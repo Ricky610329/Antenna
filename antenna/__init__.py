@@ -393,6 +393,14 @@ class AntennaPattern:
         """One-dimensional array after merge."""
         return self.merge().reshape(-1)
     
+    @property
+    def fill_rate(self) -> float:
+        """計算並返回天線 pattern 的金屬填充率。"""
+        merged_pattern = self.merge()
+        if merged_pattern.numel() == 0:
+            return 0.0
+        return (torch.sum(merged_pattern) / merged_pattern.numel()).item()
+    
     @classmethod
     def register_simulator(cls, simulator:Callable[[Tensor],Dict[str, Tensor]]):
         cls._simulator = simulator
@@ -415,7 +423,7 @@ class AntennaPattern:
         return (x2-x1)*(y2-y1) if flatten else ((x2-x1), (y2-y1))
     
     @classmethod
-    def getRandomPattern(cls, w=40, h=40):
+    def _getRandomPattern(cls, w=40, h=40):
         patterns = torch.randn(
             w, h, 
             dtype = torch.float32,
@@ -423,6 +431,38 @@ class AntennaPattern:
         )
         binaries = (patterns > 0.5).float()
         return cls(binaries, (0, w, 0, h))
+    
+    @classmethod
+    def getRandomPattern(cls, shape: tuple, fill_rate: float = 0.5) -> Self:
+        """
+        根據指定的填充率 (fill rate) 生成一個二元 (0/1) 的 pattern。
+
+        Args:
+            shape (tuple): Pattern 的形狀, 例如 (w, h)。
+            fill_rate (float): 金屬填充的比例, 範圍在 0.0 到 1.0 之間。
+
+        Returns:
+            生成的二元 pattern。
+        
+        Exapmple::
+
+            AntennaPattern.getRandomPattern((25, 25), fill_rate = np.random.uniform(0.1, 0.9))
+        """
+        w = shape[0]
+        h = shape[1]
+        total_pixels = w * h
+        num_ones = int(total_pixels * fill_rate)
+        
+        # 生成一個扁平化的一維數組
+        pattern_flat = np.zeros(total_pixels)
+        pattern_flat[:num_ones] = 1
+        
+        # 隨機打亂
+        np.random.shuffle(pattern_flat)
+        
+        # 重塑為目標形狀並轉換為 PyTorch Tensor
+        pattern_tensor = torch.tensor(pattern_flat.reshape(shape), dtype=torch.float32, device = config.device)
+        return cls(pattern_tensor, (0, w, 0, h))
 
     def __str__(self):
         _shape = self.merge().shape
