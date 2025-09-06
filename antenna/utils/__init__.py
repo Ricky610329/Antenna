@@ -24,3 +24,6 @@ from typing import (
     TypeVar, cast, Callable, Any, Optional, overload, Union, Sequence, Literal
 )
 from typing_extensions import Self
+
+ROOTDIR = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment")
+DATASET_PATH = ROOTDIR.joinpath('dataset')
