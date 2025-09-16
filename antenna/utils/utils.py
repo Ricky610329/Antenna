@@ -48,8 +48,10 @@ from shutil import rmtree as _rmtree
 #* Figure
 from matplotlib import rcParams
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure as _Figure
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.axes._axes import Axes  # type: ignore
+ReturnType = TypeVar('ReturnType')
 
 FIG_CONFIG = {
     "format": 'png',
@@ -247,13 +249,20 @@ class Config(dict):
     def setWarning(self, warning_type:str = "ignore"):
         return filterwarnings(warning_type) # type: ignore
     
-    def save(self, name:str = 'config', rootdir:Optional[str] = None):
+    @overload
+    def save(self, name:str = 'config', rootdir:Optional[str] = None, *, update_hook:Callable[[dict], ReturnType]) -> ReturnType:...
+    @overload
+    def save(self, name:str = 'config', rootdir:Optional[str] = None) -> None:...
+
+    def save(self, name:str = 'config', rootdir:Optional[str] = None, *, update_hook:Optional[Callable[[dict], ReturnType]]=None):
         """
         Only save the following types
         ```
         dict, list, tuple, str, int, float, bool, None
         ```
         If it is other, it will be automatically converted to a string using `str()`
+
+        :param update_hook: def update_hook(config)..., Ex: wandb.config.update
         """
         path = Path(rootdir or "./", f"{name}.json")
         _save = {}
@@ -265,7 +274,9 @@ class Config(dict):
                 _save[key] = str(value)
         with open(path,'w') as f:
             _json_dump(_save, f, indent = 4)
-    
+        
+        if update_hook: return update_hook(self)
+
     def load(self, name:str = 'config', rootdir:Optional[str] = None):
         """
         Only load the following types
@@ -364,6 +375,18 @@ class Figure:
     def addAll(self):
         for i in range(self.__len__()) :
             self.index(i+1)
+            
+    def convert_to(self, fn:Callable[[_Figure], ReturnType]) -> ReturnType:
+        """
+        Convert to the specified type.
+
+        :param fn: Convert function. Ex: wandb.Image
+
+        Example::
+
+            fig.conver_to(wandb.Image)
+        """
+        return fn(self.fig)
 
     def saveGIF(self, update:Callable, epochs:int = 10, dpi = 150):
         writer = PillowWriter(fps=30, metadata={"artist": "WeiWen Wu"})
