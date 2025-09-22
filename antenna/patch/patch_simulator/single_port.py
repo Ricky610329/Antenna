@@ -371,7 +371,7 @@ class SinglePortSimulator(PatchSimulator):
                 "UseLocalCS:=", False
             ])
 
-        self.oProject.Save()
+        # self.oProject.Save()
 
         # 開始模擬
         oDesign.AnalyzeAll()
