@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from loguru import logger #? pip3 install loguru
-
+from functools import partial
 import sys
 from os.path import normpath
 from time import time
@@ -296,18 +296,18 @@ class AntennaResponse:
         return cls.target(side, center, width, label = label, add = is_add)
 
     @classmethod
-    def registerLossHook(cls, loss_hook:Callable[[Tensor,Tensor], Tensor], label:str = "response"):
+    def registerLossHook(cls, loss_hook:Callable[[Tensor], Tensor], label:str = "response", **loss_hook_param):
         """
         Args:
         
             loss_hook: Used for `criterion()`
 
             ```
-            def criterion(response, target_response):...
+            def criterion(response, target_response, ...):...
             ```
         
         """
-        cls._loss_fn_hook[label] = loss_hook
+        cls._loss_fn_hook[label] = partial(loss_hook, **loss_hook_param)
 
     def criterion(self, label:str = "response", **param) -> Tensor:
         """[Loss Function] Register LossHook using `registerLossHook()` before use."""
@@ -315,7 +315,7 @@ class AntennaResponse:
             raise RuntimeError(f"The {label} of LossHook is not registered. Please use `registerLossHook()` first.")
         
         return self._loss_fn_hook[label](
-            self.response, self.target[label].response, **param
+            self.response, **param
         )
 
 class AntennaPattern:
