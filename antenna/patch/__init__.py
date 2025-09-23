@@ -56,3 +56,28 @@ def custom_loss_g(prediciton, target, loss_type='SmoothL1Loss'):
     
     loss = loss_10 + loss_4
     return loss
+
+def custom_loss_minmax(prediciton:Tensor, target:Tensor, method:Literal['low', 'high'], loss_type='SmoothL1Loss'):
+    
+    criterion = nn.SmoothL1Loss() if loss_type=='SmoothL1Loss' else nn.MSELoss()
+    loss_zero = torch.tensor(0.0, dtype=torch.float32, requires_grad=True)
+    
+    match method:
+        case 'high':
+            target_high = target.max()
+            mask_high = target == target_high 
+            mask_b_high = prediciton[mask_high] < target_high
+            return loss_zero if mask_b_high.sum() == 0 else criterion(
+                prediciton[mask_high][mask_b_high], target[mask_high][mask_b_high]
+            )
+        
+        case 'low':
+            target_low = target.min()
+            mask_low = target == target_low 
+            mask_b_low = prediciton[mask_low] > target_low
+            return loss_zero if mask_b_low.sum() == 0 else criterion(
+                prediciton[mask_low][mask_b_low], target[mask_low][mask_b_low]
+            )
+        
+        case _:
+            raise ValueError('The method must be `low` or `high`.')
