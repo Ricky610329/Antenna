@@ -492,7 +492,7 @@ class AntennaPattern:
     
     def __invert__(self):
         """Detach the response"""
-        return self.merge().detach().cpu().numpy()
+        return self.merge().detach().cpu()
     
     def input_dim(self) -> int:
         if self.input_tensor is None:

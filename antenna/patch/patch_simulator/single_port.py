@@ -404,19 +404,19 @@ class SinglePortSimulator(PatchSimulator):
                 "X Component:=", "Freq",
                 "Y Component:=", ["dB(RealizedGainTotal)"]
             ])
-        oModule.CreateReport("Realized Gain Plot 2", "Far Fields", "Rectangular Plot", "Setup1 : LastAdaptive",
-            [
-                "Context:=", "3D"
-            ],
-            [
-                "Theta:=", ["All"],
-                "Phi:=", ["90deg"],
-                "Freq:=", ["28GHz"]
-            ],
-            [
-                "X Component:=", "Theta",
-                "Y Component:=", ["dB(RealizedGainTotal)"]
-            ])
+        # oModule.CreateReport("Realized Gain Plot 2", "Far Fields", "Rectangular Plot", "Setup1 : LastAdaptive",
+        #     [
+        #         "Context:=", "3D"
+        #     ],
+        #     [
+        #         "Theta:=", ["All"],
+        #         "Phi:=", ["90deg"],
+        #         "Freq:=", ["28GHz"]
+        #     ],
+        #     [
+        #         "X Component:=", "Theta",
+        #         "Y Component:=", ["dB(RealizedGainTotal)"]
+        #     ])
 
         # Export csv
         oModule.ExportToFile(

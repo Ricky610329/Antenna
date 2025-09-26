@@ -63,6 +63,7 @@ class PatchSimulator(ABC):
 
         :param num: pattern number
         """
+        assert hasattr(self, "oDesktop"), "Please use `open()` or `reopen()` first"
         self.start_time = time()
         self.num = num
         
