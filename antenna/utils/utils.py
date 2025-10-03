@@ -298,7 +298,19 @@ config = Config()
 
 
 class Figure:
-    def __init__(self, name:str, nrowcol:tuple = (1, 1), save:bool = False, show:bool = False, rootdir:Optional[str] = None, size = (18, 12), **kwargs):
+    def __init__(
+            self, 
+            name:str, 
+            nrowcol:tuple = (1, 1), 
+            save:bool = False, show:bool = False, 
+            rootdir:Optional[str] = None, 
+            size:tuple = (18, 12), 
+            default_font_size = 12,
+            default_axes_title_size = 20,
+            default_tick_size:int = 18,
+            requires_grad:bool = False,
+            **kwargs
+        ):
         """
         :param size: Example: (18, 12), (18 * 2, 9 * 2)
         :param kwargs: All plt.figure() arguments
@@ -349,6 +361,13 @@ class Figure:
         fig = plt.figure(name, **kwargs)
         fig.set_size_inches(*size)
         fig.tight_layout(pad=0.1)
+        plt.rcParams.update({
+            'font.size': default_font_size,
+            'axes.titlesize': default_axes_title_size,
+            'xtick.labelsize': default_tick_size,
+            'ytick.labelsize': default_tick_size,
+            'axes.labelsize': default_tick_size,
+        })
         # fig.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
 
         self.fig = fig
@@ -358,6 +377,7 @@ class Figure:
         self.nrowcol = nrowcol    
         self.current_index = 1
         self.rootdir = Path(rootdir or "./")
+        self.requires_grad = requires_grad
     
     def __repr__(self):
         return f"{self.__class__.__name__}(name={self.name}, nrowcol={self.nrowcol}, save={self.save}, show={self.show}, rootdir={self.rootdir.absolute()}, size={self.fig.get_size_inches()})"
@@ -469,7 +489,7 @@ class Figure:
 
     def __enter__(self):
         self.prev = is_grad_enabled()
-        set_grad_enabled(False)
+        set_grad_enabled(self.requires_grad)
 
         return self
 
