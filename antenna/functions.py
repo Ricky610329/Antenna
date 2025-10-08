@@ -1,5 +1,6 @@
 import torch
-from torch import Tensor, nn
+from torch import Tensor, nn, nn
+import torch.nn.functional as F
 from enum import Enum
 from typing import *
 
@@ -152,3 +153,39 @@ def mirror(input: Tensor, mode: Union[FlipMode, Literal['-','|','*']]  = '*') ->
             
     return tuple(results)
 
+def gumbel_sinkhorn_rectangular(logits: torch.Tensor, tau: float = 1.0, n_iters: int = 20, hard: bool = False):
+    """
+    適用於長方形矩陣的 Gumbel-Sinkhorn 演算法。
+    
+    Args:
+        logits (torch.Tensor): 輸入的分數矩陣，形狀為 (..., K, M)，
+                               其中 K 是位置數，M 是物件數。
+        tau (float): 溫度參數。
+        n_iters (int): Sinkhorn 迭代次數。
+        hard (bool): 是否回傳離散的指派結果。
+    
+    Returns:
+        torch.Tensor: 形狀為 (..., K, M) 的 (軟性/硬性) 分配矩陣。
+    """
+    # Gumbel 雜訊擾動 (這裡我們手動實現，因為 F.gumbel_softmax 假設維度是 logits.shape[-1])
+    gumbels = -torch.log(-torch.log(torch.rand_like(logits) + 1e-20) + 1e-20)
+    perturbed_logits = (logits + gumbels) / tau
+    
+    # 為了數值穩定性，在 log-space 進行迭代
+    log_alpha = perturbed_logits
+    
+    for _ in range(n_iters):
+        # 沿著 M 維度 (物件) 進行正規化
+        log_alpha = log_alpha - torch.logsumexp(log_alpha, dim=-1, keepdim=True)
+        # 沿著 K 維度 (位置) 進行正規化
+        log_alpha = log_alpha - torch.logsumexp(log_alpha, dim=-2, keepdim=True)
+
+    soft_assignment = torch.exp(log_alpha)
+
+    if hard:
+        # 取得離散的指派結果 (不可微分)
+        _, indices = torch.max(soft_assignment, dim=-1)
+        hard_assignment = F.one_hot(indices, num_classes=logits.shape[-1]).to(logits.dtype)
+        return hard_assignment
+        
+    return soft_assignment
