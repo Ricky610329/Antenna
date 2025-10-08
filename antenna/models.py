@@ -12,7 +12,109 @@ from torch.optim.optimizer import Optimizer
 
 import numpy as np
 from math import sqrt
-   
+
+from torch.optim.lr_scheduler import LRScheduler
+class Models:
+    def __init__(
+            self, 
+            name:str = "models_{label}", 
+            rootdir:Union[str, Path] = ".", 
+            model:Optional[nn.Module] = None, 
+            optimizer:Optional[Optimizer] = None, 
+            scheduler:Optional[LRScheduler] = None, 
+            criterion:Optional[nn.Module] = None,
+            *, 
+            load:bool = False,
+            device = config.device
+        ):
+        if "{label}" in name:
+            self._name = name
+            self.name = None
+        else:
+            self._name = None
+            self.name = name
+
+        self._rootdir = rootdir
+        self.device = device
+
+        self.model = model
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.criterion = criterion
+        self.record = Record(self.__class__.__name__, rootdir=self._rootdir, load=load and self.model_file.exists())
+
+        if load: 
+            assert self.name, "Please use `Models.change()` first."
+            self.load()
+    
+    def __call__(self, *args, **kwds):
+        return self.model(*args, **kwds)
+
+    def __str__(self):
+        _str = "{class_name}(Model={model}, Optimizer={optimizer}, Scheduler={scheduler}, Criterion={criterion})"
+        return _str.format(
+            class_name = self.__class__.__name__,
+            model = self.model.__class__.__name__,
+            optimizer = self.optimizer.__class__.__name__,
+            scheduler = self.scheduler.__class__.__name__,
+            criterion = self.criterion.__class__.__name__
+        )
+    
+    @property
+    def model_file(self) -> Path:
+        """The full path to the model archive."""
+        return Path(self._rootdir).joinpath(f"{self.name}.pth")
+    
+    @property
+    def FloatTensor(self):
+        return torch.FloatTensor if str(self.device) == 'cpu' else torch.cuda.FloatTensor # type: ignore
+    
+    def change(self, label:str, *, load:bool=False, save:bool=False):
+        """
+        Change model label.
+
+        :param label: models label. You can enter `{label}` in name.
+        :param load: Load the changed models.
+        :param save: Save the models before the change.
+        """
+        if save:
+            self.save()
+        if self._name:
+            self.name = self._name.format(label=label)
+        if load:
+            self.load()
+        return self.name
+
+    def to(self, *args, **kward):
+        """
+        Move and/or cast the parameters and buffers.
+        """
+        self.model = self.model.to(*args, **kward)
+        self.device = kward['device'] or args[0]
+        return self.model
+    
+    def load(self):
+        checkpoint_loaded:dict = self.model_file.load_torch()
+        self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
+        self.scheduler.load_state_dict(checkpoint_loaded['scheduler_state_dict'])
+
+        self.device = checkpoint_loaded['device']
+
+    def save(self) -> Path:
+        checkpoint = {
+            'model_state_dict': None if not self.model else self.model.state_dict(),
+            'optimizer_state_dict': None if not self.optimizer else self.optimizer.state_dict(),
+            'scheduler_state_dict': None if not self.scheduler else self.scheduler.state_dict(),
+            'device': self.device
+        }
+        torch.save(checkpoint, self.model_file)
+        return self.model_file
+
+    def step(self, optimizer_param=None, scheduler_patam=None):
+        self.optimizer.step(optimizer_param)
+        if self.scheduler: self.scheduler.step(scheduler_patam)
+
 class BiScaleNorm(nn.Module):
     def __init__(self):
         super(BiScaleNorm, self).__init__()
@@ -157,7 +259,7 @@ class HFSSNet(nn.Module):
     
 
 # %%
-
+from .functions import gumbel_sinkhorn_rectangular
 class SPGEN(nn.Module):
     def __init__(self ,pattern_table:Tuple, size=40):
         super(SPGEN,self).__init__()
@@ -191,38 +293,58 @@ class SPGEN(nn.Module):
             dtype = torch.float32
         )
 
-    def forward(self):
+    def forward(self, tau: float = 1.0, n_iters: int = 20, hard: bool = True):
 
-        # 使用 Gumbel-Softmax 模擬 hard selection，但仍可反向傳播
-        # hard=True 代表輸出 one-hot（離散選擇）
-        # logits: [1, grid_h, grid_w, num_patterns]
-        gumbel_probs = F.gumbel_softmax(self.logits, dim=-1, hard=True)  # [1, H, W, P]
+        # 原始 logits 形狀: [1, grid_h, grid_w, num_patterns]
+        batch_size, grid_h, grid_w, num_patterns = self.logits.shape
+        
+        # 1. 重塑 logits 以符合 gumbel_sinkhorn_rectangular 的輸入
+        # 將 grid_h 和 grid_w 維度合併為一個「位置」維度
+        # 新形狀: [1, grid_h * grid_w, num_patterns]
+        num_positions = grid_h * grid_w
+        reshaped_logits = self.logits.view(batch_size, num_positions, num_patterns)
 
-        # pattern_table_tensor: [P, small_h * small_w]
-        # 對每個位置做 weighted sum（實際是 one-hot 選中的）
-        selected_patterns = torch.matmul(gumbel_probs, self.pattern_table_tensor)  # [1, H, W, small_h*small_w]
+        # 2. 使用新的 Gumbel-Sinkhorn 函式
+        # 輸出 assignment_matrix 形狀: [1, grid_h * grid_w, num_patterns]
+        # 注意：訓練時 hard 應為 False，推斷時可設為 True
+        assignment_matrix = gumbel_sinkhorn_rectangular(reshaped_logits, tau=tau, n_iters=n_iters, hard=hard)
 
-        # 將每個小圖案 reshape 回 2D 並拼接成一張大圖
+        # pattern_table_tensor: [num_patterns, small_h * small_w]
+        # 3. 執行矩陣乘法來選擇圖案
+        # torch.matmul: [1, K, M] @ [M, S*S] -> [1, K, S*S]
+        # K = num_positions, M = num_patterns, S = patern_size
+        selected_patterns = torch.matmul(assignment_matrix, self.pattern_table_tensor) # [1, H*W, small_h*small_w]
+        
+        # 4. 將結果重塑回最終的圖像形狀
+        # selected_patterns 現在的空間維度是攤平的，需要重新構建
         soft_output = selected_patterns.view(
-            1, self.grid_size, self.grid_size,  # batch, H, W,
-            self.patern_size, self.patern_size  # 小圖案大小
+            batch_size, self.grid_size, self.grid_size,  # batch, grid_h, grid_w
+            self.patern_size, self.patern_size           # 小圖案大小 (small_h, small_w)
         ).permute(
             0, 1, 3, 2, 4  # (batch, grid_h, small_h, grid_w, small_w)
         ).reshape(
-            1,
+            batch_size,
             self.grid_size * self.patern_size,
             self.grid_size * self.patern_size
         )
 
         self.output_image = soft_output
         return self.output_image
-    
-    def save(self, nrowcol:tuple, result_path):
-        with Figure("SPGEN Small Pattern", nrowcol, save=True, rootdir=result_path, size=(18, 9)) as fig:
-            for n in range(len(self)):
-                ax:Axes = fig.index(-1)
-                ax.set_title(f"Small Pattern {n+1}")
-                ax.imshow(self[n], cmap='viridis')
+
+    def save(self, nrowcol:tuple, result_path, pattern_dict:dict=None):
+        with Figure("SPGEN Small Pattern", nrowcol, save=True, rootdir=result_path, size=(18, 12), default_axes_title_size=10, default_tick_size=6) as fig:
+            if pattern_dict:
+                for name, pattern in pattern_dict.items():
+                    ax:Axes = fig.index(-1)
+                    ax.axis('off') 
+                    ax.set_title(f"{name}")
+                    ax.imshow(pattern, cmap='viridis')
+            else:
+                for n in range(len(self)):
+                    ax:Axes = fig.index(-1)
+                    ax.axis('off') 
+                    ax.set_title(f"Small Pattern {n+1}")
+                    ax.imshow(self[n], cmap='viridis')
 
     def __getitem__(self, idx):
         return self.pattern_table[idx]

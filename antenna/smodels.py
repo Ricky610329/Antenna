@@ -11,8 +11,8 @@ from abc import ABC, abstractmethod
 #%% Import By Device
 FloatTensor = torch.FloatTensor if str(config.device) == 'cpu' else torch.cuda.FloatTensor # type: ignore
 
-class SurrogateModel(ABC):
-    def __init__(self, model, criterion, optimizer:Optimizer, scheduler:Optional[LRScheduler]=None, *, progress_callback = lambda i, n: None):
+class SurrogateModel(Models, ABC):
+    def __init__(self, model, criterion, optimizer:Optimizer, scheduler:Optional[LRScheduler]=None, *, progress_callback = lambda i, n: None, rootdir="."):
         """
         Parameters
         ----------
@@ -31,50 +31,23 @@ class SurrogateModel(ABC):
 
                 progress_callback = lambda i, n: print(f'Saving frame {i}/{n}')
         """
-        self.FloatTensor = torch.FloatTensor if str(config.device) == 'cpu' else torch.cuda.FloatTensor # type: ignore
-        self.epoch = 1
-        self.model: nn.Module = model
-        self.criterion: nn.Module = criterion
-        self.optimizer: Optimizer = optimizer
-        self.scheduler: Optional[LRScheduler] = scheduler
+        super().__init__(
+            name='sm',
+            rootdir=rootdir,
+            model=model,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            criterion=criterion,
+            load=False # 避免呼叫父類別未覆寫的 load
+        )
         
         self.progress_callback = progress_callback
 
-    def save(self, rootdir):
-        # path = Path(rootdir).joinpath(f"sm_{self.epoch}.pth")
-        path = Path(rootdir).joinpath(f"sm.pth")
-        checkpoint = {
-            'epoch': self.epoch,
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'scheduler_state_dict': None if not self.scheduler else self.scheduler.state_dict(),
-        }
-        torch.save(checkpoint, path)
-        return path
-
-    def load(self, rootdir):
-        path = Path(rootdir).joinpath(f"sm.pth")
-        checkpoint:Dict = path.load_torch()
-        self.epoch = checkpoint['epoch']
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'] or {})
-
-        return self.epoch
+        self.epoch = 0
 
     def __call__(self, pattern) -> MultiResponses:
         self.epoch += 1
         return MultiResponses(self.model(pattern))
-    
-    def __str__(self):
-        _str = "{class_name}(Model={model}, Optimizer={optimizer}, Scheduler={scheduler}, Criterion={criterion})"
-        return _str.format(
-            class_name = self.__class__.__name__,
-            model = self.model.__class__.__name__,
-            optimizer = self.optimizer.__class__.__name__,
-            scheduler = self.scheduler.__class__.__name__,
-            criterion = self.criterion.__class__.__name__
-        )
          
     @abstractmethod
     def train(self, pattern):
@@ -84,7 +57,7 @@ class OldSM(SurrogateModel):
     """
     學長的做法
     """
-    def __init__(self):
+    def __init__(self, checkpoint='.'):
         model_ge = HFSSNet( # Pattern -> Response
             AntennaPattern.getAllPixel(), AntennaResponse.size()
         )
@@ -95,7 +68,7 @@ class OldSM(SurrogateModel):
         scheduler_ge = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer_ge, mode="min", factor=0.5, patience=10, min_lr=1e-6
         )
-        super().__init__(model_ge, criterion_ge, optimizer_ge, scheduler_ge)
+        super().__init__(model_ge, criterion_ge, optimizer_ge, scheduler_ge, rootdir=checkpoint)
 
     def train(self, pattern:Tensor, real_response:Tensor):
         self.model.train()
@@ -127,4 +100,45 @@ class OldSM(SurrogateModel):
             epoch_2 = epoch_2 + 1
         self.model.eval()
         return pilotLoss_2
+    
+    def pre_train(self, dataset, n=100):
+        
+        self.record.reset()
+        self.loss = float('inf')
+        epoch_2 = 0
+
+        for i in range(n):
+            pilotLoss_2 = []
+            self.model.train()
+                
+            for pattern, real_response in dataset:
+                input = pattern.flatten().to(config.device)
+                label = real_response.to(config.device)
+                self.optimizer.zero_grad()
+                
+                outputs_result:Tensor = self.model(input)
+
+                loss_R:Tensor = self.criterion(
+                    outputs_result.reshape(-1, *AntennaResponse.size()),
+                    label.reshape(-1, *AntennaResponse.size())
+                )
+                loss_R.backward()
+                self.step(scheduler_patam=loss_R)
+
+                pilotLoss_2.append(loss_R.item())
+                self.loss = loss_R.item()
+                self.progress_callback(epoch_2, 2000)
+
+                epoch_2 = epoch_2 + 1
+            
+            if pilotLoss_2: # 避免 pilotLoss_2 為空時出錯
+                avg = sum(pilotLoss_2) / len(pilotLoss_2)
+                logger.info(f'Pretrain...({i+1}/{n}), Loss: {avg}')
+                self.record['loss'] = avg
+            if self.record.early_stop('loss'):
+                logger.success(f'Early Stop!')
+                break
+
+        self.model.eval()
+        return self.record['loss']
 

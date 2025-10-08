@@ -324,7 +324,6 @@ class AntennaPattern:
 
     def __new__(cls, pattern:"AntennaPattern", *args) -> "AntennaPattern":
         if isinstance(pattern, AntennaPattern):
-            print('AntennaPattern')
             return pattern
         else:
             return super(AntennaPattern, cls).__new__(cls)
@@ -574,11 +573,11 @@ class AntennaPattern:
         return AntennaResponse(result_response)
 
     
-    def plot(self, axes:Optional[Axes] = None, show:bool = False):
+    def plot(self, axes:Optional[Axes] = None, show:bool = False, title:str = "Antenna Pattern {shape}"):
         ax:Axes = plt.axes(axes) # type: ignore
-        ax.set_title("Antenna Pattern")
+        ax.set_title(title.format(shape=self.size()))
         ax.imshow(self.merge().cpu().detach(), cmap='viridis')
-        # ax.axis('off')
+        ax.axis('off')
         if show: plt.show()
         return ax
     
