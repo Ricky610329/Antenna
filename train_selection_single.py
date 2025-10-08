@@ -14,24 +14,28 @@ import argparse
 from antenna import *
 
 from antenna.models import (
-    SPGEN, HFSSNet
+    Models, SPGEN, HFSSNet
 )
 from antenna.patch import (
     SinglePortSimulator, custom_loss_minmax
 )
 from antenna.smodels import OldSM
 from script.process_files import FileProcessor
+from antenna.utils.data import DataManager
 # from antenna.functions import mirror, mutate
 torch.autograd.set_detect_anomaly(True)
 #%% 
 ###* Basic Config ###
 connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
-RESULT_PATH, is_connect_run = get_result_path('[Patch Single][{device}] selection16_rollback_-3', rootdir=ROOTDIR)
+RESULT_PATH, is_connect_run = get_result_path('[Patch Single][{device}] selection_gumbel_sinkhorn_rectangular_CyclicLR', rootdir=ROOTDIR)
+DATASET_PATH = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\dataset")
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
 # sys.excepthook = global_exception_handler
 
 path_pic = RESULT_PATH.joinpath("pic").not_exist_create()
 path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
+data_manager = DataManager("patch_single_mirror", rootdir=DATASET_PATH)
+dataset_temp = DataManager("temp", rootdir=RESULT_PATH)
 
 
 config['Name'] = RESULT_PATH.stem
@@ -48,6 +52,11 @@ config['HFSS.min_loss'] = 0.1
 config['HFSS.max_epoch'] = 20000
 
 logger.info(f"The results will be saved in {RESULT_PATH.absolute()} (Continue: {is_connect_run}, CUDA: {torch.cuda.is_available()})")
+FileProcessor(
+    output_dir = RESULT_PATH,
+    project_name=config['Name'],
+    generated_by=config['File']
+).run()
 
 ###* Set Antemma Pattern ###
 AntennaPattern.setDefaultCoordinate((0, 25, 0, 25))
@@ -77,7 +86,7 @@ gain = AntennaResponse.registerTargetResponse(-19, 4, (5, 0, 7, 0, 5), label="Ga
 
 AntennaResponse.registerLossHook(custom_loss_minmax, label = "Gain", target=gain, method='high')
 
-with Figure('Target Response', (1, 2), rootdir=RESULT_PATH, save=True, size=(18*2, 9*2)) as fig:
+with Figure('Target Response', (1, 2), rootdir=RESULT_PATH, save=True, size=(18*2, 9*2), default_axes_title_size=50, default_tick_size=40) as fig:
     fig.addAll()
     
     fig[0].set_title('S11')
@@ -188,13 +197,13 @@ pattern_table = (
         [1, 0, 0, 0, 1],
         [1, 1, 1, 1, 1]
     ],
-    [ # 螺旋
-        [1, 1, 1, 1, 0],
-        [0, 0, 0, 1, 0],
-        [0, 1, 0, 1, 0],
-        [0, 1, 1, 1, 0],
-        [0, 0, 0, 0, 0]
-    ],
+    # [ # 螺旋
+    #     [1, 1, 1, 1, 0],
+    #     [0, 0, 0, 1, 0],
+    #     [0, 1, 0, 1, 0],
+    #     [0, 1, 1, 1, 0],
+    #     [0, 0, 0, 0, 0]
+    # ],
     [ # 點狀
         [0, 1, 0, 1, 0],
         [1, 0, 1, 0, 1],
@@ -211,20 +220,214 @@ pattern_table = (
     ]
 
 )
-model = SPGEN(pattern_table, 25)
-model.save((2,8), RESULT_PATH)
+# --- Helper function for rotation ---
+def get_rotations(base_pattern):
+    """Generates 4 rotations (0, 90, 180, 270 degrees) for a given pattern."""
+    base = np.array(base_pattern)
+    rotations = [np.rot90(base, k=i).tolist() for i in range(4)]
+    return rotations
+
+pattern_table = {
+    # ---------------------------------------------------------------
+    # 1. Essential Patterns (極度重要)
+    # ---------------------------------------------------------------
+    # 'Blank': [
+    #     [0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 0],
+    #     [0, 0, 0, 0, 0]
+    # ],
+    # 'Solid': [
+    #     [1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1],
+    #     [1, 1, 1, 1, 1]
+    # ],
+    
+    # ---------------------------------------------------------------
+    # 2. Line Patterns (線條)
+    # ---------------------------------------------------------------
+    'H-Line (Thin)': [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0]
+    ],
+    'H-Line (Bold)': [
+        [0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0]
+    ],
+    'V-Line (Thin)': [
+        [0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0]
+    ],
+    'V-Line (Bold)': [
+        [0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0]
+    ],
+    'Diag (\\, Bold)': [
+        [1, 1, 0, 0, 0],
+        [1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1],
+        [0, 0, 0, 1, 1]
+    ],
+    'Diag (/, Bold)': [
+        [0, 0, 0, 1, 1],
+        [0, 0, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 0, 0],
+        [1, 1, 0, 0, 0]
+    ],
+
+    # ---------------------------------------------------------------
+    # 3. Cross Patterns (十字)
+    # ---------------------------------------------------------------
+    '+ (Thin)': [
+        [0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0],
+        [1, 1, 1, 1, 1],
+        [0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0]
+    ],
+    '+ (Bold)': [
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0]
+    ],
+    'X (Bold)': [ # 叉叉
+        [1, 1, 0, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [1, 1, 0, 1, 1]
+    ],
+    
+    # ---------------------------------------------------------------
+    # 4. Circle / Dot Patterns (圓點)
+    # ---------------------------------------------------------------
+    'Dot': [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0]
+    ],
+    'Circle': [
+        [0, 0, 1, 0, 0],
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+        [0, 0, 1, 0, 0]
+    ],
+    
+    # ---------------------------------------------------------------
+    # 5. T-Shape Patterns (T型, 含4個旋轉方向)
+    # ---------------------------------------------------------------
+    **{f'T (Thin, Rot {i*90})': p for i, p in enumerate(get_rotations([
+        [0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1],
+        [0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0],
+        [0, 0, 1, 0, 0]
+    ]))},
+    **{f'T (Bold, Rot {i*90})': p for i, p in enumerate(get_rotations([
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0]
+    ]))},
+    
+    # ---------------------------------------------------------------
+    # 6. L-Shape Patterns (L型/角落, 含4個旋轉方向)
+    # ---------------------------------------------------------------
+    **{f'L (Thin, Rot {i*90})': p for i, p in enumerate(get_rotations([
+        [1, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0],
+        [1, 1, 1, 0, 0],
+        [0, 0, 0, 0, 0]
+    ]))},
+    **{f'L (Bold, Rot {i*90})': p for i, p in enumerate(get_rotations([
+        [1, 1, 0, 0, 0],
+        [1, 1, 0, 0, 0],
+        [1, 1, 0, 0, 0],
+        [1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 0]
+    ]))},
+
+    # ---------------------------------------------------------------
+    # 7. U-Shape Patterns (U型/C型, 含4個旋轉方向)
+    # ---------------------------------------------------------------
+    **{f'U (Thin, Rot {i*90})': p for i, p in enumerate(get_rotations([
+        [1, 0, 0, 0, 1],
+        [1, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0]
+    ]))},
+    **{f'U (Bold, Rot {i*90})': p for i, p in enumerate(get_rotations([
+        [1, 1, 0, 1, 1],
+        [1, 1, 0, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0]
+    ]))},
+}
+# print(len(pattern_table))
+
+model = SPGEN(list(pattern_table.values()), 25)
+model.save((5,7), RESULT_PATH, pattern_dict=pattern_table)
+# exit()
 optimizer = torch.optim.Adam(
     params=model.parameters(), lr=config.lr, betas=(0.5, 0.999)
 )
-smodel = OldSM()
+scheduler = torch.optim.lr_scheduler.CyclicLR(
+    optimizer, 
+    base_lr=0.0001,      # 學習率下界
+    max_lr=config.lr,    # 學習率上界 (使用您config中的值)
+    step_size_up=25,     # 從下界到上界所需的 epoch 數
+    mode='triangular2',  # 模式: triangular2 會在每個循環後將 max_lr 減半
+    cycle_momentum=True  # 對於Adam等帶動量的優化器，建議開啟
+)
+generator = Models(
+    name = "generator_{label}",
+    rootdir = path_checkpoint,
+    model = model,
+    optimizer = optimizer,
+    scheduler = scheduler
+)
+
+smodel = OldSM(checkpoint=config.checkpoint_save_path)
+
 
 ###* 斷點續跑 ###
 if is_connect_run and ('epoch' in TEMP):
-    last_model = path_checkpoint.joinpath(f"gen_model_{TEMP('epoch')}.pth")
-    Antenna_checkpoint_loaded = last_model.load_torch()
-    model.load_state_dict(Antenna_checkpoint_loaded['state_dict'])
-    optimizer.load_state_dict(Antenna_checkpoint_loaded['optimizer'])
-    smodel.load(config.checkpoint_save_path)
+    generator.change(TEMP('epoch'), load=True)
+    smodel.load()
+elif smodel.model_file.exists():
+    pass
+else:
+    with Figure('Pre Train', (1, 1), rootdir=RESULT_PATH, save=True, default_axes_title_size=50, default_tick_size=40, requires_grad=True) as fig:
+        fig.addAll()
+        fig[0].plot(smodel.pre_train(data_manager))
+        smodel.save()
+    
 
 
 # Optimizer setting
@@ -237,11 +440,7 @@ config['optimizer'] = optimizer
 config['SurrogateModel'] = smodel
 config.save(rootdir=RESULT_PATH)
 
-FileProcessor(
-    output_dir = RESULT_PATH,
-    project_name=config['Name'],
-    generated_by=config['File']
-).run()
+
 
 ###* Training ###
 epoch = TEMP('epoch', 0) # 總訓練次數
@@ -252,38 +451,40 @@ while epoch < config.epochs + 1:
 
     epoch += 1
     current_epoch += 1
-
+    generator.change(epoch)
     if current_epoch % 15 == 0 or current_epoch == 1:
         simulator.reopen()
 
     simulator.start(epoch)
     logger.info(f"Start {epoch} of {config.epochs}")
 
-    model.train()
-    optimizer.zero_grad() # adjust_lr(optimizer, epoch, init_lr)
-
+    generator.model.train()
+    generator.optimizer.zero_grad() # adjust_lr(optimizer, epoch, init_lr)
+    
     if  TEMP.early_stop('real_loss', config['patience']) and skip > config['patience']:
         ###* Rollback ###
-        _epoch = TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch')
-        best_model = path_checkpoint.joinpath(f"gen_model_{_epoch}.pth")
-        Antenna_checkpoint_loaded = best_model.load_torch()
-        model.load_state_dict(Antenna_checkpoint_loaded['state_dict'])
-        optimizer.load_state_dict(Antenna_checkpoint_loaded['optimizer'])
+        generator.change(
+            TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
+            save=True, load=True
+        )
+        TEMP['tau'] = 5.0
+        smodel.pre_train(dataset_temp)
 
         ###* 生成 pattern 並儲存於 buffer ###
         #? target response -> 生成模型 -> pattern
         output_element = AntennaPattern(
-            model()
+            generator(TEMP('tau'))
         ) 
 
         ###* Mutation ###
-        TEMP['mutation'] = 0 # TEMP('min_loss')
-        # output_element = output_element.mutate(config['mutation_rate'])
+        TEMP['mutation'] = TEMP('min_loss')
+        output_element = output_element.mutate(config['mutation_rate'])
         skip = 0
 
     else:
+        TEMP['tau'] = max(0.5, TEMP('tau', 5.0) * 0.95)
         output_element = AntennaPattern(
-            model()
+            generator(TEMP('tau'))
         ) 
         TEMP['mutation'] = 0
         skip += 1
@@ -295,14 +496,14 @@ while epoch < config.epochs + 1:
         output_result = output_element.simulate()
         real_loss = output_result.criterion()
         stack_output_result = output_result.stack()
-
+        dataset_temp.add_and_save([output_element.merge(), stack_output_result])
         sm_loss = smodel.train(output_element.series, stack_output_result)
-        smodel.save(path_checkpoint)
+        smodel.save()
 
         TEMP['real_loss'] = real_loss.item()    # 儲存 HFSS結果 的 loss
 
         jump = 0
-        
+
     else:
         #* 重複，直接使用之前的結果
         stack_output_result, real_loss = TEMP.find(
@@ -340,19 +541,22 @@ while epoch < config.epochs + 1:
     response = smodel(output_element.series)
     loss = response.criterion()
     loss.backward()
-    optimizer.step()
-    model.eval()
+    generator.step()
+    generator.model.eval()
+    TEMP['lr'] = generator.optimizer.param_groups[0]['lr']
     TEMP['fake_loss'] = loss.item() # 儲存 GEN 與 代理模型 的 loss
 
     ###* 儲存模型 ###
-    gen_checkpoint = {
-        'model': model,
-        'state_dict': model.state_dict(),
-        'optimizer': optimizer.state_dict()
-    }
-    torch.save(gen_checkpoint, path_checkpoint.joinpath(f"gen_model_{epoch}.pth"))
+    generator.save()
 
-    with Figure(f"Result {epoch} {'best' if TEMP('de') == 0 else ''}",(2,3), rootdir=path_pic, save=False if jump > 0 else True, size=(18*2, 9*2)) as fig:
+    with Figure(
+        f"Result {epoch} {'best' if TEMP('de') == 0 else ''}",
+        nrowcol = (2,3), 
+        rootdir = path_pic, 
+        save = False if jump > 0 else True, 
+        size = (18*2, 9*2),
+        default_axes_title_size = 20
+    ) as fig:
         fig.addAll()
 
         fig[0].plot(x,stack_output_result[0].cpu(), color='blue')
@@ -370,20 +574,21 @@ while epoch < config.epochs + 1:
         # fig[1].set_ylim(-20,1)
 
 
-        fig[2].plot(TEMP['min_loss'], label='min_loss')
-        fig[2].set_title("Min Loss", fontsize=20)
+        fig[2].set_title("Parameter Group")
+        fig[2].plot([x * 1000 for x in TEMP['lr']], label='Learning Rate * 1000')
+        fig[2].plot(TEMP['tau'], label='Tau')
+        fig[2].legend()
 
         fig[3].plot(TEMP['real_loss'], color='red', label='real_loss')
         fig[3].plot(TEMP['fake_loss'], color='purple', label='fake_loss', alpha=0.8)
         fig[3].plot(TEMP['mutation'], label='mutation')
-        # fig[3].plot(TEMP['min_loss'], label='min_loss')
+        fig[3].plot(TEMP['min_loss'], label='min_loss')
         fig[3].legend()
         fig[3].set_title("Loss Curve", fontsize=20)
 
         fig[4].set_title('sm_loss', fontsize=20)
         fig[4].plot(sm_loss)
 
-        fig[5].set_title('Pattern', fontsize=20)
         output_element.plot(fig[5])
 
     
