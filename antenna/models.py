@@ -110,6 +110,12 @@ class Models:
         }
         torch.save(checkpoint, self.model_file)
         return self.model_file
+    
+    def pre_load_model(self, path:Union[str, Path]):
+        path = Path(path)
+        self.model.load_state_dict(
+            path.load_torch()['model_state_dict']
+        )
 
     def step(self, optimizer_param=None, scheduler_patam=None):
         self.optimizer.step(optimizer_param)
