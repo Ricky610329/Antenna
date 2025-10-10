@@ -113,9 +113,12 @@ class Models:
     
     def pre_load_model(self, path:Union[str, Path]):
         path = Path(path)
-        self.model.load_state_dict(
-            path.load_torch()['model_state_dict']
-        )
+        checkpoint_loaded:dict = path.load_torch()
+        self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
+        for name, param in self.model.state_dict().items():
+            if not torch.all(torch.isfinite(param)):
+                raise RuntimeError(f"!!! 在參數 '{name}' 中發現無效值 (NaN 或 inf) !!!")
         logger.success(f'Successfully loaded the pre-trained model. ({path})')
 
     def step(self, optimizer_param=None, scheduler_patam=None):
