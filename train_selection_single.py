@@ -27,7 +27,7 @@ torch.autograd.set_detect_anomaly(True)
 #%% 
 ###* Basic Config ###
 connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
-RESULT_PATH, is_connect_run = get_result_path('[Patch Single][{device}] selection_gumbel_sinkhorn_rectangular_CyclicLR', rootdir=ROOTDIR)
+RESULT_PATH, is_connect_run = get_result_path('[Patch Single][{device}] selection_gumbel_sinkhorn_CyclicLR_1', rootdir=ROOTDIR)
 DATASET_PATH = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\dataset")
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
 # sys.excepthook = global_exception_handler
@@ -35,7 +35,7 @@ TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
 path_pic = RESULT_PATH.joinpath("pic").not_exist_create()
 path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
 data_manager = DataManager("patch_single_mirror", rootdir=DATASET_PATH)
-dataset_temp = DataManager("temp", rootdir=RESULT_PATH)
+online_dataset = DataManager("online", rootdir=RESULT_PATH)
 
 
 config['Name'] = RESULT_PATH.stem
@@ -420,8 +420,8 @@ smodel = OldSM(checkpoint=config.checkpoint_save_path)
 if is_connect_run and ('epoch' in TEMP):
     generator.change(TEMP('epoch'), load=True)
     smodel.load()
-elif smodel.model_file.exists():
-    pass
+elif DATASET_PATH.joinpath('sm.pth').exists():
+    smodel.pre_load_model(DATASET_PATH.joinpath('sm.pth'))
 else:
     with Figure('Pre Train', (1, 1), rootdir=RESULT_PATH, save=True, default_axes_title_size=50, default_tick_size=40, requires_grad=True) as fig:
         fig.addAll()
@@ -467,8 +467,8 @@ while epoch < config.epochs + 1:
             TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
             save=True, load=True
         )
-        TEMP['tau'] = 5.0
-        smodel.pre_train(dataset_temp)
+        TEMP['tau'] = 1.0
+        smodel.pre_train(online_dataset)
 
         ###* 生成 pattern 並儲存於 buffer ###
         #? target response -> 生成模型 -> pattern
@@ -482,7 +482,7 @@ while epoch < config.epochs + 1:
         skip = 0
 
     else:
-        TEMP['tau'] = max(0.5, TEMP('tau', 5.0) * 0.95)
+        TEMP['tau'] = 1.0 # max(0.5, TEMP('tau', 5.0) * 0.99)
         output_element = AntennaPattern(
             generator(TEMP('tau'))
         ) 
@@ -496,11 +496,12 @@ while epoch < config.epochs + 1:
         output_result = output_element.simulate()
         real_loss = output_result.criterion()
         stack_output_result = output_result.stack()
-        dataset_temp.add_and_save([output_element.merge(), stack_output_result])
         sm_loss = smodel.train(output_element.series, stack_output_result)
         smodel.save()
 
         TEMP['real_loss'] = real_loss.item()    # 儲存 HFSS結果 的 loss
+        if TEMP('real_loss') < TEMP.average('real_loss'):
+            online_dataset.add_and_save([output_element.merge(), stack_output_result])
 
         jump = 0
 
@@ -512,6 +513,7 @@ while epoch < config.epochs + 1:
         sm_loss = []
         TEMP['real_loss'] = real_loss
         jump = jump + 1
+    TEMP['online_dataset_len'] = len(online_dataset)
 
     ###* 更新 loss 的最小值 ###
     #? de: 更新最小loss的次數
@@ -577,6 +579,7 @@ while epoch < config.epochs + 1:
         fig[2].set_title("Parameter Group")
         fig[2].plot([x * 1000 for x in TEMP['lr']], label='Learning Rate * 1000')
         fig[2].plot(TEMP['tau'], label='Tau')
+        fig[2].plot(TEMP['online_dataset_len'], label='online_dataset_len')
         fig[2].legend()
 
         fig[3].plot(TEMP['real_loss'], color='red', label='real_loss')

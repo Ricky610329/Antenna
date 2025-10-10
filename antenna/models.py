@@ -116,6 +116,7 @@ class Models:
         self.model.load_state_dict(
             path.load_torch()['model_state_dict']
         )
+        logger.success(f'Successfully loaded the pre-trained model. ({path})')
 
     def step(self, optimizer_param=None, scheduler_patam=None):
         self.optimizer.step(optimizer_param)
