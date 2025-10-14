@@ -575,7 +575,7 @@ class Record:
         return self._data
     
     def average(self, key):
-        return sum(self._data[key]) / len(self._data)
+        return sum(self._data[key]) / len(self._data[key])
     
     def index(self, key:str, value, *, start:int = 0, stop:int = maxsize) -> Optional[int]:
         """
