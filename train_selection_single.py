@@ -419,7 +419,6 @@ generator = Models(
 )
 
 smodel = OldSM(checkpoint=config.checkpoint_save_path)
-Exception
 
 ###* 斷點續跑 ###
 if is_connect_run and ('epoch' in TEMP):
