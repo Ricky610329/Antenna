@@ -19,11 +19,7 @@ from .torch_utils import tensor
 from .torch_utils import cTensor
 from .torch_utils import *
 
-from typing import (
-    Tuple, List, Dict, Deque, # Can use the built-in.
-    TypeVar, cast, Callable, Any, Optional, overload, Union, Sequence, Literal
-)
-from typing_extensions import Self
+from antenna.types import *
 
 ROOTDIR = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment")
 DATASET_PATH = ROOTDIR.joinpath('dataset')

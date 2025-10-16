@@ -231,7 +231,7 @@ class AntennaResponse:
     def plot(self, label, axes:Optional[Axes] = None, show:bool = False):
         ax:Axes = plt.axes(axes) # type: ignore
         ax.set_title(f'Antenna Response')
-        ax.plot(self.getTargetResponse(label).response.cpu().detach(), color='red', label='Target')
+        ax.plot(self.target[label].response.cpu().detach(), color='red', label='Target')
         ax.plot(self.response.cpu().detach(), color='blue', label='Simulation')
         ax.legend()
         if show: plt.show()
