@@ -2,7 +2,7 @@ import torch
 from torch import Tensor, nn, nn
 import torch.nn.functional as F
 from enum import Enum
-from typing import *
+from antenna.types import *
 
 def custom_loss_interval(prediction:Tensor, target_low:Tensor, target_high:Tensor, loss_type='SmoothL1Loss'):
     """
@@ -189,3 +189,165 @@ def gumbel_sinkhorn_rectangular(logits: torch.Tensor, tau: float = 1.0, n_iters:
         return hard_assignment
         
     return soft_assignment
+
+import torch
+import math
+from torch.optim.optimizer import Optimizer
+from torch.optim.lr_scheduler import _LRScheduler
+import warnings
+
+class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
+    """
+    一個融合了 OneCycle、CosineAnnealingWarmRestarts 和 ReduceLROnPlateau 思想的排程器。
+    
+    它在週期性的餘弦退火基礎上，為每個週期增加了暖身階段，並能根據監控指標
+    在模型停滯時提前觸發重啟。同時，它也同步調整一個外部的溫度參數。
+    """
+    def __init__(
+        self,
+        optimizer: CustomOptimizer,
+        T_0: int = 50,
+        T_mult: int = 1,
+        lr_max: float = 0.01,
+        lr_min: float = 1e-6,
+        temp_max: float = 10.0,
+        temp_min: float = 0.1,
+        warmup_ratio: float = 0.1,
+        mode: str = 'min',
+        factor: float = 0.5,
+        patience: int = 5,
+        threshold: float = 0.0,
+        last_epoch: int = -1
+    ):
+        """
+        
+        :param optimizer: 要排程的優化器 (e.g., torch.optim.Adam)。
+        :param T_0: 第一個週期的長度 (以 step/batch/epoch 計數，取決於您如何使用 step)。
+        :param T_mult: 週期長度乘數。每當週期重啟時，新的週期長度將是當前週期長度乘以 T_mult。
+                       若 T_mult=1，則所有週期長度相同。
+        :param lr_max: 週期內達到的最高學習率。
+        :param lr_min: 週期內達到的最低學習率。
+        :param temp_max: 週期內達到的最高溫度值。
+        :param temp_min: 週期內達到的最低溫度值。
+        :param warmup_ratio: 暖身階段佔整個週期長度的比例 (0.0 到 1.0 之間)。
+        :param mode: 監控的指標的優化方向。'min' 表示指標越小越好 (例如 loss)，'max' 則相反 (例如 accuracy)。
+        :param factor: 強制重啟後，當前週期長度的縮減因子 (0.0 到 1.0 之間)。用於加速後續週期。
+        :param patience: 耐心值。在觸發強制重啟前，容忍指標沒有改善的步數 (step/batch/epoch)。
+        :param threshold: 判斷指標是否改善的閾值。當前指標與最佳指標的差距必須大於此值才算作改善。
+        :param last_epoch: 最後一個已排程的步數/週期數。用於從中斷處恢復訓練。
+        :raises ValueError: 如果 T_0, T_mult, 或 mode 參數無效。
+        """
+        
+        # --- 週期性參數 (來自 CosineAnnealing) ---
+        if T_0 <= 0 or not isinstance(T_0, int):
+            raise ValueError("Expected positive integer T_0, but got {}".format(T_0))
+        if T_mult < 1 or not isinstance(T_mult, int):
+            raise ValueError("Expected integer T_mult >= 1, but got {}".format(T_mult))
+        self.T_0 = T_0
+        self.T_mult = T_mult
+        self.T_i = T_0  # 當前週期的長度
+        self.T_cur = last_epoch if last_epoch != -1 else 0 # 當前週期內的位置
+        
+        # --- 學習率與溫度範圍 ---
+        self.lr_max = lr_max
+        self.lr_min = lr_min
+        self.temp_max = temp_max
+        self.temp_min = temp_min
+        self.current_temp = temp_max
+        
+        # --- 暖身參數 (來自 OneCycleLR) ---
+        self.warmup_ratio = warmup_ratio
+        
+        # --- 自適應參數 (來自 ReduceLROnPlateau) ---
+        self.mode = mode
+        self.factor = factor
+        self.patience = patience
+        self.threshold = threshold
+        self.patience_counter = 0
+        self.best_metric = float('inf') if mode == 'min' else float('-inf')
+        
+        # 檢查模式
+        if mode not in ['min', 'max']:
+            raise ValueError('mode ' + mode + ' is unknown!')
+
+        super(AdaptiveCyclicalScheduler, self).__init__(optimizer, last_epoch)
+        self.base_lrs = [lr_max] * len(self.optimizer.param_groups)
+
+    def get_temp(self) -> float:
+        """獲取當前計算出的溫度"""
+        return self.current_temp
+
+    def get_lr(self):
+        """計算並返回當前的學習率和溫度"""
+        warmup_steps = int(self.T_i * self.warmup_ratio)
+        
+        if self.T_cur < warmup_steps:
+            # 1. 暖身階段
+            lr = self.lr_min + (self.lr_max - self.lr_min) * (self.T_cur / warmup_steps)
+            self.current_temp = self.temp_min + (self.temp_max - self.temp_min) * (self.T_cur / warmup_steps)
+        else:
+            # 2. 餘弦退火階段
+            cosine_progress = (self.T_cur - warmup_steps) / (self.T_i - warmup_steps)
+            lr = self.lr_min + (self.lr_max - self.lr_min) * (1 + math.cos(math.pi * cosine_progress)) / 2
+            self.current_temp = self.temp_min + (self.temp_max - self.temp_min) * (1 + math.cos(math.pi * cosine_progress)) / 2
+
+        return [lr for _ in self.optimizer.param_groups]
+
+    def _is_metric_better(self, metric):
+        if self.mode == 'min':
+            return metric < self.best_metric - self.threshold
+        else:
+            return metric > self.best_metric + self.threshold
+
+    def step(self, metric: float = None):
+        if metric is None:
+            warnings.warn("AdaptiveCyclicalScheduler requires a metric to be passed to step() for adaptation.", UserWarning)
+        else:
+            # --- 自適應邏輯 ---
+            if self._is_metric_better(metric):
+                self.best_metric = metric
+                self.patience_counter = 0
+            else:
+                self.patience_counter += 1
+
+            if self.patience_counter >= self.patience:
+                print(f"\nMetric has not improved for {self.patience} steps. Forcing a warm restart!")
+                self.patience_counter = 0
+                # 縮短下一個週期的長度，加速反應
+                self.T_i = max(int(self.T_i * self.factor), self.T_0 // 2) 
+                self.T_cur = self.T_i # 強制結束當前週期
+
+        # --- 週期性邏輯 ---
+        if self.T_cur >= self.T_i:
+            self.T_cur = 0
+            self.T_i = self.T_i * self.T_mult
+        else:
+            self.T_cur += 1
+
+        # 更新學習率
+        for param_group, lr in zip(self.optimizer.param_groups, self.get_lr()):
+            param_group['lr'] = lr
+        
+        self._last_lr = [group['lr'] for group in self.optimizer.param_groups]
+
+    def state_dict(self):
+        """返回排程器的狀態字典。"""
+        state = super().state_dict()
+        state.update({
+            'T_i': self.T_i,
+            'T_cur': self.T_cur,
+            'current_temp': self.current_temp,
+            'patience_counter': self.patience_counter,
+            'best_metric': self.best_metric,
+            # 可以選擇性儲存初始參數，但通常在 __init__ 中處理
+        })
+        return state
+
+    def load_state_dict(self, state_dict):
+        """載入排程器的狀態字典。"""
+        super().load_state_dict(state_dict)
+        self.T_i = state_dict['T_i']
+        self.T_cur = state_dict['T_cur']
+        self.current_temp = state_dict['current_temp']
+        self.patience_counter = state_dict['patience_counter']
+        self.best_metric = state_dict['best_metric']

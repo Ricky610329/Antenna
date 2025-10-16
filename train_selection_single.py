@@ -7,12 +7,10 @@ Created on Wed May  8 16:38:05 2024
 from antenna.utils import *
 config.device = "cpu"
 
-import torch.nn as nn
 import numpy as np
 import torch
-import argparse
 from antenna import *
-
+from antenna.functions import AdaptiveCyclicalScheduler
 from antenna.models import (
     Models, SPGEN, HFSSNet
 )
@@ -27,8 +25,10 @@ torch.autograd.set_detect_anomaly(True)
 #%% 
 ###* Basic Config ###
 connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
-RESULT_PATH, is_connect_run = get_result_path('[Patch Single][{device}] selection_gumbel_sinkhorn_CyclicLR_1', rootdir=ROOTDIR)
-DATASET_PATH = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\dataset")
+RESULT_PATH, is_connect_run = get_result_path('[Patch Single][{device}] selection_gumbel_sinkhorn_AdaptiveCyclicalScheduler', rootdir=ROOTDIR)
+# DATASET_PATH = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\dataset")
+
+SM_PRETRAIN_MODEL_PATH = DATASET_PATH.joinpath('old_sm.pth')
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
 # sys.excepthook = global_exception_handler
 
@@ -45,7 +45,7 @@ config.epochs = 1000
 config.lr = 0.005
 config.checkpoint_save_path = path_checkpoint
 
-config['patience'] = 100
+config['patience'] = 10
 config['mutation_rate'] = 0.001
 config['HFSS.lr'] = 0.001
 config['HFSS.min_loss'] = 0.1
@@ -397,13 +397,18 @@ model.save((5,7), RESULT_PATH, pattern_dict=pattern_table)
 optimizer = torch.optim.Adam(
     params=model.parameters(), lr=config.lr, betas=(0.5, 0.999)
 )
-scheduler = torch.optim.lr_scheduler.CyclicLR(
-    optimizer, 
-    base_lr=0.0001,      # 學習率下界
-    max_lr=config.lr,    # 學習率上界 (使用您config中的值)
-    step_size_up=25,     # 從下界到上界所需的 epoch 數
-    mode='triangular2',  # 模式: triangular2 會在每個循環後將 max_lr 減半
-    cycle_momentum=True  # 對於Adam等帶動量的優化器，建議開啟
+scheduler = AdaptiveCyclicalScheduler(
+    optimizer,
+    T_0=100,                # 增加初始週期長度
+    T_mult=1,               # 暫時關閉週期長度增加，讓每個週期條件一致
+    lr_max=0.005,           # 稍微降低最大學習率
+    lr_min=1e-6,            # 0.0001
+    temp_max=4.0,           # 稍微降低最高溫度
+    temp_min=0.1,
+    warmup_ratio=0.2,       # 增加暖身時間
+    patience=25,            # 顯著增加耐心
+    factor=0.7,
+    mode='min'
 )
 generator = Models(
     name = "generator_{label}",
@@ -414,14 +419,14 @@ generator = Models(
 )
 
 smodel = OldSM(checkpoint=config.checkpoint_save_path)
-
+Exception
 
 ###* 斷點續跑 ###
 if is_connect_run and ('epoch' in TEMP):
     generator.change(TEMP('epoch'), load=True)
     smodel.load()
-elif DATASET_PATH.joinpath('sm.pth').exists():
-    smodel.pre_load_model(DATASET_PATH.joinpath('sm.pth'))
+elif SM_PRETRAIN_MODEL_PATH.exists():
+    smodel.pre_load_model(SM_PRETRAIN_MODEL_PATH)
 else:
     with Figure('Pre Train', (1, 1), rootdir=RESULT_PATH, save=True, default_axes_title_size=50, default_tick_size=40, requires_grad=True) as fig:
         fig.addAll()
@@ -461,13 +466,14 @@ while epoch < config.epochs + 1:
     generator.model.train()
     generator.optimizer.zero_grad() # adjust_lr(optimizer, epoch, init_lr)
     
+    TEMP['tau'] = generator.scheduler.get_temp()
     if  TEMP.early_stop('real_loss', config['patience']) and skip > config['patience']:
         ###* Rollback ###
-        generator.change(
-            TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
-            save=True, load=True
-        )
-        TEMP['tau'] = 1.0
+        # generator.change(
+        #     TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
+        #     save=True, load=True
+        # )
+
         smodel.pre_train(online_dataset)
 
         ###* 生成 pattern 並儲存於 buffer ###
@@ -478,11 +484,11 @@ while epoch < config.epochs + 1:
 
         ###* Mutation ###
         TEMP['mutation'] = TEMP('min_loss')
-        output_element = output_element.mutate(config['mutation_rate'])
+        # output_element = output_element.mutate(config['mutation_rate'])
         skip = 0
 
     else:
-        TEMP['tau'] = 1.0 # max(0.5, TEMP('tau', 5.0) * 0.99)
+        # TEMP['tau'] = 1.0 # max(0.5, TEMP('tau', 5.0) * 0.99)
         output_element = AntennaPattern(
             generator(TEMP('tau'))
         ) 
@@ -513,7 +519,7 @@ while epoch < config.epochs + 1:
         sm_loss = []
         TEMP['real_loss'] = real_loss
         jump = jump + 1
-    TEMP['online_dataset_len'] = len(online_dataset)
+    TEMP['real_loss_average'] = TEMP.average('real_loss')
 
     ###* 更新 loss 的最小值 ###
     #? de: 更新最小loss的次數
@@ -543,7 +549,7 @@ while epoch < config.epochs + 1:
     response = smodel(output_element.series)
     loss = response.criterion()
     loss.backward()
-    generator.step()
+    generator.step(scheduler_patam=real_loss)
     generator.model.eval()
     TEMP['lr'] = generator.optimizer.param_groups[0]['lr']
     TEMP['fake_loss'] = loss.item() # 儲存 GEN 與 代理模型 的 loss
@@ -579,13 +585,13 @@ while epoch < config.epochs + 1:
         fig[2].set_title("Parameter Group")
         fig[2].plot([x * 1000 for x in TEMP['lr']], label='Learning Rate * 1000')
         fig[2].plot(TEMP['tau'], label='Tau')
-        fig[2].plot(TEMP['online_dataset_len'], label='online_dataset_len')
         fig[2].legend()
 
         fig[3].plot(TEMP['real_loss'], color='red', label='real_loss')
         fig[3].plot(TEMP['fake_loss'], color='purple', label='fake_loss', alpha=0.8)
         fig[3].plot(TEMP['mutation'], label='mutation')
         fig[3].plot(TEMP['min_loss'], label='min_loss')
+        fig[3].plot(TEMP['real_loss_average'], label='real_loss_average')
         fig[3].legend()
         fig[3].set_title("Loss Curve", fontsize=20)
 
