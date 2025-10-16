@@ -6,12 +6,13 @@ from antenna import *
 from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from abc import ABC, abstractmethod
+from tqdm import trange
 
 
 #%% Import By Device
 FloatTensor = torch.FloatTensor if str(config.device) == 'cpu' else torch.cuda.FloatTensor # type: ignore
 
-class SurrogateModel(Models, ABC):
+class SurrogateModel(Models[CustomModule, CustomOptimizer, CustomScheduler], ABC):
     def __init__(self, model, criterion, optimizer:Optimizer, scheduler:Optional[LRScheduler]=None, *, progress_callback = lambda i, n: None, rootdir="."):
         """
         Parameters
@@ -53,7 +54,7 @@ class SurrogateModel(Models, ABC):
     def train(self, pattern):
         pass
 
-class OldSM(SurrogateModel):
+class OldSM(SurrogateModel[CustomModule, CustomOptimizer, CustomScheduler]):
     """
     學長的做法
     """
@@ -107,7 +108,8 @@ class OldSM(SurrogateModel):
         self.loss = float('inf')
         epoch_2 = 0
 
-        for i in range(n):
+        bar = trange(n, desc='Pre Train ...')
+        for i in bar:
             pilotLoss_2 = []
             self.model.train()
                 
@@ -127,14 +129,14 @@ class OldSM(SurrogateModel):
 
                 pilotLoss_2.append(loss_R.item())
                 self.loss = loss_R.item()
-                self.progress_callback(epoch_2, 2000)
 
                 epoch_2 = epoch_2 + 1
             
             if pilotLoss_2: # 避免 pilotLoss_2 為空時出錯
                 avg = sum(pilotLoss_2) / len(pilotLoss_2)
-                logger.info(f'Pretrain...({i+1}/{n}), Loss: {avg}')
+                # logger.info(f'Pretrain...({i+1}/{n}), Loss: {avg}')
                 self.record['loss'] = avg
+                bar.set_postfix({"Loss":avg})
             if self.record.early_stop('loss'):
                 logger.success(f'Early Stop!')
                 break

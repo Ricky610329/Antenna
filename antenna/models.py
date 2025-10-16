@@ -1,4 +1,5 @@
 from antenna.utils import *
+from antenna.types import *
 from antenna import *
 
 import torch
@@ -8,21 +9,24 @@ from torch.autograd.function import (
     BackwardCFunction,
 )
 from torch.autograd import Variable
-from torch.optim.optimizer import Optimizer
+
 
 import numpy as np
 from math import sqrt
 
-from torch.optim.lr_scheduler import LRScheduler
-class Models:
+
+from functools import partial
+
+
+class Models(Generic[CustomModule, CustomOptimizer, CustomScheduler]):
     def __init__(
             self, 
             name:str = "models_{label}", 
             rootdir:Union[str, Path] = ".", 
-            model:Optional[nn.Module] = None, 
-            optimizer:Optional[Optimizer] = None, 
-            scheduler:Optional[LRScheduler] = None, 
-            criterion:Optional[nn.Module] = None,
+            model:Optional[CustomModule] = None, 
+            optimizer:Optional[CustomOptimizer] = None, 
+            scheduler:Optional[CustomScheduler] = None, 
+            criterion:Optional[Callable[..., Tensor]] = None,
             *, 
             load:bool = False,
             device = config.device
@@ -43,9 +47,7 @@ class Models:
         self.criterion = criterion
         self.record = Record(self.__class__.__name__, rootdir=self._rootdir, load=load and self.model_file.exists())
 
-        if load: 
-            assert self.name, "Please use `Models.change()` first."
-            self.load()
+        if load: self.load()
     
     def __call__(self, *args, **kwds):
         return self.model(*args, **kwds)
@@ -63,7 +65,9 @@ class Models:
     @property
     def model_file(self) -> Path:
         """The full path to the model archive."""
+        assert self.name, "Please use `Models.change()` first."
         return Path(self._rootdir).joinpath(f"{self.name}.pth")
+
     
     @property
     def FloatTensor(self):
@@ -94,26 +98,23 @@ class Models:
         return self.model
     
     def load(self):
-        checkpoint_loaded:dict = self.model_file.load_torch()
-        self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
-        self.scheduler.load_state_dict(checkpoint_loaded['scheduler_state_dict'])
+        checkpoint_loaded = self.checkpoint(load=True)
+        if checkpoint_loaded['title'] == self.__str__():
+            self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
+            self.scheduler.load_state_dict(checkpoint_loaded['scheduler_state_dict'])
 
-        self.device = checkpoint_loaded['device']
+            self.device = checkpoint_loaded['device']
+        else:
+            raise RuntimeError(f"Please use the correct model file.\nFile: {checkpoint_loaded['title']}\nCurrent: {self.__str__()}")
 
     def save(self) -> Path:
-        checkpoint = {
-            'model_state_dict': None if not self.model else self.model.state_dict(),
-            'optimizer_state_dict': None if not self.optimizer else self.optimizer.state_dict(),
-            'scheduler_state_dict': None if not self.scheduler else self.scheduler.state_dict(),
-            'device': self.device
-        }
-        torch.save(checkpoint, self.model_file)
+        torch.save(self.checkpoint(load=False), self.model_file)
         return self.model_file
     
     def pre_load_model(self, path:Union[str, Path]):
         path = Path(path)
-        checkpoint_loaded:dict = path.load_torch()
+        checkpoint_loaded:Checkpoint = path.load_torch()
         self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
         for name, param in self.model.state_dict().items():
@@ -124,6 +125,20 @@ class Models:
     def step(self, optimizer_param=None, scheduler_patam=None):
         self.optimizer.step(optimizer_param)
         if self.scheduler: self.scheduler.step(scheduler_patam)
+    
+    def checkpoint(self, load:bool = False) -> Checkpoint:
+        if load:
+            checkpoint:dict = self.model_file.load_torch()
+        else:
+            checkpoint = {
+                "title": self.__str__(),
+                'model_state_dict': None if not self.model else self.model.state_dict(),
+                'optimizer_state_dict': None if not self.optimizer else self.optimizer.state_dict(),
+                'scheduler_state_dict': None if not self.scheduler else self.scheduler.state_dict(),
+                'device': self.device
+            }
+        return checkpoint
+
 
 class BiScaleNorm(nn.Module):
     def __init__(self):
@@ -271,7 +286,7 @@ class HFSSNet(nn.Module):
 # %%
 from .functions import gumbel_sinkhorn_rectangular
 class SPGEN(nn.Module):
-    def __init__(self ,pattern_table:Tuple, size=40):
+    def __init__(self ,pattern_table:Tuple, size=40, gumbel_fn:Callable[[Tensor, Any], Tensor]=gumbel_sinkhorn_rectangular, **gumbel_fn_kwargs):
         super(SPGEN,self).__init__()
 
         self.pattern_table = pattern_table
@@ -283,8 +298,7 @@ class SPGEN(nn.Module):
             torch.randn(1, self.grid_size, self.grid_size, self.num_patterns),
             requires_grad=True
         )
-
-
+        self.gumbel_fn:Callable[..., Tensor] = partial(gumbel_fn,  **gumbel_fn_kwargs)
 
     def __str__(self):
         return f"SPGEN(total={self.patern_size*self.grid_size}(small[{self.patern_size}]xbig[{self.grid_size}))"
@@ -317,7 +331,7 @@ class SPGEN(nn.Module):
         # 2. 使用新的 Gumbel-Sinkhorn 函式
         # 輸出 assignment_matrix 形狀: [1, grid_h * grid_w, num_patterns]
         # 注意：訓練時 hard 應為 False，推斷時可設為 True
-        assignment_matrix = gumbel_sinkhorn_rectangular(reshaped_logits, tau=tau, n_iters=n_iters, hard=hard)
+        assignment_matrix = self.gumbel_fn(reshaped_logits, tau=tau, n_iters=n_iters, hard=hard)
 
         # pattern_table_tensor: [num_patterns, small_h * small_w]
         # 3. 執行矩陣乘法來選擇圖案
