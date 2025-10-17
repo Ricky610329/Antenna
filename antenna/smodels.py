@@ -12,8 +12,8 @@ from tqdm import trange
 #%% Import By Device
 FloatTensor = torch.FloatTensor if str(config.device) == 'cpu' else torch.cuda.FloatTensor # type: ignore
 
-class SurrogateModel(Models[CustomModule, CustomOptimizer, CustomScheduler], ABC):
-    def __init__(self, model, criterion, optimizer:Optimizer, scheduler:Optional[LRScheduler]=None, *, progress_callback = lambda i, n: None, rootdir="."):
+class SurrogateModel(Models[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, CallableParam], ABC):
+    def __init__(self, model:CustomModule, criterion:Callable[CallableParam, Tensor], optimizer:CustomOptimizer, scheduler:Optional[CustomScheduler]=None, *, progress_callback = lambda i, n: None, rootdir="."):
         """
         Parameters
         ----------
@@ -54,7 +54,7 @@ class SurrogateModel(Models[CustomModule, CustomOptimizer, CustomScheduler], ABC
     def train(self, pattern):
         pass
 
-class OldSM(SurrogateModel[CustomModule, CustomOptimizer, CustomScheduler]):
+class OldSM(SurrogateModel[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, CallableParam]):
     """
     學長的做法
     """

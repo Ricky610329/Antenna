@@ -18,15 +18,15 @@ from math import sqrt
 from functools import partial
 
 
-class Models(Generic[CustomModule, CustomOptimizer, CustomScheduler]):
+class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, CallableParam]):
     def __init__(
             self, 
             name:str = "models_{label}", 
             rootdir:Union[str, Path] = ".", 
-            model:Optional[CustomModule] = None, 
+            model:Optional[ CustomModule | CallableModule[ModelParams, ReturnType]] = None, 
             optimizer:Optional[CustomOptimizer] = None, 
             scheduler:Optional[CustomScheduler] = None, 
-            criterion:Optional[Callable[..., Tensor]] = None,
+            criterion:Optional[Callable[CallableParam, Tensor]] = None,
             *, 
             load:bool = False,
             device = config.device
@@ -49,8 +49,8 @@ class Models(Generic[CustomModule, CustomOptimizer, CustomScheduler]):
 
         if load: self.load()
     
-    def __call__(self, *args, **kwds):
-        return self.model(*args, **kwds)
+    def __call__(self, *args:ModelParams.args, **kwargs:ModelParams.kwargs) -> ReturnType:
+        return  self.model(*args, **kwargs)
 
     def __str__(self):
         _str = "{class_name}(Model={model}, Optimizer={optimizer}, Scheduler={scheduler}, Criterion={criterion})"
@@ -59,7 +59,7 @@ class Models(Generic[CustomModule, CustomOptimizer, CustomScheduler]):
             model = self.model.__class__.__name__,
             optimizer = self.optimizer.__class__.__name__,
             scheduler = self.scheduler.__class__.__name__,
-            criterion = self.criterion.__class__.__name__
+            criterion = self.criterion.__name__ if isinstance(self.criterion, Tensor) else self.criterion.__class__.__name__
         )
     
     @property
@@ -285,8 +285,8 @@ class HFSSNet(nn.Module):
 
 # %%
 from .functions import gumbel_sinkhorn_rectangular
-class SPGEN(nn.Module):
-    def __init__(self ,pattern_table:Tuple, size=40, gumbel_fn:Callable[[Tensor, Any], Tensor]=gumbel_sinkhorn_rectangular, **gumbel_fn_kwargs):
+class SPGEN(nn.Module, Generic[CallableParam]):
+    def __init__(self ,pattern_table:Tuple, size=40, gumbel_fn:Callable[CallableParam, Tensor]=gumbel_sinkhorn_rectangular, **gumbel_fn_kwargs):
         super(SPGEN,self).__init__()
 
         self.pattern_table = pattern_table
@@ -298,7 +298,7 @@ class SPGEN(nn.Module):
             torch.randn(1, self.grid_size, self.grid_size, self.num_patterns),
             requires_grad=True
         )
-        self.gumbel_fn:Callable[..., Tensor] = partial(gumbel_fn,  **gumbel_fn_kwargs)
+        self.gumbel_fn:Callable[CallableParam, Tensor] =  partial(gumbel_fn,  **gumbel_fn_kwargs)
 
     def __str__(self):
         return f"SPGEN(total={self.patern_size*self.grid_size}(small[{self.patern_size}]xbig[{self.grid_size}))"
@@ -464,8 +464,10 @@ class OldGEN(nn.Module):
 
         self.r = sign_f.apply
         self.to(config.device)
-
-    def forward(self, input):
+    # def __call__(self, input):
+    #     return self.forward(input)
+    
+    def forward(self, input) -> Tensor:
         x = self.fc_patch(input)
         x = self.r(x) / 2 + 0.5 # type: ignore
         return x

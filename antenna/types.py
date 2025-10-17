@@ -11,10 +11,16 @@ from typing import (
     overload
 )
 from typing import (
-    TypeVar, 
-    TypeVarTuple,
+    TypeAlias,
+    Protocol,
+    TypeVar,       
+    #* TypeVar Param
+    # bound: Must be of the specified type or a subclass
+    # covariant: Can contain subclasses
+    # contravariant: Can contain parent class
+    TypeVarTuple,   #? *TypeVarTuple
     ParamSpec,
-    Callable, 
+    Callable,       #? Callable[..., Any]
     Any, 
     Optional, 
     Union, 
@@ -33,6 +39,19 @@ from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 
+CustomModule = TypeVar('CustomModule', bound=Module, covariant=True)
+CustomOptimizer = TypeVar('CustomOptimizer', bound=Optimizer, covariant=True)
+CustomScheduler = TypeVar('CustomScheduler', bound=LRScheduler, covariant=True)
+
+ModelParams = ParamSpec('ModelParams')
+ReturnType = TypeVar('ReturnType', covariant=True)
+
+class CallableModule(Protocol[ModelParams, ReturnType]):
+    def forward(self, *args: ModelParams.args, **kwargs: ModelParams.kwargs) -> ReturnType:
+        ...
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        ...
+
 #* General
 CallableParam = ParamSpec('CallableParam')
 
@@ -44,9 +63,7 @@ class Checkpoint(TypedDict):
     scheduler_state_dict: Optional[LRScheduler]
     device: Any
 
-CustomModule = TypeVar('CustomModule', bound=Module)
-CustomOptimizer = TypeVar('CustomOptimizer', bound=Optimizer)
-CustomScheduler = TypeVar('CustomScheduler', bound=LRScheduler)
+
 
 #* In antenna.utils.data.Data
 DataType = TypeVar('DataType') 
