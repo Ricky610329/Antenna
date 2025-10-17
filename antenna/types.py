@@ -12,14 +12,17 @@ from typing import (
 )
 from typing import (
     TypeVar, 
+    TypeVarTuple,
+    ParamSpec,
     Callable, 
     Any, 
     Optional, 
     Union, 
-    Sequence, 
+    Sequence, # list, tuple, str, range
     Literal,
     TypedDict,
-    Generic
+    Generic,
+    Hashable as _Hashable
 )
 from typing_extensions import (
     Self
@@ -30,7 +33,10 @@ from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 
+#* General
+CallableParam = ParamSpec('CallableParam')
 
+#* In antenna.models and antenna.smodels
 class Checkpoint(TypedDict):
     title: str
     mode_state_dictl: Optional[Module]
@@ -41,3 +47,7 @@ class Checkpoint(TypedDict):
 CustomModule = TypeVar('CustomModule', bound=Module)
 CustomOptimizer = TypeVar('CustomOptimizer', bound=Optimizer)
 CustomScheduler = TypeVar('CustomScheduler', bound=LRScheduler)
+
+#* In antenna.utils.data.Data
+DataType = TypeVar('DataType') 
+Hashable = TypeVar('Hashable', bound=_Hashable)

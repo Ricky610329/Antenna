@@ -11,9 +11,8 @@ import numpy as np
 from torch.utils.data import Dataset
 from loguru import logger
 from hashlib import md5
-from typing import Any, Union, TypeVar, Generic, overload, Hashable
+from antenna.types import *
 
-H = TypeVar('H', bound=Hashable)
 @overload
 def make_hashable(item: Union[torch.Tensor, np.ndarray]) -> bytes: ...
 @overload
@@ -21,11 +20,11 @@ def make_hashable(item: Union[list[Any], dict[Any, Any]]) -> tuple: ...
 @overload
 def make_hashable(item: set[Any]) -> frozenset: ...
 @overload
-def make_hashable(item: H) -> H: ...
+def make_hashable(item: Hashable) -> Hashable: ...
 def make_hashable(item: Any) -> Any:
     """將複雜資料結構遞迴地轉換為可 hash 的形式。"""
     if isinstance(item, (int, float, str, bytes, type(None))): return item
-    if isinstance(item, torch.Tensor): return item.cpu().numpy().tobytes()
+    if isinstance(item, torch.Tensor): return item.detach().cpu().numpy().tobytes()
     if isinstance(item, np.ndarray): return item.tobytes()
     if isinstance(item, (list, tuple)): return tuple(make_hashable(i) for i in item)
     if isinstance(item, (set, frozenset)): return frozenset(sorted(make_hashable(i) for i in item))
@@ -36,7 +35,7 @@ def make_hashable(item: Any) -> Any:
     except TypeError:
         raise TypeError(f"物件 {type(item).__name__} 不可 hash，且未在 make_hashable 中處理。")
     
-DataType = TypeVar('DataType')
+
 class Data(Generic[DataType]):
     def __init__(self, data:DataType=None, *, name:str="data", rootdir:Union[Path, str]="./", suffix:str="data", load=True):
         self.data:DataType = data
