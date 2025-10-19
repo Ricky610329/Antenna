@@ -262,6 +262,15 @@ class AntennaResponse:
             RuntimeError("No x registered. Please use `registerLabels()` first.")
         return np.linspace(*cls._x)
 
+    @overload
+    @classmethod
+    def size(cls, flatten: Literal[True]) -> int: ...
+    @overload
+    @classmethod
+    def size(cls, flatten: Literal[False]) -> Tuple[int, int]: ...
+    @overload
+    @classmethod
+    def size(cls) -> Tuple[int, int]: ...
     @classmethod
     def size(cls, flatten:bool = False):
         """The number of labels used to calculate loss and the number of points in their labels."""
@@ -409,15 +418,24 @@ class AntennaPattern:
         """
         TODO: 目前是取回所有的像素點，但實際上是取得大圖的像素點
         """
-        x1, x2, y1, y2 = getattr(cls, '_antenna_pattern_coordinate', (0,0,0,0))
+        x1, x2, y1, y2 = cast(Tuple[int,int, int, int], getattr(cls, '_antenna_pattern_coordinate', (0,0,0,0)))
         return (x2-x1)*(y2-y1)
     
+    @overload
+    @classmethod
+    def size(cls, flatten: Literal[True]) -> int: ...
+    @overload
+    @classmethod
+    def size(cls, flatten: Literal[False]) -> Tuple[int, int]: ...
+    @overload
+    @classmethod
+    def size(cls) -> Tuple[int, int]: ...
     @classmethod
     def size(cls, flatten:bool = False):
         """The number of labels used to calculate loss and the number of points in their labels."""
         if not hasattr(cls, '_antenna_pattern_coordinate'):
             raise RuntimeError("Please use `setDefaultCoordinate()` first.")
-        x1, x2, y1, y2 = getattr(cls, '_antenna_pattern_coordinate')
+        x1, x2, y1, y2 = cast(Tuple[int,int, int, int], getattr(cls, '_antenna_pattern_coordinate', (0,0,0,0)))
 
         return (x2-x1)*(y2-y1) if flatten else ((x2-x1), (y2-y1))
     

@@ -49,7 +49,7 @@ class SurrogateModel(Models[CustomModule, ModelParams, ReturnType, CustomOptimiz
     def __call__(self, pattern) -> MultiResponses:
         self.epoch += 1
         return MultiResponses(self.model(pattern))
-         
+
     @abstractmethod
     def train(self, pattern):
         pass
@@ -60,7 +60,7 @@ class OldSM(SurrogateModel[CustomModule, ModelParams, ReturnType, CustomOptimize
     """
     def __init__(self, checkpoint='.'):
         model_ge = HFSSNet( # Pattern -> Response
-            AntennaPattern.getAllPixel(), AntennaResponse.size()
+            AntennaPattern.size(flatten=True), AntennaResponse.size()
         )
         criterion_ge = nn.MSELoss()
         optimizer_ge = Ranger(

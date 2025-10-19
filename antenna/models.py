@@ -331,7 +331,7 @@ class SPGEN(nn.Module, Generic[CallableParam]):
         # 2. 使用新的 Gumbel-Sinkhorn 函式
         # 輸出 assignment_matrix 形狀: [1, grid_h * grid_w, num_patterns]
         # 注意：訓練時 hard 應為 False，推斷時可設為 True
-        assignment_matrix = self.gumbel_fn(reshaped_logits, tau=tau, n_iters=n_iters, hard=hard)
+        assignment_matrix = self.gumbel_fn(reshaped_logits, tau=tau, hard=hard)
 
         # pattern_table_tensor: [num_patterns, small_h * small_w]
         # 3. 執行矩陣乘法來選擇圖案

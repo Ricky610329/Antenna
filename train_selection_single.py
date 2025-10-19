@@ -20,6 +20,7 @@ from antenna.patch import (
 from antenna.smodels import OldSM
 from script.process_files import FileProcessor
 from antenna.utils.data import DataManager
+import torch.nn.functional as F
 # from antenna.functions import mirror, mutate
 torch.autograd.set_detect_anomaly(True)
 #%% 
@@ -391,7 +392,7 @@ pattern_table = {
 }
 # print(len(pattern_table))
 
-model = SPGEN(list(pattern_table.values()), 25)
+model = SPGEN(list(pattern_table.values()), 25, F.gumbel_softmax)
 model.save((5,7), RESULT_PATH, pattern_dict=pattern_table)
 # exit()
 optimizer = torch.optim.Adam(
@@ -431,8 +432,6 @@ else:
         fig.addAll()
         fig[0].plot(smodel.pre_train(data_manager))
         smodel.save()
-    
-
 
 # Optimizer setting
 # optimizer = torch.optim.Adam(params=model.parameters(), lr=init_lr)
@@ -506,7 +505,7 @@ while epoch < config.epochs + 1:
 
         TEMP['real_loss'] = real_loss.item()    # 儲存 HFSS結果 的 loss
         if TEMP('real_loss') < TEMP.average('real_loss'):
-            online_dataset.add_and_save([output_element.merge(), stack_output_result])
+            online_dataset.add_and_save([~output_element, stack_output_result])
 
         jump = 0
 
