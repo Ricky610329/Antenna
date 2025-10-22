@@ -5,7 +5,7 @@ import argparse
 from datetime import datetime
 from loguru import logger
 from typing import Union, Optional
-
+from tqdm import tqdm
 ###* Type ###
 from _io import TextIOWrapper
 class FileProcessor:
@@ -129,7 +129,8 @@ class FileProcessor:
                     outfile.write(f"\n\n{'=' * 20} 開始處理目錄: {abs_dir_path} {'=' * 20}\n\n")
 
                     found_files = False
-                    for root, dirs, files in os.walk(directory_path):
+                    _tqdm = tqdm(os.walk(directory_path), desc="Reading...")
+                    for root, dirs, files in _tqdm:
                         # 忽略指定的資料夾，並在遍歷前修改 dirs 列表
                         dirs[:] = [d for d in dirs if d not in self.IGNORED_PATTERNS]
 
@@ -137,7 +138,8 @@ class FileProcessor:
                             if file.endswith(self.extensions_tuple):
                                 found_files = True
                                 file_path = os.path.join(root, file)
-                                logger.info(f"  -> 正在讀取: {file_path}")
+                                # logger.info(f"  -> 正在讀取: {file_path}")
+                                _tqdm.set_postfix({"File": file_path})
                                 outfile.write(f"----------- {file_path} -----------\n\n")
                                 try:
                                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as infile:
