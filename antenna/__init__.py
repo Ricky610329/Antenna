@@ -162,7 +162,7 @@ class TargetResponse(MultiResponses):
         _ = " ".join([f"{key}({value})" for key, value in self._note.items()])
         return f"TargetResponse({_})"
     
-class AntennaResponse:
+class AntennaResponse(Generic[LossParams]):
     """
     Antenna Response Design.
 
@@ -174,7 +174,7 @@ class AntennaResponse:
     x_ris = np.linspace(0, 360, 361)
     _target_response = {}
     _target_response_str = {}
-    _loss_fn_hook = {}
+    _loss_fn_hook:Dict[str, Callable[LossParams, Tensor]] = {}
     target = TargetResponse()
     
     @overload
@@ -305,7 +305,7 @@ class AntennaResponse:
         return cls.target(side, center, width, label = label, add = is_add)
 
     @classmethod
-    def registerLossHook(cls, loss_hook:Callable[[Tensor], Tensor], label:str = "response", **loss_hook_param):
+    def registerLossHook(cls, loss_hook:Callable[LossParams, Tensor], label:str = "response", **loss_hook_param:LossParams.kwargs):
         """
         Args:
         
@@ -318,7 +318,7 @@ class AntennaResponse:
         """
         cls._loss_fn_hook[label] = partial(loss_hook, **loss_hook_param)
 
-    def criterion(self, label:str = "response", **param) -> Tensor:
+    def criterion(self, label:str = "response", **param:LossParams.kwargs) -> Tensor:
         """[Loss Function] Register LossHook using `registerLossHook()` before use."""
         if label not in self._loss_fn_hook.keys():
             raise RuntimeError(f"The {label} of LossHook is not registered. Please use `registerLossHook()` first.")

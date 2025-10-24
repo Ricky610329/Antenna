@@ -44,6 +44,7 @@ CustomOptimizer = TypeVar('CustomOptimizer', bound=Optimizer, covariant=True)
 CustomScheduler = TypeVar('CustomScheduler', bound=LRScheduler, covariant=True)
 
 ModelParams = ParamSpec('ModelParams')
+LossParams = ParamSpec('LossParams')
 ReturnType = TypeVar('ReturnType', covariant=True)
 
 class CallableModule(Protocol[ModelParams, ReturnType]):

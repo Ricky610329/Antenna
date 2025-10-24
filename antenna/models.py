@@ -18,7 +18,7 @@ from math import sqrt
 from functools import partial
 
 
-class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, CallableParam]):
+class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, LossParams]):
     def __init__(
             self, 
             name:str = "models_{label}", 
@@ -26,7 +26,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             model:Optional[ CustomModule | CallableModule[ModelParams, ReturnType]] = None, 
             optimizer:Optional[CustomOptimizer] = None, 
             scheduler:Optional[CustomScheduler] = None, 
-            criterion:Optional[Callable[CallableParam, Tensor]] = None,
+            criterion:Optional[Callable[LossParams, Tensor]] = None,
             *, 
             load:bool = False,
             device = config.device
@@ -92,19 +92,31 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
     def to(self, *args, **kward):
         """
         Move and/or cast the parameters and buffers.
+
+        This can be called as
+
+        .. function:: to(device=None, dtype=None, non_blocking=False)
+        .. function:: to(dtype, non_blocking=False)
+        .. function:: to(tensor, non_blocking=False)
+        .. function:: to(memory_format=torch.channels_last)
+
         """
         self.model = self.model.to(*args, **kward)
-        self.device = kward['device'] or args[0]
+        
+        self.device = kward['device'] if 'device' in kward else args[0] 
         return self.model
     
-    def load(self):
+    def load(self, force:bool = False):
         checkpoint_loaded = self.checkpoint(load=True)
-        if checkpoint_loaded['title'] == self.__str__():
+        if checkpoint_loaded['title'] == self.__str__() or force:
+            self.device = checkpoint_loaded['device']
+
             self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
             self.scheduler.load_state_dict(checkpoint_loaded['scheduler_state_dict'])
 
-            self.device = checkpoint_loaded['device']
+            self.to(device=self.device)
+            
         else:
             raise RuntimeError(f"Please use the correct model file.\nFile: {checkpoint_loaded['title']}\nCurrent: {self.__str__()}")
 
