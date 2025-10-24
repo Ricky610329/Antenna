@@ -502,7 +502,7 @@ class Figure:
 
 class Record:
     def __init__(self, name:str = "record", rootdir:Optional[str] = None, load:bool = False):
-        self._data = defaultdict(list)
+        self._data:dict[str, list] = defaultdict(list)
         self._history = defaultdict(list)
         self.name = name
         self.path = Path(rootdir or "./").joinpath(
@@ -574,9 +574,14 @@ class Record:
         
         return self._data
     
-    def average(self, key):
-        return sum(self._data[key]) / len(self._data[key])
-    
+    def average(self, key:str):
+        _key_datas = self._data[key]
+        _key_datas_len = len(_key_datas)
+        if _key_datas_len > 0:
+            return sum(_key_datas) / _key_datas_len
+        else:
+            return None
+        
     def index(self, key:str, value, *, start:int = 0, stop:int = maxsize) -> Optional[int]:
         """
         Find the index of `value` in `key`.
@@ -684,8 +689,12 @@ class Record:
             return True
         return False
 
-    def reset(self):
-        self._data = defaultdict(list)
+    def reset(self, key:Optional[str]=None):
+        if key:
+            self._data = defaultdict(list)
+        else:
+            self._data[key] = []
+
     
     def custom(self, key:str, fn:Callable, *, default = None):
         _ket_data = self._data[key]
