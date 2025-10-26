@@ -114,6 +114,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
             self.scheduler.load_state_dict(checkpoint_loaded['scheduler_state_dict'])
+            self.record.load_state_dict(checkpoint_loaded['record_state_dict'])
 
             self.to(device=self.device)
             
@@ -134,9 +135,9 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
                 raise RuntimeError(f"!!! 在參數 '{name}' 中發現無效值 (NaN 或 inf) !!!")
         logger.success(f'Successfully loaded the pre-trained model. ({path})')
 
-    def step(self, optimizer_param=None, scheduler_patam=None):
+    def step(self, optimizer_param=None, scheduler_param=None):
         self.optimizer.step(optimizer_param)
-        if self.scheduler: self.scheduler.step(scheduler_patam)
+        if self.scheduler: self.scheduler.step(scheduler_param)
     
     def checkpoint(self, load:bool = False) -> Checkpoint:
         if load:
@@ -147,7 +148,8 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
                 'model_state_dict': None if not self.model else self.model.state_dict(),
                 'optimizer_state_dict': None if not self.optimizer else self.optimizer.state_dict(),
                 'scheduler_state_dict': None if not self.scheduler else self.scheduler.state_dict(),
-                'device': self.device
+                'device': self.device,
+                'record_state_dict': self.record.state_dict()
             }
         return checkpoint
 

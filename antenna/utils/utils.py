@@ -525,9 +525,27 @@ class Record:
         else:
             _keys = ', '.join(self._data.keys())
             raise KeyError(f"{key} does not exist. (Current key: {_keys})")
-        
+    
+    def __delitem__(self, key):
+        del self._data[key]
+
     def  __contains__(self, item:str):
         return item in self._data
+
+    def state_dict(self) -> dict[str, dict[str, list]]:
+        """Return the state of the Record as a dict."""
+        return {    # Convert to a normal dict.
+            '_data': dict(self._data),
+            '_history': dict(self._history)
+        }
+
+    def load_state_dict(self, state_dict: dict[str, dict[str, list]]):
+        """Load the Record state."""
+        loaded_data = state_dict.get('_data', {})
+        loaded_history = state_dict.get('_history', {})
+
+        self._data = defaultdict(list, loaded_data)
+        self._history = defaultdict(list, loaded_history)
 
     def end(self, key, default = None, *, append = False):
         if self.__contains__(key):
@@ -555,12 +573,10 @@ class Record:
         self._history["description"].append(description or "No description")
         self._history["len"].append(len(self))
 
+        current_state = self.state_dict()
         with open(str(self.path), "wb") as f:
             _pickle_dump(
-                {
-                    "_data": self._data,
-                    "_history": self._history
-                }, 
+                current_state, 
                 file = f
             )
     
@@ -568,9 +584,8 @@ class Record:
         if not self.path.exists():
             self.save()
         with open(str(self.path), "rb") as f:
-            _loaded = _pickle_load(f)
-            self._data = _loaded["_data"]
-            self._history = _loaded["_history"]
+            loaded_state = _pickle_load(f)
+        self.load_state_dict(loaded_state)
         
         return self._data
     
@@ -689,11 +704,14 @@ class Record:
             return True
         return False
 
-    def reset(self, key:Optional[str]=None):
-        if key:
-            self._data = defaultdict(list)
+    def reset(self, key:Optional[str]=None, delete:bool = False):
+        if key is not None:
+            if delete:
+                self._data.pop(key, None)
+            else:
+                self._data[key] = []
         else:
-            self._data[key] = []
+            self._data = defaultdict(list)
 
     
     def custom(self, key:str, fn:Callable, *, default = None):

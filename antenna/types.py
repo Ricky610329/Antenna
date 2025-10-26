@@ -38,6 +38,7 @@ from typing_extensions import (
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
+from torch.types import Device
 
 CustomModule = TypeVar('CustomModule', bound=Module, covariant=True)
 CustomOptimizer = TypeVar('CustomOptimizer', bound=Optimizer, covariant=True)
@@ -56,16 +57,21 @@ class CallableModule(Protocol[ModelParams, ReturnType]):
 #* General
 CallableParam = ParamSpec('CallableParam')
 
+#* In antenna.utils.utils.Record
+class RecordStateDict(TypedDict):
+    _data: dict[str, list]
+    _history: dict[str, list]
+
 #* In antenna.models and antenna.smodels
 class Checkpoint(TypedDict):
     title: str
-    mode_state_dictl: Optional[Module]
-    optimizer_state_dict: Optional[Optimizer]
-    scheduler_state_dict: Optional[LRScheduler]
-    device: Any
-
-
+    model_state_dict: Optional[dict[str, Any]]      # Module
+    optimizer_state_dict: Optional[dict[str, Any]]  # Optimizer
+    scheduler_state_dict: Optional[dict[str, Any]]  # LRScheduler
+    record_state_dict: RecordStateDict
+    device: Device
 
 #* In antenna.utils.data.Data
 DataType = TypeVar('DataType') 
 Hashable = TypeVar('Hashable', bound=_Hashable)
+
