@@ -231,11 +231,16 @@ class Config(dict):
     @property
     def checkpoint_save_path(self) -> Path:
         """
+        Default: ./checkpoint
         ```
         config.checkpoint_save_path.not_exist_create()
         ```
         """
-        return self['checkpoint_save_path'].absolute()
+        _checkpoint_save_path:Path = self.get(
+            'checkpoint_save_path', 
+            Path('checkpoint').not_exist_create()
+        )
+        return _checkpoint_save_path.absolute()
         
     @checkpoint_save_path.setter
     def checkpoint_save_path(self, path):

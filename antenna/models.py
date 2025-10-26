@@ -22,7 +22,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
     def __init__(
             self, 
             name:str = "models_{label}", 
-            rootdir:Union[str, Path] = ".", 
+            rootdir:Optional[Union[str, Path]] = None, 
             model:Optional[ CustomModule | CallableModule[ModelParams, ReturnType]] = None, 
             optimizer:Optional[CustomOptimizer] = None, 
             scheduler:Optional[CustomScheduler] = None, 
@@ -38,7 +38,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             self._name = None
             self.name = name
 
-        self._rootdir = rootdir
+        self._rootdir = rootdir or config.checkpoint_save_path
         self.device = device
 
         self.model = model
