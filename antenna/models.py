@@ -467,7 +467,7 @@ class OldGEN(nn.Module):
     def __init__(self):
         super(OldGEN,self).__init__()
         patttern_size = AntennaPattern.size(flatten=True)
-        self.fc_patch = nn.Sequential(
+        self.fc_patch = nn.Sequential( # Can use BiScaleNorm or nn.PReLU, except the last layer.
             nn.Linear(AntennaResponse.size(flatten=True), 1024),
             nn.PReLU(),
             nn.Linear(1024, 1024),
@@ -478,14 +478,11 @@ class OldGEN(nn.Module):
 
         self.r = sign_f.apply
         self.to(config.device)
-    # def __call__(self, input):
-    #     return self.forward(input)
     
     def forward(self, input) -> Tensor:
         x = self.fc_patch(input)
         x = self.r(x) / 2 + 0.5 # type: ignore
         return x
-        # return x
 
 class GradientEstimator(nn.Module):
     def __init__(self, input_dim, output_dim):

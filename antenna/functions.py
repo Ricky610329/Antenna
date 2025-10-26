@@ -311,7 +311,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
                 self.patience_counter += 1
 
             if self.patience_counter >= self.patience:
-                print(f"\nMetric has not improved for {self.patience} steps. Forcing a warm restart!")
+                # print(f"\nMetric has not improved for {self.patience} steps. Forcing a warm restart!")
                 self.patience_counter = 0
                 # 縮短下一個週期的長度，加速反應
                 self.T_i = max(int(self.T_i * self.factor), self.T_0 // 2) 
