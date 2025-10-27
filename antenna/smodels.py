@@ -60,7 +60,7 @@ class SurrogateModel(
         self.epoch += 1
         return MultiResponses(self.model(pattern))
 
-    def train_by_datas(self, dataset:DataManager, epochs: int, batch_size: Optional[int] = None) -> List[float]:
+    def train_by_datas(self, dataset:DataManager, epochs: int = 100, batch_size: Optional[int] = None) -> List[float]:
         """
         使用提供的資料集訓練模型。
 
@@ -75,9 +75,10 @@ class SurrogateModel(
         self.model.train()
         self.record.reset()
 
-        # 創建 DataLoader
+        if len(dataset) <= 0:
+            return []
+
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True)
-        
         epoch_bar = trange(epochs, desc='Training...')
         for epoch in epoch_bar:
             for n, (patterns, real_responses) in enumerate(dataloader):
@@ -85,8 +86,10 @@ class SurrogateModel(
                 # --- 資料準備 ---
                 # 關鍵修正：使用 flatten(start_dim=1) 來保留 batch 維度
                 # 原始的 flatten() 會把 (batch_size, features) 壓成 (batch_size * features)
-                inputs = patterns.flatten(start_dim=1).to(config.device)
-                labels = real_responses.to(config.device)
+
+                if len(patterns.shape) == 1: patterns = patterns.unsqueeze(0)
+                inputs:Tensor = patterns.flatten(start_dim=1).to(config.device)
+                labels :Tensor= real_responses.to(config.device)
 
                 self.optimizer.zero_grad()
                 outputs: Tensor = self.model(inputs)

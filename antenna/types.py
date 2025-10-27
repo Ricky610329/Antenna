@@ -1,3 +1,6 @@
+# Defer type annotation evaluation to resolve forward reference and circular import issues.
+from __future__ import annotations 
+
 # Can use the built-in.
 from typing import (
     Tuple, 
@@ -11,6 +14,7 @@ from typing import (
     overload
 )
 from typing import (
+    TYPE_CHECKING,
     TypeAlias,
     Protocol,
     TypeVar,       
@@ -38,7 +42,13 @@ from typing_extensions import (
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
-from torch.types import Device
+from torch.types import Device, Tensor
+
+#* Conditional import
+# The content of this block is only executed during static type checking (such as mypy) and is ignored at runtime. 
+# It is used to resolve circular imports or speed up startup.
+if TYPE_CHECKING:
+    from antenna import AntennaPattern, MultiResponses
 
 CustomModule = TypeVar('CustomModule', bound=Module, covariant=True)
 CustomOptimizer = TypeVar('CustomOptimizer', bound=Optimizer, covariant=True)
@@ -61,6 +71,15 @@ CallableParam = ParamSpec('CallableParam')
 class RecordStateDict(TypedDict):
     _data: dict[str, list]
     _history: dict[str, list]
+
+
+class ResultType(TypedDict):
+    pattern: "AntennaPattern"
+    result:"MultiResponses"
+    loss:Tensor
+    sm_loss:list
+    time:int
+    is_best:bool
 
 #* In antenna.models and antenna.smodels
 class Checkpoint(TypedDict):

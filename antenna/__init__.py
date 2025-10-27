@@ -1,4 +1,5 @@
 from antenna.utils import *
+from antenna.types import *
 from antenna.patch import com_error
 # import numpy as np
 
@@ -57,7 +58,7 @@ class MultiResponses:
                 _responses[key] = AntennaResponse(response)
         elif isinstance(responses, Tensor):
             for n, response in enumerate(responses.reshape(AntennaResponse.size())):
-                _responses[n] = AntennaResponse(response)
+                _responses[AntennaResponse.labels[n]] = AntennaResponse(response)
         elif responses is None:
             pass
         else:

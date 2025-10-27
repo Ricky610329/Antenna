@@ -204,7 +204,7 @@ class DataManager(Data[list], Dataset):
             return
 
         is_batch = isinstance(new_data[0], (list, tuple))
-        items_to_process = new_data if is_batch else [new_data]
+        items_to_process:list[Union[list[Tensor,Tensor],list[Any,Any]]] = new_data if is_batch else [new_data]
 
         # --- 檢查資料結構一致性 ---
         for item in items_to_process:
@@ -218,6 +218,13 @@ class DataManager(Data[list], Dataset):
             elif self.data_structure != current_structure:
                 self.logger.error(f"結構不符：新資料的結構 {current_structure} 與現有結構 {self.data_structure} 不符。")
                 return
+
+        if isinstance(items_to_process[0][0], Tensor):
+            detached_data = [
+                [t.detach() for t in inner_list]
+                for inner_list in items_to_process
+            ]
+            items_to_process = detached_data
 
         if mode == 'overwrite':
             self.logger.warning(f"使用 'overwrite' 模式，將會清除所有現有資料。")
