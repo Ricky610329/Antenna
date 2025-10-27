@@ -50,7 +50,7 @@ class SurrogateModel(
             load=False # 避免呼叫父類別未覆寫的 load
         )
         
-        self.to(device=config['device'])
+        self.device = config['device']
         self.pattern_size = AntennaPattern.size
         self.response_size = AntennaResponse.size
 
@@ -307,8 +307,8 @@ class EnhancedHFSSUNet(nn.Module):
         x = x.unsqueeze(0)
         if x.dim() > 2:
              x = torch.flatten(x, 1)
-        if x.shape[1] != self.num_pattern_pixel:
-             raise ValueError(f"Input has {x.shape[1]} features, but expected {self.num_pattern_pixel}")
+        # if x.shape[1] != self.num_pattern_pixel:
+        #      raise ValueError(f"Input has {x.shape[1]} features, but expected {self.num_pattern_pixel}")
         # 使用初始化時獲取的高和寬
         x_img = x.view(-1, 1, self.input_dim_h, self.input_dim_w) #
 

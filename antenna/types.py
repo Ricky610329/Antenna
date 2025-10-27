@@ -49,8 +49,10 @@ from torch.types import Device, Tensor
 # It is used to resolve circular imports or speed up startup.
 if TYPE_CHECKING:
     from antenna import AntennaPattern, MultiResponses
+    from antenna.smodels import SurrogateModel
 
 CustomModule = TypeVar('CustomModule', bound=Module, covariant=True)
+CustomSModel = TypeVar('CustomSModel', bound="SurrogateModel", covariant=True)
 CustomOptimizer = TypeVar('CustomOptimizer', bound=Optimizer, covariant=True)
 CustomScheduler = TypeVar('CustomScheduler', bound=LRScheduler, covariant=True)
 

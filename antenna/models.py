@@ -39,7 +39,6 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             self.name = name
 
         self._rootdir = rootdir or config.checkpoint_save_path
-        self.device = device
 
         self.model = model
         self.optimizer = optimizer
@@ -47,6 +46,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         self.criterion = criterion
         self.record = Record(self.__class__.__name__, rootdir=self._rootdir, load=load and self.model_file.exists())
 
+        self.device = device
         if load: self.load()
     
     def __call__(self, *args:ModelParams.args, **kwargs:ModelParams.kwargs) -> ReturnType:
@@ -68,6 +68,14 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         assert self.name, "Please use `Models.change()` first."
         return Path(self._rootdir).joinpath(f"{self.name}.pth")
 
+    @property
+    def device(self):
+        """Model parameters of the device."""
+        return next(self.model.parameters()).device
+    
+    @device.setter
+    def device(self, device):
+        self.model.to(device = device)
     
     @property
     def FloatTensor(self):
@@ -88,23 +96,6 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         if load:
             self.load()
         return self.name
-
-    def to(self, *args, **kward):
-        """
-        Move and/or cast the parameters and buffers.
-
-        This can be called as
-
-        .. function:: to(device=None, dtype=None, non_blocking=False)
-        .. function:: to(dtype, non_blocking=False)
-        .. function:: to(tensor, non_blocking=False)
-        .. function:: to(memory_format=torch.channels_last)
-
-        """
-        self.model = self.model.to(*args, **kward)
-        
-        self.device = kward['device'] if 'device' in kward else args[0] 
-        return self.model
     
     def load(self, force:bool = False):
         checkpoint_loaded = self.checkpoint(load=True)
@@ -115,8 +106,6 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
             self.scheduler.load_state_dict(checkpoint_loaded['scheduler_state_dict'])
             self.record.load_state_dict(checkpoint_loaded['record_state_dict'])
-
-            self.to(device=self.device)
             
         else:
             raise RuntimeError(f"Please use the correct model file.\nFile: {checkpoint_loaded['title']}\nCurrent: {self.__str__()}")
@@ -153,7 +142,11 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             }
         return checkpoint
 
-
+    def requires_grad(self, mode:bool = True):
+        for param in self.model.parameters():
+            param.requires_grad = mode 
+        return next(self.model.parameters()).requires_grad
+    
 class BiScaleNorm(nn.Module):
     def __init__(self):
         super(BiScaleNorm, self).__init__()
