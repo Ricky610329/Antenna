@@ -314,7 +314,6 @@ class AntennaResponse(Generic[LossParams]):
             raise RuntimeError("No labels registered. Please use `registerLabels()` first.")
         _ = (len(cls.labels), cls._x[2])
         return _[0] * _[1] if flatten else _
-        
     
     @classmethod
     def to_str(cls):
@@ -475,6 +474,55 @@ class AntennaPattern:
 
         return (x2-x1)*(y2-y1) if flatten else ((x2-x1), (y2-y1))
     
+    @classmethod
+    def size_converter(cls, pattern: torch.Tensor, flatten: bool, batch: bool = False) -> torch.Tensor:
+        # 1. 取得 "每個樣本" 需要的元素數量
+        required_numel_per_sample = cls.size(flatten=True)
+        
+        # 2. 取得 "每個樣本" 的目標 shape (tuple)
+        if flatten:
+            # (N,) 例如 (64,)
+            target_shape_per_sample = (required_numel_per_sample,)
+        else:
+            # (H, W) 例如 (8, 8)
+            target_shape_per_sample = cls.size(flatten=False) 
+
+        # 3. 檢查輸入的總元素量是否為 "每個樣本" 元素量的整數倍
+        total_input_numel = pattern.numel()
+        assert total_input_numel % required_numel_per_sample == 0, \
+            f"Input tensor element count ({total_input_numel}) must be a multiple of the required size per sample ({required_numel_per_sample})."
+
+        # 4. 計算 batch size (B)
+        # 例如：輸入 (2, 8, 8)，total=128, required=64, B = 2
+        # 例如：輸入 (8, 8)，total=64, required=64, B = 1
+        batch_size = total_input_numel // required_numel_per_sample
+
+        # 5. 決定最終的 shape: (B, *target_shape_per_sample)
+        # 例如: (B, N) 或 (B, H, W)
+        final_shape = (batch_size, *target_shape_per_sample)
+        
+        output_pattern = pattern.reshape(final_shape)
+
+        # 6. 根據 'batch' 參數決定是否 'squeeze' 掉 B=1 的維度
+        # 這裡的 'batch' 參數意思是 "輸出是否保證有 batch 維度"
+        if not batch:
+            # 如果使用者 "不要" batch 輸出 (batch=False)
+            if batch_size == 1:
+                # 且 B 確實為 1，就拿掉 batch 維度 (squeeze)
+                # (1, H, W) -> (H, W)
+                return output_pattern.squeeze(dim=0)
+            else:
+                # 如果 B > 1 (例如 2)，但使用者卻要求 non-batch 輸出，這是一個邏輯衝突
+                raise ValueError(
+                    f"Input has batch size {batch_size}, but 'batch=False' (non-batch output) was requested. "
+                    "Cannot squeeze non-singleton batch dimension."
+                )
+        else:
+            # 如果使用者 "要" batch 輸出 (batch=True)，
+            # 我們的 reshape 已經是 (B, ...)，直接回傳
+            # (B, H, W) -> (B, H, W)
+            return output_pattern
+
     @classmethod
     def _getRandomPattern(cls, w=40, h=40):
         patterns = torch.randn(
