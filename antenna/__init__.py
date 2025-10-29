@@ -1,3 +1,38 @@
+"""
+It includes a microstrip patch antenna and a reconfigurable intelligent surface (RIS).
+
+Example::
+
+    from antenna import *
+    config.device = "cuda:0"
+
+    from antenna.utils import *
+    from antenna.models import ...
+    from antenna.smodels import ...
+
+    #* Merge files with specified extensions and generate file trees for multiple directories.
+    from script.process_files import FileProcessor
+
+    #* Select according to actual application.
+    from antenna.ris import ...
+    from antenna.patch import ...
+
+    #* Basic Config
+    connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
+    RESULT_PATH, is_connect_run = get_result_path('[...][{device}] ...', rootdir=ROOTDIR)
+    
+    #* Set Antemma Pattern
+    AntennaPattern.setDefaultCoordinate((0, n, 0, n))
+    PATTERN_SIZE = AntennaPattern.size(flatten=True)
+    simulator = ...
+    AntennaPattern.register_simulator(simulator)
+
+    #* Set Antenna Response
+    AntennaResponse.registerLabels('response', ..., x = '...')
+    x = AntennaResponse.x()
+    RESPONSE_SIZE = AntennaResponse.size(flatten=True)
+
+"""
 from antenna.utils import *
 from antenna.types import *
 from antenna.patch import com_error
@@ -590,6 +625,23 @@ class AntennaPattern:
         """Binarize and become gradient-free."""
         bi = (self.merge() >= threshold).float()
         return AntennaPattern(bi, (0, len(bi), 0, len(bi)))
+    
+    @classmethod
+    def binarization(cls, pattern:Tensor):
+        if len(pattern.shape) == 1:
+            pattern = pattern.reshape(*cls.size())
+        avg = pattern.mean()
+        rs = []
+        for l in pattern:
+            r = []
+            for v in l:
+                if v.item() < avg:
+                    r.append(-v)
+                else:
+                    r.append(1-v)
+            rs.append(r)
+        m_ = tensor(rs, requires_grad=True)
+        return pattern + m_
 
     def merge(self) -> torch.Tensor:
         """
