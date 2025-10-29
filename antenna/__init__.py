@@ -577,6 +577,23 @@ class AntennaPattern:
         """Binarize and become gradient-free."""
         bi = (self.merge() >= threshold).float()
         return AntennaPattern(bi, (0, len(bi), 0, len(bi)))
+    
+    @classmethod
+    def binarization(cls, pattern:Tensor):
+        if len(pattern.shape) == 1:
+            pattern = pattern.reshape(*cls.size())
+        avg = pattern.mean()
+        rs = []
+        for l in pattern:
+            r = []
+            for v in l:
+                if v.item() < avg:
+                    r.append(-v)
+                else:
+                    r.append(1-v)
+            rs.append(r)
+        m_ = tensor(rs, requires_grad=True)
+        return pattern + m_
 
     def merge(self) -> torch.Tensor:
         """
