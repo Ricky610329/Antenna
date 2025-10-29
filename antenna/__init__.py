@@ -1,3 +1,38 @@
+"""
+It includes a microstrip patch antenna and a reconfigurable intelligent surface (RIS).
+
+Example::
+
+    from antenna import *
+    config.device = "cuda:0"
+
+    from antenna.utils import *
+    from antenna.models import ...
+    from antenna.smodels import ...
+
+    #* Merge files with specified extensions and generate file trees for multiple directories.
+    from script.process_files import FileProcessor
+
+    #* Select according to actual application.
+    from antenna.ris import ...
+    from antenna.patch import ...
+
+    #* Basic Config
+    connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
+    RESULT_PATH, is_connect_run = get_result_path('[...][{device}] ...', rootdir=ROOTDIR)
+    
+    #* Set Antemma Pattern
+    AntennaPattern.setDefaultCoordinate((0, n, 0, n))
+    PATTERN_SIZE = AntennaPattern.size(flatten=True)
+    simulator = ...
+    AntennaPattern.register_simulator(simulator)
+
+    #* Set Antenna Response
+    AntennaResponse.registerLabels('response', ..., x = '...')
+    x = AntennaResponse.x()
+    RESPONSE_SIZE = AntennaResponse.size(flatten=True)
+
+"""
 from antenna.utils import *
 from antenna.types import *
 from antenna.patch import com_error
