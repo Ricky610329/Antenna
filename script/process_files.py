@@ -129,7 +129,7 @@ class FileProcessor:
                     outfile.write(f"\n\n{'=' * 20} 開始處理目錄: {abs_dir_path} {'=' * 20}\n\n")
 
                     found_files = False
-                    _tqdm = tqdm(os.walk(directory_path), desc="Reading...")
+                    _tqdm = tqdm(os.walk(directory_path), desc="Reading...", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} {postfix}")
                     for root, dirs, files in _tqdm:
                         # 忽略指定的資料夾，並在遍歷前修改 dirs 列表
                         dirs[:] = [d for d in dirs if d not in self.IGNORED_PATTERNS]

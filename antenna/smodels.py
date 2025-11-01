@@ -7,7 +7,6 @@ from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 from abc import ABC, abstractmethod
-from tqdm import trange
 from antenna.utils.data import DataManager
 
 class SurrogateModel(
@@ -60,26 +59,28 @@ class SurrogateModel(
         self.epoch += 1
         return MultiResponses(self.model(pattern))
 
-    def train_by_datas(self, dataset:DataManager, epochs: int = 100, batch_size: Optional[int] = None) -> List[float]:
+    def train_by_datas(self, dataset:DataManager, epochs: int = 100, batch_size: Optional[int] = None, *, verbose:bool = True) -> List[float]:
         """
-        使用提供的資料集訓練模型。
+        Train the model using the provided dataset.
 
         Args:
-            dataset (DataManager): 用於訓練的資料集。
-            epochs (int): 訓練的週期總數。
-            batch_size (Optional[int]): 每個 batch 的大小。
+            dataset (DataManager): Data set used for training.
+            epochs (int): Total number of training cycles.
+            batch_size (Optional[int]): Size of each batch.
+            verbose (bool): Enable progress bar.
 
         Returns:
-            List[float]: 每個 epoch 的平均 loss 列表。
+            List[float]: List of average losses per epoch.
         """
-        self.model.train()
+        self.requires_grad(True, train=True)
         self.record.reset()
 
         if len(dataset) <= 0:
             return []
 
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True)
-        epoch_bar = trange(epochs, desc='Training...')
+        
+        epoch_bar = tqdm(range(epochs), desc='Training...', disable=not verbose, **TQDM_CONFIG)
         for epoch in epoch_bar:
             for n, (patterns, real_responses) in enumerate(dataloader):
                 
@@ -113,8 +114,21 @@ class SurrogateModel(
         self.model.eval()
         return self.record['epoch_loss']
     
-    def train_one_data(self, pattern:Tensor, real_response:Tensor, min_loss=None, max_epoch=None):
-        self.model.train()
+    def train_one_data(self, pattern:Tensor, real_response:Tensor, min_loss=None, max_epoch=None, *, verbose:bool = True):
+        """
+        The model is trained using a single set of data.
+
+        Args:
+            pattern (Tensor): Real antenna pattern
+            real_response (Tensor): The real response of the antenna pattern
+            min_loss: Minimum loss limit
+            max_epoch: Maximum epoch limit
+            verbose (bool): Enable progress bar.
+
+        Returns:
+            List[float]: List of average losses per epoch.
+        """
+        self.requires_grad(True, train=True)
         self.record.reset()
         
         self.record['loss'] = float('inf')
@@ -126,6 +140,10 @@ class SurrogateModel(
         min_loss = min_loss or config['HFSS.min_loss']
         max_epoch = max_epoch or config['HFSS.max_epoch']
 
+        epoch_bar = tqdm(
+            total=max_epoch, desc="Training one data", 
+            bar_format=TQDM_BAR_SIMPLE, disable=not verbose, **TQDM_CONFIG
+        )
         while self.record('loss', 0) > min_loss and self.record('epoch', float('inf')) < max_epoch:
             self.optimizer.zero_grad()
 
@@ -141,6 +159,11 @@ class SurrogateModel(
 
             self.record['loss'] = loss.item()
             self.record.add('epoch', 1)
+
+            epoch_bar.update()
+            epoch_bar.set_postfix(
+                {'loss': f"{self.record('loss'):.2f}/{min_loss}"}
+            )
 
         self.model.eval()
         return self.record['loss']

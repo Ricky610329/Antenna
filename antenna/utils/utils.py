@@ -51,6 +51,8 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure as _Figure
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.axes._axes import Axes  # type: ignore
+from tqdm import tqdm
+
 ReturnType = TypeVar('ReturnType')
 
 FIG_CONFIG = {
@@ -62,6 +64,13 @@ FIG_CONFIG = {
     "facecolor": "none", # white
     "edgecolor": "none",
 }
+TQDM_CONFIG = {
+    'unit': 'epoch',
+    'unit_scale': True,
+    'mininterval': 1.0, 
+    'dynamic_ncols': True
+}
+TQDM_BAR_SIMPLE = '{l_bar}{bar}| {n_fmt}/{total_fmt} {postfix}'
 
 def errorCallback(errorCallback:Optional[Callable[[str],Any]]=None, *errorCallbackArgs, **errorCallbackKwargs):
     """

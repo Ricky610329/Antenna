@@ -32,7 +32,8 @@ from typing import (
     Literal,
     TypedDict,
     Generic,
-    Hashable as _Hashable
+    Hashable as _Hashable,
+    Iterable        #? yield
 )
 from typing_extensions import (
     Self
