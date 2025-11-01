@@ -47,21 +47,26 @@ import sys
 from os.path import normpath
 from time import time
 
-def get_result_path(name:str = "{id}-{device}", *, rootdir = None, set_logger:bool = True):
+def get_result_path(name:str = "{id}-{device}", *, rootdir = None, set_logger:bool = True, generate_code:Optional[str] = None):
     """
     Args:
         name: Folder and log name, support {id}.
         set_logger: Whether to set the logger.
             EX: XXX.log
+        generate_code: 
+            EX: __file__
 
     Examples: (equivalence)
     ```
     RESULT_PATH, EXISTS = get_result_path()
-    RESULT_PATH, EXISTS = get_result_path("{id}")
+    RESULT_PATH, EXISTS = get_result_path(
+        "{id}-{device}", rootdir=ROOTDIR, generate_code=__file__
+    )
 
     NAME = RESULT_PATH.stem
     ```
     """
+    from script.process_files import FileProcessor
     _now = int(time())
     _device = get_local_ip().split('.')[-1]
     rootdir = Path(str(normpath(rootdir))) if rootdir else  Path(__file__).parent.parent
@@ -77,6 +82,13 @@ def get_result_path(name:str = "{id}-{device}", *, rootdir = None, set_logger:bo
             format = "{time:YYYY-MM-DD HH:mm:ss} {level} {message}",
             level = "INFO",
         )
+    if generate_code:
+        FileProcessor(
+            output_dir = result_path,
+            project_name=name,
+            generated_by=generate_code,
+            verbose = False
+        ).run()
     return result_path, exists
 
 def mult(_ob):
@@ -627,21 +639,43 @@ class AntennaPattern:
         return AntennaPattern(bi, (0, len(bi), 0, len(bi)))
     
     @classmethod
-    def binarization(cls, pattern:Tensor):
+    def binarization(cls, pattern:Tensor, tau:float):
+        """
+        Perform differentiable binarization using the STE technique.
+
+        Args:
+            pattern: The pattern to be binarized. Its requires_grad will be set to True.
+            tau: The temperature parameter controls the steepness of the Sigmoid. 
+                 A smaller tau (e.g., 0.1) makes the approximation closer to hard binarization. 
+                 It must be > 0.
+
+        Returns:
+            torch.Tensor: Binarized tensor
+        """
+        #* Gradient is required
+        pattern.requires_grad_(True)
+
         if len(pattern.shape) == 1:
-            pattern = pattern.reshape(*cls.size())
-        avg = pattern.mean()
-        rs = []
-        for l in pattern:
-            r = []
-            for v in l:
-                if v.item() < avg:
-                    r.append(-v)
-                else:
-                    r.append(1-v)
-            rs.append(r)
-        m_ = tensor(rs, requires_grad=True)
-        return pattern + m_
+            pattern = pattern.reshape(*cls.size()) 
+        
+        #* Calculate threshold and steepness
+        avg = pattern.mean().detach()
+        steepness = 1/tau
+
+        #* Produces a "soft" approximation
+        #  This is to provide a smooth gradient during "backward" propagation.
+        soft_pattern = torch.sigmoid(steepness * (pattern - avg))
+
+        #* Produces a "hard" binarization result (0/1, not differentiable).
+        #  This is to get the 0/1 result you want during "forward" propagation.
+        hard_pattern = torch.round(soft_pattern)
+
+        #* STE
+        #  Forward(hard):   (hard - soft) + soft
+        #  Backward(soft)： `.detach()` will block the gradient of hard_pattern
+        binary_pattern = (hard_pattern - soft_pattern).detach() + soft_pattern
+        
+        return binary_pattern
 
     def merge(self) -> torch.Tensor:
         """
