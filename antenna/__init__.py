@@ -89,6 +89,7 @@ def get_result_path(name:str = "{id}-{device}", *, rootdir = None, set_logger:bo
             generated_by=generate_code,
             verbose = False
         ).run()
+    logger.info(f"The results will be saved in {result_path.absolute()} (Continue: {exists}, CUDA: {torch.cuda.is_available()})")
     return result_path, exists
 
 def mult(_ob):
