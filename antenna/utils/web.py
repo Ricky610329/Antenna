@@ -75,7 +75,7 @@ def get_local_ip():
 
 import subprocess
 from os.path import exists
-def connect_network_drive(drive_letter, network_path, user="", password="", *, del_old = False):
+def connect_network_drive(drive_letter, network_path, user="", password="", *, del_old = False, verbose:bool = False):
     """
     Checks if a network drive is connected and attempts to connect it if not.
     This version includes optional user and password authentication.
@@ -105,14 +105,16 @@ def connect_network_drive(drive_letter, network_path, user="", password="", *, d
 
     # Attempt to connect the network drive.
     try:
-        logger.info(f"Attempting to connect to `{drive_letter}` ...")
+        if verbose:
+            logger.info(f"Attempting to connect to `{drive_letter}` ...")
         subprocess.run(command_args, check=True, shell=True, capture_output=True, text=True)
-        logger.info(f"Network drive `{drive_letter}` successfully connected.")
+        logger.success(f"Network drive `{drive_letter}` successfully connected.")
         return True
 
     except subprocess.CalledProcessError as e:
         if exists(drive_letter): # Check if the drive is already connected.
-            logger.info(f"Network drive `{drive_letter}` is already connected. Skipping connection.")
+            if verbose:
+                logger.info(f"Network drive `{drive_letter}` is already connected. Skipping connection.")
             return True
         else:
             logger.warning(f"Connection failed: {e.stderr}")

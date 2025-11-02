@@ -457,7 +457,7 @@ class SigmoidGEN(nn.Module):
     Generator Model
     """
     def __init__(self):
-        super(OldGEN,self).__init__()
+        super(SigmoidGEN,self).__init__()
         self.fc_patch = nn.Sequential( # Can use BiScaleNorm or nn.PReLU, except the last layer.
             nn.Linear(AntennaResponse.size(flatten=True), 1024),
             nn.PReLU(),
