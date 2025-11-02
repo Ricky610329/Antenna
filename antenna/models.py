@@ -142,9 +142,18 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             }
         return checkpoint
 
-    def requires_grad(self, mode:bool = True):
+    def requires_grad(self, mode:bool = True, train:Optional[bool] = None):
         for param in self.model.parameters():
             param.requires_grad = mode 
+
+        match train:
+            case True:
+                self.model.train()
+            case False:
+                self.model.eval()
+            case _:
+                pass
+
         return next(self.model.parameters()).requires_grad
     
 class BiScaleNorm(nn.Module):
@@ -426,7 +435,6 @@ class OldGEN(nn.Module):
     """
     def __init__(self):
         super(OldGEN,self).__init__()
-        patttern_size = AntennaPattern.size(flatten=True)
         self.fc_patch = nn.Sequential( # Can use BiScaleNorm or nn.PReLU, except the last layer.
             nn.Linear(AntennaResponse.size(flatten=True), 1024),
             nn.PReLU(),
@@ -443,6 +451,26 @@ class OldGEN(nn.Module):
         x = self.fc_patch(input)
         x = self.r(x) / 2 + 0.5 # type: ignore
         return x
+
+class SigmoidGEN(nn.Module):
+    """
+    Generator Model
+    """
+    def __init__(self):
+        super(SigmoidGEN,self).__init__()
+        self.fc_patch = nn.Sequential( # Can use BiScaleNorm or nn.PReLU, except the last layer.
+            nn.Linear(AntennaResponse.size(flatten=True), 1024),
+            nn.PReLU(),
+            nn.Linear(1024, 1024),
+            nn.PReLU(),
+            nn.Linear(1024, AntennaPattern.size(flatten=True)),
+            BiScaleNorm(),
+        )
+        self.to(config.device)
+    
+    def forward(self, input, tau) -> Tensor:
+        x = self.fc_patch(input)
+        return AntennaPattern.binarization(x, tau)
 
 class GradientEstimator(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -476,3 +504,310 @@ class GradientEstimator(nn.Module):
         output = self.net(output)
         return AntennaResponse(output)
 
+class CVAE(nn.Module):
+    """
+    條件變分自動編碼器 (CVAE)
+    """
+    def __init__(self, latent_dim: int, pattern_size:Optional[int] = None, response_size:Optional[int] = None):
+        """
+        初始化 CVAE 模型。
+
+        Args:
+            pattern_size (int): 天線圖案展平後的大小
+            response_size (int): EM 響應展平後的大小
+            latent_dim (int): 潛在空間 (z) 的維度。
+        """
+        super(CVAE, self).__init__()
+        self.pattern_size = pattern_size or AntennaPattern.size(flatten=True)
+        self.response_size = response_size or AntennaResponse.size(flatten=True)
+        self.latent_dim = latent_dim
+
+        # --- 1. Encoder (Recognition Network) ---
+        # [cite_start]論文: "encodes the RIS pattern and EM responses together" [cite: 12]
+        self.encoder_input_dim = self.pattern_size + self.response_size
+        self.encoder_fc1 = nn.Linear(self.encoder_input_dim, 512)
+        self.encoder_fc2 = nn.Linear(512, 256)
+        # 輸出潛在空間的參數
+        self.fc_mu = nn.Linear(256, self.latent_dim) # 平均 (mu)
+        self.fc_logvar = nn.Linear(256, self.latent_dim) # log 變異數 (logvar)
+
+        # --- 2. Decoder (Reconstruction Network) ---
+        self.decoder_input_dim = self.latent_dim + self.response_size
+        self.decoder_fc1 = nn.Linear(self.decoder_input_dim, 256)
+        self.decoder_fc2 = nn.Linear(256, 512)
+        # 輸出 logits (用於 Gumbel-Sigmoid 或 BCEWithLogitsLoss)
+        self.decoder_fc3 = nn.Linear(512, self.pattern_size) 
+        
+        self.to(config.device)
+        logger.info(f"CVAE Model Initialized: pattern_size={pattern_size}, response_size={response_size}, latent_dim={latent_dim}")
+
+    def encode(self, pattern: Tensor, response: Tensor) -> Tuple[Tensor, Tensor]:
+        """
+        (pattern, response) -> (mu, logvar)
+
+        Args:
+            pattern (Tensor): 批次的二進制天線圖案 (B, pattern_size)。
+            response (Tensor): 批次的對應 EM 響應 (B, response_size)。
+
+        Returns:
+            Tuple[Tensor, Tensor]: 潛在空間的 (mu, logvar)。
+        """
+        inputs = torch.cat([pattern, response], dim=-1)
+        h1 = F.relu(self.encoder_fc1(inputs))
+        h2 = F.relu(self.encoder_fc2(h1))
+        return self.fc_mu(h2), self.fc_logvar(h2)
+
+    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
+        """
+        Reparameterization Trick: (mu, logvar) -> z
+
+        從 (mu, logvar) 分佈中隨機採樣一個 z 向量，同時保持梯度可回傳。
+
+        Args:
+            mu (Tensor): 潛在空間的平均。
+            logvar (Tensor): 潛在空間的 log 變異數。
+
+        Returns:
+            Tensor: 採樣出的潛在向量 z。
+        """
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std) # 從標準常態分佈中採樣噪聲
+        return mu + eps * std
+
+    def decode(self, z: Tensor, response: Tensor) -> Tensor:
+        """
+        (z, Response) -> Logits
+
+        Args:
+            z (Tensor): 批次的潛在向量 (B, latent_dim)。
+            response (Tensor): 批次的目標 EM 響應 (B, response_size)。
+
+        Returns:
+            Tensor: 重建圖案的 Logits (B, pattern_size)。
+        """
+        inputs = torch.cat([z, response], dim=-1)
+        h1 = F.relu(self.decoder_fc1(inputs))
+        h2 = F.relu(self.decoder_fc2(h1))
+        # 輸出 logits (原始分數)，用於後續的 Gumbel-Sigmoid 或 BCEWithLogitsLoss
+        return self.decoder_fc3(h2) 
+
+    def forward(self, pattern: Tensor, response: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
+        """
+        CVAE 的標準前向傳播，用於訓練 CVAE 本身 (Encoder + Decoder)。
+
+        Args:
+            pattern (Tensor): 輸入的真實圖案。
+            response (Tensor): 輸入的真實響應。
+
+        Returns:
+            Tuple[Tensor, Tensor, Tensor]: (recon_logits, mu, logvar)
+        """
+        mu, logvar = self.encode(pattern, response)
+        z = self.reparameterize(mu, logvar)
+        recon_logits = self.decode(z, response)
+        return recon_logits, mu, logvar
+
+    def loss_function(self, recon_logits: Tensor, pattern: Tensor, mu: Tensor, logvar: Tensor) -> Tensor:
+        """
+        計算 CVAE 的總損失 (ELBO Loss)。
+        Loss = 重建損失 (BCE) + KL 散度 (KLD)。
+
+        Args:
+            recon_logits (Tensor): 解碼器重建的圖案 Logits。
+            pattern (Tensor): 原始的真實圖案。
+            mu (Tensor): 編碼器輸出的 mu。
+            logvar (Tensor): 編碼器輸出的 logvar。
+
+        Returns:
+            Tensor: CVAE 的總損失。
+        """
+        # 1. 重建損失 (Reconstruction Loss)
+        #    使用 BCEWithLogitsLoss 更穩定，它等同於 Sigmoid + BCELoss
+        BCE = F.binary_cross_entropy_with_logits(recon_logits, pattern, reduction='sum')
+        
+        # 2. KL 散度 (Kullback-Leibler Divergence)
+        #    衡量潛在空間分佈 N(mu, var) 與標準常態分佈 N(0, 1) 的差異
+        # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+        KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        
+        return BCE + KLD
+
+    def generate(self, response: Tensor, n_samples: int = 1) -> Tensor:
+        """
+        用於反向設計的生成函數。
+        給定一個「目標響應」(條件)，從潛在空間隨機採樣 z, 並使用「解碼器」生成 n_samples 個候選圖案。
+
+        Args:
+            response (Tensor): 目標 EM 響應 (1, response_size)。
+            n_samples (int): 要生成的候選圖案數量。
+
+        Returns:
+            Tensor: 生成的候選圖案 Logits (n_samples, pattern_size)。
+        """
+        # 從標準常態分佈 N(0, 1) 中隨機採樣 z
+        z = torch.randn(n_samples, self.latent_dim).to(config.device)
+        
+        # 將 "目標響應" (條件) 複製 n_samples 次，以匹配 z 的批次大小
+        response_batch = response.repeat(n_samples, 1)
+        
+        # 只使用解碼器生成圖案 logits
+        logits = self.decode(z, response_batch)
+        return logits
+
+import torch
+import torch.nn as nn
+from torch.functional import F
+from typing import Optional, Tuple, List
+
+# 匯入您專案所需的模組
+from antenna import AntennaPattern, AntennaResponse, MultiResponses, config
+from antenna.functions import mirror
+
+class MirrorCVAE(nn.Module, Generic[CustomSModel]):
+    """
+    結合了 CVAE 解碼器 (生成器) 與鏡像/評估/選擇機制的模組。
+
+    forward() 方法會執行以下操作：
+    1. 根據輸入的條件 (c) 和一個隨機採樣的潛在向量 (z) 生成一個 "基礎 pattern"。
+    2. 使用 mirror() 函數 [cite: 331-332] 產生多個鏡像版本的 pattern 。
+    3. 使用傳入的 surrogate model (smodel) 評估所有鏡像 pattern 。
+    4. 找出 "最佳" (smodel 損失最低) 的 pattern 。
+    5. 回傳這個最佳的 pattern 及其對應的 smodel 損失，兩者都帶有梯度，
+       可直接用於反向傳播 。
+    """
+    def __init__(self,
+                 latent_dim: int,
+                 smodel: CustomSModel, # 您預先訓練好的 surrogate model
+                 lower_pattern: AntennaPattern = None # 靜態的 'lower' pattern
+                ):
+        """
+        初始化 MirrorCVAE 生成器。
+
+        Args:
+            latent_dim (int): CVAE 的潛在向量維度 (例如: 128)。
+            smodel (nn.Module): 一個預先訓練好的代理模型 (Surrogate Model)。
+                             這個模型將被用來 "評估" 鏡像 pattern 的好壞。
+            lower_pattern (AntennaPattern): 要添加到每個 pattern 上的靜態 'lower' 部分。
+        """
+        super().__init__()
+        
+        self.latent_dim = latent_dim
+        condition_dim = AntennaResponse.size(flatten=True)
+        pattern_dim = AntennaPattern.size(flatten=True)
+        
+        # --- 儲存外部模組 ---
+        if not callable(smodel):
+            raise TypeError("smodel 必須是一個可呼叫的 nn.Module")
+        
+        # 儲存 smodel，並凍結其參數 (如果 smodel 在別處訓練)
+        self.smodel = smodel
+        self.smodel.requires_grad(False)
+
+        self.lower = lower_pattern
+        
+        # --- CVAE 解碼器 (生成器) ---
+        # !!
+        # !! 請將這個 self.decoder 替換為您自己的 CVAE 解碼器架構
+        # !!
+        # 這裡使用一個基於 OldGEN [cite: 405-407] 的範例架構
+        self.decoder = nn.Sequential(
+            # 輸入維度 = 潛在向量 + 條件
+            nn.Linear(latent_dim + condition_dim, 1024),
+            nn.PReLU(), 
+            nn.Linear(1024, 1024),
+            nn.PReLU(), 
+            nn.Linear(1024, pattern_dim),
+            nn.Sigmoid() # 確保輸出在 0 到 1 之間
+        )
+            
+
+    def decode(self, z: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
+        """ 
+        解碼器：將潛在向量 z 和條件 c 轉換為基礎 pattern 張量。
+        """
+        inputs = torch.cat([z, c], dim=0)
+        base_pattern_tensor = self.decoder(inputs)
+        return base_pattern_tensor
+
+    def forward(self, 
+                c: torch.Tensor, 
+                z: Optional[torch.Tensor] = None
+               ) -> Tuple[AntennaPattern, torch.Tensor]:
+        """
+        執行 "產生-鏡像-評估-選擇" 的前向傳播。
+
+        Args:
+            c (torch.Tensor): 
+條件向量 (例如 AntennaResponse.target.concat())。
+            z (Optional[torch.Tensor], optional): 一個固定的潛在向量 (用於可重現的生成)。
+                                                  如果為 None，將隨機採樣。
+
+        Returns:
+            Tuple[AntennaPattern, torch.Tensor]:
+            - best_pattern (AntennaPattern): 
+評估後最佳的鏡像 pattern 物件。
+                                           梯度會連結到這個物件。
+            - best_fake_loss (torch.Tensor): 
+來自 smodel 對 best_pattern 的評估損失。
+                                            這是您應該呼叫 .backward() 的損失張量。
+        """
+        if z is None:
+            # 如果未提供 z，則隨機採樣一個
+            z = torch.randn(self.latent_dim, device=c.device)
+        
+        # 1. 解碼 (生成) 基礎 pattern 張量
+        # 這個張量帶有來自解碼器的梯度
+        base_pattern_tensor = self.decode(z, c)
+        base_pattern_obj = AntennaPattern(base_pattern_tensor)
+        
+
+        # 2. 產生鏡像 patterns 
+        # 這個鏡像操作 (cat, flip) 是可微分的 [cite: 331-343]
+        mirrored_tensors = mirror(base_pattern_obj.merge(), mode='-|*')
+        mirrored_patterns = [
+            AntennaPattern(t) + self.lower
+            if self.lower else AntennaPattern(t)
+            for t in mirrored_tensors
+        ]
+        # 3. 評估所有鏡像 patterns 
+        all_losses: List[torch.Tensor] = []
+        all_results: List[MultiResponses] = []
+        self.smodel.model.eval() # 確保 smodel 處於評估模式
+        
+        with torch.enable_grad(): # 確保在 smodel 內部計算時保留梯度
+            for pattern in mirrored_patterns:
+                # 讓梯度流經 smodel
+                
+                output_result = self.smodel(pattern.series)
+                fake_loss = output_result.criterion()
+                all_losses.append(fake_loss)
+                all_results.append(output_result)
+
+        # 4. 找出最佳損失的索引 
+        # 我們在 .detach() 後的張量上執行 argmin，
+        # 這樣 "選擇" 操作本身 (argmin) 就不會接收梯度。
+        losses_tensor_detached = torch.stack([l.detach() for l in all_losses])
+        best_loss_index = torch.argmin(losses_tensor_detached)
+        
+        # 5. 根據索引選擇 "最佳" 的 pattern 和 "最佳" 的 loss
+        # 雖然索引是 detach 的，但我們是從 *原始* 列表中索引，
+        # 因此 best_pattern 和 best_fake_loss 仍然保留著它們的梯度歷史！
+        best_pattern = mirrored_patterns[best_loss_index.item()]
+        best_fake_loss = all_losses[best_loss_index.item()]
+        
+        # (可選) 填充您在 `train_single_mirror.py`  中使用的 results 列表，用於繪圖
+        self.results_for_plotting: List[ResultType] = []
+        for i, pattern in enumerate(mirrored_patterns):
+            result_dict: ResultType = {
+                "pattern": pattern,
+                "result": all_results[i],
+                "loss": all_losses[i],
+                "sm_loss": [], # sm_loss 在 HFSS 模擬後才更新
+                "time": 0,     # time 在 HFSS 模擬後才更新
+                "is_best": (i == best_loss_index.item())
+            }
+            self.results_for_plotting.append(result_dict)
+
+        # 6. 回傳最佳的 pattern（用於後續的 HFSS 模擬）
+        # 和最佳的 fake_loss（用於反向傳播更新 CVAE）
+        return best_pattern, best_fake_loss

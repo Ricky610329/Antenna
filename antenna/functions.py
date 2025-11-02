@@ -98,35 +98,70 @@ def mirror(input: Tensor, mode: Union[FlipMode, Literal['-','|','*']]  = '*') ->
     def _get_quadrant_mirrors(tensor: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
         """輔助函數：'both' 模式的象限翻轉"""
         H, W = tensor.shape
-        # 取整數，自動處理奇偶數的中心點
-        # math.ceil(W / 2)
-        mid_w_ceil = (W + 1) // 2
-        # math.ceil(H / 2)
+        mid_h = H // 2
+        mid_w = W // 2
+
+        # 根據維度奇偶決定切片終點
+        # 如果 H 是奇數, mid_h_ceil 會是中間那一行之後的索引
+        # 如果 H 是偶數, mid_h_ceil 會是中間那一行之後的索引 (等於 mid_h)
         mid_h_ceil = (H + 1) // 2
+        mid_w_ceil = (W + 1) // 2
 
-        # 1. 取得四個象限（包含中心線）
-        top_left_q = tensor[:mid_h_ceil, :mid_w_ceil]
-        top_right_q = tensor[:mid_h_ceil, W // 2:]
-        bottom_left_q = tensor[H // 2:, :mid_w_ceil]
-        bottom_right_q = tensor[H // 2:, W // 2:]
-        
+        # 1. 精確取得四個象限 (對於奇數維度，中心行列會被包含在多個象限中，這沒關係)
+        top_left_q = tensor[:mid_h_ceil, :mid_w_ceil]     # 包含中心點/線 (如果 H/W 為奇數)
+        top_right_q = tensor[:mid_h_ceil, mid_w:]        # 從中間寬度開始 (不包含中心線，如果 W 為奇數)
+        bottom_left_q = tensor[mid_h:, :mid_w_ceil]    # 從中間高度開始 (不包含中心線，如果 H 為奇數)
+        bottom_right_q = tensor[mid_h:, mid_w:]       # 不包含中心行列
+
         # 2. 從每個象限建構一個全對稱的 Tensor
-        
-        # 從左上角建構
-        top_half = torch.cat([top_left_q, torch.flip(top_left_q, dims=[1])[:, W % 2:]], dim=1)
-        result_from_tl = torch.cat([top_half, torch.flip(top_half, dims=[0])[H % 2:, :]], dim=0)
 
-        # 從右上角建構
-        top_half = torch.cat([torch.flip(top_right_q, dims=[1])[:, :- (W % 2 if W % 2 else W)], top_right_q], dim=1)
-        result_from_tr = torch.cat([top_half, torch.flip(top_half, dims=[0])[H % 2:, :]], dim=0)
-        
-        # 從左下角建構
-        bottom_half = torch.cat([bottom_left_q, torch.flip(bottom_left_q, dims=[1])[:, W % 2:]], dim=1)
-        result_from_bl = torch.cat([torch.flip(bottom_half, dims=[0])[:- (H % 2 if H % 2 else H)], bottom_half], dim=0)
+        # --- 從左上角 (top_left_q) 建構 ---
+        # 水平翻轉左上角 (不含中心列，如果 W 為奇數)
+        flipped_tl_h = torch.flip(top_left_q[:, :mid_w], dims=[1])
+        # 組合上半部分 (若 W 為奇數，中心列來自 top_left_q)
+        top_half_from_tl = torch.cat([top_left_q, flipped_tl_h], dim=1)
+        # 垂直翻轉上半部分 (不含中心行，如果 H 為奇數)
+        flipped_tl_v = torch.flip(top_half_from_tl[:mid_h, :], dims=[0])
+        # 組合完整圖像 (若 H 為奇數，中心行來自 top_half_from_tl)
+        result_from_tl = torch.cat([top_half_from_tl, flipped_tl_v], dim=0)
 
-        # 從右下角建構
-        bottom_half = torch.cat([torch.flip(bottom_right_q, dims=[1])[:, :- (W % 2 if W % 2 else W)], bottom_right_q], dim=1)
-        result_from_br = torch.cat([torch.flip(bottom_half, dims=[0])[:- (H % 2 if H % 2 else H)], bottom_half], dim=0)
+        # --- 從右上角 (top_right_q) 建構 ---
+        # 水平翻轉右上角 (包含中心列，如果 W 為奇數)
+        flipped_tr_h = torch.flip(top_right_q, dims=[1])
+        # 組合上半部分 (若 W 為奇數，中心列來自 flipped_tr_h)
+        top_half_from_tr = torch.cat([flipped_tr_h, top_right_q[:, (W % 2):]], dim=1) # 如果 W 是奇數，跳過第一列 (中心列)
+        # 垂直翻轉上半部分 (不含中心行，如果 H 為奇數)
+        flipped_tr_v = torch.flip(top_half_from_tr[:mid_h, :], dims=[0])
+        # 組合完整圖像 (若 H 為奇數，中心行來自 top_half_from_tr)
+        result_from_tr = torch.cat([top_half_from_tr, flipped_tr_v], dim=0)
+
+        # --- 從左下角 (bottom_left_q) 建構 ---
+        # 水平翻轉左下角 (不含中心列，如果 W 為奇數)
+        flipped_bl_h = torch.flip(bottom_left_q[:, :mid_w], dims=[1])
+        # 組合下半部分 (若 W 為奇數，中心列來自 bottom_left_q)
+        bottom_half_from_bl = torch.cat([bottom_left_q, flipped_bl_h], dim=1)
+        # 垂直翻轉下半部分 (包含中心行，如果 H 為奇數)
+        flipped_bl_v = torch.flip(bottom_half_from_bl, dims=[0])
+        # 組合完整圖像 (若 H 為奇數，中心行來自 flipped_bl_v)
+        result_from_bl = torch.cat([flipped_bl_v, bottom_half_from_bl[(H % 2):, :]], dim=0) # 如果 H 是奇數，跳過第一行 (中心行)
+
+        # --- 從右下角 (bottom_right_q) 建構 ---
+        # 水平翻轉右下角 (包含中心列，如果 W 為奇數)
+        flipped_br_h = torch.flip(bottom_right_q, dims=[1])
+        # 組合下半部分 (若 W 為奇數，中心列來自 flipped_br_h)
+        bottom_half_from_br = torch.cat([flipped_br_h, bottom_right_q[:, (W % 2):]], dim=1) # 如果 W 是奇數，跳過第一列 (中心列)
+        # 垂直翻轉下半部分 (包含中心行，如果 H 為奇數)
+        flipped_br_v = torch.flip(bottom_half_from_br, dims=[0])
+        # 組合完整圖像 (若 H 為奇數，中心行來自 flipped_br_v)
+        result_from_br = torch.cat([flipped_br_v, bottom_half_from_br[(H % 2):, :]], dim=0) # 如果 H 是奇數，跳過第一行 (中心行)
+
+
+        # --- 驗證形狀 (可選，用於除錯) ---
+        expected_shape = (H, W)
+        assert result_from_tl.shape == expected_shape, f"Shape mismatch TL: {result_from_tl.shape} != {expected_shape}"
+        assert result_from_tr.shape == expected_shape, f"Shape mismatch TR: {result_from_tr.shape} != {expected_shape}"
+        assert result_from_bl.shape == expected_shape, f"Shape mismatch BL: {result_from_bl.shape} != {expected_shape}"
+        assert result_from_br.shape == expected_shape, f"Shape mismatch BR: {result_from_br.shape} != {expected_shape}"
 
         return result_from_tl, result_from_tr, result_from_bl, result_from_br
 
@@ -351,3 +386,26 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         self.current_temp = state_dict['current_temp']
         self.patience_counter = state_dict['patience_counter']
         self.best_metric = state_dict['best_metric']
+
+def elbo_Loss_fn(recon_logits: Tensor, pattern: Tensor, mu: Tensor, logvar: Tensor) -> Tensor:
+        """
+        Calculate the total loss (ELBO Loss) of the standard CVAE.
+        
+        Loss = Reconstruction Loss (BCE) + KL Divergence (KLD)
+
+        Args:
+            recon_logits (Tensor): Logits reconstructed by decoder
+            pattern (Tensor): Original real pattern
+            mu (Tensor): Mean Vector
+            logvar (Tensor): Log Variance Vector
+
+        Returns:
+            Tensor: Total loss of CVAE.
+        """
+        # 重建損失 (使用 BCEWithLogitsLoss 更穩定)
+        BCE = F.binary_cross_entropy_with_logits(recon_logits, pattern, reduction='sum')
+
+        # KL 散度
+        KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
+        return BCE + KLD
