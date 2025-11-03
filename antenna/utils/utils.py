@@ -100,9 +100,10 @@ def errorCallback(errorCallback:Optional[Callable[[str],Any]]=None, *errorCallba
     
 class Path(type(_Path()), _Path): # type: ignore
     def __new__(cls, *args, **kwargs):
+        kwargs.pop('create', None)
         return super().__new__(cls, *args, **kwargs)
     
-    def __init__(self, path: str, create:bool=False):
+    def __init__(self, *args, create:bool=False, **kwargs):
         """
         Path model.
        
