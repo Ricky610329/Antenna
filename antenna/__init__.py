@@ -59,8 +59,8 @@ def get_result_path(name:str = "{id}-{device}", *, rootdir = None, set_logger:bo
     Examples: (equivalence)
     ```
     RESULT_PATH, EXISTS = get_result_path()
-    RESULT_PATH, EXISTS = get_result_path(
-        "{id}-{device}", rootdir=ROOTDIR, generate_code=__file__
+    RESULT_PATH, CONTINUE_RUN = get_result_path(
+        "{id}-{device}", rootdir = ROOTDIR, generate_code = __file__
     )
 
     NAME = RESULT_PATH.stem
@@ -89,6 +89,10 @@ def get_result_path(name:str = "{id}-{device}", *, rootdir = None, set_logger:bo
             generated_by=generate_code,
             verbose = False
         ).run()
+
+    config['RESULT_PATH'] = result_path
+    config['CONTINUE_RUN'] = exists
+    
     logger.info(f"The results will be saved in {result_path.absolute()} (Continue: {exists}, CUDA: {torch.cuda.is_available()})")
     return result_path, exists
 
@@ -379,6 +383,13 @@ class AntennaPattern:
     _history_datas:List[List[torch.Tensor]] = []
     _best_loss = float('inf')
 
+    tau:float = 1.0
+    """
+    The temperature parameter controls the steepness of the Sigmoid. 
+    - A smaller tau (e.g., 0.1) makes the approximation closer to hard binarization. 
+    - It must be > 0.
+    """
+    
     def __new__(cls, pattern:"AntennaPattern", *args) -> "AntennaPattern":
         if isinstance(pattern, AntennaPattern):
             return pattern
@@ -640,32 +651,33 @@ class AntennaPattern:
         return AntennaPattern(bi, (0, len(bi), 0, len(bi)))
     
     @classmethod
-    def binarization(cls, pattern:Tensor, tau:float):
+    def binarization(cls, pattern:Tensor, tau:Optional[float] = None, threshold = None):
         """
         Perform differentiable binarization using the STE technique.
 
         Args:
             pattern: The pattern to be binarized. Its requires_grad will be set to True.
-            tau: The temperature parameter controls the steepness of the Sigmoid. 
-                 A smaller tau (e.g., 0.1) makes the approximation closer to hard binarization. 
-                 It must be > 0.
+            tau:   The temperature parameter controls the steepness of the Sigmoid. 
+                    A smaller tau (e.g., 0.1) makes the approximation closer to hard binarization. 
+                    It must be > 0.
 
         Returns:
             torch.Tensor: Binarized tensor
         """
         #* Gradient is required
         pattern.requires_grad_(True)
+        cls.tau:float = tau or getattr(cls, 'tau', 1.0)
 
         if len(pattern.shape) == 1:
             pattern = pattern.reshape(*cls.size()) 
         
         #* Calculate threshold and steepness
-        avg = pattern.mean().detach()
-        steepness = 1/tau
+        threshold = threshold or pattern.mean().detach() # avg
+        steepness = 1/cls.tau
 
         #* Produces a "soft" approximation
         #  This is to provide a smooth gradient during "backward" propagation.
-        soft_pattern = torch.sigmoid(steepness * (pattern - avg))
+        soft_pattern = torch.sigmoid(steepness * (pattern - threshold))
 
         #* Produces a "hard" binarization result (0/1, not differentiable).
         #  This is to get the 0/1 result you want during "forward" propagation.
@@ -677,6 +689,15 @@ class AntennaPattern:
         binary_pattern = (hard_pattern - soft_pattern).detach() + soft_pattern
         
         return binary_pattern
+
+    def binarization_(self, tau:Optional[float] = None, threshold = None):
+        pattern = self.merge().clone()
+        shape = pattern.shape
+        self.patterns = [(
+            AntennaPattern.binarization(pattern, tau=tau, threshold=threshold),
+            0, shape[1], 0, shape[0]
+        )]
+        
 
     def merge(self) -> torch.Tensor:
         """

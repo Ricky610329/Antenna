@@ -272,7 +272,8 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         :param last_epoch: 最後一個已排程的步數/週期數。用於從中斷處恢復訓練。
         :raises ValueError: 如果 T_0, T_mult, 或 mode 參數無效。
         """
-        
+        from .utils import config, Record
+        self.record = Record(self.__class__.__name__, config['RESULT_PATH'])
         # --- 週期性參數 (來自 CosineAnnealing) ---
         if T_0 <= 0 or not isinstance(T_0, int):
             raise ValueError("Expected positive integer T_0, but got {}".format(T_0))
@@ -365,6 +366,12 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         
         self._last_lr = [group['lr'] for group in self.optimizer.param_groups]
 
+        # 更新溫度(tau)
+        AntennaPattern.tau = self.get_temp()
+
+        self.record['lr'] = self.get_lr()[0]
+        self.record['tau'] = self.get_temp()
+
     def state_dict(self):
         """返回排程器的狀態字典。"""
         state = super().state_dict()
@@ -386,6 +393,24 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         self.current_temp = state_dict['current_temp']
         self.patience_counter = state_dict['patience_counter']
         self.best_metric = state_dict['best_metric']
+    
+    def plot(self, axes:Optional[Axes] = None, show:bool = False, title:str = "LR & Tau"):
+        from .utils.utils import plt
+        ax:Axes = plt.axes(axes) # type: ignore
+
+        ax_lr = ax
+        ax_tau = ax_lr.twinx()
+        p1, = ax_lr.plot(self.record['lr'], color='tab:blue', label='LR')
+        p2, = ax_tau.plot(self.record['tau'], color='tab:orange', label='Tau')
+        ax_lr.set_ylabel('Learning Rate', color='tab:blue')
+        ax_tau.set_ylabel('Tau', color='tab:orange')
+        ax_lr.tick_params(axis='y', labelcolor='tab:blue')
+        ax_tau.tick_params(axis='y', labelcolor='tab:orange')
+        ax_lr.legend(handles=[p1, p2])
+        ax.set_title(title, fontsize=20)
+
+        if show: plt.show()
+        return ax
 
 def elbo_Loss_fn(recon_logits: Tensor, pattern: Tensor, mu: Tensor, logvar: Tensor) -> Tensor:
         """

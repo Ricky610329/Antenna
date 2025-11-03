@@ -45,6 +45,10 @@ from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.types import Device, Tensor
 
+#* Figure
+from matplotlib.figure import Figure as _Figure
+from matplotlib.axes._axes import Axes  # type: ignore
+
 #* Conditional import
 # The content of this block is only executed during static type checking (such as mypy) and is ignored at runtime. 
 # It is used to resolve circular imports or speed up startup.
