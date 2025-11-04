@@ -367,6 +367,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         self._last_lr = [group['lr'] for group in self.optimizer.param_groups]
 
         # 更新溫度(tau)
+        from . import AntennaPattern
         AntennaPattern.tau = self.get_temp()
 
         self.record['lr'] = self.get_lr()[0]
@@ -397,7 +398,6 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
     def plot(self, axes:Optional[Axes] = None, show:bool = False, title:str = "LR & Tau"):
         from .utils.utils import plt
         ax:Axes = plt.axes(axes) # type: ignore
-
         ax_lr = ax
         ax_tau = ax_lr.twinx()
         p1, = ax_lr.plot(self.record['lr'], color='tab:blue', label='LR')
