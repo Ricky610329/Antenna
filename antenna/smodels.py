@@ -84,11 +84,7 @@ class SurrogateModel(
         for epoch in epoch_bar:
             for n, (patterns, real_responses) in enumerate(dataloader):
                 
-                # --- 資料準備 ---
-                # 關鍵修正：使用 flatten(start_dim=1) 來保留 batch 維度
-                # 原始的 flatten() 會把 (batch_size, features) 壓成 (batch_size * features)
-
-                if len(patterns.shape) == 1: patterns = patterns.unsqueeze(0)
+                patterns = AntennaPattern.size_converter(patterns, flatten=True, batch=True)
                 inputs:Tensor = patterns.flatten(start_dim=1).to(config.device)
                 labels :Tensor= real_responses.to(config.device)
 
