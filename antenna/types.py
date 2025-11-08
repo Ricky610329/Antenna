@@ -101,3 +101,23 @@ class Checkpoint(TypedDict):
 DataType = TypeVar('DataType') 
 Hashable = TypeVar('Hashable', bound=_Hashable)
 
+#* In antenna.utils.data.size_converter()
+class Sizable(Protocol):
+    """
+    The object or category must provide a `.size()` method.
+    """
+    
+    @overload
+    def size(self, flatten: Literal[True]) -> int: ...
+    @overload
+    def size(self, flatten: Literal[False]) -> Tuple[int, ...]: ...
+    @overload
+    def size(self) -> Tuple[int, ...]: ...
+    
+    def size(self, flatten: bool = False) -> Union[int, Tuple[int, ...]]:
+        ...
+
+Tensor_B_N:TypeAlias = Tensor
+Tensor_B_W_H:TypeAlias = Tensor
+Tensor_N:TypeAlias = Tensor
+Tensor_W_H:TypeAlias = Tensor

@@ -336,3 +336,148 @@ class DataManager(Data[list], Dataset):
 
     def __repr__(self):
         return f"<DataManager name='{self.name}' items={len(self)} path='{self.savepath}'>"
+
+@overload
+def size_converter(
+    sizer: Sizable,tensor: torch.Tensor, flatten:Literal[True], batch: Literal[True]
+) -> Tensor_B_N: ...
+@overload
+def size_converter(
+    sizer: Sizable,tensor: torch.Tensor, flatten:Literal[True], batch: Literal[False]
+) -> Tensor_N: ...
+@overload
+def size_converter(
+    sizer: Sizable,tensor: torch.Tensor, flatten:Literal[False], batch: Literal[True]
+) -> Tensor_B_W_H: ...
+@overload
+def size_converter(
+    sizer: Sizable,tensor: torch.Tensor, flatten:Literal[False], batch: Literal[False]
+) -> Tensor_W_H: ...
+@overload
+def size_converter(
+    sizer: Sizable,tensor: torch.Tensor, output_shape: str
+) -> torch.Tensor: ...
+
+def size_converter(
+    sizer: Sizable,
+    tensor: torch.Tensor, 
+    flatten: bool = False, 
+    batch: bool = False,
+    output_shape: Optional[str] = None
+) -> torch.Tensor:
+    """
+    General-purpose tensor size converter.
+
+    Mode 1 (output_shape is None):
+        Transformation using the `flatten` and `batch` parameters.
+        
+    Mode 2 (output_shape is a string):
+        Ignore the `flatten` and `batch` parameters,
+        and perform the transformation exactly as indicated by the `output_shape` string.
+
+    Args:
+        tensor (torch.Tensor): The input tensor to be transformed.
+        sizer (Sizable): An object or class that has a `.size(flatten: bool)` method
+
+        flatten (bool): Only output_shape is None.
+            True - 輸出形狀為 (B, N) 或 (N,)。
+            False - 輸出形狀為 (B, H, W) 或 (H, W)。
+        batch (bool): Only output_shape is None.
+            True - 強制輸出為批次形式 (B, ...)，即使 B=1。
+            False - 如果計算出的 B=1，則移除批次維度 (...,)。
+        output_shape (Optional[str]): [B, H, W, N] Priority use. EX: "B, 1, H, W" or "B, N, 1"
+
+    Returns:
+        torch.Tensor: The reshaped tensor.
+    """
+    try:
+        N_per_sample = sizer.size(flatten=True)
+        components = sizer.size(flatten=False)
+        H_comp = components[0]
+        W_comp = components[1]
+    except Exception as e:
+        raise ValueError(f"Unable to obtain size information from sizer({sizer})\n{e}")
+
+    total_input_numel = tensor.numel()
+    if total_input_numel % N_per_sample != 0:
+        raise ValueError(
+            f"The total number of elements in the input tensor ({total_input_numel}) "
+            f"must be an integer multiple of {N_per_sample}."
+        )
+    
+    #* Batch size
+    B_calc = total_input_numel // N_per_sample
+
+    #* Use the string output_shape
+    if output_shape is not None: 
+        try:
+            shape_parts = [part.strip() for part in output_shape.split(',')]
+            final_shape_list = []
+            has_batch_dim = False
+
+            for part in shape_parts:
+                if part == 'B':
+                    final_shape_list.append(B_calc)
+                    has_batch_dim = True
+                elif part == 'N':
+                    final_shape_list.append(N_per_sample)
+                elif part == 'H':
+                    final_shape_list.append(H_comp)
+                elif part == 'W':
+                    final_shape_list.append(W_comp)
+                elif part.isdigit():
+                    final_shape_list.append(int(part))
+                else:
+                    raise ValueError(f"'{part}'")
+        
+        except ValueError as e:
+            raise ValueError(
+                f"The string `output_shape` contains an unrecognized component: {e}."
+                "Please only use 'B', 'N', 'H', 'W', or numbers."
+            )
+        
+        #* Validate: batch dimension
+        if not has_batch_dim and B_calc > 1:
+            raise ValueError(
+                f"輸入的計算批次大小為 {B_calc}, 但 output_shape "
+                f"'{output_shape}' 中未包含 'B'。 "
+                "無法壓縮非單例的批次維度。"
+            )
+
+        #* Validate: the final total number of elements
+        target_numel = 1
+        for dim in final_shape_list:
+            target_numel *= dim
+            
+        if target_numel != total_input_numel:
+            raise ValueError(
+                f"Output shape '{output_shape}' (解析為 {final_shape_list}) "
+                f"的總元素量 ({target_numel}) 與 "
+                f"輸入張量的總元素量 ({total_input_numel}) 不匹配。"
+            )
+        
+        return tensor.reshape(final_shape_list)
+
+    else: #* Use the flatten and batch parameters
+        if flatten:
+            target_shape_per_sample = (N_per_sample,)
+        else:
+            target_shape_per_sample = components # (H_comp, W_comp)
+
+        final_shape = (B_calc, *target_shape_per_sample)
+        output_tensor = tensor.reshape(final_shape)
+
+        if not batch:
+            if B_calc == 1:
+                #? (1, H, W) -> (H, W) or (1, N) -> (N,)
+                return output_tensor.squeeze(dim=0)
+            else:
+                # B > 1, 但要求 non-batch output
+                raise ValueError(
+                    f"輸入的計算批次大小為 {B_calc}, 但請求了 'batch=False' "
+                    "(非批次輸出)。無法壓縮非單例的批次維度。"
+                )
+        else: 
+            #? (B, H, W) -> (B, H, W)
+            return output_tensor
+        

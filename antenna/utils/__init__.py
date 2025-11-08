@@ -13,6 +13,8 @@ from .web import connect_network_drive
 from .web import get_local_ip
 from .web import Email
 
+from .data import size_converter
+
 from torch import nn
 from torch import Tensor
 from .torch_utils import tensor
