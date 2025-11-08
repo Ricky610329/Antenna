@@ -7,27 +7,27 @@ from email.mime.text import MIMEText
 class Email(SMTP):
    
     def __init__(
-            self, 
-            to_addr:Union[str, Sequence[str]],
-            from_addr_pwd:tuple = ("ailab@ee.ccu.edu.tw", "bung ovhd rrcu nayg")
-        ) -> None:
+        self, 
+        to:Union[str, list[str]],
+        cc:list = [], bcc:list = [],
+        from_addr_pwd:tuple = ("ailab@ee.ccu.edu.tw", "bung ovhd rrcu nayg")
+    ) -> None:
         """
         Args:
-            to_addr (str, Sequence[str]): Target Address
+            to (str, Sequence[str]): Target Address
+            cc: 副本收件人 email
+            bcc: 密件副本收件人 email
             
         Example:
             ```
             with Email("weiwen@alum.ccu.edu.tw") as email:
-                msg = email.getText("This is a test email sent from Python.")
 
-                msg['Subject'] = 'test測試' # 郵件標題
-                msg['From'] = 'AI Lab'  # 暱稱 或是 email
-                msg['To'] = 'weiwen@alum.ccu.edu.tw'    # 收件人 email 或 暱稱
-                msg['Cc'] = 'weiwen@alum.ccu.edu.tw, XXX@gmail.com'   # 副本收件人 email 
-                msg['Bcc'] = 'weiwen@alum.ccu.edu.tw, XXX@gmail.com'  # 密件副本收件人 email
-
+                msg = email.getText(
+                    'AILAB Antenna Notice', 
+                    "This is a test email sent from Python."
+                )
                 status = email.sendMessage(msg.as_string())
-                
+                            
                 if status == {}:
                     print("Email sent successfully!")
                 else:
@@ -42,14 +42,27 @@ class Email(SMTP):
         self.starttls()
         self.login(from_addr_pwd[0], from_addr_pwd[1])
         
-        self.to_addr = to_addr
+        self.to_list = to if isinstance(to, list) else [to]
+        self.cc_list = cc if isinstance(cc, list) else [cc]
+        self.bcc_list = bcc if isinstance(bcc, list) else [bcc]
+
+        self.all_recipients = self.to_list + self.cc_list + self.bcc_list 
         self.from_addr = from_addr_pwd[0]
     
-    def getText(self, message):
-        return MIMEText(message)
+    def getText(self, subject:str = 'AILAB Antenna Notice', message:str = "" , from_name:str = "AILAB Antenna Team"):
+        msg = MIMEText(message)
+        
+        msg['Subject'] = subject
+        msg['From'] = from_name or str(self.from_addr)
+        msg['To'] = ", ".join(self.to_list)
+        msg['Cc'] = ", ".join(self.cc_list)
+
+        self.msg_str = msg.as_string()
+        return msg
                         
-    def sendMessage(self, message):
-        return self.sendmail(self.from_addr, self.to_addr, message)
+    def sendMessage(self, message:str = None):
+        assert self.all_recipients, "Please select sender."
+        return self.sendmail(self.from_addr, self.all_recipients, message or self.msg_str)
 
     def __enter__(self) -> Self:
         return self

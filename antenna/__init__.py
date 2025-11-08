@@ -35,7 +35,7 @@ Example::
 """
 from antenna.utils import *
 from antenna.types import *
-from antenna.patch import com_error
+from antenna.utils.data import size_converter
 # import numpy as np
 
 import torch
@@ -47,7 +47,14 @@ import sys
 from os.path import normpath
 from time import time
 
-def get_result_path(name:str = "{id}-{device}", *, rootdir = None, set_logger:bool = True, generate_code:Optional[str] = None):
+def get_result_path(
+    name:str = "{id}-{device}", *, 
+    rootdir = None, 
+    set_logger:bool = True, 
+    generate_code:Optional[str] = None,
+    excepthook_mode:Union[bool, Literal['only_hfss']] = 'only_hfss',
+    enable_exception_handler: bool = False,
+):
     """
     Args:
         name: Folder and log name, support {id}.
@@ -55,12 +62,18 @@ def get_result_path(name:str = "{id}-{device}", *, rootdir = None, set_logger:bo
             EX: XXX.log
         generate_code: 
             EX: __file__
+        excepthook_mode:
+            If True, an email will be sent for any exception; if False, nothing will happen.
+            [global_exception_handler(mode)]
+        enable_exception_handler:
+            config.enable_exception_handler = enable_exception_handler
 
     Examples: (equivalence)
     ```
     RESULT_PATH, EXISTS = get_result_path()
     RESULT_PATH, CONTINUE_RUN = get_result_path(
-        "{id}-{device}", rootdir = ROOTDIR, generate_code = __file__
+        "{id}-{device}", 
+        rootdir = ROOTDIR, generate_code = __file__, enable_exception_handler = True
     )
 
     NAME = RESULT_PATH.stem
@@ -90,8 +103,13 @@ def get_result_path(name:str = "{id}-{device}", *, rootdir = None, set_logger:bo
             verbose = False
         ).run()
 
-    config['RESULT_PATH'] = result_path
-    config['CONTINUE_RUN'] = exists
+    # from .utils.utils import global_exception_handler
+    config.excepthook = global_exception_handler(excepthook_mode)
+    config.enable_exception_handler = enable_exception_handler
+
+    config.NAME = name
+    config.RESULT_PATH = result_path
+    config.CONTINUE_RUN = exists
     
     logger.info(f"The results will be saved in {result_path.absolute()} (Continue: {exists}, CUDA: {torch.cuda.is_available()})")
     return result_path, exists
@@ -793,42 +811,6 @@ def reshape(_tensor:torch.Tensor):
         return _tensor.reshape(1, _shape[0])
     else:
         return _tensor.reshape(_shape[0], 1)
-
-
-def global_exception_handler(exc_type:type[BaseException] | None, exc_value: BaseException | None, exc_traceback):
-    """
-    這段是用來擷取Global For Logger.
-    ```
-    import sys
-    sys.excepthook = global_exception_handler
-    ```
-    """
-    if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(exc_type, exc_value, exc_traceback)
-        return
-    elif issubclass(exc_type, com_error):
-        logger.exception(
-            f"[{exc_type.__name__}] {exc_value}", 
-            exc_inof = (exc_type, exc_value, exc_traceback)
-        )
-        text = f"這是一個由HFSS ({exc_type.__name__}) 發出的錯誤, 其Error Code為{exc_value.hresult}, 錯誤訊息為{exc_value.strerror}"
-    else:
-        text = f"這是一個 {exc_type.__name__} 的錯誤, 錯誤訊息為{exc_value}"
-
-    with Email("weiwen@alum.ccu.edu.tw") as email:
-        tb_str = '\n'.join(traceback.format_tb(exc_traceback))
-        msg = email.getText(f"{text}, 詳細錯誤訊息如下所示\n{tb_str}")
-
-        msg['Subject'] = f'Antanna Error ({get_local_ip()})' 
-        msg['From'] = 'AI Lab' 
-        msg['To'] = 'weiwen@alum.ccu.edu.tw' 
-
-        status = email.sendMessage(msg.as_string())
-            
-        if status == {}:
-            print("Email sent successfully!")
-        else:
-            print('Email send failed!')
 
 if __name__ == "__main__":
     config.device = 'cpu'
