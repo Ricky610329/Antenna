@@ -4,6 +4,7 @@ from typing import (
 )
 from loguru import logger
 import traceback
+from types import TracebackType
 import torch
 from torch import (
     __version__,
@@ -38,7 +39,7 @@ from warnings import filterwarnings
 from pathlib import Path as _Path
 from os.path import getctime, exists
 
-from sys import maxsize
+import sys
 
 import numpy as np
 from copy import deepcopy
@@ -95,8 +96,67 @@ def errorCallback(errorCallback:Optional[Callable[[str],Any]]=None, *errorCallba
         return wrap
     return decorator
 
+def global_exception_handler(mode:Union[bool, Literal["only_hfss"]] = True) -> Callable[[type[BaseException], BaseException, TracebackType], None]:
+    try:
+        from antenna.patch import com_error  # type: ignore
+    except Exception:
+        com_error = None  # type: ignore
 
+    original_hook = sys.__excepthook__
 
+    if mode == False:
+        return original_hook
+    
+    def excepthook(exc_type:type[BaseException], exc_value: BaseException, exc_traceback:TracebackType):
+        """
+        Extract global variables from the logger.
+        ```
+        import sys
+        sys.excepthook = global_exception_handler
+        ```
+        """
+
+       # Full traceback string
+        tb_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+
+        # Log the exception with full exc_info
+        logger.opt(
+            exception = (exc_type, exc_value, exc_traceback)
+        ).error(
+            f"[{exc_type.__name__}] {exc_value}",  
+            exc_info=(exc_type, exc_value, exc_traceback)
+        )
+
+        is_com_error = (com_error is not None) and issubclass(exc_type, com_error)
+        send_email = False # (mode is True) or (mode == "only_hfss" and is_com_error)
+
+        if issubclass(exc_type, KeyboardInterrupt):
+            logger.info("Ctrl + C: Manually stop program execution.")
+            original_hook(exc_type, exc_value, exc_traceback)
+            return
+        elif is_com_error:
+            hresult = getattr(exc_value, "hresult", "N/A")
+            strerror = getattr(exc_value, "strerror", str(exc_value))
+            text = f"HFSS {exc_type.__name__}: HRESULT={hresult} — {strerror}"
+        else:
+            text = f"{exc_type.__name__}: {exc_value}"
+
+        if send_email:
+            from antenna.utils.web import Email, get_local_ip 
+            with Email("weiwen@alum.ccu.edu.tw") as email:
+                msg = email.getText(
+                    f'Antanna Error ({get_local_ip()})',
+                    f"{text}\n\nTraceback:\n{tb_text}"
+                )
+
+                status = email.sendMessage(msg.as_string())
+                    
+                if status == {}:
+                    logger.success("Email sent successfully!")
+                else:
+                    logger.error('Email send failed!')
+        original_hook(exc_type, exc_value, exc_traceback)
+    return excepthook
     
 class Path(type(_Path()), _Path): # type: ignore
     def __new__(cls, *args, **kwargs):
@@ -204,20 +264,57 @@ def plot(x,file_name:Optional[str] = None) -> None:
         if file_name: plt.savefig(file_name, **FIG_CONFIG)
 
 class Config(dict):
+    NAME:str = None
+    """Project name."""
+    EPOCHS:int = None
+    """
+    
+    """
+    LR:float = None
+    """Learning Rate For Main Training Loop."""
+
+    RESULT_PATH:Path = None
+    CONTINUE_RUN:bool = None
+
+    excepthook: Callable[[type[BaseException], BaseException, TracebackType | None], Any]
+    """
+    sys.excepthook = excepthook
+
+    Use ::
+        
+        Config.enable_exception_handler = True
+    
+    Example (excepthook) ::
+    
+        def global_exception_handler(
+            exc_type:type[BaseException] | None, 
+            exc_value: BaseException | None, 
+            exc_traceback
+        ):...
+        Config.excepthook = global_exception_handler
+    """
+
     def __init__(self):
         self.epochs = 10
         self.lr = 1e-3 # Learning Rate For Main Training Loop
         self.element_num = 40
         self['checkpoint_save_path'] = Path("./checkpoint")
         self['device'] = _torch_device(type='cpu')
+
+        self.excepthook = global_exception_handler()
     
     def __getattr__(self, name):
         # 該Class沒有此變數(name)會執行。
         return self[name]
 
     def __setattr__(self, name, value):
-        # 該Class沒有此變數(name)會執行。
-        self[name] = value
+        cls_attr = getattr(type(self), name, None) 
+        
+        # 檢查是否是 property 實例，或者是一個方法
+        if isinstance(cls_attr, (property, type(lambda:0))):
+            object.__setattr__(self, name, value)
+        else:
+            self[name] = value
 
     def check_keys(self, *keys:str, only_warning:bool = False ):
         for key in keys:
@@ -226,6 +323,18 @@ class Config(dict):
                     logger.warning(f'{key} not set.')
                 else:
                     raise KeyError(f'{key} not set.')
+    @property
+    def enable_exception_handler(self) -> bool:
+        """Whether exception handling is enabled or not."""
+        if sys.excepthook is sys.__excepthook__:
+            return False
+        else:
+            return True
+    
+    @enable_exception_handler.setter
+    def enable_exception_handler(self, mode:bool):
+        sys.excepthook = self.excepthook if mode else sys.__excepthook__
+
     @property
     def device(self):
         return self['device']
@@ -612,7 +721,7 @@ class Record:
         else:
             return None
         
-    def index(self, key:str, value, *, start:int = 0, stop:int = maxsize) -> Optional[int]:
+    def index(self, key:str, value, *, start:int = 0, stop:int = sys.maxsize) -> Optional[int]:
         """
         Find the index of `value` in `key`.
         
@@ -653,11 +762,11 @@ class Record:
             return None
     
     @overload
-    def find(self, key, value, other_keys:str, *, start=0, stop=maxsize) -> Optional[Any]:...
+    def find(self, key, value, other_keys:str, *, start=0, stop=sys.maxsize) -> Optional[Any]:...
     @overload
-    def find(self, key, value, other_keys:Tuple[str, ...] , *, start=0, stop=maxsize) -> Optional[List[Any]]:...
+    def find(self, key, value, other_keys:Tuple[str, ...] , *, start=0, stop=sys.maxsize) -> Optional[List[Any]]:...
 
-    def find(self, key, value, other_keys, *, start=0, stop=maxsize):
+    def find(self, key, value, other_keys, *, start=0, stop=sys.maxsize):
         """
         Find the `value` in `key` that corresponds to `other keys`.
 
