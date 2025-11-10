@@ -76,17 +76,24 @@ class SurrogateModel(
         self.requires_grad(True, train=True)
         self.record.reset()
 
-        if len(dataset) <= 0:
+        if dataset is None or len(dataset) <= 0:
             return []
+        elif batch_size is None:
+            pass
+        else:
+            batch_size = min(len(dataset), batch_size)
 
-        dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True)
+        dataloader = DataLoader(
+            dataset=dataset, batch_size=batch_size, shuffle=True, 
+            generator=torch.Generator(device=config.device)
+        )
         
         epoch_bar = tqdm(range(epochs), desc='Training...', disable=not verbose, **TQDM_CONFIG)
         for epoch in epoch_bar:
             for n, (patterns, real_responses) in enumerate(cast(tuple[Tensor, Tensor], dataloader)):
                 
                 patterns = self.size_converter(AntennaPattern, patterns, flatten=True, batch=True)
-                real_responses = self.size_converter(AntennaResponse, real_responses, flatten=False, batch=False)
+                real_responses = self.size_converter(AntennaResponse, real_responses, flatten=False, batch=True)
 
                 inputs:Tensor = patterns.flatten(start_dim=1).to(config.device)
                 labels:Tensor = real_responses.to(config.device)

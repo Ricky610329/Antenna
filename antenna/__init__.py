@@ -156,6 +156,11 @@ class MultiResponses:
     def __delitem__(self, key):
         del self.responses[key]
 
+    
+    def __invert__(self):
+        """Detach the response"""
+        return self.stack().detach().cpu()
+    
     def to_list(self):
         return [n.response for n in self.responses.values()]
     
@@ -301,7 +306,7 @@ class AntennaResponse(Generic[LossParams]):
 
     def __invert__(self):
         """Detach the response"""
-        return self.response.detach().cpu().numpy()
+        return self.response.detach().cpu()
     
     def _reshape2vertical(self):
         assert len(self.response.shape) == 1

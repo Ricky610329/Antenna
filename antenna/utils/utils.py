@@ -155,7 +155,7 @@ def global_exception_handler(mode:Union[bool, Literal["only_hfss"]] = True) -> C
                     logger.success("Email sent successfully!")
                 else:
                     logger.error('Email send failed!')
-        original_hook(exc_type, exc_value, exc_traceback)
+        # original_hook(exc_type, exc_value, exc_traceback)
     return excepthook
     
 class Path(type(_Path()), _Path): # type: ignore
