@@ -1,6 +1,8 @@
 # Defer type annotation evaluation to resolve forward reference and circular import issues.
 from __future__ import annotations 
 
+from numbers import Number
+from types import FunctionType
 # Can use the built-in.
 from typing import (
     Tuple, 
@@ -81,12 +83,20 @@ class RecordStateDict(TypedDict):
 
 
 class ResultType(TypedDict):
+    """
+    Real: The results after simulation
+
+    Fake: The result after model calculation
+    """
     pattern: "AntennaPattern"
-    result:"MultiResponses"
-    loss:Tensor
-    sm_loss:list
-    time:int
-    is_best:bool
+    real_result: "MultiResponses"
+    fake_result: "MultiResponses"
+    real_loss: Tensor    #? Simulator Loss: There is not usually a gradient.
+    fake_loss: Tensor    #? Model Loss: There is usually a gradient.
+    sm_loss: list           #? Surrogate Model Loss: Values ​​will only be available after HFSS simulation.
+    time: int
+    sort_key: Number    #? results: List[ResultType] = sorted(List[ResultType], key=lambda x: x["sort_key"])
+    is_best: bool
 
 #* In antenna.models and antenna.smodels
 class Checkpoint(TypedDict):

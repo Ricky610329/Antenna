@@ -59,7 +59,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             model = self.model.__class__.__name__,
             optimizer = self.optimizer.__class__.__name__,
             scheduler = self.scheduler.__class__.__name__,
-            criterion = self.criterion.__name__ if isinstance(self.criterion, Tensor) else self.criterion.__class__.__name__
+            criterion = self.criterion.__name__ if isinstance(self.criterion, FunctionType) else self.criterion.__class__.__name__
         )
     
     @property
@@ -732,7 +732,7 @@ class MirrorCVAE(nn.Module, Generic[CustomSModel]):
     def forward(self, 
                 c: torch.Tensor, 
                 z: Optional[torch.Tensor] = None
-               ) -> Tuple[AntennaPattern, torch.Tensor]:
+               ) -> List[ResultType]:
         """
         執行 "產生-鏡像-評估-選擇" 的前向傳播。
 
@@ -789,25 +789,22 @@ class MirrorCVAE(nn.Module, Generic[CustomSModel]):
         losses_tensor_detached = torch.stack([l.detach() for l in all_losses])
         best_loss_index = torch.argmin(losses_tensor_detached)
         
-        # 5. 根據索引選擇 "最佳" 的 pattern 和 "最佳" 的 loss
-        # 雖然索引是 detach 的，但我們是從 *原始* 列表中索引，
-        # 因此 best_pattern 和 best_fake_loss 仍然保留著它們的梯度歷史！
-        best_pattern = mirrored_patterns[best_loss_index.item()]
-        best_fake_loss = all_losses[best_loss_index.item()]
-        
         # (可選) 填充您在 `train_single_mirror.py`  中使用的 results 列表，用於繪圖
-        self.results_for_plotting: List[ResultType] = []
+        results: List[ResultType] = []
         for i, pattern in enumerate(mirrored_patterns):
             result_dict: ResultType = {
                 "pattern": pattern,
-                "result": all_results[i],
-                "loss": all_losses[i],
+                "real_result": None,
+                "fake_result": all_results[i],
+                "real_loss": None,
+                "fake_loss": all_losses[i],
                 "sm_loss": [], # sm_loss 在 HFSS 模擬後才更新
                 "time": 0,     # time 在 HFSS 模擬後才更新
+                "sort_key": all_losses[i].item(), 
                 "is_best": (i == best_loss_index.item())
             }
-            self.results_for_plotting.append(result_dict)
+            results.append(result_dict)
 
-        # 6. 回傳最佳的 pattern（用於後續的 HFSS 模擬）
-        # 和最佳的 fake_loss（用於反向傳播更新 CVAE）
-        return best_pattern, best_fake_loss
+            results_sorted: List[ResultType] = sorted(results, key=lambda x: x["sort_key"])
+
+        return results_sorted
