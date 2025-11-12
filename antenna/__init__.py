@@ -98,7 +98,7 @@ def get_result_path(
     if generate_code:
         FileProcessor(
             output_dir = result_path,
-            project_name=name,
+            project_name=result_path.stem,
             generated_by=generate_code,
             verbose = False
         ).run()
@@ -107,9 +107,10 @@ def get_result_path(
     config.excepthook = global_exception_handler(excepthook_mode)
     config.enable_exception_handler = enable_exception_handler
 
-    config.NAME = name
+    config.NAME = result_path.stem
     config.RESULT_PATH = result_path
     config.CONTINUE_RUN = exists
+    config.MAIN_PROGRAM = generate_code
     
     logger.info(f"The results will be saved in {result_path.absolute()} (Continue: {exists}, CUDA: {torch.cuda.is_available()})")
     return result_path, exists

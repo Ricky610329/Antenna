@@ -129,10 +129,9 @@ def global_exception_handler(mode:Union[bool, Literal["only_hfss"]] = True) -> C
 
         is_com_error = (com_error is not None) and issubclass(exc_type, com_error)
         send_email = False # (mode is True) or (mode == "only_hfss" and is_com_error)
-
         if issubclass(exc_type, KeyboardInterrupt):
             logger.info("Ctrl + C: Manually stop program execution.")
-            original_hook(exc_type, exc_value, exc_traceback)
+            # original_hook(exc_type, exc_value, exc_traceback)
             return
         elif is_com_error:
             hresult = getattr(exc_value, "hresult", "N/A")
@@ -157,7 +156,42 @@ def global_exception_handler(mode:Union[bool, Literal["only_hfss"]] = True) -> C
                     logger.error('Email send failed!')
         # original_hook(exc_type, exc_value, exc_traceback)
     return excepthook
+
+def Complete(message="Process completed.", send_email:bool=False, **results):
+    """
     
+    Example ::
+
+        _dict = {}
+        Complete(
+            "Training Finished!", send_email=True,
+            **_dict, **{"Min Loss": ...}, a='a'
+        )
+    """
+    full_message = f"Completed: {message}"
+    if results and isinstance(results, dict):
+        result_lines = [f"{key}: {value}" for key, value in results.items()]
+        formatted_result = "\n".join(result_lines)
+
+        full_message += f"\n\n{formatted_result}"
+
+    if send_email:
+        from antenna.utils.web import Email, get_local_ip 
+        with Email("weiwen@alum.ccu.edu.tw") as email:
+            msg = email.getText(
+                f'Antanna Success ({get_local_ip()})',
+                full_message
+            )
+
+            status = email.sendMessage(msg.as_string())
+                
+            if status == {}:
+                logger.success("Email sent successfully!")
+            else:
+                logger.error('Email send failed!')
+
+    logger.success(full_message)
+
 class Path(type(_Path()), _Path): # type: ignore
     def __new__(cls, *args, **kwargs):
         kwargs.pop('create', None)
@@ -266,10 +300,10 @@ def plot(x,file_name:Optional[str] = None) -> None:
 class Config(dict):
     NAME:str = None
     """Project name."""
+    MAIN_PROGRAM = None
+    """Executed by this file."""
     EPOCHS:int = None
-    """
-    
-    """
+    """ """
     LR:float = None
     """Learning Rate For Main Training Loop."""
 
