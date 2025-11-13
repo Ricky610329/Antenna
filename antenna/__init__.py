@@ -193,6 +193,7 @@ class TargetResponse(MultiResponses):
     def __init__(self):
         super().__init__(None)
         self._note = {}
+        self.metadata:dict[str, dict] = defaultdict(dict)
 
     def __getitem__(self, key):
         """
@@ -232,8 +233,33 @@ class TargetResponse(MultiResponses):
         if add:
             self[label] = expected_response
             self._note[label] = f"side={side}, center={center}, width={width}"
+            self.metadata[label].update({
+                'response': expected_response,
+                'side': side,
+                'center': center,
+                'width': width,
+                'note': f"side={side}, center={center}, width={width}",
+            })
      
         return expected_response
+    
+    def register_loss_fn(self, label, loss_fn, **loss_fn_param):
+        self.metadata[label].update({
+            'loss_fn': partial(loss_fn, **loss_fn_param),
+            'loss_fn_name': loss_fn.__name__ if isinstance(loss_fn, FunctionType) else loss_fn.__class__.__name__
+        })
+
+    def loss_fn(self, label) -> Callable[..., Tensor]:
+        return self.metadata[label]['loss_fn']
+    
+    @property
+    def labels(self):
+        return list(self.metadata.keys())
+    
+    @labels.setter
+    def labels(self, labels:Iterable[str]):
+        for label in labels:
+            _ = self.metadata[label]
     
     def concat(self):
         _result = super().concat()
@@ -246,7 +272,13 @@ class TargetResponse(MultiResponses):
         return _result
     
     def __str__(self):
-        _ = " ".join([f"{key}({value})" for key, value in self._note.items()])
+       
+        _ = " ".join(
+            [
+                f"{key}({value['note']}, loss={value.get('loss_fn_name', None)})" 
+                for key, value in self.metadata.items()
+            ]
+        )
         return f"TargetResponse({_})"
     
 class AntennaResponse(Generic[LossParams]):
@@ -259,9 +291,7 @@ class AntennaResponse(Generic[LossParams]):
     """
     x_patch_n257 = np.linspace(24, 32, 17) #? 26.5 - 28 - 29.5
     x_ris = np.linspace(0, 360, 361)
-    _target_response = {}
-    _target_response_str = {}
-    _loss_fn_hook:Dict[str, Callable[LossParams, Tensor]] = {}
+
     target = TargetResponse()
     
     @overload
@@ -339,6 +369,7 @@ class AntennaResponse(Generic[LossParams]):
             case _:
                 pass
 
+        cls.target.labels = labels
         cls.labels = labels
         cls._x = x
 
@@ -361,16 +392,15 @@ class AntennaResponse(Generic[LossParams]):
     @classmethod
     def size(cls, flatten:bool = False):
         """The number of labels used to calculate loss and the number of points in their labels."""
-        if not hasattr(cls, 'labels'):
+        if not cls.target.labels:
             raise RuntimeError("No labels registered. Please use `registerLabels()` first.")
-        _ = (len(cls.labels), cls._x[2])
+        _ = (len(cls.target.labels), cls._x[2])
         return _[0] * _[1] if flatten else _
     
     @classmethod
     def to_str(cls):
         """Get response information and default values."""
-        # target_respons_str = " ".join([f"{k}({v})" for k, v in cls._target_response_str.items()])
-        return f"AntennaResponse(labels={cls.labels}, size={cls.size()}, x={cls._x}, target={cls.target})"
+        return f"AntennaResponse(size={cls.size()}, x={cls._x}, target={cls.target})"
     
     @classmethod
     def registerTargetResponse(cls, side:float, center:float, width:Tuple[int,int,int,int,int], label:str = "response") -> Tensor:
@@ -383,11 +413,11 @@ class AntennaResponse(Generic[LossParams]):
         :return: AntennaResponse
         
         """
-        if not hasattr(cls, 'labels'):
+        if not cls.target.labels:
             raise RuntimeError(
                 "No labels registered. Please use `registerLabels()` first."
             )
-        is_add = label in cls.labels
+        is_add = label in cls.target.labels
         return cls.target(side, center, width, label = label, add = is_add)
 
     @classmethod
@@ -402,14 +432,16 @@ class AntennaResponse(Generic[LossParams]):
             ```
         
         """
-        cls._loss_fn_hook[label] = partial(loss_hook, **loss_hook_param)
+        cls.target.register_loss_fn(
+            label, loss_hook, **loss_hook_param
+        )
 
     def criterion(self, label:str = "response", **param:LossParams.kwargs) -> Tensor:
         """[Loss Function] Register LossHook using `registerLossHook()` before use."""
-        if label not in self._loss_fn_hook.keys():
+        if label not in self.target.labels:
             raise RuntimeError(f"The {label} of LossHook is not registered. Please use `registerLossHook()` first.")
         
-        return self._loss_fn_hook[label](
+        return self.target.loss_fn(label)(
             self.response, **param
         )
 
