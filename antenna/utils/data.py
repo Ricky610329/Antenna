@@ -128,7 +128,7 @@ class Data(Generic[DataType]):
         backup_path = self.rootdir.joinpath(f"{self.name}_{timestamp}.dataset.bak")
         shutil.copy2(self.savepath, backup_path)
 
-class DataManager(Data[list], Dataset):
+class DataManager(Data[list[tuple[Tensor, Tensor]]], Dataset):
     """
     一個整合了 loguru 日誌功能的通用資料管理類別。
 

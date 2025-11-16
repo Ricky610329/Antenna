@@ -73,8 +73,10 @@ class CallableModule(Protocol[ModelParams, ReturnType]):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         ...
 
-#* General
+#* General Callable
+#? fn: Callable[CallableParam, CallableReturn]
 CallableParam = ParamSpec('CallableParam')
+CallableReturn = TypeVar('CallableReturn')
 
 #* In antenna.utils.utils.Record
 class RecordStateDict(TypedDict):
@@ -93,7 +95,7 @@ class ResultType(TypedDict):
     fake_result: "MultiResponses"
     real_loss: Tensor    #? Simulator Loss: There is not usually a gradient.
     fake_loss: Tensor    #? Model Loss: There is usually a gradient.
-    sm_loss: list           #? Surrogate Model Loss: Values ​​will only be available after HFSS simulation.
+    sm_loss: list        #? Surrogate Model Loss: Values ​​will only be available after HFSS simulation.
     time: int
     sort_key: Number    #? results: List[ResultType] = sorted(List[ResultType], key=lambda x: x["sort_key"])
     is_best: bool

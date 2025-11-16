@@ -706,7 +706,7 @@ class Record:
         self._history = defaultdict(list, loaded_history)
 
     def end(self, key, default = None, *, append = False):
-        if self.__contains__(key):
+        if self.__contains__(key) and len(self.__getitem__(key)) > 0:
             return self.__getitem__(key)[-1]
         else:
             if append:
@@ -875,10 +875,10 @@ class Record:
             self._data = defaultdict(list)
 
     
-    def custom(self, key:str, fn:Callable, *, default = None):
-        _ket_data = self._data[key]
-        if _ket_data:
-            return fn(_ket_data)
+    def custom(self, key:str, fn:Callable[[list], ReturnType], *, default = None) -> Optional[ReturnType]:
+        _key_data = self._data[key]
+        if _key_data:
+            return fn(_key_data)
         return default
     
     @property
