@@ -430,8 +430,8 @@ class Config(dict):
                 _save[key] = value
             else:
                 _save[key] = str(value)
-        with open(path,'w') as f:
-            _json_dump(_save, f, indent = 4)
+        with open(path,'w', encoding='utf-8') as f:
+            _json_dump(_save, f, indent = 4, ensure_ascii = False)
         
         if update_hook: return update_hook(self)
 
@@ -773,6 +773,9 @@ class Record:
             print(temp.index('epoch', 1)) # 0
             ```
         """
+        if key not in self._data:
+            return None
+        
         if isinstance(value, ndarray):
             _result = [
                 np.array_equal(value, x) 
