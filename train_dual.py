@@ -14,7 +14,7 @@ import argparse
 from antenna import *
 
 from antenna.models import (
-    OldGEN, HFSSNet
+    OldGEN, HFSSNet, GumbelSigmoidGEN
 )
 from antenna.patch import (
     DualPortSimulator, custom_loss_g, custom_loss_r
@@ -24,7 +24,9 @@ from antenna.smodels import OldSM
 torch.autograd.set_detect_anomaly(True)
 #%% 
 ###* Basic Config ###
-RESULT_PATH, is_connect_run = get_result_path('test_mutate_0_005')
+RESULT_PATH, is_connect_run = get_result_path(
+    '[Patch][{device}] GumbelSigmoidGEN_taurate0_99_revised', rootdir=ROOTDIR
+)
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
 # sys.excepthook = global_exception_handler
 
@@ -35,15 +37,18 @@ path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
 config['Name'] = RESULT_PATH.stem
 config['File'] = __file__
 config.setWarning()
-config.epochs = 1000
-config.lr = 0.003
+config.epochs = 2000
+# 【修改建議】降低學習率，讓訓練更穩定
+config.lr = 0.001 
 config.checkpoint_save_path = path_checkpoint
 
 config['patience'] = 100
-config['mutation_rate'] = 0.005
+# 【修改建議】稍微提高變異率，以利跳出局部最佳解
+config['mutation_rate'] = 0.01
 config['HFSS.lr'] = 0.001
-config['HFSS.min_loss'] = 0.00005
-config['HFSS.max_epoch'] = 2000
+# 【修改建議】提高代理模型的準確度要求，強迫它學得更準
+config['HFSS.min_loss'] = 0.01 
+config['HFSS.max_epoch'] = 20000
 
 logger.info(f"The results will be saved in {RESULT_PATH.absolute()} (Continue: {is_connect_run}, CUDA: {torch.cuda.is_available()})")
 
@@ -63,7 +68,7 @@ AntennaResponse.registerLabels('S11', 'S21', 'S22', x = 'n257')
 x = AntennaResponse.x()
 
 #? S11 S22 -> high low high (-1.25, -12)
-returnloss = AntennaResponse.registerTargetResponse(-1.25, -15, (4, 2, 5, 2, 4), label="S11")
+returnloss = AntennaResponse.registerTargetResponse(-1.25, -12, (4, 2, 5, 2, 4), label="S11")
 returnloss = AntennaResponse.registerTargetResponse(-1.25, -15, (4, 2, 5, 2, 4), label="S22")
 returnloss_upper = AntennaResponse.registerTargetResponse(0, -10, (4, 2, 5, 2, 4), label="returnloss_upper")
 returnloss_lower = AntennaResponse.registerTargetResponse(-2.5, -50, (3, 4, 3, 4, 3), label="returnloss_lower")
@@ -94,8 +99,8 @@ with Figure('Target Response', (1, 2), rootdir=RESULT_PATH, save=True, size=(18*
     fig[1].plot(x, gain_lower.cpu(), color='blue', marker="o")
     fig[1].grid(True)
 
-###*  初始化神經網絡模型 ###
-model = OldGEN()
+###* 初始化神經網絡模型 ###
+model = GumbelSigmoidGEN()
 optimizer = torch.optim.Adam(
     params=model.parameters(), lr=config.lr, betas=(0.5, 0.999)
 )
@@ -139,7 +144,7 @@ while epoch < config.epochs + 1:
     model.train()
     optimizer.zero_grad() # adjust_lr(optimizer, epoch, init_lr)
 
-    if TEMP.early_stop('real_loss', config['patience']) and skip > config['patience']:
+    if False and TEMP.early_stop('real_loss', config['patience']) and skip > config['patience']:
         ###* Rollback ###
         _epoch = TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch')
         best_model = path_checkpoint.joinpath(f"gen_model_{_epoch}.pth")
@@ -164,20 +169,28 @@ while epoch < config.epochs + 1:
         ) 
         TEMP['mutation'] = 0
         skip += 1
+        
+    # 【說明】output_element 是連續值，output_element_b 是二值化後準備送入模擬器的 pattern
+    output_element_b = model.binarize() + upper + lower
     output_element = output_element + upper + lower
 
-    with Figure(f"pattern_{epoch}", save=False if jump > 0 else True, rootdir=path_pic) as  fig:
+    with Figure(f"pattern_{epoch}", nrowcol=(1, 2), save=False if jump > 0 else True, rootdir=path_pic) as  fig:
         fig.addAll()
         output_element.plot(fig[0])
+        output_element_b.plot(fig[1])
 
     ###* 檢查 pattern 是否重複，不重複模擬 ###
-    if 'patch_pattern_buf' not in TEMP or TEMP.index('patch_pattern_buf', ~output_element) is None:
-        #* 未重複，進行HFSS模擬
-        output_result = output_element.simulate()
+    if 'patch_pattern_buf' not in TEMP or TEMP.index('patch_pattern_buf', ~output_element_b) is None:
+        #* 未重複，進行HFSS模擬 (使用二值化後的 pattern)
+        output_result = output_element_b.simulate()
         real_loss = output_result.criterion()
         stack_output_result = output_result.stack()
-
-        sm_loss = smodel.train(output_element.series, stack_output_result)
+        
+        # 【關鍵修正】
+        # 代理模型 (smodel) 的訓練目標是學習 HFSS 的行為。
+        # 既然 HFSS 是模擬二值化後的 pattern (output_element_b)，
+        # 那麼訓練代理模型時，輸入也必須是二值化後的 pattern，這樣學習目標才一致。
+        sm_loss = smodel.train(output_element_b.series, stack_output_result)
         smodel.save(path_checkpoint)
 
         TEMP['real_loss'] = real_loss.item()    # 儲存 HFSS結果 的 loss
@@ -187,7 +200,7 @@ while epoch < config.epochs + 1:
     else:
         #* 重複，直接使用之前的結果
         stack_output_result, real_loss = TEMP.find(
-            'patch_pattern_buf', ~output_element, ('patch_result_buf', 'real_loss')
+            'patch_pattern_buf', ~output_element_b, ('patch_result_buf', 'real_loss')
         )
         sm_loss = []
         TEMP['real_loss'] = real_loss
@@ -204,8 +217,8 @@ while epoch < config.epochs + 1:
         TEMP.add('de', 1, default = 0)
     TEMP["min_loss"] = min_loss
 
-    ###*  儲存HFSS的輸入與輸出，再訓練代理模型並儲存 ###
-    TEMP['patch_pattern_buf'] = ~output_element
+    ###* 儲存HFSS的輸入與輸出，再訓練代理模型並儲存 ###
+    TEMP['patch_pattern_buf'] = ~output_element_b
     TEMP['patch_result_buf'] = stack_output_result
     
 
@@ -217,7 +230,7 @@ while epoch < config.epochs + 1:
     #? target response -> 生成模型 -> pattern -> 代理模型 -> predicted response
     #? calculate loss (target response, predicted response)
     #? update optimizer
-    # output_element = model(AntennaResponse.merge_target_responses())
+    # 這裡仍然使用連續值的 output_element 來計算梯度，這是正確的，因為梯度需要能回傳到生成器
     response = smodel(output_element.series)
     loss = response.criterion()
     loss.backward()
@@ -233,7 +246,7 @@ while epoch < config.epochs + 1:
     }
     torch.save(gen_checkpoint, path_checkpoint.joinpath(f"gen_model_{epoch}.pth"))
 
-    with Figure(f"Result {epoch}",(2,3), rootdir=path_pic, save=False if jump > 0 else True, size=(18*2, 9*2)) as fig:
+    with Figure(f"Result {epoch}  {'best' if TEMP('de') == 0 else ''}",(2,3), rootdir=path_pic, save=False if jump > 0 else True, size=(18*2, 9*2)) as fig:
         fig.addAll()
 
         fig[0].plot(x,stack_output_result[0].cpu(), color='blue')
@@ -277,7 +290,3 @@ while epoch < config.epochs + 1:
     TEMP.save(f"{epoch} times")
 
 logger.info(f"Training Finished! (Min Loss: {TEMP.custom('real_loss', min)})")
-
-#%%
-simulator.save()
-simulator.quit()
