@@ -12,7 +12,7 @@ import torch
 from antenna import *
 from antenna.functions import AdaptiveCyclicalScheduler
 from antenna.models import (
-    Models, SPGEN, HFSSNet
+    Models, SPGEN
 )
 from antenna.patch import (
     SinglePortSimulator, custom_loss_minmax
@@ -26,7 +26,10 @@ torch.autograd.set_detect_anomaly(True)
 #%% 
 ###* Basic Config ###
 connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
-RESULT_PATH, is_connect_run = get_result_path('[Patch Single][{device}] selection_gumbel_sinkhorn_AdaptiveCyclicalScheduler', rootdir=ROOTDIR)
+RESULT_PATH, CONTINUE_RUN  = get_result_path(
+    '[Patch Single][{device}] selection_gumbel_sinkhorn_AdaptiveCyclicalScheduler_topdata_freeze', 
+    rootdir = ROOTDIR, generate_code = __file__, enable_exception_handler = True
+)
 # DATASET_PATH = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\dataset")
 
 SM_PRETRAIN_MODEL_PATH = DATASET_PATH.joinpath('old_sm.pth')
@@ -46,18 +49,11 @@ config.epochs = 1000
 config.lr = 0.005
 config.checkpoint_save_path = path_checkpoint
 
-config['patience'] = 10
+config['patience'] = 5
 config['mutation_rate'] = 0.001
 config['HFSS.lr'] = 0.001
 config['HFSS.min_loss'] = 0.1
 config['HFSS.max_epoch'] = 20000
-
-logger.info(f"The results will be saved in {RESULT_PATH.absolute()} (Continue: {is_connect_run}, CUDA: {torch.cuda.is_available()})")
-FileProcessor(
-    output_dir = RESULT_PATH,
-    project_name=config['Name'],
-    generated_by=config['File']
-).run()
 
 ###* Set Antemma Pattern ###
 AntennaPattern.setDefaultCoordinate((0, 25, 0, 25))
@@ -392,7 +388,7 @@ pattern_table = {
 }
 # print(len(pattern_table))
 
-model = SPGEN(list(pattern_table.values()), 25, F.gumbel_softmax)
+model = SPGEN(list(pattern_table.values()), 25, hard=True)
 model.save((5,7), RESULT_PATH, pattern_dict=pattern_table)
 # exit()
 optimizer = torch.optim.Adam(
@@ -401,13 +397,13 @@ optimizer = torch.optim.Adam(
 scheduler = AdaptiveCyclicalScheduler(
     optimizer,
     T_0=100,                # 增加初始週期長度
-    T_mult=1,               # 暫時關閉週期長度增加，讓每個週期條件一致
-    lr_max=0.005,           # 稍微降低最大學習率
-    lr_min=1e-6,            # 0.0001
-    temp_max=4.0,           # 稍微降低最高溫度
+    T_mult=2,               # 暫時關閉週期長度增加，讓每個週期條件一致
+    lr_max=0.001,           # 稍微降低最大學習率
+    lr_min=0.00001,            # 0.0001
+    temp_max=2.0,           # 稍微降低最高溫度
     temp_min=0.1,
     warmup_ratio=0.2,       # 增加暖身時間
-    patience=25,            # 顯著增加耐心
+    patience=50,            # 顯著增加耐心
     factor=0.7,
     mode='min'
 )
@@ -422,7 +418,7 @@ generator = Models(
 smodel = OldSM(checkpoint=config.checkpoint_save_path)
 
 ###* 斷點續跑 ###
-if is_connect_run and ('epoch' in TEMP):
+if CONTINUE_RUN  and ('epoch' in TEMP):
     generator.change(TEMP('epoch'), load=True)
     smodel.load()
 elif SM_PRETRAIN_MODEL_PATH.exists():
@@ -430,7 +426,7 @@ elif SM_PRETRAIN_MODEL_PATH.exists():
 else:
     with Figure('Pre Train', (1, 1), rootdir=RESULT_PATH, save=True, default_axes_title_size=50, default_tick_size=40, requires_grad=True) as fig:
         fig.addAll()
-        fig[0].plot(smodel.pre_train(data_manager))
+        fig[0].plot(smodel.train_by_datas(data_manager))
         smodel.save()
 
 # Optimizer setting
@@ -465,15 +461,15 @@ while epoch < config.epochs + 1:
     generator.optimizer.zero_grad() # adjust_lr(optimizer, epoch, init_lr)
     
     TEMP['tau'] = generator.scheduler.get_temp()
-    if  TEMP.early_stop('real_loss', config['patience']) and skip > config['patience']:
+    if  TEMP.early_stop('real_loss', config['patience']): # and skip > config['patience']
         ###* Rollback ###
         # generator.change(
         #     TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
         #     save=True, load=True
         # )
 
-        smodel.pre_train(online_dataset)
-
+        smodel.train_by_datas(online_dataset)
+    
         ###* 生成 pattern 並儲存於 buffer ###
         #? target response -> 生成模型 -> pattern
         output_element = AntennaPattern(
@@ -500,13 +496,13 @@ while epoch < config.epochs + 1:
         output_result = output_element.simulate()
         real_loss = output_result.criterion()
         stack_output_result = output_result.stack()
-        sm_loss = smodel.train(output_element.series, stack_output_result)
+        sm_loss = smodel.train_one_data(output_element.series, stack_output_result)
         smodel.save()
 
         TEMP['real_loss'] = real_loss.item()    # 儲存 HFSS結果 的 loss
         if TEMP('real_loss') < TEMP.average('real_loss'):
             online_dataset.add_and_save([~output_element, stack_output_result])
-
+        # online_dataset.add_and_save([~output_element, stack_output_result])
         jump = 0
 
     else:
@@ -536,6 +532,7 @@ while epoch < config.epochs + 1:
     
 
     ###* 權重全部凍結 ###
+    smodel.requires_grad(False, train=False)
     # for name, para in model_HFSS.named_parameters():
     #     para.requires_grad_(False)
 
@@ -543,11 +540,11 @@ while epoch < config.epochs + 1:
     #? target response -> 生成模型 -> pattern -> 代理模型 -> predicted response
     #? calculate loss (target response, predicted response)
     #? update optimizer
-    # output_element = model(AntennaResponse.merge_target_responses())
+    output_element = AntennaPattern(generator(TEMP('tau'))) 
     response = smodel(output_element.series)
     loss = response.criterion()
     loss.backward()
-    generator.step(scheduler_patam=real_loss)
+    generator.step(scheduler_param=real_loss)
     generator.model.eval()
     TEMP['lr'] = generator.optimizer.param_groups[0]['lr']
     TEMP['fake_loss'] = loss.item() # 儲存 GEN 與 代理模型 的 loss
@@ -606,7 +603,3 @@ while epoch < config.epochs + 1:
     TEMP.save(f"{epoch} times")
 
 logger.info(f"Training Finished! (Min Loss: {TEMP.custom('real_loss', min)})")
-
-#%%
-simulator.save()
-simulator.quit()
