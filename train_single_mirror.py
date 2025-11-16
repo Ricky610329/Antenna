@@ -15,7 +15,7 @@ from antenna import *
 from script.process_files import FileProcessor
 
 from antenna.models import (
-    Models, OldGEN
+    Models, OldGEN, MirrorCVAE
 )
 from antenna.patch import (
     SinglePortSimulator, custom_loss_minmax
@@ -28,10 +28,12 @@ from antenna.utils.data import DataManager
 #%% 
 ###* Basic Config ###
 connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
-RESULT_PATH, is_connect_run = get_result_path('[Patch Single][{device}] mirror_model', rootdir=ROOTDIR)
+RESULT_PATH, CONTINUE_RUN = get_result_path(
+    "[Patch Single][{device}] MirrorCVAE_dual", 
+    rootdir = ROOTDIR, generate_code = __file__, enable_exception_handler = True
+)
 SM_PRETRAIN_MODEL_PATH = DATASET_PATH.joinpath('old_sm.pth')
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
-# sys.excepthook = global_exception_handler
 
 path_pic = RESULT_PATH.joinpath("pic").not_exist_create()
 path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
@@ -50,8 +52,6 @@ config['mutation_rate'] = 0.005
 config['HFSS.lr'] = 0.001
 config['HFSS.min_loss'] = 0.1
 config['HFSS.max_epoch'] = 10000
-
-logger.info(f"The results will be saved in {RESULT_PATH.absolute()} (Continue: {is_connect_run}, CUDA: {torch.cuda.is_available()})")
 
 ###* Set Antemma Pattern ###
 AntennaPattern.setDefaultCoordinate((0, 25, 0, 25))
@@ -99,7 +99,8 @@ with Figure('Target Response', (1, 2), rootdir=RESULT_PATH, save=True, size=(18*
     fig[1].grid(True)
 
 ###*  初始化神經網絡模型 ###
-model = OldGEN()
+smodel = OldSM(checkpoint=config.checkpoint_save_path)
+model = MirrorCVAE(128, smodel=smodel, lower_pattern=lower)
 optimizer = torch.optim.Adam(
     params=model.parameters(), lr=config.lr, betas=(0.5, 0.999)
 )
@@ -118,10 +119,9 @@ generator = Models(
     optimizer = optimizer,
     scheduler = scheduler
 )
-smodel = OldSM(checkpoint=config.checkpoint_save_path)
 
 ###* 斷點續跑 ###
-if is_connect_run and ('epoch' in TEMP):
+if CONTINUE_RUN and ('epoch' in TEMP):
     generator.change(TEMP('epoch'), load=True)
     smodel.load()
 elif SM_PRETRAIN_MODEL_PATH.exists():
@@ -143,12 +143,6 @@ config['optimizer'] = optimizer
 config['SurrogateModel'] = smodel
 config.save(rootdir=RESULT_PATH)
 
-FileProcessor(
-    output_dir = RESULT_PATH,
-    project_name=config['Name'],
-    generated_by=config['File']
-).run()
-
 ###* Training ###
 epoch = TEMP('epoch', 0) # 總訓練次數
 current_epoch = 0   # 斷掉後的訓練次數
@@ -164,11 +158,11 @@ while epoch < config.epochs + 1:
 
     logger.info(f"Start {epoch} of {config.epochs}")
 
-    model.train()
-    optimizer.zero_grad() # adjust_lr(optimizer, epoch, init_lr)
+    generator.requires_grad(True, train=True)
+    generator.optimizer.zero_grad() # adjust_lr(optimizer, epoch, init_lr)
     
 
-    if  TEMP.early_stop('real_loss', config['patience']) and skip > config['patience']:
+    if  TEMP.early_stop('real_loss', config['patience']) : # and skip > config['patience']
         ###* Rollback ###
         generator.change(
             TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
@@ -178,9 +172,7 @@ while epoch < config.epochs + 1:
 
         ###* 生成 pattern 並儲存於 buffer ###
         #? target response -> 生成模型 -> pattern
-        output_element = AntennaPattern(
-            generator(AntennaResponse.target.concat())
-        ) 
+        all_results = generator(AntennaResponse.target.concat())
 
         ###* Mutation ###
         TEMP['mutation'] = TEMP('min_loss')
@@ -188,49 +180,45 @@ while epoch < config.epochs + 1:
         skip = 0
 
     else:
-        output_element = AntennaPattern(
-            generator(AntennaResponse.target.concat())
-        ) 
+        all_results = generator(AntennaResponse.target.concat())
         TEMP['mutation'] = 0
         skip += 1
     
-    # 產生 mirrored patterns
-    mirrored_tensors = mirror(output_element.merge(), mode='-|*')
-    mirrored_patterns = [AntennaPattern(t) + lower for t in mirrored_tensors]
-
-    # 使用迴圈處理所有 mirrored patterns
-    results:list[ResultType] = []
-    for i, pattern in enumerate(mirrored_patterns):
-        output_result = smodel(pattern.series)
-        fake_loss = output_result.criterion()
-        # sm_loss = smodel.train(pattern.series, output_result.stack())
-
-        result_dict:ResultType = {
-            "pattern": pattern,
-            "result": output_result,
-            "loss": fake_loss,
-            "sm_loss": [],
-            "time": 0,
-            "is_best": False
-        }
-        results.append(result_dict)
 
     # 訓練完所有 pattern 後，統一儲存一次 smodel
     smodel.save()
 
     # 從結果中找出最好的那一個
-    best_result:ResultType = min(results, key=lambda r: r['loss'])
-    best_result['is_best'] = True
+    best_result:ResultType = all_results[0]
+    worst_result:ResultType = all_results[-1]
+    
+    best_pattern = best_result['pattern']
+    worst_pattern = worst_result['pattern']
 
-    # 將最好結果的變數提取出來，方便後續程式碼使用
-    simulator.start(f"{epoch}-{i+1}")
-    output_pattern = AntennaPattern(best_result['pattern'])
-    output_result = output_pattern.simulate()
-    real_loss =  output_result.criterion()
-    best_result['sm_loss'] = smodel.train_one_data(pattern.series, output_result.stack())
-
-    online_dataset.add_and_save([output_pattern.series, output_result.stack()])
+    #* Worst Result
+    simulator.start(f"{epoch}_worst")
+    worst_pattern.binarization_()
+    output_result = worst_pattern.simulate()
+    worst_result_loss =  output_result.criterion().item()
+    worst_result['sm_loss'] = smodel.train_one_data(worst_pattern.series, output_result.stack())
+    worst_result['real_loss'] = worst_result_loss
+    worst_result['real_result'] = output_result
     exe_time = simulator.end()
+    worst_result['time'] = exe_time
+
+    
+    #* Best Result
+    simulator.start(f"{epoch}_best")
+    best_pattern.binarization_()
+    output_result = best_pattern.simulate()
+    real_loss =  output_result.criterion()
+    best_result['sm_loss'] = smodel.train_one_data(best_pattern.series, output_result.stack())
+    best_result['real_loss'] = real_loss.item()
+    best_result['real_result'] = output_result
+
+    online_dataset.add_and_save([best_pattern.series, output_result.stack()])
+    exe_time = simulator.end()
+    best_result['time'] = exe_time
 
     TEMP['real_loss'] = real_loss.item()
 
@@ -259,22 +247,16 @@ while epoch < config.epochs + 1:
     #? calculate loss (target response, predicted response)
     #? update optimizer
     # output_element = model(AntennaResponse.merge_target_responses())
-    response = smodel(output_pattern.series)
+    response = smodel(best_pattern.series)
     loss = response.criterion()
     loss.backward()
     optimizer.step()
     model.eval()
     TEMP['fake_loss'] = loss.item() # 儲存 GEN 與 代理模型 的 loss
 
-    ###* 儲存模型 ###
-    gen_checkpoint = {
-        'model': model,
-        'state_dict': model.state_dict(),
-        'optimizer': optimizer.state_dict()
-    }
     with Figure(f"Result {epoch} {'best' if TEMP('de') == 0 else ''}", save=False if jump > 0 else True, rootdir=path_pic, nrowcol=(4,9), size=(18*2, 9*2),  default_tick_size = 14) as  fig:
             fig_original = fig.index(1)
-            output_element.plot(fig_original)
+            best_pattern.plot(fig_original)
             fig_original.set_title('Generators', fontsize=20)
 
             fig_response_s11 = fig.index(1+9)
@@ -299,8 +281,10 @@ while epoch < config.epochs + 1:
             fig_loss.plot(TEMP["min_loss"], label='min_loss')
             fig_loss.legend()
 
-            for n, result in enumerate(results, 2):
+            for n, result in enumerate(all_results, 2):
                 is_best:bool = result['is_best']
+                time_str:str = f"No simulation" if result['time'] is None else f"time: {int(result['time'])}"
+                loss_title = f"{result['fake_loss']:.2f}" if result['real_loss'] is None else f"{result['fake_loss']:.2f} -> {result['real_loss']:.2f}"
 
                 fig_index_pattern = fig.index(n)
                 fig_index_response_s11 = fig.index(n+9)
@@ -309,26 +293,31 @@ while epoch < config.epochs + 1:
 
                 result['pattern'].plot(fig_index_pattern)
 
-                fig_index_pattern.set_title(f"P{n-1} (time: {int(result['time'])})", fontsize=20)
+                fig_index_pattern.set_title(f"P{n-1} ({time_str})", fontsize=20)
                 fig_index_response_s11.set_title(f"S11 {'(best)' if is_best else ''}", fontsize=20)
                 fig_index_response_gain.set_title(f"Gain {'(best)' if is_best else ''}", fontsize=20)
-                fig_index_loss.set_title(f"Loss {result['loss']:.2f}", fontsize=20)
+                fig_index_loss.set_title(f"Loss {loss_title}", fontsize=20)
 
-                fig_index_response_s11.plot(x, ~result['result']['S11'],  color='blue', label='S11')
+                fig_index_response_s11.plot(x, ~result['fake_result']['S11'],  color='blue', label='fake')
                 fig_index_response_s11.plot(x,returnloss.cpu(), color='blue', linestyle='--')
 
-                fig_index_response_gain.plot(x, ~result['result']['Gain'],  color='red', label='Gain')
+                fig_index_response_gain.plot(x, ~result['fake_result']['Gain'],  color='red', label='fake')
                 fig_index_response_gain.plot(x,gain.cpu(), color='red', linestyle='--')
 
-                # fig_index_response_s11.legend()
-                # fig_index_response_gain.legend()
+                if result['real_result'] is not None:
+                    fig_index_response_s11.plot(x, ~result['real_result']['S11'],  color='green', label='real')
+                    fig_index_response_gain.plot(x, ~result['real_result']['Gain'],  color='green', label='real')
+
+
+                    fig_index_response_s11.legend()
+                    fig_index_response_gain.legend()
 
                 fig_index_loss.plot(result['sm_loss'])
 
     generator.save()
 
     exe_time = 0
-    logger.info(f"End {epoch} of {config.epochs}, Loss: {TEMP('real_loss'):4f}, Time: {sum([r['time'] for r in results])/60} m, jump: {jump}")
+    logger.info(f"End {epoch} of {config.epochs}, Loss: {TEMP('real_loss'):4f}, Time: {sum([r['time'] for r in all_results])/60} m, jump: {jump}")
 
     TEMP['epoch'] = epoch
     TEMP.save(f"{epoch} times")
