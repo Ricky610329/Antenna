@@ -34,7 +34,6 @@ RESULT_PATH, CONTINUE_RUN  = get_result_path(
 
 SM_PRETRAIN_MODEL_PATH = DATASET_PATH.joinpath('old_sm.pth')
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
-# sys.excepthook = global_exception_handler
 
 path_pic = RESULT_PATH.joinpath("pic").not_exist_create()
 path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
@@ -49,7 +48,7 @@ config.epochs = 1000
 config.lr = 0.005
 config.checkpoint_save_path = path_checkpoint
 
-config['patience'] = 5
+config['patience'] = 5  # 50
 config['mutation_rate'] = 0.001
 config['HFSS.lr'] = 0.001
 config['HFSS.min_loss'] = 0.1
@@ -400,9 +399,9 @@ scheduler = AdaptiveCyclicalScheduler(
     T_mult=2,               # 暫時關閉週期長度增加，讓每個週期條件一致
     lr_max=0.001,           # 稍微降低最大學習率
     lr_min=0.00001,            # 0.0001
-    temp_max=2.0,           # 稍微降低最高溫度
+    temp_max=2.0,           # 稍微降低最高溫度 # 1.0
     temp_min=0.1,
-    warmup_ratio=0.2,       # 增加暖身時間
+    warmup_ratio=0.2,       # 增加暖身時間 # 0.3
     patience=50,            # 顯著增加耐心
     factor=0.7,
     mode='min'
@@ -463,10 +462,10 @@ while epoch < config.epochs + 1:
     TEMP['tau'] = generator.scheduler.get_temp()
     if  TEMP.early_stop('real_loss', config['patience']): # and skip > config['patience']
         ###* Rollback ###
-        # generator.change(
-        #     TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
-        #     save=True, load=True
-        # )
+        generator.change(
+            TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
+            save=True, load=True
+        )
 
         smodel.train_by_datas(online_dataset)
     
@@ -576,11 +575,11 @@ while epoch < config.epochs + 1:
         fig[1].set_title('Gain', fontsize=20)
         # fig[1].set_ylim(-20,1)
 
-
-        fig[2].set_title("Parameter Group")
-        fig[2].plot([x * 1000 for x in TEMP['lr']], label='Learning Rate * 1000')
-        fig[2].plot(TEMP['tau'], label='Tau')
-        fig[2].legend()
+        generator.scheduler.plot(fig[2])
+        # fig[2].set_title("Parameter Group")
+        # fig[2].plot([x * 1000 for x in TEMP['lr']], label='Learning Rate * 1000')
+        # fig[2].plot(TEMP['tau'], label='Tau')
+        # fig[2].legend()
 
         fig[3].plot(TEMP['real_loss'], color='red', label='real_loss')
         fig[3].plot(TEMP['fake_loss'], color='purple', label='fake_loss', alpha=0.8)
