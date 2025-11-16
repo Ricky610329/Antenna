@@ -63,7 +63,7 @@ class Data(Generic[DataType]):
                 self.temppath.unlink()
             raise RuntimeError(f"儲存檔案 '{self.savepath}' 失敗") from e
     
-    def load(self):
+    def load(self) -> DataType:
         try:
             with open(self.savepath, 'rb') as f:
                 self.data:DataType = pickle.load(f)
@@ -71,6 +71,7 @@ class Data(Generic[DataType]):
             raise FileNotFoundError(f"載入失敗：找不到檔案 '{self.savepath}'")
         except (pickle.UnpicklingError, IOError) as e:
             raise RuntimeError(f"載入失敗：無法讀取或解析檔案 '{self.savepath}'") from e
+        return self.data
         
     def update(self, data, save:bool=False):
         self.data = data
