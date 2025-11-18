@@ -475,7 +475,7 @@ class SigmoidGEN(nn.Module):
         )
         self.to(config.device)
     
-    def forward(self, input, tau) -> Tensor:
+    def forward(self, input, tau:Optional[float] = None) -> Tensor:
         x = self.fc_patch(input)
         return AntennaPattern.binarization(x, tau)
 
