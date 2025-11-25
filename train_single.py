@@ -12,20 +12,22 @@ import torch
 from antenna import *
 from antenna.functions import AdaptiveCyclicalScheduler
 from antenna.models import (
-    Models, OldGEN, HFSSNet
+    Models, OldGEN, SigmoidGEN
 )
 from antenna.patch import (
     SinglePortSimulator, custom_loss_minmax
 )
 from antenna.smodels import OldSM
-from script.process_files import FileProcessor
 from antenna.utils.data import DataManager
 # from antenna.functions import mirror, mutate
 torch.autograd.set_detect_anomaly(True)
 #%% 
 ###* Basic Config ###
 connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
-RESULT_PATH, is_connect_run = get_result_path('[Patch Single][{device}] pixel_norollback', rootdir=ROOTDIR)
+RESULT_PATH, CONTINUE_RUN = get_result_path(
+    "[Patch-Single-{device}-{tid}] pixel_base", 
+    rootdir = ROOTDIR, generate_code = __file__, enable_exception_handler = True
+)
 # DATASET_PATH = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\dataset")
 
 SM_PRETRAIN_MODEL_PATH = DATASET_PATH.joinpath('old_sm.pth')
@@ -96,7 +98,7 @@ with Figure('Target Response', (1, 2), rootdir=RESULT_PATH, save=True, size=(18*
     fig[1].grid(True)
 
 
-model = OldGEN()
+model = SigmoidGEN()
 optimizer = torch.optim.Adam(
     params=model.parameters(), lr=config.lr, betas=(0.5, 0.999)
 )
@@ -125,11 +127,17 @@ generator = Models(
 smodel = OldSM(checkpoint=config.checkpoint_save_path)
 
 ###* 斷點續跑 ###
-if is_connect_run and ('epoch' in TEMP):
+if CONTINUE_RUN and ('epoch' in TEMP):
     generator.change(TEMP('epoch'), load=True)
     smodel.load()
 elif SM_PRETRAIN_MODEL_PATH.exists():
     smodel.pre_load_model(SM_PRETRAIN_MODEL_PATH)
+
+    from antenna.utils.data import Data
+    data_result = Data(name='KuoHung-1', rootdir=r"\\140.123.106.219\temp\碩二_吳維文's\Patch Antenna\Experiment\result\[Test][37] KuoHung Pattern")
+    KuoHung, response = data_result.load()
+
+    smodel.train_one_data(AntennaPattern(KuoHung).series, response, min_loss=0.001, max_epoch=1e4)
 else:
     with Figure('Pre Train', (1, 1), rootdir=RESULT_PATH, save=True, default_axes_title_size=50, default_tick_size=40, requires_grad=True) as fig:
         fig.addAll()
@@ -168,12 +176,12 @@ while epoch < config.epochs + 1:
     generator.optimizer.zero_grad() # adjust_lr(optimizer, epoch, init_lr)
     
     TEMP['tau'] = 0
-    if  TEMP.early_stop('real_loss', config['patience']) and skip > config['patience']:
+    if  TEMP.early_stop('real_loss', config['patience']):
         ###* Rollback ###
-        # generator.change(
-        #     TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
-        #     save=True, load=True
-        # )
+        generator.change(
+            TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch'), 
+            save=True, load=True
+        )
 
         smodel.train_by_datas(online_dataset)
 
@@ -249,7 +257,7 @@ while epoch < config.epochs + 1:
     response = smodel(output_element.series)
     loss = response.criterion()
     loss.backward()
-    generator.step(scheduler_patam=real_loss)
+    generator.step(scheduler_param=real_loss)
     generator.model.eval()
     
     TEMP['fake_loss'] = loss.item() # 儲存 GEN 與 代理模型 的 loss
