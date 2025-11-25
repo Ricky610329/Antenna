@@ -69,7 +69,7 @@ def get_result_path(
     ```
     RESULT_PATH, EXISTS = get_result_path()
     RESULT_PATH, CONTINUE_RUN = get_result_path(
-        "{id}-{device}", 
+        "{device}-{tid}", # device, tid, id
         rootdir = ROOTDIR, generate_code = __file__, enable_exception_handler = True
     )
 
@@ -81,7 +81,7 @@ def get_result_path(
     _device = get_local_ip().split('.')[-1]
     rootdir = Path(str(normpath(rootdir))) if rootdir else  Path(__file__).parent.parent
     result_path = rootdir.joinpath(
-        "result", str(name.format(id = _now, device = _device))
+        "result", str(name.format(id = _now, device = _device, tid = TID.generate()))
     )
     exists  = result_path.exists()
     result_path.not_exist_create()
@@ -672,7 +672,7 @@ class AntennaPattern:
         return AntennaPattern(bi, (0, len(bi), 0, len(bi)))
     
     @classmethod
-    def binarization(cls, pattern:Tensor, tau:Optional[float] = None, threshold = None):
+    def binarization(cls, pattern:Tensor, tau:Optional[float] = None, threshold = None, *, only_soft:bool=False):
         """
         Perform differentiable binarization using the STE technique.
 
@@ -699,6 +699,7 @@ class AntennaPattern:
         #* Produces a "soft" approximation
         #  This is to provide a smooth gradient during "backward" propagation.
         soft_pattern = torch.sigmoid(steepness * (pattern - threshold))
+        if only_soft is True: return soft_pattern
 
         #* Produces a "hard" binarization result (0/1, not differentiable).
         #  This is to get the 0/1 result you want during "forward" propagation.
