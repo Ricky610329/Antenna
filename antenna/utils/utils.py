@@ -1109,7 +1109,10 @@ class TID:
             
         return num + cls.CUSTOM_EPOCH
 
-
+def get_shake_128(text: str, length: int = 6) -> str:
+    """Generate a shake_128 ID."""
+    from hashlib import shake_128
+    return shake_128(text.encode()).hexdigest(length // 2 + 1)[:length]
 
 if __name__ == "__main__":
     # print(Path("./checkpoint").manage_file_count("*.pth", keep_latest=1))

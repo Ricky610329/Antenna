@@ -54,7 +54,7 @@ def get_result_path(
 ):
     """
     Args:
-        name: Folder and log name, support {id}.
+        name: Folder and log name, support {device}, {hash_id}, {tid}, {id}.
         set_logger: Whether to set the logger.
             EX: XXX.log
         generate_code: 
@@ -69,7 +69,7 @@ def get_result_path(
     ```
     RESULT_PATH, EXISTS = get_result_path()
     RESULT_PATH, CONTINUE_RUN = get_result_path(
-        "{device}-{tid}", # device, tid, id
+        "{device}-{hash_id}", # device, hash_id, tid, id
         rootdir = ROOTDIR, generate_code = __file__, enable_exception_handler = True
     )
 
@@ -79,9 +79,10 @@ def get_result_path(
     from script.process_files import FileProcessor
     _now = int(time())
     _device = get_local_ip().split('.')[-1]
+    _hash_id = get_shake_128(name, length=6)
     rootdir = Path(str(normpath(rootdir))) if rootdir else  Path(__file__).parent.parent
     result_path = rootdir.joinpath(
-        "result", str(name.format(id = _now, device = _device, tid = TID.generate()))
+        "result", str(name.format(id = _now, device = _device, tid = TID.generate(), hash_id = _hash_id))
     )
     exists  = result_path.exists()
     result_path.not_exist_create()
