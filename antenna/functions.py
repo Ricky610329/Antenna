@@ -275,7 +275,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         :raises ValueError: 如果 T_0, T_mult, 或 mode 參數無效。
         """
         from .utils import config, Record
-        self.record = Record(self.__class__.__name__, config['RESULT_PATH'])
+        self.record = Record(self.__class__.__name__, config.get('RESULT_PATH'))
         # --- 週期性參數 (來自 CosineAnnealing) ---
         if T_0 <= 0 or not isinstance(T_0, int):
             raise ValueError("Expected positive integer T_0, but got {}".format(T_0))
@@ -286,7 +286,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         self.T_0 = T_0
         self.T_mult = T_mult
         self.T_i = T_0  # 當前週期的長度
-        self.T_cur = last_epoch if last_epoch != -1 else 0 # 當前週期內的位置
+        self.T_cur = last_epoch if last_epoch != -1 else -1
         
         self.on_plateau = on_plateau
         
@@ -387,7 +387,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
 
                             # D. 設定時間點：反推對應的步數
                             # 這樣下一次 get_lr() 就會從這個高度繼續往上走
-                            self.T_cur = int(ratio * warmup_steps)
+                            self.T_cur = int(round(ratio * warmup_steps))
                         else:
                             # 如果沒有暖身區間，就直接設為 -1 (避免除以零)
                             self.T_cur = -1
