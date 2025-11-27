@@ -225,6 +225,15 @@ def gumbel_sinkhorn_rectangular(logits: torch.Tensor, tau: float = 1.0, n_iters:
         
     return soft_assignment
 
+def total_variation_loss(img, weight=0.01):
+    """計算 Total Variation Loss 以抑制過度破碎的圖樣"""
+    from .utils.data import size_converter
+    img = size_converter(AntennaPattern, img, output_shape="B, 1, H, W")
+    bs_img, c_img, h_img, w_img = img.size()
+    tv_h = torch.pow(img[:,:,1:,:] - img[:,:,:-1,:], 2).sum()
+    tv_w = torch.pow(img[:,:,:,1:] - img[:,:,:,:-1], 2).sum()
+    return weight * (tv_h + tv_w) / (bs_img * c_img * h_img * w_img)
+
 import torch
 import math
 from torch.optim.optimizer import Optimizer
