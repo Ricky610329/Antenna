@@ -454,8 +454,50 @@ class Config(dict):
 
 config = Config()
 
+class MultiConfig:
+    def __init__(self, congig:dict[str, dict[str, Any]]={}, label=None):
+        '''
+        
+        Example ::
 
+            MULTICONFIG = MultiConfig(
+                {
+                    'default': {
+                        ...
+                    }
+                },
+                label = 'default'
+            )
+        '''
+        self.metadata:dict[str, dict] = congig
 
+        if len(sys.argv) < 1 and label is None:
+            raise ValueError(
+                "Must provide a configuration label either as a command-line argument "
+                "or directly to the MultiConfig constructor."
+            )
+        self.config_label = str(label if label is not None else sys.argv[1])
+
+    @property
+    def label(self):
+        return self.config_label
+    
+    @label.setter
+    def label(self, value):
+        self.config_label = str(value)
+
+    def __setitem__(self, key, value):
+        self.metadata[self.config_label][key] = value
+
+    def __getitem__(self, key):
+        return self.metadata[self.config_label][key]
+
+    def __call__(self, key:str, default=None):
+        if key in self.metadata[self.config_label]:
+            return  self.metadata[self.config_label][key]
+        else:
+            return default
+    
 class Figure:
     def __init__(
             self, 
