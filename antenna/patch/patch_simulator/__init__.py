@@ -50,9 +50,12 @@ class PatchSimulator(ABC):
     
     def reopen(self, project_keep_latest:int = 5):
         self.kill() # self.quit()
-        self.path_project.manage_file_count("*", keep_latest=project_keep_latest)
+        self.clean(project_keep_latest)
         # sleep(7)
         self.open()
+
+    def clean(self, project_keep_latest:int = 5):
+        return self.path_project.manage_file_count("*", keep_latest=project_keep_latest)
 
     def kill(self):
         _kill("ansysedt.exe")

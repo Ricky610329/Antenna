@@ -228,6 +228,7 @@ def gumbel_sinkhorn_rectangular(logits: torch.Tensor, tau: float = 1.0, n_iters:
 def total_variation_loss(img, weight=0.01):
     """計算 Total Variation Loss 以抑制過度破碎的圖樣"""
     from .utils.data import size_converter
+    from . import AntennaPattern
     img = size_converter(AntennaPattern, img, output_shape="B, 1, H, W")
     bs_img, c_img, h_img, w_img = img.size()
     tv_h = torch.pow(img[:,:,1:,:] - img[:,:,:-1,:], 2).sum()
@@ -260,7 +261,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         mode: str = 'min',
         factor: float = 0.5,
         patience: int = 5,
-        on_plateau:Literal['peak', 'reset','linear'] = 'linear',
+        on_plateau:Literal['peak', 'reset','linear'] = 'peak',
         threshold: float = 0.0,
         last_epoch: int = -1
     ):
