@@ -486,6 +486,9 @@ class MultiConfig:
     def label(self, value):
         self.config_label = str(value)
 
+    def get_label_data(self, label:Optional[str] = None):
+        return self.metadata[label or self.config_label]
+
     def __setitem__(self, key, value):
         self.metadata[self.config_label][key] = value
 
