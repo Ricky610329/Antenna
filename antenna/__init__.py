@@ -809,6 +809,16 @@ class AntennaPattern:
             i, j = divmod(idx, matrix.size(1))
             matrix[i, j] = 1 - matrix[i, j]
         return AntennaPattern(matrix)
+    
+    def total_variation_loss(self, weight=0.01):
+        """計算 Total Variation Loss 以抑制過度破碎的圖樣"""
+        img = self.merge()
+        h_img, w_img = img.size()
+
+        tv_h = torch.pow(img[1:, :] - img[:-1, :], 2).sum() 
+        tv_w = torch.pow(img[:, 1:] - img[:, :-1], 2).sum()
+        
+        return weight * (tv_h + tv_w) / (h_img * w_img)
 
 def reshape(_tensor:torch.Tensor):
     _shape = _tensor.shape
