@@ -107,6 +107,7 @@ def get_result_path(
 
     config.NAME = result_path.stem
     config.RESULT_PATH = result_path
+    config.ID = _hash_id
     config.CONTINUE_RUN = exists
     config.MAIN_PROGRAM = generate_code
     

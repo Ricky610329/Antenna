@@ -303,6 +303,8 @@ class Config(dict):
     """Project name."""
     MAIN_PROGRAM = None
     """Executed by this file."""
+    ID:str = str(int(time()))
+    """Project ID."""
     EPOCHS:int = None
     """ """
     LR:float = None
