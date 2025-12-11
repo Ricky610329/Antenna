@@ -303,8 +303,6 @@ class Config(dict):
     """Project name."""
     MAIN_PROGRAM = None
     """Executed by this file."""
-    ID:str = str(int(time()))
-    """Project ID."""
     EPOCHS:int = None
     """ """
     LR:float = None
@@ -332,6 +330,7 @@ class Config(dict):
     """
 
     def __init__(self):
+        self.ID:str = str(int(time()))
         self.epochs = 10
         self.lr = 1e-3 # Learning Rate For Main Training Loop
         self.element_num = 40

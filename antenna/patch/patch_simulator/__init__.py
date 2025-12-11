@@ -4,7 +4,7 @@ from script.kill import kill as _kill
 import numpy as np
 from pandas import read_csv
 from abc import ABC, abstractmethod
-from ...utils import Path
+from ...utils import Path, config
 from time import sleep, time
 from loguru import logger
 from torch import tensor, Tensor, all, logical_or
@@ -18,7 +18,7 @@ class PatchSimulator(ABC):
         self.path_result = self.path_record.joinpath('result').not_exist_create()
         self.path_project = self.path_record.joinpath('project').not_exist_create()
 
-        self.name_project = "patch_project_{num}"   #? self.name_project.format(num=num)
+        self.name_project = f"project_{config.ID}_" + "{num}"   #? self.name_project.format(num=num)
         self.name_design = "patch_design_{num}"
 
         
@@ -69,15 +69,19 @@ class PatchSimulator(ABC):
         assert hasattr(self, "oDesktop"), "Please use `open()` or `reopen()` first"
         self.start_time = time()
         self.num = num
-        
-        self.oProject = self.oDesktop.NewProject(self.name_project.format(num=num)) # 建立一個新專案（回傳 oProject 物件）
 
-        self.save(self.name_project.format(num=num))
+        project_name = self.name_project.format(num=num)
+        if project_name in self.oDesktop.GetProjects():
+            self.oDesktop.CloseProject(project_name)
+
+        self.oProject = self.oDesktop.NewProject(project_name) # 建立一個新專案（回傳 oProject 物件）
+
+        self.save(project_name)
 
         #* 設定目前作用中的專案
         #? SetActiveProject(name)
         self.oProject = self.oDesktop.SetActiveProject(
-            self.name_project.format(num=num)
+            project_name
         )
 
         ###* 插入新設計 ###
