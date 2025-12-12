@@ -71,7 +71,9 @@ class PatchSimulator(ABC):
         self.num = num
 
         project_name = self.name_project.format(num=num)
-        if project_name in self.oDesktop.GetProjects():
+
+        if project_name in [_.GetName() for _ in self.oDesktop.GetProjects()]:
+            logger.warning(f"Closing {project_name}...")
             self.oDesktop.CloseProject(project_name)
 
         self.oProject = self.oDesktop.NewProject(project_name) # 建立一個新專案（回傳 oProject 物件）
