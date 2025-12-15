@@ -129,7 +129,7 @@ def global_exception_handler(mode:Union[bool, Literal["only_hfss"]] = True) -> C
         )
 
         is_com_error = (com_error is not None) and issubclass(exc_type, com_error)
-        send_email = False # (mode is True) or (mode == "only_hfss" and is_com_error)
+        send_email = (mode is True) or (mode == "only_hfss" and is_com_error)
         if issubclass(exc_type, KeyboardInterrupt):
             logger.info("Ctrl + C: Manually stop program execution.")
             # original_hook(exc_type, exc_value, exc_traceback)
