@@ -10,7 +10,7 @@ config.device = "cpu"
 import numpy as np
 import torch
 from antenna import *
-from antenna.functions import AdaptiveCyclicalScheduler
+from antenna.functions import AdaptiveCyclicalScheduler, total_variation_loss
 from antenna.models import (
     Models, OldGEN, SigmoidGEN
 )
@@ -23,23 +23,56 @@ from antenna.utils.data import DataManager
 torch.autograd.set_detect_anomaly(True)
 #%% 
 ###* Basic Config ###
+MULTICONFIG = MultiConfig(
+    {
+        '1': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_1"
+        },
+        '2': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_2"
+        },
+
+        #* 換不同 Base
+        '3': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_1_total_variation_loss_01",
+            'KuoHung': 'KuoHung-1',
+            "total_variation_loss": 0.01
+        },
+        '4': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_2_total_variation_loss_01",
+            'KuoHung': 'KuoHung-2',
+            "total_variation_loss": 0.01
+        },
+
+        #* on_plateau
+        '5': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_on_plateau_linear",
+            "on_plateau": "linear"
+        },
+        '6': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_on_plateau_peak",
+            "on_plateau": "peak"
+        },
+    }
+)
 connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
 RESULT_PATH, CONTINUE_RUN = get_result_path(
-    "[Patch-Single-{device}-{tid}] pixel_base", 
+    MULTICONFIG('name', "[Patch-Single-{device}-{hash_id}] pixel_base"), 
     rootdir = ROOTDIR, generate_code = __file__, enable_exception_handler = True
 )
+
 # DATASET_PATH = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\dataset")
 
 SM_PRETRAIN_MODEL_PATH = DATASET_PATH.joinpath('old_sm.pth')
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
-# sys.excepthook = global_exception_handler
+# sys.excepthook = global_exception_handlerc
 
 path_pic = RESULT_PATH.joinpath("pic").not_exist_create()
 path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
 data_manager = DataManager("patch_single_mirror", rootdir=DATASET_PATH)
 online_dataset = DataManager("online", rootdir=RESULT_PATH)
 
-
+config.update(MULTICONFIG.get_label_data())
 config['Name'] = RESULT_PATH.stem
 config['File'] = __file__
 config.setWarning()
@@ -113,7 +146,8 @@ scheduler = AdaptiveCyclicalScheduler(
     warmup_ratio=0.2,       # 增加暖身時間
     patience=25,            # 顯著增加耐心
     factor=0.7,
-    mode='min'
+    mode='min',
+    on_plateau = MULTICONFIG("on_plateau", "peak")
 )
 generator = Models(
     name = "generator_{label}",
@@ -134,7 +168,10 @@ elif SM_PRETRAIN_MODEL_PATH.exists():
     smodel.pre_load_model(SM_PRETRAIN_MODEL_PATH)
 
     from antenna.utils.data import Data
-    data_result = Data(name='KuoHung-1', rootdir=r"\\140.123.106.219\temp\碩二_吳維文's\Patch Antenna\Experiment\result\[Test][37] KuoHung Pattern")
+    data_result = Data(
+        name = MULTICONFIG("KuoHung", 'KuoHung-1'), 
+        rootdir = r"\\140.123.106.219\temp\碩二_吳維文's\Patch Antenna\Experiment\result\[Test][37] KuoHung Pattern"
+    )
     KuoHung, response = data_result.load()
 
     smodel.train_one_data(AntennaPattern(KuoHung).series, response, min_loss=0.001, max_epoch=1e4)
@@ -167,7 +204,12 @@ while epoch < config.epochs + 1:
     current_epoch += 1
     generator.change(epoch)
     if current_epoch % 15 == 0 or current_epoch == 1:
-        simulator.reopen()
+        # try:
+        #     simulator.quit()
+        # except:
+        #     pass
+        # simulator
+        simulator.open()
 
     simulator.start(epoch)
     logger.info(f"Start {epoch} of {config.epochs}")
@@ -255,8 +297,8 @@ while epoch < config.epochs + 1:
     #? update optimizer
     # output_element = model(AntennaResponse.merge_target_responses())
     response = smodel(output_element.series)
-    loss = response.criterion()
-    loss.backward()
+    loss = response.criterion() + output_element.total_variation_loss(MULTICONFIG("total_variation_loss", 0))
+    loss.backward() 
     generator.step(scheduler_param=real_loss)
     generator.model.eval()
     
@@ -297,7 +339,7 @@ while epoch < config.epochs + 1:
         fig[3].plot(TEMP['min_loss'], label='min_loss')
         fig[3].plot(TEMP['real_loss_average'], label='real_loss_average')
         fig[3].legend()
-        fig[3].set_title("Loss Curve", fontsize=20)
+        fig[3].set_title(f"Loss Curve ({TEMP('real_loss', '')})", fontsize=20)
 
         fig[4].set_title('sm_loss', fontsize=20)
         fig[4].plot(sm_loss)
