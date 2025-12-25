@@ -8,7 +8,7 @@ from datetime import datetime
 
 import torch
 import numpy as np
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Subset
 from loguru import logger
 from hashlib import md5
 from antenna.types import *
@@ -185,6 +185,40 @@ class DataManager(Data[list[tuple[Tensor, Tensor]]], Dataset):
 
         except Exception as e:
             self.logger.exception(f"載入資料時發生錯誤：{e}")
+
+    def filter(self, filter_func: Callable[[Any], bool], *args, **kwargs) -> Subset:
+        """
+        根據過濾條件建立並回傳一個資料子集 (Subset)。
+        此方法不會改變 DataManager 本身的狀態。
+
+        Args:
+            filter_func (Callable): 接受單筆資料 (sample, label) 並回傳 bool 的函式。
+
+        Returns:
+            torch.utils.data.Subset: 包含符合條件資料的子集物件。
+        """
+        if not self.data:
+            self.logger.warning("資料集為空，回傳空子集。")
+            return Subset(self, [])
+
+        self.logger.info("正在計算過濾條件並建立子集...")
+        
+        try:
+            # 找出符合條件的索引
+            # self.data[i] 是一個 (sample, label) 元組
+            indices = [ 
+                i for i, item in enumerate(self.data) 
+                if filter_func(item, *args, **kwargs)
+            ]
+            
+            subset = Subset(self, indices)
+            # self.logger.success(f"子集建立完成。包含 {len(indices)} / {len(self.data)} 筆資料。")
+            return subset
+
+        except Exception as e:
+            self.logger.error(f"建立過濾子集時發生錯誤：{e}")
+            # 發生錯誤時回傳空子集或拋出異常，視需求而定
+            return Subset(self, [])
 
     def add_and_save(self, new_data: list, mode='append'):
         """
@@ -482,3 +516,20 @@ def size_converter(
             #? (B, H, W) -> (B, H, W)
             return output_tensor
         
+def dynamic_loss_filter(
+    datas:Tuple[Tensor, Tensor], 
+    lower: float = float('inf'), 
+    upper: float = float('-inf'), 
+) -> bool:
+    """
+    Example::
+
+        DataManager.filter(minmax_filter, lower=TEMP('smaller', float('inf')), upper=TEMP('bigger', float('-inf')))
+    """
+    from antenna import MultiResponses
+    _pattern, _response = datas
+    # _pattern = AntennaPattern(_pattern)
+    _response = MultiResponses(_response)
+    _loss = _response.criterion().item()
+
+    return _loss > upper or _loss < lower
