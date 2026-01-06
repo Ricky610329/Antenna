@@ -588,13 +588,16 @@ class Figure:
         return f"{self.__class__.__name__}(name={self.name}, nrowcol={self.nrowcol}, save={self.save}, show={self.show}, rootdir={self.rootdir.absolute()}, size={self.fig.get_size_inches()})"
 
 
-    def index(self, index:int = 1):
+    def index(self, index:int = 1, title:Optional[str] = None):
         """
         :param index: Support -1
         """
-        index = self.current_index if index == -1 else index
-        ax = self.fig.add_subplot(self.nrowcol[0], self.nrowcol[1], index)
+        self.current_index = self.current_index if index == -1 else index
+        ax = self.fig.add_subplot(self.nrowcol[0], self.nrowcol[1], self.current_index)
         self.current_index += 1
+
+        if title is not None:
+            ax.set_title(title)
         return ax
     
     def addAll(self):

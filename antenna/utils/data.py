@@ -186,7 +186,7 @@ class DataManager(Data[list[tuple[Tensor, Tensor]]], Dataset):
         except Exception as e:
             self.logger.exception(f"載入資料時發生錯誤：{e}")
 
-    def filter(self, filter_func: Callable[[Any], bool], *args, **kwargs) -> Subset:
+    def filter(self, filter_func: Callable[[tuple[Tensor, Tensor]], bool], *args, **kwargs) -> Subset:
         """
         根據過濾條件建立並回傳一個資料子集 (Subset)。
         此方法不會改變 DataManager 本身的狀態。
