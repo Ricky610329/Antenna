@@ -193,7 +193,7 @@ def Complete(message="Process completed.", send_email:bool=False, **results):
 
     logger.success(full_message)
 
-class Path(type(_Path()), _Path): # type: ignore
+class Path(type(_Path())): # type: ignore
     def __new__(cls, *args, **kwargs):
         kwargs.pop('create', None)
         return super().__new__(cls, *args, **kwargs)
@@ -217,6 +217,9 @@ class Path(type(_Path()), _Path): # type: ignore
         # self.path = path
         
         if create: self.not_exist_create()
+
+    def __reduce__(self):
+        return (self.__class__, (str(self),))
 
     def rmtree(self) -> bool:
         if self.is_dir():
