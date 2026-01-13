@@ -1,4 +1,4 @@
-from  win32com.client import Dispatch as  _dispatch #? pip install pywin32
+from  win32com.client import DispatchEx as  _dispatch, gencache #? pip install pywin32
 from pywintypes import com_error # type: ignore
 from script.kill import kill as _kill
 import numpy as np
@@ -72,9 +72,30 @@ class PatchSimulator(ABC):
 
         project_name = self.name_project.format(num=num)
 
-        if project_name in [_.GetName() for _ in self.oDesktop.GetProjects()]:
+        existing_project_names = []
+        try:
+            # 取得所有專案物件
+            projects = self.oDesktop.GetProjects()
+            for proj in projects:
+                try:
+                    # 嘗試取得名稱，若該物件已失效(Zombie)，這裡會報錯但被捕獲
+                    name = proj.GetName()
+                    existing_project_names.append(name)
+                except Exception:
+                    # 忽略無法讀取名稱的壞掉物件，不中斷程式
+                    continue
+        except Exception as e:
+            # 若連 GetProjects 都失敗，代表 HFSS 可能徹底卡死
+            logger.error(f"Failed to retrieve project list: {e}")
+        
+        # 檢查是否需要關閉舊專案
+        if project_name in existing_project_names:
             logger.warning(f"Closing {project_name}...")
-            self.oDesktop.CloseProject(project_name)
+            try:
+                self.oDesktop.CloseProject(project_name)
+            except Exception as e:
+                logger.warning(f"Failed to close {project_name}, it might be already closed. Error: {e}")
+
 
         self.oProject = self.oDesktop.NewProject(project_name) # 建立一個新專案（回傳 oProject 物件）
 
