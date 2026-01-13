@@ -4,6 +4,7 @@ import pickle
 import pathlib
 from pathlib import Path
 from flask import Flask, render_template, send_from_directory, abort, jsonify, request
+from werkzeug.utils import secure_filename
 import pandas as pd
 from datetime import datetime, timedelta
 
@@ -17,6 +18,10 @@ import sys
 sys.path.append(os.getcwd())
 
 from antenna.utils import Record, config
+from antenna.utils.data import DataManager, Data
+import torch
+import numpy as np
+import shutil
 
 # Force CPU to avoid CUDA errors in the viewer
 config.device = 'cpu'
@@ -25,6 +30,12 @@ app = Flask(__name__)
 
 # Define Result Directory
 RESULT_DIR = Path(r"T:\\碩二_吳維文's\\Patch Antenna\\Experiment\\result")
+# We assume dataset directory is sibling to result or explicitly defined
+DATASET_DIR = Path(r"T:\\碩二_吳維文's\\Patch Antenna\\Experiment\\dataset")
+# Temp dir for downloads (Absolute Path)
+TEMP_DIR = Path(os.getcwd()).joinpath('temp_downloads').absolute()
+if not TEMP_DIR.exists():
+    TEMP_DIR.mkdir(parents=True)
 
 # Custom Unpickler to handle older Path objects
 class PathFixUnpickler(pickle.Unpickler):
@@ -60,31 +71,206 @@ def get_active_ip_list():
         
     return sorted(list(ACTIVE_USERS.keys()))
 
+# --- Caching ---
+RECORD_CACHE = {} # {record_id: {'key': (rec_mtime, pic_mtime), 'data': record_dict}}
+
+def natural_sort_key(s):
+    """Helper for natural sort (e.g. 1, 2, 10). s can be a Path object or string."""
+    import re
+    # If s is a Path object, use s.name, else use s string
+    name = s.name if hasattr(s, 'name') else s
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split('([0-9]+)', name)]
+
 @app.route('/')
 def index():
-    """List all available records."""
+    """List all available records and datasets."""
+    # 1. Records
     if not RESULT_DIR.exists():
         records = []
     else:
-        # List directories in result/
         records = []
+        
+        # Iterate over directories
+        # We use a list to collect valid record IDs to clean up cache later if needed
+        current_record_ids = set()
+
         for d in RESULT_DIR.iterdir():
             if d.is_dir():
-                # Get basic stats
+                current_record_ids.add(d.name)
+                
+                # Get timestamps for caching
+                rec_mtime = d.stat().st_mtime
+                pic_dir = d / 'pic'
+                pic_mtime = 0
+                if pic_dir.exists():
+                    pic_mtime = pic_dir.stat().st_mtime
+                
+                cache_key = (rec_mtime, pic_mtime)
+                
+                # Check Cache
+                cached = RECORD_CACHE.get(d.name)
+                if cached and cached['key'] == cache_key:
+                    records.append(cached['data'])
+                    continue
+
+                # Cache Miss - Process Record
                 stat = d.stat()
-                records.append({
+                
+                # Find best image
+                best_image = None
+                if pic_dir.exists():
+                    images = list(pic_dir.glob('*.png'))
+                    if images:
+                        images.sort(key=natural_sort_key)
+                        
+                        # 1. Try to find last image containing 'best'
+                        best_candidates = [img for img in images if 'best' in img.name.lower()]
+                        if best_candidates:
+                            best_image = best_candidates[-1].name
+                        else:
+                            # 2. Fallback to last naturally sorted png
+                            best_image = images[-1].name
+
+                record_data = {
                     'id': d.name,
                     'mtime': stat.st_mtime,
-                    'ctime': stat.st_ctime
-                })
-        
-        # Sort by modification time, newest first
+                    'ctime': stat.st_ctime,
+                    'best_image': best_image
+                }
+                
+                # Update Cache
+                RECORD_CACHE[d.name] = {
+                    'key': cache_key,
+                    'data': record_data
+                }
+                
+                records.append(record_data)
+
+        # Optional: Clean up cache for deleted records
+        # expired_ids = set(RECORD_CACHE.keys()) - current_record_ids
+        # for eid in expired_ids:
+        #     del RECORD_CACHE[eid]
+            
         records.sort(key=lambda x: x['mtime'], reverse=True)
     
+    # 2. Datasets
+    datasets = []
+    if DATASET_DIR.exists():
+        for f in DATASET_DIR.glob('*.dataset'):
+            stat = f.stat()
+            # Name without extension
+            datasets.append({
+                'id': f.stem,
+                'name': f.name,
+                'mtime': stat.st_mtime,
+                'size': stat.st_size
+            })
+        datasets.sort(key=lambda x: x['mtime'], reverse=True)
+
     # Get active users
     active_ips = get_active_ip_list()
         
-    return render_template('index.html', records=records, active_ips=active_ips)
+    return render_template('index.html', records=records, datasets=datasets, active_ips=active_ips)
+
+@app.route('/generator')
+def generator():
+    """Render the antenna pattern generator page."""
+    return render_template('generator.html')
+
+@app.route('/api/save_generated_pattern', methods=['POST'])
+def save_generated_pattern():
+    """Save the generated pattern using Data class and return file."""
+    try:
+        payload = request.json
+        grid = payload.get('grid')
+        raw_filename = payload.get('filename', 'custom_pattern')
+        
+        if not grid:
+            return "No grid data provided", 400
+
+        # Secure filename
+        filename = secure_filename(raw_filename)
+        if not filename:
+            filename = 'custom_pattern'
+
+        # Convert to Tensor (assuming 0/1 float32)
+        # grid is list of lists
+        arr = np.array(grid, dtype=np.float32)
+        tensor_data = torch.from_numpy(arr)
+        
+        # Use utils/data.py Data class
+        # Data(data=..., name=..., rootdir=..., suffix='data')
+        # It saves to rootdir/name.suffix
+        data_obj = Data(tensor_data, name=filename, rootdir=TEMP_DIR, suffix='data', load=False)
+        data_obj.save()
+        
+        # File path
+        file_path = data_obj.savepath
+        
+        # Debugging prints
+        print(f"Saved generated pattern to: {file_path}")
+        
+        if not file_path.exists():
+             print(f"Error: File not found at {file_path}")
+             return "Failed to save file", 500
+
+        # Send file
+        # send_from_directory expects directory string and filename
+        return send_from_directory(directory=str(TEMP_DIR), path=f"{filename}.data", as_attachment=True)
+
+    except Exception as e:
+        print(f"Exception in save_generated_pattern: {e}")
+        # Return the actual error type for better debugging
+        return f"{type(e).__name__}: {str(e)}", 500
+
+@app.route('/dataset/<dataset_name>')
+def view_dataset(dataset_name):
+    """View details of a specific dataset."""
+    try:
+        # Load dataset using DataManager
+        # Note: DataManager expects name without extension if it manages suffixes, 
+        # but here we might need to be careful. DataManager(name, rootdir) looks for name.dataset
+        dm = DataManager(dataset_name, rootdir=DATASET_DIR, verbose=False)
+        
+        # Metadata
+        total_items = len(dm)
+        
+        # Prepare samples for visualization (limit to first 50 to avoid browser crash)
+        limit = 50
+        samples = []
+        
+        # DataManager items are usually (input, output) tuples of tensors
+        # We need to convert them to lists for JSON serialization
+        for i in range(min(total_items, limit)):
+            item = dm[i]
+            # Handle list/tuple of tensors
+            if isinstance(item, (list, tuple)):
+                inp, outp = item[0], item[1]
+            else:
+                inp, outp = item, None
+
+            # Convert to list helper
+            def to_list(tensor_or_arr):
+                if tensor_or_arr is None: return None
+                if hasattr(tensor_or_arr, 'tolist'):
+                    return tensor_or_arr.tolist()
+                return tensor_or_arr
+
+            samples.append({
+                'id': i,
+                'input': to_list(inp),
+                'output': to_list(outp)
+            })
+
+        return render_template(
+            'dataset.html',
+            dataset_name=dataset_name,
+            total_items=total_items,
+            samples=samples
+        )
+    except Exception as e:
+        return f"Error loading dataset: {str(e)}", 500
 
 @app.route('/record/<record_id>')
 def view_record(record_id):

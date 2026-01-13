@@ -46,40 +46,142 @@
 </nav>
 
 <div class="container">
-    <div class="row mb-4">
-        <div class="col">
-            <h1 class="display-5">Experimental Records</h1>
-            <p class="text-muted">Select a record to view training logs and generated designs.</p>
-        </div>
-    </div>
+    
+    <!-- Header Tabs -->
+    <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab" aria-controls="records" aria-selected="true">
+                <i class="bi bi-journal-text me-2"></i>Experimental Records
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="datasets-tab" data-bs-toggle="tab" data-bs-target="#datasets" type="button" role="tab" aria-controls="datasets" aria-selected="false">
+                <i class="bi bi-database me-2"></i>Datasets
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tools-tab" data-bs-toggle="tab" data-bs-target="#tools" type="button" role="tab" aria-controls="tools" aria-selected="false">
+                <i class="bi bi-tools me-2"></i>Tools
+            </button>
+        </li>
+    </ul>
 
-    {% if not records %}
-    <div class="alert alert-warning" role="alert">
-        No records found in the <code>result/</code> directory.
-    </div>
-    {% else %}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        {% for record in records %}
-        <div class="col">
-            <a href="/record/{{ record.id }}" class="text-decoration-none text-dark">
-                <div class="card h-100 record-card">
-                    <div class="card-body">
-                        <h5 class="card-title text-primary">{{ record.id }}</h5>
-                        <p class="card-text">
-                            <small class="text-muted">Last Modified:</small><br>
-                            {{ record.mtime | round | int }} (Timestamp)
-                            <!-- Ideally convert timestamp to date string in Python or JS -->
-                        </p>
-                    </div>
-                    <div class="card-footer bg-transparent border-top-0">
-                        <span class="btn btn-outline-primary btn-sm w-100">View Details</span>
-                    </div>
+    <div class="tab-content" id="myTabContent">
+        
+        <!-- Records Tab Pane -->
+        <div class="tab-pane fade show active" id="records" role="tabpanel" aria-labelledby="records-tab">
+            <div class="row mb-4">
+                <div class="col">
+                    <h1 class="display-5">Experimental Records</h1>
+                    <p class="text-muted">Select a record to view training logs and generated designs.</p>
                 </div>
-            </a>
+            </div>
+
+            {% if not records %}
+            <div class="alert alert-warning" role="alert">
+                No records found in the <code>result/</code> directory.
+            </div>
+            {% else %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for record in records %}
+                <div class="col">
+                    <a href="/record/{{ record.id }}" class="text-decoration-none text-dark">
+                        <div class="card h-100 record-card">
+                            {% if record.best_image %}
+                            <img src="/result/{{ record.id }}/pic/{{ record.best_image }}" class="card-img-top" alt="Result" style="height: 200px; object-fit: contain; background-color: #000;">
+                            {% else %}
+                            <div class="d-flex align-items-center justify-content-center bg-light text-muted" style="height: 200px;">
+                                <i class="bi bi-image" style="font-size: 2rem;"></i>
+                            </div>
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">{{ record.id }}</h5>
+                                <p class="card-text">
+                                    <small class="text-muted">Last Modified:</small><br>
+                                    {{ record.mtime | round | int }} (Timestamp)
+                                    <!-- Ideally convert timestamp to date string in Python or JS -->
+                                </p>
+                            </div>
+                            <div class="card-footer bg-transparent border-top-0">
+                                <span class="btn btn-outline-primary btn-sm w-100">View Details</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
-        {% endfor %}
+
+        <!-- Datasets Tab Pane -->
+        <div class="tab-pane fade" id="datasets" role="tabpanel" aria-labelledby="datasets-tab">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2 class="display-5">Datasets</h2>
+                    <p class="text-muted">Available datasets for training and validation.</p>
+                </div>
+            </div>
+
+            {% if not datasets %}
+            <div class="alert alert-secondary" role="alert">
+                No datasets found in the <code>dataset/</code> directory.
+            </div>
+            {% else %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for ds in datasets %}
+                <div class="col">
+                    <a href="/dataset/{{ ds.id }}" class="text-decoration-none text-dark">
+                        <div class="card h-100 record-card border-info">
+                            <div class="card-body">
+                                <h5 class="card-title text-info">
+                                    <i class="bi bi-database me-2"></i>{{ ds.name }}
+                                </h5>
+                                <p class="card-text">
+                                    <small class="text-muted">Last Modified:</small><br>
+                                    {{ ds.mtime | round | int }} (Timestamp)<br>
+                                    <small class="text-muted">Size:</small> {{ (ds.size / 1024 / 1024) | round(2) }} MB
+                                </p>
+                            </div>
+                            <div class="card-footer bg-transparent border-top-0">
+                                <span class="btn btn-outline-info btn-sm w-100">View Data</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Tools Tab Pane -->
+        <div class="tab-pane fade" id="tools" role="tabpanel" aria-labelledby="tools-tab">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2 class="display-5">Tools</h2>
+                    <p class="text-muted">Utilities for antenna design and analysis.</p>
+                </div>
+            </div>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                <div class="col">
+                    <a href="/generator" class="text-decoration-none text-dark">
+                        <div class="card h-100 record-card border-warning">
+                            <div class="card-body">
+                                <h5 class="card-title text-warning">
+                                    <i class="bi bi-grid-3x3 me-2"></i>Pattern Generator
+                                </h5>
+                                <p class="card-text">
+                                    Create custom antenna patterns interactively using a grid editor and export them as data files.
+                                </p>
+                            </div>
+                            <div class="card-footer bg-transparent border-top-0">
+                                <span class="btn btn-outline-warning btn-sm w-100">Launch Tool</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-    {% endif %}
 </div>
 
 <!-- Bootstrap JS -->

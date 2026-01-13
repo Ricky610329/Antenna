@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antenna Generator</title>
+    <link rel="icon" href="{{ url_for('static', filename = 'picture/house.ico') }}" type="image/x-icon" >
+    <link rel="icon" href="{{ url_for('static', filename = 'picture/house.png') }}" type="image/png" >
+    <link rel="shortcut icon" href="{{ url_for('static', filename = 'picture/house.ico') }}" type="image/x-icon" >
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Fix: Prevent top clipping when scrollable */
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 20px;
+            overflow: auto;
+            max-height: 70vh;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+            cursor: crosshair;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="/">
+            <i class="bi bi-broadcast-pin me-2"></i>
+            Antenna Visualizer
+        </a>
+        <span class="navbar-text text-white">
+            Generator
+        </span>
+        <a href="/" class="btn btn-outline-light btn-sm ms-auto">Back to Home</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row">
+        <!-- Controls Sidebar -->
+        <div class="col-md-3">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-sliders me-2"></i>Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form id="gridForm">
+                        <div class="mb-3">
+                            <label for="gridWidth" class="form-label">Width (Cells)</label>
+                            <input type="number" class="form-control" id="gridWidth" value="25" min="1" max="100">
+                        </div>
+                        <div class="mb-3">
+                            <label for="gridHeight" class="form-label">Height (Cells)</label>
+                            <input type="number" class="form-control" id="gridHeight" value="25" min="1" max="100">
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-grid-3x3 me-1"></i>Create Grid
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" id="btnClear">
+                                <i class="bi bi-eraser me-1"></i>Clear All
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="btnFill">
+                                <i class="bi bi-paint-bucket me-1"></i>Fill All
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-download me-2"></i>Export</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="filename" class="form-label">Filename</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="filename" value="custom_pattern">
+                            <span class="input-group-text">.data</span>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-success" id="btnDownload">
+                            <i class="bi bi-file-earmark-arrow-down me-1"></i>Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="col-md-9">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Editor Canvas</h5>
+                    <small class="text-muted">Left click to draw, Right click to erase</small>
+                </div>
+                <div class="card-body canvas-container">
+                    <canvas id="editorCanvas"></canvas>
+                </div>
+                <div class="card-footer bg-white text-muted">
+                    <small id="statusText">Ready. 40x40 Grid.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('editorCanvas');
+    const ctx = canvas.getContext('2d');
+    const form = document.getElementById('gridForm');
+    const btnClear = document.getElementById('btnClear');
+    const btnFill = document.getElementById('btnFill');
+    const btnDownload = document.getElementById('btnDownload');
+    const statusText = document.getElementById('statusText');
+
+    let width = 25;
+    let height = 25;
+    let cellSize = 15; // px
+    let gridData = []; // 2D array: 0 or 1
+    let isDrawing = false;
+    let drawMode = 1; // 1 for metal, 0 for empty
+
+        let hoverX = -1;
+
+        let hoverY = -1;
+
+    
+
+        function initGrid(w, h) {
+
+            width = w;
+
+            height = h;
+
+            
+
+            // Dynamic cell size
+
+            const maxWidth = 800;
+
+            cellSize = Math.floor(maxWidth / width);
+
+            if (cellSize < 15) cellSize = 15; 
+
+            if (cellSize > 40) cellSize = 40; 
+
+    
+
+            canvas.width = width * cellSize;
+
+            canvas.height = height * cellSize;
+
+    
+
+            gridData = Array.from({ length: height }, () => Array(width).fill(0));
+
+            
+
+            draw();
+
+            statusText.innerText = `Ready. ${width}x${height} Grid.`;
+
+        }
+
+    
+
+        function draw() {
+
+            // Clear
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            
+
+            // Draw Cells
+
+            ctx.fillStyle = '#0d6efd'; // Metal color
+
+            for (let y = 0; y < height; y++) {
+
+                for (let x = 0; x < width; x++) {
+
+                    if (gridData[y][x] === 1) {
+
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+
+                    }
+
+                }
+
+            }
+
+    
+
+            // Draw Grid Lines
+
+            ctx.beginPath();
+
+            ctx.strokeStyle = '#e0e0e0';
+
+            ctx.lineWidth = 1;
+
+            
+
+            for (let x = 0; x <= width; x++) {
+
+                ctx.moveTo(x * cellSize, 0);
+
+                ctx.lineTo(x * cellSize, height * cellSize);
+
+            }
+
+            for (let y = 0; y <= height; y++) {
+
+                ctx.moveTo(0, y * cellSize);
+
+                ctx.lineTo(width * cellSize, y * cellSize);
+
+            }
+
+            ctx.stroke();
+
+    
+
+            // Draw Hover Highlight
+
+            if (hoverX >= 0 && hoverX < width && hoverY >= 0 && hoverY < height) {
+
+                ctx.beginPath();
+
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+
+                ctx.lineWidth = 2;
+
+                ctx.strokeRect(hoverX * cellSize, hoverY * cellSize, cellSize, cellSize);
+
+            }
+
+        }
+
+    
+
+        function getMousePos(canvas, evt) {
+
+            const rect = canvas.getBoundingClientRect();
+
+            return {
+
+                x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+
+                y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+
+            };
+
+        }
+
+    
+
+                    function toggleCell(e) {
+
+    
+
+                        const pos = getMousePos(canvas, e);
+
+    
+
+                        const x = Math.floor(pos.x / cellSize);
+
+    
+
+                        const y = Math.floor(pos.y / cellSize);
+
+    
+
+                
+
+    
+
+                        console.log(`Toggle: ${x}, ${y} -> ${drawMode}`);
+
+    
+
+                
+
+    
+
+                        if (x >= 0 && x < width && y >= 0 && y < height) {
+
+    
+
+                            gridData[y][x] = drawMode;
+
+    
+
+                            draw(); 
+
+    
+
+                            statusText.innerText = `Drawing ${drawMode === 1 ? 'Metal' : 'Empty'} at (${x}, ${y})`;
+
+    
+
+                        }
+
+    
+
+                    }
+
+        
+
+        // ... Event Listeners ...
+
+    
+
+        canvas.addEventListener('mousemove', (e) => {
+
+            const pos = getMousePos(canvas, e);
+
+            const x = Math.floor(pos.x / cellSize);
+
+            const y = Math.floor(pos.y / cellSize);
+
+            
+
+            if (x !== hoverX || y !== hoverY) {
+
+                hoverX = x;
+
+                hoverY = y;
+
+                if (x >= 0 && x < width && y >= 0 && y < height) {
+
+                    statusText.innerText = `Grid: (${x}, ${y}) | Size: ${width}x${height}`;
+
+                }
+
+                draw();
+
+            }
+
+            
+
+            if (isDrawing) toggleCell(e);
+
+        });
+
+    
+
+        canvas.addEventListener('mouseleave', () => {
+            hoverX = -1;
+            hoverY = -1;
+            draw();
+            statusText.innerText = `Ready. ${width}x${height} Grid.`;
+        });
+
+    // --- Event Listeners ---
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const w = parseInt(document.getElementById('gridWidth').value);
+        const h = parseInt(document.getElementById('gridHeight').value);
+        if (w > 0 && h > 0) initGrid(w, h);
+    });
+
+    btnClear.addEventListener('click', () => {
+        gridData = gridData.map(row => { row.fill(0); return row; });
+        draw();
+    });
+
+    btnFill.addEventListener('click', () => {
+        gridData = gridData.map(row => { row.fill(1); return row; });
+        draw();
+    });
+
+    // Mouse Interaction
+    canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        // Left click (0) = Draw (1), Right click (2) = Erase (0)
+        drawMode = e.button === 2 ? 0 : 1; 
+        console.log(`MouseDown: Button=${e.button}, Mode=${drawMode}`);
+        toggleCell(e);
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDrawing = false;
+    });
+
+    // Prevent context menu on right click
+    canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    });
+
+    // Download Logic
+    btnDownload.addEventListener('click', async () => {
+        const filename = document.getElementById('filename').value || 'custom_pattern';
+        
+        // Prepare data
+        const payload = {
+            grid: gridData,
+            filename: filename
+        };
+
+        btnDownload.disabled = true;
+        btnDownload.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+
+        try {
+            const response = await fetch('/api/save_generated_pattern', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                // Trigger download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${filename}.data`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                statusText.innerText = 'Download successful.';
+            } else {
+                const err = await response.text();
+                alert('Error saving file: ' + err);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('An error occurred: ' + e.message);
+        } finally {
+            btnDownload.disabled = false;
+            btnDownload.innerHTML = '<i class="bi bi-file-earmark-arrow-down me-1"></i>Download';
+        }
+    });
+
+    // Init defaults
+    initGrid(25, 25);
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
