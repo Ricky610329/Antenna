@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
-#? python -m script.process_files ./ -e .py
+#? python -m script.process_files -t main.py (依賴模式)
+#? python -m script.process_files -dir ./ (目錄掃描模式)
 import os
 import argparse
+import sys
+import ast
+import importlib.util
 from datetime import datetime
-from loguru import logger
-from typing import Union, Optional
-from tqdm import tqdm
-###* Type ###
-from _io import TextIOWrapper
-import os
-from datetime import datetime
-from typing import Union, Optional, List, Tuple
+from typing import Union, Optional, List, Tuple, Set
 from io import TextIOWrapper
+from loguru import logger
 from tqdm import tqdm
-from loguru import logger # 假設您使用 loguru，如果不是請替換
 
 class FileProcessor:
     # 類別層級的常數，作為預設忽略模式
@@ -28,7 +25,7 @@ class FileProcessor:
         'build',
         'dist',
         'script', 'result', 'docs', 'abandon',
-        'wandb'
+        'wandb',
     }
 
     def __init__(
@@ -37,235 +34,348 @@ class FileProcessor:
             extensions: List[str] = ['.py'], 
             output_file: str = "project_report.txt",
             output_dir: str = ".", 
-            project_name: str = "純生成無專案", 
+            project_name: str = "專案報告", 
             project_description: Optional[str] = None, 
-            generated_by: str = __file__,
+            generated_by: Optional[str] = None,
             verbose: bool = True 
         ):
         """
-        將多個目錄的原始碼與文件樹整合到單一報告檔案中。
-
-        :param directories: 要處理的一個或多個目標資料夾路徑。
-        :param extensions: 要整合的一個或多個檔案副檔名。
-        :param output_file: 整合後的單一報告文件名稱。
-        :param output_dir: 所有輸出文件的目標資料夾。
-        :param project_name: 報告中顯示的專案名稱。
-        :param project_description: 報告中顯示的專案描述。
-        :param generated_by: 產生此報告的主程式名稱。
-        :param verbose: 是否在控制台顯示日誌和進度條。
+        :param directories: 要掃描或限制分析範圍的資料夾路徑。
+        :param extensions: 要包含的副檔名。
+        :param generated_by: (依賴模式用) 指定入口檔案路徑。若為 None，則執行全目錄掃描。
         """
         self.directories = directories if isinstance(directories, (list, tuple)) else [directories]
+        # [新增] 預先計算絕對路徑，用於嚴格過濾檔案範圍
+        self.abs_directories = [os.path.abspath(d) for d in self.directories]
+        
         self.extensions = extensions
         self.output_file = output_file
         self.output_dir = output_dir
         self.extensions_tuple = tuple(self.extensions)
         self.project_name = project_name
-        self.generated_by = generated_by
-        self.project_description = project_description or "此報告包含程式碼檔案的整合內容與專案文件樹結構，用於提供專案的完整概覽。"
-        self.verbose = verbose
-
-    def _validate_directories(self):
-        """
-        驗證所有指定的目錄路徑是否有效，並創建輸出資料夾。
-        """
-        for path in self.directories:
-            if not os.path.isdir(path):
-                logger.error(f"指定的路徑 '{path}' 不是一個有效的資料夾或不存在。")
-                return False
         
-        # 確保輸出資料夾存在
+        self.generated_by = os.path.abspath(generated_by) if generated_by else None
+        
+        self.project_description = project_description
+        self.verbose = verbose
+        self.scanned_files: List[str] = [] 
+
+    # ================= 依賴分析相關方法 (Dependency Mode) =================
+
+    def _is_custom_module(self, file_path: str) -> bool:
+        """
+        判斷檔案是否為自定義模組。
+        條件：
+        1. 非 site-packages/venv 等系統目錄。
+        2. [新增] 必須位於指定的 directories 範圍內。
+        """
         try:
-            os.makedirs(self.output_dir, exist_ok=True)
-            if self.verbose:
-                logger.info(f"輸出資料夾 '{self.output_dir}' 已確認或建立。")
-        except OSError as e:
-            if self.verbose:
-                logger.error(f"無法建立輸出資料夾 '{self.output_dir}': {e}")
+            if not file_path: return False
+            abs_path = os.path.abspath(file_path)
+            
+            # 1. 系統/環境路徑排除
+            if any(x in abs_path for x in ['site-packages', 'dist-packages', 'venv', '.env', '__pycache__']):
+                return False
+            if "lib/python" in abs_path.replace("\\", "/"): 
+                return False
+            
+            # 2. [嚴格過濾] 檢查檔案是否在允許的目錄清單中
+            # 使用 commonpath 判斷層級關係
+            in_scope = False
+            for d in self.abs_directories:
+                try:
+                    # 如果 d 是 abs_path 的父目錄(或相同)，commonpath 結果應為 d
+                    if os.path.commonpath([d, abs_path]) == d:
+                        in_scope = True
+                        break
+                except ValueError:
+                    # 處理 Windows 不同磁碟機的情況
+                    continue
+            
+            if not in_scope:
+                # logger.debug(f"跳過範圍外檔案: {abs_path}")
+                return False
+
+            return True
+        except Exception:
             return False
 
-        return True
-
-    def _write_main_header(self, file_obj: TextIOWrapper):
-        """
-        在單一報告文件的頂部寫入總標頭。
-        """
-        file_obj.write(f"Project Name: {self.project_name}\n")
-        file_obj.write(f"Title: 專案總報告 (Project Report)\n")
-        file_obj.write(f"Project Description: {self.project_description}\n")
-        file_obj.write("=" * 80 + "\n")
-        file_obj.write(f"產生時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        file_obj.write(f"目標目錄: {', '.join([os.path.abspath(p) for p in self.directories])}\n")
-        file_obj.write(f"目標副檔名: {', '.join(self.extensions)}\n")
-        file_obj.write(f"忽略規則: {', '.join(sorted(list(self.IGNORED_PATTERNS)))}\n")
-        if self.generated_by:
-            file_obj.write(f"報告生成者: 此報告由專案主程式 `{self.generated_by}` 產生。\n")
-        file_obj.write("=" * 80 + "\n")
-
-    def _combine_files_section(self, outfile: TextIOWrapper):
-        """
-        將檔案內容寫入到提供的文件物件中（作為報告的一個區段）。
-        """
-        if self.verbose:  # <--- 修改點 3: 加入 verbose 判斷
-            logger.info(f"開始整合副檔名為 '{', '.join(self.extensions)}' 的檔案...")
+    def _resolve_import_path(self, module_name: str, base_dir: str, level: int = 0) -> Optional[str]:
+        """嘗試解析 import 的實際檔案路徑。"""
+        # 為了讓 importlib 能找到當前目錄下的模組，暫時將 base_dir 加入 path
+        search_path = [base_dir, os.getcwd()] + sys.path
         
-        for directory_path in self.directories:
-            abs_dir_path = os.path.abspath(directory_path)
-            if self.verbose:  # <--- 修改點 3: 加入 verbose 判斷
-                logger.success(f"正在處理目錄: {abs_dir_path}")
+        try:
+            # 相對路徑 (from . import x)
+            if level > 0:
+                package_parts = module_name.split('.') if module_name else []
+                current_dir = base_dir
+                for _ in range(level - 1):
+                    current_dir = os.path.dirname(current_dir)
+                
+                if not package_parts: return None 
+                
+                guess_path = os.path.join(current_dir, *package_parts)
+                candidates = [guess_path + '.py', os.path.join(guess_path, '__init__.py')]
+                for c in candidates:
+                    if os.path.exists(c) and os.path.isfile(c):
+                        return os.path.abspath(c)
 
-            found_files = False
+            # 絕對路徑 / 標準解析
+            if level == 0:
+                try:
+                    original_sys_path = sys.path[:]
+                    sys.path.insert(0, base_dir)
+                    spec = importlib.util.find_spec(module_name)
+                    sys.path = original_sys_path
+                    if spec and spec.origin:
+                        return spec.origin
+                except (ImportError, ValueError, AttributeError):
+                    pass
+
+            # Fallback
+            if level == 0:
+                rel_path = module_name.replace('.', os.sep)
+                candidates = [
+                    os.path.join(base_dir, rel_path + '.py'),
+                    os.path.join(base_dir, rel_path, '__init__.py'),
+                    os.path.join(os.getcwd(), rel_path + '.py'),
+                ]
+                for c in candidates:
+                    if os.path.exists(c) and os.path.isfile(c):
+                        return os.path.abspath(c)
+        
+        except Exception:
+            pass
+        return None
+
+    def _analyze_file_imports(self, file_path: str) -> Set[str]:
+        """解析單一檔案的 AST 並回傳所有發現的自定義依賴檔案路徑。"""
+        found_files = set()
+        if not os.path.exists(file_path): return found_files
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                tree = ast.parse(content, filename=file_path)
+        except Exception as e:
+            logger.warning(f"無法解析 AST: {file_path} ({e})")
+            return found_files
+
+        base_dir = os.path.dirname(file_path)
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    path = self._resolve_import_path(alias.name, base_dir, level=0)
+                    if path and self._is_custom_module(path):
+                        found_files.add(path)
+
+            elif isinstance(node, ast.ImportFrom):
+                level = node.level if node.level is not None else 0
+                module_name = node.module
+                
+                if module_name or level > 0:
+                    path = self._resolve_import_path(module_name, base_dir, level)
+                    if path and self._is_custom_module(path):
+                        found_files.add(path)
+                
+                if node.names:
+                    for alias in node.names:
+                        if alias.name == '*': continue
+                        sub_module_name = f"{module_name}.{alias.name}" if module_name else alias.name
+                        path = self._resolve_import_path(sub_module_name, base_dir, level)
+                        if path and self._is_custom_module(path):
+                            found_files.add(path)
+        return found_files
+
+    def _scan_dependencies_recursive(self, entry_file: str) -> List[str]:
+        """遞迴掃描依賴 (BFS)。"""
+        visited = set()
+        queue = [entry_file]
+        visited.add(entry_file)
+        
+        result_files = []
+        pbar = tqdm(desc="Analyzing Dependencies", disable=not self.verbose)
+
+        while queue:
+            current_file = queue.pop(0)
             
-            # <--- 修改點 4: 控制 tqdm 的 disable 狀態 ---
-            walk_iter = os.walk(directory_path)
-            _tqdm = tqdm(
-                walk_iter, 
-                desc="Reading...", 
-                bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} {postfix}", 
-                disable=not self.verbose
-            )
+            # [修改] 只有當檔案位於指定目錄內時，才加入最終報告清單
+            # 注意：即使檔案不在目錄內（例如外部入口腳本），我們仍然會分析其依賴，
+            # 以便找出它是否引用了目錄內的檔案。
+            if self._is_custom_module(current_file):
+                result_files.append(current_file)
+            elif current_file == entry_file and self.verbose:
+                logger.info(f"注意: 入口檔案 {os.path.basename(current_file)} 不在指定目錄內，將不會包含其內容，僅分析其依賴。")
+
+            pbar.update(1)
+            pbar.set_postfix(file=os.path.basename(current_file))
+
+            # 找出此檔案的 imports
+            new_imports = self._analyze_file_imports(current_file)
             
-            for root, dirs, files in _tqdm:
-                # 忽略指定的資料夾
+            for imp in new_imports:
+                if imp not in visited:
+                    visited.add(imp)
+                    queue.append(imp)
+        
+        pbar.close()
+        return result_files
+
+    # ================= 目錄掃描相關方法 (Directory Mode) =================
+
+    def _scan_directories_recursive(self) -> List[str]:
+        """掃描 directories 中符合 extension 的所有檔案。"""
+        files_found = []
+        if self.verbose:
+            logger.info(f"開始掃描目錄: {self.directories}")
+        
+        for d in self.directories:
+            if not os.path.exists(d): continue
+            walk_iter = os.walk(d)
+            for root, dirs, files in walk_iter:
                 dirs[:] = [d for d in dirs if d not in self.IGNORED_PATTERNS]
-
-                for file in sorted(files):
+                for file in files:
                     if file.endswith(self.extensions_tuple):
-                        found_files = True
-                        file_path = os.path.join(root, file)
-                        
-                        if self.verbose:  # <--- 修改點 5: tqdm 更新也需控制
-                            _tqdm.set_postfix({"File": file_path})
-                            
-                        outfile.write(f"----------- {file_path} -----------\n\n")
-                        try:
-                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as infile:
-                                content = infile.read()
-                                outfile.write(content)
-                                outfile.write("\n\n")
-                        except Exception as e:
-                            outfile.write(f"*** 無法讀取檔案: {e} ***\n\n")
-            
-            if not found_files:
-                if self.verbose:
-                    logger.info(f"  -> 在 {abs_dir_path} 中未找到符合副檔名的檔案。")
-                outfile.write(f"*** 在此目錄中未找到符合副檔名 '{', '.join(self.extensions)}' 的檔案 ***\n\n")
-
-        if self.verbose:  # <--- 修改點 3: 加入 verbose 判斷
-            logger.info("...檔案整合部分已完成。")
+                        files_found.append(os.path.join(root, file))
+        return files_found
 
     def _generate_tree_section(self, outfile: TextIOWrapper):
-        """
-        將文件樹結構寫入到提供的文件物件中（作為報告的一個區段）。
-        """
-        if self.verbose:
-            logger.info(f"開始產生文件樹 (將忽略: {', '.join(self.IGNORED_PATTERNS)})...")
+        outfile.write(f"\n\n{'=' * 20} 專案目錄結構 (Directory Tree) {'=' * 20}\n")
+        
+        # [修改] 建立一個 Set 來快速查詢哪些檔案已被納入分析
+        scanned_set = {os.path.abspath(f) for f in self.scanned_files}
         
         for directory_path in self.directories:
             abs_dir_path = os.path.abspath(directory_path)
-            if self.verbose:
-                logger.success(f"正在為目錄產生樹狀圖: {abs_dir_path}")
-            outfile.write(f"\n\n{'=' * 20} 目錄樹: {abs_dir_path} {'=' * 20}\n")
-            
-            outfile.write(f"{os.path.basename(abs_dir_path)}\n")
-            self._create_tree_recursive(outfile, abs_dir_path, "")
-        
-        if self.verbose:
-            logger.info("...文件樹部分已完成。")
+            outfile.write(f"\n附註: (*) 代表該檔案已被納入報告內容。\n")
+            outfile.write(f"Root: {os.path.basename(abs_dir_path)} ({abs_dir_path})\n")
+            self._create_tree_recursive(outfile, abs_dir_path, "", scanned_set)
 
-    def _create_tree_recursive(self, file_obj: TextIOWrapper, dir_path: str, prefix: str = ""):
-        """
-        遞迴輔助函式，用來建立文件樹的每一層結構，會跳過忽略列表中的項目。
-        """
+    def _create_tree_recursive(self, file_obj: TextIOWrapper, dir_path: str, prefix: str = "", scanned_set: Set[str] = None):
+        if scanned_set is None: scanned_set = set()
+        
         try:
             items = [item for item in os.listdir(dir_path) if item not in self.IGNORED_PATTERNS]
             entries = sorted(items, key=lambda x: not os.path.isdir(os.path.join(dir_path, x)))
-        except OSError as e:
-            file_obj.write(f"{prefix}└── [無法存取: {e}]\n")
+        except OSError:
             return
 
         for i, entry in enumerate(entries):
             connector = "└── " if i == len(entries) - 1 else "├── "
-            file_obj.write(f"{prefix}{connector}{entry}\n")
-
+            
+            # [修改] 檢查檔案是否在 scanned_set 中，若是則加上標記
+            full_path = os.path.join(dir_path, entry)
+            is_included = os.path.abspath(full_path) in scanned_set
+            marker = " (*)" if is_included and os.path.isfile(full_path) else ""
+            
+            file_obj.write(f"{prefix}{connector}{entry}{marker}\n")
+            
             entry_path = os.path.join(dir_path, entry)
             if os.path.isdir(entry_path):
                 new_prefix = "    " if i == len(entries) - 1 else "│   "
-                self._create_tree_recursive(file_obj, entry_path, prefix + new_prefix)
-    
+                self._create_tree_recursive(file_obj, entry_path, prefix + new_prefix, scanned_set)
+
+    # ================= 共用報告生成方法 =================
+
+    def _write_main_header(self, file_obj: TextIOWrapper):
+        file_obj.write(f"Project Name: {self.project_name}\n")
+        file_obj.write(f"Generate Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        
+        if self.generated_by:
+            mode_str = f"依賴分析模式 (Dependency Mode) - Entry: {os.path.basename(self.generated_by)}"
+            desc = self.project_description or "此報告基於入口檔案進行依賴分析，僅包含位於指定目錄內的相關程式碼。"
+        else:
+            mode_str = "全目錄掃描模式 (Directory Scan Mode)"
+            desc = self.project_description or "此報告包含指定目錄下的所有符合副檔名之檔案。"
+            
+        file_obj.write(f"Mode: {mode_str}\n")
+        file_obj.write(f"Target Directories: {', '.join(self.directories)}\n")
+        file_obj.write(f"Description: {desc}\n")
+        file_obj.write(f"Total Files Included: {len(self.scanned_files)}\n")
+        file_obj.write("=" * 80 + "\n")
+
+    def _generate_file_list_section(self, outfile: TextIOWrapper):
+        outfile.write(f"\n\n{'=' * 20} 包含的檔案清單 (File List) {'=' * 20}\n")
+        try:
+            common_path = os.path.commonpath(self.scanned_files)
+        except:
+            common_path = os.getcwd()
+        outfile.write(f"Common Root: {common_path}\n")
+        for f in sorted(self.scanned_files):
+            outfile.write(f" - {os.path.relpath(f, common_path)}\n")
+
+    def _combine_files_section(self, outfile: TextIOWrapper):
+        sorted_files = sorted(list(self.scanned_files))
+        _tqdm = tqdm(sorted_files, desc="Writing content", disable=not self.verbose)
+
+        outfile.write(f"\n\n{'=' * 20} 檔案內容 (File Contents) {'=' * 20}\n")
+        for file_path in _tqdm:
+            outfile.write(f"\n{'='*30} FILE: {file_path} {'='*30}\n")
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as infile:
+                    content = infile.read()
+                    outfile.write(content)
+                    outfile.write("\n") 
+            except Exception as e:
+                outfile.write(f"*** 讀取錯誤: {e} ***\n")
+
     def run(self):
-        """
-        執行所有主要任務，並將所有結果寫入單一報告文件。
-        """
-        if not self._validate_directories():
+        try:
+            os.makedirs(self.output_dir, exist_ok=True)
+        except OSError as e:
+            logger.error(f"無法建立輸出資料夾: {e}")
             return
-        
+
+        if self.generated_by:
+            if self.verbose: logger.info(f"[Mode] 依賴分析模式 (Recursive): {self.generated_by}")
+            if not os.path.exists(self.generated_by):
+                logger.error(f"找不到入口檔案: {self.generated_by}")
+                return
+            self.scanned_files = self._scan_dependencies_recursive(self.generated_by)
+        else:
+            if self.verbose: logger.info(f"[Mode] 目錄掃描模式: {self.directories}")
+            self.scanned_files = self._scan_directories_recursive()
+
         output_path = os.path.join(self.output_dir, self.output_file)
-        if self.verbose:  # <--- 修改點 3: 加入 verbose 判斷
-            logger.info(f"開始產生總報告: {output_path}")
-        
+        if self.verbose: logger.info(f"找到 {len(self.scanned_files)} 個符合條件的檔案，正在寫入報告...")
+
         try:
             with open(output_path, 'w', encoding='utf-8') as outfile:
-                # 1. 寫入總標頭
                 self._write_main_header(outfile)
-                
-                # 2. 寫入文件樹部分
-                outfile.write("\n\n\n" + "I. 文件樹 (Directory Tree)" + "\n" + "="*80 + "\n")
                 self._generate_tree_section(outfile)
-
-                # 3. 寫入檔案整合部分
-                outfile.write("\n\n" + "II. 檔案整合 (File Contents)" + "\n" + "="*80 + "\n")
+                if self.generated_by: self._generate_file_list_section(outfile)
                 self._combine_files_section(outfile)
-                
-            logger.success(f"專案報告已成功寫入: {output_path}")
+            logger.success(f"完成！報告位置: {output_path}")
 
         except Exception as e:
-            if self.verbose:
-                logger.error(f"產生總報告時發生錯誤: {e}")
+            logger.error(f"錯誤: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+
 def main():
-    """
-    主函式，處理使用者輸入並建立 FileProcessor 實例。
-    """
-    parser = argparse.ArgumentParser(
-        description="一個強大的文件處理工具，可以整合指定副檔名的檔案，並為多個目錄產生文件樹。",
-        formatter_class=argparse.RawTextHelpFormatter
-    )
-    
-    parser.add_argument(
-        "-dir", "--directories", 
-        default=['.'],
-        nargs='+', 
-        help="要處理的一個或多個目標資料夾路徑，請用空格分隔。"
-    )
-    parser.add_argument(
-        "-e", "--extensions", 
-        nargs='+',
-        default=['.py'], 
-        help="要整合的一個或多個檔案副檔名，請用空格分隔。\n範例: -e .py .html .css (預設值: .py)"
-    )
-    parser.add_argument("-o1", "--output_combine", default="combine_files.txt", help="整合後的文件名稱。(預設值: combine_files.txt)")
-    parser.add_argument("-o2", "--output_tree", default="trees.txt", help="文件樹的輸出文件名稱。(預設值: trees.txt)")
-    parser.add_argument("-o3", "--output_dir", default=".", help="所有輸出文件的目標資料夾。(預設值: .)")
-    parser.add_argument("-n", "--project_name", default="Project Report", help="設定報告中的專案名稱。")
-    parser.add_argument("-d", "--project_description", default="", help="設定報告中的專案描述。")
-    
+    parser = argparse.ArgumentParser(description="專案代碼整合報告生成器", formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("-t", "--target", default=None, help="[依賴模式] 指定入口檔案。")
+    parser.add_argument("-d", "--directories", default=['.'], nargs='+', help="分析範圍資料夾 (預設: .)。")
+    parser.add_argument("-e", "--extensions", nargs='+', default=['.py'], help="副檔名 (預設: .py)。")
+    parser.add_argument("-o", "--output", default="project_report.txt", help="輸出檔名。")
+    parser.add_argument("-od", "--output_dir", default=".", help="輸出資料夾。")
+    parser.add_argument("-n", "--name", default="Project Report", help="專案名稱。")
     args = parser.parse_args()
 
-    import sys
-    # 建立 FileProcessor 實例
     processor = FileProcessor(
-        # directories=args.directories,
-        # extensions=args.extensions,
-        # output_combine=args.output_combine,
-        # output_tree=args.output_tree,
-        # output_dir=args.output_dir,
-        # project_name=args.project_name,
-        # project_description=args.project_description,
-        generated_by= f"Command({' '.join(sys.argv)})"
+        directories=args.directories,
+        extensions=args.extensions,
+        output_file=args.output,
+        output_dir=args.output_dir,
+        project_name=args.name,
+        generated_by=args.target
     )
-
-    # 執行任務
     processor.run()
 
-
 if __name__ == "__main__":
-    main()
+    FileProcessor(
+        generated_by=None,#r'C:\timmy\Program\Antenna\train_dual.py',
+        verbose = True
+    ).run()
