@@ -55,7 +55,12 @@ def track_active_users():
     """Update the last seen timestamp for the requesting IP."""
     try:
         # If behind a proxy, you might need request.headers.get('X-Forwarded-For')
-        ip = request.remote_addr
+        if request.headers.getlist("X-Forwarded-For"):
+            # 取第一個 IP，通常是真實客戶端 IP
+            ip = request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+        else:
+            # 如果沒有 Header，回退到 remote_addr (例如本地測試時)
+            ip = request.remote_addr
         ACTIVE_USERS[ip] = datetime.now()
     except Exception:
         pass # Don't break the app if tracking fails
