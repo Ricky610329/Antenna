@@ -31,6 +31,9 @@
         .gallery-img:hover {
             transform: scale(1.05);
         }
+        #content-container {
+            display: none; /* Initially hidden */
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -49,588 +52,393 @@
 </nav>
 
 <div class="container">
-    {% if error %}
-    <div class="alert alert-danger" role="alert">
-        {{ error }}
-    </div>
-    {% endif %}
-
-    <div class="row">
-        <!-- Main Content Column -->
-        <div class="col-lg-8">
-            
-            <!-- Global Control Section -->
-            {% if matrix_data %}
-            <div class="card mb-4 shadow-sm sticky-top" style="z-index: 1020; top: 1rem;">
-                <div class="card-body">
-                    <label for="globalStepSlider" class="form-label fw-bold d-flex justify-content-between">
-                        <span>Global Step Control</span>
-                        <span id="globalStepLabel" class="badge bg-primary rounded-pill">Step: 0</span>
-                    </label>
-                    <input type="range" class="form-range" id="globalStepSlider" min="0" max="100" value="100">
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Charts Section -->
-            {% if data %}
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Training Metrics</h5>
-                    {% if record_name %}
-                    <small class="text-muted">Source: {{ record_name }}</small>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <select id="metricSelect" class="form-select" multiple size="5">
-                                <!-- Options populated by JS -->
-                            </select>
-                            <small class="text-muted">Hold Ctrl/Cmd to select multiple metrics.</small>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="metricsChart"></canvas>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Matrix Visualization Section -->
-            {% if matrix_data %}
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Matrix Data Visualization</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-4" id="matrixContainer">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Gallery Section (Hidden by Default) -->
-            {% if images %}
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Generated Images</h5>
-                    <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#galleryCollapse" aria-expanded="false" aria-controls="galleryCollapse">
-                        Toggle Images
-                    </button>
-                </div>
-                <div class="collapse" id="galleryCollapse">
-                    <div class="card-body">
-                        <div class="row row-cols-2 row-cols-md-3 g-3">
-                            {% for img in images %}
-                            <div class="col">
-                                <div class="card h-100 border-0">
-                                    <a href="/result/{{ record_id }}/pic/{{ img }}" target="_blank">
-                                        <img src="/result/{{ record_id }}/pic/{{ img }}" class="gallery-img" alt="{{ img }}" loading="lazy">
-                                    </a>
-                                    <div class="card-body p-1 text-center">
-                                        <small class="text-muted text-truncate d-block">{{ img }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Raw Data Section (Collapsed) -->
-            {% if data %}
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Raw Data (All)</h5>
-                    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#rawDataCollapse">
-                        Show Data
-                    </button>
-                </div>
-                <div class="collapse" id="rawDataCollapse">
-                    <div class="card-body">
-                        <div class="table-responsive" style="max-height: 400px; overflow: auto;">
-                            <table class="table table-sm table-striped table-hover text-nowrap" id="rawDataTable">
-                                <thead>
-                                    <!-- Populated by JS -->
-                                </thead>
-                                <tbody>
-                                    <!-- Populated by JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="text-center p-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
+        <p class="mt-2">Loading record data from NAS...</p>
+    </div>
 
-        <!-- Sidebar Column -->
-        <div class="col-lg-4">
-             <!-- Config Section -->
-             {% if config %}
-             <div class="card mb-4 shadow-sm">
-                 <div class="card-header bg-white">
-                     <h5 class="mb-0">Configuration</h5>
-                 </div>
-                 <div class="card-body">
-                     <pre class="bg-light p-2 rounded" style="max-height: 400px; overflow-y: auto;"><code>{{ config | tojson(indent=4) }}</code></pre>
-                 </div>
-             </div>
-             {% endif %}
+    <!-- Error Display -->
+    <div id="error-container" class="alert alert-danger" role="alert" style="display: none;"></div>
 
-            <!-- History/Metadata Section -->
-            {% if history %}
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">History / Metadata</h5>
-                     <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#historyCollapse">
-                        Show Info
-                    </button>
-                </div>
-                 <div class="collapse" id="historyCollapse">
+    <!-- Main Content Area (Initially Hidden) -->
+    <div id="content-container">
+        <div class="row">
+            <!-- Main Content Column -->
+            <div class="col-lg-8">
+                
+                <!-- Global Control Section -->
+                <div id="global-control-section" class="card mb-4 shadow-sm sticky-top" style="z-index: 1020; top: 1rem; display: none;">
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-striped">
-                                <thead>
-                                    <tr>
-                                        {% for key in history[0].keys() %}
-                                        <th>{{ key }}</th>
-                                        {% endfor %}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for row in history %}
-                                    <tr>
-                                        {% for value in row.values() %}
-                                        <td>{{ value }}</td>
-                                        {% endfor %}
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                        <label for="globalStepSlider" class="form-label fw-bold d-flex justify-content-between">
+                            <span>Global Step Control</span>
+                            <span id="globalStepLabel" class="badge bg-primary rounded-pill">Step: 0</span>
+                        </label>
+                        <input type="range" class="form-range" id="globalStepSlider" min="0" max="100" value="100">
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div id="charts-section" class="card mb-4 shadow-sm" style="display: none;">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Training Metrics</h5>
+                        <small id="record-name-source" class="text-muted"></small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <select id="metricSelect" class="form-select" multiple size="5">
+                                    <!-- Options populated by JS -->
+                                </select>
+                                <small class="text-muted">Hold Ctrl/Cmd to select multiple metrics.</small>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="metricsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Matrix Visualization Section -->
+                <div id="matrix-section" class="card mb-4 shadow-sm" style="display: none;">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Matrix Data Visualization</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4" id="matrixContainer">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gallery Section -->
+                <div id="gallery-section" class="card mb-4 shadow-sm" style="display: none;">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Generated Images</h5>
+                        <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#galleryCollapse" aria-expanded="false" aria-controls="galleryCollapse">
+                            Toggle Images
+                        </button>
+                    </div>
+                    <div class="collapse" id="galleryCollapse">
+                        <div class="card-body">
+                            <div id="gallery-container" class="row row-cols-2 row-cols-md-3 g-3">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Raw Data Section -->
+                <div id="raw-data-section" class="card mb-4 shadow-sm" style="display: none;">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Raw Data (All)</h5>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#rawDataCollapse">
+                            Show Data
+                        </button>
+                    </div>
+                    <div class="collapse" id="rawDataCollapse">
+                        <div class="card-body">
+                            <div class="table-responsive" style="max-height: 400px; overflow: auto;">
+                                <table class="table table-sm table-striped table-hover text-nowrap" id="rawDataTable">
+                                    <thead>
+                                        <!-- Populated by JS -->
+                                    </thead>
+                                    <tbody>
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endif %}
+
+            <!-- Sidebar Column -->
+            <div class="col-lg-4">
+                 <!-- Config Section -->
+                 <div id="config-section" class="card mb-4 shadow-sm" style="display: none;">
+                     <div class="card-header bg-white">
+                         <h5 class="mb-0">Configuration</h5>
+                     </div>
+                     <div class="card-body">
+                         <pre class="bg-light p-2 rounded" style="max-height: 400px; overflow-y: auto;"><code id="config-data-pre"></code></pre>
+                     </div>
+                 </div>
+
+                <!-- History/Metadata Section -->
+                <div id="history-section" class="card mb-4 shadow-sm" style="display: none;">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">History / Metadata</h5>
+                         <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#historyCollapse">
+                            Show Info
+                        </button>
+                    </div>
+                     <div class="collapse" id="historyCollapse">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table id="history-table" class="table table-sm table-striped">
+                                    <thead></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Data passed from Flask
-    const rawData = {{ data | tojson }};
-    const matrixData = {{ matrix_data | default({}) | tojson }};
+document.addEventListener('DOMContentLoaded', function() {
+    const recordId = '{{ record_id }}';
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const contentContainer = document.getElementById('content-container');
+    const errorContainer = document.getElementById('error-container');
 
-    // --- Global Slider Initialization (Must be before updateChart) ---
-    const globalSlider = document.getElementById('globalStepSlider');
-    const globalLabel = document.getElementById('globalStepLabel');
-    const updateCallbacks = []; // Functions to call when global slider moves
-    let globalMaxStep = 0;
-
-    if (matrixData && Object.keys(matrixData).length > 0) {
-        // Determine Global Max Step
-        Object.keys(matrixData).forEach(key => {
-            const len = matrixData[key].length;
-            if (len - 1 > globalMaxStep) globalMaxStep = len - 1;
-        });
-
-        // Initialize Global Slider if it exists
-        if (globalSlider) {
-            globalSlider.max = globalMaxStep;
-            globalSlider.value = globalMaxStep;
-            globalLabel.innerText = `Step: ${globalMaxStep}`;
-
-            globalSlider.addEventListener('input', (e) => {
-                const step = parseInt(e.target.value);
-                globalLabel.innerText = `Step: ${step}`;
+    fetch(`/api/record/${recordId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(apiData => {
+            loadingIndicator.style.display = 'none';
+            
+            if (apiData.error) {
+                errorContainer.innerText = apiData.error;
+                errorContainer.style.display = 'block';
+                return;
+            }
+            
+            contentContainer.style.display = 'block';
+            
+            // --- DECOUPLED RENDER FUNCTIONS ---
+            
+            const renderImages = (images) => {
+                const container = document.getElementById('gallery-container');
+                if (!images || images.length === 0) return;
                 
-                // Update Matrix Views
-                updateCallbacks.forEach(cb => cb(step));
+                document.getElementById('gallery-section').style.display = 'block';
+                let html = '';
+                images.forEach(img => {
+                    html += `
+                        <div class="col">
+                            <div class="card h-100 border-0">
+                                <a href="/result/${recordId}/pic/${img}" target="_blank">
+                                    <img src="/result/${recordId}/pic/${img}" class="gallery-img" alt="${img}" loading="lazy">
+                                </a>
+                                <div class="card-body p-1 text-center">
+                                    <small class="text-muted text-truncate d-block">${img}</small>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+                container.innerHTML = html;
+            };
 
-                // Update Training Metrics Chart
-                if (window.metricsChartInstance) {
-                    const chart = window.metricsChartInstance;
+            const renderConfig = (config) => {
+                if (!config || Object.keys(config).length === 0) return;
+                document.getElementById('config-section').style.display = 'block';
+                document.getElementById('config-data-pre').textContent = JSON.stringify(config, null, 4);
+            };
 
-                    // 1. Update Annotation Line
-                    if (chart.options.plugins.annotation.annotations.line1) {
-                        chart.options.plugins.annotation.annotations.line1.xMin = step;
-                        chart.options.plugins.annotation.annotations.line1.xMax = step;
-                    }
+            const renderHistory = (history) => {
+                const container = document.getElementById('history-table');
+                if (!history || history.length === 0) return;
 
-                    // 2. Trigger Tooltip/Hover Effect
-                    const activeElements = [];
-                    chart.data.datasets.forEach((dataset, datasetIndex) => {
-                        // Ensure data exists for this step
-                        if (dataset.data[step] !== undefined) {
-                            activeElements.push({
-                                datasetIndex: datasetIndex,
-                                index: step
-                            });
-                        }
+                document.getElementById('history-section').style.display = 'block';
+                const thead = container.querySelector('thead');
+                const tbody = container.querySelector('tbody');
+                
+                let headerHtml = '<tr>';
+                Object.keys(history[0]).forEach(key => headerHtml += `<th>${key}</th>`);
+                headerHtml += '</tr>';
+                thead.innerHTML = headerHtml;
+
+                let bodyHtml = '';
+                history.forEach(row => {
+                    bodyHtml += '<tr>';
+                    Object.values(row).forEach(val => bodyHtml += `<td>${val !== null ? val : ''}</td>`);
+                    bodyHtml += '</tr>';
+                });
+                tbody.innerHTML = bodyHtml;
+            };
+
+            const renderTrainingMetrics = (rawData, recordName) => {
+                if (!rawData || Object.keys(rawData).length === 0) return;
+                
+                document.getElementById('charts-section').style.display = 'block';
+                if (recordName) {
+                    document.getElementById('record-name-source').innerText = `Source: ${recordName}`;
+                }
+
+                // --- This logic is mostly the same as the original file ---
+                const ctx = document.getElementById('metricsChart').getContext('2d');
+                const metricSelect = document.getElementById('metricSelect');
+                const rawDataTableHead = document.querySelector('#rawDataTable thead');
+                const rawDataTableBody = document.querySelector('#rawDataTable tbody');
+                
+                const keys = Object.keys(rawData);
+                if (keys.length === 0) return;
+                
+                document.getElementById('raw-data-section').style.display = 'block';
+
+                const numRows = rawData[keys[0]].length;
+                
+                // --- Populate Raw Data Table ---
+                let headRow = '<tr><th>Index</th>';
+                keys.forEach(key => headRow += `<th>${key}</th>`);
+                headRow += '</tr>';
+                rawDataTableHead.innerHTML = headRow;
+
+                let bodyContent = '';
+                for (let i = numRows - 1; i >= 0; i--) { 
+                    bodyContent += `<tr><td>${i}</td>`;
+                    keys.forEach(key => {
+                        let val = rawData[key][i];
+                        if (val !== null && typeof val === 'number') val = val.toFixed(4);
+                        bodyContent += `<td>${val !== null ? val : ''}</td>`;
                     });
-
-                    if (activeElements.length > 0) {
-                        chart.setActiveElements(activeElements);
-                        chart.tooltip.setActiveElements(activeElements);
-                    } else {
-                        chart.setActiveElements([]);
-                        chart.tooltip.setActiveElements([], {x: 0, y: 0});
-                    }
-
-                    chart.update('none'); // Efficient update without animation
+                    bodyContent += '</tr>';
                 }
-            });
-        }
-    }
-    
-    // Initialize Chart
-    if (rawData && Object.keys(rawData).length > 0) {
-        const ctx = document.getElementById('metricsChart').getContext('2d');
-        const metricSelect = document.getElementById('metricSelect');
-        const rawDataTableHead = document.querySelector('#rawDataTable thead');
-        const rawDataTableBody = document.querySelector('#rawDataTable tbody');
-        
-        const keys = Object.keys(rawData);
-        const numRows = rawData[keys[0]].length;
-        
-        // --- Populate Raw Data Table (All rows) ---
-        // Header
-        let headRow = '<tr><th>Index</th>';
-        keys.forEach(key => {
-            headRow += `<th>${key}</th>`;
-        });
-        headRow += '</tr>';
-        rawDataTableHead.innerHTML = headRow;
+                rawDataTableBody.innerHTML = bodyContent;
 
-        // Body
-        let bodyContent = '';
-        // Display all rows, reversed (newest first)
-        for (let i = numRows - 1; i >= 0; i--) { 
-            bodyContent += `<tr><td>${i}</td>`;
-            keys.forEach(key => {
-                let val = rawData[key][i];
-                if (typeof val === 'number') val = val.toFixed(4);
-                bodyContent += `<td>${val}</td>`;
-            });
-            bodyContent += '</tr>';
-        }
-        rawDataTableBody.innerHTML = bodyContent;
+                // --- Populate Metric Select ---
+                keys.forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.text = key;
+                    if (key.includes('loss')) option.selected = true;
+                    metricSelect.appendChild(option);
+                });
 
-        // --- Populate Metric Select ---
-        keys.forEach(key => {
-            const option = document.createElement('option');
-            option.value = key;
-            option.text = key;
-            // Default select loss metrics
-            if (key.includes('loss')) {
-                option.selected = true;
-            }
-            metricSelect.appendChild(option);
-        });
-
-        // let chartInstance = null; // Defined globally via window for access
-
-        function updateChart() {
-            const selectedOptions = Array.from(metricSelect.selectedOptions).map(opt => opt.value);
-            const currentStep = globalSlider ? parseInt(globalSlider.value) : 0;
-            
-            const datasets = selectedOptions.map((key, index) => {
-                const hue = (index * 137.508) % 360; 
-                return {
-                    label: key,
-                    data: rawData[key],
-                    borderColor: `hsl(${hue}, 70%, 50%)`,
-                    backgroundColor: `hsl(${hue}, 70%, 50%, 0.1)`,
-                    borderWidth: 2,
-                    tension: 0.1,
-                    pointRadius: 1
-                };
-            });
-
-            // Assuming x-axis is just index (Epoch)
-            const labels = Array.from({length: rawData[selectedOptions[0]]?.length || 0}, (_, i) => i);
-
-            if (window.metricsChartInstance) {
-                window.metricsChartInstance.destroy();
-            }
-
-            window.metricsChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            title: {
-                                display: true,
-                                text: 'Epoch / Step'
-                            }
-                        },
-                        y: {
-                            display: true,
-                            title: {
-                                display: true,
-                                text: 'Value'
-                            }
-                        }
-                    },
-                    plugins: {
-                        annotation: {
-                            annotations: {
-                                line1: {
-                                    type: 'line',
-                                    xMin: currentStep,
-                                    xMax: currentStep,
-                                    borderColor: 'rgba(255, 99, 132, 0.8)',
-                                    borderWidth: 2,
-                                    label: {
-                                        display: true,
-                                        content: 'Current Step',
-                                        position: 'start'
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        metricSelect.addEventListener('change', updateChart);
-        updateChart(); // Initial load
-    }
-
-    // --- Initialize Matrix Visualization ---
-    if (matrixData && Object.keys(matrixData).length > 0) {
-        const container = document.getElementById('matrixContainer');
-        const matrixCharts = {}; // Store Chart.js instances
-        // updateCallbacks // Defined at top
-        
-        // 1 & 2 done at top
-
-        // 3. Create Cards
-        Object.keys(matrixData).forEach(key => {
-            const series = matrixData[key];
-            const maxStep = series.length - 1;
-            
-            // Create Card Col
-            const col = document.createElement('div');
-            col.className = 'col-md-6 col-lg-4';
-            
-            // Create Inner HTML (No local slider)
-            col.innerHTML = `
-                <div class="card h-100">
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <small class="fw-bold text-uppercase text-truncate" title="${key}" style="max-width: 100px;">${key}</small>
-                        
-                        <div class="btn-group btn-group-sm" role="group">
-                            <input type="radio" class="btn-check" name="btnradio-${key}" id="btn-heat-${key}" autocomplete="off" checked>
-                            <label class="btn btn-outline-primary" for="btn-heat-${key}" title="Heatmap View">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-grid-3x3-gap-fill" viewBox="0 0 16 16"><path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V7zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-2z"/></svg>
-                            </label>
-
-                            <input type="radio" class="btn-check" name="btnradio-${key}" id="btn-line-${key}" autocomplete="off">
-                            <label class="btn btn-outline-primary" for="btn-line-${key}" title="Line Chart View">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-graph-up" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M0 0h1v15h15v1H0V0Zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07Z"/></svg>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="card-body p-2 d-flex flex-column align-items-center justify-content-center position-relative" style="height: 250px; background: #f8f9fa;">
-                         <!-- Heatmap Container -->
-                        <div id="heat-container-${key}" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;">
-                            <canvas id="canvas-${key}" width="200" height="200" style="width:100%; height:100%; object-fit: contain; image-rendering: pixelated;"></canvas>
-                        </div>
-                        <!-- Line Chart Container -->
-                        <div id="line-container-${key}" style="width:100%; height:100%; display:none;">
-                            <canvas id="chart-${key}"></canvas>
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.appendChild(col);
-
-            const canvas = col.querySelector(`#canvas-${key}`);
-            const chartCanvas = col.querySelector(`#chart-${key}`);
-            const heatContainer = col.querySelector(`#heat-container-${key}`);
-            const lineContainer = col.querySelector(`#line-container-${key}`);
-            const btnHeat = col.querySelector(`#btn-heat-${key}`);
-            const btnLine = col.querySelector(`#btn-line-${key}`);
-
-            let currentMode = 'heatmap'; // 'heatmap' or 'line'
-
-            // --- Render Logic ---
-            function renderHeatmap(step, data) {
-                const ctx = canvas.getContext('2d');
-                const w = canvas.width;
-                const h = canvas.height;
-                ctx.clearRect(0, 0, w, h);
-
-                // Determine dimensions
-                const rows = data.length;
-                const cols = Array.isArray(data[0]) ? data[0].length : 1;
-                
-                const cellW = w / cols;
-                const cellH = h / rows;
-
-                // Normalize (Simple min/max for current frame)
-                let minVal = Infinity, maxVal = -Infinity;
-                if (Array.isArray(data[0])) {
-                     data.forEach(row => row.forEach(v => {
-                        if (v < minVal) minVal = v;
-                        if (v > maxVal) maxVal = v;
-                     }));
-                } else {
-                     data.forEach(v => {
-                        if (v < minVal) minVal = v;
-                        if (v > maxVal) maxVal = v;
-                     });
-                }
-                if (maxVal === minVal) maxVal = minVal + 1;
-
-                // Draw
-                for (let r = 0; r < rows; r++) {
-                    for (let c = 0; c < cols; c++) {
-                        const val = (cols > 1) ? data[r][c] : data[r];
-                        const norm = (val - minVal) / (maxVal - minVal);
-                        
-                        // Color Map (Blue-ish)
-                        const intensity = Math.floor(norm * 255);
-                        // Make 0 dark, 1 bright
-                        ctx.fillStyle = `rgb(${0}, ${intensity}, ${intensity + 50})`; 
-                        
-                        ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
-                    }
-                }
-            }
-
-            function renderLineChart(step, data) {
-                let datasets = [];
-                let labels = [];
-
-                if (Array.isArray(data[0])) {
-                    // Matrix (2D)
-                    const rows = data.length;
-                    const cols = data[0].length;
-                    labels = Array.from({length: cols}, (_, i) => i);
+                function updateChart() {
+                    const selectedOptions = Array.from(metricSelect.selectedOptions).map(opt => opt.value);
+                    const currentStep = window.globalSlider ? parseInt(window.globalSlider.value) : 0;
                     
-                    for (let r = 0; r < rows; r++) {
-                        const hue = (r * 137.508) % 360;
-                        datasets.push({
-                            label: `Row ${r}`,
-                            data: data[r],
-                            borderColor: `hsl(${hue}, 70%, 50%)`,
-                            borderWidth: 1.5,
-                            pointRadius: 0,
-                            tension: 0.1,
-                            fill: false
-                        });
-                    }
-                } else {
-                    // Vector (1D)
-                    labels = data.map((_, i) => i);
-                    datasets.push({
-                        label: 'Value',
-                        data: data,
-                        borderColor: 'rgb(75, 192, 192)',
-                        borderWidth: 1.5,
-                        pointRadius: 0,
-                        tension: 0.1,
-                        fill: false
+                    const datasets = selectedOptions.map((key, index) => {
+                        const hue = (index * 137.508) % 360; 
+                        return { label: key, data: rawData[key], borderColor: `hsl(${hue}, 70%, 50%)`, backgroundColor: `hsl(${hue}, 70%, 50%, 0.1)`, borderWidth: 2, tension: 0.1, pointRadius: 1 };
                     });
-                }
+                    
+                    const labels = Array.from({length: rawData[selectedOptions[0]]?.length || 0}, (_, i) => i);
 
-                if (matrixCharts[key]) {
-                    // Update existing chart
-                    matrixCharts[key].data.labels = labels;
-                    matrixCharts[key].data.datasets = datasets;
-                    matrixCharts[key].update('none');
-                } else {
-                    // Create new chart
-                    const ctx = chartCanvas.getContext('2d');
-                    matrixCharts[key] = new Chart(ctx, {
+                    if (window.metricsChartInstance) window.metricsChartInstance.destroy();
+
+                    window.metricsChartInstance = new Chart(ctx, {
                         type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: datasets
-                        },
+                        data: { labels, datasets },
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            animation: false,
-                            scales: {
-                                x: { display: true, title: {display: true, text: 'Column Index'} },
-                                y: { display: true }
-                            },
-                            plugins: {
-                                legend: { 
-                                    display: datasets.length > 1,
-                                    labels: { boxWidth: 10, font: { size: 10 } }
-                                }
-                            }
+                            responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                            scales: { x: { type: 'linear', title: { display: true, text: 'Epoch / Step' } }, y: { display: true, title: { display: true, text: 'Value' } } },
+                            plugins: { annotation: { annotations: { line1: { type: 'line', xMin: currentStep, xMax: currentStep, borderColor: 'rgba(255, 99, 132, 0.8)', borderWidth: 2, label: { display: true, content: 'Current Step', position: 'start' } } } } }
                         }
                     });
                 }
-            }
 
-            function updateView(step) {
-                // If this metric has fewer steps than global max, clamp it
-                const localStep = Math.min(step, maxStep);
-                const data = series[localStep];
+                metricSelect.addEventListener('change', updateChart);
+                updateChart();
+            };
+
+            const renderMatrixViz = (matrixData) => {
+                if (!matrixData || Object.keys(matrixData).length === 0) return;
+
+                document.getElementById('global-control-section').style.display = 'block';
+                document.getElementById('matrix-section').style.display = 'block';
+
+                // --- This logic is mostly the same as the original file ---
+                const globalSlider = document.getElementById('globalStepSlider');
+                window.globalSlider = globalSlider; // Make it globally accessible
+                const globalLabel = document.getElementById('globalStepLabel');
+                const updateCallbacks = [];
+                let globalMaxStep = 0;
+
+                Object.keys(matrixData).forEach(key => {
+                    const len = matrixData[key].length;
+                    if (len - 1 > globalMaxStep) globalMaxStep = len - 1;
+                });
+
+                globalSlider.max = globalMaxStep;
+                globalSlider.value = globalMaxStep;
+                globalLabel.innerText = `Step: ${globalMaxStep}`;
+
+                globalSlider.addEventListener('input', (e) => {
+                    const step = parseInt(e.target.value);
+                    globalLabel.innerText = `Step: ${step}`;
+                    updateCallbacks.forEach(cb => cb(step));
+                    if (window.metricsChartInstance) {
+                        const chart = window.metricsChartInstance;
+                        if (chart.options.plugins.annotation.annotations.line1) {
+                            chart.options.plugins.annotation.annotations.line1.xMin = step;
+                            chart.options.plugins.annotation.annotations.line1.xMax = step;
+                        }
+                        const activeElements = [];
+                        chart.data.datasets.forEach((dataset, datasetIndex) => {
+                            if (dataset.data[step] !== undefined) activeElements.push({ datasetIndex, index: step });
+                        });
+                        chart.setActiveElements(activeElements.length > 0 ? activeElements : []);
+                        chart.tooltip.setActiveElements(activeElements.length > 0 ? activeElements : [], {x: 0, y: 0});
+                        chart.update('none');
+                    }
+                });
                 
-                if (!data) return;
+                const container = document.getElementById('matrixContainer');
+                const matrixCharts = {};
+                
+                Object.keys(matrixData).forEach(key => {
+                    const series = matrixData[key];
+                    const maxStep = series.length - 1;
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-lg-4';
+                    col.innerHTML = `
+                        <div class="card h-100">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <small class="fw-bold text-uppercase text-truncate" title="${key}" style="max-width: 100px;">${key}</small>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="btnradio-${key}" id="btn-heat-${key}" autocomplete="off" checked>
+                                    <label class="btn btn-outline-primary" for="btn-heat-${key}" title="Heatmap View"><i class="bi bi-grid-3x3-gap-fill"></i></label>
+                                    <input type="radio" class="btn-check" name="btnradio-${key}" id="btn-line-${key}" autocomplete="off">
+                                    <label class="btn btn-outline-primary" for="btn-line-${key}" title="Line Chart View"><i class="bi bi-graph-up"></i></label>
+                                </div>
+                            </div>
+                            <div class="card-body p-2 d-flex flex-column align-items-center justify-content-center position-relative" style="height: 250px; background: #f8f9fa;">
+                                <div id="heat-container-${key}" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"><canvas id="canvas-${key}" width="200" height="200" style="width:100%; height:100%; object-fit: contain; image-rendering: pixelated;"></canvas></div>
+                                <div id="line-container-${key}" style="width:100%; height:100%; display:none;"><canvas id="chart-${key}"></canvas></div>
+                            </div>
+                        </div>`;
+                    container.appendChild(col);
+                    const canvas = col.querySelector(`#canvas-${key}`), chartCanvas = col.querySelector(`#chart-${key}`), heatContainer = col.querySelector(`#heat-container-${key}`), lineContainer = col.querySelector(`#line-container-${key}`), btnHeat = col.querySelector(`#btn-heat-${key}`), btnLine = col.querySelector(`#btn-line-${key}`);
+                    let currentMode = 'heatmap';
+                    const renderHeatmap = (step, data) => { const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height; ctx.clearRect(0, 0, w, h); const rows = data.length, cols = Array.isArray(data[0]) ? data[0].length : 1, cellW = w / cols, cellH = h / rows; let minVal = Infinity, maxVal = -Infinity; if (Array.isArray(data[0])) data.forEach(row => row.forEach(v => { if (v < minVal) minVal = v; if (v > maxVal) maxVal = v; })); else data.forEach(v => { if (v < minVal) minVal = v; if (v > maxVal) maxVal = v; }); if (maxVal === minVal) maxVal = minVal + 1; for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const val = (cols > 1) ? data[r][c] : data[r], norm = (val - minVal) / (maxVal - minVal), intensity = Math.floor(norm * 255); ctx.fillStyle = `rgb(0, ${intensity}, ${intensity + 50})`; ctx.fillRect(c * cellW, r * cellH, cellW, cellH); } };
+                    const renderLineChart = (step, data) => { let datasets = [], labels = []; if (Array.isArray(data[0])) { const rows = data.length, cols = data[0].length; labels = Array.from({length: cols}, (_, i) => i); for (let r = 0; r < rows; r++) { const hue = (r * 137.508) % 360; datasets.push({ label: `Row ${r}`, data: data[r], borderColor: `hsl(${hue}, 70%, 50%)`, borderWidth: 1.5, pointRadius: 0, tension: 0.1, fill: false }); } } else { labels = data.map((_, i) => i); datasets.push({ label: 'Value', data: data, borderColor: 'rgb(75, 192, 192)', borderWidth: 1.5, pointRadius: 0, tension: 0.1, fill: false }); } if (matrixCharts[key]) { matrixCharts[key].data.labels = labels; matrixCharts[key].data.datasets = datasets; matrixCharts[key].update('none'); } else { const ctx = chartCanvas.getContext('2d'); matrixCharts[key] = new Chart(ctx, { type: 'line', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: true, title: {display: true, text: 'Column Index'} }, y: { display: true } }, plugins: { legend: { display: datasets.length > 1, labels: { boxWidth: 10, font: { size: 10 } } } } } }); } };
+                    const updateView = (step) => { const localStep = Math.min(step, maxStep), data = series[localStep]; if (!data) return; if (currentMode === 'heatmap') { heatContainer.style.display = 'flex'; lineContainer.style.display = 'none'; renderHeatmap(localStep, data); } else { heatContainer.style.display = 'none'; lineContainer.style.display = 'block'; requestAnimationFrame(() => renderLineChart(localStep, data)); } };
+                    updateCallbacks.push(updateView);
+                    btnHeat.addEventListener('change', () => { if (btnHeat.checked) { currentMode = 'heatmap'; const currentGlobalStep = globalSlider ? parseInt(globalSlider.value) : maxStep; updateView(currentGlobalStep); } });
+                    btnLine.addEventListener('change', () => { if (btnLine.checked) { currentMode = 'line'; const currentGlobalStep = globalSlider ? parseInt(globalSlider.value) : maxStep; updateView(currentGlobalStep); } });
+                    updateView(maxStep);
+                });
+            };
 
-                if (currentMode === 'heatmap') {
-                    heatContainer.style.display = 'flex';
-                    lineContainer.style.display = 'none';
-                    renderHeatmap(localStep, data);
-                } else {
-                    heatContainer.style.display = 'none';
-                    lineContainer.style.display = 'block';
-                    requestAnimationFrame(() => renderLineChart(localStep, data));
-                }
-            }
+            // --- CALL RENDER FUNCTIONS ---
+            renderTrainingMetrics(apiData.data, apiData.record_name);
+            renderMatrixViz(apiData.matrix_data);
+            renderImages(apiData.images);
+            renderConfig(apiData.config);
+            renderHistory(apiData.history);
 
-            // --- Event Listeners ---
-            // Add to global callback list
-            updateCallbacks.push(updateView);
-
-            btnHeat.addEventListener('change', () => {
-                if (btnHeat.checked) {
-                    currentMode = 'heatmap';
-                    // Re-render current step
-                    const currentGlobalStep = globalSlider ? parseInt(globalSlider.value) : maxStep;
-                    updateView(currentGlobalStep);
-                }
-            });
-
-            btnLine.addEventListener('change', () => {
-                if (btnLine.checked) {
-                    currentMode = 'line';
-                    // Re-render current step
-                    const currentGlobalStep = globalSlider ? parseInt(globalSlider.value) : maxStep;
-                    updateView(currentGlobalStep);
-                }
-            });
-
-            // Initial Render
-            updateView(maxStep);
+        })
+        .catch(error => {
+            console.error('Error fetching record data:', error);
+            loadingIndicator.style.display = 'none';
+            errorContainer.innerText = 'Failed to load data from the server. See console for details.';
+            errorContainer.style.display = 'block';
         });
-    }
+});
 </script>
 
 </body>

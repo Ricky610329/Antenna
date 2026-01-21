@@ -89,22 +89,21 @@ def natural_sort_key(s):
 
 @app.route('/')
 def index():
-    """List all available records and datasets."""
+    """Serves the skeleton of the index page. Data is fetched asynchronously."""
+    return render_template('index.html')
+
+@app.route('/api/main-page-data')
+def get_main_page_data():
+    """API endpoint to fetch all data needed for the main index page."""
     # 1. Records
     if not RESULT_DIR.exists():
         records = []
     else:
         records = []
-        
-        # Iterate over directories
-        # We use a list to collect valid record IDs to clean up cache later if needed
         current_record_ids = set()
-
         for d in RESULT_DIR.iterdir():
             if d.is_dir():
                 current_record_ids.add(d.name)
-                
-                # Get timestamps for caching
                 rec_mtime = d.stat().st_mtime
                 pic_dir = d / 'pic'
                 pic_mtime = 0
@@ -113,28 +112,21 @@ def index():
                 
                 cache_key = (rec_mtime, pic_mtime)
                 
-                # Check Cache
                 cached = RECORD_CACHE.get(d.name)
                 if cached and cached['key'] == cache_key:
                     records.append(cached['data'])
                     continue
 
-                # Cache Miss - Process Record
                 stat = d.stat()
-                
-                # Find best image
                 best_image = None
                 if pic_dir.exists():
                     images = list(pic_dir.glob('*.png'))
                     if images:
                         images.sort(key=natural_sort_key)
-                        
-                        # 1. Try to find last image containing 'best'
                         best_candidates = [img for img in images if 'best' in img.name.lower()]
                         if best_candidates:
                             best_image = best_candidates[-1].name
                         else:
-                            # 2. Fallback to last naturally sorted png
                             best_image = images[-1].name
 
                 record_data = {
@@ -144,39 +136,32 @@ def index():
                     'best_image': best_image
                 }
                 
-                # Update Cache
-                RECORD_CACHE[d.name] = {
-                    'key': cache_key,
-                    'data': record_data
-                }
-                
+                RECORD_CACHE[d.name] = {'key': cache_key, 'data': record_data}
                 records.append(record_data)
-
-        # Optional: Clean up cache for deleted records
-        # expired_ids = set(RECORD_CACHE.keys()) - current_record_ids
-        # for eid in expired_ids:
-        #     del RECORD_CACHE[eid]
-            
-        records.sort(key=lambda x: x['mtime'], reverse=True)
+        
+        records.sort(key=lambda x: x.get('mtime', 0), reverse=True)
     
     # 2. Datasets
     datasets = []
     if DATASET_DIR.exists():
         for f in DATASET_DIR.glob('*.dataset'):
             stat = f.stat()
-            # Name without extension
             datasets.append({
                 'id': f.stem,
                 'name': f.name,
                 'mtime': stat.st_mtime,
                 'size': stat.st_size
             })
-        datasets.sort(key=lambda x: x['mtime'], reverse=True)
+        datasets.sort(key=lambda x: x.get('mtime', 0), reverse=True)
 
-    # Get active users
+    # 3. Get active users
     active_ips = get_active_ip_list()
         
-    return render_template('index.html', records=records, datasets=datasets, active_ips=active_ips)
+    return jsonify({
+        'records': records,
+        'datasets': datasets,
+        'active_ips': active_ips
+    })
 
 @app.route('/generator')
 def generator():
@@ -280,6 +265,17 @@ def view_dataset(dataset_name):
 @app.route('/record/<record_id>')
 def view_record(record_id):
     """View details of a specific record."""
+    # This route now only serves the skeleton page.
+    # The actual data will be fetched by a JavaScript call to /api/record/<record_id>
+    record_path = RESULT_DIR / record_id
+    if not record_path.exists():
+        abort(404, description="Record not found")
+
+    return render_template('record.html', record_id=record_id)
+
+@app.route('/api/record/<record_id>')
+def get_record_data(record_id):
+    """API endpoint to fetch data for a specific record."""
     record_path = RESULT_DIR / record_id
     if not record_path.exists():
         abort(404, description="Record not found")
@@ -374,8 +370,7 @@ def view_record(record_id):
         except Exception as e:
             print(f"Failed to load config.json: {e}")
 
-    return render_template(
-        'record.html', 
+    return jsonify(
         record_id=record_id, 
         record_name=record_name_loaded,
         data=data_dict, 
