@@ -7,6 +7,25 @@ from flask import Flask, render_template, send_from_directory, abort, jsonify, r
 from werkzeug.utils import secure_filename
 import pandas as pd
 from datetime import datetime, timedelta
+import sys
+
+# --- Mode and Path Configuration ---
+# Check for '-dev' flag to enable development mode
+DEV_MODE = '-dev' in sys.argv
+if DEV_MODE:
+    print("----- Running in Development Mode (debug=True) -----")
+else:
+    print("----- Running in Production Mode (debug=False) -----")
+
+# Define Result Directory (always use production path)
+RESULT_DIR = Path(r"T:\\碩二_吳維文's\\Patch Antenna\\Experiment\\result")
+# We assume dataset directory is sibling to result or explicitly defined
+DATASET_DIR = Path(r"T:\\碩二_吳維文's\\Patch Antenna\\Experiment\\dataset")
+
+# Temp dir for downloads is always local
+TEMP_DIR = Path(os.getcwd()).joinpath('temp_downloads').absolute()
+TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
 
 # Set environment variable to avoid some issues with matplotlib GUI backends
 import matplotlib
@@ -14,7 +33,6 @@ matplotlib.use('Agg')
 
 # Import antenna utils
 # Ensure PYTHONPATH is set in the shell script, or sys.path.append here if needed
-import sys
 sys.path.append(os.getcwd())
 
 from antenna.utils import Record, config
@@ -27,15 +45,6 @@ import shutil
 config.device = 'cpu'
 
 app = Flask(__name__)
-
-# Define Result Directory
-RESULT_DIR = Path(r"T:\\碩二_吳維文's\\Patch Antenna\\Experiment\\result")
-# We assume dataset directory is sibling to result or explicitly defined
-DATASET_DIR = Path(r"T:\\碩二_吳維文's\\Patch Antenna\\Experiment\\dataset")
-# Temp dir for downloads (Absolute Path)
-TEMP_DIR = Path(os.getcwd()).joinpath('temp_downloads').absolute()
-if not TEMP_DIR.exists():
-    TEMP_DIR.mkdir(parents=True)
 
 # Custom Unpickler to handle older Path objects
 class PathFixUnpickler(pickle.Unpickler):
@@ -387,13 +396,15 @@ def serve_result(filename):
     return send_from_directory(RESULT_DIR, filename)
 
 if __name__ == '__main__':
-    # Ensure result directory exists for the app to not crash immediately (optional)
+    # Ensure result directory exists for the app to not crash immediately
+    # This is more critical in production. In dev, dirs are created above.
     if not RESULT_DIR.exists():
         print(f"Warning: Result directory '{RESULT_DIR}' does not exist.")
+        # In prod, we might not want to create it automatically, but for convenience:
         try:
-            RESULT_DIR.mkdir()
+            RESULT_DIR.mkdir(parents=True, exist_ok=True)
             print(f"Created '{RESULT_DIR}'.")
-        except:
-            pass
+        except Exception as e:
+            print(f"Error creating result directory: {e}")
             
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=DEV_MODE, host='0.0.0.0', port=5000)

@@ -15,6 +15,35 @@ call conda activate patch
 echo.
 echo Starting Antenna Visualizer...
 
-python application/app.py
+:menu
+cls
+echo Select an environment to start:
+echo.
+echo   1. Production Mode (by Waitress)
+echo   2. Development Mode
+echo   3. Production Mode (by Flask Built-in Server)
+echo.
+
+choice /c 123 /n /m "Please enter your choice (1=Waitress, 2=Development, 3=Flask Prod): "
+
+if errorlevel 3 (
+    echo Starting in Production Mode (Flask Built-in Server)...
+    python application/app.py
+    goto end
+)
+
+if errorlevel 2 (
+    echo Starting in Development Mode...
+    python application/app.py -dev
+    goto end
+)
+
+if errorlevel 1 (
+    echo Starting in Production Mode (Waitress)...
+    python application/run_waitress.py
+    goto end
+)
+
+:end
 
 pause
