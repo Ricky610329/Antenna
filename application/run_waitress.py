@@ -1,7 +1,7 @@
 # run_waitress.py
 import logging
 from waitress import serve
-from app import app
+from application.app import app
 
 # Configure waitress logging to only show errors
 logger = logging.getLogger('waitress')
