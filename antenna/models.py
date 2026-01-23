@@ -111,15 +111,19 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             raise RuntimeError(f"Please use the correct model file.\nFile: {checkpoint_loaded['title']}\nCurrent: {self.__str__()}")
 
     def save(self) -> Path:
-        temp_file = self.model_file.with_suffix(self.model_file.suffix + '.tmp')
+        return self.save_as(self.model_file)
+    
+    def save_as(self, filename:Union[str, Path]) -> Path:
+        filename = Path(filename)
+        temp_file = filename.with_suffix(filename.suffix + '.tmp')
         try:
             torch.save(self.checkpoint(load=False), temp_file)
-            temp_file.replace(self.model_file)
+            temp_file.replace(filename)
         except Exception as e:
             if temp_file.exists():
                 temp_file.unlink()
             raise
-        return self.model_file
+        return filename
     
     def pre_load_model(self, path:Union[str, Path]):
         path = Path(path)
