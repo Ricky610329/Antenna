@@ -821,6 +821,46 @@ class AntennaPattern:
         
         return weight * (tv_h + tv_w) / (h_img * w_img)
 
+    def island_suppression_loss(self, weight: float = 1.0, kernel_size: int = 5) -> torch.Tensor:
+        """
+        孤島抑制損失 (Island Suppression Loss)。
+        專為「沒有參考圖樣」的情況設計。
+        透過計算像素與其「局部鄰域平均值」的差異，來抑制孤立的噪點 (孤島) 或孔洞。
+        這類似於一種局部平滑約束。
+
+        Args:
+            weight: 權重。
+            kernel_size: 鄰域視窗大小，建議使用奇數 (如 3 或 5)。較大的 kernel 會促成更大的連通區塊。
+        """
+        img = self.merge()
+        
+        # 確保為浮點數
+        if not img.is_floating_point():
+            img = img.float()
+            
+        # 準備進行 2D Pooling: 需要 (Batch, Channel, Height, Width)
+        # 這裡假設 img 為 (H, W)，擴展為 (1, 1, H, W)
+        img_input = img.unsqueeze(0).unsqueeze(0)
+        
+        # 計算局部平均 (Local Average)
+        # Padding 設為 kernel_size // 2 以保持輸出尺寸不變
+        avg_img = F.avg_pool2d(
+            img_input, 
+            kernel_size=kernel_size, 
+            stride=1, 
+            padding=kernel_size // 2
+        )
+        
+        # 去掉多餘維度回歸 (H, W)
+        avg_img = avg_img.squeeze(0).squeeze(0)
+        
+        # 計算像素與局部平均的 L1 差異
+        # 若某點是孤島 (值為 1，周圍全 0)，平均值很低 (如 0.1)，差異大 (0.9) -> Loss 高
+        # 若某點在內部 (值為 1，周圍全 1)，平均值很高 (如 1.0)，差異小 (0.0) -> Loss 低
+        loss = torch.abs(img - avg_img).sum()
+        
+        return weight * loss / img.numel()
+    
 def reshape(_tensor:torch.Tensor):
     _shape = _tensor.shape
     if len(_shape) == 1:

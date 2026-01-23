@@ -255,20 +255,22 @@ class Path(type(_Path())): # type: ignore
         else:
             self.unlink()
 
-    def manage_file_count(self, pattern:str, keep_latest:int = 3):
+    def manage_file_count(self, file:str, keep_latest:Optional[int] = 3):
         """
         Manage the number of archives and only keep the latest specified number.
 
-        :param pattern: Patterns matching archives, E.g., '*.pth'
+        :param file: Patterns matching archives, E.g., '*.pth'
         :param keep_latest: Latest quantity to keep.
         """
+        if keep_latest is None:
+            return False
 
         # Confirm that the target directory exists.
         if not self.exists():
             raise FileNotFoundError(f"The destination directory ({self.absolute()}) does not exist.")
         
         # Get all files matching the pattern.
-        files_sorted = sorted(self.glob(pattern), key=getctime)
+        files_sorted = sorted(self.glob(file), key=getctime)
 
         # If the file exceeds the limit, delete the oldest file.
         if len(files_sorted) > keep_latest:

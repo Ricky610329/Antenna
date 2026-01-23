@@ -53,6 +53,24 @@ MULTICONFIG = MultiConfig(
             'name': "[Patch-Single-{device}-{hash_id}] pixel_base_on_plateau_peak",
             "on_plateau": "peak"
         },
+        '7': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_linear_tv50",
+            "total_variation_loss": 50,
+            "on_plateau": "linear"
+        },
+        '8': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_linear_tv100",
+            "island_suppression_loss": 100,
+            "on_plateau": "linear"
+        },
+        '9': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_linear_is100",
+            "island_suppression_loss": 100,
+        },
+        '10': {
+            'name': "[Patch-Single-{device}-{hash_id}] pixel_base_linear_is1",
+            "island_suppression_loss": 1,
+        },
     }
 )
 connect_network_drive("T:", r"\\140.123.106.219\temp", "user", "ailab120")
@@ -167,12 +185,13 @@ if CONTINUE_RUN and ('epoch' in TEMP):
 elif SM_PRETRAIN_MODEL_PATH.exists():
     smodel.pre_load_model(SM_PRETRAIN_MODEL_PATH)
 
-    from antenna.utils.data import Data
-    data_result = Data(
-        name = MULTICONFIG("KuoHung", 'KuoHung-1'), 
-        rootdir = r"\\140.123.106.219\temp\碩二_吳維文's\Patch Antenna\Experiment\result\[Test][37] KuoHung Pattern"
-    )
-    KuoHung, response = data_result.load()
+    # from antenna.utils.data import Data
+    # data_result = Data(
+    #     name = MULTICONFIG("KuoHung", 'KuoHung-1'), 
+    #     rootdir = r"\\140.123.106.219\temp\碩二_吳維文's\Patch Antenna\Experiment\result\[Test][37] KuoHung Pattern"
+    # )
+    from KuoHung import KuoHung as _kh
+    KuoHung, response = _kh.load(MULTICONFIG("KuoHung", '1'))
 
     smodel.train_one_data(AntennaPattern(KuoHung).series, response, min_loss=0.001, max_epoch=1e4)
 else:
@@ -198,20 +217,15 @@ epoch = TEMP('epoch', 0) # 總訓練次數
 current_epoch = 0   # 斷掉後的訓練次數
 jump = 0 # 跳躍次數 (pattern 重複，不重複模擬)
 skip = 0
+simulator.open()
 while epoch < config.epochs + 1:
 
     epoch += 1
     current_epoch += 1
     generator.change(epoch)
-    if current_epoch % 15 == 0 or current_epoch == 1:
-        # try:
-        #     simulator.quit()
-        # except:
-        #     pass
-        # simulator
-        simulator.open()
 
     simulator.start(epoch)
+    
     logger.info(f"Start {epoch} of {config.epochs}")
 
     generator.requires_grad(True, train=True)
@@ -297,7 +311,7 @@ while epoch < config.epochs + 1:
     #? update optimizer
     # output_element = model(AntennaResponse.merge_target_responses())
     response = smodel(output_element.series)
-    loss = response.criterion() + output_element.total_variation_loss(MULTICONFIG("total_variation_loss", 0))
+    loss = response.criterion() + output_element.total_variation_loss(MULTICONFIG("total_variation_loss", 0)) + output_element.island_suppression_loss(MULTICONFIG("island_suppression_loss", 0))
     loss.backward() 
     generator.step(scheduler_param=real_loss)
     generator.model.eval()
@@ -348,6 +362,7 @@ while epoch < config.epochs + 1:
 
     
     exe_time = simulator.end()
+    simulator.clean()
     logger.info(f"End {epoch} of {config.epochs}, Loss: {TEMP('real_loss'):4f}, Time: {exe_time} s, jump: {jump}")
 
     TEMP['epoch'] = epoch
