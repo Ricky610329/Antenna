@@ -690,10 +690,14 @@ class AntennaPattern:
         #* Gradient is required
         pattern.requires_grad_(True)
         cls.tau:float = tau or getattr(cls, 'tau', 1.0)
+        if cls.tau < 1e-4: cls.tau = 1e-4
 
         if len(pattern.shape) == 1:
             pattern = pattern.reshape(*cls.size()) 
         
+        # 將 logits 限制在 [-10, 10] 之間，Sigmoid(-10) 已極趨近 0，Sigmoid(10) 極趨近 1
+        pattern = torch.clamp(pattern, min=-10.0, max=10.0)
+
         #* Calculate threshold and steepness
         threshold = threshold or pattern.mean().detach() # avg
         steepness = 1/cls.tau
@@ -701,6 +705,9 @@ class AntennaPattern:
         #* Produces a "soft" approximation
         #  This is to provide a smooth gradient during "backward" propagation.
         soft_pattern = torch.sigmoid(steepness * (pattern - threshold))
+        if torch.isnan(soft_pattern).any():
+            soft_pattern = torch.nan_to_num(soft_pattern, nan=0.5)
+
         if only_soft is True: return soft_pattern
 
         #* Produces a "hard" binarization result (0/1, not differentiable).
