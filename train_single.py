@@ -10,7 +10,7 @@ config.device = "cpu"
 import numpy as np
 import torch
 from antenna import *
-from antenna.functions import AdaptiveCyclicalScheduler, total_variation_loss
+from antenna.functions import AdaptiveCyclicalScheduler, GapClosingLoss, SpectralConnectivityLoss
 from antenna.models import (
     Models, OldGEN, SigmoidGEN
 )
@@ -165,7 +165,7 @@ scheduler = AdaptiveCyclicalScheduler(
     patience=25,            # 顯著增加耐心
     factor=0.7,
     mode='min',
-    on_plateau = MULTICONFIG("on_plateau", "peak")
+    on_plateau = MULTICONFIG("on_plateau", "linear") # TODO
 )
 generator = Models(
     name = "generator_{label}",
@@ -218,6 +218,8 @@ current_epoch = 0   # 斷掉後的訓練次數
 jump = 0 # 跳躍次數 (pattern 重複，不重複模擬)
 skip = 0
 simulator.open()
+spectral_connectivity_loss = SpectralConnectivityLoss()
+gap_closing_loss = GapClosingLoss()
 while epoch < config.epochs + 1:
 
     epoch += 1
@@ -311,7 +313,13 @@ while epoch < config.epochs + 1:
     #? update optimizer
     # output_element = model(AntennaResponse.merge_target_responses())
     response = smodel(output_element.series)
-    loss = response.criterion() + output_element.total_variation_loss(MULTICONFIG("total_variation_loss", 0)) + output_element.island_suppression_loss(MULTICONFIG("island_suppression_loss", 0))
+    loss = (
+        response.criterion()
+        + output_element.total_variation_loss(MULTICONFIG("total_variation_loss", 0))
+        + output_element.island_suppression_loss(MULTICONFIG("island_suppression_loss", 0))
+        + MULTICONFIG("spectral_connectivity_loss", 0) * spectral_connectivity_loss.forward(output_element.size_converter(output_shape="B, 1, H, W"))
+        + MULTICONFIG("gap_closing_loss", 0) * gap_closing_loss.forward(output_element.size_converter(output_shape="B, 1, H, W"))
+    )
     loss.backward() 
     generator.step(scheduler_param=real_loss)
     generator.model.eval()
