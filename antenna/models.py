@@ -114,6 +114,10 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         return self.save_as(self.model_file)
     
     def save_as(self, filename:Union[str, Path]) -> Path:
+        """
+        :param filename: 檔案完整路徑，含副檔名(suffix)
+        """
+
         filename = Path(filename)
         temp_file = filename.with_suffix(filename.suffix + '.tmp')
         try:
@@ -556,7 +560,7 @@ class CVAE(nn.Module):
         )
         
         self.to(config.device)
-        logger.info(f"CVAE Model Initialized: pattern_size={pattern_size}, response_size={response_size}, latent_dim={latent_dim}")
+        # logger.info(f"CVAE Model Initialized: pattern_size={pattern_size}, response_size={response_size}, latent_dim={latent_dim}")
 
     def encode(self, pattern: Tensor_B_N, response: Tensor_B_N) -> Tuple[Tensor, Tensor]:
         """
@@ -571,7 +575,7 @@ class CVAE(nn.Module):
         """
         inputs = torch.cat([pattern, response], dim=-1)
         h = self.encoder_fc(inputs)
-        return self.fc_mu(h), self.fc_logvar(h)
+        return self.fc_mu(h), torch.clamp(self.fc_logvar(h), min=-10.0, max=10.0)
 
     def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
         """
@@ -607,6 +611,8 @@ class CVAE(nn.Module):
         Returns:
             Tuple[Tensor, Tensor, Tensor]: (recon_logits, mu, logvar)
         """
+        pattern = size_converter(AntennaPattern, pattern, flatten=True, batch=True)
+        response = size_converter(AntennaResponse, response, flatten=True, batch=True)
         mu, logvar = self.encode(pattern, response)
         z = self.reparameterize(mu, logvar)
         recon_pattern = self.decode(z, response)
@@ -617,18 +623,21 @@ class CVAE(nn.Module):
         推論
         """
         self.eval()
+        target_response = size_converter(AntennaResponse, target_response, flatten=True, batch=True)
         if best is not None: # 基於歷史最佳解進行微調
             best_pattern, best_response = best
             with torch.no_grad():
+                best_pattern = size_converter(AntennaPattern, best_pattern, flatten=True, batch=True)
+                best_response = size_converter(AntennaResponse, best_response, flatten=True, batch=True)
                 mu, _ = self.encode(best_pattern, best_response)
                 z = mu + torch.randn_like(mu)*noise_scale
 
         elif z is None:  # 全域隨機探索
             z = torch.randn(target_response.size(0), self.fc_mu.out_features).to(target_response.device)
 
-        return self.decode(z, target_response)
+        return AntennaPattern.binarization(self.decode(z, target_response))
 
-    def elbo_logits(self, recon_logits: Tensor, target: Tensor, mu: Tensor, logvar: Tensor, beta: float = 0.01) -> Tensor:
+    def elbo_logits(self, recon_logits: Tensor, target: Tensor, mu: Tensor, logvar: Tensor, beta: float = 1) -> Tensor:
         """
         基於原始 Logits 計算。
         
@@ -642,29 +651,45 @@ class CVAE(nn.Module):
         
         return BCE + beta * KLD
 
-    def elbo_binarized(self, recon_bin: Tensor, target: Tensor, mu: Tensor, logvar: Tensor, beta: float = 0.01) -> Tensor:
+    def elbo_binarized(self, recon_bin: Tensor, target: Tensor, mu: Tensor, logvar: Tensor, beta: float = 1) -> Tensor:
         """
         基於二值化後的結果計算。
-        
-        Args:
-            recon_bin: 經過 STE 二值化處理後的圖樣 (數值為 0.0 或 1.0，但帶有 soft gradient)
-            target: 真實圖樣
         """
-        eps = 1e-7
+        eps = 1e-6
         recon_safe = torch.clamp(recon_bin, min=eps, max=1.0 - eps)
         
-        BCE = F.binary_cross_entropy(recon_safe, target, reduction='sum')
-        KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-         
-        return BCE + beta * KLD
+        # 2. 確保 target 也是浮點數 (雖然通常已經是)
+        target = target.float()
+        
+        # 3. 計算 BCE
+        # 建議改用 mean (平均)，避免因 pattern_size 很大導致 Loss 數值過大
+        BCE = F.binary_cross_entropy(recon_safe, target, reduction='mean') 
+        # 如果您堅持用 sum，請務必加上梯度裁剪 (Clip Grad)
+        # BCE = F.binary_cross_entropy(recon_safe, target, reduction='sum')
+
+        # 4. 計算 KLD
+        # 這裡您之前已經加了 clamp logvar，應該是安全的
+        # 若上方改用 mean，這裡建議也改用 mean 以維持比例
+        KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+        # KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
+        total_loss = BCE + beta * KLD
+        
+        # 5. [最後防線] 檢查 NaN/Inf
+        if torch.isinf(total_loss) or torch.isnan(total_loss):
+            print(f"[Warning] Inf/NaN Loss Detected! BCE={BCE.item()}, KLD={KLD.item()}")
+            # 回傳帶梯度的 0，避免程式崩潰，讓 Optimizer 跳過這一步
+            return torch.tensor(0.0, requires_grad=True, device=total_loss.device)
+
+        return total_loss
 
     def fit(self, 
             data_source, 
             optimizer: torch.optim.Optimizer, 
             epochs: int = 100, 
             batch_size: int = 32,
-            beta: float = 0.01, 
-            use_ste: bool = False,
+            beta: float = 1, 
+            use_ste: bool = True,
             ste_params: dict = {'tau': 1.0, 'threshold': 0.0}) -> dict:
         """
         封裝好的訓練迴圈。
@@ -681,6 +706,10 @@ class CVAE(nn.Module):
         Returns:
             dict: 包含 'total_loss', 'bce', 'kld' 的歷史紀錄 list。
         """
+        if hasattr(data_source, '__len__') and len(data_source) == 0:
+            print(f"[Warning] Data source is empty (0 items). Skipping training loop.")
+            return {'total': [], 'bce': [], 'kld': []}
+        
         # 1. 確保模型處於訓練模式
         self.train()
         
@@ -717,7 +746,7 @@ class CVAE(nn.Module):
                 "Expected DataLoader, Dataset, or (Pattern_Tensor, Response_Tensor)."
             )
 
-        history = {'total': [], 'bce': [], 'kld': []}
+        history = {'total_loss': [], 'bce': [], 'kld': []}
 
         # 3. 訓練迴圈
         for epoch in range(epochs):
@@ -727,8 +756,8 @@ class CVAE(nn.Module):
             steps = 0
             
             for batch_x, batch_c in dataloader:
-                batch_x = batch_x.to(config.device)
-                batch_c = batch_c.to(config.device)
+                batch_x = size_converter(AntennaPattern, batch_x.to(config.device), flatten=True, batch=True)
+                batch_c = size_converter(AntennaResponse,  batch_c.to(config.device), flatten=True, batch=True)
                 
                 # --- Forward ---
                 recon_logits, mu, logvar = self.forward(batch_x, batch_c)
@@ -737,8 +766,8 @@ class CVAE(nn.Module):
                 if use_ste: # Binary Optimization (STE)
                     recon_ste = AntennaPattern.binarization(
                         recon_logits, 
-                        tau=ste_params.get('tau', 1.0), 
-                        threshold=ste_params.get('threshold', 0.0)
+                        # tau=ste_params.get('tau', 1.0), 
+                        # threshold=ste_params.get('threshold', 0.0)
                     )
                     loss = self.elbo_binarized(recon_ste, batch_x, mu, logvar, beta)
                 else:   # Logits Optimization (Standard)
@@ -747,6 +776,7 @@ class CVAE(nn.Module):
                 # --- Backward ---
                 optimizer.zero_grad()
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
                 optimizer.step()
                 
                 # --- Record ---
@@ -761,7 +791,7 @@ class CVAE(nn.Module):
 
             # 平均 Loss
             if steps > 0:
-                history['total'].append(epoch_loss / steps)
+                history['total_loss'].append(epoch_loss / steps)
                 history['bce'].append(epoch_bce / steps)
                 history['kld'].append(epoch_kld / steps)
 

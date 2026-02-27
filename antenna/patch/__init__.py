@@ -81,3 +81,81 @@ def custom_loss_minmax(prediciton:Tensor, target:Tensor, method:Literal['low', '
         
         case _:
             raise ValueError('The method must be `low` or `high`.')
+
+@overload
+def interval_loss(
+    prediction: Tensor, lower_response: float,   upper_response: float, 
+    target: Tensor = None, *,  loss_type: str = 'SmoothL1Loss',   reduction: str = 'mean',
+) -> torch.Tensor:
+    """
+    Interval Loss: 視為相對於 Target 的誤差容許值[target + lower, target + upper], 限制 prediction 必須在此動態邊界內。
+
+    :param prediction: 預測值。
+    :param lower_response: 相對於 Target 的下限偏移 (如 -0.5)
+    :param upper_response: 相對於 Target 的上限偏移 (如 0.5)
+    :param target: 真實標籤
+    :param loss_type: 'SmoothL1Loss' 或 'MSELoss'。
+    :param reduction: 'mean' 或 'sum'。
+    """
+    ...
+@overload
+def interval_loss(
+    prediction: Tensor, lower_response: Tensor,   upper_response: Tensor, *,
+    loss_type: str = 'SmoothL1Loss',   reduction: str = 'mean',
+) -> torch.Tensor:
+    """
+    Interval Loss: 限制 prediction 必須在 [lower, upper] 之間。
+    
+    :param prediction: 預測值
+    :param lower_response: 絕對下限值
+    :param upper_response: 絕對上限值
+    :param loss_type: 'SmoothL1Loss' 或 'MSELoss'。
+    :param reduction: 'mean' 或 'sum'。
+    """    
+    ...
+
+
+def interval_loss(
+    prediction: Tensor,  lower_response: Union[float, Tensor],  upper_response: Union[float, Tensor], 
+    target: Tensor = None,* , loss_type: str = 'SmoothL1Loss', reduction: str = 'mean'
+) -> Tensor:
+    """
+    區間損失 (Interval Loss) 的核心運算函數。
+    
+    :param prediction: 預測值。
+    :param lower_response: 
+        - Float: 相對於 Target 的下限偏移 (如 -0.5)。
+        - Tensor: 絕對下限值。
+    :param upper_response: 
+        - Float: 相對於 Target 的上限偏移 (如 0.5)。
+        - Tensor: 絕對上限值。
+    :param target (Tensor, optional): 真實標籤。若使用 float 模式 (相對偏移) 則為必填。
+    :param loss_type: 'SmoothL1Loss' 或 'MSELoss'。
+    :param reduction: 'mean' 或 'sum'。
+    """
+    if loss_type == 'SmoothL1Loss':
+        loss_fn = nn.SmoothL1Loss(reduction=reduction)
+    elif loss_type == 'MSELoss':
+        loss_fn = nn.MSELoss(reduction=reduction)
+    else:
+        raise ValueError(f"Unsupported loss_type: {loss_type}")
+
+    if isinstance(lower_response, Tensor) and isinstance(upper_response, Tensor):
+        min_bound = lower_response
+        max_bound = upper_response
+
+    else:   #* Target + Offset
+        if target is None:
+            raise ValueError("使用 Float (相對偏移模式) 時，必須傳入 target。")
+
+        min_bound = target + lower_response
+        max_bound = target + upper_response
+
+    #* Universal Clamp Logic
+    # 我們將 Prediction 限制在 [min_bound, max_bound] 範圍內，得到一個「參考目標 (Reference Target)」。
+    # - 若 Prediction 在範圍內：Ref = Prediction。 Loss = 0。
+    # - 若 Prediction 超出範圍：Ref = 邊界值。 Loss = |Pred - 邊界值|。
+    target_clamped = torch.clamp(prediction, min=min_bound, max=max_bound).detach() # 確保參考目標被視為常數，讓梯度正確指向 Prediction
+    loss = loss_fn(prediction, target_clamped)
+    
+    return loss
