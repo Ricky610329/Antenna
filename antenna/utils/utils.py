@@ -512,6 +512,7 @@ class Figure:
             self, 
             name:str, 
             nrowcol:tuple = (1, 1), 
+            ncols:tuple = (0, 0),
             save:bool = False, show:bool = False, 
             rootdir:Optional[str] = None, 
             size:tuple = (18, 12), 
@@ -524,6 +525,7 @@ class Figure:
         """
         :param size: Example: (18, 12), (18 * 2, 9 * 2)
         :param kwargs: All plt.figure() arguments
+        :param ncols: (total, cols) -> nrowcol=(total/cols, cols)
 
         ## Example
         ```
@@ -568,6 +570,7 @@ class Figure:
             fig.saveMP4(update, epochs, video_time=5)
         ```
         """
+        from math import ceil
         fig = plt.figure(name, **kwargs)
         fig.set_size_inches(*size)
         fig.tight_layout(pad=0.1)
@@ -584,7 +587,7 @@ class Figure:
         self.save = save
         self.show = show
         self.name = name
-        self.nrowcol = nrowcol    
+        self.nrowcol = (ceil(ncols[0] / ncols[1]), ncols[1]) if ncols[0] > 0 else nrowcol
         self.current_index = 1
         self.rootdir = Path(rootdir or "./")
         self.requires_grad = requires_grad
