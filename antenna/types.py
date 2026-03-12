@@ -57,6 +57,7 @@ from matplotlib.axes._axes import Axes  # type: ignore
 if TYPE_CHECKING:
     from antenna import AntennaPattern, MultiResponses
     from antenna.smodels import SurrogateModel
+    from numpy import ndarray
 
 CustomModule = TypeVar('CustomModule', bound=Module, covariant=True)
 CustomSModel = TypeVar('CustomSModel', bound="SurrogateModel", covariant=True)
@@ -133,3 +134,13 @@ Tensor_B_N:TypeAlias = Tensor
 Tensor_B_W_H:TypeAlias = Tensor
 Tensor_N:TypeAlias = Tensor
 Tensor_W_H:TypeAlias = Tensor
+
+class FeedReachabilityDictType(TypedDict):
+    feed_positions: list
+    """潰入點"""
+    rate:float
+    """電流導通率"""
+    mask:ndarray
+    """電流導通的遮罩"""
+    pattern: ndarray
+    title: str

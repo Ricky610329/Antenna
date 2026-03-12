@@ -10,7 +10,7 @@ config.device = "cpu"
 import numpy as np
 import torch
 from antenna import *
-from antenna.functions import AdaptiveCyclicalScheduler, GapClosingLoss, SpectralConnectivityLoss
+from antenna.functions import FeedReachability, AdaptiveCyclicalScheduler, GapClosingLoss, SpectralConnectivityLoss
 from antenna.models import (
     Models, OldGEN, SigmoidGEN
 )
@@ -21,7 +21,7 @@ from antenna.smodels import OldSM
 from antenna.utils.data import DataManager
 # from antenna.functions import mirror, mutate
 torch.autograd.set_detect_anomaly(True)
-#%% 
+
 ###* Basic Config ###
 MULTICONFIG = MultiConfig(
     {
@@ -218,10 +218,11 @@ current_epoch = 0   # 斷掉後的訓練次數
 jump = 0 # 跳躍次數 (pattern 重複，不重複模擬)
 skip = 0
 simulator.open()
+r_feed = FeedReachability.single_feed()
 spectral_connectivity_loss = SpectralConnectivityLoss()
 gap_closing_loss = GapClosingLoss()
 while epoch < config.epochs + 1:
-
+    start = time()
     epoch += 1
     current_epoch += 1
     generator.change(epoch)
@@ -293,6 +294,9 @@ while epoch < config.epochs + 1:
     if TEMP('real_loss') <= min_loss:
         min_loss = TEMP('real_loss')
         TEMP['de'] = 0
+
+        config['best_epoch'] = epoch
+        config.save(rootdir=RESULT_PATH)
     else:
         min_loss = min_loss
         TEMP.add('de', 1, default = 0)
@@ -301,6 +305,7 @@ while epoch < config.epochs + 1:
     ###*  儲存HFSS的輸入與輸出，再訓練代理模型並儲存 ###
     TEMP['patch_pattern_buf'] = ~output_element
     TEMP['patch_result_buf'] = stack_output_result
+    TEMP['r_feed'] = r_feed(~output_element)
     
 
     ###* 權重全部凍結 ###
@@ -329,6 +334,13 @@ while epoch < config.epochs + 1:
     ###* 儲存模型 ###
     generator.save()
 
+    exe_time = simulator.end()
+    simulator.clean()
+
+    TEMP['epoch'] = epoch
+    TEMP['time'] = round(time()-start, 1)
+    TEMP.save(f"{epoch} times")
+
     with Figure(
         f"Result {epoch} {'best' if TEMP('de') == 0 else ''}",
         nrowcol = (2,3), 
@@ -337,43 +349,57 @@ while epoch < config.epochs + 1:
         size = (18*2, 9*2),
         default_axes_title_size = 20
     ) as fig:
-        fig.addAll()
+        pattern_ax = fig.index(-1)
+        # output_element.plot(pattern_ax)
+        r_feed.plot(pattern_ax)
 
-        fig[0].plot(x,stack_output_result[0].cpu(), color='blue')
-        fig[0].plot(x,returnloss.cpu(), color='blue', linestyle='--')
-        # fig[0].plot(x,returnloss_upper.cpu(), color='red')
-        # fig[0].plot(x, returnloss_lower.cpu(), color='red')
-        fig[0].set_title('S11', fontsize=20)
-        # fig[0].set_ylim(-15,1)
+        s11_ax = fig.index(-1)
+        s11_ax.plot(x,stack_output_result[0].cpu(), color='blue')
+        s11_ax.plot(x,returnloss.cpu(), color='blue', linestyle='--')
+        # s11_ax.plot(x,returnloss_upper.cpu(), color='red')
+        # s11_ax.plot(x, returnloss_lower.cpu(), color='red')
+        s11_ax.set_title('S11', fontsize=20)
+        # s11_ax.set_ylim(-15,1)
 
-        fig[1].plot(x,stack_output_result[1].cpu(), color='blue')
-        fig[1].plot(x,gain.cpu(), color='blue', linestyle='--')
-        # fig[1].plot(x,gain_upper.cpu(), color='red')
-        # fig[1].plot(x, gain_upper.cpu(), color='red')
-        fig[1].set_title('Gain', fontsize=20)
-        # fig[1].set_ylim(-20,1)
+        gain_ax = fig.index(-1)
+        gain_ax.plot(x,stack_output_result[1].cpu(), color='blue')
+        gain_ax.plot(x,gain.cpu(), color='blue', linestyle='--')
+        # gain_ax.plot(x,gain_upper.cpu(), color='red')
+        # gain_ax.plot(x, gain_upper.cpu(), color='red')
+        gain_ax.set_title('Gain', fontsize=20)
+        # gain_ax.set_ylim(-20,1)
 
-        generator.scheduler.plot(fig[2])
+        scheduler_ax = fig.index(-1)
+        generator.scheduler.plot(scheduler_ax)
 
-        fig[3].plot(TEMP['real_loss'], color='red', label='real_loss')
-        fig[3].plot(TEMP['fake_loss'], color='purple', label='fake_loss', alpha=0.8)
-        fig[3].plot(TEMP['mutation'], label='mutation')
-        fig[3].plot(TEMP['min_loss'], label='min_loss')
-        fig[3].plot(TEMP['real_loss_average'], label='real_loss_average')
-        fig[3].legend()
-        fig[3].set_title(f"Loss Curve ({TEMP('real_loss', '')})", fontsize=20)
+        loss_ax = fig.index(-1)
+        loss_ax.plot(TEMP['real_loss'], color='red', label='real_loss')
+        loss_ax.plot(TEMP['fake_loss'], color='purple', label='fake_loss', alpha=0.8)
+        # loss_ax.plot(TEMP['mutation'], label='mutation')
+        loss_ax.plot(TEMP['min_loss'], label='min_loss')
+        loss_ax.plot(TEMP['real_loss_average'], label='real_loss_average')
+        loss_ax.legend()
+        loss_ax.set_title(f"Loss Curve (Current: {TEMP('real_loss', ''):.2f})", fontsize=20)
 
-        fig[4].set_title('sm_loss', fontsize=20)
-        fig[4].plot(sm_loss)
+        # sm_loss_ax = fig.index(-1)
+        # sm_loss_ax.set_title('sm_loss', fontsize=20)
+        # sm_loss_ax.plot(sm_loss)
 
-        output_element.plot(fig[5])
+        index_ax = fig.index(-1)
+        r_feed_ax = index_ax
+        time_ax = r_feed_ax.twinx()
+        p1, = r_feed_ax.plot(TEMP['r_feed'], color='tab:blue', label=f"{r_feed.r_feed_str} (Avg. {TEMP.average('r_feed'):.2f})")
+        p2, = time_ax.plot(TEMP['time'], color='tab:orange', label=f"Time (s) (Avg. {TEMP.average('time'):.2f})")
+        r_feed_ax.set_ylabel(r_feed.r_feed_str, color='tab:blue')
+        time_ax.set_ylabel('Time (s)', color='tab:orange')
+        r_feed_ax.tick_params(axis='y', labelcolor='tab:blue')
+        time_ax.tick_params(axis='y', labelcolor='tab:orange')
+        r_feed_ax.legend(handles=[p1, p2])
+        index_ax.set_title(f"Index E{TEMP('epoch')}", fontsize=20)
 
-    
-    exe_time = simulator.end()
-    simulator.clean()
     logger.info(f"End {epoch} of {config.epochs}, Loss: {TEMP('real_loss'):4f}, Time: {exe_time} s, jump: {jump}")
 
-    TEMP['epoch'] = epoch
-    TEMP.save(f"{epoch} times")
+    
+    
 
 Complete(f"Training Finished! (Min Loss: {TEMP.custom('real_loss', min)})", **config, send_email=True)

@@ -3,6 +3,10 @@ from torch import Tensor, nn, nn
 import torch.nn.functional as F
 from enum import Enum
 from antenna.types import *
+from antenna.utils.utils import Figure, plt
+from collections import defaultdict
+import numpy as np
+from loguru import logger
 
 def custom_loss_interval(prediction:Tensor, target_low:Tensor, target_high:Tensor, loss_type='SmoothL1Loss'):
     """
@@ -564,3 +568,203 @@ class GapClosingLoss(nn.Module):
         
         loss = torch.mean((closed - antenna_map) ** 2)
         return loss
+
+class FeedReachability: # R_feed
+    def __init__(self, feed_positions:list[tuple[int, int]]):
+        """
+        計算共同連通指標 (Mutual Feed Connectivity Index)
+        只有當所有饋電點都連通在同一個金屬塊上時，才計算該塊的佔比。
+
+        :param feed_positions: 座標列表 [(r1, c1), (r2, c2), ...]
+        """
+        from scipy.ndimage import label
+        assert len(feed_positions)>0, ""
+
+        self.feed_positions = feed_positions
+        """潰入點"""
+        self.rate = None
+        """電流導通率"""
+        self.mask = 0
+        """電流導通的遮罩"""
+        # self.structure = np.ones((3, 3))
+        self.structure = np.array([
+            [0.0,1.0,0.0],
+            [1.0,1.0,1.0],
+            [0.0,1.0,0.0]])
+        """連通性, 預設採用 8-連通 (8-connectivity), 若要4連通可以是十字架"""
+        self.record:list[FeedReachabilityDictType] = []
+        self.r_feed_str = "$R_{{feed}}$"
+
+        self._label = label
+    
+    @classmethod
+    def single_feed(cls):
+        shape = (25, 25)
+        return cls([(shape[0]-1, int((shape[1])/2))])
+
+    @classmethod
+    def dual_feed(cls):
+        shape = (25, 25)
+        return cls([(shape[0]-1, int((shape[1])/2)),(0, int((shape[1])/2))])
+    
+    def __call__(self, pattern: Union[Tensor, np.ndarray], *, record:bool=False, title:str = "Pattern ($R_{{feed}}$={rate:.2%})"):
+        """
+        :param pattern: 2D array (1=金屬, 0=介質)
+        :return: Feed Reachability Rate
+        """
+        
+        if isinstance(pattern, Tensor):
+            pattern = pattern.numpy()
+        
+        labeled_array, _ = self._label(pattern, structure=self.structure)
+        
+        # 1. 取得所有饋電點所在的 Label IDs
+        feed_labels = []
+        
+        for pos in self.feed_positions:
+            
+            # 檢查座標是否越界或該處無金屬
+            if 0 <= pos[0] < pattern.shape[0] and 0 <= pos[1] < pattern.shape[1]:
+                lbl = labeled_array[pos]
+                if lbl > 0:
+                    feed_labels.append(lbl)
+                else:
+                    logger.warning("其中一個潰入點沒金屬，直接失敗")
+                    return 0.0, np.zeros_like(pattern) # 其中一個點沒金屬，直接失敗
+            else:
+                logger.error("潰入點座標是否越界")
+                return 0.0, np.zeros_like(pattern)
+
+        # 2. 「AND」邏輯檢查：判斷所有饋電點的 Label 是否完全相同
+        unique_labels = set(feed_labels)
+        
+        if len(unique_labels) == 1:
+            # 所有饋電點都在同一個連通塊上
+            shared_label = list(unique_labels)[0]
+            shared_mask = (labeled_array == shared_label)
+            
+            total_metal_pixels = np.sum(pattern)
+            connected_pixels = np.sum(shared_mask)
+            mutual_index = connected_pixels / total_metal_pixels
+
+        else:
+            # 饋電點分布在不同的連通塊上，或彼此斷開
+            mutual_index = 0.0
+            shared_mask = np.zeros_like(pattern)
+        
+        self.rate = mutual_index
+        self.mask = shared_mask
+        self.pattern = pattern
+        self.title = title.format(rate=mutual_index)
+        
+        if record:
+            self.record.append(
+                {
+                    'pattern': pattern,
+                    'feed_positions': self.feed_positions,
+                    'rate': mutual_index,
+                    'mask': shared_mask,
+                    "title": self.title
+                }
+            ) 
+        return mutual_index
+    
+    @property
+    def r_feed_dict(self):
+        result = defaultdict(list)
+        for entry in self.record:
+            result[entry['title']].append(entry['rate'])
+        
+        return result
+    
+    @property
+    def r_feed_list(self):
+        return [_['rate'] for _ in self.record]
+    
+    @property
+    def rate_list(self):
+        return [_['rate']*100 for _ in self.record]
+    
+    @property
+    def r_feed_avg(self):
+        return np.mean(self.r_feed_list)
+    
+    def plot(self, axes = None, show=False, data:FeedReachabilityDictType=None):
+        pattern = self.pattern
+
+        pattern = data['pattern'] if data else self.pattern
+        mask = data['mask'] if data else self.mask
+        rate = data['rate'] if data else self.rate
+        title = data['title'] if data else self.title
+        feed_positions = data['feed_positions'] if data else self.feed_positions
+
+        ax:Axes = axes if axes else plt.axes(axes) # type: ignore
+        ax.set_title(title)
+
+        #* 初始化底圖
+        display_img = np.full((pattern.shape[0], pattern.shape[1], 3), [0.96, 0.96, 0.97]) # 淺冷灰色
+        
+        #* 標示所有原始金屬區域
+        display_img[pattern == 1] = [0.74, 0.76, 0.78] # 中灰色
+        
+        #* 疊加有效連通區域
+        display_img[mask == 1] = [0.1, 0.7, 0.1]
+        
+        #* 繪製影像
+        ax.imshow(display_img, interpolation='nearest')
+        
+        #* 標註饋電點
+        for feed_pos in feed_positions:
+            ax.plot(feed_pos[1], feed_pos[0], 'ro', markersize=8, markeredgecolor='yellow')
+
+        ax.axis('off') # on/off
+        # plt.grid(False)
+        if show: plt.show()
+        return ax
+
+    def plot_records(self, cols: int = 4, show: bool = True):
+        record_n = len(self.record)
+        with Figure("FeedReachability", ncols=(record_n,cols), show=show) as fig:
+            for n, r_feed in enumerate(self.record):
+                ax = fig.index(-1)
+                self.plot(ax, show=False, data=r_feed)
+
+    def plot_records_rate(self, axes = None, show=False):
+
+        plt.rcParams.update({
+            'font.size': 16,
+        })
+
+        ax:plt.Axes = axes if axes else plt.axes(axes) # type: ignore
+        # ax.set_title(f'Feed Reachability (Avg. = {self.r_feed_avg:.2%})')
+
+        for key, rate in self.r_feed_dict.items():
+            ax.plot(rate, label=f"{key} (Avg. = {np.mean(rate):.2%})")
+
+        ax.set_xlabel('Epoch')  # x 軸名稱
+        ax.set_ylabel('$R_{{feed}}$')  # y 軸名稱
+        ax.set_ylim(0, 1)
+
+        # plt.grid(False)
+        plt.legend()
+        if show: plt.show()
+        return ax
+
+    def plot_one_record_rate(self, axes = None, show=False):
+
+        plt.rcParams.update({
+            'font.size': 16,
+        })
+
+        ax:plt.Axes = axes if axes else plt.axes(axes) # type: ignore
+        ax.set_title(f'Feed Reachability (Avg. = {self.r_feed_avg:.2%})')
+
+        ax.plot(self.rate_list)
+
+        ax.set_xlabel('Epoch')  # x 軸名稱
+        ax.set_ylabel('$R_{{feed}}$ (%)')  # y 軸名稱
+        ax.set_ylim(0, 100)
+
+        # plt.grid(False)
+        if show: plt.show()
+        return ax
