@@ -10,91 +10,91 @@ Antenna 是一個基於 PyTorch 的研究專案，用於透過深度學習優化
 
 ## 分支
 
-主要開發在 **`GAN`** 分支上進行，`main` 為穩定分支。
+主要開發在 **`GAN`** 分支上進行，`main` 為穩定分支。`modernize` 為現代化重構分支。
 
 ## 環境建置
 
 ```bash
 conda create --name antenna python=3.11
 conda activate antenna
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
-需要 Windows 環境（pywin32 用於 HFSS COM 介面）。可能需要連接網路磁碟 `T:` 以存取資料集（`\\140.123.106.219\temp`）。
+需要 Windows 環境（pywin32 用於 HFSS COM 介面）。網路磁碟帳密透過環境變數設定（參考 `.env.example`）。
 
 ## 執行方式
 
-訓練腳本為頂層的 `train_*.py` 檔案，每個對應不同的訓練變體：
+### Hydra CLI（新）
 ```bash
-python train_single.py    # 單埠天線
-python train_dual.py      # 雙埠天線
-python train_ris.py       # RIS
+python -m antenna train +experiment=train_single
+python -m antenna train +experiment=train_dual epochs=2000
+python -m antenna train +experiment=train_ris environment.device=cuda:0
 ```
 
-網頁應用程式（Flask 結果檢視器）：
+### 原始訓練腳本（仍可用）
+```bash
+python train_single.py
+python train_dual.py
+python train_ris.py
+```
+
+### 網頁應用程式
 ```bash
 python application/run_waitress.py          # 正式環境
 python application/app.py -dev              # 開發環境
 ```
 
-## 架構
+## 開發工具
 
-### 核心類別 (`antenna/__init__.py`)
-
-- **`AntennaPattern`** — 表示天線設計的 2D 二值像素圖。支援合併、模擬、二值化、突變。具有類別層級狀態：使用前需呼叫 `setDefaultCoordinate()` 與 `register_simulator()`。
-- **`AntennaResponse`** — 表示頻域響應曲線（S11、Gain、S21 等）。透過靜態方法（`registerLabels()`、`registerLossHook()`、`registerTargetResponse()`）註冊標籤、損失函數鉤子與目標響應。
-- **`TargetResponse`** / **`MultiResponses`** — 目標/期望的響應曲線，支援自訂損失函數註冊。
-
-### 訓練基礎架構 (`antenna/models.py`, `antenna/smodels.py`)
-
-- **`Models`** — 高度泛型的訓練封裝器（`Models[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, LossParams]`）。管理模型、優化器、排程器、損失函數，以及用於檢查點的 `Record`。
-- **`SurrogateModel`** — 繼承 `Models`，用於 HFSS 代理模型建模，可在不執行完整 HFSS 模擬的情況下訓練。
-
-### 模擬器整合 (`antenna/patch/`, `antenna/ris/`)
-
-- **`PatchSimulator`**（基底類別）、**`SinglePortSimulator`**、**`DualPortSimulator`** — HFSS COM 介面，僅限 Windows。
-- **`RISSimulator`** — RIS 圖案模擬。
-
-### 工具模組 (`antenna/utils/`)
-
-- **`Config` / `config`** — 全域單例設定（device、NAME、RESULT_PATH、epochs、lr 等）。支援動態屬性設定。
-- **`Record`** — 模型與訓練歷史的持久化檢查點。
-- **`Figure`** — Matplotlib 封裝器，支援多子圖與自動儲存。
-- **`Path`** — 擴充 `pathlib.Path`，新增 `not_exist_create()`、`del_from_glob()`、`manage_file_count()`。
-- **`DataManager`** / **`size_converter`**（`antenna/utils/data.py`）— 資料集管理與彈性張量重塑。
-- **`connect_network_drive`**、**`Email`**（`antenna/utils/web.py`）— 網路磁碟與通知工具。
-
-### 損失函數
-
-分散於多個模組中：
-- `antenna/__init__.py` — `total_variation_loss()`、`island_suppression_loss()`
-- `antenna/patch/__init__.py` — `custom_loss_r()`、`custom_loss_g()`、`custom_loss_minmax()`、`interval_loss()`
-- `antenna/ris/__init__.py` — `custom_loss()`
-- `antenna/functions.py` — `custom_loss_interval()`、`GapClosingLoss`、`SpectralConnectivityLoss`
-
-### 典型訓練腳本模式
-
-```python
-from antenna import *
-from antenna.utils import *
-from antenna.models import Models
-from antenna.patch import SinglePortSimulator
-
-connect_default_drive()
-RESULT_PATH, CONTINUE_RUN = get_result_path('[...][{device}] ...', rootdir=ROOTDIR)
-
-AntennaPattern.setDefaultCoordinate((0, n, 0, n))
-AntennaPattern.register_simulator(simulator)
-AntennaResponse.registerLabels('response', ..., x='...')
+```bash
+pre-commit install        # 安裝 pre-commit hooks
+ruff check .              # Lint
+ruff format .             # 格式化
+pytest                    # 測試
 ```
 
-## 重要路徑
+## 架構
 
-- `ROOTDIR`：`T:\碩二_吳維文's\Patch Antenna\Experiment`（網路磁碟）
-- `DATASET_PATH`：`ROOTDIR/dataset`
+### 套件結構
+```
+antenna/
+├── core/           # 核心類別（AntennaPattern, AntennaResponse）
+├── models/         # 生成器與訓練封裝
+│   ├── base.py         # Models 泛型訓練封裝器
+│   ├── generators/     # SigmoidGEN, GumbelSigmoidGEN, SPGEN, CVAE, MirrorCVAE
+│   ├── surrogates/     # 代理模型（SurrogateModel）
+│   └── autograd/       # 自訂 autograd 函數
+├── simulators/     # PatchSimulator, SinglePort, DualPort, RIS（re-export hub）
+├── losses/         # 損失函數
+│   ├── patch_losses.py     # custom_loss_r/g/minmax, interval_loss
+│   ├── regularization.py   # TV loss, island suppression, SC/GC loss, FeedReachability
+│   └── mirror.py           # mirror, gumbel_sinkhorn
+├── schedulers/     # AdaptiveCyclicalScheduler（已解耦 tau callback）
+├── training/       # Trainer class（開發中）
+├── configs/        # Hydra structured config dataclasses
+├── conf/           # Hydra YAML 設定檔
+│   ├── config.yaml
+│   ├── response/       # single_port, dual_port, ris
+│   └── experiment/     # train_single, train_dual, train_ris
+└── utils/          # Config, Record, Figure, Path, DataManager
+```
+
+### 核心類別
+
+- **`AntennaPattern`** (`core/pattern.py`) — 2D 二值像素圖，支援合併、模擬、二值化。具有 class-level 狀態（`setDefaultCoordinate()`, `register_simulator()`）。
+- **`AntennaResponse`** (`core/response.py`) — 頻域響應曲線。透過 `registerLabels()`, `registerTargetResponse()`, `registerLossHook()` 設定。
+- **`Models`** (`models/base.py`) — 泛型訓練封裝器，管理模型、優化器、排程器、檢查點。
+
+### 設定管理
+
+使用 **Hydra** 進行設定管理：
+- YAML 設定檔位於 `antenna/conf/`
+- Structured configs 位於 `antenna/configs/schema.py`
+- 支援 CLI override：`python -m antenna train epochs=2000`
+- 支援實驗組合：`+experiment=train_single`
+
+### 重要路徑
+
 - 結果儲存於：`result/<run-name>/`
 - 實驗追蹤：Weights & Biases (`wandb`)
-
-## 測試與檢查
-
-目前沒有正式的測試框架、Linter 設定或 CI/CD 流程。
+- 網路磁碟帳密：環境變數（`ANTENNA_NETWORK_DRIVE_*`, `ANTENNA_EMAIL_*`）
