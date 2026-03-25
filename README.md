@@ -24,30 +24,36 @@ conda list
 ```
 
 
-### 安裝依賴完竟
-依照自己的需求備註
-
+### 安裝依賴
 ```bash
-pip install -r requirements.txt
+# 建議方式（可編輯安裝）
+pip install -e ".[dev]"
 
-# Update requirements.txt
-pip freeze > requirements.txt
+# 或者使用 requirements.txt
+pip install -r requirements.txt
+```
+
+### 開發設定
+```bash
+pre-commit install
 ```
 
 檔案介紹
 -----------
 
-```python
+```
 Antenna
-├─ antenna    # 主套件
-|  ├─ patch   # microstrip patch antenna
-|  |  └─ patch_simulator
-|  |      ├─ sab # HFSS用
-|  |      └─ ...
-|  ├─ ris    # Reconfigurable Intelligent Surface (RIS)
-|  |  └─ ...
-|  └─ ...
-├─ script     # 腳本
-|  └─ ...
-└─ result     # 執行後自動生成
+├─ antenna/       # 主套件
+│  ├─ core/       # 核心類別（AntennaPattern, AntennaResponse）
+│  ├─ models/     # 生成器與代理模型
+│  ├─ simulators/ # HFSS / RIS 模擬器
+│  ├─ losses/     # 損失函數
+│  ├─ training/   # 訓練迴圈
+│  ├─ schedulers/ # 學習率排程器
+│  ├─ conf/       # Hydra YAML 設定檔
+│  └─ utils/      # 工具模組
+├─ application/   # Flask 結果檢視器
+├─ tests/         # 測試
+├─ script/        # 輔助腳本
+└─ result/        # 執行後自動生成
 ```
