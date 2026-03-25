@@ -1,0 +1,24 @@
+labels: [S11, S21, S22]
+x: n257
+label_configs:
+  S11:
+    target:
+      side: -2.5
+      center: -10
+      width: [5, 0, 7, 0, 5]
+    loss_fn: custom_loss_r
+    loss_params: {}
+  S21:
+    target:
+      side: -2.5
+      center: -10
+      width: [5, 0, 7, 0, 5]
+    loss_fn: custom_loss_r
+    loss_params: {}
+  S22:
+    target:
+      side: -2.5
+      center: -10
+      width: [5, 0, 7, 0, 5]
+    loss_fn: custom_loss_r
+    loss_params: {}

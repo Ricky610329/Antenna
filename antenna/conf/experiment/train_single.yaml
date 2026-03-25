@@ -1,0 +1,23 @@
+# @package _global_
+defaults:
+  - override /response: single_port
+
+model: sigmoid_gen
+simulator: single_port
+epochs: 1000
+patience: 10
+experiment_name: "[Patch-Single-{device}-{hash_id}] pixel_base"
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 100
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 0.000001
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.2
+  patience: 25
+  factor: 0.7
+  mode: min
+  on_plateau: linear

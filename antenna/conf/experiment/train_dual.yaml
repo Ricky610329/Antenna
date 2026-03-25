@@ -1,0 +1,12 @@
+# @package _global_
+defaults:
+  - override /response: dual_port
+
+model: gumbel_sigmoid_gen
+simulator: dual_port
+epochs: 2000
+patience: 100
+experiment_name: "[Patch][{device}] GumbelSigmoidGEN"
+
+scheduler:
+  _target_: none

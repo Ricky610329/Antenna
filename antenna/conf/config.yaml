@@ -1,0 +1,41 @@
+defaults:
+  - environment: default
+  - response: single_port
+  - _self_
+
+# 訓練參數
+model: sigmoid_gen
+simulator: single_port
+epochs: 1000
+patience: 10
+mutation_rate: 0.001
+experiment_name: "[Patch-Single-{device}-{hash_id}]"
+
+# 正則化權重
+total_variation_loss_weight: 0.0
+island_suppression_loss_weight: 0.0
+spectral_connectivity_loss_weight: 0.0
+gap_closing_loss_weight: 0.0
+
+# 優化器
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.005
+  betas: [0.5, 0.999]
+
+# 排程器
+scheduler:
+  _target_: none
+
+# 代理模型
+surrogate:
+  type: old
+  pretrain_path: null
+  training_mode: one_data
+  hfss_min_loss: 0.1
+  hfss_max_epoch: 20000
+  hfss_lr: 0.001
+
+# Pattern
+pattern:
+  coordinate: [0, 25, 0, 25]

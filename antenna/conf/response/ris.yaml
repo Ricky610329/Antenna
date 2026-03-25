@@ -1,0 +1,10 @@
+labels: [response]
+x: ris
+label_configs:
+  response:
+    target:
+      side: -20
+      center: 0
+      width: [140, 0, 40, 0, 181]
+    loss_fn: custom_loss
+    loss_params: {}

@@ -1,0 +1,18 @@
+# @package _global_
+defaults:
+  - override /response: ris
+
+model: gumbel_sigmoid_gen
+simulator: ris
+epochs: 1000
+patience: 10
+experiment_name: "[RIS][{device}] GumbelSigmoidGEN"
+
+pattern:
+  coordinate: [0, 40, 0, 40]
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  factor: 0.5
+  patience: 10
+  min_lr: 0.000001

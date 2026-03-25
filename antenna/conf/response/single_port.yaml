@@ -1,0 +1,19 @@
+labels: [S11, Gain]
+x: n257
+label_configs:
+  S11:
+    target:
+      side: 0
+      center: -10
+      width: [5, 0, 7, 0, 5]
+    loss_fn: custom_loss_minmax
+    loss_params:
+      method: low
+  Gain:
+    target:
+      side: -19
+      center: 4
+      width: [5, 0, 7, 0, 5]
+    loss_fn: custom_loss_minmax
+    loss_params:
+      method: high
