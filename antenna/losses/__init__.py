@@ -1,8 +1,3 @@
-"""
-Re-export hub: 所有原始的 functions.py 導出仍然有效。
-實際實現已拆分至 antenna.losses 與 antenna.schedulers 子模組。
-"""
-
 from antenna.losses.interval import custom_loss_interval
 from antenna.losses.mirror import FlipMode, gumbel_sinkhorn_rectangular, mirror
 from antenna.losses.regularization import (
@@ -11,7 +6,6 @@ from antenna.losses.regularization import (
     SpectralConnectivityLoss,
     total_variation_loss,
 )
-from antenna.schedulers.adaptive_cyclical import AdaptiveCyclicalScheduler
 
 __all__ = [
     "custom_loss_interval",
@@ -19,7 +13,6 @@ __all__ = [
     "mirror",
     "gumbel_sinkhorn_rectangular",
     "total_variation_loss",
-    "AdaptiveCyclicalScheduler",
     "SpectralConnectivityLoss",
     "GapClosingLoss",
     "FeedReachability",
