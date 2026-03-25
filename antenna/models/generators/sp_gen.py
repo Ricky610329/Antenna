@@ -5,9 +5,9 @@ import torch
 from torch import nn
 from torch.types import Tensor
 
+from antenna.functions import gumbel_sinkhorn_rectangular
 from antenna.types import *
 from antenna.utils import *
-from antenna.functions import gumbel_sinkhorn_rectangular
 
 
 class SPGEN(nn.Module, Generic[CallableParam]):

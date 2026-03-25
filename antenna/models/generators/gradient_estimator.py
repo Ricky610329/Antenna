@@ -1,9 +1,9 @@
-"""GradientEstimator — 梯度估計模型。"""
+from torch import nn
+from torch.types import Tensor
 
-import torch
-from torch import Tensor, nn
-
-from antenna import AntennaPattern, AntennaResponse, config
+from antenna import *
+from antenna.types import *
+from antenna.utils import *
 
 
 class GradientEstimator(nn.Module):
@@ -31,7 +31,8 @@ class GradientEstimator(nn.Module):
         self.to(config.device)
 
     def forward(self, A: Tensor):
-        A = A.unsqueeze(0)
+        A = A.unsqueeze(0)  # ? [batch, W, H]
+        # print(A.shape)
         output = self.conv(A)
         output = self.net(output)
         return AntennaResponse(output)
