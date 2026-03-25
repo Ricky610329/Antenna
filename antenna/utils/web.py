@@ -1,33 +1,41 @@
-from loguru import logger
-from typing import Union, Sequence, Self
-
-#* Email
-from smtplib import SMTP
+import os
+from collections.abc import Sequence
 from email.mime.text import MIMEText
+
+# * Email
+from smtplib import SMTP
+from typing import Self, Union
+
+from loguru import logger
+
+
 class Email(SMTP):
-   
     def __init__(
-        self, 
-        to:Union[str, list[str]],
-        cc:list = [], bcc:list = [],
-        from_addr_pwd:tuple = ("ailab@ee.ccu.edu.tw", "bung ovhd rrcu nayg")
+        self,
+        to: str | list[str],
+        cc: list = [],
+        bcc: list = [],
+        from_addr_pwd: tuple = (
+            os.environ.get("ANTENNA_EMAIL_ADDRESS", ""),
+            os.environ.get("ANTENNA_EMAIL_APP_PASSWORD", ""),
+        ),
     ) -> None:
         """
         Args:
             to (str, Sequence[str]): Target Address
             cc: 副本收件人 email
             bcc: 密件副本收件人 email
-            
+
         Example:
             ```
             with Email("weiwen@alum.ccu.edu.tw") as email:
 
                 msg = email.getText(
-                    'AILAB Antenna Notice', 
+                    'AILAB Antenna Notice',
                     "This is a test email sent from Python."
                 )
                 status = email.sendMessage(msg.as_string())
-                            
+
                 if status == {}:
                     print("Email sent successfully!")
                 else:
@@ -41,38 +49,39 @@ class Email(SMTP):
         super().__init__("smtp.gmail.com", 587)
         self.starttls()
         self.login(from_addr_pwd[0], from_addr_pwd[1])
-        
+
         self.to_list = to if isinstance(to, list) else [to]
         self.cc_list = cc if isinstance(cc, list) else [cc]
         self.bcc_list = bcc if isinstance(bcc, list) else [bcc]
 
-        self.all_recipients = self.to_list + self.cc_list + self.bcc_list 
+        self.all_recipients = self.to_list + self.cc_list + self.bcc_list
         self.from_addr = from_addr_pwd[0]
-    
-    def getText(self, subject:str = 'AILAB Antenna Notice', message:str = "" , from_name:str = "AILAB Antenna Team"):
+
+    def getText(self, subject: str = "AILAB Antenna Notice", message: str = "", from_name: str = "AILAB Antenna Team"):
         msg = MIMEText(message)
-        
-        msg['Subject'] = subject
-        msg['From'] = from_name or str(self.from_addr)
-        msg['To'] = ", ".join(self.to_list)
-        msg['Cc'] = ", ".join(self.cc_list)
+
+        msg["Subject"] = subject
+        msg["From"] = from_name or str(self.from_addr)
+        msg["To"] = ", ".join(self.to_list)
+        msg["Cc"] = ", ".join(self.cc_list)
 
         self.msg_str = msg.as_string()
         return msg
-                        
-    def sendMessage(self, message:str = None):
+
+    def sendMessage(self, message: str = None):
         assert self.all_recipients, "Please select sender."
         return self.sendmail(self.from_addr, self.all_recipients, message or self.msg_str)
 
     def __enter__(self) -> Self:
         return self
-    
+
     def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, tb) -> None:
         self.quit()
 
 
+from socket import AF_INET, SOCK_DGRAM, socket
 
-from socket import socket, AF_INET, SOCK_DGRAM
+
 def get_local_ip():
     s = socket(AF_INET, SOCK_DGRAM)
     try:
@@ -88,7 +97,9 @@ def get_local_ip():
 
 import subprocess
 from os.path import exists
-def connect_network_drive(drive_letter, network_path, user="", password="", *, del_old = False, verbose:bool = False):
+
+
+def connect_network_drive(drive_letter, network_path, user="", password="", *, del_old=False, verbose: bool = False):
     """
     Checks if a network drive is connected and attempts to connect it if not.
     This version includes optional user and password authentication.
@@ -102,19 +113,17 @@ def connect_network_drive(drive_letter, network_path, user="", password="", *, d
     Returns:
         bool: True if the connection is successful or already exists, False otherwise.
     """
-    
+
     if del_old:
         try:
-            subprocess.run(
-                ['net', 'use', drive_letter, '/delete'], check=True, capture_output=True, text=True
-            )
+            subprocess.run(["net", "use", drive_letter, "/delete"], check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError:
             pass
 
     # Build the net use command.
-    command_args = ['net', 'use', drive_letter, network_path, '/persistent:yes']
+    command_args = ["net", "use", drive_letter, network_path, "/persistent:yes"]
     if user and password:
-        command_args.extend([password, '/user:' + user])
+        command_args.extend([password, "/user:" + user])
 
     # Attempt to connect the network drive.
     try:
@@ -125,10 +134,18 @@ def connect_network_drive(drive_letter, network_path, user="", password="", *, d
         return True
 
     except subprocess.CalledProcessError as e:
-        if exists(drive_letter): # Check if the drive is already connected.
+        if exists(drive_letter):  # Check if the drive is already connected.
             if verbose:
                 logger.info(f"Network drive `{drive_letter}` is already connected. Skipping connection.")
             return True
         else:
             logger.warning(f"Connection failed: {e.stderr}")
         return False
+
+
+def connect_default_drive(drive_letter="T:", *, del_old=False, verbose=False):
+    """從環境變數讀取帳密，連接預設網路磁碟。"""
+    network_path = os.environ.get("ANTENNA_NETWORK_DRIVE_PATH", r"\\140.123.106.219\temp")
+    user = os.environ.get("ANTENNA_NETWORK_DRIVE_USER", "")
+    password = os.environ.get("ANTENNA_NETWORK_DRIVE_PASSWORD", "")
+    return connect_network_drive(drive_letter, network_path, user, password, del_old=del_old, verbose=verbose)
