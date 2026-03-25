@@ -1,10 +1,12 @@
 import os
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-#? python -m script.check_gpu
+# ? python -m script.check_gpu
+
+import time
 
 import torch
-import time
 
 # 檢查是否有可用的 GPU
 if not torch.cuda.is_available():
@@ -26,7 +28,7 @@ try:
     print(f"Created two {matrix_size}x{matrix_size} matrices on GPU.")
 
     print("Starting GPU stress test... Press Ctrl+C to stop.")
-    
+
     start_time = time.time()
     iterations = 0
 
@@ -35,13 +37,13 @@ try:
         # 在 GPU 上執行矩陣乘法
         C = torch.matmul(A, B)
         iterations += 1
-        
+
         # 每隔 10 秒印出一次進度
         if time.time() - start_time > 10:
             print(f"Completed {iterations} matmul operations in the last 10 seconds.")
             start_time = time.time()
             iterations = 0
-            
+
 except torch.cuda.OutOfMemoryError:
     print("\nCUDA Out of Memory Error! Please try reducing the 'matrix_size'.")
 except KeyboardInterrupt:

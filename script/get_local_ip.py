@@ -1,9 +1,6 @@
+from socket import AF_INET, SOCK_DGRAM, socket
 
-from socket import (
-    socket,
-    AF_INET,
-    SOCK_DGRAM
-)
+
 def getLocalIP():
     try:
         # 創建一個 socket 連接到一個公共的 DNS 服務器
@@ -14,6 +11,7 @@ def getLocalIP():
         return local_ip
     except Exception as e:
         return str(e)
+
 
 if __name__ == "__main__":
     print(f"Local IP Address: {getLocalIP()}")
