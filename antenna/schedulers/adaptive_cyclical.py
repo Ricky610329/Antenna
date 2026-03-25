@@ -33,6 +33,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         on_plateau: Literal["peak", "reset", "linear"] = "peak",
         threshold: float = 0.0,
         last_epoch: int = -1,
+        tau_callback: Optional[Callable[[float], None]] = None,
     ):
         """
 
@@ -53,6 +54,18 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         :param last_epoch: 最後一個已排程的步數/週期數。用於從中斷處恢復訓練。
         :raises ValueError: 如果 T_0, T_mult, 或 mode 參數無效。
         """
+        # --- Tau callback（預設向後相容：自動設定 AntennaPattern.tau）---
+        if tau_callback is not None:
+            self._tau_callback = tau_callback
+        else:
+
+            def _default_tau_callback(tau: float):
+                from antenna import AntennaPattern
+
+                AntennaPattern.tau = tau
+
+            self._tau_callback = _default_tau_callback
+
         self.record = Record(self.__class__.__name__, config.get("RESULT_PATH"))
         # --- 週期性參數 (來自 CosineAnnealing) ---
         if T_0 <= 0 or not isinstance(T_0, int):
@@ -188,10 +201,9 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
 
         self._last_lr = [group["lr"] for group in self.optimizer.param_groups]
 
-        # 更新溫度(tau)
-        from antenna import AntennaPattern
-
-        AntennaPattern.tau = self.get_temp()
+        # 更新溫度(tau) — 透過 callback 而非直接修改全域狀態
+        if self._tau_callback is not None:
+            self._tau_callback(self.get_temp())
 
         self.record["lr"] = self.get_lr()[0]
         self.record["tau"] = self.get_temp()
