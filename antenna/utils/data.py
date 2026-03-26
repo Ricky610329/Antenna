@@ -128,6 +128,25 @@ class Data(Generic[DataType]):
         backup_path = self.rootdir.joinpath(f"{self.name}_{timestamp}.dataset.bak")
         shutil.copy2(self.savepath, backup_path)
 
+def dynamic_loss_filter(
+    datas:Tuple[Tensor, Tensor], 
+    lower: float = float('-inf'),
+    upper: float = float('inf'),
+) -> bool:
+    """
+    Example::
+
+        DataManager.filter(minmax_filter, lower=TEMP('smaller', float('-inf')), upper=TEMP('bigger', float('inf')))
+    """
+    from antenna import MultiResponses
+    _pattern, _response = datas
+    # _pattern = AntennaPattern(_pattern)
+    _response = MultiResponses(_response)
+    _loss = _response.criterion().item()
+
+    return lower <= _loss <= upper
+
+
 class DataManager(Data[list[tuple[Tensor, Tensor]]], Dataset):
     """
     一個整合了 loguru 日誌功能的通用資料管理類別。
@@ -186,10 +205,22 @@ class DataManager(Data[list[tuple[Tensor, Tensor]]], Dataset):
         except Exception as e:
             self.logger.exception(f"載入資料時發生錯誤：{e}")
 
-    def filter(self, filter_func: Callable[[tuple[Tensor, Tensor]], bool], *args, **kwargs) -> Subset:
+    def filter(self, filter_func: Callable[[tuple[Tensor, Tensor]], bool] = dynamic_loss_filter, *args, **kwargs) -> Subset:
         """
         根據過濾條件建立並回傳一個資料子集 (Subset)。
         此方法不會改變 DataManager 本身的狀態。
+
+        Default:: 
+            
+            # DataManager.filter(lower=..., upper=...)
+            def dynamic_loss_filter(
+                datas:Tuple[Tensor, Tensor], 
+                lower: float = float('-inf'),
+                upper: float = float('inf'),
+            ) -> bool:
+                return lower <= loss <= upper
+
+
 
         Args:
             filter_func (Callable): 接受單筆資料 (sample, label) 並回傳 bool 的函式。
@@ -516,20 +547,3 @@ def size_converter(
             #? (B, H, W) -> (B, H, W)
             return output_tensor
         
-def dynamic_loss_filter(
-    datas:Tuple[Tensor, Tensor], 
-    lower: float = float('inf'), 
-    upper: float = float('-inf'), 
-) -> bool:
-    """
-    Example::
-
-        DataManager.filter(minmax_filter, lower=TEMP('smaller', float('inf')), upper=TEMP('bigger', float('-inf')))
-    """
-    from antenna import MultiResponses
-    _pattern, _response = datas
-    # _pattern = AntennaPattern(_pattern)
-    _response = MultiResponses(_response)
-    _loss = _response.criterion().item()
-
-    return _loss > upper or _loss < lower
