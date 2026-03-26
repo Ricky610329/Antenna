@@ -469,79 +469,51 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
 
 
 class SpectralConnectivityLoss(nn.Module):
-    def __init__(self, height=25, width=25):
-        """
-        頻譜圖論法: 將 Pattern 看作一張圖 (Graph)
-
-        - 節點 (Nodes)：每個像素是一個節點。
-        - 邊 (Edges)：如果兩個像素相鄰，且都有金屬 (數值高)，則邊的權重很大；如果其中一個沒金屬，邊的權重接近 0。
-        
-        目標：最大化拉普拉斯矩陣 (Laplacian Matrix) 的第二小特徵值 ($\lambda_2$)，又稱為 Fiedler Value。$\lambda_2 > 0$：整張圖的金屬部分是連通的。$\lambda_2 \approx 0$：圖斷成了兩塊或更多塊。
-        """
+    def __init__(self, height=25, width=25, epsilon=1e-2):
         super().__init__()
-        
-        self.H = height
-        self.W = width
+        self.H, self.W = height, width
         self.num_nodes = height * width
+        self.epsilon = epsilon  # 基礎連通性，防止 lambda_2 鎖死在 0
         
-        # 預先建立鄰接關係索引 (Adjacency Indices)
-        # 這裡建立 4-連通 (上下左右) 的關係
-        self.adj_indices = []
+        # 預建鄰接索引
+        src, dst = [], []
         for r in range(height):
             for c in range(width):
                 idx = r * width + c
-                # 下
-                if r + 1 < height: self.adj_indices.append((idx, (r + 1) * width + c))
-                # 右
-                if c + 1 < width: self.adj_indices.append((idx, r * width + (c + 1)))
-        
-        self.src = torch.tensor([x[0] for x in self.adj_indices]).long()
-        self.dst = torch.tensor([x[1] for x in self.adj_indices]).long()
+                if r + 1 < height: src.append(idx); dst.append((r + 1) * width + c)
+                if c + 1 < width: src.append(idx); dst.append(r * width + (c + 1))
+        self.register_buffer('src', torch.tensor(src).long())
+        self.register_buffer('dst', torch.tensor(dst).long())
 
     def forward(self, antenna_map):
-        """
-        antenna_map: (Batch, 1, H, W) 數值 0~1
-        """
+        # 確保輸入是 (B, 1, H, W)
+        if antenna_map.dim() == 2: antenna_map = antenna_map.unsqueeze(0).unsqueeze(0)
         batch_size = antenna_map.shape[0]
-        # 攤平成 (Batch, N)
         flat_map = antenna_map.view(batch_size, -1)
-        
-        device = antenna_map.device
-        self.src = self.src.to(device)
-        self.dst = self.dst.to(device)
-        
         losses = []
-        
+
         for b in range(batch_size):
-            # 1. 建構邊的權重 (Edge Weights)
-            # 邊的權重 = 兩個連接像素值的幾何平均 (或乘積)
-            # 只有當兩個像素都是 1 時，邊才是 1
-            node_vals = flat_map[b] + 1e-4 # 加小數值避免全 0
-            weights = node_vals[self.src] * node_vals[self.dst]
+            # 改進權重邏輯：金屬與金屬=1.0, 其他部分至少有 epsilon 的連通性
+            node_vals = flat_map[b]
+            # 邊權重 = 節點相乘的加權 + 基礎連通性
+            w = (node_vals[self.src] * node_vals[self.dst]) + self.epsilon
             
-            # 2. 建構拉普拉斯矩陣 L = D - A
-            # A: 鄰接矩陣 (Adjacency Matrix)
-            A = torch.zeros(self.num_nodes, self.num_nodes, device=device)
-            A[self.src, self.dst] = weights
-            A[self.dst, self.src] = weights # 對稱
-            
-            # D: 度矩陣 (Degree Matrix) - 對角線是 A 的列總和
-            degree = torch.sum(A, dim=1)
-            D = torch.diag(degree)
-            
+            # 建立對稱拉普拉斯
+            A = torch.zeros(self.num_nodes, self.num_nodes, device=antenna_map.device)
+            A[self.src, self.dst] = w
+            A[self.dst, self.src] = w
+            D = torch.diag(torch.sum(A, dim=1))
             L = D - A
             
-            # 3. 計算特徵值 (Eigenvalues)
-            # 因為 L 是實對稱矩陣，使用 symeig 或 linalg.eigh
+            # 計算特徵值
             eigvals = torch.linalg.eigvalsh(L)
+            lambda_2 = eigvals[1]  # Fiedler Value
             
-            # 4. 取第二小特徵值 (Fiedler Value)
-            # eigvals[0] 理論上是 0 (對應全 1 向量)，我們關注 eigvals[1]
-            lambda_2 = eigvals[1]
-            
-            # Loss 設計：我們希望 lambda_2 越大越好 (越連通)
-            # 如果 lambda_2 已經夠大 (例如 > 0.1)，Loss 就可以是 0
-            losses.append(torch.relu(0.5 - lambda_2)) 
+            # 目標：讓 lambda_2 越大越好（金屬連通後 lambda_2 會顯著增加）
+            # 使用負對數或反比，讓差異更明顯
+            losses.append(1/(lambda_2))
+            # losses.append(-torch.log(lambda_2+1e6))
+            # losses.append(torch.exp(-lambda_2)) 
 
         return torch.mean(torch.stack(losses))
 
@@ -553,8 +525,10 @@ class GapClosingLoss(nn.Module):
         super().__init__()
 
     def forward(self, antenna_map):
+        # R = (kernel_size-1)/2
+
         # 1. Soft Dilation (膨脹) - 填補裂縫
-        # 使用 MaxPool 模擬
+        # 使用 MaxPool 模擬 
         dilated = F.max_pool2d(antenna_map, kernel_size=3, stride=1, padding=1)
         
         # 2. Soft Erosion (腐蝕) - 恢復外形
