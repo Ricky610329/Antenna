@@ -32,18 +32,21 @@ class PatchSimulator(ABC):
         """不會等待"""
         self.oDesktop.QuitApplication() # 關閉整個 HFSS 軟體
 
-    def save(self, name:str = None):
-        # path = path.format(count=str(self.count))
+    def save(self, name:str = None, rootpath=None):
+        path = Path(rootpath) if rootpath else self.path_project
         if name:
             #* 另存新檔
             #? SaveAs(filename, overwrite)
             self.oProject.SaveAs(
-                str(self.path_project.joinpath(f"{name}.aedt")), True
+                str(path.joinpath(f"{name}.aedt")), True
             )
+
         else:
             #* 儲存專案（到目前的儲存位置）
             self.oProject.Save()
-    
+
+        return name if name else self.name_project.format(num=self.num)
+
     # def recreateProject(self, name):
     #     self.oDesktop.CloseProject(name)    # 關閉指定的專案
     #     # self.oProject = self.oDesktop.NewProject("Design_Patch_Antenna")
@@ -121,21 +124,22 @@ class PatchSimulator(ABC):
         
         return self.oDesign
     
-    def end(self) -> int:
+    def end(self, name=None, save_project:bool = True) -> int:
         """
         Delete Design and close project.
 
         :return: Execution time
         """
         assert getattr(self, 'num', None) != None, "Please use `start()` first"
-        self.save(
-            self.name_project.format(num=self.num)
-        )
+        if save_project:
+            self.save(
+                self.name_project.format(num=self.num)
+            )
         self.oProject.DeleteDesign(
             self.name_design.format(num=self.num)
         )
         self.oDesktop.CloseProject(
-            self.name_project.format(num=self.num)
+            name if name else self.name_project.format(num=self.num)
         )
         self.num = None
 

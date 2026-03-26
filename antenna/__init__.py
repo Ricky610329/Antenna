@@ -180,7 +180,7 @@ class MultiResponses:
     def criterion(self):
         """The loss will be calculated from the registered labels."""
         responses = {}
-        for label, res in zip(AntennaResponse.labels, self.stack()):
+        for label, res in zip(AntennaResponse.labels, self.to_list()):
             responses[label] = res
 
         loss = tensor(0.0, requires_grad=True)
@@ -519,7 +519,7 @@ class AntennaPattern:
                 _input_tensor, _c[0], _c[1], _c[2], _c[3]
             )
         )
-        
+
     @property
     def series(self):
         """One-dimensional array after merge."""

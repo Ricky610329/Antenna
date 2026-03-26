@@ -6,7 +6,7 @@ class SinglePortSimulator(PatchSimulator):
     def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'single_port.sab'), pixel_count:int = 25):
         super().__init__(record_path, HFSS_sab_path, pixel_count)
 
-    def __call__(self, pixel_matrix:Tensor):
+    def __call__(self, pixel_matrix:Tensor, only_create_project:bool = False):
         super().__call__(pixel_matrix)
         pixel_row = self.pixel_count
         pixel_column = self.pixel_count
@@ -371,7 +371,10 @@ class SinglePortSimulator(PatchSimulator):
                 "UseLocalCS:=", False
             ])
 
-        # self.oProject.Save()
+        if only_create_project:
+            # self.oProject.Save()
+            return
+        
 
         # 開始模擬
         oDesign.AnalyzeAll()
@@ -439,19 +442,32 @@ class SinglePortSimulator(PatchSimulator):
         Gain_dataframe = read_csv(
             self.path_result.joinpath(f"NN_patch_Gain_{self.num}_S11.csv")
         )
-        # Beamwidth_dataframe = pd.read_csv(args.record_path+'csv/NN_patch_Beamwidth_'+ str(Design_index) +'_Realized Gain Plot 2.csv')
 
-        #  將數值取出 之後要算loss
-        S11 = Sparameter_dataframe.iloc[0:17, 1]
-        Gain = Gain_dataframe.iloc[0:17, 3]
-        # Beamwidth = Beamwidth_dataframe.iloc[0:181, 3]
+        # 預期頻率點，這裡定義後，後續皆以 len(freqs_expected) 為準
+        freqs_expected = np.linspace(24, 32, 17)
+        expected_len = len(freqs_expected)
+
+        #* S11
+        freqs_s11 = Sparameter_dataframe.iloc[:, 0].values
+        S11_vals = Sparameter_dataframe.iloc[:, 1].values
+        if len(S11_vals) != expected_len:
+            logger.warning(f"HFSS S11 模擬點數異常 (Pattern {self.num})！預期 {expected_len} 點，實際取得 {len(S11_vals)} 點，將自動進行插值補齊。")
+            S11_vals:np.ndarray = np.interp(freqs_expected, freqs_s11, S11_vals)
+
+        #* Gain 
+        freqs_gain = Gain_dataframe.iloc[:, 0].values
+        Gain_vals = Gain_dataframe.iloc[:, 3].values
+        if len(Gain_vals) != expected_len:
+            logger.warning(f"HFSS Gain 模擬點數異常 (Pattern {self.num})！預期 {expected_len} 點，實際取得 {len(Gain_vals)} 點，將自動進行插值補齊。")
+
+            Gain_vals:np.ndarray = np.interp(freqs_expected, freqs_gain, Gain_vals)
 
         _result = {
-            'S11': tensor(S11.to_list()),
-            'Gain': tensor(Gain.to_list()),
+            'S11': tensor(S11_vals.tolist()),
+            'Gain': tensor(Gain_vals.tolist()),
         }
 
         full_output = []
-        full_parameter = np.append(np.append(full_output, S11.to_numpy()), Gain.to_numpy())
+        full_parameter = np.append(np.append(full_output, S11_vals), Gain_vals)
 
         return _result
