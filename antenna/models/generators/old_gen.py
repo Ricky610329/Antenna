@@ -1,11 +1,10 @@
-from torch import nn
-from torch.types import Tensor
+from torch import Tensor, nn
 
-from antenna import *
+from antenna.core.pattern import AntennaPattern
+from antenna.core.response import AntennaResponse
 from antenna.models.autograd import sign_f
 from antenna.models.components import BiScaleNorm
-from antenna.types import *
-from antenna.utils import *
+from antenna.utils.config import config
 
 
 class OldGEN(nn.Module):

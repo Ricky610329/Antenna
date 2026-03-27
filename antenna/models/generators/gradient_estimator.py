@@ -1,9 +1,7 @@
-from torch import nn
-from torch.types import Tensor
+from torch import Tensor, nn
 
-from antenna import *
-from antenna.types import *
-from antenna.utils import *
+from antenna.core.response import AntennaResponse
+from antenna.utils.config import config
 
 
 class GradientEstimator(nn.Module):

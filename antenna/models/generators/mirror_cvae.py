@@ -1,13 +1,12 @@
-from typing import List, Optional, Tuple
+from typing import Generic
 
 import torch
-import torch.nn as nn
-from torch.functional import F
+from torch import nn
 
-# 匯入您專案所需的模組
-from antenna import AntennaPattern, AntennaResponse, MultiResponses, config
-from antenna.functions import mirror
-from antenna.types import *
+from antenna.core.pattern import AntennaPattern
+from antenna.core.response import AntennaResponse, MultiResponses
+from antenna.losses.mirror import mirror
+from antenna.types import CallableParam, CustomSModel, ResultType
 
 
 class MirrorCVAE(nn.Module, Generic[CustomSModel]):

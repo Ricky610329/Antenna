@@ -1,11 +1,11 @@
 import torch
 from torch import nn
 
-from antenna import *
+from antenna.core.pattern import AntennaPattern
+from antenna.core.response import AntennaResponse
 from antenna.models.autograd import GumbelSigmoid
 from antenna.models.components import BiScaleNorm
-from antenna.types import *
-from antenna.utils import *
+from antenna.utils.config import config
 
 
 class GumbelSigmoidGEN(nn.Module):

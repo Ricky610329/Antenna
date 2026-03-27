@@ -1,10 +1,11 @@
-from torch import nn
-from torch.types import Tensor
+from typing import Optional
 
-from antenna import *
+from torch import Tensor, nn
+
+from antenna.core.pattern import AntennaPattern
+from antenna.core.response import AntennaResponse
 from antenna.models.components import BiScaleNorm
-from antenna.types import *
-from antenna.utils import *
+from antenna.utils.config import config
 
 
 class SigmoidGEN(nn.Module):
@@ -24,6 +25,6 @@ class SigmoidGEN(nn.Module):
         )
         self.to(config.device)
 
-    def forward(self, input, tau: Optional[float] = None) -> Tensor:
+    def forward(self, input, tau: float | None = None) -> Tensor:
         x = self.fc_patch(input)
         return AntennaPattern.binarization(x, tau)

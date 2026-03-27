@@ -1,22 +1,34 @@
 from types import FunctionType
+from typing import Callable, Generic, Optional, Union
 
 import torch
-from torch.types import Tensor
+from loguru import logger
+from torch import Tensor
 
-from antenna import *
-from antenna.types import *
-from antenna.utils import *
+from antenna.types import (
+    CallableModule,
+    Checkpoint,
+    CustomModule,
+    CustomOptimizer,
+    CustomScheduler,
+    LossParams,
+    ModelParams,
+    ReturnType,
+)
+from antenna.utils.config import config
+from antenna.utils.path import Path
+from antenna.utils.record import Record
 
 
 class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, LossParams]):
     def __init__(
         self,
         name: str = "models_{label}",
-        rootdir: Optional[Union[str, Path]] = None,
-        model: Optional[CustomModule | CallableModule[ModelParams, ReturnType]] = None,
-        optimizer: Optional[CustomOptimizer] = None,
-        scheduler: Optional[CustomScheduler] = None,
-        criterion: Optional[Callable[LossParams, Tensor]] = None,
+        rootdir: str | Path | None = None,
+        model: CustomModule | CallableModule[ModelParams, ReturnType] | None = None,
+        optimizer: CustomOptimizer | None = None,
+        scheduler: CustomScheduler | None = None,
+        criterion: Callable[LossParams, Tensor] | None = None,
         *,
         load: bool = False,
         device=config.device,
@@ -108,7 +120,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
     def save(self) -> Path:
         return self.save_as(self.model_file)
 
-    def save_as(self, filename: Union[str, Path]) -> Path:
+    def save_as(self, filename: str | Path) -> Path:
         """
         :param filename: 檔案完整路徑，含副檔名(suffix)
         """
@@ -124,7 +136,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             raise
         return filename
 
-    def pre_load_model(self, path: Union[str, Path]):
+    def pre_load_model(self, path: str | Path):
         path = Path(path)
         checkpoint_loaded: Checkpoint = path.load_torch()
         self.model.load_state_dict(checkpoint_loaded["model_state_dict"])
@@ -153,7 +165,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             }
         return checkpoint
 
-    def requires_grad(self, mode: bool = True, train: Optional[bool] = None):
+    def requires_grad(self, mode: bool = True, train: bool | None = None):
         for param in self.model.parameters():
             param.requires_grad = mode
 

@@ -52,6 +52,7 @@ class Trainer:
         self.cfg = cfg
         self._setup_environment()
         self._setup_paths()
+        self._setup_simulator()
         self._setup_antenna()
         self._setup_models()
         self._setup_tracking()
@@ -80,6 +81,26 @@ class Trainer:
         config.epochs = self.cfg.epochs
         config.lr = self.cfg.optimizer.lr
         config.checkpoint_save_path = self.path_checkpoint
+
+    def _setup_simulator(self):
+        """建立並註冊模擬器。"""
+        from antenna.patch.patch_simulator.dual_port import DualPortSimulator
+        from antenna.patch.patch_simulator.single_port import SinglePortSimulator
+
+        sim_type = self.cfg.simulator
+        if sim_type == "single_port":
+            self.simulator = SinglePortSimulator(record_path=self.result_path)
+        elif sim_type == "dual_port":
+            self.simulator = DualPortSimulator(record_path=self.result_path)
+        elif sim_type == "ris":
+            from antenna.ris.simulate_ris import RISSimulator
+
+            coord = self.cfg.pattern.coordinate
+            self.simulator = RISSimulator(element_num=coord[1] - coord[0])
+        else:
+            raise ValueError(f"未知的模擬器: {sim_type}")
+
+        AntennaPattern.register_simulator(self.simulator)
 
     def _setup_antenna(self):
         """設定 AntennaPattern 與 AntennaResponse。"""
@@ -191,10 +212,18 @@ class Trainer:
         logger.info(f"開始訓練: {self.cfg.experiment_name}")
         logger.info(f"模型: {self.cfg.model}, 設備: {self.cfg.environment.device}, Epochs: {self.cfg.epochs}")
 
+        # 開啟模擬器（HFSS COM 或 RIS）
+        if hasattr(self.simulator, "open"):
+            self.simulator.open()
+
         while epoch < self.cfg.epochs + 1:
             start = time()
             epoch += 1
             self.generator.change(epoch)
+
+            # 開始新的模擬回合
+            if hasattr(self.simulator, "start"):
+                self.simulator.start(epoch)
 
             logger.info(f"Start {epoch} of {self.cfg.epochs}")
 
@@ -276,6 +305,12 @@ class Trainer:
 
             self.record["fake_loss"] = loss.item()
             self.generator.save()
+
+            # 結束模擬回合
+            if hasattr(self.simulator, "end"):
+                self.simulator.end()
+            if hasattr(self.simulator, "clean"):
+                self.simulator.clean()
 
             self.record["epoch"] = epoch
             self.record["time"] = round(time() - start, 1)

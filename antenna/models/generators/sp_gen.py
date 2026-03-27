@@ -1,13 +1,13 @@
 from functools import partial
+from typing import Generic
 
 import numpy as np
 import torch
-from torch import nn
-from torch.types import Tensor
+from torch import Tensor, nn
 
-from antenna.functions import gumbel_sinkhorn_rectangular
-from antenna.types import *
-from antenna.utils import *
+from antenna.losses.mirror import gumbel_sinkhorn_rectangular
+from antenna.types import Callable, CallableParam, Tuple
+from antenna.utils.figure import Axes, Figure
 
 
 class SPGEN(nn.Module, Generic[CallableParam]):

@@ -1,11 +1,13 @@
-import torch
-from torch import nn
-from torch.functional import F
-from torch.types import Tensor
+from typing import Callable, Optional, Tuple
 
-from antenna import *
-from antenna.types import *
-from antenna.utils import *
+import torch
+import torch.nn.functional as F
+from torch import Tensor, nn
+
+from antenna.core.pattern import AntennaPattern
+from antenna.core.response import AntennaResponse
+from antenna.types import Tensor_B_N
+from antenna.utils.config import config
 from antenna.utils.data import size_converter
 
 
@@ -17,8 +19,8 @@ class CVAE(nn.Module):
     def __init__(
         self,
         latent_dim: int,
-        pattern_size: Optional[int] = None,
-        response_size: Optional[int] = None,
+        pattern_size: int | None = None,
+        response_size: int | None = None,
         binary_fn: Callable[..., Tensor] = AntennaPattern.binarization,
     ):
         """
@@ -59,7 +61,7 @@ class CVAE(nn.Module):
         self.to(config.device)
         # logger.info(f"CVAE Model Initialized: pattern_size={pattern_size}, response_size={response_size}, latent_dim={latent_dim}")
 
-    def encode(self, pattern: Tensor_B_N, response: Tensor_B_N) -> Tuple[Tensor, Tensor]:
+    def encode(self, pattern: Tensor_B_N, response: Tensor_B_N) -> tuple[Tensor, Tensor]:
         """
         (pattern, response) -> (mu, logvar)
 
@@ -97,7 +99,7 @@ class CVAE(nn.Module):
         inputs = torch.cat([z, response], dim=-1)
         return self.decoder_fc(inputs)
 
-    def forward(self, pattern: Tensor, response: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
+    def forward(self, pattern: Tensor, response: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """
         (Encoder + Decoder) -> (recon_logits, mu, logvar)
 
@@ -118,8 +120,8 @@ class CVAE(nn.Module):
     def inference(
         self,
         target_response: Tensor,
-        z: Optional[Tensor] = None,
-        best: Optional[tuple[Tensor, Tensor]] = None,
+        z: Tensor | None = None,
+        best: tuple[Tensor, Tensor] | None = None,
         noise_scale=0.0,
     ):
         """
