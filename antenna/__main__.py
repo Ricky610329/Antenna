@@ -55,17 +55,11 @@ def _train():
         from omegaconf import OmegaConf
 
         logger.info(f"設定:\n{OmegaConf.to_yaml(cfg)}")
-        logger.info(f"實驗名稱: {cfg.experiment_name}")
-        logger.info(f"模型: {cfg.model}")
-        logger.info(f"模擬器: {cfg.simulator}")
-        logger.info(f"Epochs: {cfg.epochs}")
 
-        # TODO: Phase 3 後續 — 實作完整 Trainer class
-        # from antenna.training.trainer import Trainer
-        # trainer = Trainer(cfg)
-        # trainer.run()
+        from antenna.training.trainer import Trainer
 
-        logger.warning("Trainer 尚未實作，目前僅載入設定。請使用原始 train_*.py 腳本或等待後續更新。")
+        trainer = Trainer(cfg)
+        trainer.run()
 
     train_main()
 
