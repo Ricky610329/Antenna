@@ -134,8 +134,6 @@ class Record:
         if isinstance(value, ndarray):
             _result = [np.array_equal(value, x) for x in self[key][start:stop]]
         elif isinstance(value, Tensor):
-            import torch
-
             _result = [torch.equal(value, x) for x in self[key][start:stop]]
         else:
             if value in self[key]:

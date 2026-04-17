@@ -223,18 +223,9 @@ class Figure:
         return filename
 
     def saveIMG(self, path=None):
-        FIG_CONFIG = {
-            "format": "png",
-            "bbox_inches": "tight",
-            "pad_inches": 0.1,
-            "dpi": 300,
-            "transparent": True,
-            "facecolor": "white",  # white or none
-            "edgecolor": "white",  # white or none
-        }
-        # self.fig.set_size_inches(18, 12)
+        save_config = {**FIG_CONFIG, "facecolor": "white", "edgecolor": "white"}
         path = path or self.rootdir.joinpath(f"{self.name}.png")
-        plt.savefig(path, **FIG_CONFIG)
+        plt.savefig(path, **save_config)
         return path
 
     def __getitem__(self, index: int) -> Axes:

@@ -29,7 +29,12 @@ class Path(type(_Path())):  # type: ignore
         path.not_exist_create(create_file=True)
         ```
         """
-        # self.path = path
+        # Python 3.12+ 的 pathlib 需要呼叫 super().__init__() 初始化 _raw_paths
+        # 舊版 Python 中 PurePath.__init__ 不接受引數，需要容錯處理。
+        try:
+            super().__init__(*args, **kwargs)
+        except TypeError:
+            super().__init__()
 
         if create:
             self.not_exist_create()
