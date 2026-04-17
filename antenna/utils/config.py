@@ -3,6 +3,7 @@ import traceback
 from collections.abc import Callable
 from json import dump as _json_dump
 from json import load as _json_load
+from pathlib import Path as _StdPath
 from time import time
 from types import TracebackType
 from typing import (
@@ -73,17 +74,17 @@ def global_exception_handler(
 
     def excepthook(exc_type: type[BaseException], exc_value: BaseException, exc_traceback: TracebackType):
         """
-        Extract global variables from the logger.
+        全域例外處理 hook。
+
         ```
         import sys
         sys.excepthook = global_exception_handler
         ```
         """
-
-        # Full traceback string
+        # 完整 traceback 字串
         tb_text = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
-        # Log the exception with full exc_info
+        # 以 loguru 記錄例外
         logger.opt(exception=(exc_type, exc_value, exc_traceback)).error(
             f"[{exc_type.__name__}] {exc_value}", exc_info=(exc_type, exc_value, exc_traceback)
         )
@@ -92,7 +93,6 @@ def global_exception_handler(
         send_email = (mode is True) or (mode == "only_hfss" and is_com_error)
         if issubclass(exc_type, KeyboardInterrupt):
             logger.info("Ctrl + C: Manually stop program execution.")
-            # original_hook(exc_type, exc_value, exc_traceback)
             return
         elif is_com_error:
             hresult = getattr(exc_value, "hresult", "N/A")
@@ -113,7 +113,6 @@ def global_exception_handler(
                     logger.success("Email sent successfully!")
                 else:
                     logger.error("Email send failed!")
-        # original_hook(exc_type, exc_value, exc_traceback)
 
     return excepthook
 
@@ -276,15 +275,21 @@ class Config(dict):
         update_hook: Callable[[dict], ReturnType] | None = None,
     ):
         """
-        Only save the following types
+        將設定序列化為 JSON 儲存。
+
+        僅支援以下型別：
         ```
         dict, list, tuple, str, int, float, bool, None
         ```
-        If it is other, it will be automatically converted to a string using `str()`
+        其餘型別會透過 `str()` 轉為字串。
 
         :param update_hook: def update_hook(config)..., Ex: wandb.config.update
+
+        .. note::
+            Legacy API — 新 code 請改用 Hydra DictConfig / OmegaConf.save。
+            此方法僅供 legacy `train_*.py` 腳本使用。
         """
-        path = Path(rootdir or "./", f"{name}.json")
+        path = _StdPath(rootdir or "./") / f"{name}.json"
         _save = {}
         self.update(vars(self))
         for key, value in self.items():
@@ -300,13 +305,14 @@ class Config(dict):
 
     def load(self, name: str = "config", rootdir: str | None = None):
         """
-        Only load the following types
-        ```
-        dict, list, tuple, str, int, float, bool, None
-        ```
+        從 JSON 檔載入設定至目前 Config 實例。
+
+        僅能讀入 JSON 原生支援的型別（dict, list, str, int, float, bool, None）。
+
+        .. note::
+            Legacy API — 新 code 請改用 Hydra DictConfig / OmegaConf.load。
         """
-        # TODO
-        path = Path(rootdir or "./", f"{name}.json")
+        path = _StdPath(rootdir or "./") / f"{name}.json"
         with open(path, encoding="utf-8") as f:
             self.update(_json_load(f))
 
@@ -319,9 +325,15 @@ config = Config()
 
 
 class MultiConfig:
-    def __init__(self, congig: dict[str, dict[str, Any]] = {}, label=None):
-        """
+    """
+    多標籤設定容器。
 
+    .. note::
+        Legacy API — 新 code 請改用 Hydra multi-run 或 structured configs。
+    """
+
+    def __init__(self, config: dict[str, dict[str, Any]] | None = None, label: str | None = None):
+        """
         Example ::
 
             MULTICONFIG = MultiConfig(
@@ -332,10 +344,13 @@ class MultiConfig:
                 },
                 label = 'default'
             )
-        """
-        self.metadata: dict[str, dict] = congig
 
-        if len(sys.argv) < 1 and label is None:
+        :param config: 標籤到設定字典的映射。
+        :param label: 要使用的標籤；若為 None 則讀取 `sys.argv[1]`。
+        """
+        self.metadata: dict[str, dict] = config if config is not None else {}
+
+        if label is None and len(sys.argv) < 2:
             raise ValueError(
                 "Must provide a configuration label either as a command-line argument "
                 "or directly to the MultiConfig constructor."
