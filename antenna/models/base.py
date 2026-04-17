@@ -1,5 +1,5 @@
 from types import FunctionType
-from typing import Callable, Generic, Optional, Union
+from typing import Callable, Generic
 
 import torch
 from loguru import logger
@@ -33,12 +33,9 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         load: bool = False,
         device=config.device,
     ):
-        if "{label}" in name:
-            self._name = name
-            self.name = None
-        else:
-            self._name = None
-            self.name = name
+        has_placeholder = "{label}" in name
+        self._name = name if has_placeholder else None
+        self.name = None if has_placeholder else name
 
         self._rootdir = rootdir or config.checkpoint_save_path
 
@@ -48,6 +45,8 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         self.criterion = criterion
         self.record = Record(self.__class__.__name__, rootdir=self._rootdir, load=load and self.model_file.exists())
 
+        # 快取 device；避免每次透過 next(model.parameters()) 取得（昂貴）。
+        self._device = None
         self.device = device
         if load:
             self.load()
@@ -56,15 +55,15 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         return self.model(*args, **kwargs)
 
     def __str__(self):
-        _str = "{class_name}(Model={model}, Optimizer={optimizer}, Scheduler={scheduler}, Criterion={criterion})"
-        return _str.format(
-            class_name=self.__class__.__name__,
-            model=self.model.__class__.__name__,
-            optimizer=self.optimizer.__class__.__name__,
-            scheduler=self.scheduler.__class__.__name__,
-            criterion=self.criterion.__name__
-            if isinstance(self.criterion, FunctionType)
-            else self.criterion.__class__.__name__,
+        criterion_name = (
+            self.criterion.__name__ if isinstance(self.criterion, FunctionType) else self.criterion.__class__.__name__
+        )
+        return (
+            f"{self.__class__.__name__}("
+            f"Model={self.model.__class__.__name__}, "
+            f"Optimizer={self.optimizer.__class__.__name__}, "
+            f"Scheduler={self.scheduler.__class__.__name__}, "
+            f"Criterion={criterion_name})"
         )
 
     @property
@@ -75,12 +74,16 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
 
     @property
     def device(self):
-        """Model parameters of the device."""
-        return next(self.model.parameters()).device
+        """快取的 model device。"""
+        return self._device
 
     @device.setter
     def device(self, device):
-        self.model.to(device=device)
+        if self.model is not None:
+            self.model.to(device=device)
+            self._device = next(self.model.parameters()).device
+        else:
+            self._device = torch.device(device) if not isinstance(device, torch.device) else device
 
     @property
     def FloatTensor(self):
@@ -103,19 +106,16 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         return self.name
 
     def load(self, force: bool = False):
-        checkpoint_loaded = self.checkpoint(load=True)
-        if checkpoint_loaded["title"] == self.__str__() or force:
-            self.device = checkpoint_loaded["device"]
-
-            self.model.load_state_dict(checkpoint_loaded["model_state_dict"])
-            self.optimizer.load_state_dict(checkpoint_loaded["optimizer_state_dict"])
-            self.scheduler.load_state_dict(checkpoint_loaded["scheduler_state_dict"])
-            self.record.load_state_dict(checkpoint_loaded["record_state_dict"])
-
-        else:
+        checkpoint_loaded = self._load_checkpoint_from_disk()
+        if not force and checkpoint_loaded["title"] != self.__str__():
             raise RuntimeError(
                 f"Please use the correct model file.\nFile: {checkpoint_loaded['title']}\nCurrent: {self.__str__()}"
             )
+        self.device = checkpoint_loaded["device"]
+        self.model.load_state_dict(checkpoint_loaded["model_state_dict"])
+        self.optimizer.load_state_dict(checkpoint_loaded["optimizer_state_dict"])
+        self.scheduler.load_state_dict(checkpoint_loaded["scheduler_state_dict"])
+        self.record.load_state_dict(checkpoint_loaded["record_state_dict"])
 
     def save(self) -> Path:
         return self.save_as(self.model_file)
@@ -124,11 +124,10 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         """
         :param filename: 檔案完整路徑，含副檔名(suffix)
         """
-
         filename = Path(filename)
         temp_file = filename.with_suffix(filename.suffix + ".tmp")
         try:
-            torch.save(self.checkpoint(load=False), temp_file)
+            torch.save(self._build_checkpoint(), temp_file)
             temp_file.replace(filename)
         except Exception:
             if temp_file.exists():
@@ -152,18 +151,21 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
             self.scheduler.step(scheduler_param)
 
     def checkpoint(self, load: bool = False) -> Checkpoint:
-        if load:
-            checkpoint: dict = self.model_file.load_torch()
-        else:
-            checkpoint = {
-                "title": self.__str__(),
-                "model_state_dict": None if not self.model else self.model.state_dict(),
-                "optimizer_state_dict": None if not self.optimizer else self.optimizer.state_dict(),
-                "scheduler_state_dict": None if not self.scheduler else self.scheduler.state_dict(),
-                "device": self.device,
-                "record_state_dict": self.record.state_dict(),
-            }
-        return checkpoint
+        """保留舊 public 介面；load=True 讀檔，False 產生當前 state checkpoint。"""
+        return self._load_checkpoint_from_disk() if load else self._build_checkpoint()
+
+    def _build_checkpoint(self) -> Checkpoint:
+        return {
+            "title": self.__str__(),
+            "model_state_dict": None if not self.model else self.model.state_dict(),
+            "optimizer_state_dict": None if not self.optimizer else self.optimizer.state_dict(),
+            "scheduler_state_dict": None if not self.scheduler else self.scheduler.state_dict(),
+            "device": self.device,
+            "record_state_dict": self.record.state_dict(),
+        }
+
+    def _load_checkpoint_from_disk(self) -> Checkpoint:
+        return self.model_file.load_torch()
 
     def requires_grad(self, mode: bool = True, train: bool | None = None):
         for param in self.model.parameters():

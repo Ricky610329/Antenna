@@ -29,7 +29,8 @@ class Path(type(_Path())):  # type: ignore
         path.not_exist_create(create_file=True)
         ```
         """
-        # self.path = path
+        # Python 3.12+：PurePath 狀態（_raw_paths 等）在 __init__ 建立，需呼叫 super。
+        super().__init__(*args, **kwargs)
 
         if create:
             self.not_exist_create()
@@ -99,7 +100,8 @@ class Path(type(_Path())):  # type: ignore
             return False
 
     def load_torch(self, device=None):
-        from antenna.models import config
+        # Deferred import 避免循環相依。
+        from antenna.utils.config import config
 
         if __version__ >= "2.6.0":
             return _torch_load(self, weights_only=False, map_location=device or config.device)
