@@ -8,7 +8,6 @@ model: sigmoid_gen
 simulator: single_port
 epochs: 1000
 patience: 10
-mutation_rate: 0.001
 experiment_name: "[Patch-Single-{device}-{hash_id}]"
 
 # 正則化權重
