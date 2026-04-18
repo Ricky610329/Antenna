@@ -106,8 +106,9 @@ class AntennaPattern:
 
     @classmethod
     def getAllPixel(cls):
-        """
-        TODO: 目前是取回所有的像素點，但實際上是取得大圖的像素點
+        """取得預設 coordinate 所定義的像素總數。
+
+        等同於 ``size(flatten=True)``，但在未設定 coordinate 時回傳 0 而非 raise。
         """
         x1, x2, y1, y2 = cast(Tuple[int, int, int, int], getattr(cls, "_antenna_pattern_coordinate", (0, 0, 0, 0)))
         return (x2 - x1) * (y2 - y1)
@@ -221,7 +222,7 @@ class AntennaPattern:
         if not isinstance(_coordinate, tuple):
             raise TypeError(f"Expected tuple, but got {type(_coordinate)}")
 
-        if not len(_coordinate) == 4:
+        if len(_coordinate) != 4:
             raise ValueError(f"Expected tuple of length 4, but got {len(_coordinate)}")
 
         setattr(cls, "_antenna_pattern_coordinate", _coordinate)
@@ -325,8 +326,6 @@ class AntennaPattern:
         for key, value in result.items():
             result_response[key] = AntennaResponse(value)
 
-        # TODO
-        # if not any([pattern.equal(p) for p, _ in self._history_datas]):
         AntennaPattern._history_datas.append([pattern, result_response])
 
         return AntennaResponse(result_response)
