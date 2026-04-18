@@ -13,8 +13,6 @@ from typing import Literal
 import torch
 from torch import Tensor, nn
 
-from antenna.types import overload
-
 __all__ = [
     "custom_loss_boundary",
     "custom_loss_r",
@@ -132,60 +130,35 @@ def custom_loss_minmax(
     return _one_sided_penalty(prediciton, target, method, criterion)
 
 
-@overload
-def interval_loss(
-    prediction: Tensor,
-    lower_response: float,
-    upper_response: float,
-    target: Tensor = None,
-    *,
-    loss_type: str = "SmoothL1Loss",
-    reduction: str = "mean",
-) -> torch.Tensor:
-    """
-    Interval Loss: 視為相對於 Target 的誤差容許值[target + lower, target + upper], 限制 prediction 必須在此動態邊界內。
-    """
-    ...
-
-
-@overload
-def interval_loss(
-    prediction: Tensor,
-    lower_response: Tensor,
-    upper_response: Tensor,
-    *,
-    loss_type: str = "SmoothL1Loss",
-    reduction: str = "mean",
-) -> torch.Tensor:
-    """
-    Interval Loss: 限制 prediction 必須在 [lower, upper] 之間。
-    """
-    ...
-
-
 def interval_loss(
     prediction: Tensor,
     lower_response: float | Tensor,
     upper_response: float | Tensor,
-    target: Tensor = None,
+    target: Tensor | None = None,
     *,
     loss_type: str = "SmoothL1Loss",
     reduction: str = "mean",
 ) -> Tensor:
-    """
-    區間損失 (Interval Loss) 的核心運算函數。
+    """區間損失 (Interval Loss)。
+
+    支援兩種模式：
+
+    - **絕對邊界**：當 ``lower_response`` 與 ``upper_response`` 皆為 :class:`Tensor` 時，
+      將 prediction clamp 至 ``[lower_response, upper_response]`` 計算損失。
+    - **相對偏移**：當 ``lower_response`` / ``upper_response`` 為純量，需另外傳入
+      ``target``，則邊界為 ``[target + lower, target + upper]``。
     """
     loss_fn = _make_criterion(loss_type, reduction=reduction)
 
     if isinstance(lower_response, Tensor) and isinstance(upper_response, Tensor):
         min_bound = lower_response
         max_bound = upper_response
-    else:  # * Target + Offset
+    else:
+        # 相對偏移模式必須提供 target
         if target is None:
-            raise ValueError("使用 Float (相對偏移模式) 時，必須傳入 target。")
+            raise ValueError("使用純量 (相對偏移模式) 時，必須傳入 target。")
         min_bound = target + lower_response
         max_bound = target + upper_response
 
-    # * Universal Clamp Logic
     target_clamped = torch.clamp(prediction, min=min_bound, max=max_bound).detach()
     return loss_fn(prediction, target_clamped)
