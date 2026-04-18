@@ -30,7 +30,11 @@ class Path(type(_Path())):  # type: ignore
         ```
         """
         # Python 3.12+：PurePath 狀態（_raw_paths 等）在 __init__ 建立，需呼叫 super。
-        super().__init__(*args, **kwargs)
+        # 舊版 Python 中 PurePath.__init__ 不接受引數，需要容錯處理。
+        try:
+            super().__init__(*args, **kwargs)
+        except TypeError:
+            super().__init__()
 
         if create:
             self.not_exist_create()
