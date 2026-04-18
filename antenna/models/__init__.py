@@ -12,6 +12,15 @@ from antenna.models.generators import (
     OldGEN,
     SigmoidGEN,
 )
+from antenna.models.surrogates import (
+    DoubleConvWithDropout,
+    EnhancedHFSSUNet,
+    HFSSNet,
+    OldSM,
+    SelfAttention,
+    SurrogateModel,
+    UNetSM,
+)
 
 __all__ = [
     "Models",
@@ -27,4 +36,11 @@ __all__ = [
     "CVAE",
     "MirrorCVAE",
     "GradientEstimator",
+    "HFSSNet",
+    "SelfAttention",
+    "DoubleConvWithDropout",
+    "EnhancedHFSSUNet",
+    "SurrogateModel",
+    "OldSM",
+    "UNetSM",
 ]
