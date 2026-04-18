@@ -1,4 +1,3 @@
 device: "cpu"
 network_drive_letter: "T:"
 rootdir: ""
-dataset_path: ""
