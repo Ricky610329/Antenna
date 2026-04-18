@@ -1,4 +1,4 @@
-"""統一 Trainer 封裝。"""
+"""antenna.training — 訓練流程封裝。"""
 
 from antenna.training.trainer import Trainer
 
