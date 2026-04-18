@@ -12,14 +12,7 @@ from torch import Tensor
 from antenna.types import *
 from antenna.utils.config import config
 from antenna.utils.data import size_converter
-from antenna.utils.torch_utils import concat, cTensor, stack, tensor
-
-
-def mult(_ob):
-    _result = 1
-    for i in _ob:
-        _result *= i
-    return _result
+from antenna.utils.torch_utils import concat, stack, tensor
 
 
 class MultiResponses:
@@ -90,16 +83,15 @@ class MultiResponses:
 class TargetResponse(MultiResponses):
     def __init__(self):
         super().__init__(None)
-        self._note = {}
         self.metadata: dict[str, dict] = defaultdict(dict)
 
     def __getitem__(self, key):
         """
         Target Response Design.
 
-        Use `setTargetResponse()` before use, otherwise use the default value
+        Use `registerTargetResponse()` before use, otherwise raises RuntimeError.
         """
-        if key not in self._note.keys():
+        if key not in self.responses:
             raise RuntimeError(
                 f"The {key} of TargetResponse is not registered. Please use `registerTargetResponse()` first."
             )
@@ -137,7 +129,6 @@ class TargetResponse(MultiResponses):
 
         if add:
             self[label] = expected_response
-            self._note[label] = f"side={side}, center={center}, width={width}"
             self.metadata[label].update(
                 {
                     "response": expected_response,
@@ -285,7 +276,7 @@ class AntennaResponse(Generic[LossParams]):
     def x(cls):
         """Get the x-axis value of this response."""
         if not hasattr(cls, "_x"):
-            RuntimeError("No x registered. Please use `registerLabels()` first.")
+            raise RuntimeError("No x registered. Please use `registerLabels()` first.")
         return np.linspace(*cls._x)
 
     @overload
