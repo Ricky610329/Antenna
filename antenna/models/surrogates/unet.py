@@ -147,10 +147,7 @@ class EnhancedHFSSUNet(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         # 0. Reshape Input: (...) -> (B, 1, H, W)
-        x = x.unsqueeze(0)
-        if x.dim() > 2:
-            x = torch.flatten(x, 1)
-        x_img = x.view(-1, 1, self.input_dim_h, self.input_dim_w)
+        x_img = x.reshape(-1, 1, self.input_dim_h, self.input_dim_w)
 
         # 1. Encoder
         x1 = self.down1(x_img)

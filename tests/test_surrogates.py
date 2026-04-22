@@ -116,6 +116,41 @@ def test_enhanced_hfss_unet_device_move_cpu():
 
 
 # ---------------------------------------------------------------------------
+# SurrogateModel 封裝器
+# ---------------------------------------------------------------------------
+def test_surrogate_model_call_returns_multi_responses_and_increments_epoch(tmp_path):
+    """``SurrogateModel.__call__`` 每次呼叫應遞增 ``epoch`` 並回傳 ``MultiResponses``。"""
+    from torch import nn
+
+    from antenna.core.pattern import AntennaPattern
+    from antenna.core.response import AntennaResponse, MultiResponses
+    from antenna.models.surrogates.hfss_net import HFSSNet
+    from antenna.models.surrogates.surrogate_model import SurrogateModel
+
+    AntennaPattern.setDefaultCoordinate((0, 4, 0, 4))
+    AntennaResponse.registerLabels("response", x=(0, 1, 3))
+
+    num_pixel = AntennaPattern.size(flatten=True)
+    model = HFSSNet(num_pattern_pixel=num_pixel, num_response=AntennaResponse.size(flatten=False))
+    optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
+
+    sm = SurrogateModel(
+        model=model,
+        criterion=nn.MSELoss(),
+        optimizer=optimizer,
+        scheduler=None,
+        rootdir=str(tmp_path),
+    )
+
+    assert sm.epoch == 0
+    dummy = torch.zeros(num_pixel, device=next(model.parameters()).device)
+    out = sm(dummy)
+
+    assert isinstance(out, MultiResponses)
+    assert sm.epoch == 1
+
+
+# ---------------------------------------------------------------------------
 # antenna.smodels shim
 # ---------------------------------------------------------------------------
 def test_smodels_shim_exports():

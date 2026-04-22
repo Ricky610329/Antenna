@@ -65,11 +65,6 @@ class SurrogateModel(
             load=False,  # 避免呼叫父類別未覆寫的 load
         )
 
-        self.device = config["device"]
-        self.pattern_size = AntennaPattern.size
-        self.response_size = AntennaResponse.size
-        self.size_converter = size_converter
-
         self.epoch = 0
 
     def __call__(self, pattern) -> MultiResponses:
@@ -113,8 +108,8 @@ class SurrogateModel(
         epoch_bar = tqdm(range(epochs), desc="Training...", disable=not verbose, **TQDM_CONFIG)
         for epoch in epoch_bar:
             for patterns, real_responses in cast(tuple[Tensor, Tensor], dataloader):
-                patterns = self.size_converter(AntennaPattern, patterns, flatten=True, batch=True)
-                real_responses = self.size_converter(AntennaResponse, real_responses, flatten=False, batch=True)
+                patterns = size_converter(AntennaPattern, patterns, flatten=True, batch=True)
+                real_responses = size_converter(AntennaResponse, real_responses, flatten=False, batch=True)
 
                 inputs: Tensor = patterns.flatten(start_dim=1).to(config.device)
                 labels: Tensor = real_responses.to(config.device)
