@@ -53,9 +53,15 @@ class PatchSimulator(ABC):
     
     def reopen(self, project_keep_latest:int = 5):
         self.kill() # self.quit()
-        self.clean(project_keep_latest)
+        if project_keep_latest: self.clean(project_keep_latest)
         # sleep(7)
         self.open()
+
+    def restart(self, kill:bool=False):
+        num = self.num
+        self.end(save_project=False)
+        if kill: self.reopen(None)
+        self.start(num)
 
     def clean(self, project_keep_latest:int = 5):
         return self.path_project.manage_file_count("*", keep_latest=project_keep_latest)
@@ -127,22 +133,42 @@ class PatchSimulator(ABC):
     def end(self, name=None, save_project:bool = True) -> int:
         """
         Delete Design and close project.
-
-        :return: Execution time
         """
         assert getattr(self, 'num', None) != None, "Please use `start()` first"
-        if save_project:
-            self.save(
-                self.name_project.format(num=self.num)
-            )
-        self.oProject.DeleteDesign(
-            self.name_design.format(num=self.num)
-        )
-        self.oDesktop.CloseProject(
-            name if name else self.name_project.format(num=self.num)
-        )
-        self.num = None
 
+        # 1. 嘗試儲存專案
+        if save_project:
+            try:
+                self.save(self.name_project.format(num=self.num))
+            except Exception as e:
+                logger.warning(f"專案儲存失敗，略過: {e}")
+
+        # 2. 嘗試刪除設計 (加上強制獵殺防護)
+        try:
+            self.oProject.DeleteDesign(self.name_design.format(num=self.num))
+        except Exception as e:
+            
+            
+            sleep(2) # 等待 2 秒讓系統釋放檔案鎖定
+            try:
+                self.oProject.DeleteDesign(self.name_design.format(num=self.num))
+            except:
+                # 直接呼叫我們之前寫好的重生機制 (它會 kill, sleep, 並重新連線 COM)
+                self.reopen()
+                
+                # 重生完畢後，直接結束這回合，不用再執行後面的 CloseProject 了
+                self.num = None
+                return int(time()-self.start_time)
+
+        # 3. 嘗試關閉專案
+        try:
+            self.oDesktop.CloseProject(name if name else self.name_project.format(num=self.num))
+        except Exception as e:
+            logger.error(f"專案關閉異常，HFSS 可能徹底當機，準備強制重啟核心: {e}")
+            # 如果連專案都關不掉，代表 ansysedt.exe 已經壞了，啟動您的 kill() 大絕招
+            self.reopen() 
+
+        self.num = None
         return int(time()-self.start_time)
 
 

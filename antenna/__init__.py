@@ -33,6 +33,7 @@ Example::
 from antenna.utils import *
 from antenna.types import *
 from antenna.utils.data import size_converter
+from antenna.patch.patch_simulator import PatchSimulator
 # import numpy as np
 
 import torch
@@ -534,7 +535,7 @@ class AntennaPattern:
         return (torch.sum(merged_pattern) / merged_pattern.numel()).item()
     
     @classmethod
-    def register_simulator(cls, simulator:Callable[[Tensor],Dict[str, Tensor]]):
+    def register_simulator(cls, simulator:Union[PatchSimulator, Callable[[Tensor],Dict[str, Tensor]]]):
         cls._simulator = simulator
 
     @classmethod
@@ -755,11 +756,16 @@ class AntennaPattern:
     def simulate(self, no_grad:bool = True, **param):
         pattern = self.merge()
         result_response = {}
-       
+
         if hasattr(self, "_simulator"):
             if no_grad:
                 with torch.no_grad():
-                    result:Dict[str, Tensor] = self._simulator(pattern.detach(), **param)
+                    try:
+                        result:Dict[str, Tensor] = self._simulator(pattern.detach(), **param)
+                    except Exception as e:
+                        logger.warning(f'模擬器發生錯誤, 將重新啟動並執行: {e}')
+                        self._simulator.restart(kill=True)
+                        result:Dict[str, Tensor] = self._simulator(pattern.detach(), **param)
             else:
                 result:Dict[str, Tensor]  = self._simulator(pattern, **param)
         else:
