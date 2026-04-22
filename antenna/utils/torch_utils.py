@@ -31,7 +31,7 @@ from torch import (
     tensor as _tensor,
 )
 
-from .utils import config
+from antenna.utils.config import config
 
 try:
     from torch.utils.tensorboard import SummaryWriter  # type:ignore pip install tensorboard

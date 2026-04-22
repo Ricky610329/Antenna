@@ -1,10 +1,10 @@
 import os
-from collections.abc import Sequence
+import subprocess
 from email.mime.text import MIMEText
-
-# * Email
+from os.path import exists
 from smtplib import SMTP
-from typing import Self, Union
+from socket import AF_INET, SOCK_DGRAM, socket
+from typing import Self
 
 from loguru import logger
 
@@ -13,8 +13,8 @@ class Email(SMTP):
     def __init__(
         self,
         to: str | list[str],
-        cc: list = [],
-        bcc: list = [],
+        cc: list | None = None,
+        bcc: list | None = None,
         from_addr_pwd: tuple = (
             os.environ.get("ANTENNA_EMAIL_ADDRESS", ""),
             os.environ.get("ANTENNA_EMAIL_APP_PASSWORD", ""),
@@ -51,8 +51,9 @@ class Email(SMTP):
         self.login(from_addr_pwd[0], from_addr_pwd[1])
 
         self.to_list = to if isinstance(to, list) else [to]
-        self.cc_list = cc if isinstance(cc, list) else [cc]
-        self.bcc_list = bcc if isinstance(bcc, list) else [bcc]
+        # 避免可變預設引數：None -> []
+        self.cc_list = list(cc) if cc else []
+        self.bcc_list = list(bcc) if bcc else []
 
         self.all_recipients = self.to_list + self.cc_list + self.bcc_list
         self.from_addr = from_addr_pwd[0]
@@ -68,7 +69,7 @@ class Email(SMTP):
         self.msg_str = msg.as_string()
         return msg
 
-    def sendMessage(self, message: str = None):
+    def sendMessage(self, message: str | None = None):
         assert self.all_recipients, "Please select sender."
         return self.sendmail(self.from_addr, self.all_recipients, message or self.msg_str)
 
@@ -77,9 +78,6 @@ class Email(SMTP):
 
     def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, tb) -> None:
         self.quit()
-
-
-from socket import AF_INET, SOCK_DGRAM, socket
 
 
 def get_local_ip():
@@ -93,10 +91,6 @@ def get_local_ip():
     finally:
         s.close()
     return ip
-
-
-import subprocess
-from os.path import exists
 
 
 def connect_network_drive(drive_letter, network_path, user="", password="", *, del_old=False, verbose: bool = False):

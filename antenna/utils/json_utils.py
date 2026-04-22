@@ -27,7 +27,7 @@ class json:
 
         if not self.path.exists():
             if create:
-                self.path.touch()
+                # dump() 會開檔寫入，已隱含建立檔案；無需額外 touch()。
                 self.dump({})
             else:
                 raise FileNotFoundError(f"JSON file '{path}' does not exist.")
@@ -85,25 +85,22 @@ class json:
             return default
 
     def _set(self, keys: list, value: Any) -> dict:
-        temp = self.load().copy()
-        _ = "temp"
-        for i, k in enumerate(keys):
-            if k == "":
-                continue
-            _ += f"['{k}']"
+        # 以 dict 走訪代替 exec()：逐層建立中間節點後於最末層寫入。
+        data = self.load()
+        path = [k for k in keys if k != ""]
+        if not path:
+            return data
 
-            if i == len(keys) - 1:
-                exec(f"{_} = value")
-            else:
-                if k not in temp:
-                    exec(f"{_} = {{}}")
-
-        return temp
+        node = data
+        for k in path[:-1]:
+            if k not in node or not isinstance(node[k], dict):
+                node[k] = {}
+            node = node[k]
+        node[path[-1]] = value
+        return data
 
     def _get(self, keys: list) -> Any:
-
-        self.data = self.load()
-        result = self.data.copy()
+        result = self.load()
         for k in keys:
             if k == "":
                 continue
