@@ -49,21 +49,23 @@ def _one_sided_penalty(
 
     若沒有任何元素越界，回傳可微分的零張量。
     """
-    if method == "high":
-        bound = target.max()
-        mask = target == bound
-        violation = prediction[mask] < bound
-    elif method == "low":
-        bound = target.min()
-        mask = target == bound
-        violation = prediction[mask] > bound
-    else:
+    if method not in ("low", "high"):
         raise ValueError(f"method 必須為 'low' 或 'high'，收到 {method!r}")
 
-    if violation.sum() == 0:
+    # 空張量情形：無任何元素可比較，直接回傳零張量避免 target.max()/min() 例外。
+    if target.numel() == 0:
         return _zero_loss()
 
-    return criterion(prediction[mask][violation], target[mask][violation])
+    bound = target.max() if method == "high" else target.min()
+    mask = target == bound
+    pred_on_bound = prediction[mask]
+    target_on_bound = target[mask]
+    violation = pred_on_bound < bound if method == "high" else pred_on_bound > bound
+
+    if not violation.any():
+        return _zero_loss()
+
+    return criterion(pred_on_bound[violation], target_on_bound[violation])
 
 
 def custom_loss_boundary(
