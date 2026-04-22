@@ -1,8 +1,4 @@
-"""
-Created on Wed May  8 16:38:05 2024
-
-@author: user
-"""
+"""Patch Single Port 訓練腳本 — selection 版（使用 SPGEN 從預定義 pattern 選擇）。"""
 
 from antenna.utils import *
 
@@ -10,7 +6,6 @@ config.device = "cpu"
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 
 from antenna import *
 from antenna.functions import AdaptiveCyclicalScheduler
@@ -18,11 +13,9 @@ from antenna.models import SPGEN, Models
 from antenna.patch import SinglePortSimulator, custom_loss_minmax
 from antenna.smodels import OldSM
 from antenna.utils.data import DataManager
-from script.process_files import FileProcessor
 
-# from antenna.functions import mirror, mutate
 torch.autograd.set_detect_anomaly(True)
-# %%
+
 ###* Basic Config ###
 connect_default_drive()
 RESULT_PATH, CONTINUE_RUN = get_result_path(
@@ -31,7 +24,6 @@ RESULT_PATH, CONTINUE_RUN = get_result_path(
     generate_code=__file__,
     enable_exception_handler=True,
 )
-# DATASET_PATH = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\dataset")
 
 SM_PRETRAIN_MODEL_PATH = DATASET_PATH.joinpath("old_sm.pth")
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
@@ -69,18 +61,12 @@ AntennaPattern.register_simulator(simulator)
 AntennaResponse.registerLabels("S11", "Gain", x="n257")
 x = AntennaResponse.x()
 
-# ? S11 S22 -> high low high (-1.25, -12)
+# ? S11 目標：high low high (-1.25, -12)
 returnloss = AntennaResponse.registerTargetResponse(0, -10, (5, 0, 7, 0, 5), label="S11")
-# returnloss_upper = AntennaResponse.registerTargetResponse(0, -10, (4, 2, 5, 2, 4), label="returnloss_upper")
-# returnloss_lower = AntennaResponse.registerTargetResponse(-2.5, -50, (3, 4, 3, 4, 3), label="returnloss_lower")
-
 AntennaResponse.registerLossHook(custom_loss_minmax, label="S11", target=returnloss, method="low")
 
-# ? Gain -> low high low (-2, -19.5) (0, -25)
+# ? Gain 目標：low high low (-2, -19.5) (0, -25)
 gain = AntennaResponse.registerTargetResponse(-19, 4, (5, 0, 7, 0, 5), label="Gain")
-# gain_upper = AntennaResponse.registerTargetResponse(-17, 0, (1, 2, 11, 2, 1), label="gain_upper")
-# gain_lower = AntennaResponse.registerTargetResponse(-22, -3, (4, 2, 5, 2, 4), label="gain_lower")
-
 AntennaResponse.registerLossHook(custom_loss_minmax, label="Gain", target=gain, method="high")
 
 with Figure(
@@ -96,61 +82,18 @@ with Figure(
 
     fig[0].set_title("S11")
     fig[0].plot(x, returnloss.cpu().detach().numpy(), color="red", marker="o")
-    # fig[0].plot(x, returnloss_upper.cpu(), color='blue', marker="o")
-    # fig[0].plot(x, returnloss_lower.cpu(), color='blue', marker="o")
     fig[0].grid(True)
-    # fig[0].set_ylim(-13, 1)
 
     fig[1].set_title("Gain")
     fig[1].plot(x, gain.cpu().detach().numpy(), color="red", marker="o")
-    # fig[1].plot(x, gain_upper.cpu(), color='blue', marker="o")
-    # fig[1].plot(x, gain_lower.cpu(), color='blue', marker="o")
     fig[1].grid(True)
 
-###*  初始化神經網絡模型 ###
-pattern_table = (
-    # * 粗
-    [[0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0]],
-    [[0, 1, 1, 1, 0], [0, 1, 1, 1, 0], [0, 1, 1, 1, 0], [0, 1, 1, 1, 0], [0, 1, 1, 1, 0]],
-    [[0, 0, 0, 0, 0], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [0, 0, 0, 0, 0]],
-    [[1, 1, 0, 0, 0], [1, 1, 1, 0, 0], [0, 1, 1, 1, 0], [0, 0, 1, 1, 1], [0, 0, 0, 1, 1]],
-    [[0, 0, 0, 1, 1], [0, 0, 1, 1, 1], [0, 1, 1, 1, 0], [1, 1, 1, 0, 0], [1, 1, 0, 0, 0]],
-    [[1, 1, 0, 1, 1], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [1, 1, 0, 1, 1]],
-    [[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 0, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]],
-    # * 細
-    [[0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [0, 0, 1, 0, 0]],
-    [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
-    [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]],
-    [[0, 0, 0, 0, 1], [0, 0, 0, 1, 0], [0, 0, 1, 0, 0], [0, 1, 0, 0, 0], [1, 0, 0, 0, 0]],
-    [[1, 0, 0, 0, 1], [0, 1, 0, 1, 0], [0, 0, 1, 0, 0], [0, 1, 0, 1, 0], [1, 0, 0, 0, 1]],
-    [[1, 1, 1, 1, 1], [1, 0, 0, 0, 1], [1, 0, 0, 0, 1], [1, 0, 0, 0, 1], [1, 1, 1, 1, 1]],
-    # [ # 螺旋
-    #     [1, 1, 1, 1, 0],
-    #     [0, 0, 0, 1, 0],
-    #     [0, 1, 0, 1, 0],
-    #     [0, 1, 1, 1, 0],
-    #     [0, 0, 0, 0, 0]
-    # ],
-    [  # 點狀
-        [0, 1, 0, 1, 0],
-        [1, 0, 1, 0, 1],
-        [0, 1, 0, 1, 0],
-        [1, 0, 1, 0, 1],
-        [0, 1, 0, 1, 0],
-    ],
-    [  # 圓點
-        [0, 0, 1, 0, 0],
-        [0, 1, 1, 1, 0],
-        [1, 1, 1, 1, 1],
-        [0, 1, 1, 1, 0],
-        [0, 0, 1, 0, 0],
-    ],
-)
+###* 初始化神經網絡模型 ###
 
 
-# --- Helper function for rotation ---
+# --- 旋轉輔助函式 ---
 def get_rotations(base_pattern):
-    """Generates 4 rotations (0, 90, 180, 270 degrees) for a given pattern."""
+    """為給定 pattern 產生 4 個旋轉（0, 90, 180, 270 度）。"""
     base = np.array(base_pattern)
     rotations = [np.rot90(base, k=i).tolist() for i in range(4)]
     return rotations
@@ -158,24 +101,7 @@ def get_rotations(base_pattern):
 
 pattern_table = {
     # ---------------------------------------------------------------
-    # 1. Essential Patterns (極度重要)
-    # ---------------------------------------------------------------
-    # 'Blank': [
-    #     [0, 0, 0, 0, 0],
-    #     [0, 0, 0, 0, 0],
-    #     [0, 0, 0, 0, 0],
-    #     [0, 0, 0, 0, 0],
-    #     [0, 0, 0, 0, 0]
-    # ],
-    # 'Solid': [
-    #     [1, 1, 1, 1, 1],
-    #     [1, 1, 1, 1, 1],
-    #     [1, 1, 1, 1, 1],
-    #     [1, 1, 1, 1, 1],
-    #     [1, 1, 1, 1, 1]
-    # ],
-    # ---------------------------------------------------------------
-    # 2. Line Patterns (線條)
+    # 1. 線條 Patterns
     # ---------------------------------------------------------------
     "H-Line (Thin)": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [1, 1, 1, 1, 1], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
     "H-Line (Bold)": [[0, 0, 0, 0, 0], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [0, 0, 0, 0, 0]],
@@ -184,7 +110,7 @@ pattern_table = {
     "Diag (\\, Bold)": [[1, 1, 0, 0, 0], [1, 1, 1, 0, 0], [0, 1, 1, 1, 0], [0, 0, 1, 1, 1], [0, 0, 0, 1, 1]],
     "Diag (/, Bold)": [[0, 0, 0, 1, 1], [0, 0, 1, 1, 1], [0, 1, 1, 1, 0], [1, 1, 1, 0, 0], [1, 1, 0, 0, 0]],
     # ---------------------------------------------------------------
-    # 3. Cross Patterns (十字)
+    # 2. 十字 Patterns
     # ---------------------------------------------------------------
     "+ (Thin)": [[0, 0, 1, 0, 0], [0, 0, 1, 0, 0], [1, 1, 1, 1, 1], [0, 0, 1, 0, 0], [0, 0, 1, 0, 0]],
     "+ (Bold)": [[0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0]],
@@ -196,12 +122,12 @@ pattern_table = {
         [1, 1, 0, 1, 1],
     ],
     # ---------------------------------------------------------------
-    # 4. Circle / Dot Patterns (圓點)
+    # 3. 圓點 Patterns
     # ---------------------------------------------------------------
     "Dot": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
     "Circle": [[0, 0, 1, 0, 0], [0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0], [0, 0, 1, 0, 0]],
     # ---------------------------------------------------------------
-    # 5. T-Shape Patterns (T型, 含4個旋轉方向)
+    # 4. T 型 Patterns（含 4 個旋轉方向）
     # ---------------------------------------------------------------
     **{
         f"T (Thin, Rot {i * 90})": p
@@ -216,7 +142,7 @@ pattern_table = {
         )
     },
     # ---------------------------------------------------------------
-    # 6. L-Shape Patterns (L型/角落, 含4個旋轉方向)
+    # 5. L 型 Patterns（含 4 個旋轉方向）
     # ---------------------------------------------------------------
     **{
         f"L (Thin, Rot {i * 90})": p
@@ -231,7 +157,7 @@ pattern_table = {
         )
     },
     # ---------------------------------------------------------------
-    # 7. U-Shape Patterns (U型/C型, 含4個旋轉方向)
+    # 6. U 型 Patterns（含 4 個旋轉方向）
     # ---------------------------------------------------------------
     **{
         f"U (Thin, Rot {i * 90})": p
@@ -246,22 +172,20 @@ pattern_table = {
         )
     },
 }
-# print(len(pattern_table))
 
 model = SPGEN(list(pattern_table.values()), 25, hard=True)
 model.save((5, 7), RESULT_PATH, pattern_dict=pattern_table)
-# exit()
 optimizer = torch.optim.Adam(params=model.parameters(), lr=config.lr, betas=(0.5, 0.999))
 scheduler = AdaptiveCyclicalScheduler(
     optimizer,
-    T_0=100,  # 增加初始週期長度
-    T_mult=2,  # 暫時關閉週期長度增加，讓每個週期條件一致
-    lr_max=0.001,  # 稍微降低最大學習率
-    lr_min=0.00001,  # 0.0001
-    temp_max=2.0,  # 稍微降低最高溫度 # 1.0
+    T_0=100,
+    T_mult=2,
+    lr_max=0.001,
+    lr_min=0.00001,
+    temp_max=2.0,
     temp_min=0.1,
-    warmup_ratio=0.2,  # 增加暖身時間 # 0.3
-    patience=50,  # 顯著增加耐心
+    warmup_ratio=0.2,
+    patience=50,
     factor=0.7,
     mode="min",
 )
@@ -290,10 +214,6 @@ else:
         fig.addAll()
         fig[0].plot(smodel.train_by_datas(data_manager))
         smodel.save()
-
-# Optimizer setting
-# optimizer = torch.optim.Adam(params=model.parameters(), lr=init_lr)
-# optimizer = torch.optim.RMSprop(params=model.parameters(), lr=init_lr)
 
 config["AntennaResponse"] = AntennaResponse.to_str()
 config["Generator"] = model
@@ -333,11 +253,9 @@ while epoch < config.epochs + 1:
 
         ###* Mutation ###
         TEMP["mutation"] = TEMP("min_loss")
-        # output_element = output_element.mutate(config['mutation_rate'])
         skip = 0
 
     else:
-        # TEMP['tau'] = 1.0 # max(0.5, TEMP('tau', 5.0) * 0.99)
         output_element = AntennaPattern(generator(TEMP("tau")))
         TEMP["mutation"] = 0
         skip += 1
@@ -355,7 +273,6 @@ while epoch < config.epochs + 1:
         TEMP["real_loss"] = real_loss.item()  # 儲存 HFSS結果 的 loss
         if TEMP("real_loss") < TEMP.average("real_loss"):
             online_dataset.add_and_save([~output_element, stack_output_result])
-        # online_dataset.add_and_save([~output_element, stack_output_result])
         jump = 0
 
     else:
@@ -379,19 +296,16 @@ while epoch < config.epochs + 1:
         TEMP.add("de", 1, default=0)
     TEMP["min_loss"] = min_loss
 
-    ###*  儲存HFSS的輸入與輸出，再訓練代理模型並儲存 ###
+    ###* 儲存 HFSS 的輸入與輸出，再訓練代理模型並儲存 ###
     TEMP["patch_pattern_buf"] = ~output_element
     TEMP["patch_result_buf"] = stack_output_result
 
     ###* 權重全部凍結 ###
     smodel.requires_grad(False, train=False)
-    # for name, para in model_HFSS.named_parameters():
-    #     para.requires_grad_(False)
 
-    ###* 更新GEN ###
+    ###* 更新 GEN ###
     # ? target response -> 生成模型 -> pattern -> 代理模型 -> predicted response
-    # ? calculate loss (target response, predicted response)
-    # ? update optimizer
+    # ? 計算 loss(target response, predicted response) 並更新 optimizer
     output_element = AntennaPattern(generator(TEMP("tau")))
     response = smodel(output_element.series)
     loss = response.criterion()
@@ -416,23 +330,13 @@ while epoch < config.epochs + 1:
 
         fig[0].plot(x, stack_output_result[0].cpu(), color="blue")
         fig[0].plot(x, returnloss.cpu(), color="blue", linestyle="--")
-        # fig[0].plot(x,returnloss_upper.cpu(), color='red')
-        # fig[0].plot(x, returnloss_lower.cpu(), color='red')
         fig[0].set_title("S11", fontsize=20)
-        # fig[0].set_ylim(-15,1)
 
         fig[1].plot(x, stack_output_result[1].cpu(), color="blue")
         fig[1].plot(x, gain.cpu(), color="blue", linestyle="--")
-        # fig[1].plot(x,gain_upper.cpu(), color='red')
-        # fig[1].plot(x, gain_upper.cpu(), color='red')
         fig[1].set_title("Gain", fontsize=20)
-        # fig[1].set_ylim(-20,1)
 
         generator.scheduler.plot(fig[2])
-        # fig[2].set_title("Parameter Group")
-        # fig[2].plot([x * 1000 for x in TEMP['lr']], label='Learning Rate * 1000')
-        # fig[2].plot(TEMP['tau'], label='Tau')
-        # fig[2].legend()
 
         fig[3].plot(TEMP["real_loss"], color="red", label="real_loss")
         fig[3].plot(TEMP["fake_loss"], color="purple", label="fake_loss", alpha=0.8)

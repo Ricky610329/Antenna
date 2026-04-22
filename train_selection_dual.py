@@ -1,33 +1,23 @@
-"""
-Created on Wed May  8 16:38:05 2024
-
-@author: user
-"""
+"""Patch Dual Port 訓練腳本 — selection 版（使用 SPGEN 從預定義 pattern 選擇）。"""
 
 from antenna.utils import *
 
 config.device = "cpu"
 
-import argparse
-
-import numpy as np
 import torch
-import torch.nn as nn
 
 from antenna import *
-from antenna.models import SPGEN, HFSSNet
+from antenna.models import SPGEN
 from antenna.patch import DualPortSimulator, custom_loss_g, custom_loss_r
 from antenna.smodels import OldSM
 from script.process_files import FileProcessor
 
-# from antenna.functions import mirror, mutate
 torch.autograd.set_detect_anomaly(True)
-# %%
+
 ###* Basic Config ###
 connect_default_drive()
 RESULT_PATH, is_connect_run = get_result_path("[Patch][{device}] selection16_rollback_-3", rootdir=ROOTDIR)
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
-# sys.excepthook = global_exception_handler
 
 path_pic = RESULT_PATH.joinpath("pic").not_exist_create()
 path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
@@ -89,7 +79,6 @@ with Figure("Target Response", (1, 2), rootdir=RESULT_PATH, save=True, size=(18 
     fig[0].plot(x, returnloss_upper.cpu(), color="blue", marker="o")
     fig[0].plot(x, returnloss_lower.cpu(), color="blue", marker="o")
     fig[0].grid(True)
-    # fig[0].set_ylim(-13, 1)
 
     fig[1].set_title("S21")
     fig[1].plot(x, gain.cpu().detach().numpy(), color="red", marker="o")
@@ -97,7 +86,7 @@ with Figure("Target Response", (1, 2), rootdir=RESULT_PATH, save=True, size=(18 
     fig[1].plot(x, gain_lower.cpu(), color="blue", marker="o")
     fig[1].grid(True)
 
-###*  初始化神經網絡模型 ###
+###* 初始化神經網絡模型 ###
 pattern_table = (
     # * 粗
     [[0, 1, 1, 1, 0], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [0, 1, 1, 1, 0]],
@@ -150,10 +139,6 @@ if is_connect_run and ("epoch" in TEMP):
     smodel.load(config.checkpoint_save_path)
 
 
-# Optimizer setting
-# optimizer = torch.optim.Adam(params=model.parameters(), lr=init_lr)
-# optimizer = torch.optim.RMSprop(params=model.parameters(), lr=init_lr)
-
 config["AntennaResponse"] = AntennaResponse.to_str()
 config["Generator"] = model
 config["optimizer"] = optimizer
@@ -193,8 +178,7 @@ while epoch < config.epochs + 1:
         output_element = AntennaPattern(model())
 
         ###* Mutation ###
-        TEMP["mutation"] = 0  # TEMP('min_loss')
-        # output_element = output_element.mutate(config['mutation_rate'])
+        TEMP["mutation"] = 0
         skip = 0
 
     else:
@@ -237,19 +221,13 @@ while epoch < config.epochs + 1:
         TEMP.add("de", 1, default=0)
     TEMP["min_loss"] = min_loss
 
-    ###*  儲存HFSS的輸入與輸出，再訓練代理模型並儲存 ###
+    ###* 儲存 HFSS 的輸入與輸出，再訓練代理模型並儲存 ###
     TEMP["patch_pattern_buf"] = ~output_element
     TEMP["patch_result_buf"] = stack_output_result
 
-    ###* 權重全部凍結 ###
-    # for name, para in model_HFSS.named_parameters():
-    #     para.requires_grad_(False)
-
-    ###* 更新GEN ###
+    ###* 更新 GEN ###
     # ? target response -> 生成模型 -> pattern -> 代理模型 -> predicted response
-    # ? calculate loss (target response, predicted response)
-    # ? update optimizer
-    # output_element = model(AntennaResponse.merge_target_responses())
+    # ? 計算 loss(target response, predicted response) 並更新 optimizer
     response = smodel(output_element.series)
     loss = response.criterion()
     loss.backward()
@@ -312,6 +290,5 @@ while epoch < config.epochs + 1:
 
 logger.info(f"Training Finished! (Min Loss: {TEMP.custom('real_loss', min)})")
 
-# %%
 simulator.save()
 simulator.quit()
