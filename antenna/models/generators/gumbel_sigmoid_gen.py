@@ -38,9 +38,12 @@ class GumbelSigmoidGEN(nn.Module):
         self.tau_history.append(self.tau.detach().cpu().item())
         return x
 
-    def anneal_tau(self, rate: float = 0.995, min_tau: float = 0.1) -> None:
-        """Annealing — 訓練初期較大的 tau 鼓勵探索，後期收斂至離散解。"""
-        # 目前以 clamp 下限保護 tau；rate/min_tau 參數留作未來擴充。
+    def anneal_tau(self, min_tau: float = 0.1) -> None:
+        """Annealing — 訓練初期較大的 tau 鼓勵探索，後期收斂至離散解。
+
+        目前僅以 ``clamp(min=min_tau)`` 作為下限保護；完整 annealing schedule
+        尚未實作（若要加入可以在此處乘以衰減率）。
+        """
         self.tau = torch.clamp(self.tau, min=min_tau)
         self.tau_history.append(self.tau.detach().cpu().item())
 

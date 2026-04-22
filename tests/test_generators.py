@@ -200,6 +200,39 @@ def test_sp_gen_hard_output_is_binary():
     assert _is_binary(out)
 
 
+# ─────────────── CVAE ───────────────
+
+
+def test_cvae_forward_shape():
+    """CVAE forward 回傳 (recon_logits, mu, logvar)，三者皆應帶批次維度。"""
+    from antenna.models.generators import CVAE
+
+    latent_dim = 8
+    batch = 4
+    model = CVAE(latent_dim=latent_dim)
+
+    pattern = torch.randn(batch, AntennaPattern.size(flatten=True), device=config.device)
+    response = torch.randn(batch, AntennaResponse.size(flatten=True), device=config.device)
+
+    recon, mu, logvar = model(pattern, response)
+    assert recon.shape == (batch, AntennaPattern.size(flatten=True))
+    assert mu.shape == (batch, latent_dim)
+    assert logvar.shape == (batch, latent_dim)
+
+
+def test_cvae_generate_shape():
+    """generate() 以單一條件生成 n_samples 個 logits。"""
+    from antenna.models.generators import CVAE
+
+    latent_dim = 8
+    n_samples = 3
+    model = CVAE(latent_dim=latent_dim)
+
+    response = torch.randn(1, AntennaResponse.size(flatten=True), device=config.device)
+    logits = model.generate(response, n_samples=n_samples)
+    assert logits.shape == (n_samples, AntennaPattern.size(flatten=True))
+
+
 # ─────────────── re-export 完整性 ───────────────
 
 
