@@ -1,75 +1,95 @@
 """AntennaPattern 核心類別。"""
 
-from typing import cast
+from typing import Callable, Literal, Self, cast, overload
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
+from matplotlib.axes import Axes
 from torch import Tensor
 
-from antenna.types import *
 from antenna.utils.config import config
 from antenna.utils.data import size_converter
 
+# * Sigmoid logits 的截斷範圍
+# Sigmoid(-10) 已極趨近 0，Sigmoid(10) 極趨近 1，超出範圍只會造成數值不穩
+_SIGMOID_LOGIT_CLAMP: float = 10.0
+
+# * Tau 下限：避免除以 0 或 steepness 爆炸
+_TAU_MIN: float = 1e-4
+
+# * 二值化預設門檻
+_DEFAULT_BINARIZE_THRESHOLD: float = 0.5
+
+# * Coordinate 的類別屬性名稱（存放在 class 上）
+_COORDINATE_ATTR: str = "_antenna_pattern_coordinate"
+
 
 class AntennaPattern:
-    _history_datas: List[List[torch.Tensor]] = []
+    """
+    天線 pattern 的核心容器。
+
+    以「多個帶有座標的 2D Tensor」為內部表示，支援：
+    - 合併 (merge) 為單一底層 pattern
+    - 可微分二值化 (STE binarization)
+    - 隨機生成 / 突變 / 填充率計算
+    - 與註冊的 simulator 搭配進行 HFSS 模擬
+
+    Coordinate 格式：``(x1, x2, y1, y2)``，其中 ``x`` 為寬度方向、``y`` 為高度方向。
+    """
+
+    _history_datas: list[list[torch.Tensor]] = []
     _best_loss = float("inf")
 
     tau: float = 1.0
-    """
-    The temperature parameter controls the steepness of the Sigmoid.
-    - A smaller tau (e.g., 0.1) makes the approximation closer to hard binarization.
-    - It must be > 0.
+    """Sigmoid 溫度參數，控制 soft binarization 的陡峭度。
+    - 越小 (例如 0.1) 越接近硬性二值化。
+    - 必須 > 0。
     """
 
     def __new__(cls, pattern: "AntennaPattern", *args) -> "AntennaPattern":
+        # 若傳入的已是 AntennaPattern，直接回傳原物件；__init__ 也會 early return 避免重複初始化
         if isinstance(pattern, AntennaPattern):
             return pattern
-        else:
-            return super().__new__(cls)
+        return super().__new__(cls)
 
     @overload
-    def __init__(self, pattern: Tensor, coordinate: Optional[Tuple[int, int, int, int]] = None):
+    def __init__(self, pattern: Tensor, coordinate: tuple[int, int, int, int] | None = None):
         """
-        Example:
-        ```
-        AntennaPattern.setCoordinate((0, 25, 0, 25))
-        ```
+        Example::
+
+            AntennaPattern.setDefaultCoordinate((0, 25, 0, 25))
         """
 
     @overload
-    def __init__(self, patterns: List[Tuple[Tensor, int, int, int, int]]):
+    def __init__(self, patterns: list[tuple[Tensor, int, int, int, int]]):
         """
         Args:
-            pattern: [(pattern, x1, x2, y1, y2), ...] >>> pattern is 2D
+            pattern: ``[(pattern, x1, x2, y1, y2), ...]`` 其中 pattern 為 2D。
         """
 
-    def __init__(self, pattern: Union[Tensor, List], coordinate: Optional[Tuple[int, int, int, int]] = None):
-
+    def __init__(self, pattern: Tensor | list, coordinate: tuple[int, int, int, int] | None = None):
+        # 對應 __new__ 回傳既有物件的情境，避免重複初始化覆蓋原狀態
         if isinstance(pattern, AntennaPattern):
             return
 
-        # * The core of this class.
-        # ? [(pattern, x1, x2, y1, y2), ...] >>> pattern is 2D
-        self.patterns: List[Tuple[Tensor, int, int, int, int]] = []
+        # * 核心資料結構：[(pattern, x1, x2, y1, y2), ...]，其中 pattern 為 2D
+        self.patterns: list[tuple[Tensor, int, int, int, int]] = []
 
         if isinstance(pattern, Tensor):
             self.input_tensor = torch.clamp(pattern.to(config.device), min=0.0, max=1.0)
-            self.coordinate: Union[Tuple[int, int, int, int], Tuple] = coordinate or getattr(
-                self, "_antenna_pattern_coordinate", None
-            )
-
+            self.coordinate: tuple[int, int, int, int] | tuple = coordinate or getattr(self, _COORDINATE_ATTR, None)
             self._check_input()
 
-        elif isinstance(pattern, List):
+        elif isinstance(pattern, list):
             self.patterns = pattern
 
         else:
             raise TypeError(f"Expected type for pattern is Tensor or List, but got {type(pattern)}")
 
     def _check_input(self):
+        """驗證 `input_tensor` 與 `coordinate` 並加入 `patterns`。"""
         _dim = self.input_dim()
         _c = self.coordinate
         _input_tensor = self.input_tensor
@@ -80,16 +100,14 @@ class AntennaPattern:
             )
         if _dim == 1:
             _input_tensor = _input_tensor.reshape((_c[1] - _c[0], _c[3] - _c[2]))
-        elif _dim == 2:
-            pass
-        else:
+        elif _dim != 2:
             raise ValueError(f"Input pattern expected >1 dimension, but got {_dim} dimension")
 
         self.patterns.append((_input_tensor, _c[0], _c[1], _c[2], _c[3]))
 
     @property
     def series(self):
-        """One-dimensional array after merge."""
+        """合併後攤平為 1D 的張量。"""
         return self.merge().reshape(-1)
 
     @property
@@ -101,7 +119,8 @@ class AntennaPattern:
         return (torch.sum(merged_pattern) / merged_pattern.numel()).item()
 
     @classmethod
-    def register_simulator(cls, simulator: Callable[[Tensor], Dict[str, Tensor]]):
+    def register_simulator(cls, simulator: Callable[[Tensor], dict[str, Tensor]]):
+        """註冊 HFSS 或其他 simulator callable。"""
         cls._simulator = simulator
 
     @classmethod
@@ -110,7 +129,7 @@ class AntennaPattern:
 
         等同於 ``size(flatten=True)``，但在未設定 coordinate 時回傳 0 而非 raise。
         """
-        x1, x2, y1, y2 = cast(Tuple[int, int, int, int], getattr(cls, "_antenna_pattern_coordinate", (0, 0, 0, 0)))
+        x1, x2, y1, y2 = cast(tuple[int, int, int, int], getattr(cls, _COORDINATE_ATTR, (0, 0, 0, 0)))
         return (x2 - x1) * (y2 - y1)
 
     @overload
@@ -118,28 +137,25 @@ class AntennaPattern:
     def size(cls, flatten: Literal[True]) -> int: ...
     @overload
     @classmethod
-    def size(cls, flatten: Literal[False]) -> Tuple[int, int]: ...
+    def size(cls, flatten: Literal[False]) -> tuple[int, int]: ...
     @overload
     @classmethod
-    def size(cls) -> Tuple[int, int]: ...
+    def size(cls) -> tuple[int, int]: ...
     @classmethod
     def size(cls, flatten: bool = False):
-        """The number of labels used to calculate loss and the number of points in their labels."""
-        if not hasattr(cls, "_antenna_pattern_coordinate"):
+        """取得預設 coordinate 的寬高 (W, H) 或攤平後總像素數。"""
+        if not hasattr(cls, _COORDINATE_ATTR):
             raise RuntimeError("Please use `setDefaultCoordinate()` first.")
-        x1, x2, y1, y2 = cast(Tuple[int, int, int, int], getattr(cls, "_antenna_pattern_coordinate", (0, 0, 0, 0)))
+        x1, x2, y1, y2 = cast(tuple[int, int, int, int], getattr(cls, _COORDINATE_ATTR, (0, 0, 0, 0)))
 
         return (x2 - x1) * (y2 - y1) if flatten else ((x2 - x1), (y2 - y1))
 
     def size_converter(self, flatten: bool = False, batch: bool = False, output_shape=None) -> torch.Tensor:
-        """:param output_shape: Priority use. (B, H, W, N) EX: "B, 1, H, W" or "B, N, 1" """
-        return size_converter(self, self.merge(), flatten=flatten, batch=batch, output_shape=output_shape)
+        """依 ``output_shape`` 或 flatten/batch 參數調整 merge 後張量的形狀。
 
-    @classmethod
-    def _getRandomPattern(cls, w=40, h=40):
-        patterns = torch.randn(w, h, dtype=torch.float32, device=config.device)
-        binaries = (patterns > 0.5).float()
-        return cls(binaries, (0, w, 0, h))
+        :param output_shape: 優先使用 (B, H, W, N)，例如 ``"B, 1, H, W"`` 或 ``"B, N, 1"``。
+        """
+        return size_converter(self, self.merge(), flatten=flatten, batch=batch, output_shape=output_shape)
 
     @classmethod
     def getRandomPattern(cls, shape: tuple, fill_rate: float = 0.5) -> Self:
@@ -153,20 +169,17 @@ class AntennaPattern:
         Returns:
             生成的二元 pattern。
 
-        Exapmple::
+        Example::
 
-            AntennaPattern.getRandomPattern((25, 25), fill_rate = np.random.uniform(0.1, 0.9))
+            AntennaPattern.getRandomPattern((25, 25), fill_rate=np.random.uniform(0.1, 0.9))
         """
-        w = shape[0]
-        h = shape[1]
+        w, h = shape[0], shape[1]
         total_pixels = w * h
         num_ones = int(total_pixels * fill_rate)
 
-        # 生成一個扁平化的一維數組
+        # 生成扁平化的一維數組（前 num_ones 個為 1）後隨機打亂
         pattern_flat = np.zeros(total_pixels)
         pattern_flat[:num_ones] = 1
-
-        # 隨機打亂
         np.random.shuffle(pattern_flat)
 
         # 重塑為目標形狀並轉換為 PyTorch Tensor
@@ -191,33 +204,34 @@ class AntennaPattern:
             antenna_pattern.input_tensor = None
 
             return antenna_pattern
-        else:
-            raise TypeError(f"Unsupported operand type for +: 'AntennaPattern' and '{type(other)}'")
+        raise TypeError(f"Unsupported operand type for +: 'AntennaPattern' and '{type(other)}'")
 
     def __len__(self):
         return len(self.patterns)
 
     def __invert__(self):
-        """Detach the response"""
+        """Detach 並搬回 CPU 的合併結果。"""
         return self.merge().detach().cpu()
 
     def input_dim(self) -> int:
+        """回傳 `input_tensor` 的維度（1 或 2）。僅適用於單層 pattern。"""
         if self.input_tensor is None:
             raise RuntimeError("This function is not for multilayer boards.")
 
         if len(self.input_tensor.shape) == 1 or self.input_tensor.shape[0] == 1:
             return 1
-        else:
-            return self.input_tensor.dim()
+        return self.input_tensor.dim()
 
     def copy(self):
+        """淺拷貝一個新的 AntennaPattern（共享底層 patterns list 之元素）。"""
         return AntennaPattern(self.patterns)
 
     @classmethod
-    def setDefaultCoordinate(cls, _coordinate: Tuple[int, int, int, int]):
-        """
-        Coordinate Design.
+    def setDefaultCoordinate(cls, _coordinate: tuple[int, int, int, int]):
+        """設定 class-level 預設 coordinate。
 
+        Args:
+            _coordinate: ``(x1, x2, y1, y2)`` 4 元素 tuple。
         """
         if not isinstance(_coordinate, tuple):
             raise TypeError(f"Expected tuple, but got {type(_coordinate)}")
@@ -225,82 +239,93 @@ class AntennaPattern:
         if len(_coordinate) != 4:
             raise ValueError(f"Expected tuple of length 4, but got {len(_coordinate)}")
 
-        setattr(cls, "_antenna_pattern_coordinate", _coordinate)
+        setattr(cls, _COORDINATE_ATTR, _coordinate)
 
-    def binarize(self, threshold=0.5):
-        """Binarize and become gradient-free."""
+    def binarize(self, threshold: float = _DEFAULT_BINARIZE_THRESHOLD):
+        """硬性二值化 (gradient-free)。回傳新的 `AntennaPattern`。"""
         bi = (self.merge() >= threshold).float()
-        return AntennaPattern(bi, (0, len(bi), 0, len(bi)))
+        # bi 的形狀為 (H, W)，coordinate 對應 (x1, x2, y1, y2) 即 (W_start, W_end, H_start, H_end)
+        h, w = bi.shape[0], bi.shape[1]
+        return AntennaPattern(bi, (0, w, 0, h))
 
     @classmethod
-    def binarization(cls, pattern: Tensor, tau: Optional[float] = None, threshold=None, *, only_soft: bool = False):
+    def binarization(
+        cls,
+        pattern: Tensor,
+        tau: float | None = None,
+        threshold=None,
+        *,
+        only_soft: bool = False,
+    ):
         """
-        Perform differentiable binarization using the STE technique.
+        使用 STE (Straight-Through Estimator) 技術的可微分二值化。
 
         Args:
-            pattern: The pattern to be binarized. Its requires_grad will be set to True.
-            tau:   The temperature parameter controls the steepness of the Sigmoid.
-                    A smaller tau (e.g., 0.1) makes the approximation closer to hard binarization.
-                    It must be > 0.
+            pattern: 要二值化的 tensor；會被設定 ``requires_grad=True``。
+            tau: Sigmoid 溫度參數；越小越接近硬性二值化，必須 > 0。
+            threshold: 二值化門檻；None 時使用 ``pattern.mean()``。
+            only_soft: 若為 True，只回傳 soft sigmoid 輸出（完全可微）。
 
         Returns:
-            torch.Tensor: Binarized tensor
+            torch.Tensor: 二值化後的張量（forward 為 0/1，backward 走 soft sigmoid 的梯度）。
         """
         # * Gradient is required
         pattern.requires_grad_(True)
-        cls.tau: float = tau or getattr(cls, "tau", 1.0)
-        if cls.tau < 1e-4:
-            cls.tau = 1e-4
+        cls.tau = float(tau) if tau is not None else getattr(cls, "tau", 1.0)
+        if cls.tau < _TAU_MIN:
+            cls.tau = _TAU_MIN
 
         if len(pattern.shape) == 1:
             pattern = pattern.reshape(*cls.size())
 
-        # 將 logits 限制在 [-10, 10] 之間，Sigmoid(-10) 已極趨近 0，Sigmoid(10) 極趨近 1
-        pattern = torch.clamp(pattern, min=-10.0, max=10.0)
+        # 將 logits 限制在 [-CLAMP, CLAMP] 之間以避免 Sigmoid 數值飽和
+        pattern = torch.clamp(pattern, min=-_SIGMOID_LOGIT_CLAMP, max=_SIGMOID_LOGIT_CLAMP)
 
-        # * Calculate threshold and steepness
-        threshold = threshold or pattern.mean().detach()  # avg
+        # * 計算 threshold 與 steepness
+        threshold = threshold if threshold is not None else pattern.mean().detach()
         steepness = 1 / cls.tau
 
-        # * Produces a "soft" approximation
-        #  This is to provide a smooth gradient during "backward" propagation.
+        # * 產生 soft 近似 (backward 時提供平滑梯度)
         soft_pattern = torch.sigmoid(steepness * (pattern - threshold))
         if torch.isnan(soft_pattern).any():
             soft_pattern = torch.nan_to_num(soft_pattern, nan=0.5)
 
-        if only_soft is True:
+        if only_soft:
             return soft_pattern
 
-        # * Produces a "hard" binarization result (0/1, not differentiable).
-        #  This is to get the 0/1 result you want during "forward" propagation.
+        # * 產生 hard 二值化結果 (0/1，不可微)，forward 時實際使用
         hard_pattern = torch.round(soft_pattern)
 
-        # * STE
-        #  Forward(hard):   (hard - soft) + soft
-        #  Backward(soft)： `.detach()` will block the gradient of hard_pattern
+        # * STE：Forward 為 hard，Backward 透過 soft 的梯度回傳
         binary_pattern = (hard_pattern - soft_pattern).detach() + soft_pattern
 
         return binary_pattern
 
-    def binarization_(self, tau: Optional[float] = None, threshold=None):
+    def binarization_(self, tau: float | None = None, threshold=None):
+        """原地 (in-place) 將 patterns 替換為可微分二值化後的單一 pattern。"""
         pattern = self.merge().clone()
         shape = pattern.shape
         self.patterns = [(AntennaPattern.binarization(pattern, tau=tau, threshold=threshold), 0, shape[1], 0, shape[0])]
 
-    def merge(self) -> torch.Tensor:
-        """
-        將所有 pattern 合併成一個大的底層 pattern
-        - 後加入的 pattern 會覆蓋前面的 pattern
-        - 返回合併後的二維 tensor
-        """
+    def _bounding_box(self) -> tuple[int, int, int, int]:
+        """計算所有 sub-pattern 的 bounding box: ``(min_x, max_x, min_y, max_y)``。"""
         if not self.patterns:
             raise ValueError("No patterns to merge")
 
         max_x = max(x2 for _, _, x2, _, _ in self.patterns)
         min_x = min(x1 for _, x1, _, _, _ in self.patterns)
-
         max_y = max(y2 for _, _, _, _, y2 in self.patterns)
         min_y = min(y1 for _, _, _, y1, _ in self.patterns)
+        return min_x, max_x, min_y, max_y
+
+    def merge(self) -> torch.Tensor:
+        """
+        將所有 pattern 合併成一個大的底層 pattern。
+
+        - 後加入的 pattern 會覆蓋前面的 pattern
+        - 返回合併後的二維 tensor (H, W)
+        """
+        min_x, max_x, min_y, max_y = self._bounding_box()
 
         base_pattern = torch.zeros((max_y, max_x))
         for pattern, x1, x2, y1, y2 in self.patterns:
@@ -309,19 +334,20 @@ class AntennaPattern:
         return base_pattern.to(config.device)[min_y:max_y, min_x:max_x]
 
     def simulate(self, no_grad: bool = True, **param):
+        """呼叫已註冊的 simulator 並包裝成 `AntennaResponse`。"""
         from antenna.core.response import AntennaResponse
 
         pattern = self.merge()
         result_response = {}
 
-        if hasattr(self, "_simulator"):
-            if no_grad:
-                with torch.no_grad():
-                    result: Dict[str, Tensor] = self._simulator(pattern.detach(), **param)
-            else:
-                result: Dict[str, Tensor] = self._simulator(pattern, **param)
-        else:
+        if not hasattr(self, "_simulator"):
             raise RuntimeError("Please use `register_simulator()` to register the simulator.")
+
+        if no_grad:
+            with torch.no_grad():
+                result: dict[str, Tensor] = self._simulator(pattern.detach(), **param)
+        else:
+            result: dict[str, Tensor] = self._simulator(pattern, **param)
 
         for key, value in result.items():
             result_response[key] = AntennaResponse(value)
@@ -330,7 +356,8 @@ class AntennaPattern:
 
         return AntennaResponse(result_response)
 
-    def plot(self, axes: Optional[Axes] = None, show: bool = False, title: str = "Antenna Pattern {shape}"):
+    def plot(self, axes: Axes | None = None, show: bool = False, title: str = "Antenna Pattern {shape}"):
+        """繪製合併後的 pattern。"""
         ax: Axes = plt.axes(axes)  # type: ignore
         ax.set_title(title.format(shape=self.size()))
         ax.imshow(self.merge().cpu().detach(), cmap="viridis")
@@ -339,12 +366,12 @@ class AntennaPattern:
             plt.show()
         return ax
 
-    def plot_individual(self, axes: Optional[Axes] = None, show: bool = False):
+    def plot_individual(self, axes: Axes | None = None, show: bool = False):
+        """逐一繪製各個 sub-pattern (水平串接)。"""
         if not self.patterns:
             raise ValueError("No patterns to merge")
 
-        max_x = max(x2 for _, _, x2, _, _ in self.patterns)
-        max_y = max(y2 for _, _, _, _, y2 in self.patterns)
+        _, max_x, _, max_y = self._bounding_box()
         base_pattern = torch.zeros((max_x, max_y), dtype=self.input_tensor.dtype)
         _result = []
         for pattern, x1, x2, y1, y2 in self.patterns:
@@ -360,6 +387,7 @@ class AntennaPattern:
         return ax
 
     def mutate(self, rate):
+        """以指定比例隨機翻轉像素值 (0↔1)，回傳新的 `AntennaPattern`。"""
         matrix = self.merge()
         total = matrix.numel()
         n = int(total * rate)
@@ -372,7 +400,7 @@ class AntennaPattern:
         return AntennaPattern(matrix)
 
     def total_variation_loss(self, weight=0.01):
-        """計算 Total Variation Loss 以抑制過度破碎的圖樣"""
+        """計算 Total Variation Loss 以抑制過度破碎的圖樣。"""
         img = self.merge()
         h_img, w_img = img.size()
 
