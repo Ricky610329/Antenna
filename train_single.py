@@ -1,24 +1,18 @@
-"""
-Created on Wed May  8 16:38:05 2024
-
-@author: user
-"""
+"""Patch Single Port 訓練腳本（使用 SigmoidGEN 生成器）。"""
 
 from antenna.utils import *
 
 config.device = "cpu"
 
-import numpy as np
 import torch
 
 from antenna import *
 from antenna.functions import AdaptiveCyclicalScheduler, FeedReachability, GapClosingLoss, SpectralConnectivityLoss
-from antenna.models import Models, OldGEN, SigmoidGEN
+from antenna.models import Models, SigmoidGEN
 from antenna.patch import SinglePortSimulator, custom_loss_minmax
 from antenna.smodels import OldSM
 from antenna.utils.data import DataManager
 
-# from antenna.functions import mirror, mutate
 torch.autograd.set_detect_anomaly(True)
 
 ###* Basic Config ###
@@ -68,11 +62,8 @@ RESULT_PATH, CONTINUE_RUN = get_result_path(
     enable_exception_handler=True,
 )
 
-# DATASET_PATH = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\dataset")
-
 SM_PRETRAIN_MODEL_PATH = DATASET_PATH.joinpath("old_sm.pth")
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
-# sys.excepthook = global_exception_handlerc
 
 path_pic = RESULT_PATH.joinpath("pic").not_exist_create()
 path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
@@ -107,18 +98,12 @@ AntennaPattern.register_simulator(simulator)
 AntennaResponse.registerLabels("S11", "Gain", x="n257")
 x = AntennaResponse.x()
 
-# ? S11 S22 -> high low high (-1.25, -12)
+# ? S11 目標：high low high (-1.25, -12)
 returnloss = AntennaResponse.registerTargetResponse(0, -10, (5, 0, 7, 0, 5), label="S11")
-# returnloss_upper = AntennaResponse.registerTargetResponse(0, -10, (4, 2, 5, 2, 4), label="returnloss_upper")
-# returnloss_lower = AntennaResponse.registerTargetResponse(-2.5, -50, (3, 4, 3, 4, 3), label="returnloss_lower")
-
 AntennaResponse.registerLossHook(custom_loss_minmax, label="S11", target=returnloss, method="low")
 
-# ? Gain -> low high low (-2, -19.5) (0, -25)
+# ? Gain 目標：low high low (-2, -19.5) (0, -25)
 gain = AntennaResponse.registerTargetResponse(-19, 4, (5, 0, 7, 0, 5), label="Gain")
-# gain_upper = AntennaResponse.registerTargetResponse(-17, 0, (1, 2, 11, 2, 1), label="gain_upper")
-# gain_lower = AntennaResponse.registerTargetResponse(-22, -3, (4, 2, 5, 2, 4), label="gain_lower")
-
 AntennaResponse.registerLossHook(custom_loss_minmax, label="Gain", target=gain, method="high")
 
 with Figure(
@@ -134,15 +119,10 @@ with Figure(
 
     fig[0].set_title("S11")
     fig[0].plot(x, returnloss.cpu().detach().numpy(), color="red", marker="o")
-    # fig[0].plot(x, returnloss_upper.cpu(), color='blue', marker="o")
-    # fig[0].plot(x, returnloss_lower.cpu(), color='blue', marker="o")
     fig[0].grid(True)
-    # fig[0].set_ylim(-13, 1)
 
     fig[1].set_title("Gain")
     fig[1].plot(x, gain.cpu().detach().numpy(), color="red", marker="o")
-    # fig[1].plot(x, gain_upper.cpu(), color='blue', marker="o")
-    # fig[1].plot(x, gain_lower.cpu(), color='blue', marker="o")
     fig[1].grid(True)
 
 
@@ -180,11 +160,6 @@ if CONTINUE_RUN and ("epoch" in TEMP):
 elif SM_PRETRAIN_MODEL_PATH.exists():
     smodel.pre_load_model(SM_PRETRAIN_MODEL_PATH)
 
-    # from antenna.utils.data import Data
-    # data_result = Data(
-    #     name = MULTICONFIG("KuoHung", 'KuoHung-1'),
-    #     rootdir = r"\\140.123.106.219\temp\碩二_吳維文's\Patch Antenna\Experiment\result\[Test][37] KuoHung Pattern"
-    # )
     from KuoHung import KuoHung as _kh
 
     KuoHung, response = _kh.load(MULTICONFIG("KuoHung", "1"))
@@ -204,10 +179,6 @@ else:
         fig[0].plot(smodel.train_by_datas(data_manager))
         smodel.save()
 
-
-# Optimizer setting
-# optimizer = torch.optim.Adam(params=model.parameters(), lr=init_lr)
-# optimizer = torch.optim.RMSprop(params=model.parameters(), lr=init_lr)
 
 config["AntennaResponse"] = AntennaResponse.to_str()
 config["Generator"] = model
@@ -250,7 +221,6 @@ while epoch < config.epochs + 1:
 
         ###* Mutation ###
         TEMP["mutation"] = TEMP("min_loss")
-        # output_element = output_element.mutate(config['mutation_rate'])
         skip = 0
 
     else:
@@ -303,15 +273,9 @@ while epoch < config.epochs + 1:
     TEMP["patch_result_buf"] = stack_output_result
     TEMP["r_feed"] = r_feed(~output_element)
 
-    ###* 權重全部凍結 ###
-    # for name, para in model_HFSS.named_parameters():
-    #     para.requires_grad_(False)
-
-    ###* 更新GEN ###
+    ###* 更新 GEN ###
     # ? target response -> 生成模型 -> pattern -> 代理模型 -> predicted response
-    # ? calculate loss (target response, predicted response)
-    # ? update optimizer
-    # output_element = model(AntennaResponse.merge_target_responses())
+    # ? 計算 loss(target response, predicted response) 並更新 optimizer
     response = smodel(output_element.series)
     loss = (
         response.criterion()
@@ -347,24 +311,17 @@ while epoch < config.epochs + 1:
         default_axes_title_size=20,
     ) as fig:
         pattern_ax = fig.index(-1)
-        # output_element.plot(pattern_ax)
         r_feed.plot(pattern_ax)
 
         s11_ax = fig.index(-1)
         s11_ax.plot(x, stack_output_result[0].cpu(), color="blue")
         s11_ax.plot(x, returnloss.cpu(), color="blue", linestyle="--")
-        # s11_ax.plot(x,returnloss_upper.cpu(), color='red')
-        # s11_ax.plot(x, returnloss_lower.cpu(), color='red')
         s11_ax.set_title("S11", fontsize=20)
-        # s11_ax.set_ylim(-15,1)
 
         gain_ax = fig.index(-1)
         gain_ax.plot(x, stack_output_result[1].cpu(), color="blue")
         gain_ax.plot(x, gain.cpu(), color="blue", linestyle="--")
-        # gain_ax.plot(x,gain_upper.cpu(), color='red')
-        # gain_ax.plot(x, gain_upper.cpu(), color='red')
         gain_ax.set_title("Gain", fontsize=20)
-        # gain_ax.set_ylim(-20,1)
 
         scheduler_ax = fig.index(-1)
         generator.scheduler.plot(scheduler_ax)
@@ -372,15 +329,10 @@ while epoch < config.epochs + 1:
         loss_ax = fig.index(-1)
         loss_ax.plot(TEMP["real_loss"], color="red", label="real_loss")
         loss_ax.plot(TEMP["fake_loss"], color="purple", label="fake_loss", alpha=0.8)
-        # loss_ax.plot(TEMP['mutation'], label='mutation')
         loss_ax.plot(TEMP["min_loss"], label="min_loss")
         loss_ax.plot(TEMP["real_loss_average"], label="real_loss_average")
         loss_ax.legend()
         loss_ax.set_title(f"Loss Curve (Current: {TEMP('real_loss', ''):.2f})", fontsize=20)
-
-        # sm_loss_ax = fig.index(-1)
-        # sm_loss_ax.set_title('sm_loss', fontsize=20)
-        # sm_loss_ax.plot(sm_loss)
 
         index_ax = fig.index(-1)
         r_feed_ax = index_ax

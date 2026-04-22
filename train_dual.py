@@ -1,31 +1,21 @@
-"""
-Created on Wed May  8 16:38:05 2024
-
-@author: user
-"""
+"""Patch Dual Port 訓練腳本（使用 GumbelSigmoidGEN 生成器）。"""
 
 from antenna.utils import *
 
 config.device = "cpu"
 
-import argparse
-
-import numpy as np
 import torch
-import torch.nn as nn
 
 from antenna import *
-from antenna.models import GumbelSigmoidGEN, HFSSNet, OldGEN
+from antenna.models import GumbelSigmoidGEN
 from antenna.patch import DualPortSimulator, custom_loss_g, custom_loss_r
 from antenna.smodels import OldSM
 
-# from antenna.functions import mirror, mutate
 torch.autograd.set_detect_anomaly(True)
-# %%
+
 ###* Basic Config ###
 RESULT_PATH, is_connect_run = get_result_path("[Patch][{device}] GumbelSigmoidGEN_taurate0_99_revised", rootdir=ROOTDIR)
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
-# sys.excepthook = global_exception_handler
 
 path_pic = RESULT_PATH.joinpath("pic").not_exist_create()
 path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
@@ -35,15 +25,12 @@ config["Name"] = RESULT_PATH.stem
 config["File"] = __file__
 config.setWarning()
 config.epochs = 2000
-# 【修改建議】降低學習率，讓訓練更穩定
 config.lr = 0.001
 config.checkpoint_save_path = path_checkpoint
 
 config["patience"] = 100
-# 【修改建議】稍微提高變異率，以利跳出局部最佳解
 config["mutation_rate"] = 0.01
 config["HFSS.lr"] = 0.001
-# 【修改建議】提高代理模型的準確度要求，強迫它學得更準
 config["HFSS.min_loss"] = 0.01
 config["HFSS.max_epoch"] = 20000
 
@@ -90,7 +77,6 @@ with Figure("Target Response", (1, 2), rootdir=RESULT_PATH, save=True, size=(18 
     fig[0].plot(x, returnloss_upper.cpu(), color="blue", marker="o")
     fig[0].plot(x, returnloss_lower.cpu(), color="blue", marker="o")
     fig[0].grid(True)
-    # fig[0].set_ylim(-13, 1)
 
     fig[1].set_title("S21")
     fig[1].plot(x, gain.cpu().detach().numpy(), color="red", marker="o")
@@ -111,10 +97,6 @@ if is_connect_run and ("epoch" in TEMP):
     optimizer.load_state_dict(Antenna_checkpoint_loaded["optimizer"])
     smodel.load(config.checkpoint_save_path)
 
-
-# Optimizer setting
-# optimizer = torch.optim.Adam(params=model.parameters(), lr=init_lr)
-# optimizer = torch.optim.RMSprop(params=model.parameters(), lr=init_lr)
 
 config["AntennaResponse"] = AntennaResponse.to_str()
 config["Generator"] = model
@@ -162,7 +144,7 @@ while epoch < config.epochs + 1:
         TEMP["mutation"] = 0
         skip += 1
 
-    # 【說明】output_element 是連續值，output_element_b 是二值化後準備送入模擬器的 pattern
+    # output_element 是連續值；output_element_b 是二值化後送入模擬器的 pattern
     output_element_b = model.binarize() + upper + lower
     output_element = output_element + upper + lower
 
@@ -178,10 +160,7 @@ while epoch < config.epochs + 1:
         real_loss = output_result.criterion()
         stack_output_result = output_result.stack()
 
-        # 【關鍵修正】
-        # 代理模型 (smodel) 的訓練目標是學習 HFSS 的行為。
-        # 既然 HFSS 是模擬二值化後的 pattern (output_element_b)，
-        # 那麼訓練代理模型時，輸入也必須是二值化後的 pattern，這樣學習目標才一致。
+        # 代理模型必須用與 HFSS 一致的輸入（二值化後的 pattern），學習目標才對齊
         sm_loss = smodel.train(output_element_b.series, stack_output_result)
         smodel.save(path_checkpoint)
 
@@ -209,19 +188,14 @@ while epoch < config.epochs + 1:
         TEMP.add("de", 1, default=0)
     TEMP["min_loss"] = min_loss
 
-    ###* 儲存HFSS的輸入與輸出，再訓練代理模型並儲存 ###
+    ###* 儲存 HFSS 的輸入與輸出，再訓練代理模型並儲存 ###
     TEMP["patch_pattern_buf"] = ~output_element_b
     TEMP["patch_result_buf"] = stack_output_result
 
-    ###* 權重全部凍結 ###
-    # for name, para in model_HFSS.named_parameters():
-    #     para.requires_grad_(False)
-
-    ###* 更新GEN ###
+    ###* 更新 GEN ###
     # ? target response -> 生成模型 -> pattern -> 代理模型 -> predicted response
-    # ? calculate loss (target response, predicted response)
-    # ? update optimizer
-    # 這裡仍然使用連續值的 output_element 來計算梯度，這是正確的，因為梯度需要能回傳到生成器
+    # ? 計算 loss(target response, predicted response) 並更新 optimizer
+    # 這裡用連續值的 output_element 以保留梯度回傳至生成器
     response = smodel(output_element.series)
     loss = response.criterion()
     loss.backward()

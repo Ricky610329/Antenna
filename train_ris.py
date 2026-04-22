@@ -1,29 +1,21 @@
-"""
-Created on Wed May  8 16:38:05 2024
-
-@author: user
-"""
+"""RIS 訓練腳本（使用 GumbelSigmoidGEN 生成器）。"""
 
 from antenna.utils import *
 
 config.device = "cuda:0"
 
-import numpy as np
 import torch
-import torch.nn as nn
 
 from antenna import *
-from antenna.models import GumbelSigmoidGEN, HFSSNet, OldGEN
+from antenna.models import GumbelSigmoidGEN
 from antenna.ris import RISSimulator, custom_loss
 from antenna.smodels import OldSM
 
-# from antenna.functions import mirror, mutate
 torch.autograd.set_detect_anomaly(True)
-# %%
+
 ###* Basic Config ###
 RESULT_PATH, is_connect_run = get_result_path("test_GumbelSigmoidGEN")
 TEMP = Record("temp", rootdir=RESULT_PATH, load=True)
-# sys.excepthook = global_exception_handler
 
 path_pic = RESULT_PATH.joinpath("pic").not_exist_create()
 path_checkpoint = RESULT_PATH.joinpath("checkpoint").not_exist_create()
@@ -58,7 +50,7 @@ AntennaPattern.register_simulator(simulator)
 AntennaResponse.registerLabels("response", x="ris")
 x = AntennaResponse.x()
 
-# ? S11 S22 -> high low high (-1.25, -12)
+# ? 目標響應：high low high (-1.25, -12)
 returnloss = AntennaResponse.registerTargetResponse(0, -20, (190, 15, 25, 15, 116))
 
 AntennaResponse.registerLossHook(custom_loss)
@@ -70,11 +62,9 @@ with Figure("Target Response", (1, 1), rootdir=RESULT_PATH, save=True, size=(18 
     fig[0].plot(x, returnloss.cpu().detach().numpy(), color="red", marker="o")
     fig[0].grid(True)
 
-###*  初始化神經網絡模型 ###
+###* 初始化神經網絡模型 ###
 model = GumbelSigmoidGEN()
-optimizer = torch.optim.Adam(  # RMSprop(params=model.parameters(), lr=init_lr)
-    params=model.parameters(), lr=config.lr, betas=(0.5, 0.999)
-)
+optimizer = torch.optim.Adam(params=model.parameters(), lr=config.lr, betas=(0.5, 0.999))
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=10, min_lr=1e-6)
 smodel = OldSM()
 
@@ -111,19 +101,12 @@ while epoch < config.epochs + 1:
 
     if TEMP.early_stop("real_loss", config["patience"]) and skip > config["patience"] or jump > 2:
         ###* Rollback ###
-        # _epoch = TEMP.find('real_loss', TEMP('min_loss', float('inf')), 'epoch')
-        # best_model = path_checkpoint.joinpath(f"gen_model_{_epoch}.pth")
-        # Antenna_checkpoint_loaded = best_model.load_torch()
-        # model.load_state_dict(Antenna_checkpoint_loaded['state_dict'])
-        # optimizer.load_state_dict(Antenna_checkpoint_loaded['optimizer'])
-
         ###* 生成 pattern 並儲存於 buffer ###
         # ? target response -> 生成模型 -> pattern
         output_element = AntennaPattern(model(AntennaResponse.target.concat()))
 
         ###* Mutation ###
         TEMP["mutation"] = TEMP("min_loss")
-        # output_element = output_element.mutate(config['mutation_rate'])
         skip = 0
 
     else:
@@ -167,19 +150,13 @@ while epoch < config.epochs + 1:
         TEMP.add("de", 1, default=0)
     TEMP["min_loss"] = min_loss
 
-    ###*  儲存HFSS的輸入與輸出，再訓練代理模型並儲存 ###
+    ###* 儲存 HFSS 的輸入與輸出，再訓練代理模型並儲存 ###
     TEMP["patch_pattern_buf"] = ~output_element
     TEMP["patch_result_buf"] = stack_output_result
 
-    ###* 權重全部凍結 ###
-    # for name, para in model_HFSS.named_parameters():
-    #     para.requires_grad_(False)
-
-    ###* 更新GEN ###
+    ###* 更新 GEN ###
     # ? target response -> 生成模型 -> pattern -> 代理模型 -> predicted response
-    # ? calculate loss (target response, predicted response)
-    # ? update optimizer
-    # output_element = model(AntennaResponse.merge_target_responses())
+    # ? 計算 loss(target response, predicted response) 並更新 optimizer
     response = smodel(output_element.series)
     loss = response.criterion()
     loss.backward()
