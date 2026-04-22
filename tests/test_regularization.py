@@ -85,6 +85,17 @@ def test_tv_loss_gradient_flows():
     assert torch.isfinite(img.grad).all()
 
 
+def test_tv_loss_gradient_reduces_loss(checker_4d):
+    """沿負梯度方向走一步，loss 應該變小（驗證梯度方向正確）。"""
+    img = checker_4d.clone().detach().requires_grad_(True)
+    loss0 = total_variation_loss(img, weight=1.0)
+    loss0.backward()
+    with torch.no_grad():
+        stepped = img - 0.1 * img.grad
+    loss1 = total_variation_loss(stepped, weight=1.0)
+    assert loss1.item() < loss0.item()
+
+
 def test_tv_loss_accepts_2d_tensor():
     """size_converter 應可把 2D 張量轉為 (B, 1, H, W)。"""
     img = torch.rand(8, 8)
@@ -165,6 +176,20 @@ def test_gap_closing_gradient_flow():
     loss.backward()
     assert img.grad is not None
     assert torch.isfinite(img.grad).all()
+
+
+def test_gap_closing_gradient_reduces_loss():
+    """有裂縫的圖上，沿負梯度走一步應能降低 loss。"""
+    img = torch.ones(1, 1, 5, 5)
+    img[0, 0, 2, 2] = 0.0
+    img = img.requires_grad_(True)
+    gc = GapClosingLoss()
+    loss0 = gc(img)
+    loss0.backward()
+    with torch.no_grad():
+        stepped = img - 0.5 * img.grad
+    loss1 = gc(stepped)
+    assert loss1.item() < loss0.item()
 
 
 # ---------------------------------------------------------------------------
@@ -299,3 +324,11 @@ def test_feed_reachability_r_feed_dict_groups_by_title():
     assert len(grouped) == 1
     # 唯一的 key 對應兩筆紀錄
     assert len(next(iter(grouped.values()))) == 2
+
+
+@requires_scipy
+def test_feed_reachability_r_feed_str_accessible_on_instance_and_class():
+    """train_single.py 會透過 instance 讀取 r_feed_str，必須保持公開介面。"""
+    fr = FeedReachability([(0, 0)])
+    assert FeedReachability.r_feed_str == fr.r_feed_str
+    assert "R_" in fr.r_feed_str

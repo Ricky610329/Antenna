@@ -2,14 +2,16 @@
 
 from collections import defaultdict
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
 from loguru import logger
+from matplotlib.axes._axes import Axes
 from torch import Tensor, nn
 
-from antenna.types import *
-from antenna.utils.utils import Figure, plt
+from antenna.types import FeedReachabilityDictType
+from antenna.utils.figure import Figure
 
 
 def total_variation_loss(img, weight: float = 0.01) -> Tensor:
@@ -23,10 +25,10 @@ def total_variation_loss(img, weight: float = 0.01) -> Tensor:
     from antenna.utils.data import size_converter
 
     img = size_converter(AntennaPattern, img, output_shape="B, 1, H, W")
-    bs_img, c_img, h_img, w_img = img.size()
-    tv_h = torch.pow(img[:, :, 1:, :] - img[:, :, :-1, :], 2).sum()
-    tv_w = torch.pow(img[:, :, :, 1:] - img[:, :, :, :-1], 2).sum()
-    return weight * (tv_h + tv_w) / (bs_img * c_img * h_img * w_img)
+    bs, c, h, w = img.size()
+    tv_h = ((img[:, :, 1:, :] - img[:, :, :-1, :]) ** 2).sum()
+    tv_w = ((img[:, :, :, 1:] - img[:, :, :, :-1]) ** 2).sum()
+    return weight * (tv_h + tv_w) / (bs * c * h * w)
 
 
 class SpectralConnectivityLoss(nn.Module):
@@ -38,6 +40,11 @@ class SpectralConnectivityLoss(nn.Module):
     目標：最大化拉普拉斯矩陣 (Laplacian) 的第二小特徵值 (Fiedler Value)。
     若 $\\lambda_2 > 0$：圖上的金屬部分連通；若 $\\lambda_2 \\approx 0$：圖斷成多塊。
     """
+
+    #: 避免全 0 pattern 造成所有邊權重都為 0 的保護值。
+    EPS = 1e-4
+    #: 低於此 Fiedler Value 門檻才計入損失。
+    LAMBDA2_THRESHOLD = 0.5
 
     def __init__(self, height: int = 25, width: int = 25):
         super().__init__()
@@ -59,7 +66,7 @@ class SpectralConnectivityLoss(nn.Module):
                     src.append(idx)
                     dst.append(r * width + (c + 1))
 
-        # 使用 register_buffer 讓 .to(device) 自動搬運
+        # register_buffer 讓 .to(device) 會自動搬運索引張量
         self.register_buffer("src", torch.as_tensor(src, dtype=torch.long), persistent=False)
         self.register_buffer("dst", torch.as_tensor(dst, dtype=torch.long), persistent=False)
 
@@ -75,32 +82,24 @@ class SpectralConnectivityLoss(nn.Module):
         flat_map = antenna_map.reshape(batch_size, -1)
         device = antenna_map.device
 
-        # register_buffer 已經會隨模組搬移，但保險起見做一次 to()
-        src = self.src.to(device)
-        dst = self.dst.to(device)
-
         losses = []
         for b in range(batch_size):
-            # 1. 建構邊的權重：兩端像素值的乘積 (加 eps 避免全 0)
-            node_vals = flat_map[b] + 1e-4
-            weights = node_vals[src] * node_vals[dst]
+            # 1. 建構邊的權重：兩端像素值的乘積 (加 EPS 避免全 0)
+            node_vals = flat_map[b] + self.EPS
+            weights = node_vals[self.src] * node_vals[self.dst]
 
             # 2. 建構拉普拉斯矩陣 L = D - A
             A = torch.zeros(self.num_nodes, self.num_nodes, device=device)
-            A[src, dst] = weights
-            A[dst, src] = weights  # 對稱
+            A[self.src, self.dst] = weights
+            A[self.dst, self.src] = weights  # 對稱
 
-            degree = torch.sum(A, dim=1)
-            L = torch.diag(degree) - A
+            L = torch.diag(A.sum(dim=1)) - A
 
-            # 3. 實對稱矩陣的特徵值
-            eigvals = torch.linalg.eigvalsh(L)
-
-            # 4. eigvals[0] 理論上為 0，取第二小特徵值 (Fiedler Value)
-            lambda_2 = eigvals[1]
+            # 3. 實對稱矩陣的特徵值；eigvals[0] 理論上為 0，取第二小 (Fiedler Value)
+            lambda_2 = torch.linalg.eigvalsh(L)[1]
 
             # 希望 lambda_2 越大越好；超過門檻後損失為 0
-            losses.append(torch.relu(0.5 - lambda_2))
+            losses.append(torch.relu(self.LAMBDA2_THRESHOLD - lambda_2))
 
         return torch.mean(torch.stack(losses))
 
@@ -132,13 +131,14 @@ class FeedReachability:  # R_feed
         [[0.0, 1.0, 0.0], [1.0, 1.0, 1.0], [0.0, 1.0, 0.0]],
     )
 
+    #: 繪圖與圖例使用的 LaTeX 標籤。
+    r_feed_str = "$R_{{feed}}$"
+
     def __init__(self, feed_positions: list[tuple[int, int]]):
         """
         Args:
             feed_positions: 饋電點座標列表 ``[(r1, c1), (r2, c2), ...]``。
         """
-        from scipy.ndimage import label
-
         assert len(feed_positions) > 0, "feed_positions 不可為空"
 
         self.feed_positions = feed_positions
@@ -154,9 +154,6 @@ class FeedReachability:  # R_feed
         self.structure = self.DEFAULT_STRUCTURE
         """連通性結構元素。"""
         self.record: list[FeedReachabilityDictType] = []
-        self.r_feed_str = "$R_{{feed}}$"
-
-        self._label = label
 
     @classmethod
     def single_feed(cls) -> "FeedReachability":
@@ -170,7 +167,7 @@ class FeedReachability:  # R_feed
 
     def __call__(
         self,
-        pattern: Union[Tensor, np.ndarray],
+        pattern: Tensor | np.ndarray,
         *,
         record: bool = False,
         title: str = "Pattern ($R_{{feed}}$={rate:.2%})",
@@ -184,10 +181,12 @@ class FeedReachability:  # R_feed
         Returns:
             Feed Reachability Rate，範圍 [0, 1]。
         """
+        from scipy.ndimage import label
+
         if isinstance(pattern, Tensor):
             pattern = pattern.detach().cpu().numpy()
 
-        labeled_array, _ = self._label(pattern, structure=self.structure)
+        labeled_array, _ = label(pattern, structure=self.structure)
 
         # 1. 取得每個饋電點所在的連通塊 label
         feed_labels: list[int] = []
@@ -202,10 +201,8 @@ class FeedReachability:  # R_feed
             feed_labels.append(lbl)
 
         # 2. 「AND」邏輯：所有饋電點須落在同一塊
-        unique_labels = set(feed_labels)
-        if len(unique_labels) == 1:
-            shared_label = next(iter(unique_labels))
-            shared_mask = (labeled_array == shared_label).astype(pattern.dtype)
+        if len(set(feed_labels)) == 1:
+            shared_mask = (labeled_array == feed_labels[0]).astype(pattern.dtype)
             total_metal_pixels = np.sum(pattern)
             mutual_index = float(np.sum(shared_mask) / total_metal_pixels) if total_metal_pixels > 0 else 0.0
         else:
@@ -265,7 +262,7 @@ class FeedReachability:  # R_feed
             return 0.0
         return float(np.mean(self.r_feed_list))
 
-    def plot(self, axes=None, show: bool = False, data: FeedReachabilityDictType = None):
+    def plot(self, axes=None, show: bool = False, data: FeedReachabilityDictType | None = None):
         pattern = data["pattern"] if data else self.pattern
         mask = data["mask"] if data else self.mask
         title = data["title"] if data else self.title
