@@ -895,6 +895,16 @@ class Record:
                 _result.append(self[other_key][_index])
             return _result
 
+    def best(self, mode: Callable = min, key:str = "real_loss", output_keys:list[str] = ['epoch', 'patch_pattern_buf', 'patch_result_buf']) -> list:
+        if key not in self._data or not self._data[key]:
+            return None
+        
+        # 取得目標 key 中的最佳數值 (Best value)
+        best_value = mode(self._data[key])
+        
+        # 呼叫現有的 find 方法回傳對應的 output_keys
+        return self.find(key, best_value, output_keys)
+
     def early_stop(self, key: str, patience: int = 10, is_maximize: bool = False) -> bool:
         """
         根據指定 key 的歷史資料，決定是否應該 early stop。
