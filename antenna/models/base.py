@@ -46,7 +46,6 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         self.record = Record(self.__class__.__name__, rootdir=self._rootdir, load=load and self.model_file.exists())
 
         # 快取 device；避免每次透過 next(model.parameters()) 取得（昂貴）。
-        self._device = None
         self.device = device
         if load:
             self.load()
@@ -68,7 +67,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
 
     @property
     def model_file(self) -> Path:
-        """The full path to the model archive."""
+        """model checkpoint 檔案的完整路徑。"""
         assert self.name, "Please use `Models.change()` first."
         return Path(self._rootdir).joinpath(f"{self.name}.pth")
 
@@ -90,12 +89,11 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         return torch.FloatTensor if str(self.device) == "cpu" else torch.cuda.FloatTensor  # type: ignore
 
     def change(self, label: str, *, load: bool = False, save: bool = False):
-        """
-        Change model label.
+        """變更 model 的 label（以 ``name`` 中的 ``{label}`` 佔位符為準）。
 
-        :param label: models label. You can enter `{label}` in name.
-        :param load: Load the changed models.
-        :param save: Save the models before the change.
+        :param label: 欲套用的 label；若 ``name`` 中不含 ``{label}`` 佔位符則不會變更檔名。
+        :param load: 套用新 label 後是否立即讀取對應的 checkpoint。
+        :param save: 變更 label 之前是否先存檔舊的 checkpoint。
         """
         if save:
             self.save()
@@ -106,6 +104,10 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         return self.name
 
     def load(self, force: bool = False):
+        """從 :pyattr:`model_file` 讀取 checkpoint 並還原 model/optimizer/scheduler/record 狀態。
+
+        :param force: 若為 ``True``，即使 checkpoint 的 ``title`` 與目前實例不符也直接套用。
+        """
         checkpoint_loaded = self._load_checkpoint_from_disk()
         if not force and checkpoint_loaded["title"] != self.__str__():
             raise RuntimeError(
@@ -118,11 +120,13 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         self.record.load_state_dict(checkpoint_loaded["record_state_dict"])
 
     def save(self) -> Path:
+        """將目前的 checkpoint 存入 :pyattr:`model_file`。"""
         return self.save_as(self.model_file)
 
     def save_as(self, filename: str | Path) -> Path:
-        """
-        :param filename: 檔案完整路徑，含副檔名(suffix)
+        """以原子寫入（透過 ``.tmp`` 暫存檔）方式將 checkpoint 存到指定路徑。
+
+        :param filename: 檔案完整路徑，含副檔名 (suffix)。
         """
         filename = Path(filename)
         temp_file = filename.with_suffix(filename.suffix + ".tmp")
@@ -136,6 +140,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         return filename
 
     def pre_load_model(self, path: str | Path):
+        """從指定 checkpoint 預載 model/optimizer 權重，並驗證參數不含 NaN/inf。"""
         path = Path(path)
         checkpoint_loaded: Checkpoint = path.load_torch()
         self.model.load_state_dict(checkpoint_loaded["model_state_dict"])
@@ -146,6 +151,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         logger.success(f"Successfully loaded the pre-trained model. ({path})")
 
     def step(self, optimizer_param=None, scheduler_param=None):
+        """執行一次 optimizer step；若有 scheduler，同時觸發 scheduler step。"""
         self.optimizer.step(optimizer_param)
         if self.scheduler:
             self.scheduler.step(scheduler_param)
@@ -168,6 +174,12 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         return self.model_file.load_torch()
 
     def requires_grad(self, mode: bool = True, train: bool | None = None):
+        """設定 model 所有參數的 ``requires_grad``，並可選擇切換 train/eval 模式。
+
+        :param mode: 是否對參數啟用梯度追蹤。
+        :param train: ``True`` 切換至 ``train()``、``False`` 切換至 ``eval()``、``None`` 保持現狀。
+        :return: 參數的 ``requires_grad`` 實際值（以第一個參數為準）。
+        """
         for param in self.model.parameters():
             param.requires_grad = mode
 
