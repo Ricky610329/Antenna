@@ -68,15 +68,11 @@ class MultiResponses:
         """:param output_shape: Priority use. (B, H, W, N) EX: "B, 1, H, W" or "B, N, 1" """
         return size_converter(AntennaResponse, self.to_list(), flatten=flatten, batch=batch, output_shape=output_shape)
 
-    def criterion(self):
-        """The loss will be calculated from the registered labels."""
-        responses = {}
-        for label, res in zip(AntennaResponse.labels, self.stack()):
-            responses[label] = res
-
+    def criterion(self) -> Tensor:
+        """依已註冊的 labels 逐一計算並加總 loss。"""
         loss = tensor(0.0, requires_grad=True)
-        for key, value in responses.items():
-            loss = loss + AntennaResponse(value).criterion(key)
+        for label, res in zip(AntennaResponse.labels, self.stack()):
+            loss = loss + AntennaResponse(res).criterion(label)
         return loss
 
 
@@ -105,14 +101,14 @@ class TargetResponse(MultiResponses):
         label: str = "response",
         add: bool = False,
     ) -> Tensor:
-        """
-        Target Response Design.
+        """建立梯形 mask 作為目標響應。
 
-        :param side: The Y value at both ends of the response.
-        :param center: The y value of the center point of the response.
-
-        :return: AntennaResponse
-
+        :param side: 響應兩端的 Y 值。
+        :param center: 響應中心點的 Y 值。
+        :param width: 由五段寬度組成的 tuple，對應 side→ramp-up→center→ramp-down→side。
+        :param label: 存入 metadata 的 label 名稱。
+        :param add: 是否把產生的 response 寫入 ``self[label]`` 與 metadata。
+        :return: 產生的 mask（1D ``Tensor``）。
         """
         if len(width) != 5:
             raise ValueError(f"Expected 5 width, but got {len(width)}")
@@ -125,7 +121,7 @@ class TargetResponse(MultiResponses):
                 np.ones(width[4]) * side,
             ]
         )
-        expected_response = tensor(np.array(mask_up), dtype=torch.float32, device=config.device)
+        expected_response = tensor(mask_up, dtype=torch.float32, device=config.device)
 
         if add:
             self[label] = expected_response
@@ -172,10 +168,14 @@ class TargetResponse(MultiResponses):
         return _result
 
     def __str__(self):
-        _ = " ".join(
-            [f"{key}({value['note']}, loss={value.get('loss_fn_name', None)})" for key, value in self.metadata.items()]
+        # 尚未 registerTargetResponse 的 label 不會有 'note'，以 get 取值避免 KeyError。
+        meta_str = " ".join(
+            [
+                f"{key}({value.get('note', '-')}, loss={value.get('loss_fn_name', None)})"
+                for key, value in self.metadata.items()
+            ]
         )
-        return f"TargetResponse({_})"
+        return f"TargetResponse({meta_str})"
 
 
 class AntennaResponse(Generic[LossParams]):
@@ -254,11 +254,11 @@ class AntennaResponse(Generic[LossParams]):
         return ax
 
     @classmethod
-    def registerLabels(cls, *labels: str, x: Union[tuple[int, int, int], Literal["ris", "n257"]] = "ris") -> Tensor:
-        """
-        The loss will be calculated from the registered labels.
+    def registerLabels(cls, *labels: str, x: Union[tuple[int, int, int], Literal["ris", "n257"]] = "ris") -> None:
+        """註冊要計算 loss 的 labels 與對應 x 軸設定。
 
-        :param x: (start, stop, total)
+        :param labels: 要計算 loss 的 label 名稱。
+        :param x: 可傳 ``(start, stop, total)`` 三元組，或預設字串 ``"ris"`` / ``"n257"``。
         """
         match x:
             case "ris":
@@ -305,14 +305,13 @@ class AntennaResponse(Generic[LossParams]):
     def registerTargetResponse(
         cls, side: float, center: float, width: Tuple[int, int, int, int, int], label: str = "response"
     ) -> Tensor:
-        """
-        Target Response Design.
+        """註冊目標響應（梯形 mask）。
 
-        :param side: The Y value at both ends of the response.
-        :param center: The y value of the center point of the response.
-
-        :return: AntennaResponse
-
+        :param side: 響應兩端的 Y 值。
+        :param center: 響應中心點的 Y 值。
+        :param width: 由五段寬度組成的 tuple。
+        :param label: 目標響應的 label；必須先透過 ``registerLabels()`` 註冊。
+        :return: 產生的 mask（1D ``Tensor``）。
         """
         if not cls.target.labels:
             raise RuntimeError("No labels registered. Please use `registerLabels()` first.")
@@ -321,23 +320,23 @@ class AntennaResponse(Generic[LossParams]):
 
     @classmethod
     def registerLossHook(
-        cls, loss_hook: Callable[LossParams, Tensor], label: str = "response", **loss_hook_param: LossParams.kwargs
-    ):
-        """
-        Args:
+        cls,
+        loss_hook: Callable[LossParams, Tensor],
+        label: str = "response",
+        **loss_hook_param: LossParams.kwargs,
+    ) -> None:
+        """註冊 ``criterion()`` 使用的 loss function。
 
-            loss_hook: Used for `criterion()`
-
-            ```
-            def criterion(response, target_response, ...):...
-            ```
-
+        :param loss_hook: 供 ``criterion()`` 呼叫的損失函式，簽章範例
+            ``def criterion(response, target_response, ...): ...``。
+        :param label: loss hook 對應的 label。
+        :param loss_hook_param: 會以 ``functools.partial`` 預先綁定給 loss_hook 的關鍵字參數。
         """
         cls.target.register_loss_fn(label, loss_hook, **loss_hook_param)
 
     def criterion(self, label: str = "response", **param: LossParams.kwargs) -> Tensor:
         """[Loss Function] Register LossHook using `registerLossHook()` before use."""
-        if label not in self.target.labels:
+        if label not in self.target.labels or "loss_fn" not in self.target.metadata[label]:
             raise RuntimeError(f"The {label} of LossHook is not registered. Please use `registerLossHook()` first.")
 
         return self.target.loss_fn(label)(self.response, **param)
