@@ -1,33 +1,45 @@
+"""RIS 模擬與專屬損失函數之公開入口。"""
+
 from torch import Tensor
-from torch.functional import F
+from torch.nn import functional as F
 
 from .simulate_ris import RISSimulator
 
+__all__ = ["RISSimulator", "custom_loss"]
 
-def custom_loss(prediction, target: Tensor, loss_type="SmoothL1Loss"):
 
+def custom_loss(prediction, target: Tensor, loss_type: str = "SmoothL1Loss"):
+    """RIS 遠場響應之遮罩式 SmoothL1 損失。
+
+    僅針對「預測偏離可接受範圍」的取樣點計算損失：
+    - 目標為 low_response 之處，若預測值大於 low_response 則計入
+    - 目標為 high_response 之處，若預測值小於 low_response 則計入
+    不滿足條件時退回一個小係數的 MSE，確保仍有梯度可回傳。
+    """
     high_response = target.max()
     low_response = target.min()
 
-    # 基本條件
-    mask_20 = target == low_response
-    mask_b_20 = prediction[mask_20] > low_response
+    mask_low = target == low_response
+    mask_low_violated = prediction[mask_low] > low_response
 
-    mask_0 = target == high_response
-    mask_s_0 = prediction[mask_0] < low_response
+    mask_high = target == high_response
+    mask_high_violated = prediction[mask_high] < low_response
 
-    # 為了確保有梯度，設定條件不滿足時也會計入一個 dummy loss
-    if mask_b_20.sum() > 0:
-        loss_20 = F.smooth_l1_loss(prediction[mask_20][mask_b_20], target[mask_20][mask_b_20])
+    # 為避免條件不成立時失去梯度，退回一個小係數的 MSE 作為 dummy loss
+    if mask_low_violated.sum() > 0:
+        loss_low = F.smooth_l1_loss(
+            prediction[mask_low][mask_low_violated],
+            target[mask_low][mask_low_violated],
+        )
     else:
-        # 使用全體 prediction 的一小部分作 dummy loss，保證梯度
-        loss_20 = 0.01 * F.mse_loss(prediction, target)
+        loss_low = 0.01 * F.mse_loss(prediction, target)
 
-    if mask_s_0.sum() > 0:
-        loss_0 = F.smooth_l1_loss(prediction[mask_0][mask_s_0], target[mask_0][mask_s_0])
+    if mask_high_violated.sum() > 0:
+        loss_high = F.smooth_l1_loss(
+            prediction[mask_high][mask_high_violated],
+            target[mask_high][mask_high_violated],
+        )
     else:
-        loss_0 = 0.01 * F.mse_loss(prediction, target)
+        loss_high = 0.01 * F.mse_loss(prediction, target)
 
-    loss = loss_20 + loss_0
-
-    return loss
+    return loss_low + loss_high
