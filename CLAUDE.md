@@ -15,8 +15,8 @@ Antenna 是一個基於 PyTorch 的研究專案，用於透過深度學習優化
 ## 環境建置
 
 ```bash
-conda create --name antenna python=3.11
-conda activate antenna
+conda create --name ant python=3.11
+conda activate ant
 pip install -e ".[dev]"
 ```
 
