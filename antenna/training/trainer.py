@@ -9,11 +9,11 @@
 """
 
 from time import time
+from typing import Any, Callable
 
-import numpy as np
 import torch
 from loguru import logger
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 
 from antenna.core.pattern import AntennaPattern
 from antenna.core.response import AntennaResponse
@@ -22,49 +22,85 @@ from antenna.losses.regularization import FeedReachability, GapClosingLoss, Spec
 from antenna.models.base import Models
 from antenna.models.generators.gumbel_sigmoid_gen import GumbelSigmoidGEN
 from antenna.models.generators.sigmoid_gen import SigmoidGEN
+from antenna.ris import custom_loss as ris_custom_loss
 from antenna.schedulers.adaptive_cyclical import AdaptiveCyclicalScheduler
 from antenna.smodels import OldSM
 from antenna.utils.config import config
 from antenna.utils.data import DataManager
-from antenna.utils.figure import Figure
-from antenna.utils.path import Path
 from antenna.utils.record import Record
 from antenna.utils.web import connect_default_drive
 
-# 損失函數對應表
-LOSS_FN_REGISTRY = {
+# 損失函數對應表（YAML `loss_fn` 欄位映射至實作）。
+LOSS_FN_REGISTRY: dict[str, Callable[..., torch.Tensor]] = {
     "custom_loss_minmax": custom_loss_minmax,
     "custom_loss_r": custom_loss_r,
     "custom_loss_g": custom_loss_g,
+    # RIS 專用 loss，供 ``conf/response/ris.yaml`` 使用。
+    "custom_loss": ris_custom_loss,
 }
 
-# 模型對應表
-MODEL_REGISTRY = {
+# 模型對應表（YAML `model` 欄位映射至生成器類別）。
+MODEL_REGISTRY: dict[str, type[torch.nn.Module]] = {
     "sigmoid_gen": SigmoidGEN,
     "gumbel_sigmoid_gen": GumbelSigmoidGEN,
 }
 
+# 模擬器對應表（YAML `simulator` 欄位映射至模擬器 factory）。
+# 透過 lazy import 避免在測試環境沒有 HFSS COM 時載入失敗。
+
+
+def _single_port_factory(cfg: DictConfig, result_path):
+    from antenna.patch.patch_simulator.single_port import SinglePortSimulator
+
+    return SinglePortSimulator(record_path=result_path)
+
+
+def _dual_port_factory(cfg: DictConfig, result_path):
+    from antenna.patch.patch_simulator.dual_port import DualPortSimulator
+
+    return DualPortSimulator(record_path=result_path)
+
+
+def _ris_factory(cfg: DictConfig, result_path):
+    from antenna.ris.simulate_ris import RISSimulator
+
+    coord = cfg.pattern.coordinate
+    return RISSimulator(element_num=coord[1] - coord[0])
+
+
+SIMULATOR_REGISTRY: dict[str, Callable[[DictConfig, Any], Any]] = {
+    "single_port": _single_port_factory,
+    "dual_port": _dual_port_factory,
+    "ris": _ris_factory,
+}
+
 
 class Trainer:
-    """統一訓練器，從 Hydra DictConfig 驅動。"""
+    """統一訓練器，從 Hydra DictConfig 驅動。
 
-    def __init__(self, cfg: DictConfig):
-        self.cfg = cfg
+    執行 ``__init__`` 即完成所有前置設定（環境、路徑、模擬器、模型與追蹤），
+    呼叫 :meth:`run` 後才進入真正的 epoch loop。
+    """
+
+    def __init__(self, cfg: DictConfig) -> None:
+        self.cfg: DictConfig = cfg
+        # 依序建立：環境 → 路徑 → 追蹤（含 Record）→ 模擬器 → 天線 → 模型。
+        # 追蹤放在模型之前，讓 resume 時 _setup_models() 可以讀取 self.record。
         self._setup_environment()
         self._setup_paths()
+        self._setup_tracking()
         self._setup_simulator()
         self._setup_antenna()
         self._setup_models()
-        self._setup_tracking()
 
     # ── 初始化階段 ──────────────────────────────────
 
-    def _setup_environment(self):
+    def _setup_environment(self) -> None:
         """設定裝置、網路磁碟。"""
         config.device = self.cfg.environment.device
         connect_default_drive(self.cfg.environment.network_drive_letter)
 
-    def _setup_paths(self):
+    def _setup_paths(self) -> None:
         """建立結果目錄。"""
         from antenna import get_result_path
         from antenna.utils import ROOTDIR
@@ -82,27 +118,16 @@ class Trainer:
         config.lr = self.cfg.optimizer.lr
         config.checkpoint_save_path = self.path_checkpoint
 
-    def _setup_simulator(self):
-        """建立並註冊模擬器。"""
-        from antenna.patch.patch_simulator.dual_port import DualPortSimulator
-        from antenna.patch.patch_simulator.single_port import SinglePortSimulator
-
+    def _setup_simulator(self) -> None:
+        """依據 ``cfg.simulator`` 建立並註冊模擬器。"""
         sim_type = self.cfg.simulator
-        if sim_type == "single_port":
-            self.simulator = SinglePortSimulator(record_path=self.result_path)
-        elif sim_type == "dual_port":
-            self.simulator = DualPortSimulator(record_path=self.result_path)
-        elif sim_type == "ris":
-            from antenna.ris.simulate_ris import RISSimulator
-
-            coord = self.cfg.pattern.coordinate
-            self.simulator = RISSimulator(element_num=coord[1] - coord[0])
-        else:
-            raise ValueError(f"未知的模擬器: {sim_type}")
-
+        factory = SIMULATOR_REGISTRY.get(sim_type)
+        if factory is None:
+            raise ValueError(f"未知的模擬器: {sim_type}（可用: {sorted(SIMULATOR_REGISTRY)})")
+        self.simulator = factory(self.cfg, self.result_path)
         AntennaPattern.register_simulator(self.simulator)
 
-    def _setup_antenna(self):
+    def _setup_antenna(self) -> None:
         """設定 AntennaPattern 與 AntennaResponse。"""
         coord = tuple(self.cfg.pattern.coordinate)
         AntennaPattern.setDefaultCoordinate(coord)
@@ -112,7 +137,7 @@ class Trainer:
         AntennaResponse.registerLabels(*resp_cfg.labels, x=resp_cfg.x)
 
         # 註冊每個 label 的 target 與 loss hook
-        self._targets = {}
+        self._targets: dict[str, torch.Tensor] = {}
         for label, label_cfg in resp_cfg.label_configs.items():
             target_cfg = label_cfg.target
             target_tensor = AntennaResponse.registerTargetResponse(
@@ -122,15 +147,15 @@ class Trainer:
 
             loss_fn = LOSS_FN_REGISTRY.get(label_cfg.loss_fn)
             if loss_fn is None:
-                raise ValueError(f"未知的損失函數: {label_cfg.loss_fn}")
+                raise ValueError(f"未知的損失函數: {label_cfg.loss_fn}（可用: {sorted(LOSS_FN_REGISTRY)})")
             AntennaResponse.registerLossHook(loss_fn, label=label, target=target_tensor, **label_cfg.loss_params)
 
-    def _setup_models(self):
+    def _setup_models(self) -> None:
         """建立生成器、優化器、排程器、代理模型。"""
         # 生成器
         model_cls = MODEL_REGISTRY.get(self.cfg.model)
         if model_cls is None:
-            raise ValueError(f"未知的模型: {self.cfg.model}")
+            raise ValueError(f"未知的模型: {self.cfg.model}（可用: {sorted(MODEL_REGISTRY)})")
         self.model = model_cls()
 
         # 優化器
@@ -141,36 +166,10 @@ class Trainer:
         )
 
         # 排程器
-        sched_cfg = self.cfg.scheduler
-        if sched_cfg._target_ == "none":
-            self.scheduler = None
-        elif "AdaptiveCyclicalScheduler" in sched_cfg._target_:
-            self.scheduler = AdaptiveCyclicalScheduler(
-                self.optimizer,
-                T_0=sched_cfg.get("T_0", 100),
-                T_mult=sched_cfg.get("T_mult", 1),
-                lr_max=sched_cfg.get("lr_max", 0.005),
-                lr_min=sched_cfg.get("lr_min", 1e-6),
-                temp_max=sched_cfg.get("temp_max", 4.0),
-                temp_min=sched_cfg.get("temp_min", 0.1),
-                warmup_ratio=sched_cfg.get("warmup_ratio", 0.2),
-                patience=sched_cfg.get("patience", 25),
-                factor=sched_cfg.get("factor", 0.7),
-                mode=sched_cfg.get("mode", "min"),
-                on_plateau=sched_cfg.get("on_plateau", "linear"),
-            )
-        elif "ReduceLROnPlateau" in sched_cfg._target_:
-            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer,
-                factor=sched_cfg.get("factor", 0.5),
-                patience=sched_cfg.get("patience", 10),
-                min_lr=sched_cfg.get("min_lr", 1e-6),
-            )
-        else:
-            self.scheduler = None
+        self.scheduler = self._build_scheduler(self.cfg.scheduler)
 
         # Models 封裝
-        self.generator = Models(
+        self.generator: Models = Models(
             name="generator_{label}",
             rootdir=self.path_checkpoint,
             model=self.model,
@@ -185,16 +184,48 @@ class Trainer:
         config["HFSS.max_epoch"] = self.cfg.surrogate.hfss_max_epoch
         self.smodel = OldSM(checkpoint=self.path_checkpoint)
 
-        # 載入檢查點
+        # 載入檢查點（需 self.record 已於 _setup_tracking 中建立）
         if self.continue_run and hasattr(self, "record") and ("epoch" in self.record):
             self.generator.change(self.record("epoch"), load=True)
             self.smodel.load()
 
-    def _setup_tracking(self):
-        """初始化記錄、資料集、正則化。"""
-        from antenna.utils import DATASET_PATH
+    def _build_scheduler(self, sched_cfg: DictConfig):
+        """依 ``sched_cfg._target_`` 字串建立對應的 scheduler。
 
-        self.record = Record("temp", rootdir=self.result_path, load=True)
+        - ``"none"`` 或未知 target → 回傳 ``None``。
+        - 缺少 ``_target_`` 欄位時視為未設定，回傳 ``None``。
+        """
+        target = sched_cfg.get("_target_", "none") if sched_cfg is not None else "none"
+        if target == "none":
+            return None
+        if "AdaptiveCyclicalScheduler" in target:
+            return AdaptiveCyclicalScheduler(
+                self.optimizer,
+                T_0=sched_cfg.get("T_0", 100),
+                T_mult=sched_cfg.get("T_mult", 1),
+                lr_max=sched_cfg.get("lr_max", 0.005),
+                lr_min=sched_cfg.get("lr_min", 1e-6),
+                temp_max=sched_cfg.get("temp_max", 4.0),
+                temp_min=sched_cfg.get("temp_min", 0.1),
+                warmup_ratio=sched_cfg.get("warmup_ratio", 0.2),
+                patience=sched_cfg.get("patience", 25),
+                factor=sched_cfg.get("factor", 0.7),
+                mode=sched_cfg.get("mode", "min"),
+                on_plateau=sched_cfg.get("on_plateau", "linear"),
+            )
+        if "ReduceLROnPlateau" in target:
+            return torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer,
+                factor=sched_cfg.get("factor", 0.5),
+                patience=sched_cfg.get("patience", 10),
+                min_lr=sched_cfg.get("min_lr", 1e-6),
+            )
+        logger.warning(f"未知的 scheduler target: {target!r}，不使用 scheduler。")
+        return None
+
+    def _setup_tracking(self) -> None:
+        """初始化記錄、資料集、正則化。"""
+        self.record: Record = Record("temp", rootdir=self.result_path, load=True)
         self.online_dataset = DataManager("online", rootdir=self.result_path)
 
         # 正則化損失
@@ -204,7 +235,7 @@ class Trainer:
 
     # ── 訓練迴圈 ──────────────────────────────────
 
-    def run(self):
+    def run(self) -> None:
         """主訓練迴圈。"""
         epoch = self.record("epoch", 0)
         jump = 0
