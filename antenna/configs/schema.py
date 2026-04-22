@@ -72,11 +72,12 @@ class SchedulerConfig:
 
 @dataclass
 class SurrogateConfig:
-    """代理模型（OldSM）與 HFSS 訓練迴圈設定。"""
+    """代理模型（OldSM）與 HFSS 訓練迴圈設定。
 
-    type: str = "old"
-    pretrain_path: str | None = None
-    training_mode: str = "one_data"
+    目前僅使用 HFSS 相關欄位；trainer 透過 `antenna.utils.config` 的
+    `HFSS.*` key 讀取 `hfss_lr` / `hfss_min_loss` / `hfss_max_epoch`。
+    """
+
     hfss_min_loss: float = 0.1
     hfss_max_epoch: int = 20000
     hfss_lr: float = 0.001

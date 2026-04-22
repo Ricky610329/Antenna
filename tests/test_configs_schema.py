@@ -56,11 +56,8 @@ def test_scheduler_config_defaults():
 
 
 def test_surrogate_config_defaults():
-    """SurrogateConfig 預設為 OldSM 設定。"""
+    """SurrogateConfig 預設 HFSS 訓練參數。"""
     sur = OmegaConf.structured(SurrogateConfig)
-    assert sur.type == "old"
-    assert sur.pretrain_path is None
-    assert sur.training_mode == "one_data"
     assert sur.hfss_min_loss == pytest.approx(0.1)
     assert sur.hfss_max_epoch == 20000
     assert sur.hfss_lr == pytest.approx(0.001)
@@ -191,12 +188,17 @@ def test_cli_override_regularization_weights():
 
 
 def test_schema_no_dead_fields():
-    """已知的死欄位（dataset_path / mutation_rate / wandb_*）不應存在於 schema。"""
+    """已知的死欄位（dataset_path / mutation_rate / wandb_* / 未接線的 surrogate 欄位）
+    不應存在於 schema。"""
     cfg = OmegaConf.structured(TrainConfig)
     assert "dataset_path" not in cfg.environment
     assert "mutation_rate" not in cfg
     assert "wandb_project" not in cfg
     assert "wandb_name" not in cfg
+    # surrogate 僅保留 trainer 實際讀取的 HFSS 欄位
+    assert "type" not in cfg.surrogate
+    assert "pretrain_path" not in cfg.surrogate
+    assert "training_mode" not in cfg.surrogate
 
 
 def test_config_yaml_no_dead_fields():
@@ -204,5 +206,7 @@ def test_config_yaml_no_dead_fields():
     conf_path = Path(__file__).resolve().parent.parent / "antenna" / "conf"
     text = (conf_path / "config.yaml").read_text(encoding="utf-8")
     assert "mutation_rate" not in text
+    assert "pretrain_path" not in text
+    assert "training_mode" not in text
     env_text = (conf_path / "environment" / "default.yaml").read_text(encoding="utf-8")
     assert "dataset_path" not in env_text
