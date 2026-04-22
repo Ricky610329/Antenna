@@ -4,11 +4,10 @@ from sys import path
 
 path.append(join(dirname(__file__), ".."))
 
-from matplotlib.pyplot import imread
 from numpy import linspace
 
 from antenna import AntennaResponse, get_result_path
-from antenna.utils import Figure, Path, Record, config
+from antenna.utils import Figure, Record, config
 
 config.setWarning()
 

@@ -25,6 +25,7 @@ dependencies = [
     "PyYAML",
     "Pillow",
     "Flask",
+    "waitress",
     "psutil",
     "GitPython",
     "imageio-ffmpeg",
@@ -52,19 +53,27 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["F", "E", "W", "I", "UP"]
+# 下列規則於 modernize 分支遷移期間暫時全域忽略；
+# 待各 Unit 逐步清乾淨後可移除並收回。
 ignore = [
-    "F401",   # unused imports — 遷移期間暫時忽略
+    "F401",   # unused imports — wildcard import 與舊 API 殘留
     "F403",   # wildcard imports — Phase 1 逐步修復
     "F405",   # undefined from wildcard — F403 的附帶影響
     "F811",   # 重複定義 — overload 裝飾器與 wildcard imports 導致
     "F821",   # 未定義名稱 — wildcard imports 導致
-    "F722",   # syntax error in forward annotation — 遷移期間暫時忽略
-    "E402",   # import 不在頂部 — 遷移期間暫時忽略（config.device 設定順序）
+    "F722",   # syntax error in forward annotation — jaxtyping/TorchScript 用法
+    "E402",   # import 不在頂部 — config.device 設定順序需要
     "E501",   # 行太長 — 由 formatter 處理
     "E722",   # bare except — 遷移期間暫時忽略
     "E741",   # 模糊變數名 — ML 程式碼常見 (l, I, O)
-    "UP035",  # typing 舊式用法 — 遷移期間暫時忽略
+    "UP035",  # typing 舊式用法 — 逐步移除
 ]
+
+# 已清理完畢的檔案改採逐步嚴格的 per-file 規則；
+# 這些 override 在 per-file 層級比 ignore 嚴格。
+[tool.ruff.lint.per-file-ignores]
+# application/ 與 script/ (Unit 20) 已清掉 F401/E402/E722/UP035，
+# 這裡保留空白表示不額外放寬，讓未來全域 ignore 收緊時自動生效。
 
 [tool.ruff.lint.isort]
 known-first-party = ["antenna"]

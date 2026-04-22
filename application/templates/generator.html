@@ -133,239 +133,103 @@
     let gridData = []; // 2D array: 0 or 1
     let isDrawing = false;
     let drawMode = 1; // 1 for metal, 0 for empty
+    let hoverX = -1;
+    let hoverY = -1;
 
-        let hoverX = -1;
+    function initGrid(w, h) {
+        width = w;
+        height = h;
 
-        let hoverY = -1;
+        // 依格數自動調整每格像素大小
+        const maxWidth = 800;
+        cellSize = Math.floor(maxWidth / width);
+        if (cellSize < 15) cellSize = 15;
+        if (cellSize > 40) cellSize = 40;
 
-    
+        canvas.width = width * cellSize;
+        canvas.height = height * cellSize;
+        gridData = Array.from({ length: height }, () => Array(width).fill(0));
 
-        function initGrid(w, h) {
+        draw();
+        statusText.innerText = `Ready. ${width}x${height} Grid.`;
+    }
 
-            width = w;
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            height = h;
-
-            
-
-            // Dynamic cell size
-
-            const maxWidth = 800;
-
-            cellSize = Math.floor(maxWidth / width);
-
-            if (cellSize < 15) cellSize = 15; 
-
-            if (cellSize > 40) cellSize = 40; 
-
-    
-
-            canvas.width = width * cellSize;
-
-            canvas.height = height * cellSize;
-
-    
-
-            gridData = Array.from({ length: height }, () => Array(width).fill(0));
-
-            
-
-            draw();
-
-            statusText.innerText = `Ready. ${width}x${height} Grid.`;
-
+        // 金屬格
+        ctx.fillStyle = '#0d6efd';
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (gridData[y][x] === 1) {
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+            }
         }
 
-    
+        // 格線
+        ctx.beginPath();
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= width; x++) {
+            ctx.moveTo(x * cellSize, 0);
+            ctx.lineTo(x * cellSize, height * cellSize);
+        }
+        for (let y = 0; y <= height; y++) {
+            ctx.moveTo(0, y * cellSize);
+            ctx.lineTo(width * cellSize, y * cellSize);
+        }
+        ctx.stroke();
 
-        function draw() {
-
-            // Clear
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            
-
-            // Draw Cells
-
-            ctx.fillStyle = '#0d6efd'; // Metal color
-
-            for (let y = 0; y < height; y++) {
-
-                for (let x = 0; x < width; x++) {
-
-                    if (gridData[y][x] === 1) {
-
-                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-
-                    }
-
-                }
-
-            }
-
-    
-
-            // Draw Grid Lines
-
+        // 滑鼠 hover 格框線
+        if (hoverX >= 0 && hoverX < width && hoverY >= 0 && hoverY < height) {
             ctx.beginPath();
-
-            ctx.strokeStyle = '#e0e0e0';
-
-            ctx.lineWidth = 1;
-
-            
-
-            for (let x = 0; x <= width; x++) {
-
-                ctx.moveTo(x * cellSize, 0);
-
-                ctx.lineTo(x * cellSize, height * cellSize);
-
-            }
-
-            for (let y = 0; y <= height; y++) {
-
-                ctx.moveTo(0, y * cellSize);
-
-                ctx.lineTo(width * cellSize, y * cellSize);
-
-            }
-
-            ctx.stroke();
-
-    
-
-            // Draw Hover Highlight
-
-            if (hoverX >= 0 && hoverX < width && hoverY >= 0 && hoverY < height) {
-
-                ctx.beginPath();
-
-                ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
-
-                ctx.lineWidth = 2;
-
-                ctx.strokeRect(hoverX * cellSize, hoverY * cellSize, cellSize, cellSize);
-
-            }
-
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(hoverX * cellSize, hoverY * cellSize, cellSize, cellSize);
         }
+    }
 
-    
+    function getMousePos(canvas, evt) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+            y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
 
-        function getMousePos(canvas, evt) {
-
-            const rect = canvas.getBoundingClientRect();
-
-            return {
-
-                x: (evt.clientX - rect.left) * (canvas.width / rect.width),
-
-                y: (evt.clientY - rect.top) * (canvas.height / rect.height)
-
-            };
-
-        }
-
-    
-
-                    function toggleCell(e) {
-
-    
-
-                        const pos = getMousePos(canvas, e);
-
-    
-
-                        const x = Math.floor(pos.x / cellSize);
-
-    
-
-                        const y = Math.floor(pos.y / cellSize);
-
-    
-
-                
-
-    
-
-                        console.log(`Toggle: ${x}, ${y} -> ${drawMode}`);
-
-    
-
-                
-
-    
-
-                        if (x >= 0 && x < width && y >= 0 && y < height) {
-
-    
-
-                            gridData[y][x] = drawMode;
-
-    
-
-                            draw(); 
-
-    
-
-                            statusText.innerText = `Drawing ${drawMode === 1 ? 'Metal' : 'Empty'} at (${x}, ${y})`;
-
-    
-
-                        }
-
-    
-
-                    }
-
-        
-
-        // ... Event Listeners ...
-
-    
-
-        canvas.addEventListener('mousemove', (e) => {
-
-            const pos = getMousePos(canvas, e);
-
-            const x = Math.floor(pos.x / cellSize);
-
-            const y = Math.floor(pos.y / cellSize);
-
-            
-
-            if (x !== hoverX || y !== hoverY) {
-
-                hoverX = x;
-
-                hoverY = y;
-
-                if (x >= 0 && x < width && y >= 0 && y < height) {
-
-                    statusText.innerText = `Grid: (${x}, ${y}) | Size: ${width}x${height}`;
-
-                }
-
-                draw();
-
-            }
-
-            
-
-            if (isDrawing) toggleCell(e);
-
-        });
-
-    
-
-        canvas.addEventListener('mouseleave', () => {
-            hoverX = -1;
-            hoverY = -1;
+    function toggleCell(e) {
+        const pos = getMousePos(canvas, e);
+        const x = Math.floor(pos.x / cellSize);
+        const y = Math.floor(pos.y / cellSize);
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+            gridData[y][x] = drawMode;
             draw();
-            statusText.innerText = `Ready. ${width}x${height} Grid.`;
-        });
+            statusText.innerText = `Drawing ${drawMode === 1 ? 'Metal' : 'Empty'} at (${x}, ${y})`;
+        }
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+        const pos = getMousePos(canvas, e);
+        const x = Math.floor(pos.x / cellSize);
+        const y = Math.floor(pos.y / cellSize);
+        if (x !== hoverX || y !== hoverY) {
+            hoverX = x;
+            hoverY = y;
+            if (x >= 0 && x < width && y >= 0 && y < height) {
+                statusText.innerText = `Grid: (${x}, ${y}) | Size: ${width}x${height}`;
+            }
+            draw();
+        }
+        if (isDrawing) toggleCell(e);
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        hoverX = -1;
+        hoverY = -1;
+        draw();
+        statusText.innerText = `Ready. ${width}x${height} Grid.`;
+    });
 
     // --- Event Listeners ---
 
@@ -386,12 +250,10 @@
         draw();
     });
 
-    // Mouse Interaction
+    // 滑鼠互動：左鍵畫 (1)，右鍵擦除 (0)
     canvas.addEventListener('mousedown', (e) => {
         isDrawing = true;
-        // Left click (0) = Draw (1), Right click (2) = Erase (0)
-        drawMode = e.button === 2 ? 0 : 1; 
-        console.log(`MouseDown: Button=${e.button}, Mode=${drawMode}`);
+        drawMode = e.button === 2 ? 0 : 1;
         toggleCell(e);
     });
 
