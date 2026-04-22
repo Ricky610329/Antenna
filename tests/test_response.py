@@ -214,3 +214,99 @@ def test_multiresponses_stack_and_concat_shapes():
     concated = mr.concat()
     assert stacked.shape == (2, 4)
     assert concated.shape == (8,)
+
+
+def test_multiresponses_invert_detaches_to_cpu():
+    """~MultiResponses 應回傳 detach 後的 cpu tensor。"""
+    AntennaResponse.registerLabels("a", "b", x=(0, 3, 4))
+    mr = MultiResponses({"a": torch.zeros(4, requires_grad=True), "b": torch.ones(4, requires_grad=True)})
+    inv = ~mr
+    assert inv.device.type == "cpu"
+    assert not inv.requires_grad
+    assert inv.shape == (2, 4)
+
+
+def test_multiresponses_type_error_for_invalid_input():
+    """傳入非 dict/Tensor/None 應 raise TypeError。"""
+    with pytest.raises(TypeError, match="Expected type"):
+        MultiResponses(123)  # type: ignore[arg-type]
+
+
+# -------------------- size / to_str --------------------
+
+
+def test_size_flatten_returns_int():
+    """size(flatten=True) 應回傳 label 數 × 每個 label 的點數。"""
+    AntennaResponse.registerLabels("a", "b", x=(0, 3, 4))
+    assert AntennaResponse.size(flatten=True) == 8
+    assert AntennaResponse.size(flatten=False) == (2, 4)
+
+
+def test_to_str_contains_size_and_x():
+    """to_str() 應包含 size 與 _x 摘要資訊。"""
+    AntennaResponse.registerLabels("a", x=(0, 3, 4))
+    text = AntennaResponse.to_str()
+    assert "AntennaResponse" in text
+    assert "(1, 4)" in text
+
+
+# -------------------- registerLossHook & criterion --------------------
+
+
+def _mse_hook(response: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """測試用 loss hook：與指定 target 的 MSE。"""
+    return ((response - target) ** 2).mean()
+
+
+def test_register_loss_hook_and_criterion_single_label():
+    """註冊 hook 後，AntennaResponse.criterion() 應呼叫到 hook。"""
+    AntennaResponse.registerLabels("resp", x=(0, 3, 4))
+    target = torch.zeros(4)
+    AntennaResponse.registerLossHook(_mse_hook, label="resp", target=target)
+
+    response = AntennaResponse(torch.ones(4))
+    loss = response.criterion("resp")
+    assert torch.allclose(loss, torch.tensor(1.0))
+
+
+def test_criterion_without_registered_hook_raises():
+    """criterion 若 label 未透過 registerLossHook 註冊應 raise。"""
+    AntennaResponse.registerLabels("resp", x=(0, 3, 4))
+    response = AntennaResponse(torch.ones(4))
+    with pytest.raises(RuntimeError, match="is not registered"):
+        response.criterion("resp")
+
+
+def test_register_loss_hook_records_fn_name():
+    """register_loss_fn 應記錄函式名稱供 __str__ 使用。"""
+    AntennaResponse.registerLabels("resp", x=(0, 3, 4))
+    AntennaResponse.registerTargetResponse(side=0.0, center=1.0, width=(1, 0, 2, 0, 1), label="resp")
+    AntennaResponse.registerLossHook(_mse_hook, label="resp", target=torch.zeros(4))
+
+    meta = AntennaResponse.target.metadata["resp"]
+    assert meta["loss_fn_name"] == "_mse_hook"
+    # __str__ 應帶出 loss function 名稱
+    assert "_mse_hook" in str(AntennaResponse.target)
+
+
+def test_register_loss_hook_partial_binds_kwargs():
+    """loss hook 的 kwargs 應被 partial 綁定，呼叫時不需再傳。"""
+    AntennaResponse.registerLabels("resp", x=(0, 3, 4))
+    AntennaResponse.registerLossHook(_mse_hook, label="resp", target=torch.full((4,), 2.0))
+
+    response = AntennaResponse(torch.zeros(4))
+    loss = response.criterion("resp")
+    # (0 - 2)^2 = 4
+    assert torch.allclose(loss, torch.tensor(4.0))
+
+
+def test_multiresponses_criterion_sums_over_labels():
+    """MultiResponses.criterion() 應加總所有 label 的 loss。"""
+    AntennaResponse.registerLabels("a", "b", x=(0, 3, 4))
+    AntennaResponse.registerLossHook(_mse_hook, label="a", target=torch.zeros(4))
+    AntennaResponse.registerLossHook(_mse_hook, label="b", target=torch.zeros(4))
+
+    mr = MultiResponses({"a": torch.ones(4), "b": torch.full((4,), 2.0)})
+    total = mr.criterion()
+    # a: mean((1-0)^2)=1, b: mean((2-0)^2)=4 → 合計 5
+    assert torch.allclose(total, torch.tensor(5.0))
