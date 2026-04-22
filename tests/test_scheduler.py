@@ -327,3 +327,102 @@ def test_invalid_T_mult_raises():
 def test_invalid_mode_raises():
     with pytest.raises(ValueError):
         AdaptiveCyclicalScheduler(_make_optimizer(), T_0=10, mode="weird", tau_callback=_noop)
+
+
+# ---------------------------------------------------------------------------
+# PyTorch LR scheduler 慣例
+# ---------------------------------------------------------------------------
+
+
+def test_get_last_lr_matches_optimizer():
+    """get_last_lr()（PyTorch 慣例）應該回傳最近一次 step 的 lr，與 optimizer 同步。"""
+    scheduler, optimizer = _make_scheduler()
+    for metric in [1.0, 0.9, 0.85]:
+        scheduler.step(metric)
+    last = scheduler.get_last_lr()
+    assert last == [group["lr"] for group in optimizer.param_groups]
+
+
+# ---------------------------------------------------------------------------
+# 邊界情況：warmup_ratio = 1.0（整個週期都是 warmup）
+# ---------------------------------------------------------------------------
+
+
+def test_warmup_ratio_one_does_not_divide_by_zero():
+    """warmup_ratio=1.0 時 cosine_span=0；get_lr 應該走退化分支而不是 ZeroDivisionError。"""
+    scheduler, optimizer = _make_scheduler(T_0=10, warmup_ratio=1.0, lr_min=0.0, lr_max=1.0)
+    # 跑滿一個完整週期
+    for _ in range(12):
+        with pytest.warns(UserWarning):
+            scheduler.step()
+    lr = optimizer.param_groups[0]["lr"]
+    # 不應該是 NaN / inf
+    assert math.isfinite(lr)
+    assert 0.0 <= lr <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# 完整流程：warmup → cosine → plateau 觸發 → 重啟
+# ---------------------------------------------------------------------------
+
+
+def test_full_warmup_plateau_restart_flow():
+    """驗證完整流程：lr 先從谷底爬到峰值（warmup），接著衰減（cosine），
+    送入停滯 metric 後觸發 peak 重啟，lr 應該再次回到峰值。"""
+    scheduler, optimizer = _make_scheduler(
+        on_plateau="peak",
+        T_0=20,
+        warmup_ratio=0.25,
+        patience=3,
+        factor=1.0,
+        lr_min=0.0,
+        lr_max=1.0,
+    )
+    lr_trace: list[float] = []
+
+    # Phase 1: warmup — 送入持續改善的 metric，避免觸發 plateau
+    for i in range(5):
+        scheduler.step(metric=1.0 - i * 0.1)
+        lr_trace.append(optimizer.param_groups[0]["lr"])
+    # warmup 結束（T_cur=5）應該在峰值
+    assert math.isclose(lr_trace[-1], 1.0, rel_tol=1e-6)
+
+    # Phase 2: cosine 衰減 — 繼續改善
+    for i in range(5, 15):
+        scheduler.step(metric=0.5 - i * 0.01)
+        lr_trace.append(optimizer.param_groups[0]["lr"])
+    # cosine 階段的最後一筆 lr 應該低於峰值
+    assert lr_trace[-1] < lr_trace[4]
+
+    # Phase 3: 觸發 plateau — 連續 3 次 metric 不改善
+    lr_before_plateau = optimizer.param_groups[0]["lr"]
+    for _ in range(3):
+        scheduler.step(metric=1e9)
+    # peak 模式重啟後 lr 應回到峰值，明顯高於觸發前
+    assert optimizer.param_groups[0]["lr"] > lr_before_plateau
+    assert math.isclose(optimizer.param_groups[0]["lr"], 1.0, rel_tol=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# tau callback 在重啟後仍然持續生效
+# ---------------------------------------------------------------------------
+
+
+def test_tau_callback_invoked_across_restart():
+    """重啟前後 tau_callback 都必須被呼叫，且值 = scheduler.get_temp()。"""
+    captured: list[float] = []
+    scheduler, _ = _make_scheduler(
+        tau_callback=captured.append,
+        on_plateau="peak",
+        T_0=10,
+        warmup_ratio=0.2,
+        patience=2,
+    )
+    baseline = len(captured)
+    scheduler.step(metric=0.0)
+    for _ in range(3):  # 觸發 plateau
+        scheduler.step(metric=1e9)
+    # 每次 step 都會呼叫一次 callback
+    assert len(captured) - baseline == 4
+    # 最近一次呼叫的 tau 值必須等於 get_temp()
+    assert captured[-1] == scheduler.get_temp()

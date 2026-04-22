@@ -6,6 +6,20 @@ from torch.optim.lr_scheduler import _LRScheduler
 from antenna.types import *
 from antenna.utils import Record, config
 
+# 模組常數：集中管理字串列舉，避免分散在 __init__ 與型別標註兩處
+_ON_PLATEAU_MODES: tuple[str, ...] = ("peak", "reset", "linear")
+_METRIC_MODES: tuple[str, ...] = ("min", "max")
+
+
+def _default_tau_callback(tau: float) -> None:
+    """預設 tau callback：向後相容，將溫度寫入 AntennaPattern.tau。
+
+    延遲 import 以避免模組載入時的循環依賴。
+    """
+    from antenna import AntennaPattern
+
+    AntennaPattern.tau = tau
+
 
 class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
     """
@@ -50,33 +64,29 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         :param on_plateau: patience 觸發時的動作
         :param threshold: 判斷指標是否改善的閾值。當前指標與最佳指標的差距必須大於此值才算作改善。
         :param last_epoch: 最後一個已排程的步數/週期數。用於從中斷處恢復訓練。
-        :raises ValueError: 如果 T_0, T_mult, 或 mode 參數無效。
+        :param tau_callback: 每次 step 後接收當前溫度的 callback；未傳入時使用預設行為
+                             (寫入 AntennaPattern.tau) 以維持向後相容。
+        :raises ValueError: 如果 T_0, T_mult, on_plateau 或 mode 參數無效。
         """
         # --- Tau callback（預設向後相容：自動設定 AntennaPattern.tau）---
-        if tau_callback is not None:
-            self._tau_callback = tau_callback
-        else:
-
-            def _default_tau_callback(tau: float):
-                from antenna import AntennaPattern
-
-                AntennaPattern.tau = tau
-
-            self._tau_callback = _default_tau_callback
+        self._tau_callback = tau_callback if tau_callback is not None else _default_tau_callback
 
         self.record = Record(self.__class__.__name__, config.get("RESULT_PATH"))
-        # --- 週期性參數 (來自 CosineAnnealing) ---
-        if T_0 <= 0 or not isinstance(T_0, int):
+        # --- 參數驗證 ---
+        if not isinstance(T_0, int) or T_0 <= 0:
             raise ValueError(f"Expected positive integer T_0, but got {T_0}")
-        if T_mult < 1 or not isinstance(T_mult, int):
+        if not isinstance(T_mult, int) or T_mult < 1:
             raise ValueError(f"Expected integer T_mult >= 1, but got {T_mult}")
-        if on_plateau not in ["peak", "reset", "linear"]:
-            raise ValueError("on_plateau must be 'peak' or 'reset' or 'linear'")
+        if on_plateau not in _ON_PLATEAU_MODES:
+            raise ValueError(f"on_plateau must be one of {_ON_PLATEAU_MODES}, got {on_plateau!r}")
+        if mode not in _METRIC_MODES:
+            raise ValueError(f"mode must be one of {_METRIC_MODES}, got {mode!r}")
+
+        # --- 週期性參數 (來自 CosineAnnealing) ---
         self.T_0 = T_0
         self.T_mult = T_mult
         self.T_i = T_0  # 當前週期的長度
-        self.T_cur = last_epoch if last_epoch != -1 else -1
-
+        self.T_cur = last_epoch
         self.on_plateau = on_plateau
 
         # --- 學習率與溫度範圍 ---
@@ -97,10 +107,6 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         self.patience_counter = 0
         self.best_metric = float("inf") if mode == "min" else float("-inf")
 
-        # 檢查模式
-        if mode not in ["min", "max"]:
-            raise ValueError("mode " + mode + " is unknown!")
-
         super().__init__(optimizer, last_epoch)
         self.base_lrs = [lr_max] * len(self.optimizer.param_groups)
 
@@ -109,20 +115,28 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         return self.current_temp
 
     def get_lr(self):
-        """計算並返回當前的學習率和溫度"""
+        """計算並返回當前的學習率，同步更新內部溫度狀態。
+
+        副作用：更新 self.current_temp — 讓 lr 與 tau 共用同一條 cosine 曲線，
+        外部請透過 get_temp() 讀取當前溫度。progress 代表「距離峰值的比例」
+        (0 = 峰值 lr_max/temp_max，1 = 谷底 lr_min/temp_min)。
+        """
         warmup_steps = int(self.T_i * self.warmup_ratio)
+        cosine_span = self.T_i - warmup_steps
 
         if self.T_cur < warmup_steps:
-            # 1. 暖身階段
-            lr = self.lr_min + (self.lr_max - self.lr_min) * (self.T_cur / warmup_steps)
-            self.current_temp = self.temp_min + (self.temp_max - self.temp_min) * (self.T_cur / warmup_steps)
+            # 1. 暖身階段：從 1 (谷底) 線性下降到 0 (峰值)
+            progress = 1 - self.T_cur / warmup_steps
+        elif cosine_span > 0:
+            # 2. 餘弦退火階段：從 0 (峰值) 平滑上升到 1 (谷底)
+            cosine_progress = (self.T_cur - warmup_steps) / cosine_span
+            progress = 1 - (1 + math.cos(math.pi * cosine_progress)) / 2
         else:
-            # 2. 餘弦退火階段
-            cosine_progress = (self.T_cur - warmup_steps) / (self.T_i - warmup_steps)
-            lr = self.lr_min + (self.lr_max - self.lr_min) * (1 + math.cos(math.pi * cosine_progress)) / 2
-            self.current_temp = (
-                self.temp_min + (self.temp_max - self.temp_min) * (1 + math.cos(math.pi * cosine_progress)) / 2
-            )
+            # warmup_ratio == 1.0 的退化情況：整個週期都是暖身，結尾鎖定在峰值
+            progress = 0.0
+
+        lr = self.lr_max - (self.lr_max - self.lr_min) * progress
+        self.current_temp = self.temp_max - (self.temp_max - self.temp_min) * progress
 
         return [lr for _ in self.optimizer.param_groups]
 
@@ -132,7 +146,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         else:
             return metric > self.best_metric + self.threshold
 
-    def step(self, metric: float = None):
+    def step(self, metric: Optional[float] = None):
         if metric is None:
             warnings.warn(
                 "AdaptiveCyclicalScheduler requires a metric to be passed to step() for adaptation.", UserWarning
@@ -146,45 +160,27 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
                 self.patience_counter += 1
 
             if self.patience_counter >= self.patience:
-                # print(f"\nMetric has not improved for {self.patience} steps. Forcing a warm restart!")
                 self.patience_counter = 0
                 self.T_i = max(int(self.T_i * self.factor), self.T_0 // 2)  # 保持最小週期長度限制
-
-                # 2. 決定重啟位置 (Apply on_plateau strategy)
-                match self.on_plateau:
-                    case "reset":  # 回到起點 (最小值)，重新開始暖身
-                        # 設定為 -1，因為 step() 尾端的 self.T_cur += 1 會將其變為 0
-                        self.T_cur = -1
-
-                    case "peak":  # 直接跳到峰值 (最大值)，跳過暖身
-                        # 計算新週期中，暖身結束的那一點 (即 LR/Tau 最大的點)
-                        warmup_steps = int(self.T_i * self.warmup_ratio)
-
-                        # 設定為 warmup_steps - 1，因為 step() 尾端的 self.T_cur += 1 會將其變為 warmup_steps
-                        # 根據 get_lr() 的邏輯，當 T_cur == warmup_steps 時，剛好是最大值
-                        self.T_cur = warmup_steps - 1
-
-                    case "linear":  # 從當前數值，線性爬升回最大值
-                        # A. 取得當前 LR (假設所有 group LR 一致，取第一個)
+                # 以下所有分支的設定值都會被 step() 尾端的 self.T_cur += 1 遞增一格
+                warmup_steps = int(self.T_i * self.warmup_ratio)
+                if self.on_plateau == "reset":
+                    # 回到週期起點，重新開始暖身
+                    self.T_cur = -1
+                elif self.on_plateau == "peak":
+                    # 直接跳到峰值：遞增後 T_cur == warmup_steps，對應 progress=0 (即 lr_max)
+                    self.T_cur = warmup_steps - 1
+                elif self.on_plateau == "linear":
+                    # 從當前 lr 反推在暖身線上的位置，讓 lr 連續地繼續往上爬
+                    if warmup_steps > 0:
                         current_lr = self.optimizer.param_groups[0]["lr"]
-
-                        # B. 計算新週期中，暖身階段的總長度
-                        warmup_steps = int(self.T_i * self.warmup_ratio)
-
-                        if warmup_steps > 0:
-                            # C. 反推：當前的 LR 在暖身線上對應的比例 (0.0 ~ 1.0)
-                            # 公式: ratio = (目前 - 最小) / (最大 - 最小)
-                            ratio = (current_lr - self.lr_min) / (self.lr_max - self.lr_min + 1e-10)
-                            ratio = max(0.0, min(1.0, ratio))  # 限制範圍以防萬一
-
-                            # D. 設定時間點：反推對應的步數
-                            # 這樣下一次 get_lr() 就會從這個高度繼續往上走
-                            self.T_cur = int(round(ratio * warmup_steps))
-                        else:
-                            # 如果沒有暖身區間，就直接設為 -1 (避免除以零)
-                            self.T_cur = -1
-                    case _:
-                        pass
+                        lr_span = self.lr_max - self.lr_min
+                        ratio = (current_lr - self.lr_min) / lr_span if lr_span > 0 else 0.0
+                        ratio = max(0.0, min(1.0, ratio))
+                        self.T_cur = int(round(ratio * warmup_steps))
+                    else:
+                        # 沒有暖身區間時退化為 reset 行為
+                        self.T_cur = -1
 
         # --- 週期性邏輯 ---
         if self.T_cur >= self.T_i:
@@ -193,18 +189,18 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         else:
             self.T_cur += 1
 
-        # 更新學習率
-        for param_group, lr in zip(self.optimizer.param_groups, self.get_lr()):
+        # 更新學習率（get_lr() 同時會更新 self.current_temp）
+        lrs = self.get_lr()
+        for param_group, lr in zip(self.optimizer.param_groups, lrs):
             param_group["lr"] = lr
 
-        self._last_lr = [group["lr"] for group in self.optimizer.param_groups]
+        self._last_lr = lrs
 
         # 更新溫度(tau) — 透過 callback 而非直接修改全域狀態
-        if self._tau_callback is not None:
-            self._tau_callback(self.get_temp())
+        self._tau_callback(self.current_temp)
 
-        self.record["lr"] = self.get_lr()[0]
-        self.record["tau"] = self.get_temp()
+        self.record["lr"] = lrs[0]
+        self.record["tau"] = self.current_temp
 
     def state_dict(self):
         """返回排程器的狀態字典。"""
@@ -216,7 +212,6 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
                 "current_temp": self.current_temp,
                 "patience_counter": self.patience_counter,
                 "best_metric": self.best_metric,
-                # 可以選擇性儲存初始參數，但通常在 __init__ 中處理
             }
         )
         return state
