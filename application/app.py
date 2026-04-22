@@ -243,11 +243,7 @@ def get_record_data(record_id):
         target_file = None
         if record_files:
             file_map = {f.name: f for f in record_files}
-            target_file = (
-                file_map.get("temp.record")
-                or file_map.get(f"{record_id}.record")
-                or record_files[0]
-            )
+            target_file = file_map.get("temp.record") or file_map.get(f"{record_id}.record") or record_files[0]
 
         if target_file:
             record_name_loaded = target_file.name

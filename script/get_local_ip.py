@@ -1,4 +1,5 @@
 """印出本機 IP 位址的 CLI 包裝；實作轉用 antenna.utils.web。"""
+
 import sys
 from os.path import dirname, join
 
