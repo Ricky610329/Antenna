@@ -98,8 +98,23 @@ class KuoHung:
         )
 
 if __name__ == "__main__":
-    kh = KuoHung('2', port='Single')
-    print(kh)
+    base1 = KuoHung('1', port='Single')
+    base2 = KuoHung('2', port='Single')
+
+    
+    with Figure('Base', (2,3), show=True, size=(18, 9), default_axes_title_size=18, default_tick_size=16) as fig:
+            
+            fig.addAll()
+
+            for n, (base, responses) in enumerate([base1.data.load(), base2.data.load()], 0):
+                title = f"Base-{n+1}"
+                AntennaPattern(base).plot(fig[3*n])
+                fig[3*n].set_title(title)
 
 
+                fig[3*n+1].plot(base1.x, responses[0])
+                fig[3*n+1].set_title(f"S11 ({title})")
+
+                fig[3*n+2].plot(base1.x, responses[1])
+                fig[3*n+2].set_title(f"Gain ({title})")
 
