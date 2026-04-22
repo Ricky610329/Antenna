@@ -1,7 +1,9 @@
 """區間型損失函數：若 prediction 落在目標區間內則損失為 0。"""
 
 import torch
-from torch import Tensor, nn
+from torch import Tensor
+
+from antenna.losses.patch_losses import _make_criterion
 
 
 def custom_loss_interval(
@@ -24,20 +26,8 @@ def custom_loss_interval(
     Returns:
         對所有元素取平均後的純量損失。
     """
-    criterion = nn.SmoothL1Loss(reduction="none") if loss_type == "SmoothL1Loss" else nn.MSELoss(reduction="none")
-
-    losses = torch.zeros_like(prediction)
-
-    # 1. prediction 高於上界
-    mask_above = prediction > target_high
-    if mask_above.any():
-        losses[mask_above] = criterion(prediction[mask_above], target_high.expand_as(prediction)[mask_above])
-
-    # 2. prediction 低於下界
-    mask_below = prediction < target_low
-    if mask_below.any():
-        losses[mask_below] = criterion(prediction[mask_below], target_low.expand_as(prediction)[mask_below])
-
-    # 3. 區間內的元素保持 0，不需額外處理
-
-    return losses.mean()
+    criterion = _make_criterion(loss_type, reduction="mean")
+    # 將 prediction 夾到區間內作為目標值；未越界處 diff=0 ⇒ 損失為 0，
+    # detach() 確保梯度只沿 prediction 路徑回傳。
+    clamped = torch.clamp(prediction, min=target_low, max=target_high).detach()
+    return criterion(prediction, clamped)

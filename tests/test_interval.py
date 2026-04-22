@@ -65,6 +65,35 @@ def test_custom_loss_interval_supports_mse():
     assert loss_mse > loss_smooth
 
 
+def test_custom_loss_interval_invalid_loss_type_raises():
+    low = torch.full((3,), 0.0)
+    high = torch.full((3,), 1.0)
+    pred = torch.zeros(3)
+
+    with pytest.raises(ValueError):
+        custom_loss_interval(pred, low, high, loss_type="HuberLossX")
+
+
+def test_custom_loss_interval_broadcasts_scalar_bounds():
+    # 下/上界為 0-d tensor 時也應正確 broadcast
+    low = torch.tensor(-1.0)
+    high = torch.tensor(1.0)
+    pred_inside = torch.tensor([-0.5, 0.0, 0.5])
+    pred_outside = torch.tensor([2.0, -2.0, 0.0])
+
+    assert torch.allclose(custom_loss_interval(pred_inside, low, high), torch.tensor(0.0))
+    assert custom_loss_interval(pred_outside, low, high) > 0
+
+
+def test_custom_loss_interval_zero_width_interval():
+    # target_low == target_high：等同於 pointwise 匹配損失
+    low = torch.full((3,), 0.5)
+    high = torch.full((3,), 0.5)
+    pred = torch.tensor([0.5, 0.5, 0.5])
+
+    assert torch.allclose(custom_loss_interval(pred, low, high), torch.tensor(0.0))
+
+
 # ---------------------------------------------------------------------------
 # interval_loss
 # ---------------------------------------------------------------------------

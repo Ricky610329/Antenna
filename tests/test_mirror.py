@@ -115,6 +115,7 @@ def test_gumbel_sinkhorn_soft_assignment_is_doubly_stochastic():
 
 
 def test_gumbel_sinkhorn_soft_output_in_unit_interval():
+    torch.manual_seed(1)
     logits = torch.randn(4, 4)
     out = gumbel_sinkhorn_rectangular(logits, tau=1.0, n_iters=20, hard=False)
     assert torch.all(out >= 0)
@@ -122,6 +123,7 @@ def test_gumbel_sinkhorn_soft_output_in_unit_interval():
 
 
 def test_gumbel_sinkhorn_hard_returns_one_hot_rows():
+    torch.manual_seed(2)
     logits = torch.randn(5, 7)
     out = gumbel_sinkhorn_rectangular(logits, tau=1.0, n_iters=20, hard=True)
 
@@ -132,6 +134,7 @@ def test_gumbel_sinkhorn_hard_returns_one_hot_rows():
 
 
 def test_gumbel_sinkhorn_supports_batch_dim():
+    torch.manual_seed(3)
     logits = torch.randn(3, 4, 4)
     out = gumbel_sinkhorn_rectangular(logits, tau=1.0, n_iters=20, hard=False)
     assert out.shape == logits.shape
@@ -140,6 +143,7 @@ def test_gumbel_sinkhorn_supports_batch_dim():
 
 
 def test_gumbel_sinkhorn_preserves_gradient_flow():
+    torch.manual_seed(4)
     logits = torch.randn(4, 4, requires_grad=True)
     out = gumbel_sinkhorn_rectangular(logits, tau=1.0, n_iters=10, hard=False)
     out.sum().backward()
