@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from math import ceil
 from typing import (
     Any,
     TypeVar,
@@ -116,8 +117,6 @@ class Figure:
             fig.saveMP4(update, epochs, video_time=5)
         ```
         """
-        from math import ceil
-
         fig = plt.figure(name, **kwargs)
         fig.set_size_inches(*size)
         fig.tight_layout(pad=0.1)

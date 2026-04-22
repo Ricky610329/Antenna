@@ -1,3 +1,5 @@
+from hashlib import shake_128
+from string import ascii_lowercase, ascii_uppercase, digits
 from time import time
 from typing import (
     Literal,
@@ -11,13 +13,11 @@ class TID:
     支援輸出格式：Base62 字串 或 Integer (偏移數值)
     """
 
-    import string
-
     # 設定基準時間 (Epoch): 2001-09-28 00:00:00 UTC
     CUSTOM_EPOCH = 1001635200
 
     # Base62 字元集
-    ALPHABET = string.digits + string.ascii_lowercase + string.ascii_uppercase
+    ALPHABET = digits + ascii_lowercase + ascii_uppercase
     BASE = len(ALPHABET)
 
     @classmethod
@@ -25,10 +25,10 @@ class TID:
     def generate(cls, timestamp: int | None = None, as_int: Literal[False] = False) -> str: ...
     @classmethod
     @overload
-    def generate(cls, timestamp: int | None = None, as_int: Literal[True] = ...) -> int: ...
+    def generate(cls, timestamp: int | None, as_int: Literal[True]) -> int: ...
 
     @classmethod
-    def generate(cls, timestamp: int = None, as_int: bool = False) -> str | int:
+    def generate(cls, timestamp: int | None = None, as_int: bool = False) -> str | int:
         """
         產生 TID。
         :param timestamp: 指定時間戳，若無則使用當前時間
@@ -81,7 +81,10 @@ class TID:
 
 
 def get_shake_128(text: str, length: int = 6) -> str:
-    """Generate a shake_128 ID."""
-    from hashlib import shake_128
+    """產生 shake_128 摘要字串（非密碼學用途，用於顯示/資料夾命名）。
 
+    Args:
+        length: 期望的 hex 字元數；shake_128 以位元組為單位輸出，
+            需要約 ``length // 2 + 1`` 個位元組再截斷成目標長度。
+    """
     return shake_128(text.encode()).hexdigest(length // 2 + 1)[:length]

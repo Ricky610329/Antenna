@@ -14,6 +14,8 @@ import pytest
 import torch
 
 from antenna.utils.figure import FIG_CONFIG, TQDM_CONFIG, Figure, plot
+from antenna.utils.hashing import TID, get_shake_128
+from antenna.utils.json_utils import json as JsonFile
 from antenna.utils.path import Path
 from antenna.utils.record import Record
 
@@ -370,3 +372,112 @@ class TestFigure:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             plot([1, 2, 3])  # 不指定 file_name
+
+
+# --------------------------------------------------------------------------- #
+# hashing                                                                     #
+# --------------------------------------------------------------------------- #
+
+
+class TestHashing:
+    def test_tid_roundtrip_string(self):
+        # 固定 timestamp 便於回推還原
+        ts = 1_700_000_000
+        tid = TID.generate(ts)
+        assert isinstance(tid, str)
+        assert TID.decode(tid) == ts
+
+    def test_tid_roundtrip_int(self):
+        ts = 1_700_000_000
+        offset = TID.generate(ts, as_int=True)
+        assert isinstance(offset, int)
+        assert TID.decode(offset) == ts
+
+    def test_tid_zero_delta(self):
+        # delta = 0 -> 回傳 ALPHABET[0] ('0')
+        tid = TID.generate(TID.CUSTOM_EPOCH)
+        assert tid == TID.ALPHABET[0]
+
+    def test_tid_before_epoch_raises(self):
+        with pytest.raises(ValueError):
+            TID.generate(TID.CUSTOM_EPOCH - 1)
+
+    def test_tid_decode_invalid_char(self):
+        with pytest.raises(ValueError):
+            TID.decode("!invalid")
+
+    def test_get_shake_128_deterministic(self):
+        # 相同輸入永遠產生相同摘要
+        a = get_shake_128("hello", length=6)
+        b = get_shake_128("hello", length=6)
+        assert a == b
+        assert len(a) == 6
+
+    def test_get_shake_128_differs_per_input(self):
+        assert get_shake_128("a") != get_shake_128("b")
+
+    def test_get_shake_128_various_lengths(self):
+        for length in [1, 2, 4, 8, 16]:
+            assert len(get_shake_128("x", length=length)) == length
+
+
+# --------------------------------------------------------------------------- #
+# json_utils                                                                  #
+# --------------------------------------------------------------------------- #
+
+
+class TestJsonFile:
+    def test_create_and_load_empty(self, tmp_path):
+        p = tmp_path / "cfg.json"
+        j = JsonFile(str(p))
+        assert p.exists()
+        assert j.load() == {}
+
+    def test_missing_no_create_raises(self, tmp_path):
+        with pytest.raises(FileNotFoundError):
+            JsonFile(str(tmp_path / "nope.json"), create=False)
+
+    def test_set_and_get_simple(self, tmp_path):
+        j = JsonFile(str(tmp_path / "s.json"))
+        j("foo", "bar")
+        assert j("foo") == "bar"
+        assert j["foo"] == "bar"
+
+    def test_set_and_get_nested(self, tmp_path):
+        j = JsonFile(str(tmp_path / "n.json"))
+        j("base/path", "/data")
+        j("base/name", "demo")
+        assert j("base/path") == "/data"
+        assert j("base/name") == "demo"
+        # 未 nested 層可讀回完整 dict
+        assert j("base") == {"path": "/data", "name": "demo"}
+
+    def test_value_coercion(self, tmp_path):
+        j = JsonFile(str(tmp_path / "c.json"))
+        j("a", "null")
+        assert j("a") is None
+        j("b", "true")
+        assert j("b") is True
+        j("c", "False")
+        assert j("c") is False
+
+    def test_get_with_default_persists(self, tmp_path):
+        j = JsonFile(str(tmp_path / "g.json"))
+        # 讀不到時以 default 寫回並回傳
+        assert j.get("missing", default=123) == 123
+        # 第二次直接讀得到
+        assert j("missing") == 123
+
+    def test_setitem_and_getitem(self, tmp_path):
+        j = JsonFile(str(tmp_path / "i.json"))
+        j["k1"] = "v1"
+        assert j["k1"] == "v1"
+
+    def test_delete(self, tmp_path):
+        j = JsonFile(str(tmp_path / "d.json"))
+        j("a/b", "x")
+        assert j.delete("a/b") is True
+        # 中間節點仍存在，但葉節點被移除
+        assert j("a") == {}
+        # 刪不存在的 key 回傳 False
+        assert j.delete("nope/nope") is False
