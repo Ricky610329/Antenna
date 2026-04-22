@@ -26,11 +26,8 @@ optimizer:
 scheduler:
   _target_: none
 
-# 代理模型
+# 代理模型 / HFSS 訓練迴圈
 surrogate:
-  type: old
-  pretrain_path: null
-  training_mode: one_data
   hfss_min_loss: 0.1
   hfss_max_epoch: 20000
   hfss_lr: 0.001
