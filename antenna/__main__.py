@@ -18,24 +18,26 @@ CLI 入口點: python -m antenna [command] [hydra overrides]
 
 import sys
 
+HELP_TEXT = (
+    "使用方式: python -m antenna <command> [options]\n"
+    "\n"
+    "Commands:\n"
+    "  train    執行訓練（使用 Hydra 設定）\n"
+    "\n"
+    "範例:\n"
+    "  python -m antenna train +experiment=train_single\n"
+    "  python -m antenna train +experiment=train_dual epochs=2000\n"
+)
+
 
 def main():
     command = sys.argv[1] if len(sys.argv) > 1 else "help"
 
     if command == "train":
-        sys.argv = [sys.argv[0]] + sys.argv[2:]  # 移除子命令讓 Hydra 解析
+        sys.argv = [sys.argv[0]] + sys.argv[2:]  # 移除子命令讓 Hydra 解析剩餘參數
         _train()
-    elif command == "help" or command == "--help":
-        print(
-            "使用方式: python -m antenna <command> [options]\n"
-            "\n"
-            "Commands:\n"
-            "  train    執行訓練（使用 Hydra 設定）\n"
-            "\n"
-            "範例:\n"
-            "  python -m antenna train +experiment=train_single\n"
-            "  python -m antenna train +experiment=train_dual epochs=2000\n"
-        )
+    elif command in ("help", "--help", "-h"):
+        print(HELP_TEXT)
     else:
         print(f"未知命令: {command}，使用 'python -m antenna help' 查看使用方式。")
         sys.exit(1)
