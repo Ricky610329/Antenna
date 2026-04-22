@@ -5,9 +5,9 @@ import ast
 import importlib.util
 import os
 import sys
+from collections import deque
 from datetime import datetime
 from io import TextIOWrapper
-from typing import List, Optional, Set, Tuple, Union
 
 from loguru import logger
 from tqdm import tqdm
@@ -49,7 +49,7 @@ class FileProcessor:
         :param generated_by: (依賴模式用) 指定入口檔案路徑。若為 None，則執行全目錄掃描。
         """
         self.directories = directories if isinstance(directories, (list, tuple)) else [directories]
-        # [新增] 預先計算絕對路徑，用於嚴格過濾檔案範圍
+        # 預先計算絕對路徑，用於嚴格過濾檔案範圍
         self.abs_directories = [os.path.abspath(d) for d in self.directories]
 
         self.extensions = extensions
@@ -67,49 +67,32 @@ class FileProcessor:
     # ================= 依賴分析相關方法 (Dependency Mode) =================
 
     def _is_custom_module(self, file_path: str) -> bool:
-        """
-        判斷檔案是否為自定義模組。
-        條件：
-        1. 非 site-packages/venv 等系統目錄。
-        2. [新增] 必須位於指定的 directories 範圍內。
-        """
+        """判斷檔案是否為自定義模組（非系統路徑且位於指定目錄內）。"""
         try:
             if not file_path:
                 return False
             abs_path = os.path.abspath(file_path)
 
-            # 1. 系統/環境路徑排除
+            # 1. 系統 / 虛擬環境路徑排除
             if any(x in abs_path for x in ["site-packages", "dist-packages", "venv", ".env", "__pycache__"]):
                 return False
             if "lib/python" in abs_path.replace("\\", "/"):
                 return False
 
-            # 2. [嚴格過濾] 檢查檔案是否在允許的目錄清單中
-            # 使用 commonpath 判斷層級關係
-            in_scope = False
+            # 2. 透過 commonpath 檢查檔案是否在允許的目錄範圍內
             for d in self.abs_directories:
                 try:
-                    # 如果 d 是 abs_path 的父目錄(或相同)，commonpath 結果應為 d
                     if os.path.commonpath([d, abs_path]) == d:
-                        in_scope = True
-                        break
+                        return True
                 except ValueError:
-                    # 處理 Windows 不同磁碟機的情況
+                    # Windows 跨磁碟機時 commonpath 會拋 ValueError
                     continue
-
-            if not in_scope:
-                # logger.debug(f"跳過範圍外檔案: {abs_path}")
-                return False
-
-            return True
+            return False
         except Exception:
             return False
 
     def _resolve_import_path(self, module_name: str, base_dir: str, level: int = 0) -> str | None:
         """嘗試解析 import 的實際檔案路徑。"""
-        # 為了讓 importlib 能找到當前目錄下的模組，暫時將 base_dir 加入 path
-        [base_dir, os.getcwd()] + sys.path
-
         try:
             # 相對路徑 (from . import x)
             if level > 0:
@@ -199,19 +182,16 @@ class FileProcessor:
 
     def _scan_dependencies_recursive(self, entry_file: str) -> list[str]:
         """遞迴掃描依賴 (BFS)。"""
-        visited = set()
-        queue = [entry_file]
-        visited.add(entry_file)
-
+        visited = {entry_file}
+        queue = deque([entry_file])
         result_files = []
         pbar = tqdm(desc="Analyzing Dependencies", disable=not self.verbose)
 
         while queue:
-            current_file = queue.pop(0)
+            current_file = queue.popleft()
 
-            # [修改] 只有當檔案位於指定目錄內時，才加入最終報告清單
-            # 注意：即使檔案不在目錄內（例如外部入口腳本），我們仍然會分析其依賴，
-            # 以便找出它是否引用了目錄內的檔案。
+            # 只有當檔案位於指定目錄內時才納入報告；
+            # 但即使入口檔不在範圍內，仍會分析其 imports 以找出範圍內的依賴。
             if self._is_custom_module(current_file):
                 result_files.append(current_file)
             elif current_file == entry_file and self.verbose:
@@ -222,10 +202,7 @@ class FileProcessor:
             pbar.update(1)
             pbar.set_postfix(file=os.path.basename(current_file))
 
-            # 找出此檔案的 imports
-            new_imports = self._analyze_file_imports(current_file)
-
-            for imp in new_imports:
+            for imp in self._analyze_file_imports(current_file):
                 if imp not in visited:
                     visited.add(imp)
                     queue.append(imp)
@@ -255,7 +232,7 @@ class FileProcessor:
     def _generate_tree_section(self, outfile: TextIOWrapper):
         outfile.write(f"\n\n{'=' * 20} 專案目錄結構 (Directory Tree) {'=' * 20}\n")
 
-        # [修改] 建立一個 Set 來快速查詢哪些檔案已被納入分析
+        # 用 Set 快速查詢哪些檔案已納入報告
         scanned_set = {os.path.abspath(f) for f in self.scanned_files}
 
         for directory_path in self.directories:
@@ -278,18 +255,16 @@ class FileProcessor:
 
         for i, entry in enumerate(entries):
             connector = "└── " if i == len(entries) - 1 else "├── "
-
-            # [修改] 檢查檔案是否在 scanned_set 中，若是則加上標記
             full_path = os.path.join(dir_path, entry)
+            # 檔案若已納入報告則加上 (*) 標記
             is_included = os.path.abspath(full_path) in scanned_set
             marker = " (*)" if is_included and os.path.isfile(full_path) else ""
 
             file_obj.write(f"{prefix}{connector}{entry}{marker}\n")
 
-            entry_path = os.path.join(dir_path, entry)
-            if os.path.isdir(entry_path):
+            if os.path.isdir(full_path):
                 new_prefix = "    " if i == len(entries) - 1 else "│   "
-                self._create_tree_recursive(file_obj, entry_path, prefix + new_prefix, scanned_set)
+                self._create_tree_recursive(file_obj, full_path, prefix + new_prefix, scanned_set)
 
     # ================= 共用報告生成方法 =================
 
@@ -314,7 +289,8 @@ class FileProcessor:
         outfile.write(f"\n\n{'=' * 20} 包含的檔案清單 (File List) {'=' * 20}\n")
         try:
             common_path = os.path.commonpath(self.scanned_files)
-        except:
+        except (ValueError, OSError):
+            # 跨磁碟機或路徑無共通祖先時 fallback 到 cwd
             common_path = os.getcwd()
         outfile.write(f"Common Root: {common_path}\n")
         for f in sorted(self.scanned_files):
@@ -398,7 +374,8 @@ def main():
 
 
 if __name__ == "__main__":
-    FileProcessor(
-        generated_by=None,  # r'C:\timmy\Program\Antenna\train_dual.py',
-        verbose=True,
-    ).run()
+    # 若無提供 CLI 參數則以預設（全目錄掃描）執行
+    if len(sys.argv) > 1:
+        main()
+    else:
+        FileProcessor(generated_by=None, verbose=True).run()
