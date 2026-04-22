@@ -214,3 +214,51 @@ def test_custom_loss_minmax_backward_when_no_violation(simple_target, exact_pred
     # grad 可能為 None（因為無計算圖連結），也可能為全零；兩者皆合法
     if exact_prediction.grad is not None:
         assert torch.allclose(exact_prediction.grad, torch.zeros_like(exact_prediction))
+
+
+# ----- 邊界情形：空頻段 / 全零 / 全一 -----
+
+
+def test_custom_loss_boundary_empty_tensor():
+    """空頻段（numel == 0）輸入應回傳零張量且不拋出例外。"""
+    pred = torch.empty(0, requires_grad=True)
+    target = torch.empty(0)
+    loss_r = custom_loss_r(pred, target)
+    loss_g = custom_loss_g(pred, target)
+    loss_high = custom_loss_minmax(pred, target, method="high")
+    loss_low = custom_loss_minmax(pred, target, method="low")
+    for loss in (loss_r, loss_g, loss_high, loss_low):
+        assert torch.allclose(loss, torch.tensor(0.0))
+
+
+def test_custom_loss_boundary_all_zero_target():
+    """target 全為 0：max == min == 0，mask 涵蓋全部元素；
+    pred 任一側越界都應得到對應的單側損失。"""
+    pred = torch.tensor([-1.0, 0.0, 2.0], requires_grad=True)
+    target = torch.zeros(3)
+    # method="high": bound=0, 越界條件 pred < 0 => index 0 越界
+    loss_high = custom_loss_minmax(pred, target, method="high")
+    # method="low" : bound=0, 越界條件 pred > 0 => index 2 越界
+    loss_low = custom_loss_minmax(pred, target, method="low")
+    assert loss_high.item() > 0
+    assert loss_low.item() > 0
+
+
+def test_custom_loss_boundary_all_ones_target():
+    """target 全為 1：high == low 邊界同值，雙邊界損失等於兩單側之和。"""
+    pred = torch.tensor([0.5, 1.0, 1.5], requires_grad=True)
+    target = torch.ones(3)
+    loss_boundary = custom_loss_boundary(pred, target)
+    loss_high = custom_loss_minmax(pred, target, method="high")
+    loss_low = custom_loss_minmax(pred, target, method="low")
+    assert torch.allclose(loss_boundary, loss_high + loss_low)
+
+
+def test_custom_loss_boundary_does_not_mutate_inputs(simple_target, violating_prediction):
+    """損失計算不應修改輸入張量（無 in-place 操作）。"""
+    pred_before = violating_prediction.detach().clone()
+    target_before = simple_target.detach().clone()
+    _ = custom_loss_boundary(violating_prediction, simple_target)
+    _ = custom_loss_minmax(violating_prediction, simple_target, method="high")
+    assert torch.equal(violating_prediction.detach(), pred_before)
+    assert torch.equal(simple_target, target_before)
