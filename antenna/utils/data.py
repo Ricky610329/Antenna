@@ -355,12 +355,14 @@ class DataManager(Data[list[tuple[Tensor, Tensor]]], Dataset):
             self.logger.error(f"無效的模式 '{mode}'。請使用 'append' 或 'overwrite'。")
             return
 
-        # --- 去重 ---
+        # --- 去重 ---（對每筆只做一次 make_hashable，避免 Tensor tobytes() 重複成本）
         unique_new_data = []
         for item in items_to_process:
-            if item not in self:
-                unique_new_data.append(item)
-                self.add_set(item)
+            hashable_item = make_hashable(item)
+            if hashable_item in self.data_set:
+                continue
+            unique_new_data.append(item)
+            self.data_set.add(hashable_item)
 
         num_duplicates = len(items_to_process) - len(unique_new_data)
         if num_duplicates > 0:
@@ -396,11 +398,9 @@ class DataManager(Data[list[tuple[Tensor, Tensor]]], Dataset):
         return True
 
     def clear_all_data(self):
-        """清空記憶體中和檔案中的所有資料。執行前會先備份。"""
+        """清空記憶體中和檔案中的所有資料。執行前會先備份（若檔案不存在則略過）。"""
         self.logger.warning(f"即將刪除所有資料及檔案 '{self.savepath}'...")
-        if self.savepath.exists():
-            self.backup()
-
+        self.backup()  # timestamped_backup 已處理檔案不存在的情況
         self.clear([])
         self.data_structure = None
         self.save()
