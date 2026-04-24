@@ -75,8 +75,7 @@ def load_generator(ckpt_path: Path) -> GumbelSigmoidGEN:
 
 def plot_pattern_evolution(run_dir: Path, coord: tuple, out: Path) -> None:
     ckpt_dir = run_dir / "checkpoint"
-    ckpts = sorted(ckpt_dir.glob("generator_*.pth"),
-                   key=lambda p: int(p.stem.split("_")[1]))
+    ckpts = sorted(ckpt_dir.glob("generator_*.pth"), key=lambda p: int(p.stem.split("_")[1]))
     if not ckpts:
         print("  no generator checkpoints found")
         return
@@ -109,8 +108,7 @@ def plot_pattern_evolution(run_dir: Path, coord: tuple, out: Path) -> None:
 
 def plot_response_vs_target(run_dir: Path, coord: tuple, out: Path) -> None:
     ckpt_dir = run_dir / "checkpoint"
-    ckpts = sorted(ckpt_dir.glob("generator_*.pth"),
-                   key=lambda p: int(p.stem.split("_")[1]))
+    ckpts = sorted(ckpt_dir.glob("generator_*.pth"), key=lambda p: int(p.stem.split("_")[1]))
     if not ckpts:
         return
 
@@ -136,7 +134,7 @@ def plot_response_vs_target(run_dir: Path, coord: tuple, out: Path) -> None:
 
     fig, ax = plt.subplots(figsize=(10, 4))
     ax.plot(x, target_np, label="target", linewidth=2)
-    ax.plot(x, response_np.flatten()[:len(target_np)], label=f"epoch {last_ep}", linewidth=1.5, alpha=0.8)
+    ax.plot(x, response_np.flatten()[: len(target_np)], label=f"epoch {last_ep}", linewidth=1.5, alpha=0.8)
     ax.set_xlabel("sample index")
     ax.set_ylabel("dB")
     ax.set_title("Target vs Final Response (last epoch)")
