@@ -262,7 +262,8 @@ class Trainer:
             self.generator.optimizer.zero_grad()
 
             # ── Early stopping & rollback ──
-            self.record["tau"] = 0
+            # 記錄 generator 當下的 tau（若有），供退火曲線檢視；沒有 tau 屬性則存 None。
+            self.record["tau"] = float(self.model.tau.detach().cpu().item()) if hasattr(self.model, "tau") else None
             if self.record.early_stop("real_loss", self.cfg.patience):
                 self.generator.change(
                     self.record.find("real_loss", self.record("min_loss", float("inf")), "epoch"),
