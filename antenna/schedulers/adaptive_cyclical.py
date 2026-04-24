@@ -203,8 +203,13 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         self.record["tau"] = self.current_temp
 
     def state_dict(self):
-        """返回排程器的狀態字典。"""
+        """返回排程器的狀態字典。
+
+        注意：排除 ``_tau_callback``（可能是使用者自訂 closure，不可 pickle），
+        只保存純數值狀態。載入時若需要 callback，重新建立 scheduler 時傳入即可。
+        """
         state = super().state_dict()
+        state.pop("_tau_callback", None)
         state.update(
             {
                 "T_i": self.T_i,
