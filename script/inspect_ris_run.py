@@ -158,6 +158,24 @@ def plot_response_vs_target(run_dir: Path, coord: tuple, out: Path) -> None:
     print(f"  response vs target → {out}")
 
 
+def detect_coord(run_dir: Path) -> tuple:
+    """從第一個 generator checkpoint 的 state_dict 推斷 pattern 邊長。"""
+    ckpt_dir = run_dir / "checkpoint"
+    first = next(ckpt_dir.glob("generator_*.pth"), None)
+    if first is None:
+        return (0, 15, 0, 15)
+    ckpt = torch.load(first, map_location="cpu", weights_only=False)
+    state = ckpt["model_state_dict"] if isinstance(ckpt, dict) and "model_state_dict" in ckpt else ckpt
+    # 最後一個 Linear 的 out_features 就是 pattern 攤平後的大小
+    last_fc_bias = [v for k, v in state.items() if k.endswith(".bias") and "fc_patch" in k][-1]
+    pattern_size = last_fc_bias.shape[0]
+    n = int(pattern_size**0.5)
+    if n * n != pattern_size:
+        raise ValueError(f"非方形 pattern_size={pattern_size}，無法推斷 coord")
+    print(f"  detected coordinate: (0, {n}, 0, {n}) from pattern_size={pattern_size}")
+    return (0, n, 0, n)
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         print(__doc__)
@@ -177,12 +195,9 @@ def main() -> None:
 
     plot_loss(data, pic / "loss_curves.png")
 
-    # 從 experiment 名稱推斷 coordinate — 或從 config 讀
-    coord_guess = (0, 15, 0, 15)  # smoke default
-    if "40x40" in run_dir.name or "20ep" in run_dir.name:
-        coord_guess = (0, 40, 0, 40)
-    plot_pattern_evolution(run_dir, coord_guess, pic / "pattern_evolution.png")
-    plot_response_vs_target(run_dir, coord_guess, pic / "response_vs_target.png")
+    coord = detect_coord(run_dir)
+    plot_pattern_evolution(run_dir, coord, pic / "pattern_evolution.png")
+    plot_response_vs_target(run_dir, coord, pic / "response_vs_target.png")
 
 
 if __name__ == "__main__":
