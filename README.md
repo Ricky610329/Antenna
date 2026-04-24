@@ -539,6 +539,8 @@ gap_closing_loss_weight: 0.0
 
 `antenna/training/trainer.py` 的 `Trainer` class 把所有東西綁起來。
 
+> **詳細架構圖、online learning 細節、參數表、現況觀察**：見 [`docs/architecture.md`](docs/architecture.md)
+
 **初始化順序**（重要，修過 bug）：
 
 ```
