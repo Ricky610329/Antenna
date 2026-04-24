@@ -118,6 +118,18 @@ def plot_pattern_evolution(run_dir: Path, coord: tuple, out: Path) -> None:
     print(f"  pattern evolution → {out}")
 
 
+def _forward_pattern(gen, target, n: int) -> np.ndarray:
+    """硬二值化 pattern 並丟進 RIS sim，回傳響應 numpy 陣列。"""
+    with torch.no_grad():
+        logits = gen(target)
+        pattern = (torch.sigmoid(logits) > 0.5).float().reshape(n, -1)
+    sim = RISSimulator(element_num=n)
+    response = sim(pattern)
+    if isinstance(response, dict):
+        response = next(iter(response.values()))
+    return response.detach().cpu().numpy() if torch.is_tensor(response) else np.asarray(response)
+
+
 def plot_response_vs_target(run_dir: Path, coord: tuple, out: Path) -> None:
     ckpt_dir = run_dir / "checkpoint"
     ckpts = sorted(ckpt_dir.glob("generator_*.pth"), key=lambda p: int(p.stem.split("_")[1]))
@@ -126,30 +138,43 @@ def plot_response_vs_target(run_dir: Path, coord: tuple, out: Path) -> None:
 
     last_ep = len(ckpts)
     _setup_once(coord)
-
-    sim = RISSimulator(element_num=coord[1] - coord[0])
     target = AntennaResponse.target.concat().to(config.device)
 
-    gen = load_generator(ckpt_dir / f"generator_{last_ep}.pth")
-    with torch.no_grad():
-        logits = gen(target)
-        pattern = (torch.sigmoid(logits) > 0.5).float().reshape(coord[1] - coord[0], -1)
-        pattern_2d = pattern.detach()
-        response = sim(pattern_2d)
+    # 找 best epoch (real_loss 最小)
+    import pickle
 
-    if isinstance(response, dict):
-        response = next(iter(response.values()))
-    response_np = response.detach().cpu().numpy() if torch.is_tensor(response) else np.asarray(response)
+    with open(run_dir / "temp.record", "rb") as f:
+        rec_data = pickle.load(f)["_data"]
+    real_losses = rec_data.get("real_loss", [])
+    epochs = rec_data.get("epoch", list(range(1, len(real_losses) + 1)))
+    best_ep = int(epochs[int(np.argmin(real_losses))]) if real_losses else last_ep
 
+    n = coord[1] - coord[0]
     target_np = target.detach().cpu().numpy()
     x = np.arange(len(target_np))
 
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(12, 4))
     ax.plot(x, target_np, label="target", linewidth=2)
-    ax.plot(x, response_np.flatten()[: len(target_np)], label=f"epoch {last_ep}", linewidth=1.5, alpha=0.8)
+
+    # 畫 best 與 last（若 best == last 只畫一條）
+    for ep, style in [
+        (best_ep, {"linewidth": 2, "alpha": 0.9}),
+        (last_ep, {"linewidth": 1.5, "alpha": 0.6, "linestyle": "--"}),
+    ]:
+        if not (ckpt_dir / f"generator_{ep}.pth").exists():
+            continue
+        gen = load_generator(ckpt_dir / f"generator_{ep}.pth")
+        resp = _forward_pattern(gen, target, n)
+        label = f"epoch {ep} (best)" if ep == best_ep else f"epoch {ep} (last)"
+        if best_ep == last_ep:
+            label = f"epoch {ep} (best=last)"
+            ax.plot(x, resp.flatten()[: len(target_np)], label=label, **style)
+            break
+        ax.plot(x, resp.flatten()[: len(target_np)], label=label, **style)
+
     ax.set_xlabel("sample index")
     ax.set_ylabel("dB")
-    ax.set_title("Target vs Final Response (last epoch)")
+    ax.set_title(f"Target vs Best/Last Response (best@ep{best_ep}, last@ep{last_ep})")
     ax.legend()
     ax.grid(alpha=0.3)
     fig.tight_layout()
