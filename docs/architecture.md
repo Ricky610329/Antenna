@@ -357,14 +357,20 @@ if record.index("patch_pattern_buf", ~output_element) is None:
 - 或 DataManager 既有的 `make_hashable` 直接用於主迴圈（目前只在 DataManager 內部用）
 - Buffer 設上限（例如 keep 最新 1000 筆）
 
-### 8.4 Tau 沒被正確 log
+### 8.4 Tau 沒被正確 log（已修 `824cc23`）
 
 ```python
 self.record["tau"] = 0
 ```
-硬編碼 0。應該是 `self.record["tau"] = self.model.tau.item()`（GumbelSigmoidGEN 的 tau 是 `nn.Parameter`）。
+硬編碼 0。已修：改為讀 `self.model.tau.detach().cpu().item()`（GumbelSigmoidGEN 的 tau 是 `nn.Parameter`），修正後可以畫 tau 隨 epoch 的退火曲線。
 
-**這是真 bug**，修正後可以畫 tau 隨 epoch 的退火曲線。
+### 8.4a Scheduler tau_callback 沒接到 generator（已修 `497d694`）
+
+`AdaptiveCyclicalScheduler` 預設的 tau_callback 只更新 `AntennaPattern.tau`（class attribute），不影響 `GumbelSigmoidGEN.tau`（nn.Parameter）。修正：trainer 的 `_make_tau_callback()` 回傳一個 in-place 寫 `model.tau.data` 的 closure，讓退火真的生效。
+
+### 8.4b Rollback 把 scheduler state 一起拉回去（已修 `77b5078`）
+
+`Models.load()` 會還原 `scheduler.load_state_dict(...)`，這代表每次 rollback 都把 tau 退火進度拉回 best epoch 當時的狀態。實測 v4（56 次 rollback）tau 完全無法進步；v5（1 次 rollback）scheduler 才走半段。修正：trainer 在 rollback 前後備份/還原 scheduler state，讓 model/optimizer 回到 best，但 scheduler 繼續向前 anneal。
 
 ### 8.5 Surrogate 每 epoch 花 up to 20000 iter
 
