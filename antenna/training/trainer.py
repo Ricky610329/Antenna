@@ -285,11 +285,17 @@ class Trainer:
             # 記錄 generator 當下的 tau（若有），供退火曲線檢視；沒有 tau 屬性則存 None。
             self.record["tau"] = float(self.model.tau.detach().cpu().item()) if hasattr(self.model, "tau") else None
             if self.record.early_stop("real_loss", self.cfg.patience):
+                # Rollback：Models.load 會同步還原 scheduler state，會把 tau 退火進度也
+                # 拉回去。為讓退火持續向前，這裡先備份 scheduler state，rollback 後再
+                # 還原回來 —— 只有 model/optimizer 真的退回 best，scheduler 不動。
+                sched_state = self.scheduler.state_dict() if self.scheduler else None
                 self.generator.change(
                     self.record.find("real_loss", self.record("min_loss", float("inf")), "epoch"),
                     save=True,
                     load=True,
                 )
+                if self.scheduler and sched_state is not None:
+                    self.scheduler.load_state_dict(sched_state)
                 self.smodel.train_by_datas(self.online_dataset)
                 target_in = AntennaResponse.target.concat().to(config.device)
                 output_element = AntennaPattern(self.generator(target_in))
