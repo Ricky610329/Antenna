@@ -212,6 +212,7 @@ class Trainer:
                 factor=sched_cfg.get("factor", 0.7),
                 mode=sched_cfg.get("mode", "min"),
                 on_plateau=sched_cfg.get("on_plateau", "linear"),
+                tau_callback=self._make_tau_callback(),
             )
         if "ReduceLROnPlateau" in target:
             return torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -222,6 +223,25 @@ class Trainer:
             )
         logger.warning(f"未知的 scheduler target: {target!r}，不使用 scheduler。")
         return None
+
+    def _make_tau_callback(self) -> Callable[[float], None] | None:
+        """若 generator 有可學習 tau 屬性（例如 GumbelSigmoidGEN），回傳一個
+        讓 scheduler 直接覆寫 tau 的 callback；否則回傳 None，讓 scheduler
+        使用預設 callback（僅更新 AntennaPattern.tau）。
+
+        注意：scheduler 驅動的 tau 會 in-place 覆蓋梯度累積的更新，讓 tau
+        退火完全 schedule-driven；這是刻意設計。
+        """
+        if not hasattr(self.model, "tau"):
+            return None
+
+        model = self.model
+
+        def _cb(tau_value: float) -> None:
+            with torch.no_grad():
+                model.tau.data.fill_(float(tau_value))
+
+        return _cb
 
     def _setup_tracking(self) -> None:
         """初始化記錄、資料集、正則化。"""

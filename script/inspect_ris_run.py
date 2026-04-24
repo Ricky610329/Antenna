@@ -26,10 +26,10 @@ def load_record(run_dir: Path) -> dict:
 
 
 def plot_loss(data: dict, out: Path) -> None:
-    fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+    fig, ax = plt.subplots(1, 3, figsize=(16, 4))
     epochs = data["epoch"]
-    ax[0].plot(epochs, data["real_loss"], label="real_loss", marker="o")
-    ax[0].plot(epochs, data["fake_loss"], label="fake_loss (surrogate)", marker="x")
+    ax[0].plot(epochs, data["real_loss"], label="real_loss", marker="o", markersize=3)
+    ax[0].plot(epochs, data["fake_loss"], label="fake_loss (surrogate)", marker="x", markersize=3)
     ax[0].plot(epochs, data["min_loss"], label="min_loss", linestyle="--")
     ax[0].set_xlabel("epoch")
     ax[0].set_ylabel("loss")
@@ -37,12 +37,24 @@ def plot_loss(data: dict, out: Path) -> None:
     ax[0].legend()
     ax[0].grid(alpha=0.3)
 
-    ax[1].plot(epochs, data["r_feed"], label="r_feed", marker="s")
-    ax[1].set_xlabel("epoch")
-    ax[1].set_ylabel("value")
-    ax[1].set_title("r_feed (FeedReachability)")
-    ax[1].legend()
-    ax[1].grid(alpha=0.3)
+    tau_vals = [t for t in data.get("tau", []) if t is not None]
+    if tau_vals:
+        ax[1].plot(epochs[: len(tau_vals)], tau_vals, label="tau", marker=".", markersize=3, color="tab:orange")
+        ax[1].set_xlabel("epoch")
+        ax[1].set_ylabel("tau")
+        ax[1].set_title("Gumbel-Sigmoid tau (退火)")
+        ax[1].legend()
+        ax[1].grid(alpha=0.3)
+    else:
+        ax[1].text(0.5, 0.5, "no tau logged\n(older run)", ha="center", va="center", transform=ax[1].transAxes)
+        ax[1].set_title("tau (n/a)")
+
+    ax[2].plot(epochs, data["r_feed"], label="r_feed", marker="s", markersize=3)
+    ax[2].set_xlabel("epoch")
+    ax[2].set_ylabel("value")
+    ax[2].set_title("r_feed (FeedReachability)")
+    ax[2].legend()
+    ax[2].grid(alpha=0.3)
 
     fig.tight_layout()
     fig.savefig(out, dpi=120)
