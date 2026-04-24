@@ -376,15 +376,18 @@ self.record["tau"] = 0
 
 Gumbel-Sigmoid 的 forward 是 `sigmoid(clamp(logits, -5, 5) / tau) + noise`，backward 的梯度是 `sigmoid * (1 - sigmoid)`。當 tau=0.1 時，clamp 邊界的 logit=±5 送進 sigmoid 變成 sigmoid(±50) ≈ 0 or 1，**梯度接近 0**。
 
-實測對比（15×15 RIS 100 epoch）：
+實測對比（15×15 RIS 100 epoch，target 固定）：
 
-| Run | Scheduler | Tau 最低到 | min_loss | 結論 |
-|-----|-----------|-----------|----------|------|
-| v4 | T_0=200, patience=20, scheduler 會被 rollback | ~2.7 | **3.14** | 高 tau + 頻繁 rollback = 近似 simulated annealing |
-| v5 | T_0=100, patience=60, scheduler 也會被 rollback | 1.4 | 5.76 | rollback 不夠，generator 漂移 |
-| v6 | T_0=100, patience=20, scheduler 不被 rollback | 0.1 | 7.86 | tau 完全退火但低 tau 梯度 vanish，反而學不動 |
+| Run | Scheduler | patience | Tau 最低到 | Rollbacks | min_loss | 結論 |
+|-----|-----------|---------|-----------|-----------|----------|------|
+| v4 | T_0=200, scheduler 會被 rollback 拉回 | 20 | 3.23 | 56 | 3.14 | 高 tau + 頻繁 rollback = 近似 simulated annealing |
+| v5 | T_0=100, scheduler 也會被 rollback | 60 | 1.4 | 1 | 5.76 | rollback 不夠，generator 漂移 |
+| v6 | T_0=100, scheduler decoupled | 20 | **0.1** | 30 | 7.86 | tau 完全退火但低 tau 梯度 vanish，反而學不動 |
+| **v7** | T_0=200, scheduler decoupled | 20 | 2.08 | 37 | **3.02** ✅ | **v4 + decoupling = 目前最佳**，tau 能比 v4 多降一點又不觸及梯度 vanish |
 
-**結論**：對這類二值 inverse design 任務，**tau 應維持在 2-4 區間**，配合頻繁 rollback 做隨機探索——不是愈低愈好。後續若要做完整退火，需解決梯度 vanishing（例如擴大 clamp 範圍、或使用其他 STE 近似）。
+**結論**：對這類二值 inverse design 任務，**tau 應維持在 2-4 區間**（避免 vanishing），配合頻繁 rollback 做隨機探索；同時讓 scheduler 不被 rollback 拉回讓 tau 能單調往下。後續若要做完整退火到 tau<1，需解決梯度 vanishing（例如擴大 clamp 範圍、或使用其他 STE 近似）。
+
+**15×15 RIS 的 loss 下界觀察**：v4/v7 都停在 ~3 附近，代表這已接近此任務的可達下界——15×15 陣列產生的 beam 寬度不夠覆蓋 target 的 40-sample plateau。後續若要進一步降低 loss，要改增元素數（20×20、25×25）、或放寬 target 定義。
 
 ### 8.5 Surrogate 每 epoch 花 up to 20000 iter
 
