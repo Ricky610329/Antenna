@@ -339,15 +339,23 @@ if real_loss < average(real_loss):
 - 前 K epoch 無條件加入（暖身）
 - 或改成「距離現有 buffer 中 pattern 最近鄰太遠就加入」（diversity-based）
 
-### 8.3 去重只看上一個 pattern
+### 8.3 去重複雜度 O(N²)
 
 ```python
 if record.index("patch_pattern_buf", ~output_element) is None:
     ... simulate ...
 ```
-`patch_pattern_buf` 只儲存**上一個** pattern，不是整個 buffer。所以 generator 若產出循環 A→B→A→B，第三次看到 A 仍會重新模擬。
 
-**可能的改善**：拿整個 buffer 做 hash 去重（DataManager 已有 `make_hashable`）。
+`record.index` 實際上會掃整個歷史 list（`Record.__setitem__` 是 append，不是 overwrite），所以**去重確實覆蓋全部歷史**。這裡的潛在問題不是正確性而是效率：
+
+- 每 epoch 對整個 buffer 做線性搜尋 (O(N))
+- Buffer 無上限成長，記憶體 + 搜尋成本雙重疊加
+- 100 epoch 還好，10k epoch 會變慢
+
+**可能的改善**：
+- 改用 hash set 儲存已見過的 pattern id
+- 或 DataManager 既有的 `make_hashable` 直接用於主迴圈（目前只在 DataManager 內部用）
+- Buffer 設上限（例如 keep 最新 1000 筆）
 
 ### 8.4 Tau 沒被正確 log
 
