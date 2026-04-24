@@ -372,6 +372,20 @@ self.record["tau"] = 0
 
 `Models.load()` 會還原 `scheduler.load_state_dict(...)`，這代表每次 rollback 都把 tau 退火進度拉回 best epoch 當時的狀態。實測 v4（56 次 rollback）tau 完全無法進步；v5（1 次 rollback）scheduler 才走半段。修正：trainer 在 rollback 前後備份/還原 scheduler state，讓 model/optimizer 回到 best，但 scheduler 繼續向前 anneal。
 
+### 8.4c 實驗觀察：低 tau 時梯度 vanishing（GumbelSigmoid STE 的結構限制）
+
+Gumbel-Sigmoid 的 forward 是 `sigmoid(clamp(logits, -5, 5) / tau) + noise`，backward 的梯度是 `sigmoid * (1 - sigmoid)`。當 tau=0.1 時，clamp 邊界的 logit=±5 送進 sigmoid 變成 sigmoid(±50) ≈ 0 or 1，**梯度接近 0**。
+
+實測對比（15×15 RIS 100 epoch）：
+
+| Run | Scheduler | Tau 最低到 | min_loss | 結論 |
+|-----|-----------|-----------|----------|------|
+| v4 | T_0=200, patience=20, scheduler 會被 rollback | ~2.7 | **3.14** | 高 tau + 頻繁 rollback = 近似 simulated annealing |
+| v5 | T_0=100, patience=60, scheduler 也會被 rollback | 1.4 | 5.76 | rollback 不夠，generator 漂移 |
+| v6 | T_0=100, patience=20, scheduler 不被 rollback | 0.1 | 7.86 | tau 完全退火但低 tau 梯度 vanish，反而學不動 |
+
+**結論**：對這類二值 inverse design 任務，**tau 應維持在 2-4 區間**，配合頻繁 rollback 做隨機探索——不是愈低愈好。後續若要做完整退火，需解決梯度 vanishing（例如擴大 clamp 範圍、或使用其他 STE 近似）。
+
 ### 8.5 Surrogate 每 epoch 花 up to 20000 iter
 
 內層迴圈上限 20,000，對每個 epoch 都是嚴重的 overhead（實測 ~50 秒/epoch）。在 RIS 這個可微 oracle 的場景下，每一對 `(P, response)` 都能 exact 算出來，surrogate 「學不到新東西」時還硬 fit 是浪費。
