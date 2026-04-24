@@ -270,10 +270,12 @@ class Trainer:
                     load=True,
                 )
                 self.smodel.train_by_datas(self.online_dataset)
-                output_element = AntennaPattern(self.generator(AntennaResponse.target.concat()))
+                target_in = AntennaResponse.target.concat().to(config.device)
+                output_element = AntennaPattern(self.generator(target_in))
                 self.record["mutation"] = self.record("min_loss")
             else:
-                output_element = AntennaPattern(self.generator(AntennaResponse.target.concat()))
+                target_in = AntennaResponse.target.concat().to(config.device)
+                output_element = AntennaPattern(self.generator(target_in))
                 self.record["mutation"] = 0
 
             # ── 去重 & 模擬 ──

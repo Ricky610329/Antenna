@@ -31,7 +31,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         criterion: Callable[LossParams, Tensor] | None = None,
         *,
         load: bool = False,
-        device=config.device,
+        device=None,
     ):
         has_placeholder = "{label}" in name
         self._name = name if has_placeholder else None
@@ -46,7 +46,8 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         self.record = Record(self.__class__.__name__, rootdir=self._rootdir, load=load and self.model_file.exists())
 
         # 快取 device；避免每次透過 next(model.parameters()) 取得（昂貴）。
-        self.device = device
+        # device=None 時於呼叫當下讀取 config.device（避免 default 綁 import 時的舊值）。
+        self.device = device if device is not None else config.device
         if load:
             self.load()
 
