@@ -386,6 +386,7 @@ Gumbel-Sigmoid 的 forward 是 `sigmoid(clamp(logits, -5, 5) / tau) + noise`，b
 | **v7** | T_0=200, scheduler decoupled | 20 | 2.08 | 37 | **3.02** ✅ | **v4 + decoupling = 目前最佳**，tau 能比 v4 多降一點又不觸及梯度 vanish |
 | v8 (20×20) | T_0=120, scheduler decoupled | 20 | 2.08 | 13 | 3.53 | **物理現象反直覺**：元素增加 → beam 反而更窄 → 對寬 target 反而 worse |
 | v9 (10×10) | T_0=200, scheduler decoupled | 20 | 2.08 | 32 | 3.48 | 元素更少也 worse — beam 形狀不夠尖銳，能量散布過廣，sidelobe 反過頭抬高 |
+| v11 (15×15, target plateau 40→20) | T_0=200, scheduler decoupled | 20 | 0.10 | 56 | 3.06 | **target 窄化沒突破** — best pattern 仍 100% 全亮，響應跟 V7 幾乎相同；loss 下界跟 target 形狀無關 |
 
 **結論**：對這類二值 inverse design 任務，**tau 應維持在 2-4 區間**（避免 vanishing），配合頻繁 rollback 做隨機探索；同時讓 scheduler 不被 rollback 拉回讓 tau 能單調往下。後續若要做完整退火到 tau<1，需解決梯度 vanishing（例如擴大 clamp 範圍、或使用其他 STE 近似）。
 
