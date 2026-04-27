@@ -178,12 +178,13 @@ def test_trainer_exposed_from_package():
 
 
 def test_loss_fn_registry_keys():
-    """LOSS_FN_REGISTRY 需含 patch + ris 全部四種 loss。"""
+    """LOSS_FN_REGISTRY 需含 patch + ris 全部 loss。"""
     assert set(LOSS_FN_REGISTRY) == {
         "custom_loss_minmax",
         "custom_loss_r",
         "custom_loss_g",
         "custom_loss",
+        "custom_loss_directivity",
     }
 
 
