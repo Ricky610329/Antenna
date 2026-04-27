@@ -384,10 +384,21 @@ Gumbel-Sigmoid 的 forward 是 `sigmoid(clamp(logits, -5, 5) / tau) + noise`，b
 | v5 | T_0=100, scheduler 也會被 rollback | 60 | 1.4 | 1 | 5.76 | rollback 不夠，generator 漂移 |
 | v6 | T_0=100, scheduler decoupled | 20 | **0.1** | 30 | 7.86 | tau 完全退火但低 tau 梯度 vanish，反而學不動 |
 | **v7** | T_0=200, scheduler decoupled | 20 | 2.08 | 37 | **3.02** ✅ | **v4 + decoupling = 目前最佳**，tau 能比 v4 多降一點又不觸及梯度 vanish |
+| v8 (20×20) | T_0=120, scheduler decoupled | 20 | 2.08 | 13 | 3.53 | **物理現象反直覺**：元素增加 → beam 反而更窄 → 對寬 target 反而 worse |
 
 **結論**：對這類二值 inverse design 任務，**tau 應維持在 2-4 區間**（避免 vanishing），配合頻繁 rollback 做隨機探索；同時讓 scheduler 不被 rollback 拉回讓 tau 能單調往下。後續若要做完整退火到 tau<1，需解決梯度 vanishing（例如擴大 clamp 範圍、或使用其他 STE 近似）。
 
-**15×15 RIS 的 loss 下界觀察**：v4/v7 都停在 ~3 附近，代表這已接近此任務的可達下界——15×15 陣列產生的 beam 寬度不夠覆蓋 target 的 40-sample plateau。後續若要進一步降低 loss，要改增元素數（20×20、25×25）、或放寬 target 定義。
+**Pattern 大小 vs target 寬度的物理關係**（v7 vs v8 對比揭露）：
+
+> RIS 元素愈多（陣列增益愈高）→ 主波束愈窄（半功率波束寬度愈小）。對固定的 target plateau 寬度而言：
+> - 元素**過少**：beam 太寬，主峰高度不足
+> - 元素**剛好**：beam 寬度貼近 target plateau
+> - 元素**過多**：beam 太窄、能量集中在中心一點，覆蓋不到 plateau 邊緣
+
+V7 (15×15) 的 beam 比 V8 (20×20) 寬，反而更貼近此 target 的 40-sample plateau，所以 loss 較低。要再降低 loss 應該：
+1. **減少元素數**（試 10×10、12×12 看 sweet spot 在哪）
+2. **放寬 target 至更窄 plateau**（接近現有 beam 寬度的 ~20 samples）
+3. **接受目前 ~3.0 為此 target × 此元素數的物理下界**
 
 ### 8.5 Surrogate 每 epoch 花 up to 20000 iter
 
