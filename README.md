@@ -540,6 +540,25 @@ gap_closing_loss_weight: 0.0
 - `gumbel_sinkhorn_rectangular`：可微的排列矩陣（透過 Sinkhorn 在 log space 做）
 - `interval_loss`：頻段上下限約束；低於下限或高於上限才累積 loss
 
+### 10.4 RIS-specific losses（`antenna/ris/__init__.py`）
+
+兩個 RIS 專用 loss 都在 `LOSS_FN_REGISTRY` 註冊好可從 YAML 直接呼叫：
+
+- **`custom_loss`**：tolerance-style — sidelobe 區超過 threshold 才罰、main beam 跌到 sidelobe 以下才罰；不超出範圍時 fallback 到小 MSE。**缺點**：main beam 沒「越高越好」的梯度動機，generator 把主峰擺到位後就停止 push。
+- **`custom_loss_directivity`**：tolerance + reward — 沿用 sidelobe 平方 penalty，但**main beam 直接用 `-mean(prediction)` 當 loss 項**，響應越高 loss 越低。期望突破 §8.4d 的 generator collapse。
+  - 參數：`sidelobe_threshold`（dB）、`main_beam_weight`（reward 項權重，預設 0.1）
+
+YAML 切換：
+```yaml
+response:
+  label_configs:
+    response:
+      loss_fn: custom_loss_directivity
+      loss_params:
+        sidelobe_threshold: -20.0
+        main_beam_weight: 0.1
+```
+
 ---
 
 ## 11. 排程器 (Schedulers)
