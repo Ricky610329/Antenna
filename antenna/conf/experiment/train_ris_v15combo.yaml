@@ -1,0 +1,56 @@
+# @package _global_
+# RIS 訓練：BiasedGumbelSigmoidGEN + custom_loss_tolerance
+#
+# 集前面實驗教訓：
+# - V12 wide clamp 沒解 collapse → 不改 clamp
+# - V13 directivity loss 不平衡 → 用 tolerance loss（雙邊平方 penalty）
+# - §8.4d 觀察 logits 自然停在 ≈0 → 用 BiasedGumbelSigmoidGEN（最後一層 bias 隨機初始化）
+#
+# 用法：
+#     python -m antenna train +experiment=train_ris_v15combo environment.device=cuda:0
+defaults:
+  - override /response: ris
+
+model: biased_gumbel_sigmoid_gen
+simulator: ris
+epochs: 100
+patience: 20
+experiment_name: "[RIS-v15combo][{device}] 15x15-Biased-Tolerance"
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+# tolerance loss：雙邊平方 penalty（單位 dB² 平衡）
+response:
+  labels: [response]
+  x: ris
+  label_configs:
+    response:
+      target:
+        side: -20
+        center: 0
+        width: [140, 0, 40, 0, 181]
+      loss_fn: custom_loss_tolerance
+      loss_params:
+        sidelobe_threshold: -20.0
+        main_target: 0.0
+        main_weight: 1.0
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 200
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 1.0e-6
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001
