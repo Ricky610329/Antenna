@@ -403,6 +403,20 @@ V7 (15×15) 的 beam 比 V8 (20×20) 寬，反而更貼近此 target 的 40-samp
 
 **Sweet spot 已確認**：v7 (15×15) → v8 (20×20) → v9 (10×10) = 3.02 → 3.53 → 3.48。**15×15 為 local optimum**，兩個方向放大或縮小都 worse。要進一步改善 loss 必須**改 target 形狀**（變窄）或**改變陣列幾何**（非方形、稀疏排列）。
 
+### 8.4d 觀察：Generator 沒真的「學到」discrete pattern（待解決）
+
+實測 V7 best epoch 的 hard-binarized pattern：**225/225 全亮（100% on）**。Generator 的 sigmoid(logits) 雖有微小波動，但全都 >= 0.5，threshold 0.5 後沒有結構。
+
+這代表訓練期間「最佳」響應其實**不是來自 generator 學到的 mapping**，而是來自 Gumbel-Sigmoid 在 forward 時的隨機採樣 — Gumbel noise 混入後產生的非全亮 pattern 偶爾比較好，被 rollback 抓住。
+
+**結論**：目前的「訓練」實際上是用 Gumbel-Sigmoid 採樣 + rollback 跑 simulated annealing，**不是真正的 inverse design 學習**。要讓 generator 真的學到 target → pattern 的 mapping，可能要：
+1. 擴大 `clamp([-5, 5])` 範圍，讓 logits 能拉開正負區隔（待 §8.4c 實驗）
+2. 用更強的 STE（例如 hard sample + softmax 反向）
+3. 加 reconstruction-style 約束（例如 binary entropy regularization 鼓勵兩極化）
+4. 接受目前是 SA-style 而不叫 inverse design — 對 patch 而言這仍可用，但 generator 在 inference time 沒有實際意義（每次 forward 給的是隨機 pattern）
+
+可用 `script/inspect_ris_run.py` 檢視任一 run 的 best hard-binarized pattern：輸出在 `result/<run>/pic/best_pattern_hard.png`。
+
 ### 8.5 Surrogate 每 epoch 花 up to 20000 iter
 
 內層迴圈上限 20,000，對每個 epoch 都是嚴重的 overhead（實測 ~50 秒/epoch）。在 RIS 這個可微 oracle 的場景下，每一對 `(P, response)` 都能 exact 算出來，surrogate 「學不到新東西」時還硬 fit 是浪費。

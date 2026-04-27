@@ -223,6 +223,44 @@ def main() -> None:
     coord = detect_coord(run_dir)
     plot_pattern_evolution(run_dir, coord, pic / "pattern_evolution.png")
     plot_response_vs_target(run_dir, coord, pic / "response_vs_target.png")
+    plot_best_hard_pattern(run_dir, coord, data, pic / "best_pattern_hard.png")
+
+
+def plot_best_hard_pattern(run_dir: Path, coord: tuple, data: dict, out: Path) -> None:
+    """畫出 best epoch 的硬二值化 pattern（實際部署時會看到的銅箔分布）。"""
+    ckpt_dir = run_dir / "checkpoint"
+    real_losses = data.get("real_loss", [])
+    epochs = data.get("epoch", [])
+    if not real_losses:
+        return
+    best_ep = int(epochs[int(np.argmin(real_losses))])
+    ckpt_path = ckpt_dir / f"generator_{best_ep}.pth"
+    if not ckpt_path.exists():
+        print(f"  no ckpt at best epoch {best_ep}")
+        return
+
+    _setup_once(coord)
+    target = AntennaResponse.target.concat().to(config.device)
+    gen = load_generator(ckpt_path)
+
+    n = coord[1] - coord[0]
+    with torch.no_grad():
+        logits = gen(target)
+        soft = torch.sigmoid(logits).cpu().numpy().reshape(n, n)
+        hard = (soft > 0.5).astype(np.float32)
+
+    fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+    axes[0].imshow(soft, cmap="gray_r", vmin=0, vmax=1)
+    axes[0].set_title(f"epoch {best_ep} soft sigmoid(logits)")
+    axes[0].axis("off")
+    axes[1].imshow(hard, cmap="gray_r", vmin=0, vmax=1)
+    on = int(hard.sum())
+    axes[1].set_title(f"hard-binarized (>0.5)\n{on}/{n * n} on ({100 * on / (n * n):.0f}%)")
+    axes[1].axis("off")
+    fig.tight_layout()
+    fig.savefig(out, dpi=120)
+    plt.close(fig)
+    print(f"  best hard pattern → {out}")
 
 
 if __name__ == "__main__":
