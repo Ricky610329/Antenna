@@ -835,12 +835,18 @@ pre-commit run --all-files
 | `ImportError: DLL load failed` 在 pywin32 | Windows 環境但 pywin32 沒正確安裝；重裝 `pip install --force-reinstall pywin32` |
 | `pytest -x` 找不到 `antenna` | `pip install -e ".[dev]"` 忘了；或 conda env 沒啟用 |
 | Hydra override 不生效 | 加 `--cfg job` 看合成後的設定，確認該欄位路徑正確 |
+| Hydra 報 `Could not override 'X'` / `Key 'X' is not in struct` | 此欄位不在 structured config schema；改用 `++` 前綴強制加（如 `++scheduler.T_0=100`） |
 | CUDA OOM | 降 batch、縮小 pattern coordinate、或 `environment.device=cpu` |
+| `Expected all tensors to be on the same device` 在 generator forward | 已修（commit 358628a）— 若再遇到請確認 `Models.__init__` 沒在傳 `device=config.device` 早綁定 default |
 | HFSS 開不起來 | 確認 Ansys AEDT 已安裝；`gencache.EnsureDispatch` 失敗時會 raise |
 | `test_configs_schema.py` 被跳過 | 缺 `hydra-core` / `omegaconf`；`pip install -e ".[dev]"` 會補 |
 | 網路磁碟連不上 | `.env` 的 `ANTENNA_NETWORK_DRIVE_*` 帳密錯誤 |
+| 訓練結果寫到別人的網路磁碟資料夾 | `ROOTDIR` 預設行為；用 `environment.rootdir=.` 或 `ANTENNA_ROOTDIR` 環境變數覆寫，將結果落地本地 `result/` |
+| 在 git worktree 內跑 pytest，匯入到主 repo 的 antenna/ | `pyproject.toml` 的 `pythonpath=["."]` 會被 pytest 解析到主 repo；改用 `pytest -o "pythonpath=<worktree-abs-path>"` 或 cd 到 worktree 內驗證 `python -c "import antenna; print(antenna.__file__)"` |
 | ruff format 在 CI 失敗但本地過 | 整 repo 跑 `ruff format .`，注意 Unit 20 之後有幾個檔案曾經漏做 |
 | Pre-commit 第一次太慢 | ruff / pre-commit 需下載 hook repo，之後會被快取 |
+| `AdaptiveCyclicalScheduler` tau 沒退火（一直停在 4.0 附近） | 已修（commit 497d694）— scheduler 預設 callback 不影響 GumbelSigmoidGEN.tau；trainer 已自動接 callback，但若用 `scheduler._target_=` 覆寫到自訂類別需確認 callback 仍有效 |
+| `Can't pickle local object '_cb'` 在 Models.save | 已修（commit 40ff5b4）— scheduler.state_dict 之前會把 closure 連帶序列化 |
 
 ---
 
