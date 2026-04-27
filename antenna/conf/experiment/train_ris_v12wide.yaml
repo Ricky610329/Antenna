@@ -1,0 +1,42 @@
+# @package _global_
+# RIS 訓練：V7 best config + WideGumbelSigmoidGEN 變體
+#
+# 用途：驗證 docs/architecture.md §8.4d 的假說。
+# - 標準 GumbelSigmoidGEN clamp logits 至 [-5, 5]，sigmoid 容易飽和但不夠極端，
+#   實測 V7 best 的 hard-binarized pattern 是 100% 全亮（沒學到結構）。
+# - WideGumbelSigmoidGEN 把 clamp 擴大到 [-20, 20]，期望 logits 能拉開正負區隔。
+#
+# 用法：
+#     python -m antenna train +experiment=train_ris_v12wide environment.device=cuda:0
+#
+# 其餘設計與 train_ris_v7best.yaml 相同。
+defaults:
+  - override /response: ris
+
+model: wide_gumbel_sigmoid_gen
+simulator: ris
+epochs: 100
+patience: 20
+experiment_name: "[RIS-v12wide][{device}] 15x15-WideGumbel"
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 200
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 1.0e-6
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001
