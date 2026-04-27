@@ -263,6 +263,26 @@ python application/run_waitress.py
 - 互動式 pattern 生成器
 - 下載產生的資料集
 
+### 5.5 結果視覺化工具（命令列）
+
+訓練完成後可以用 `script/` 下的工具產出檢視圖：
+
+```bash
+# 單一 run 的完整 inspection（loss/tau/pattern/response/best-hard pattern + 10 sample 三聯圖）
+python script/inspect_ris_run.py result/RIS-v7-v4like-decoupled
+
+# 多 run cross-overlay 比較（loss / tau / response 疊圖 + summary 表）
+python script/compare_ris_runs.py result/RIS-v4-* result/RIS-v7-* result/RIS-v9-*
+```
+
+`inspect_ris_run.py` 產出在 `result/<run>/pic/`：
+- `loss_curves.png`、`pattern_evolution.png`、`response_vs_target.png`、`best_pattern_hard.png`
+- `samples/sample_NN.png` × 10 張：每張顯示「輸入 target / 輸出 pattern / 實際響應」三聯圖。**用於驗證 generator 是否真為 conditional**——若 10 個不同 target 卻得到同樣 pattern，就表示 generator collapse（見 [`docs/architecture.md`](docs/architecture.md) §8.4d）。
+
+`compare_ris_runs.py` 產出在 `result/_compare/<timestamp>/`：
+- `loss_compare.png`、`tau_compare.png`、`response_compare.png`、`summary.md`
+- 支援 mixed-target 比較（每個 run 從自己的 `config.yaml` 讀回訓練時的 target）
+
 ---
 
 ## 6. 專案結構
