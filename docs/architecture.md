@@ -444,4 +444,6 @@ V7 (15×15) 的 beam 比 V8 (20×20) 寬，反而更貼近此 target 的 40-samp
 - `antenna/utils/record.py` — 訓練追蹤
 - `antenna/utils/data.py` — Online dataset 管理
 - `antenna/conf/experiment/train_ris.yaml` — RIS 預設組合
-- `script/inspect_ris_run.py` — 結果視覺化工具
+- `antenna/conf/experiment/train_ris_v7best.yaml` — V7 已知最佳組合（min_loss 3.02 @ 15×15）
+- `script/inspect_ris_run.py` — 單 run 結果視覺化（loss/tau/pattern/response）
+- `script/compare_ris_runs.py` — 多 run cross-overlay 比較（loss/tau/best-response 疊圖 + summary 表）
