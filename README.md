@@ -548,6 +548,14 @@ gap_closing_loss_weight: 0.0
 - **`custom_loss_directivity`**：tolerance + reward — 沿用 sidelobe 平方 penalty，但**main beam 直接用 `-mean(prediction)` 當 loss 項**，響應越高 loss 越低。期望突破 §8.4d 的 generator collapse。
   - 參數：`sidelobe_threshold`（dB）、`main_beam_weight`（reward 項權重，預設 0.1）
 
+> **⚠️ 已知調參陷阱**：兩項單位不同（side_loss 是 dB²、main_reward 是 dB）。
+> V13 實測 main_beam_weight=0.1 時 loss 飆到 ~40（從 main_reward 的線性 dB 來），
+> generator 反而往 sidelobe 平壓的方向跑（壓低 main beam → side_loss=0 → 但 main_reward 變大），
+> 訓練退化。建議：
+> - 把 main_reward 也用平方/clip 控制範圍，例如 `(target_high - main).clamp(min=0).pow(2)`
+> - 或大幅降低 main_beam_weight（如 0.001）讓 sidelobe penalty 主導
+> - 或先固定 sidelobe_threshold 為實際達得到的值（例如 -25 而非 -20）
+
 YAML 切換：
 ```yaml
 response:
