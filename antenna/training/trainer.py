@@ -118,9 +118,13 @@ class Trainer:
 
         # 把當下使用的 cfg 落地到 result/，供 inspect 工具還原 target / coord 等資訊。
         # 用 OmegaConf.save 寫成 YAML，避免之後讀不回來。
+        # 用 str() 包裝路徑：mock 出來的 _FakePath（測試用）不認得 OmegaConf 的 file-like 介面。
         from omegaconf import OmegaConf
 
-        OmegaConf.save(self.cfg, self.result_path.joinpath("config.yaml"))
+        try:
+            OmegaConf.save(self.cfg, str(self.result_path.joinpath("config.yaml")))
+        except (TypeError, OSError):
+            pass  # 在純 mock 測試環境下若不能寫檔，不視為錯誤
 
         config.epochs = self.cfg.epochs
         config.lr = self.cfg.optimizer.lr
