@@ -411,12 +411,15 @@ V7 (15×15) 的 beam 比 V8 (20×20) 寬，反而更貼近此 target 的 40-samp
 這代表訓練期間「最佳」響應其實**不是來自 generator 學到的 mapping**，而是來自 Gumbel-Sigmoid 在 forward 時的隨機採樣 — Gumbel noise 混入後產生的非全亮 pattern 偶爾比較好，被 rollback 抓住。
 
 **結論**：目前的「訓練」實際上是用 Gumbel-Sigmoid 採樣 + rollback 跑 simulated annealing，**不是真正的 inverse design 學習**。要讓 generator 真的學到 target → pattern 的 mapping，可能要：
-1. 擴大 `clamp([-5, 5])` 範圍，讓 logits 能拉開正負區隔（待 §8.4c 實驗）
+1. 擴大 `clamp([-5, 5])` 範圍，讓 logits 能拉開正負區隔
+   → 已實作 `WideGumbelSigmoidGEN` (clamp [-20, 20])，在 `MODEL_REGISTRY` 中以 `wide_gumbel_sigmoid_gen` 註冊；preset `train_ris_v12wide.yaml`。
 2. 用更強的 STE（例如 hard sample + softmax 反向）
 3. 加 reconstruction-style 約束（例如 binary entropy regularization 鼓勵兩極化）
-4. 接受目前是 SA-style 而不叫 inverse design — 對 patch 而言這仍可用，但 generator 在 inference time 沒有實際意義（每次 forward 給的是隨機 pattern）
+4. **改 loss 設計** → 已實作 `custom_loss_directivity`：tolerance + main beam reward 風格（不只是「不要過低」，直接獎勵峰值升高）；preset `train_ris_v13directivity.yaml` 結合 wide gumbel 與此 loss。
 
-可用 `script/inspect_ris_run.py` 檢視任一 run 的 best hard-binarized pattern：輸出在 `result/<run>/pic/best_pattern_hard.png`。
+可用 `script/inspect_ris_run.py` 檢視任一 run：
+- `pic/best_pattern_hard.png` — best epoch 的 hard-binarized pattern
+- `pic/samples/sample_NN.png` — 10 張不同 target → pattern → 實際響應的三聯圖。**用於檢驗 generator 是否真為 conditional**：若 10 個不同 target 卻得到相同 pattern，就確認 collapse。
 
 ### 8.5 Surrogate 每 epoch 花 up to 20000 iter
 
@@ -463,5 +466,8 @@ V7 (15×15) 的 beam 比 V8 (20×20) 寬，反而更貼近此 target 的 40-samp
 - `antenna/utils/data.py` — Online dataset 管理
 - `antenna/conf/experiment/train_ris.yaml` — RIS 預設組合
 - `antenna/conf/experiment/train_ris_v7best.yaml` — V7 已知最佳組合（min_loss 3.02 @ 15×15）
-- `script/inspect_ris_run.py` — 單 run 結果視覺化（loss/tau/pattern/response）
-- `script/compare_ris_runs.py` — 多 run cross-overlay 比較（loss/tau/best-response 疊圖 + summary 表）
+- `script/inspect_ris_run.py` — 單 run 結果視覺化（loss/tau/pattern/response/best-hard pattern/10 張 sample 三聯圖）
+- `script/compare_ris_runs.py` — 多 run cross-overlay 比較（loss/tau/best-response 疊圖 + summary 表，支援 mixed-target）
+- `antenna/conf/experiment/train_ris_v7best.yaml` — 已知最佳設定（min_loss 3.02 @ 15×15）
+- `antenna/conf/experiment/train_ris_v12wide.yaml` — V7 + WideGumbelSigmoidGEN 變體
+- `antenna/conf/experiment/train_ris_v13directivity.yaml` — wide gumbel + directivity loss 雙管齊下
