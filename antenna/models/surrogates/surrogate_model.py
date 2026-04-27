@@ -142,6 +142,7 @@ class SurrogateModel(
         real_response: Tensor,
         min_loss=None,
         max_epoch=None,
+        min_epoch=None,
         *,
         verbose: bool = True,
     ):
@@ -152,6 +153,9 @@ class SurrogateModel(
             real_response: ``pattern`` 對應的真實響應。
             min_loss: loss 下限（達到即停止）。
             max_epoch: epoch 上限。
+            min_epoch: epoch 下限（即使 loss 已達到 ``min_loss`` 仍至少訓練此次數）。
+                若為 None 則讀 ``config['HFSS.min_epoch']``，再缺則為 0（無下限）。
+                防止初始 loss 偶然就達標而過早離開、surrogate 沒真正 fit 新資料。
             verbose: 是否顯示進度條。
 
         Returns:
@@ -168,6 +172,8 @@ class SurrogateModel(
 
         min_loss = min_loss or config["HFSS.min_loss"]
         max_epoch = max_epoch or config["HFSS.max_epoch"]
+        if min_epoch is None:
+            min_epoch = config.get("HFSS.min_epoch", 0)
 
         epoch_bar = tqdm(
             total=max_epoch,
@@ -176,7 +182,10 @@ class SurrogateModel(
             disable=not verbose,
             **TQDM_CONFIG,
         )
-        while self.record("loss", 0) > min_loss and self.record("epoch", float("inf")) < max_epoch:
+        # 條件：尚未達 min_epoch 強制繼續；達了之後 loss > min_loss 才繼續；超過 max_epoch 一律停。
+        while self.record("epoch", float("inf")) < max_epoch and (
+            self.record("epoch", float("inf")) < min_epoch or self.record("loss", 0) > min_loss
+        ):
             self.optimizer.zero_grad()
 
             outputs_result: Tensor = self.model(input)
