@@ -141,7 +141,9 @@ def main() -> None:
         target = AntennaResponse.target.concat().to(config.device)
         if not target_drawn:
             t_np = target.detach().cpu().numpy()
-            ax.plot(np.arange(len(t_np)), t_np, label="reference target (40-sample plateau)", linewidth=2.5, color="black")
+            ax.plot(
+                np.arange(len(t_np)), t_np, label="reference target (40-sample plateau)", linewidth=2.5, color="black"
+            )
             target_drawn = True
         try:
             resp, best_ep = _hard_response(d, coord, target)
