@@ -30,6 +30,21 @@ def _load_record(run_dir: Path) -> dict:
         return pickle.load(f)["_data"]
 
 
+def _load_target_args(run_dir: Path) -> tuple:
+    """從 result/<run>/config.yaml 讀 target；若無 fallback 到預設 V4-V9 target。"""
+    cfg_path = run_dir / "config.yaml"
+    if cfg_path.exists():
+        try:
+            from omegaconf import OmegaConf
+
+            cfg = OmegaConf.load(cfg_path)
+            tgt = cfg.response.label_configs.response.target
+            return (float(tgt.side), float(tgt.center), tuple(tgt.width))
+        except Exception:
+            pass
+    return (-20.0, 0.0, (140, 0, 40, 0, 181))
+
+
 def _detect_coord(run_dir: Path) -> tuple[int, int, int, int]:
     first = next((run_dir / "checkpoint").glob("generator_*.pth"), None)
     if first is None:
@@ -123,28 +138,39 @@ def main() -> None:
     print(f"  → {out_dir / 'tau_compare.png'}")
 
     # 3. Response overlay (best epoch of each run, hard-binarized)
-    # 注意：target 在這裡固定使用 V4–V9 的 40-sample plateau (140,0,40,0,181)。
-    # 若混合不同 target 的 run（例如 V11 = 20-sample plateau），target 線只代表
-    # 「預設 target」做為對比基準，不是每個 run 訓練時的目標。請勿據此判斷
-    # 個別 run 的 fit quality；改用單 run 的 inspect_ris_run.py 看實際 target vs response。
-    AntennaResponse.registerLabels("response", x="ris")
-    AntennaResponse.registerTargetResponse(-20.0, 0.0, (140, 0, 40, 0, 181), "response")
-
+    # 每個 run 各自從其 result/<run>/config.yaml 讀回訓練時用的 target；舊 run
+    # 沒存 cfg.yaml 的話 fallback 到預設 (140, 0, 40, 0, 181)。同 plot 上會多一條
+    # target 線：若所有 run 都同一 target 就一條，否則畫多條（每個 run 各一）。
     fig, ax = plt.subplots(figsize=(13, 5))
-    target_drawn = False
+    drawn_targets: list[tuple] = []  # 已畫過的 target args 去重
     for d in run_dirs:
         try:
             coord = _detect_coord(d)
         except FileNotFoundError:
             continue
+
+        # 重設 AntennaResponse 全域狀態以套用此 run 的 target
+        AntennaResponse.target.responses.clear()
+        AntennaResponse.target.metadata.clear()
         AntennaPattern.setDefaultCoordinate(coord)
+        AntennaResponse.registerLabels("response", x="ris")
+        target_args = _load_target_args(d)
+        AntennaResponse.registerTargetResponse(*target_args, "response")
         target = AntennaResponse.target.concat().to(config.device)
-        if not target_drawn:
+
+        # 畫此 run 的 target（同 args 不重畫）
+        if target_args not in drawn_targets:
+            drawn_targets.append(target_args)
             t_np = target.detach().cpu().numpy()
             ax.plot(
-                np.arange(len(t_np)), t_np, label="reference target (40-sample plateau)", linewidth=2.5, color="black"
+                np.arange(len(t_np)),
+                t_np,
+                label=f"target {target_args[2]}",
+                linewidth=2,
+                linestyle=":",
+                alpha=0.8,
             )
-            target_drawn = True
+
         try:
             resp, best_ep = _hard_response(d, coord, target)
             ax.plot(
@@ -158,7 +184,9 @@ def main() -> None:
             print(f"  skip response for {d.name}: {e}")
     ax.set_xlabel("sample index")
     ax.set_ylabel("dB")
-    ax.set_title("Best-epoch hard-binarized response (reference target shown for comparison only)")
+    n_tgt = len(drawn_targets)
+    title_suffix = f" ({n_tgt} different target{'s' if n_tgt > 1 else ''})"
+    ax.set_title(f"Best-epoch hard-binarized response{title_suffix}")
     ax.legend(fontsize=9)
     ax.grid(alpha=0.3)
     fig.tight_layout()
