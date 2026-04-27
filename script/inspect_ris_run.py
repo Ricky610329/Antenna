@@ -227,6 +227,110 @@ def detect_coord(run_dir: Path) -> tuple:
     return (0, n, 0, n)
 
 
+def dump_samples(run_dir: Path, coord: tuple, data: dict, out_dir: Path, n_samples: int = 10) -> None:
+    """對 best epoch generator 餵 N 組不同 target，每組存一張 3-panel 圖：
+    (input target response, output binary pattern, actual response)。
+
+    用於檢驗 generator 是否真是 conditional：若 N 個不同 target 卻得到
+    N 個相同 pattern，就確認 collapse 假說（§8.4d）。
+    """
+    ckpt_dir = run_dir / "checkpoint"
+    real_losses = data.get("real_loss", [])
+    epochs = data.get("epoch", [])
+    if not real_losses:
+        return
+    best_ep = int(epochs[int(np.argmin(real_losses))])
+    ckpt_path = ckpt_dir / f"generator_{best_ep}.pth"
+    if not ckpt_path.exists():
+        return
+
+    AntennaPattern.setDefaultCoordinate(coord)
+    if not AntennaResponse.target.metadata:
+        AntennaResponse.registerLabels("response", x="ris")
+        # placeholder target，真正的 target 我們手動產
+        AntennaResponse.registerTargetResponse(-20.0, 0.0, (140, 0, 40, 0, 181), "response")
+
+    n = coord[1] - coord[0]
+    sim = RISSimulator(element_num=n)
+    gen = load_generator(ckpt_path)
+
+    samples_dir = out_dir / "samples"
+    samples_dir.mkdir(exist_ok=True)
+
+    # 10 個變化：交替變動 plateau 位置與 plateau 寬度
+    sample_configs = []
+    for i in range(n_samples):
+        # plateau 位置：在 90 至 240 之間移動
+        center_pos = 110 + i * 14
+        # plateau 寬度：20 ~ 60
+        plateau_w = 20 + (i % 5) * 10
+        left_w = max(0, center_pos - plateau_w // 2)
+        right_w = max(0, 361 - left_w - plateau_w)
+        sample_configs.append((-20.0, 0.0, (left_w, 0, plateau_w, 0, right_w)))
+
+    rng = torch.Generator(device="cpu")
+    rng.manual_seed(42)
+
+    rows = []
+    for idx, (side, center, width) in enumerate(sample_configs, start=1):
+        # 重置 target tensor，但保留 labels metadata（不然 registerTargetResponse 會喊「沒有 labels」）
+        AntennaResponse.registerLabels("response", x="ris")
+        AntennaResponse.registerTargetResponse(side, center, width, "response")
+        target = AntennaResponse.target.concat().to(config.device)
+
+        with torch.no_grad():
+            logits = gen(target)
+            soft = torch.sigmoid(logits)
+            hard = (soft > 0.5).float().reshape(n, n)
+            response = sim(hard)
+        if isinstance(response, dict):
+            response = next(iter(response.values()))
+        resp_np = response.detach().cpu().numpy().flatten()
+
+        target_np = target.detach().cpu().numpy()
+        hard_np = hard.cpu().numpy()
+        on_count = int(hard_np.sum())
+
+        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+        x = np.arange(len(target_np))
+        axes[0].plot(x, target_np, color="tab:blue", linewidth=2)
+        axes[0].set_title(f"Input target response\nplateau@{width[0]}–{width[0] + width[2]} ({width[2]} samples)")
+        axes[0].set_xlabel("sample idx")
+        axes[0].set_ylabel("dB")
+        axes[0].grid(alpha=0.3)
+        axes[0].set_ylim(-30, 5)
+
+        axes[1].imshow(hard_np, cmap="gray_r", vmin=0, vmax=1)
+        axes[1].set_title(f"Output pattern (hard-binarized)\n{on_count}/{n * n} on ({100 * on_count / (n * n):.0f}%)")
+        axes[1].axis("off")
+
+        axes[2].plot(x, target_np, color="tab:blue", linewidth=1.5, label="target", alpha=0.7)
+        axes[2].plot(x[: len(resp_np)], resp_np, color="tab:orange", linewidth=1.5, label="actual")
+        axes[2].set_title(f"Actual response (RIS sim)\nmax={resp_np.max():.2f} dB @ idx={int(np.argmax(resp_np))}")
+        axes[2].set_xlabel("sample idx")
+        axes[2].set_ylabel("dB")
+        axes[2].legend(fontsize=9)
+        axes[2].grid(alpha=0.3)
+
+        fig.suptitle(f"Sample {idx}/{n_samples} — best epoch {best_ep}")
+        fig.tight_layout()
+        out_path = samples_dir / f"sample_{idx:02d}.png"
+        fig.savefig(out_path, dpi=110)
+        plt.close(fig)
+        rows.append((idx, width[2], width[0], on_count, float(resp_np.max())))
+
+    print(f"  dumped {n_samples} samples → {samples_dir}/")
+    # 摘要表
+    summary_lines = [
+        "| # | plateau_w | plateau_start | pattern on% | resp peak dB |",
+        "|---|-----------|---------------|-------------|--------------|",
+    ]
+    for idx, w, start, on, peak in rows:
+        summary_lines.append(f"| {idx} | {w} | {start} | {100 * on / (n * n):.0f}% | {peak:.2f} |")
+    (samples_dir / "summary.md").write_text("\n".join(summary_lines), encoding="utf-8")
+    print(f"  summary → {samples_dir / 'summary.md'}")
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         print(__doc__)
@@ -250,6 +354,7 @@ def main() -> None:
     plot_pattern_evolution(run_dir, coord, pic / "pattern_evolution.png")
     plot_response_vs_target(run_dir, coord, pic / "response_vs_target.png")
     plot_best_hard_pattern(run_dir, coord, data, pic / "best_pattern_hard.png")
+    dump_samples(run_dir, coord, data, pic, n_samples=10)
 
 
 def plot_best_hard_pattern(run_dir: Path, coord: tuple, data: dict, out: Path) -> None:
