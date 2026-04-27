@@ -123,6 +123,10 @@ def main() -> None:
     print(f"  → {out_dir / 'tau_compare.png'}")
 
     # 3. Response overlay (best epoch of each run, hard-binarized)
+    # 注意：target 在這裡固定使用 V4–V9 的 40-sample plateau (140,0,40,0,181)。
+    # 若混合不同 target 的 run（例如 V11 = 20-sample plateau），target 線只代表
+    # 「預設 target」做為對比基準，不是每個 run 訓練時的目標。請勿據此判斷
+    # 個別 run 的 fit quality；改用單 run 的 inspect_ris_run.py 看實際 target vs response。
     AntennaResponse.registerLabels("response", x="ris")
     AntennaResponse.registerTargetResponse(-20.0, 0.0, (140, 0, 40, 0, 181), "response")
 
@@ -137,7 +141,7 @@ def main() -> None:
         target = AntennaResponse.target.concat().to(config.device)
         if not target_drawn:
             t_np = target.detach().cpu().numpy()
-            ax.plot(np.arange(len(t_np)), t_np, label="target", linewidth=2.5, color="black")
+            ax.plot(np.arange(len(t_np)), t_np, label="reference target (40-sample plateau)", linewidth=2.5, color="black")
             target_drawn = True
         try:
             resp, best_ep = _hard_response(d, coord, target)
@@ -152,7 +156,7 @@ def main() -> None:
             print(f"  skip response for {d.name}: {e}")
     ax.set_xlabel("sample index")
     ax.set_ylabel("dB")
-    ax.set_title("Best-epoch hard-binarized response comparison")
+    ax.set_title("Best-epoch hard-binarized response (reference target shown for comparison only)")
     ax.legend(fontsize=9)
     ax.grid(alpha=0.3)
     fig.tight_layout()
