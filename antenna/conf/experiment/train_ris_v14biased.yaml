@@ -1,0 +1,39 @@
+# @package _global_
+# RIS 訓練：BiasedGumbelSigmoidGEN（最後一層 bias 隨機初始化打破 collapse）
+#
+# V12 確認 wide clamp 沒解決 collapse；V13 試 directivity loss（仍跑中）。
+# V14 改變初始條件：fc_patch 最後一層 bias 從 uniform(-3, 3) 起步，
+# epoch 1 已是「半 on 半 off」結構，generator 必須學修正、不能停在 logits ≈ 0。
+#
+# 用法：
+#     python -m antenna train +experiment=train_ris_v14biased environment.device=cuda:0
+defaults:
+  - override /response: ris
+
+model: biased_gumbel_sigmoid_gen
+simulator: ris
+epochs: 100
+patience: 20
+experiment_name: "[RIS-v14biased][{device}] 15x15-BiasedInit"
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 200
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 1.0e-6
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001
