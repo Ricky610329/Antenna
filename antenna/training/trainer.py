@@ -22,6 +22,7 @@ from antenna.losses.regularization import FeedReachability, GapClosingLoss, Spec
 from antenna.models.base import Models
 from antenna.models.generators.gumbel_sigmoid_gen import GumbelSigmoidGEN
 from antenna.models.generators.sigmoid_gen import SigmoidGEN
+from antenna.models.generators.wide_gumbel_sigmoid_gen import WideGumbelSigmoidGEN
 from antenna.ris import custom_loss as ris_custom_loss
 from antenna.schedulers.adaptive_cyclical import AdaptiveCyclicalScheduler
 from antenna.smodels import OldSM
@@ -43,6 +44,7 @@ LOSS_FN_REGISTRY: dict[str, Callable[..., torch.Tensor]] = {
 MODEL_REGISTRY: dict[str, type[torch.nn.Module]] = {
     "sigmoid_gen": SigmoidGEN,
     "gumbel_sigmoid_gen": GumbelSigmoidGEN,
+    "wide_gumbel_sigmoid_gen": WideGumbelSigmoidGEN,
 }
 
 # 模擬器對應表（YAML `simulator` 欄位映射至模擬器 factory）。
