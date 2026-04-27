@@ -187,7 +187,12 @@ python -m antenna train [override...]
 python -m antenna train +experiment=train_single
 python -m antenna train +experiment=train_dual
 python -m antenna train +experiment=train_ris
+python -m antenna train +experiment=train_ris_v7best   # RIS 已知最佳設定
 ```
+
+> **`train_ris_v7best` preset**：把 V4–V7 多輪實驗找到的最佳超參封裝成單一 yaml。
+> 含 AdaptiveCyclicalScheduler + scheduler decoupling rollback + 適當 tau 範圍避免梯度 vanishing。
+> 參數選擇理由詳見 [`docs/architecture.md`](docs/architecture.md) §8.4c。
 
 **常用 override 範例**：
 
@@ -203,6 +208,9 @@ python -m antenna train +experiment=train_ris pattern.coordinate=[0,30,0,30]
 
 # 換排程器
 python -m antenna train +experiment=train_single scheduler._target_=torch.optim.lr_scheduler.ReduceLROnPlateau scheduler.factor=0.5
+
+# 結果輸出根目錄（推薦：寫到本地 ./result/，避免污染共用網路磁碟）
+python -m antenna train +experiment=train_ris environment.rootdir=.
 
 # multirun（同時跑多組）
 python -m antenna -m train +experiment=train_single optimizer.lr=0.001,0.005,0.01
