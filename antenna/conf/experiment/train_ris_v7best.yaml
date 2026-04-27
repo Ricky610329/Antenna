@@ -1,0 +1,47 @@
+# @package _global_
+# RIS 訓練的 v7 最佳設定（min_loss 3.02 @ 15×15 RIS, 100 epoch）
+#
+# 來源：docs/architecture.md §8.4c 的實驗對比表
+# 用法：
+#     python -m antenna train +experiment=train_ris_v7best environment.device=cuda:0
+#
+# 關鍵設計：
+# - patience=20 觸發頻繁 rollback 做 simulated annealing
+# - T_0=200 + epochs=100 → tau 只走半段 cosine（max 4.0 → 約 2.0），
+#   避免低 tau 區段的梯度 vanishing（見 §8.4c）
+# - scheduler.patience=500 停用內建 plateau restart（rollback 自己負責探索）
+# - surrogate.hfss_max_epoch=5000 把每 epoch 的 surrogate 內層 fit 從 20000
+#   降到 5000，加速 4×（accuracy 影響不大）
+#
+# 注意：trainer 的 rollback 已修正不會把 scheduler state 拉回（commit 77b5078），
+# 此設定才能讓 tau 真正單調退火。
+defaults:
+  - override /response: ris
+
+model: gumbel_sigmoid_gen
+simulator: ris
+epochs: 100
+patience: 20
+experiment_name: "[RIS-v7best][{device}] 15x15-AdaptiveCyclical"
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 200
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 1.0e-6
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001
