@@ -387,6 +387,7 @@ Gumbel-Sigmoid 的 forward 是 `sigmoid(clamp(logits, -5, 5) / tau) + noise`，b
 | v8 (20×20) | T_0=120, scheduler decoupled | 20 | 2.08 | 13 | 3.53 | **物理現象反直覺**：元素增加 → beam 反而更窄 → 對寬 target 反而 worse |
 | v9 (10×10) | T_0=200, scheduler decoupled | 20 | 2.08 | 32 | 3.48 | 元素更少也 worse — beam 形狀不夠尖銳，能量散布過廣，sidelobe 反過頭抬高 |
 | v11 (15×15, target plateau 40→20) | T_0=200, scheduler decoupled | 20 | 0.10 | 56 | 3.06 | **target 窄化沒突破** — best pattern 仍 100% 全亮，響應跟 V7 幾乎相同；loss 下界跟 target 形狀無關 |
+| v12 (15×15, **WideGumbelSigmoidGEN** clamp [-20,20]) | T_0=200, scheduler decoupled | 20 | TBD | TBD | 7.83 (mid-run) | **wide clamp 沒解決 collapse** — best pattern 仍 100% on，logits 實際只用 [0.44, 0.57] 範圍。問題不在 clamp 邊界，generator 自然偏好 logits ≈ 0。loss 反更差（梯度動力差異） |
 
 **結論**：對這類二值 inverse design 任務，**tau 應維持在 2-4 區間**（避免 vanishing），配合頻繁 rollback 做隨機探索；同時讓 scheduler 不被 rollback 拉回讓 tau 能單調往下。後續若要做完整退火到 tau<1，需解決梯度 vanishing（例如擴大 clamp 範圍、或使用其他 STE 近似）。
 
@@ -411,11 +412,12 @@ V7 (15×15) 的 beam 比 V8 (20×20) 寬，反而更貼近此 target 的 40-samp
 這代表訓練期間「最佳」響應其實**不是來自 generator 學到的 mapping**，而是來自 Gumbel-Sigmoid 在 forward 時的隨機採樣 — Gumbel noise 混入後產生的非全亮 pattern 偶爾比較好，被 rollback 抓住。
 
 **結論**：目前的「訓練」實際上是用 Gumbel-Sigmoid 採樣 + rollback 跑 simulated annealing，**不是真正的 inverse design 學習**。要讓 generator 真的學到 target → pattern 的 mapping，可能要：
-1. 擴大 `clamp([-5, 5])` 範圍，讓 logits 能拉開正負區隔
-   → 已實作 `WideGumbelSigmoidGEN` (clamp [-20, 20])，在 `MODEL_REGISTRY` 中以 `wide_gumbel_sigmoid_gen` 註冊；preset `train_ris_v12wide.yaml`。
+1. ~~擴大 `clamp([-5, 5])` 範圍，讓 logits 能拉開正負區隔~~
+   → 已實作 `WideGumbelSigmoidGEN` (clamp [-20, 20])，**V12 實測無效**：generator 自然把 logits 維持在 [0.44, 0.57]，根本沒用到擴大的範圍。問題不在 clamp 邊界。
 2. 用更強的 STE（例如 hard sample + softmax 反向）
-3. 加 reconstruction-style 約束（例如 binary entropy regularization 鼓勵兩極化）
+3. 加 reconstruction-style 約束（例如 binary entropy regularization 鼓勵兩極化），或在 init 時讓 fc_patch 的 bias 偏離 0
 4. **改 loss 設計** → 已實作 `custom_loss_directivity`：tolerance + main beam reward 風格（不只是「不要過低」，直接獎勵峰值升高）；preset `train_ris_v13directivity.yaml` 結合 wide gumbel 與此 loss。
+5. **真正改成 conditional generator**：訓練時隨機 sample 一組多樣 target，讓 mapping 真有 pressure 學成。這需要改 trainer 主迴圈與 target 採樣策略。
 
 可用 `script/inspect_ris_run.py` 檢視任一 run：
 - `pic/best_pattern_hard.png` — best epoch 的 hard-binarized pattern
