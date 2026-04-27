@@ -20,6 +20,7 @@ from antenna.core.response import AntennaResponse
 from antenna.losses.patch_losses import custom_loss_g, custom_loss_minmax, custom_loss_r
 from antenna.losses.regularization import FeedReachability, GapClosingLoss, SpectralConnectivityLoss
 from antenna.models.base import Models
+from antenna.models.generators.biased_gumbel_sigmoid_gen import BiasedGumbelSigmoidGEN
 from antenna.models.generators.gumbel_sigmoid_gen import GumbelSigmoidGEN
 from antenna.models.generators.sigmoid_gen import SigmoidGEN
 from antenna.models.generators.wide_gumbel_sigmoid_gen import WideGumbelSigmoidGEN
@@ -47,6 +48,7 @@ MODEL_REGISTRY: dict[str, type[torch.nn.Module]] = {
     "sigmoid_gen": SigmoidGEN,
     "gumbel_sigmoid_gen": GumbelSigmoidGEN,
     "wide_gumbel_sigmoid_gen": WideGumbelSigmoidGEN,
+    "biased_gumbel_sigmoid_gen": BiasedGumbelSigmoidGEN,
 }
 
 # 模擬器對應表（YAML `simulator` 欄位映射至模擬器 factory）。

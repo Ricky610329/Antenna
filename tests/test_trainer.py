@@ -196,7 +196,12 @@ def test_loss_fn_registry_values_are_callable():
 
 def test_model_registry_keys():
     """MODEL_REGISTRY 應含所有目前支援的生成器。"""
-    assert set(MODEL_REGISTRY) == {"sigmoid_gen", "gumbel_sigmoid_gen", "wide_gumbel_sigmoid_gen"}
+    assert set(MODEL_REGISTRY) == {
+        "sigmoid_gen",
+        "gumbel_sigmoid_gen",
+        "wide_gumbel_sigmoid_gen",
+        "biased_gumbel_sigmoid_gen",
+    }
 
 
 def test_model_registry_values_are_classes():
