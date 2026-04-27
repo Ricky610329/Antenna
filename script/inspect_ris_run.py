@@ -65,14 +65,40 @@ def plot_loss(data: dict, out: Path) -> None:
 _SETUP_DONE = False
 
 
-def _setup_once(pattern_coord: tuple) -> None:
-    """只 register 一次（全域狀態）。"""
+def _load_target_from_cfg(run_dir: Path) -> tuple[float, float, tuple] | None:
+    """嘗試從 result/<run>/config.yaml 讀出 target (side, center, width)。
+
+    若該 run 是用早期 trainer 跑的（沒寫 config.yaml）則回傳 None，
+    呼叫端會 fallback 到預設 target。
+    """
+    cfg_path = run_dir / "config.yaml"
+    if not cfg_path.exists():
+        return None
+    try:
+        from omegaconf import OmegaConf
+
+        cfg = OmegaConf.load(cfg_path)
+        tgt = cfg.response.label_configs.response.target
+        return float(tgt.side), float(tgt.center), tuple(tgt.width)
+    except Exception:
+        return None
+
+
+def _setup_once(pattern_coord: tuple, run_dir: Path | None = None) -> None:
+    """只 register 一次（全域狀態）。target 優先從 run dir 的 config.yaml 讀；
+    讀不到 fallback 到預設 V4–V9 target (40-sample plateau)。"""
     global _SETUP_DONE
     AntennaPattern.setDefaultCoordinate(pattern_coord)
     if _SETUP_DONE:
         return
     AntennaResponse.registerLabels("response", x="ris")
-    AntennaResponse.registerTargetResponse(-20.0, 0.0, (140, 0, 40, 0, 181), "response")
+    target_args = (-20.0, 0.0, (140, 0, 40, 0, 181))
+    if run_dir is not None:
+        loaded = _load_target_from_cfg(run_dir)
+        if loaded is not None:
+            target_args = loaded
+            print(f"  loaded target from config.yaml: side={loaded[0]} center={loaded[1]} width={loaded[2]}")
+    AntennaResponse.registerTargetResponse(*target_args, "response")
     _SETUP_DONE = True
 
 
@@ -92,7 +118,7 @@ def plot_pattern_evolution(run_dir: Path, coord: tuple, out: Path) -> None:
         print("  no generator checkpoints found")
         return
 
-    _setup_once(coord)
+    _setup_once(coord, run_dir)
 
     sample_epochs = [1, len(ckpts) // 2, len(ckpts)]
     sample_epochs = sorted(set(e for e in sample_epochs if 1 <= e <= len(ckpts)))
@@ -137,7 +163,7 @@ def plot_response_vs_target(run_dir: Path, coord: tuple, out: Path) -> None:
         return
 
     last_ep = len(ckpts)
-    _setup_once(coord)
+    _setup_once(coord, run_dir)
     target = AntennaResponse.target.concat().to(config.device)
 
     # 找 best epoch (real_loss 最小)
@@ -239,7 +265,7 @@ def plot_best_hard_pattern(run_dir: Path, coord: tuple, data: dict, out: Path) -
         print(f"  no ckpt at best epoch {best_ep}")
         return
 
-    _setup_once(coord)
+    _setup_once(coord, run_dir)
     target = AntennaResponse.target.concat().to(config.device)
     gen = load_generator(ckpt_path)
 

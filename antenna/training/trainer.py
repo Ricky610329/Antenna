@@ -116,6 +116,12 @@ class Trainer:
         self.path_pic = self.result_path.joinpath("pic").not_exist_create()
         self.path_checkpoint = self.result_path.joinpath("checkpoint").not_exist_create()
 
+        # 把當下使用的 cfg 落地到 result/，供 inspect 工具還原 target / coord 等資訊。
+        # 用 OmegaConf.save 寫成 YAML，避免之後讀不回來。
+        from omegaconf import OmegaConf
+
+        OmegaConf.save(self.cfg, self.result_path.joinpath("config.yaml"))
+
         config.epochs = self.cfg.epochs
         config.lr = self.cfg.optimizer.lr
         config.checkpoint_save_path = self.path_checkpoint
