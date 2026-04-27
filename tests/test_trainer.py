@@ -185,6 +185,7 @@ def test_loss_fn_registry_keys():
         "custom_loss_g",
         "custom_loss",
         "custom_loss_directivity",
+        "custom_loss_tolerance",
     }
 
 

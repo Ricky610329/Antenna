@@ -6,7 +6,7 @@ from torch.nn import functional as F
 
 from .simulate_ris import RISSimulator
 
-__all__ = ["RISSimulator", "custom_loss", "custom_loss_directivity"]
+__all__ = ["RISSimulator", "custom_loss", "custom_loss_directivity", "custom_loss_tolerance"]
 
 
 def custom_loss(prediction, target: Tensor, loss_type: str = "SmoothL1Loss"):
@@ -90,3 +90,48 @@ def custom_loss_directivity(
         main_reward = torch.tensor(0.0, device=prediction.device)
 
     return side_loss + main_beam_weight * main_reward
+
+
+def custom_loss_tolerance(
+    prediction,
+    target: Tensor,
+    sidelobe_threshold: float = -20.0,
+    main_target: float | None = None,
+    main_weight: float = 1.0,
+):
+    """雙邊 tolerance loss — 兩項都用平方 penalty，單位平衡（皆 dB²）。
+
+    跟 :func:`custom_loss_directivity` 相比：把 main beam reward 從線性
+    `-mean(prediction)` 改為硬下限 `(main_target - prediction).clamp(min=0).pow(2)`。
+    這樣 side / main 兩項單位都是 dB²、量級可比，避免 V13 觀察到的退化解
+    （generator 學會把 main beam 也壓低以滿足 sidelobe 限制）。
+
+    Args:
+        prediction: 預測響應 (dB)。
+        target: 目標 mask（梯形：target.max() = main beam 期望值，target.min() = sidelobe）。
+        sidelobe_threshold: sidelobe 上限 (dB)。
+        main_target: main beam 下限 (dB)。預設 None 時用 ``target.max()``。
+        main_weight: main beam penalty 相對 sidelobe 的權重；預設 1.0 = 平等對待。
+
+    Returns:
+        side_squared_excess + main_weight * main_squared_deficit。
+    """
+    if main_target is None:
+        main_target = float(target.max().item())
+
+    mask_main = target == target.max()
+    mask_side = target == target.min()
+
+    if mask_side.any():
+        side_excess = (prediction[mask_side] - sidelobe_threshold).clamp(min=0)
+        side_loss = side_excess.pow(2).mean()
+    else:
+        side_loss = torch.tensor(0.0, device=prediction.device)
+
+    if mask_main.any():
+        main_deficit = (main_target - prediction[mask_main]).clamp(min=0)
+        main_loss = main_deficit.pow(2).mean()
+    else:
+        main_loss = torch.tensor(0.0, device=prediction.device)
+
+    return side_loss + main_weight * main_loss

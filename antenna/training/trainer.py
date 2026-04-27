@@ -26,6 +26,7 @@ from antenna.models.generators.sigmoid_gen import SigmoidGEN
 from antenna.models.generators.wide_gumbel_sigmoid_gen import WideGumbelSigmoidGEN
 from antenna.ris import custom_loss as ris_custom_loss
 from antenna.ris import custom_loss_directivity as ris_custom_loss_directivity
+from antenna.ris import custom_loss_tolerance as ris_custom_loss_tolerance
 from antenna.schedulers.adaptive_cyclical import AdaptiveCyclicalScheduler
 from antenna.smodels import OldSM
 from antenna.utils.config import config
@@ -41,6 +42,7 @@ LOSS_FN_REGISTRY: dict[str, Callable[..., torch.Tensor]] = {
     # RIS 專用 loss，供 ``conf/response/ris.yaml`` 使用。
     "custom_loss": ris_custom_loss,
     "custom_loss_directivity": ris_custom_loss_directivity,
+    "custom_loss_tolerance": ris_custom_loss_tolerance,
 }
 
 # 模型對應表（YAML `model` 欄位映射至生成器類別）。
