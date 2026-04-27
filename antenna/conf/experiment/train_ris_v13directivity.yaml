@@ -1,0 +1,57 @@
+# @package _global_
+# RIS 訓練：V12 wide gumbel + directivity loss 雙管齊下
+#
+# 假說：
+# - V12 (wide_gumbel_sigmoid_gen, clamp [-20,20]) 給 logits 真正拉開正/負的空間
+# - custom_loss_directivity 直接獎勵 main beam 響應升高（不只是「不要過低」）
+# 兩者搭配可望讓 generator 真的學到 inverse mapping，loss 突破 SA 下界 ~3。
+#
+# 用法：
+#     python -m antenna train +experiment=train_ris_v13directivity environment.device=cuda:0
+#
+# 其餘設計與 v12wide 一致。
+defaults:
+  - override /response: ris
+
+model: wide_gumbel_sigmoid_gen
+simulator: ris
+epochs: 100
+patience: 20
+experiment_name: "[RIS-v13directivity][{device}] 15x15-Wide-Reward"
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+# 用 directivity loss：main beam reward + sidelobe penalty
+response:
+  labels: [response]
+  x: ris
+  label_configs:
+    response:
+      target:
+        side: -20
+        center: 0
+        width: [140, 0, 40, 0, 181]
+      loss_fn: custom_loss_directivity
+      loss_params:
+        sidelobe_threshold: -20.0
+        main_beam_weight: 0.1
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 200
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 1.0e-6
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001
