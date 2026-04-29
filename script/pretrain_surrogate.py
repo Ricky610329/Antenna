@@ -87,6 +87,16 @@ def main() -> None:
         default="result/_pretrained_surrogate",
         help="輸出目錄（預設 result/_pretrained_surrogate）",
     )
+    parser.add_argument(
+        "--n_structured",
+        type=int,
+        default=0,
+        help=(
+            "額外混入幾組「線性相位梯度」結構化 pattern。"
+            "若 >0 則對 (θ, φ) 隨機撒點生成，對 surrogate 教 directional beam mapping。"
+            "預設 0 = 純隨機 binary（向後相容原版行為）"
+        ),
+    )
     args = parser.parse_args()
 
     if args.device:
@@ -107,12 +117,45 @@ def main() -> None:
 
     # ── 1. 產生 dataset ──
     patterns, responses = generate_dataset(args.element_num, args.n_samples, seed=args.seed)
-    logger.info(f"patterns: {tuple(patterns.shape)} dtype={patterns.dtype}, on-rate={patterns.mean():.3f}")
-    logger.info(f"responses: {tuple(responses.shape)} dB range=[{responses.min():.2f}, {responses.max():.2f}]")
+    logger.info(f"random patterns: {tuple(patterns.shape)} on-rate={patterns.mean():.3f}")
+
+    # 可選：混入結構化 pattern（線性相位梯度）→ 教 surrogate 認識 directional beam
+    if args.n_structured > 0:
+        # 同目錄載入 generate_structured_patterns（script/ 不是 package，用 importlib）
+        import importlib.util as _ilu
+
+        _spec = _ilu.spec_from_file_location(
+            "_gen_struct", Path(__file__).parent / "generate_structured_patterns.py"
+        )
+        _mod = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+
+        s_pat, s_resp = _mod.generate_structured_dataset(
+            args.element_num, args.n_structured, seed=args.seed + 1
+        )
+        s_pat = s_pat.to(patterns.device)
+        s_resp = s_resp.to(responses.device)
+        patterns = torch.cat([patterns, s_pat], dim=0)
+        responses = torch.cat([responses, s_resp], dim=0)
+        logger.info(
+            f"混入 {args.n_structured} 組結構化 pattern → 總計 {len(patterns)} 筆"
+            f"（structured on-rate={s_pat.mean():.3f}）"
+        )
+
+    logger.info(f"responses dB range: [{responses.min():.2f}, {responses.max():.2f}]")
 
     dataset_pkl = out_dir / "dataset.pkl"
     with open(dataset_pkl, "wb") as f:
-        pickle.dump({"patterns": patterns, "responses": responses, "element_num": args.element_num}, f)
+        pickle.dump(
+            {
+                "patterns": patterns,
+                "responses": responses,
+                "element_num": args.element_num,
+                "n_random": args.n_samples,
+                "n_structured": args.n_structured,
+            },
+            f,
+        )
     logger.info(f"dataset → {dataset_pkl}  ({dataset_pkl.stat().st_size / 1024:.0f} KB)")
 
     # ── 2. 灌進 DataManager 給 train_by_datas 吃 ──

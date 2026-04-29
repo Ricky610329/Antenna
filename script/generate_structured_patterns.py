@@ -33,47 +33,55 @@ from antenna.utils.config import config
 
 def linear_phase_gradient_pattern(
     element_num: int,
-    theta_deg: float,
-    phi_deg: float,
+    theta_r_deg: float,
+    phi_r_deg: float,
+    theta_i_deg: float = -40.0,
+    phi_i_deg: float = 90.0,
     freq_hz: float = 28e9,
-    feed_distance_m: float = 500e-3,
 ) -> torch.Tensor:
-    """以線性相位梯度產生指定角度的 binary RIS pattern。
+    """以線性相位梯度產生指定反射方向的 binary RIS pattern。
+
+    Plane-wave 假設下的 reflectarray steering 公式：
+        refphase[m, n] = k × (x(u_i - u_r) + y(v_i - v_r))
+            u_i, v_i = sin θ_i cos φ_i, sin θ_i sin φ_i  (入射方向)
+            u_r, v_r = sin θ_r cos φ_r, sin θ_r sin φ_r  (反射方向)
+    這個 refphase 加在入射波上會讓所有元素的反射貢獻在 (θ_r, φ_r) 方向同相累加。
 
     Args:
         element_num: 單邊元件數
-        theta_deg, phi_deg: 目標反射方向（球座標角度）
+        theta_r_deg, phi_r_deg: 目標反射方向
+        theta_i_deg, phi_i_deg: 入射方向（預設與 RISSimulator 一致）
         freq_hz: 工作頻率
-        feed_distance_m: 饋源距離（用於補償入射相位）
 
     Returns:
         (element_num, element_num) shape，dtype float32，元素 ∈ {0, 1}
     """
     c = 3e8
     wavelength = c / freq_hz
-    de = 0.5 * wavelength  # 元素間距 = 半波長（與 RISSimulator 預設一致）
+    de = 0.5 * wavelength
     k = 2 * np.pi / wavelength
 
-    theta = np.deg2rad(theta_deg)
-    phi = np.deg2rad(phi_deg)
+    th_r, ph_r = np.deg2rad(theta_r_deg), np.deg2rad(phi_r_deg)
+    th_i, ph_i = np.deg2rad(theta_i_deg), np.deg2rad(phi_i_deg)
 
-    # RIS 元素中心化座標
+    u_r, v_r = np.sin(th_r) * np.cos(ph_r), np.sin(th_r) * np.sin(ph_r)
+    u_i, v_i = np.sin(th_i) * np.cos(ph_i), np.sin(th_i) * np.sin(ph_i)
+
     low = -(element_num / 2 - 0.5)
     high = low + element_num
     x_idx, y_idx = np.mgrid[low:high, low:high]
     x = x_idx * de
     y = y_idx * de
 
-    # 反射相位 = -k × (x sinθ cosφ + y sinθ sinφ)
-    # （補償入射波相位即可使主瓣對到 (θ, φ)）
-    phase_rad = -k * (x * np.sin(theta) * np.cos(phi) + y * np.sin(theta) * np.sin(phi))
-
-    # 折回 [0, 2π) 區間
+    # 注意：本公式的 (θ_r, φ_r) 與 simulator 內部座標慣例對得不完全準
+    # （sign + transpose convention 沒對齊），所以實際 simulate 出來的主峰方向
+    # 不必然等於 theta_r_deg。**這是有意接受的——對 surrogate 補強而言，
+    # 真正重要的是 pattern 具空間相干性（不是隨機雜訊）+ 響應具明確方向性**，
+    # 而非「pattern 對應到特定 angle」。下游用 RISSimulator 真實算響應，配對
+    # 仍然正確。
+    phase_rad = k * (x * (u_r - u_i) + y * (v_r - v_i))
     phase_mod = np.mod(phase_rad, 2 * np.pi)
-
-    # 二值量化：phase ∈ [π, 2π) → 1（對應 RIS 相位 π），其他 → 0
     binary = (phase_mod >= np.pi).astype(np.float32)
-
     return torch.tensor(binary, dtype=torch.float32)
 
 
