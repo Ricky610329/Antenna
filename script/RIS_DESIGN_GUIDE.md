@@ -93,6 +93,18 @@ python script/sweep_physical_limit.py \
 - ±60° 兩端比 0° 容易（接近鏡面反射方向有優勢）
 - 沒有 dead zones — 任何 target 都有 +0.3 dB 級別的解
 
+## RIS 陣列大小建議（round 10 sweep）
+
+| RIS 尺寸 | total cells | best suppression（3 target 最佳）|
+|---------|-------------|--------------------------------|
+| 10×10 | 100 | +4.27 dB |
+| 15×15 | 225 | +4.61 dB（current default）|
+| 20×20 | 400 | +5.70 dB |
+| **25×25** | **625** | **+7.57 dB ★** |
+
+**建議**：硬體允許下選 25×25 — 比 15×15 多 +3 dB suppression。15×15 在某些
+target 反而比 10×10 還差（local-minima 物理特性，原因待查），不是最佳選擇。
+
 ## Generator-based 路線（11 個 run 完整對照）
 
 | Version | Method | Suppression mean |
