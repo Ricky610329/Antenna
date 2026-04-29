@@ -357,6 +357,29 @@ specular reflection 干擾，最容易做 directional shaping。
 broadside target 成立**。其他 target 方向需要各別 sweep 找最佳 (freq,
 element_num, inc_θ) 配置。
 
+### Round 33 — Target × Inc_θ Sweep（specular-avoidance 假說失敗）
+
+5 target × 5 inc_θ × 5.6 GHz × 19×19 × seed=0（GD only, 無 SA）：
+
+| target_θ | -60° inc | -30° | 0° | +30° | +60° |
+|----------|----------|------|-----|------|------|
+| -50° | **+5.86 ★** | +4.32 | +3.72 | +2.25 | +3.69 |
+| -25° | +3.44 | **+6.69 ★** | +2.29 | +1.91 | +3.53 |
+| 0° | +2.20 | +4.78 | +1.76 | +8.18 | **+8.79 ★** |
+| +25° | **+6.08 ★** | +1.71 | +3.74 | +1.74 | +5.10 |
+| +50° | +4.10 | +5.76 | +3.73 | +4.63 | **+6.40 ★** |
+
+**Specular-avoidance 假說失敗**：
+- target=+25° 最佳 inc=**-60°**（specular 在 +60°，距離 35°）—— 不是預期 anti-diagonal
+- target=+50° 最佳 inc=+60°（specular 與 target 同方向）—— 反直覺
+- target × inc 配對是 **chaotic**，不能用簡單物理規則預測
+
+**對使用者**：
+- 每個 target 都需要 inc_θ sweep 找最佳（沒有 universal rule）
+- 最佳 cell: target=0°, inc=+60° → +8.79 dB（GD only）
+- 加 SA 後應 → +9~+11 級
+- 不過大致 inc=±60° 都 OK（除了少數 dead spot）
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
