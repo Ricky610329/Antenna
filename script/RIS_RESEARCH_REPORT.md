@@ -558,6 +558,29 @@ mean **+9.67**, min +8.32, max +11.82
 **對使用者**：target 寬度設計應匹配 RIS 的 main lobe 寬度（不要過寬或過窄）。
 不同 freq × n 配置有自己的 main lobe 寬度。
 
+### Round 44 — 10-Restart 命中率調查
+
+5.6 GHz × 19 × broadside × inc=+60° × width=46 × 10 restarts × SA-per-restart：
+
+  restart 1 (seed=0): GD +11.82 → SA +11.82 ★
+  restart 2-10:       GD +2.69~+7.91, SA +6.56~+9.32
+
+**1/10 命中率不變**（5 restart 也是 1/5）—— **+11.82 是 seed=0 specific**：
+- design tool default seed=0 → 對此特定配置直接命中 +11.82
+- 其他 seeds 1-9 + SA 都跨不過 deeper basin
+- 每個配置可能有自己的 lucky seed
+
+**Triple Sharp Peak Configuration**（+11.82 dB physical record requires
+ALL of）：
+1. 5.6 GHz frequency
+2. 19×19 size (9.5λ aperture)
+3. inc_θ=+60°
+4. broadside target (idx 154-200)
+5. width=46 (~23° main lobe match)
+6. seed=0 (lucky GD init)
+
+任一維度偏離都顯著下降。+11.82 是極窄 attraction basin。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
