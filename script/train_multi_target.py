@@ -59,6 +59,8 @@ def main() -> None:
     parser.add_argument("--n_targets", type=int, default=32, help="target pool 大小")
     parser.add_argument("--binary_mode", action="store_true", default=False,
                         help="是否套 BinarySTE（預設 False = 連續訓練 + 後處理量化）")
+    parser.add_argument("--cond_reg_weight", type=float, default=0.5,
+                        help="conditional regularizer 權重 — 強迫不同 target 給不同 logits")
     parser.add_argument("--surrogate_path", type=str,
                         default="result/_pretrained_surrogate_v4/checkpoint/sm.pth")
     parser.add_argument("--device", type=str, default=None)
@@ -142,6 +144,24 @@ def main() -> None:
         # binary_balance penalty 仍開
         loss = loss + 0.5 * (soft.mean() - 0.5).abs()
 
+        # ── Conditional regularizer ──
+        # 隨機抽另一個對比 target，要求兩者的 logits 距離夠大；penalize 1/(distance+ε)
+        # 用 logits（pre-sigmoid）而非 soft 比，避免 sigmoid 飽和把訊號壓掉
+        if args.cond_reg_weight > 0:
+            idx2 = int(np.random.randint(0, args.n_targets))
+            while idx2 == idx:
+                idx2 = int(np.random.randint(0, args.n_targets))
+            target2 = target_pool[idx2]
+            _ = gen(target2)
+            logits2 = gen.logits.detach()  # detach 避免雙倍 grad path
+            # 重新 forward target1 取 logits1（gen.logits 被 target2 的 forward 蓋掉）
+            _ = gen(target)
+            logits1 = gen.logits
+            l2_dist_sq = ((logits1 - logits2) ** 2).mean()
+            # reward 距離：penalty = w / (dist + eps)
+            cond_loss = args.cond_reg_weight / (l2_dist_sq + 0.1)
+            loss = loss + cond_loss
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -189,7 +209,11 @@ def main() -> None:
                     f"avg_suppression={avg_supp:+.2f} dB | best={best_supp:+.2f}"
                 )
 
-    # 結束評估：對 10 個 sample target 計算 suppression
+    # 結束評估：載入 best ckpt（不是 final），對 10 個 sample target 計算 suppression
+    best_path = ckpt_dir / "best.pth"
+    if best_path.exists():
+        gen.load_state_dict(torch.load(best_path, map_location=config.device, weights_only=False))
+        logger.info(f"評估時載入 best ckpt: avg_suppression={best_supp:+.2f} dB")
     gen.eval()
     rows = []
     sample_targets = make_target_pool(10, response_size=361, seed=args.seed + 999).to(config.device)
