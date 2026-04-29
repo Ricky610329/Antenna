@@ -54,9 +54,19 @@ def main() -> None:
     run_dir = Path(sys.argv[1]).resolve()
     config.device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    # 取 best epoch
-    import pickle
-    rec = pickle.load(open(run_dir / "temp.record", "rb"))["_data"]
+    # 取 best epoch — record 用 torch.save 寫入時會帶 device，cpu 啟動時要 map_location
+    import io, pickle, pickle as _pkl
+
+    def _safe_load_record(p: Path):
+        # record 是 pickle({_data: dict, ...})，但內含 torch.save 過的 tensor
+        # 用 torch.load 走完整 deserialize（含 map_location）
+        try:
+            return torch.load(p, map_location=config.device, weights_only=False)["_data"]
+        except Exception:
+            with open(p, "rb") as f:
+                return _pkl.load(f)["_data"]
+
+    rec = _safe_load_record(run_dir / "temp.record")
     rl = rec["real_loss"]; ep = rec["epoch"]
     best_ep = int(ep[int(np.argmin(rl))])
     ckpt = run_dir / "checkpoint" / f"generator_{best_ep}.pth"
