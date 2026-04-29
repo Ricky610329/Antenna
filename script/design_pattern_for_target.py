@@ -110,6 +110,9 @@ def main() -> None:
                         "round 12 sweep 顯示 ±60° 最佳，0° 最差。")
     p.add_argument("--inc_phi", type=float, default=None,
                    help="入射方位角 φ_i (deg)。None=用 default (90°)")
+    p.add_argument("--freq", type=float, default=None,
+                   help="工作頻率 (Hz)。None=用 default 28e9。"
+                        "5.6 GHz × 19×19 配置可達物理上限 +11.82 dB。")
     p.add_argument("--sa_steps", type=int, default=0,
                    help="GD 後加 SA fine-tune 的步數（0=不做）。"
                         "建議 5000-8000 + flip_n=3 + T0=20，能把 +2 dB local "
@@ -146,9 +149,11 @@ def main() -> None:
         sim_kwargs["inc_theta_deg"] = args.inc_theta
     if args.inc_phi is not None:
         sim_kwargs["inc_phi_deg"] = args.inc_phi
+    if args.freq is not None:
+        sim_kwargs["freq_hz"] = args.freq
     sim = RISSimulator(**sim_kwargs)
-    if args.inc_theta is not None or args.inc_phi is not None:
-        logger.info(f"使用入射角 inc_θ={sim.inc_theta_deg}°, inc_φ={sim.inc_phi_deg}°")
+    logger.info(f"RISSimulator: element_num={sim.element_num}, freq={sim.freq_hz / 1e9:.2f} GHz, "
+                f"inc_θ={sim.inc_theta_deg}°, inc_φ={sim.inc_phi_deg}°")
 
     logger.info(
         f"設計 target: plateau idx {main_lo}-{main_hi} ({args.plateau_w} samples), "

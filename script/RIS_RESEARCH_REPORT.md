@@ -309,6 +309,33 @@ suppression。
 **Open question**：torch.use_deterministic_algorithms(True) 能否讓 +11.82 變
 可重複？這是 round 31+ 可探的方向。
 
+### Round 31 — Reproducibility 真相（API bug, 非 CUDA non-det）
+
+CUDA determinism test (3 modes × 3 runs each, seed=0)：
+- Mode A 預設: +11.8231 / +11.8231 / +11.8231
+- Mode B cudnn.deterministic: +11.8231 / +11.8231 / +11.8231
+- Mode C use_deterministic_algorithms: +11.8231 / +11.8231 / +11.8231
+
+**所有 9 次 byte-identical** — GD 完全 deterministic！
+
+那 round 30 的「不一致」是怎麼回事？**design_pattern_for_target.py 缺
+`--freq` 參數**——所以 round 30 命令 `--inc_theta 60` 但沒指定 freq，
+RISSimulator 用 default 28 GHz。**+4.78 dB 是 28 GHz × 19×19 × +60°
+的合理結果**（跟 round 17/18 一致），不是 5.6 GHz 配置。
+
+**修正**：design_pattern_for_target / design_batch 都加 `--freq` 參數。
+驗證：design tool with `--freq 5.6e9 --element_num 19 --inc_theta 60 --seed 0`
+立刻得 +11.82 dB。
+
+**完整 epistemic 鏈**：
+- R19 sweep_frequency_x_size 觀察到 +11.82
+- R28 benchmark_gd_vs_sa 加 --freq 重現 +11.82
+- R30 design tool 沒 --freq 失敗（誤以為 CUDA non-det）
+- R31 fix design tool API → 立刻重現
+
+**最終結論**：+11.82 dB 是**完全 reproducible 的物理上限**。CUDA
+determinism 本來就 OK，問題是 API 設計缺失。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
