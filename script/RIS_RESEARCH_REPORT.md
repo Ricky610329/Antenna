@@ -515,6 +515,26 @@ mean **+9.67**, min +8.32, max +11.82
 新 SA-per-restart 對其他 size 提升到 +8.5+ dB（vs round 19 single-seed 在 +6~+7），
 但無法跨 19×19 的 +11.82 wide gap——**+11.82 是 5.6 GHz broadside 真實物理上限**。
 
+### Round 42 — Inc Fine Grid（+60° 是 Sharp Peak）
+
+5.6 GHz × 19 × broadside × inc fine grid × SA-per-restart：
+
+| inc_θ | suppression |
+|-------|-------------|
+| +50° | +8.88 |
+| +55° | +8.71 |
+| **+60°** | **+11.82 ★** |
+| +65° | +10.36 |
+| +70° | +9.28 |
+
+**重要發現**：
+- **+60° 是 sharp peak**，不是 broad plateau
+- ±5° 偏離造成 -1.46 ~ -3.11 dB 顯著下降
+- 物理：specular at -60° 與 broadside target (-1.5°) 距離最遠
+
+**對使用者**：硬體安裝必須精確對到 inc=+60°，差 ±5° 就會掉 1.5+ dB。
+**這是 critical 的部署建議**。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
