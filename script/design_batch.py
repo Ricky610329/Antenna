@@ -51,7 +51,10 @@ def design_one(
     sim: RISSimulator, target: torch.Tensor,
     *, element_num: int, main_lo: int, main_hi: int,
     steps: int, lr: float, n_restarts: int, seed: int,
+    sa_mod=None, sa_steps: int = 0, sa_T0: float = 20.0,
+    sa_flip_n: int = 3, sa_reheat_cycles: int = 2,
 ) -> dict:
+    """每個 GD restart 立刻做 SA，取 best across（修 round 35 SA-per-restart bug）。"""
     pattern_size = element_num * element_num
     best_supp = -np.inf
     best_pattern = None
@@ -84,11 +87,31 @@ def design_one(
             mp = float(hard_resp[main_idx].max())
             sm = float(hard_resp[side_idx].max())
             supp = mp - sm
-            if supp > best_supp:
-                best_supp = supp
-                best_pattern = hard.cpu().numpy()
-                best_resp = hard_resp
-                best_loss_overall = best_loss_local
+
+        # Round 36 修正：對每個 restart 立刻做 SA，不是只對 best GD
+        if sa_mod is not None and sa_steps > 0:
+            sa_pat, _ = sa_mod.sa_finetune(
+                sim, target, hard,
+                main_lo=main_lo, main_hi=main_hi,
+                steps=sa_steps, T0=sa_T0, T_final=0.001,
+                flip_n=sa_flip_n, log_every=sa_steps + 1,
+                reheat_cycles=sa_reheat_cycles,
+            )
+            _, sa_supp = sa_mod.evaluate(sim, sa_pat, target, main_lo, main_hi)
+            if sa_supp > supp:
+                with torch.no_grad():
+                    hard_resp = sim(sa_pat)["response"].cpu().numpy()
+                hard = sa_pat
+                supp = sa_supp
+                mp = float(hard_resp[main_idx].max())
+                sm_idx = np.array([i for i in range(len(hard_resp)) if i not in set(main_idx.tolist())])
+                sm = float(hard_resp[sm_idx].max())
+
+        if supp > best_supp:
+            best_supp = supp
+            best_pattern = hard.cpu().numpy() if isinstance(hard, torch.Tensor) else hard
+            best_resp = hard_resp
+            best_loss_overall = best_loss_local
 
     return {
         "suppression": best_supp,
@@ -200,37 +223,18 @@ def main() -> None:
         target_np = np.full(361, -20.0, dtype=np.float32)
         target_np[start:start + width] = 0.0
         target = torch.tensor(target_np, device=config.device)
+        # SA-per-restart: design_one 內部處理（round 36 修正）
         info = design_one(
             sim, target, element_num=args.element_num,
             main_lo=start, main_hi=start + width,
             steps=args.steps, lr=args.lr, n_restarts=nr, seed=args.seed,
+            sa_mod=sa_mod, sa_steps=args.sa_steps,
+            sa_T0=args.sa_T0, sa_flip_n=args.sa_flip_n,
+            sa_reheat_cycles=args.sa_reheat_cycles,
         )
         info["name"] = name
         info["plateau_start"] = start
         info["plateau_w"] = width
-
-        # 可選 SA fine-tune（每個 target 都做）
-        if sa_mod is not None:
-            init_supp = info["suppression"]
-            pat_t = torch.tensor(info["pattern"], dtype=torch.float32, device=config.device)
-            sa_pat, _ = sa_mod.sa_finetune(
-                sim, target, pat_t,
-                main_lo=start, main_hi=start + width,
-                steps=args.sa_steps, T0=args.sa_T0, T_final=0.001,
-                flip_n=args.sa_flip_n, log_every=max(1, args.sa_steps // 4),
-                reheat_cycles=args.sa_reheat_cycles,
-            )
-            sa_loss, sa_supp = sa_mod.evaluate(sim, sa_pat, target, start, start + width)
-            if sa_supp > info["suppression"]:
-                with torch.no_grad():
-                    info["hard_resp"] = sim(sa_pat)["response"].cpu().numpy()
-                info["pattern"] = sa_pat.cpu().numpy()
-                info["suppression"] = sa_supp
-                info["main_peak"] = float(info["hard_resp"][start:start + width].max())
-                info["side_max"] = float(np.delete(info["hard_resp"], np.arange(start, start + width)).max())
-                info["on_rate"] = float(sa_pat.float().mean())
-                logger.info(f"  SA: {init_supp:+.2f} → {sa_supp:+.2f} dB (+{sa_supp - init_supp:.2f})")
-
         results.append(info)
 
         # 個別 target dir
