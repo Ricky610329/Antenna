@@ -105,6 +105,11 @@ def main() -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--n_restarts", type=int, default=1,
                    help="random restart 次數，取最好的 — 避開 local minimum")
+    p.add_argument("--inc_theta", type=float, default=None,
+                   help="入射角 θ_i (deg)。None=用 RISSimulator default (-40°)。"
+                        "round 12 sweep 顯示 ±60° 最佳，0° 最差。")
+    p.add_argument("--inc_phi", type=float, default=None,
+                   help="入射方位角 φ_i (deg)。None=用 default (90°)")
     p.add_argument("--out_dir", type=str, default=None)
     p.add_argument("--device", type=str, default=None)
     args = p.parse_args()
@@ -127,7 +132,14 @@ def main() -> None:
     target_np[main_lo:main_hi] = center
     target = torch.tensor(target_np, device=config.device)
 
-    sim = RISSimulator(element_num=args.element_num)
+    sim_kwargs = {"element_num": args.element_num}
+    if args.inc_theta is not None:
+        sim_kwargs["inc_theta_deg"] = args.inc_theta
+    if args.inc_phi is not None:
+        sim_kwargs["inc_phi_deg"] = args.inc_phi
+    sim = RISSimulator(**sim_kwargs)
+    if args.inc_theta is not None or args.inc_phi is not None:
+        logger.info(f"使用入射角 inc_θ={sim.inc_theta_deg}°, inc_φ={sim.inc_phi_deg}°")
 
     logger.info(
         f"設計 target: plateau idx {main_lo}-{main_hi} ({args.plateau_w} samples), "

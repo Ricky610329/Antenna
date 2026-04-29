@@ -116,6 +116,9 @@ def main() -> None:
     p.add_argument("--lr", type=float, default=0.05)
     p.add_argument("--n_restarts", type=int, default=5)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--inc_theta", type=float, default=None,
+                   help="入射角 θ_i (deg)。round 12 sweep 顯示 ±60° 最佳，0° 最差")
+    p.add_argument("--inc_phi", type=float, default=None)
     p.add_argument("--csv", type=str, default=None,
                    help="CSV file with columns: name,plateau_start,plateau_w[,n_restarts]")
     p.add_argument("--target", action="append", default=[],
@@ -157,7 +160,14 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"輸出 dir: {out_dir}")
 
-    sim = RISSimulator(element_num=args.element_num)
+    sim_kwargs = {"element_num": args.element_num}
+    if args.inc_theta is not None:
+        sim_kwargs["inc_theta_deg"] = args.inc_theta
+    if args.inc_phi is not None:
+        sim_kwargs["inc_phi_deg"] = args.inc_phi
+    sim = RISSimulator(**sim_kwargs)
+    if args.inc_theta is not None or args.inc_phi is not None:
+        logger.info(f"使用入射角 inc_θ={sim.inc_theta_deg}°, inc_φ={sim.inc_phi_deg}°")
     THETA_DEG = np.arange(-90, 90.1, 0.5)
 
     results = []
