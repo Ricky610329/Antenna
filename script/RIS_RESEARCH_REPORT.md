@@ -112,6 +112,23 @@ GD + SA, 5.6 GHz × 19×19           +11.82 dB ← 新最高（round 19）
 會產生 grating lobe 干擾 main/side 分離。這比單純「aperture 越大越好」的
 直覺更精細。
 
+### Round 20 — 28 GHz fine grid 驗證 bimodal 假說
+
+| size | mean | max |
+|------|------|-----|
+| 11×11 | +8.08 | +8.44 |
+| **13×13** | **+8.93 ★** | +9.37 |
+| 15×15 | +8.15 | +9.75 |
+| 17×17 | +7.43 | +8.38 ← valley |
+| 19×19 | +7.94 | +9.44 |
+
+**結論**：
+- 28 GHz 也呈現非單調 size dependence（13 peak, 17 valley）
+- 不同頻率 peak 在不同 size：5.6 GHz=19×19 (9.5λ), 28 GHz=13×13 (6.5λ)
+- **不是純 aperture 效應**——還有 element spacing × inc_θ × target 的複雜 interaction
+- **修正建議**：28 GHz 選 13×13（不是 15×15）。Round 17 用 5 seeds 看 15×15 也不錯
+  (mean +7.87)，但 13×13 在這次 sweep 高出 0.78 dB
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
