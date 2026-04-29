@@ -266,6 +266,30 @@ suppression。
 - 實務 mean +8.15 dB，worst case +6.84 dB（reheat=1，reheat=2 應更高）
 - 想穩定接近 +11.82 需要更多 GD restarts 或更激進 SA reheat schedule
 
+### Round 29 — 激進 SA schedule 嘗試（失敗）
+
+對 seed=1 (GD +5.82) 試突破 +11.82 deeper basin：
+
+| Schedule | suppression |
+|----------|-------------|
+| GD init | +5.82 |
+| **std reheat=2** (flip_n=3, T0=20, 8000 step) | **+8.34 ★** |
+| big flip (flip_n=10, T0=50, 15000 step) | +7.98 |
+| huge flip (flip_n=20, T0=100, 15000 step) | +7.48 |
+| staged 20→10→3 (20000 step) | +7.54 |
+
+**重大結論**：
+1. **std reheat=2 已是 SA 最優**——更激進反而更差
+2. **更大 flip_n 不能跨 basin**——flip_n=20 翻 9% pixel 仍困在當前 basin
+3. **+11.82 是 wide gap 隔開的 deeper basin**——SA 從 +5.82 跳不過去
+4. **SA gain ceiling ≈ +2~+3 dB**——對 attraction basin 局部優化有效，跨 basin 無效
+
+**理論啟示**：attraction basin 結構不是連續可走的，+5.82 周圍 local max
+≈ +8.34，+11.82 是另一個（更深更窄）的 basin，需要 GD lucky init 才能找到。
+
+**對使用者**：要穩達 +11 級別，不要試更激進 SA — 應**多 GD restarts**（10 次
+有 ~1 次 lucky）+ std reheat=2 SA。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
