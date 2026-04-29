@@ -336,6 +336,27 @@ RISSimulator 用 default 28 GHz。**+4.78 dB 是 28 GHz × 19×19 × +60°
 **最終結論**：+11.82 dB 是**完全 reproducible 的物理上限**。CUDA
 determinism 本來就 OK，問題是 API 設計缺失。
 
+### Round 32 — +11.82 是 Target-Specific（Broadside Only）
+
+5 plateau positions × 5.6 GHz × 19×19 × inc_θ=+60° × seed=0：
+
+| target | θ_center | suppression |
+|--------|----------|-------------|
+| **center** | **-1.5°** | **+11.82 ★** |
+| right | +30° | +6.68 |
+| far_left | -48.5° | +4.70 |
+| left | -33° | +1.99 |
+| far_right | +61.5° | +0.60 ↓ |
+
+mean +5.16 dB, **+11.82 只在 broadside (θ≈0°) 達成**。
+
+**物理**：inc_θ=+60° → specular reflection 在 -60°；broadside 方向最遠離
+specular reflection 干擾，最容易做 directional shaping。
+
+**修正廣義建議**：「5.6 GHz × 19×19 × inc_θ=+60° 是最佳硬體配置」**只對
+broadside target 成立**。其他 target 方向需要各別 sweep 找最佳 (freq,
+element_num, inc_θ) 配置。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
