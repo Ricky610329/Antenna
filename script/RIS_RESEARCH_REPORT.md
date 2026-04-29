@@ -441,6 +441,32 @@ mean **+9.67**, min +8.32, max +11.82
 - broadside 是 +11.82 真實上限保持
 - 推薦此配置作為 5.6 GHz 部署的 baseline
 
+### Round 39 — 28 GHz × 13×13 對比（不同 freq×n 的 plateau profile）
+
+28 GHz × 13×13 × inc=+60° × 5 restart × SA-per-restart：
+
+| target | 5.6 GHz × 19 | 28 GHz × 13 |
+|--------|--------------|-------------|
+| left (-33°) | +9.44 | +7.87 |
+| center_left (-17.5°) | +9.84 | +9.93 |
+| **broadside (-1.5°)** | **+11.82 ★** | +9.18 |
+| center_right (+14°) | +9.57 | +9.17 |
+| right (+30°) | +9.43 | +8.71 |
+| **far_right (+45.5°)** | +9.29 | **+10.11 ★** |
+| rightmost (+61.5°) | +8.32 | +7.38 |
+| **mean** | **+9.67** | **+8.91** |
+
+**意外規律**：兩配置最佳 target 方向不同！
+- 5.6 GHz × 19 (aperture 9.5λ=508mm): best 在 broadside (-1.5°)
+- 28 GHz × 13 (aperture 6.5λ=70mm): best 在 far_right (+45.5°)
+
+物理推測：不同 aperture 跟 inc_θ 配對下，array factor 結構不同，
+最佳 target 方向不是 inc_θ 的簡單函數。
+
+**對使用者**：選擇 freq × n 配置時要考慮實際部署 target 方向。
+- 5.6 GHz 部署 → 19×19 broadside
+- 28 GHz 部署 → 13×13 偏右方向（+30°~+45°）
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
