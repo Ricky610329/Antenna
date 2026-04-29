@@ -535,6 +535,29 @@ mean **+9.67**, min +8.32, max +11.82
 **對使用者**：硬體安裝必須精確對到 inc=+60°，差 ±5° 就會掉 1.5+ dB。
 **這是 critical 的部署建議**。
 
+### Round 43 — Plateau Width Sweep（Width=46 也是 Sharp Peak）
+
+5.6 GHz × 19 × broadside (center idx 177) × inc=+60° × 5 restart × SA-per-restart：
+
+| width | θ range | suppression |
+|-------|---------|-------------|
+| 20 | -6.5° ~ +3.5° | +8.65 |
+| 30 | -9° ~ +6° | +8.65 |
+| **46** | -13° ~ +10° | **+11.82 ★** baseline |
+| 60 | -16.5° ~ +13.5° | +9.07 |
+| 80 | -21.5° ~ +18.5° | +9.62 |
+
+**重要發現**：**Width=46 是 sharp peak**，對應 5.6 GHz × 19 RIS main lobe
+寬度 ~23°：
+- 太窄 (20-30): plateau 切不到完整 main lobe
+- 太寬 (60-80): sidelobe 區被計入 main，相對 suppression 上限低
+
+**+11.82 dB 是「width=46 × inc=+60° × 19×19」三重 sharp peak 共振**。
+任何維度偏離都顯著下降。
+
+**對使用者**：target 寬度設計應匹配 RIS 的 main lobe 寬度（不要過寬或過窄）。
+不同 freq × n 配置有自己的 main lobe 寬度。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
