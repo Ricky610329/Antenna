@@ -413,6 +413,34 @@ Round 12 的結論基於 **GD only 雜訊**，被 SA 後完整 heatmap 推翻。
 
 **對使用者最終建議**：default `--inc_theta 30`，不是 60。
 
+### Round 37 — 7 Plateau Positions × SA-per-restart：整體大躍進
+
+5.6 GHz × 19×19 × inc=+60° × 5 restart × SA-per-restart：
+
+| target | θ_center | suppression |
+|--------|----------|-------------|
+| left | -33° | +9.44 |
+| center_left | -17.5° | +9.84 |
+| **broadside** | **-1.5°** | **+11.82 ★** |
+| center_right | +14° | +9.57 |
+| right | +30° | +9.43 |
+| far_right | +45.5° | +9.29 |
+| rightmost | +61.5° | +8.32 |
+
+mean **+9.67**, min +8.32, max +11.82
+
+**對比 Round 32**（同配置但 GD only seed=0）：
+- R32: range +0.60 ~ +11.82, mean +5.16（多 dead spots）
+- **R37: range +8.32 ~ +11.82, mean +9.67（no dead spots）**
+
+**SA-per-restart 邏輯 = 整體 +4.51 dB mean 改善**。
+
+**對使用者意義**：
+- **5.6 GHz × 19 × inc=+60° 對所有 plateau 方向都 ≥+8 dB**
+- 不只 broadside 強，整個 (-33° ~ +61.5°) 都達 +8~+11 dB
+- broadside 是 +11.82 真實上限保持
+- 推薦此配置作為 5.6 GHz 部署的 baseline
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）

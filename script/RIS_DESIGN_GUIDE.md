@@ -27,10 +27,15 @@ python script/design_pattern_for_target.py \
 > SA 後完整 heatmap 顯示 ±30° 對 5/5 target 都有最佳或近最佳結果，
 > 比 ±60° 好 ~+1 dB mean。Round 12 的「±60° 最佳」是 GD only 雜訊。
 
-**2 分鐘**輸出可部署的 binary pattern + 評估報告。實測 suppression 可達
-**+9.75 dB**（物理上限），mean **+8.38 dB**（round 25 reheat=2 benchmark），
-worst case **+7.13 dB**（即使 GD 全部 restart 卡 +2 dB local min）。比
-generator-based 路線（v6 −0.46 dB）高 **+10 dB**。
+**2 分鐘**輸出可部署的 binary pattern + 評估報告。
+
+**Round 37 升級紀錄**（5.6 GHz × 19 × inc=+60° × 7 plateau × SA-per-restart）:
+- broadside (-1.5°): **+11.82 dB ★** (物理上限)
+- 其他方向 (-33° ~ +61.5°): **+8.32 ~ +9.84 dB**
+- **mean +9.67 dB**, min +8.32 dB, max +11.82 dB
+- **沒有 dead spots**——所有 plateau 方向都達 +8 dB+
+
+比 generator-based 路線（v6 −0.46 dB）高 **+10 ~ +12 dB**。
 
 ## 工具樹
 
