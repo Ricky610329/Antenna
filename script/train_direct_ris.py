@@ -18,12 +18,38 @@ from pathlib import Path
 import numpy as np
 import torch
 from loguru import logger
+from torch import nn
 
 from antenna.core.pattern import AntennaPattern
 from antenna.core.response import AntennaResponse
 from antenna.models.generators.biased_gumbel_sigmoid_gen import BiasedGumbelSigmoidGEN
 from antenna.ris import RISSimulator, custom_loss_tolerance
 from antenna.utils.config import config
+
+
+class PlainMLPGen(nn.Module):
+    """無 Gumbel noise 的最簡 generator — pure MLP + sigmoid。
+
+    用於驗證 v8 conditioning failure 是否真由 GumbelSigmoid noise 造成。
+    """
+
+    def __init__(self, input_dim: int, hidden: int = 512):
+        super().__init__()
+        pat_size = AntennaPattern.size(flatten=True)
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, hidden),
+            nn.PReLU(),
+            nn.Linear(hidden, hidden),
+            nn.PReLU(),
+            nn.Linear(hidden, pat_size),
+        )
+        self.logits: torch.Tensor | None = None
+        self.tau = None  # 為了與 generator API 對齊
+        self.to(config.device)
+
+    def forward(self, target: torch.Tensor) -> torch.Tensor:
+        self.logits = self.net(target)
+        return torch.sigmoid(self.logits)
 
 # 重用 train_multi_target.py 的 target pool
 import importlib.util as _ilu
@@ -41,6 +67,8 @@ def main() -> None:
     parser.add_argument("--n_targets", type=int, default=32)
     parser.add_argument("--cond_reg_weight", type=float, default=0.5)
     parser.add_argument("--balance_weight", type=float, default=0.5)
+    parser.add_argument("--gen", choices=["biased", "plain"], default="biased",
+                        help="generator class — 'biased'=BiasedGumbelSigmoidGEN, 'plain'=PlainMLPGen (no noise)")
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--out_dir", type=str, default="result/RIS-direct-v8")
     parser.add_argument("--seed", type=int, default=0)
@@ -63,7 +91,11 @@ def main() -> None:
     target_pool = make_target_pool(args.n_targets, response_size=361, seed=args.seed).to(config.device)
     logger.info(f"target pool shape: {tuple(target_pool.shape)}")
 
-    gen = BiasedGumbelSigmoidGEN().to(config.device)
+    if args.gen == "biased":
+        gen = BiasedGumbelSigmoidGEN().to(config.device)
+    else:
+        gen = PlainMLPGen(input_dim=361).to(config.device)
+    logger.info(f"generator: {type(gen).__name__}")
     optimizer = torch.optim.Adam(gen.parameters(), lr=args.lr, betas=(0.5, 0.999))
 
     out_dir = Path(args.out_dir)
