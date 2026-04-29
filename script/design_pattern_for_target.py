@@ -103,6 +103,8 @@ def main() -> None:
     p.add_argument("--steps", type=int, default=2000)
     p.add_argument("--lr", type=float, default=0.05)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--n_restarts", type=int, default=1,
+                   help="random restart 次數，取最好的 — 避開 local minimum")
     p.add_argument("--out_dir", type=str, default=None)
     p.add_argument("--device", type=str, default=None)
     args = p.parse_args()
@@ -127,13 +129,30 @@ def main() -> None:
 
     sim = RISSimulator(element_num=args.element_num)
 
-    logger.info(f"設計 target: plateau idx {main_lo}-{main_hi} ({args.plateau_w} samples)")
-    pattern, info = design(
-        sim, target,
-        element_num=args.element_num,
-        main_lo=main_lo, main_hi=main_hi,
-        steps=args.steps, lr=args.lr, seed=args.seed,
+    logger.info(
+        f"設計 target: plateau idx {main_lo}-{main_hi} ({args.plateau_w} samples), "
+        f"n_restarts={args.n_restarts}"
     )
+
+    # Multi-restart：跑 n_restarts 次不同 seed，取 suppression 最高
+    best_pattern = None
+    best_info = None
+    for restart in range(args.n_restarts):
+        pat, info = design(
+            sim, target,
+            element_num=args.element_num,
+            main_lo=main_lo, main_hi=main_hi,
+            steps=args.steps, lr=args.lr, seed=args.seed + restart,
+        )
+        logger.info(
+            f"  restart {restart + 1}/{args.n_restarts}: "
+            f"suppression={info['suppression']:+.2f} dB"
+        )
+        if best_info is None or info["suppression"] > best_info["suppression"]:
+            best_pattern = pat
+            best_info = info
+    pattern, info = best_pattern, best_info
+    logger.info(f"best across {args.n_restarts} restarts: suppression={info['suppression']:+.2f} dB")
 
     tag = f"plateau_{main_lo}_{args.plateau_w}"
     out_dir = Path(args.out_dir) if args.out_dir else Path("outputs/per_target_design") / tag
