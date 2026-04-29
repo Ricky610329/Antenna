@@ -115,8 +115,19 @@ direct GD 比較顯示 BinarySTE (-3.34 dB) << continuous + post-quantize (+3.05
 - 25×25 在 inc_θ=-40° (default) 達 +7.57 dB
 - 15×15 在 inc_θ=+60° 達 +9.51 dB（更好！）
 - 25×25 在 inc_θ=+60° 反而 +7.42 dB（更糟）
-**直覺**：25×25 cells 更多但 GD landscape 更崎嶇，在某些 inc_θ 配對下
-local minima 比 15×15 還多。
+
+**Round 17 用 SA 驗證**：4 個 size 各跑 5 seeds × {GD, GD+SA}，inc_θ=+60°：
+
+| n | GD max | SA max | SA mean |
+|---|--------|--------|---------|
+| 10×10 | +5.87 | +8.21 | +7.52 |
+| **15×15** | +9.51 | **+9.75 ★** | **+7.87 ★** |
+| 20×20 | +5.22 | +8.28 | +7.13 |
+| 25×25 | +7.42 | +7.98 | +7.32 |
+
+**結論**：「越大越好」直覺**部分被否定**。SA 後 15×15 仍是真實物理最佳
+(max +9.75 vs 25×25 max +7.98)。25×25 的劣勢不是 GD 卡 local min，是真實
+物理特性（element spacing × wavelength × beam-forming 之間的 interaction）。
 
 ### 5. 入射角是最重要的物理變因
 | inc_θ | 平均 suppression |
