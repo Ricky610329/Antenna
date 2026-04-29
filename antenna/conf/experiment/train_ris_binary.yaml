@@ -1,0 +1,59 @@
+# @package _global_
+# RIS 訓練 — 強制 binary phase {0, π}（硬體相容版）
+#
+# 與 v15combo 的差別：
+# - binary_mode=true → generator 輸出走 BinarySTE，pattern 嚴格 {0, 1}
+#   送進 RISSimulator 對應 {0, π} 相位，與硬體實機一致
+# - 仍用 BiasedGumbelSigmoidGEN（反 collapse）+ custom_loss_tolerance（雙邊平方）
+# - tau 退火範圍可較窄：硬離散後 tau 主要影響 noise，不再影響輸出離散度
+#
+# 用法：
+#     python -m antenna train +experiment=train_ris_binary environment.device=cuda:0
+defaults:
+  - override /response: ris
+
+model: biased_gumbel_sigmoid_gen
+simulator: ris
+epochs: 100
+patience: 20
+experiment_name: "[RIS-binary][{device}] 15x15-BinarySTE"
+
+# 啟用嚴格二值化（{0, 1} → 對應 RIS 相位 {0, π}）
+binary_mode: true
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+response:
+  labels: [response]
+  x: ris
+  label_configs:
+    response:
+      target:
+        side: -20
+        center: 0
+        width: [140, 0, 40, 0, 181]
+      loss_fn: custom_loss_tolerance
+      loss_params:
+        sidelobe_threshold: -20.0
+        main_target: 0.0
+        main_weight: 1.0
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 200
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 1.0e-6
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001

@@ -1,0 +1,61 @@
+# @package _global_
+# RIS 訓練 — Binary phase + 預訓練 surrogate（推薦旗艦 preset）
+#
+# 與 train_ris_binary.yaml 的差別：
+# - 假設使用者已先執行 ``python script/pretrain_surrogate.py --element_num 15``
+# - surrogate.pretrained_path 指向預訓練輸出，trainer 啟動時直接載入
+# - surrogate.freeze=false：仍允許 online learning 微調 — 預訓練只是給個合理起點
+#
+# 用法（兩步驟）：
+#     python script/pretrain_surrogate.py --element_num 15 --n_samples 5000 --device cuda:0
+#     python -m antenna train +experiment=train_ris_binary_pretrained environment.device=cuda:0
+defaults:
+  - override /response: ris
+
+model: biased_gumbel_sigmoid_gen
+simulator: ris
+epochs: 100
+patience: 20
+experiment_name: "[RIS-binary-pretrained][{device}] 15x15-Binary-Pretrained"
+
+# 嚴格 binary（對應 RIS 相位 {0, π}）
+binary_mode: true
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+response:
+  labels: [response]
+  x: ris
+  label_configs:
+    response:
+      target:
+        side: -20
+        center: 0
+        width: [140, 0, 40, 0, 181]
+      loss_fn: custom_loss_tolerance
+      loss_params:
+        sidelobe_threshold: -20.0
+        main_target: 0.0
+        main_weight: 1.0
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 200
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 1.0e-6
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001
+  pretrained_path: result/_pretrained_surrogate
+  freeze: false

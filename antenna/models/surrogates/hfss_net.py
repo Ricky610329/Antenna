@@ -43,5 +43,9 @@ class HFSSNet(nn.Module):
 
     def forward(self, input: Tensor) -> Tensor:
         x = self.fc_patch(input)
-        x = x.reshape(self.num_response)
-        return x
+        # 同時支援 1D 單筆 (P,) 與 2D batch (B, P) 兩種輸入：
+        # - 1D：reshape 成 num_response（既有行為，trainer.train_one_data 走此 path）
+        # - 2D：reshape 成 (B, *num_response)，給 train_by_datas 的 batch loader 用
+        if input.dim() == 1:
+            return x.reshape(self.num_response)
+        return x.reshape(input.shape[0], *self.num_response)

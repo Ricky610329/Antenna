@@ -8,6 +8,7 @@
     trainer.run()
 """
 
+from pathlib import Path
 from time import time
 from typing import Any, Callable
 
@@ -19,6 +20,7 @@ from antenna.core.pattern import AntennaPattern
 from antenna.core.response import AntennaResponse
 from antenna.losses.patch_losses import custom_loss_g, custom_loss_minmax, custom_loss_r
 from antenna.losses.regularization import FeedReachability, GapClosingLoss, SpectralConnectivityLoss
+from antenna.models.autograd import BinarySTE
 from antenna.models.base import Models
 from antenna.models.generators.biased_gumbel_sigmoid_gen import BiasedGumbelSigmoidGEN
 from antenna.models.generators.gumbel_sigmoid_gen import GumbelSigmoidGEN
@@ -202,6 +204,20 @@ class Trainer:
         config["HFSS.max_epoch"] = self.cfg.surrogate.hfss_max_epoch
         self.smodel = OldSM(checkpoint=self.path_checkpoint)
 
+        # 預訓練 surrogate 載入（cfg.surrogate.pretrained_path 指向預訓練輸出 dir）
+        # 若指定且檔案存在，把 sm.pth 直接灌進 self.smodel.model 取代 cold start。
+        # cfg.surrogate.freeze=true 時整個 surrogate 不再更新（跳過 train_one_data / train_by_datas）。
+        self.surrogate_frozen = bool(getattr(self.cfg.surrogate, "freeze", False))
+        pretrained_path = getattr(self.cfg.surrogate, "pretrained_path", None)
+        if pretrained_path:
+            sm_pth = Path(pretrained_path) / "checkpoint" / "sm.pth"
+            if sm_pth.exists():
+                state = torch.load(sm_pth, map_location=config.device, weights_only=False)
+                self.smodel.model.load_state_dict(state)
+                logger.info(f"已載入預訓練 surrogate: {sm_pth}{' (frozen)' if self.surrogate_frozen else ''}")
+            else:
+                logger.warning(f"surrogate.pretrained_path 指定但找不到 {sm_pth}，使用 cold start")
+
         # 載入檢查點（需 self.record 已於 _setup_tracking 中建立）
         if self.continue_run and hasattr(self, "record") and ("epoch" in self.record):
             self.generator.change(self.record("epoch"), load=True)
@@ -271,6 +287,18 @@ class Trainer:
         self.gc_loss = GapClosingLoss() if self.cfg.gap_closing_loss_weight > 0 else None
         self.r_feed = FeedReachability.single_feed()
 
+    def _maybe_binarize(self, raw: torch.Tensor) -> torch.Tensor:
+        """依 ``cfg.binary_mode`` 決定是否把 generator 輸出強制離散化。
+
+        啟用後對 generator 的連續輸出套 :class:`BinarySTE`：forward 為 hard
+        threshold (>= 0.5)、backward 為 identity。**送進模擬器、surrogate、
+        及任何後續 loss 的 pattern 都會是嚴格 {0, 1}**，與 RIS 硬體 {0, π}
+        相位一致；訓練時 STE 仍提供 surrogate path 上的可微梯度。
+        """
+        if getattr(self.cfg, "binary_mode", False):
+            return BinarySTE.apply(raw)
+        return raw
+
     # ── 訓練迴圈 ──────────────────────────────────
 
     def run(self) -> None:
@@ -314,14 +342,18 @@ class Trainer:
                 )
                 if self.scheduler and sched_state is not None:
                     self.scheduler.load_state_dict(sched_state)
-                self.smodel.train_by_datas(self.online_dataset)
+                if not self.surrogate_frozen:
+                    self.smodel.train_by_datas(self.online_dataset)
                 target_in = AntennaResponse.target.concat().to(config.device)
-                output_element = AntennaPattern(self.generator(target_in))
+                soft_pattern = self.generator(target_in)
+                output_element = AntennaPattern(self._maybe_binarize(soft_pattern))
                 self.record["mutation"] = self.record("min_loss")
             else:
                 target_in = AntennaResponse.target.concat().to(config.device)
-                output_element = AntennaPattern(self.generator(target_in))
+                soft_pattern = self.generator(target_in)
+                output_element = AntennaPattern(self._maybe_binarize(soft_pattern))
                 self.record["mutation"] = 0
+            self._last_soft_pattern = soft_pattern
 
             # ── 去重 & 模擬 ──
             if (
@@ -331,8 +363,9 @@ class Trainer:
                 output_result = output_element.simulate()
                 real_loss = output_result.criterion()
                 stack_output_result = output_result.stack()
-                self.smodel.train_one_data(output_element.series, stack_output_result)
-                self.smodel.save()
+                if not self.surrogate_frozen:
+                    self.smodel.train_one_data(output_element.series, stack_output_result)
+                    self.smodel.save()
 
                 self.record["real_loss"] = real_loss.item()
                 if self.record("real_loss") < self.record.average("real_loss"):
@@ -376,6 +409,14 @@ class Trainer:
                 loss = loss + self.cfg.gap_closing_loss_weight * self.gc_loss(
                     output_element.size_converter(output_shape="B, 1, H, W")
                 )
+
+            # ── Binary balance loss（懲罰 pattern 偏離 50% on-rate，反 collapse）──
+            # 用 soft pattern (sigmoid 後、STE 前) 計算 mean，避免 STE 鎖死梯度。
+            balance_w = float(getattr(self.cfg, "binary_balance_weight", 0.0))
+            if balance_w > 0:
+                balance_loss = balance_w * (self._last_soft_pattern.mean() - 0.5).abs()
+                loss = loss + balance_loss
+                self.record["balance_loss"] = balance_loss.item()
 
             loss.backward()
             self.generator.step(scheduler_param=real_loss)
