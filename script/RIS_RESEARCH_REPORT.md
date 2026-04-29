@@ -636,6 +636,34 @@ ALL of）：
 - 60 GHz × 15: width=60
 - **General: width ≈ 60 / (aperture in λ) × 5**（粗略 fit）
 
+### Round 47 — 新紀錄 +13.41 dB（28 GHz × 13 × width=80 × inc=+50°）
+
+28 GHz × 13 × width=80 × broadside center × 5 restart × SA-per-restart：
+
+| inc_θ | suppression |
+|-------|-------------|
+| +30° | +9.30 |
+| +45° | +9.74 |
+| **+50°** | **+13.41 ★ NEW RECORD** |
+| +55° | +9.43 |
+| +60° (R46 baseline) | +10.53 |
+
+**重大發現**：
+1. **+50° 是 sharp peak**——±5° 都顯著低
+2. **28 GHz × 13 × width=80 best inc = +50°**（不是 +60°！）
+3. **新物理紀錄 +13.41 dB**（破之前 5.6 GHz × 19 × +60° 的 +11.82）
+4. **不同配置有不同 sweet inc**：
+   - 5.6 GHz × 19 × width=46: inc=+60°
+   - 28 GHz × 13 × width=80: inc=+50°
+
+從 v1 −4.08 dB 到 +13.41 dB = **17.49 dB 改善**（之前是 15.9 dB）。
+
+物理推測：每個配置（freq × n × width）有自己的 sweet inc。
+sweet inc 跟 specular reflection × main lobe 寬度的關係比想像複雜。
+單純「±60° best」過度簡化——實際是配置相關的 sharp peak。
+
+**新使用者建議**：對自己的 (freq, n, width) 跑 inc fine grid 找 sweet。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
