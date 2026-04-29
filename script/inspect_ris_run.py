@@ -14,9 +14,20 @@ import torch
 
 from antenna.core.pattern import AntennaPattern
 from antenna.core.response import AntennaResponse
+from antenna.models.generators.biased_gumbel_sigmoid_gen import BiasedGumbelSigmoidGEN
 from antenna.models.generators.gumbel_sigmoid_gen import GumbelSigmoidGEN
+from antenna.models.generators.sigmoid_gen import SigmoidGEN
+from antenna.models.generators.wide_gumbel_sigmoid_gen import WideGumbelSigmoidGEN
 from antenna.ris import RISSimulator
 from antenna.utils.config import config
+
+# 已知的 RIS generator 類別（順序 = 嘗試載入順序）
+_GEN_REGISTRY = (
+    BiasedGumbelSigmoidGEN,
+    WideGumbelSigmoidGEN,
+    GumbelSigmoidGEN,
+    SigmoidGEN,
+)
 
 
 def load_record(run_dir: Path) -> dict:
@@ -102,13 +113,21 @@ def _setup_once(pattern_coord: tuple, run_dir: Path | None = None) -> None:
     _SETUP_DONE = True
 
 
-def load_generator(ckpt_path: Path) -> GumbelSigmoidGEN:
-    gen = GumbelSigmoidGEN()
+def load_generator(ckpt_path: Path):
+    """載入 RIS generator checkpoint。逐一嘗試 registry 內的類別，第一個 state_dict 對得起來的勝出。"""
     ckpt = torch.load(ckpt_path, map_location=config.device, weights_only=False)
     state = ckpt["model_state_dict"] if isinstance(ckpt, dict) and "model_state_dict" in ckpt else ckpt
-    gen.load_state_dict(state)
-    gen.eval()
-    return gen
+    last_err: Exception | None = None
+    for cls in _GEN_REGISTRY:
+        gen = cls()
+        try:
+            gen.load_state_dict(state)
+            gen.eval()
+            return gen
+        except RuntimeError as e:
+            last_err = e
+            continue
+    raise RuntimeError(f"無法從 {ckpt_path.name} 載入任何已知 generator，最後錯誤：{last_err}")
 
 
 def plot_pattern_evolution(run_dir: Path, coord: tuple, out: Path) -> None:
@@ -131,11 +150,14 @@ def plot_pattern_evolution(run_dir: Path, coord: tuple, out: Path) -> None:
     for ax, ep in zip(axes, sample_epochs):
         gen = load_generator(ckpt_dir / f"generator_{ep}.pth")
         with torch.no_grad():
-            logits = gen(target)
+            # gen(target) 已是 [0, 1] 軟輸出（GumbelSigmoid 已套用），不再 sigmoid
+            soft = gen(target).detach()
         n = coord[1] - coord[0]
-        img = torch.sigmoid(logits.detach()).cpu().numpy().reshape(n, n)
-        ax.imshow(img, cmap="gray_r", vmin=0, vmax=1)
-        ax.set_title(f"epoch {ep} (sigmoid(logits))")
+        # 一律 hard binarization（{0, 1} 對應實機 RIS 相位 {0, π}）
+        hard = (soft > 0.5).float().cpu().numpy().reshape(n, n)
+        on = int(hard.sum())
+        ax.imshow(hard, cmap="gray_r", vmin=0, vmax=1)
+        ax.set_title(f"epoch {ep}\n{on}/{n * n} on ({100 * on / (n * n):.0f}%)")
         ax.axis("off")
 
     fig.tight_layout()
@@ -145,10 +167,14 @@ def plot_pattern_evolution(run_dir: Path, coord: tuple, out: Path) -> None:
 
 
 def _forward_pattern(gen, target, n: int) -> np.ndarray:
-    """硬二值化 pattern 並丟進 RIS sim，回傳響應 numpy 陣列。"""
+    """硬二值化 pattern 並丟進 RIS sim，回傳響應 numpy 陣列。
+
+    注意：``gen(target)`` 對 GumbelSigmoidGEN 系列回傳 **已套用 Gumbel-Sigmoid** 後
+    的 [0, 1] 軟輸出，不能再 ``sigmoid()`` 一次，否則永遠 > 0.5（hard 全 1）。
+    """
     with torch.no_grad():
-        logits = gen(target)
-        pattern = (torch.sigmoid(logits) > 0.5).float().reshape(n, -1)
+        soft = gen(target)
+        pattern = (soft > 0.5).float().reshape(n, -1)
     sim = RISSimulator(element_num=n)
     response = sim(pattern)
     if isinstance(response, dict):
@@ -279,8 +305,8 @@ def dump_samples(run_dir: Path, coord: tuple, data: dict, out_dir: Path, n_sampl
         target = AntennaResponse.target.concat().to(config.device)
 
         with torch.no_grad():
-            logits = gen(target)
-            soft = torch.sigmoid(logits)
+            # gen(target) 對 GumbelSigmoidGEN 系列已是 [0, 1] 軟輸出（不能再 sigmoid）
+            soft = gen(target)
             hard = (soft > 0.5).float().reshape(n, n)
             response = sim(hard)
         if isinstance(response, dict):
@@ -304,9 +330,22 @@ def dump_samples(run_dir: Path, coord: tuple, data: dict, out_dir: Path, n_sampl
         axes[1].set_title(f"Output pattern (hard-binarized)\n{on_count}/{n * n} on ({100 * on_count / (n * n):.0f}%)")
         axes[1].axis("off")
 
+        # ── main beam vs sidelobe 物理指標 ──
+        main_lo, main_hi = width[0], width[0] + width[2]
+        main_idx = np.arange(main_lo, min(main_hi, len(resp_np)))
+        side_idx = np.array([i for i in range(len(resp_np)) if i not in set(main_idx.tolist())])
+        main_peak = float(resp_np[main_idx].max()) if len(main_idx) else float("nan")
+        side_max = float(resp_np[side_idx].max()) if len(side_idx) else float("nan")
+        suppression = main_peak - side_max  # 正值表示 main beam 高於最大 sidelobe
+
         axes[2].plot(x, target_np, color="tab:blue", linewidth=1.5, label="target", alpha=0.7)
         axes[2].plot(x[: len(resp_np)], resp_np, color="tab:orange", linewidth=1.5, label="actual")
-        axes[2].set_title(f"Actual response (RIS sim)\nmax={resp_np.max():.2f} dB @ idx={int(np.argmax(resp_np))}")
+        # 標出 main beam 區間
+        axes[2].axvspan(main_lo, main_hi, color="green", alpha=0.08, label="main beam region")
+        axes[2].set_title(
+            f"Actual response — main_peak={main_peak:.2f} dB, "
+            f"side_max={side_max:.2f} dB, suppression={suppression:.2f} dB"
+        )
         axes[2].set_xlabel("sample idx")
         axes[2].set_ylabel("dB")
         axes[2].legend(fontsize=9)
@@ -317,16 +356,25 @@ def dump_samples(run_dir: Path, coord: tuple, data: dict, out_dir: Path, n_sampl
         out_path = samples_dir / f"sample_{idx:02d}.png"
         fig.savefig(out_path, dpi=110)
         plt.close(fig)
-        rows.append((idx, width[2], width[0], on_count, float(resp_np.max())))
+        rows.append((idx, width[2], width[0], on_count, main_peak, side_max, suppression))
 
     print(f"  dumped {n_samples} samples → {samples_dir}/")
-    # 摘要表
+    # 摘要表 — 報出物理指標而非單純 max
     summary_lines = [
-        "| # | plateau_w | plateau_start | pattern on% | resp peak dB |",
-        "|---|-----------|---------------|-------------|--------------|",
+        "| # | plateau_w | plateau_start | pattern on% | main_peak dB | side_max dB | suppression dB |",
+        "|---|-----------|---------------|-------------|--------------|-------------|----------------|",
     ]
-    for idx, w, start, on, peak in rows:
-        summary_lines.append(f"| {idx} | {w} | {start} | {100 * on / (n * n):.0f}% | {peak:.2f} |")
+    for idx, w, start, on, mp, sm, sup in rows:
+        summary_lines.append(
+            f"| {idx} | {w} | {start} | {100 * on / (n * n):.0f}% | "
+            f"{mp:.2f} | {sm:.2f} | {sup:+.2f} |"
+        )
+    # 整體統計
+    sup_vals = [r[6] for r in rows]
+    summary_lines.append("")
+    summary_lines.append(f"**suppression 統計**：mean={np.mean(sup_vals):+.2f} dB, "
+                         f"min={np.min(sup_vals):+.2f}, max={np.max(sup_vals):+.2f} dB")
+    summary_lines.append("> 正值 = main beam 高於最大 sidelobe（好）；負值 = 主峰反而被 sidelobe 蓋過（壞）。")
     (samples_dir / "summary.md").write_text("\n".join(summary_lines), encoding="utf-8")
     print(f"  summary → {samples_dir / 'summary.md'}")
 
@@ -376,8 +424,8 @@ def plot_best_hard_pattern(run_dir: Path, coord: tuple, data: dict, out: Path) -
 
     n = coord[1] - coord[0]
     with torch.no_grad():
-        logits = gen(target)
-        soft = torch.sigmoid(logits).cpu().numpy().reshape(n, n)
+        # gen(target) 已是 [0, 1] 軟輸出，不再 sigmoid
+        soft = gen(target).cpu().numpy().reshape(n, n)
         hard = (soft > 0.5).astype(np.float32)
 
     fig, axes = plt.subplots(1, 2, figsize=(8, 4))

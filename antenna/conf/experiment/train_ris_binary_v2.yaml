@@ -1,0 +1,63 @@
+# @package _global_
+# RIS 訓練 v2 — Binary + Pretrained + 反 collapse triple combo
+#
+# 比 train_ris_binary_pretrained.yaml 改的：
+# - H：BiasedGumbelSigmoidGEN 已內部修好（移除 BiScaleNorm + 啟動校準）
+#       初始 on-rate ≈ 50% 而非偏向全 1
+# - I：binary_balance_weight=0.5 — 懲罰 pattern 偏離 50% on-rate，反 collapse
+# - J：custom_loss_tolerance.main_weight=5.0 + sidelobe_threshold=-25.0
+#       強化「main beam 必須對到指定 plateau」訊號 + 提高 sidelobe 門檻
+#
+# 用法：
+#     python script/pretrain_surrogate.py --element_num 15 --n_samples 5000 --device cuda:0
+#     python -m antenna train +experiment=train_ris_binary_v2 environment.device=cuda:0
+defaults:
+  - override /response: ris
+
+model: biased_gumbel_sigmoid_gen
+simulator: ris
+epochs: 100
+patience: 20
+experiment_name: "[RIS-binary-v2][{device}] 15x15-Anti-Collapse"
+
+binary_mode: true
+binary_balance_weight: 0.5  # ← 反 collapse 主力
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+response:
+  labels: [response]
+  x: ris
+  label_configs:
+    response:
+      target:
+        side: -20
+        center: 0
+        width: [140, 0, 40, 0, 181]
+      loss_fn: custom_loss_tolerance
+      loss_params:
+        sidelobe_threshold: -25.0  # ← 從 -20 拉到 -25，主動壓 sidelobe
+        main_target: 0.0
+        main_weight: 5.0           # ← 從 1.0 拉到 5.0，強化主峰要求
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 200
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 1.0e-6
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001
+  pretrained_path: result/_pretrained_surrogate
+  freeze: false
