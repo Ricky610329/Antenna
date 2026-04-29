@@ -290,6 +290,25 @@ suppression。
 **對使用者**：要穩達 +11 級別，不要試更激進 SA — 應**多 GD restarts**（10 次
 有 ~1 次 lucky）+ std reheat=2 SA。
 
+### Round 30 — 10-Restart 驗證意外 + reproducibility 反思
+
+對 5.6 GHz × 19×19 用 design_pattern_for_target 跑 10 restarts (seed 0-9)：
+- best across 10: GD +6.36, GD+SA +8.03 dB
+- **沒命中 +11.82**！seed 0 在 design tool 卻只到 +4.78（vs benchmark seed 0 +11.82）
+
+**可能原因**：
+1. **GPU CUDA non-determinism**：torch.manual_seed(0) 在不同 run 給不同 logits
+2. design_pattern_for_target 與 benchmark_gd_vs_sa 之間 sim init 順序差異
+
+**修正使用者期望**：
+- +11.82 dB 是**真實上限**（兩次獨立 run 都達到）
+- 但**命中是極稀有 lucky 事件**，不是 10% 可預期
+- **實務期望**：mean +8.38 dB (round 25), max ~+9.75 dB
+- **+8 dB 已是 production-ready 水準**
+
+**Open question**：torch.use_deterministic_algorithms(True) 能否讓 +11.82 變
+可重複？這是 round 31+ 可探的方向。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
