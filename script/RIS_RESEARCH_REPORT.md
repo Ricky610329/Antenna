@@ -80,7 +80,8 @@ direct GD 15×15 (5 restart)        +6.94 dB
 direct GD 25×25 batch 5 targets    +8.65 dB
 direct GD 15×15 inc_θ=+60°         +9.51 dB（曾以為的上限）
 GD + SA fine-tune (28 GHz)         +9.80 dB
-GD + SA, 60 GHz × 10×10            +10.51 dB ← 真正最高（round 18）
+GD + SA, 60 GHz × 10×10            +10.51 dB
+GD + SA, 5.6 GHz × 19×19           +11.82 dB ← 新最高（round 19）
 ```
 
 ### Round 18 — 頻率 × element_num 二維 sweep（GD+SA）
@@ -93,6 +94,23 @@ GD + SA, 60 GHz × 10×10            +10.51 dB ← 真正最高（round 18）
 
 **Aperture 假說部分證實**：5.6 GHz 最佳 aperture=10λ，28/60 GHz 最佳=7.5λ。
 但 5.6 GHz 內非單調（15×15=7.5λ 反而最差）→ 還有其他物理因素未被解釋。
+
+### Round 19 — 5.6 GHz fine grid sweep（探 valley 結構）
+
+| size | mean | max | aperture |
+|------|------|-----|----------|
+| 11×11 | +7.40 | +7.99 | 5.5λ |
+| 13×13 | +8.16 | +10.40 | 6.5λ |
+| **15×15** | **+6.69** | **+7.57** | 7.5λ ← VALLEY |
+| 17×17 | +7.08 | +7.09 | 8.5λ |
+| **19×19** | **+9.07** | **+11.82 ★** | 9.5λ |
+
+**Bimodal 結構**：13×13 與 19×19 是高峰，15×15-17×17 是 valley。
+**新最高紀錄 +11.82 dB**（5.6 GHz × 19×19, 1 seed of 3）。
+
+**物理推測**：grating lobe 結構與 aperture 大小有共振效應。某些特定 aperture
+會產生 grating lobe 干擾 main/side 分離。這比單純「aperture 越大越好」的
+直覺更精細。
 
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
