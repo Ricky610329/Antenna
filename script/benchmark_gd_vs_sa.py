@@ -60,6 +60,7 @@ def main() -> None:
     p.add_argument("--plateau_start", type=int, default=154)
     p.add_argument("--plateau_w", type=int, default=46)
     p.add_argument("--inc_theta", type=float, default=60.0)
+    p.add_argument("--freq", type=float, default=28e9)
     p.add_argument("--steps", type=int, default=1500)
     p.add_argument("--lr", type=float, default=0.05)
     p.add_argument("--n_seeds", type=int, default=10)
@@ -80,7 +81,7 @@ def main() -> None:
 
     AntennaPattern.setDefaultCoordinate((0, args.element_num, 0, args.element_num))
     AntennaResponse.registerLabels("response", x="ris")
-    sim = RISSimulator(element_num=args.element_num, inc_theta_deg=args.inc_theta)
+    sim = RISSimulator(element_num=args.element_num, freq_hz=args.freq, inc_theta_deg=args.inc_theta)
 
     target_np = np.full(361, -20.0, dtype=np.float32)
     target_np[args.plateau_start:args.plateau_start + args.plateau_w] = 0.0
