@@ -160,58 +160,69 @@ def main() -> None:
         f"n_restarts={args.n_restarts}"
     )
 
-    # Multi-restart：跑 n_restarts 次不同 seed，取 suppression 最高
+    # Multi-restart：跑 n_restarts 次不同 seed
+    # **重要**：若有 SA，對每個 restart 都做 SA 取 max（不是 best GD 後做 SA）
+    # Round 35 驗證：差 GD 在 SA 下能跳更遠，好 GD 反而早卡 local plateau
+    if args.sa_steps > 0:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location("_sa", Path(__file__).parent / "binary_sa_finetune.py")
+        _sa_mod = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_sa_mod)
+    else:
+        _sa_mod = None
+
     best_pattern = None
     best_info = None
     for restart in range(args.n_restarts):
-        pat, info = design(
+        pat, info_r = design(
             sim, target,
             element_num=args.element_num,
             main_lo=main_lo, main_hi=main_hi,
             steps=args.steps, lr=args.lr, seed=args.seed + restart,
         )
-        logger.info(
-            f"  restart {restart + 1}/{args.n_restarts}: "
-            f"suppression={info['suppression']:+.2f} dB"
-        )
-        if best_info is None or info["suppression"] > best_info["suppression"]:
-            best_pattern = pat
-            best_info = info
-    pattern, info = best_pattern, best_info
-    logger.info(f"best across {args.n_restarts} restarts: suppression={info['suppression']:+.2f} dB")
+        gd_supp = info_r["suppression"]
 
-    # 可選 SA fine-tune（對 GD 找到的 best pattern 做 binary domain SA）
-    if args.sa_steps > 0:
-        import importlib.util as _ilu
-        _spec = _ilu.spec_from_file_location("_sa", Path(__file__).parent / "binary_sa_finetune.py")
-        _sa_mod = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_sa_mod)
-
-        logger.info(f"啟動 SA fine-tune: {args.sa_steps} steps, T0={args.sa_T0}, flip_n={args.sa_flip_n}")
-        sa_pattern, _ = _sa_mod.sa_finetune(
-            sim, target, pattern,
-            main_lo=main_lo, main_hi=main_hi,
-            steps=args.sa_steps, T0=args.sa_T0, T_final=0.001,
-            flip_n=args.sa_flip_n, log_every=max(1, args.sa_steps // 5),
-            reheat_cycles=args.sa_reheat_cycles,
-        )
-        sa_loss, sa_supp = _sa_mod.evaluate(sim, sa_pattern, target, main_lo, main_hi)
-        if sa_supp > info["suppression"]:
-            gain = sa_supp - info["suppression"]
-            logger.success(f"SA gain: {info['suppression']:+.2f} → {sa_supp:+.2f} dB (+{gain:.2f})")
-            with torch.no_grad():
-                hard_resp = sim(sa_pattern)["response"].cpu().numpy()
-            pattern = sa_pattern  # 保持 torch.Tensor（後面 main 用 .cpu().numpy()）
-            info = {
-                "best_loss": sa_loss,
-                "main_peak": float(hard_resp[main_lo:main_hi].max()),
-                "side_max": float(np.delete(hard_resp, np.arange(main_lo, main_hi)).max()),
-                "suppression": sa_supp,
-                "on_rate": float(sa_pattern.float().mean()),
-                "history": info["history"],
-                "hard_resp": hard_resp,
-            }
+        # 對每個 restart 立即做 SA（不等到 best GD 才做）
+        if _sa_mod is not None:
+            sa_pat, _ = _sa_mod.sa_finetune(
+                sim, target, pat,
+                main_lo=main_lo, main_hi=main_hi,
+                steps=args.sa_steps, T0=args.sa_T0, T_final=0.001,
+                flip_n=args.sa_flip_n, log_every=args.sa_steps + 1,
+                reheat_cycles=args.sa_reheat_cycles,
+            )
+            sa_loss, sa_supp = _sa_mod.evaluate(sim, sa_pat, target, main_lo, main_hi)
+            if sa_supp > gd_supp:
+                with torch.no_grad():
+                    hard_resp = sim(sa_pat)["response"].cpu().numpy()
+                pat = sa_pat
+                info_r = {
+                    "best_loss": sa_loss,
+                    "main_peak": float(hard_resp[main_lo:main_hi].max()),
+                    "side_max": float(np.delete(hard_resp, np.arange(main_lo, main_hi)).max()),
+                    "suppression": sa_supp,
+                    "on_rate": float(sa_pat.float().mean()),
+                    "history": info_r["history"],
+                    "hard_resp": hard_resp,
+                }
+            logger.info(
+                f"  restart {restart + 1}/{args.n_restarts}: "
+                f"GD={gd_supp:+.2f} → SA={info_r['suppression']:+.2f} dB"
+            )
         else:
-            logger.warning(f"SA 未改善：{info['suppression']:+.2f} → {sa_supp:+.2f}（保留 GD 結果）")
+            logger.info(
+                f"  restart {restart + 1}/{args.n_restarts}: "
+                f"suppression={info_r['suppression']:+.2f} dB"
+            )
+
+        if best_info is None or info_r["suppression"] > best_info["suppression"]:
+            best_pattern = pat
+            best_info = info_r
+
+    pattern, info = best_pattern, best_info
+    logger.success(
+        f"best across {args.n_restarts} restarts (with SA each): "
+        f"suppression={info['suppression']:+.2f} dB"
+    )
 
     tag = f"plateau_{main_lo}_{args.plateau_w}"
     out_dir = Path(args.out_dir) if args.out_dir else Path("outputs/per_target_design") / tag
