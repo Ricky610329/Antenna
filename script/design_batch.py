@@ -119,6 +119,10 @@ def main() -> None:
     p.add_argument("--inc_theta", type=float, default=None,
                    help="入射角 θ_i (deg)。round 12 sweep 顯示 ±60° 最佳，0° 最差")
     p.add_argument("--inc_phi", type=float, default=None)
+    p.add_argument("--sa_steps", type=int, default=0,
+                   help="GD 後加 SA fine-tune 步數（0=不做）。建議 8000 + flip_n=3 + T0=20")
+    p.add_argument("--sa_T0", type=float, default=20.0)
+    p.add_argument("--sa_flip_n", type=int, default=3)
     p.add_argument("--csv", type=str, default=None,
                    help="CSV file with columns: name,plateau_start,plateau_w[,n_restarts]")
     p.add_argument("--target", action="append", default=[],
@@ -168,6 +172,14 @@ def main() -> None:
     sim = RISSimulator(**sim_kwargs)
     if args.inc_theta is not None or args.inc_phi is not None:
         logger.info(f"使用入射角 inc_θ={sim.inc_theta_deg}°, inc_φ={sim.inc_phi_deg}°")
+
+    # 可選 SA fine-tune 模組（lazy import）
+    sa_mod = None
+    if args.sa_steps > 0:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location("_sa", Path(__file__).parent / "binary_sa_finetune.py")
+        sa_mod = _ilu.module_from_spec(_spec); _spec.loader.exec_module(sa_mod)
+        logger.info(f"SA fine-tune enabled: {args.sa_steps} steps, T0={args.sa_T0}, flip_n={args.sa_flip_n}")
     THETA_DEG = np.arange(-90, 90.1, 0.5)
 
     results = []
@@ -191,6 +203,28 @@ def main() -> None:
         info["name"] = name
         info["plateau_start"] = start
         info["plateau_w"] = width
+
+        # 可選 SA fine-tune（每個 target 都做）
+        if sa_mod is not None:
+            init_supp = info["suppression"]
+            pat_t = torch.tensor(info["pattern"], dtype=torch.float32, device=config.device)
+            sa_pat, _ = sa_mod.sa_finetune(
+                sim, target, pat_t,
+                main_lo=start, main_hi=start + width,
+                steps=args.sa_steps, T0=args.sa_T0, T_final=0.001,
+                flip_n=args.sa_flip_n, log_every=max(1, args.sa_steps // 4),
+            )
+            sa_loss, sa_supp = sa_mod.evaluate(sim, sa_pat, target, start, start + width)
+            if sa_supp > info["suppression"]:
+                with torch.no_grad():
+                    info["hard_resp"] = sim(sa_pat)["response"].cpu().numpy()
+                info["pattern"] = sa_pat.cpu().numpy()
+                info["suppression"] = sa_supp
+                info["main_peak"] = float(info["hard_resp"][start:start + width].max())
+                info["side_max"] = float(np.delete(info["hard_resp"], np.arange(start, start + width)).max())
+                info["on_rate"] = float(sa_pat.float().mean())
+                logger.info(f"  SA: {init_supp:+.2f} → {sa_supp:+.2f} dB (+{sa_supp - init_supp:.2f})")
+
         results.append(info)
 
         # 個別 target dir
