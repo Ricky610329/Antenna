@@ -581,6 +581,30 @@ ALL of）：
 
 任一維度偏離都顯著下降。+11.82 是極窄 attraction basin。
 
+### Round 45 — 60 GHz × 15 Width Sweep（不同 freq×n 不同 main lobe 寬度）
+
+60 GHz × 15 × broadside × inc=+60° × 5 restart × SA-per-restart：
+
+| width | 5.6 GHz × 19 | **60 GHz × 15** |
+|-------|--------------|------------------|
+| 20 | +8.65 | +7.64 |
+| 30 | +8.65 | +8.74 |
+| **46** | **+11.82 ★** | +9.91 |
+| **60** | +9.07 | **+10.14 ★** |
+| 80 | +9.62 | +9.67 |
+
+**重要新發現**：
+- **60 GHz × 15 best width = 60**（不是 46！）
+- 60 GHz × 15 broadside 新最佳 **+10.14 dB**
+- 不同 freq × n 配置有自己的 main lobe 匹配寬度
+
+物理推測：60 GHz × 15 main lobe 寬度比 5.6 GHz × 19 更寬，所以最佳 plateau 也較寬。
+
+**對使用者**：
+- 5.6 GHz 部署用 width=46
+- 60 GHz 部署用 width=60
+- 不能 hardcode width
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
