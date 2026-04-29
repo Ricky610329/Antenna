@@ -132,9 +132,16 @@ target 反而比 10×10 還差（local-minima 物理特性，原因待查），�
 | 28 GHz | **13×13 ★**（valley 在 17×17）| +8.93 | +9.37 | 6.5λ=70mm |
 | 60 GHz | **15×15 ★** | +8.55 | **+10.51** | 7.5λ=38mm |
 
-**⚠️ Universal valley at 17×17**（round 21 三頻率對照確認）：
-所有三頻率 (5.6/28/60 GHz) 在 17×17 都是 mean suppression local min。
-**強烈避免**這個 size — 物理上 grating lobe × inc_θ=+60° 配對下的 anti-resonance。
+**⚠️ Bimodal valley 隨 inc_θ 移動**（round 21-22 驗證）：
+
+當 inc_θ=+60°，三頻率 valley 在 17×17（5.6 GHz +7.08, 28 GHz +7.43, 60 GHz +7.02）。
+當 inc_θ=-40°，28 GHz valley 在 13×13 (+7.39)，17×17 反而是 peak (+7.97)。
+
+**結論**：bimodal valley **不是純 size 物理特性**，是 **inc_θ × size 配對的
+anti-resonance**。不同 inc_θ 下避開的 size 不同。
+
+**強烈建議**：為實際部署 inc_θ 跑 sweep_frequency_x_size.py fine grid 找
+你硬體配置下的真正最佳 size。下表只是 inc_θ=+60° 下的結果。
 
 **規律**：
 - 高頻（60 GHz）對 size 不敏感，10×10 已可達 +10.51 dB（歷史最高）

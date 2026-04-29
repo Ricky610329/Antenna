@@ -153,6 +153,33 @@ GD + SA, 5.6 GHz × 19×19           +11.82 dB ← 新最高（round 19）
 產生的 grating lobe 結構正好覆蓋 sidelobe 區，干擾 main/side 分離。要解釋
 這個 universal valley 需要更深入的 array factor 數學分析。
 
+### Round 22 — Universal Valley 假說被否定（!）
+
+實驗：28 GHz × 5 sizes × inc_θ=-40°（vs round 20 的 +60°）
+
+| size | inc_θ=+60° (round 20) | inc_θ=-40° (round 22) | 差異 |
+|------|-----------------------|-----------------------|------|
+| 11×11 | +8.08 | +7.56 | -0.52 |
+| 13×13 | **+8.93 ★** | **+7.39 ↓** | **valley 換位** |
+| 15×15 | +8.15 | **+8.01 ★** | swap |
+| 17×17 | **+7.43 ↓** | +7.97 | **不再 valley** |
+| 19×19 | +7.94 | +7.44 | -0.50 |
+
+**重大反轉**：
+- inc_θ=+60° 下 valley 在 17×17，peak 在 13×13
+- inc_θ=-40° 下 valley 在 13×13，peak 在 15×15
+- **17×17 universal valley 假說被否定**——它是 inc_θ × size 配對的
+  anti-resonance，不是純 size 物理特性
+
+**精準理解**：bimodal 結構源自 inc_θ × element spacing × target plateau
+位置的多因子干涉。對使用者意義：**不能用 lookup table 一勞永逸**，每個
+部署配置都需要 fine grid sweep。
+
+**修正使用者建議**：
+- 對自己的硬體配置（freq, inc_θ）跑 `sweep_frequency_x_size.py`
+- 取 mean suppression 最高的 size 作為實際部署選擇
+- Round 17 表（28 GHz × inc_θ=+60° → 15×15 是 sweet spot）只在那特定配置下成立
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
