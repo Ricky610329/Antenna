@@ -219,6 +219,29 @@ GD + SA, 5.6 GHz × 19×19           +11.82 dB ← 新最高（round 19）
 - 但 ±60° max 仍然較高（+8.71 vs 0° +8.25），所以**仍建議偏角入射**
 - 任意 inc_θ 在合適 size 下都能達 +7~+8 dB
 
+### Round 27 — inc_phi 入射方位角 sweep
+
+5 phi × 5 sizes × 2 seeds × GD+SA reheat=2, inc_θ=+60°, 28 GHz:
+
+| phi | row mean |
+|-----|----------|
+| **0°** | +4.76 ↓↓ |
+| +45° | +7.86 |
+| **+90°** | **+8.30 ★** |
+| +135° | +8.36 |
+| **180°** | +6.09 ↓ |
+
+**重大發現**：phi 影響非常大！
+- phi=0°/180° 災難（avg +4.76 / +6.09 dB）—— 應絕對避免
+- phi=±45°/±90°/±135° 都好（avg +7.86 ~ +8.36 dB）
+
+**物理解讀**：inc_phi 控制入射波在 RIS x/y 投影。response 是 phi=0° 切片，
+當 inc_phi=0/180°（入射與 response 同平面），specular reflection 直接干擾
+sidelobe 區。phi=90° 讓入射與 response 正交，反射波遠離 sidelobe → 高
+suppression。
+
+**對使用者**：RISSimulator default phi=90° 是 robust optimal，不要改。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）

@@ -125,6 +125,22 @@ target 反而比 10×10 還差（local-minima 物理特性，原因待查），�
 
 **強烈建議**：硬體安裝時避免垂直入射（θ=0°），偏角 ±60° 平均高 +5 dB suppression。
 
+## inc_phi 入射方位角警告（Round 27 sweep）
+
+| phi | mean (across sizes) |
+|-----|---------------------|
+| 0° | +4.76 dB ← **絕對避免** |
+| +45° | +7.86 dB |
+| **+90° (default)** | **+8.30 dB ★** |
+| +135° | +8.36 dB |
+| 180° | +6.09 dB ← **絕對避免** |
+
+物理：phi 控制入射波在 RIS x/y 投影。response 是 phi=0° 切片，當 inc_phi 也是
+0° / 180°（入射與 response 同平面），specular reflection 直接干擾 sidelobe 區。
+phi=90° 讓入射與 response 正交，反射波遠離 sidelobe → 高 suppression。
+
+**結論**：RISSimulator default 的 inc_phi=90° 是 robust optimal，不要改。
+
 ## 頻率 × 陣列大小選型表（round 18 sweep）
 
 | 部署頻率 | 推薦 size | mean (dB) | max (dB) | aperture |
