@@ -29,6 +29,11 @@ from antenna.ris import RISSimulator, custom_loss_tolerance
 from antenna.utils.config import config
 
 
+import importlib.util
+_spec = importlib.util.spec_from_file_location("_sa", Path(__file__).parent / "binary_sa_finetune.py")
+sa_mod = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(sa_mod)
+
+
 def gd_one(sim, target, n, main_lo, main_hi, steps, lr, seed):
     pattern_size = n * n
     torch.manual_seed(seed)
@@ -53,7 +58,7 @@ def gd_one(sim, target, n, main_lo, main_hi, steps, lr, seed):
         side_idx = np.array([i for i in range(len(resp)) if i not in set(main_idx.tolist())])
         mp = float(resp[main_idx].max())
         sm = float(resp[side_idx].max())
-    return mp - sm
+    return hard, mp - sm
 
 
 def main() -> None:
@@ -65,6 +70,8 @@ def main() -> None:
     p.add_argument("--plateau_w", type=int, default=46)
     p.add_argument("--steps", type=int, default=1500)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--sa_steps", type=int, default=0,
+                   help="若 >0，對每個 cell 跑 SA fine-tune（建議 8000）")
     p.add_argument("--device", type=str, default=None)
     p.add_argument("--out_dir", type=str, default="outputs/sweep_target_x_inc")
     args = p.parse_args()
@@ -93,9 +100,20 @@ def main() -> None:
         for j, inc in enumerate(args.inc_thetas):
             cnt += 1
             sim = RISSimulator(element_num=args.element_num, freq_hz=args.freq, inc_theta_deg=inc)
-            supp = gd_one(sim, target, args.element_num,
-                          plateau_start, plateau_start + args.plateau_w,
-                          args.steps, 0.05, args.seed)
+            hard, supp = gd_one(sim, target, args.element_num,
+                                plateau_start, plateau_start + args.plateau_w,
+                                args.steps, 0.05, args.seed)
+            if args.sa_steps > 0:
+                sa_pat, _ = sa_mod.sa_finetune(
+                    sim, target, hard,
+                    main_lo=plateau_start, main_hi=plateau_start + args.plateau_w,
+                    steps=args.sa_steps, T0=20.0, T_final=0.001,
+                    flip_n=3, log_every=args.sa_steps + 1,
+                    reheat_cycles=2,
+                )
+                _, supp_sa = sa_mod.evaluate(sim, sa_pat, target,
+                                             plateau_start, plateau_start + args.plateau_w)
+                supp = max(supp, supp_sa)
             Z[i, j] = supp
             logger.info(f"[{cnt}/{total}] target_θ={t_theta:+.0f}°, inc_θ={inc:+.0f}°: "
                         f"suppression={supp:+.2f} dB")
