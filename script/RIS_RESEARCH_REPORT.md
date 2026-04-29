@@ -79,8 +79,25 @@ v6 (generator best)                −0.46 dB
 direct GD 15×15 (5 restart)        +6.94 dB
 direct GD 25×25 batch 5 targets    +8.65 dB
 direct GD 15×15 inc_θ=+60°         +9.51 dB（曾以為的上限）
-GD + SA fine-tune                  +9.80 dB ← 真正物理上限（round 16 驗證）
+GD + SA fine-tune (28 GHz)         +9.80 dB
+GD + SA, 60 GHz × 10×10            +10.51 dB ← 真正最高（round 18）
 ```
+
+### Round 18 — 頻率 × element_num 二維 sweep（GD+SA）
+
+| frequency | 10×10 | 15×15 | 20×20 | 最佳 size | aperture |
+|-----------|-------|-------|-------|-----------|----------|
+| 5.6 GHz | +7.61 | +6.69 | **+8.43** | 20×20 | 10λ=536mm |
+| 28 GHz | +7.83 | **+8.15** | +7.27 | 15×15 | 7.5λ=80mm |
+| 60 GHz | +8.45 | **+8.55** | +8.44 | 15×15 | 7.5λ=38mm |
+
+**Aperture 假說部分證實**：5.6 GHz 最佳 aperture=10λ，28/60 GHz 最佳=7.5λ。
+但 5.6 GHz 內非單調（15×15=7.5λ 反而最差）→ 還有其他物理因素未被解釋。
+
+**對使用者的硬體選型建議更新**：
+- 28 GHz 部署：15×15 最佳
+- 5.6 GHz 部署：應選 20×20（甚至更大）
+- 60 GHz 部署：對 size 不敏感，10/15/20 都可
 
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
