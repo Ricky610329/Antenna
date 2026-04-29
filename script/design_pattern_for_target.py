@@ -110,6 +110,12 @@ def main() -> None:
                         "round 12 sweep 顯示 ±60° 最佳，0° 最差。")
     p.add_argument("--inc_phi", type=float, default=None,
                    help="入射方位角 φ_i (deg)。None=用 default (90°)")
+    p.add_argument("--sa_steps", type=int, default=0,
+                   help="GD 後加 SA fine-tune 的步數（0=不做）。"
+                        "建議 5000-8000 + flip_n=3 + T0=20，能把 +2 dB local "
+                        "minimum 推到 +7 dB 級別。")
+    p.add_argument("--sa_T0", type=float, default=20.0)
+    p.add_argument("--sa_flip_n", type=int, default=3)
     p.add_argument("--out_dir", type=str, default=None)
     p.add_argument("--device", type=str, default=None)
     args = p.parse_args()
@@ -165,6 +171,38 @@ def main() -> None:
             best_info = info
     pattern, info = best_pattern, best_info
     logger.info(f"best across {args.n_restarts} restarts: suppression={info['suppression']:+.2f} dB")
+
+    # 可選 SA fine-tune（對 GD 找到的 best pattern 做 binary domain SA）
+    if args.sa_steps > 0:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location("_sa", Path(__file__).parent / "binary_sa_finetune.py")
+        _sa_mod = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_sa_mod)
+
+        logger.info(f"啟動 SA fine-tune: {args.sa_steps} steps, T0={args.sa_T0}, flip_n={args.sa_flip_n}")
+        sa_pattern, _ = _sa_mod.sa_finetune(
+            sim, target, pattern,
+            main_lo=main_lo, main_hi=main_hi,
+            steps=args.sa_steps, T0=args.sa_T0, T_final=0.001,
+            flip_n=args.sa_flip_n, log_every=max(1, args.sa_steps // 5),
+        )
+        sa_loss, sa_supp = _sa_mod.evaluate(sim, sa_pattern, target, main_lo, main_hi)
+        if sa_supp > info["suppression"]:
+            gain = sa_supp - info["suppression"]
+            logger.success(f"SA gain: {info['suppression']:+.2f} → {sa_supp:+.2f} dB (+{gain:.2f})")
+            with torch.no_grad():
+                hard_resp = sim(sa_pattern)["response"].cpu().numpy()
+            pattern = sa_pattern  # 保持 torch.Tensor（後面 main 用 .cpu().numpy()）
+            info = {
+                "best_loss": sa_loss,
+                "main_peak": float(hard_resp[main_lo:main_hi].max()),
+                "side_max": float(np.delete(hard_resp, np.arange(main_lo, main_hi)).max()),
+                "suppression": sa_supp,
+                "on_rate": float(sa_pattern.float().mean()),
+                "history": info["history"],
+                "hard_resp": hard_resp,
+            }
+        else:
+            logger.warning(f"SA 未改善：{info['suppression']:+.2f} → {sa_supp:+.2f}（保留 GD 結果）")
 
     tag = f"plateau_{main_lo}_{args.plateau_w}"
     out_dir = Path(args.out_dir) if args.out_dir else Path("outputs/per_target_design") / tag

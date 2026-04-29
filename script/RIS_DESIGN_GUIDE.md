@@ -6,20 +6,25 @@
 ## 結論先行
 
 對 **「為單一固定 target 找最佳 binary RIS pattern」** 的實際需求，最佳工具
-是 **`design_pattern_for_target.py`**（with multi-restart）：
+是 **`design_pattern_for_target.py`**（with multi-restart + SA fine-tune）：
 
 ```bash
 python script/design_pattern_for_target.py \
-  --plateau_start 280 \
+  --plateau_start 154 \
   --plateau_w 46 \
+  --inc_theta 60 \
   --steps 1500 \
-  --n_restarts 5 \
+  --n_restarts 3 \
+  --sa_steps 8000 \
+  --sa_T0 20 \
+  --sa_flip_n 3 \
   --device cuda:0
 ```
 
-**5 分鐘**輸出可部署的 binary pattern + 評估報告。實測 suppression 可達
-**+6.94 dB**（接近物理上限），比 generator-based 路線（v6 −0.46 dB）高
-**+7.4 dB**。
+**2 分鐘**輸出可部署的 binary pattern + 評估報告。實測 suppression 可達
+**+9.51 dB**（物理上限），即使 GD 全部 restart 卡 +2 dB local min，SA 也能
+推到 +7+ dB（**round 15 驗證**）。比 generator-based 路線（v6 −0.46 dB）高
+**+10 dB**。
 
 ## 工具樹
 
