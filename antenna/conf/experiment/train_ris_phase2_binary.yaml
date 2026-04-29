@@ -1,0 +1,74 @@
+# @package _global_
+# Phase 2 / 位元遷移第二階段 — 載入 phase 1 連續權重 + 啟用 BinarySTE 微調
+#
+# 流程（兩步驟一起跑）：
+#     # Phase 1 — 連續相位
+#     python -m antenna train +experiment=train_ris_phase1_continuous experiment_name=RIS-phase1
+#     # Phase 2 — 把 phase 1 generator 權重遷移到 binary 模型，繼續微調
+#     python -m antenna train +experiment=train_ris_phase2_binary experiment_name=RIS-phase2
+#
+# 此 yaml 與 phase1 的差別：
+#   - binary_mode=true → 啟用 BinarySTE，輸出嚴格 {0,1}
+#   - generator.pretrained_path 指向 Phase 1 結果（trainer 自動載入最後一個 generator_*.pth）
+#   - epoch 較少（微調，不從零開始）
+#   - lr 較小（避免破壞 phase 1 學到的 conditional 結構）
+defaults:
+  - override /response: ris
+
+model: biased_gumbel_sigmoid_gen
+simulator: ris
+epochs: 50
+patience: 20
+experiment_name: "[RIS-phase2][{device}] 15x15-binary-migrated"
+
+binary_mode: true
+binary_balance_weight: 0.5
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+response:
+  labels: [response]
+  x: ris
+  label_configs:
+    response:
+      target:
+        side: -20
+        center: 0
+        width: [140, 0, 40, 0, 181]
+      loss_fn: custom_loss_tolerance
+      loss_params:
+        sidelobe_threshold: -25.0
+        main_target: 0.0
+        main_weight: 5.0
+
+# Phase 2 用較小 lr（從 phase 1 的 0.005 降到 0.001）
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.001
+  betas: [0.5, 0.999]
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 100
+  T_mult: 1
+  lr_max: 0.001
+  lr_min: 1.0e-6
+  temp_max: 2.0          # ← 比 phase 1 低，鎖定離散決策
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001
+  pretrained_path: result/_pretrained_surrogate
+  freeze: false
+
+# 位元遷移：載入 phase 1 的 generator 權重（trainer 自動從該 dir 找最新 checkpoint）
+generator:
+  pretrained_path: result/RIS-phase1

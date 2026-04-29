@@ -1,0 +1,66 @@
+# @package _global_
+# Phase 1 / 位元遷移第一階段 — 連續相位生成
+#
+# 目的：先讓 generator 學會「target → 連續相位 pattern」的 conditional mapping，
+#      避開量化造成的優化崎嶇空間。下一步 (phase 2) 才把權重遷移到 binary 模型。
+#
+# 設計依據：114 學年蔡奇倫論文「位元遷移策略」§3 + ICLR 2026 progressive QAT 文獻
+# 主要差異 vs train_ris_binary_pretrained.yaml：
+#   - binary_mode=false → 不套 BinarySTE，輸出連續 sigmoid ∈ [0,1]
+#   - 仍走 BiasedGumbelSigmoidGEN（無 BiScaleNorm + bias 校準）
+#   - balance loss 仍開（讓 mean(soft) 維持 ~0.5）
+#   - 較少 epoch（連續比較好優化）
+#
+# 用法：
+#     python -m antenna train +experiment=train_ris_phase1_continuous environment.device=cuda:0
+defaults:
+  - override /response: ris
+
+model: biased_gumbel_sigmoid_gen
+simulator: ris
+epochs: 60
+patience: 20
+experiment_name: "[RIS-phase1][{device}] 15x15-continuous"
+
+# 連續相位（不啟用 BinarySTE）
+binary_mode: false
+binary_balance_weight: 0.5
+
+pattern:
+  coordinate: [0, 15, 0, 15]
+
+response:
+  labels: [response]
+  x: ris
+  label_configs:
+    response:
+      target:
+        side: -20
+        center: 0
+        width: [140, 0, 40, 0, 181]
+      loss_fn: custom_loss_tolerance
+      loss_params:
+        sidelobe_threshold: -25.0
+        main_target: 0.0
+        main_weight: 5.0
+
+scheduler:
+  _target_: antenna.schedulers.adaptive_cyclical.AdaptiveCyclicalScheduler
+  T_0: 200
+  T_mult: 1
+  lr_max: 0.005
+  lr_min: 1.0e-6
+  temp_max: 4.0
+  temp_min: 0.1
+  warmup_ratio: 0.01
+  patience: 500
+  factor: 0.7
+  mode: min
+  on_plateau: linear
+
+surrogate:
+  hfss_max_epoch: 5000
+  hfss_min_loss: 0.1
+  hfss_lr: 0.001
+  pretrained_path: result/_pretrained_surrogate
+  freeze: false

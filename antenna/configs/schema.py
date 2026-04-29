@@ -71,6 +71,19 @@ class SchedulerConfig:
 
 
 @dataclass
+class GeneratorConfig:
+    """Generator 預訓練 / 位元遷移設定。
+
+    位元遷移（curriculum quantization）流程：
+      Phase 1 — binary_mode=false，generator 輸出連續相位，學會 conditional mapping
+      Phase 2 — binary_mode=true 啟用 BinarySTE，``pretrained_path`` 指向 Phase 1 run dir
+                trainer 啟動時自動從該 dir 抓最新的 ``generator_*.pth`` 預載
+    """
+
+    pretrained_path: str | None = None
+
+
+@dataclass
 class SurrogateConfig:
     """代理模型（OldSM）與 HFSS 訓練迴圈設定。
 
@@ -102,6 +115,7 @@ class TrainConfig:
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     surrogate: SurrogateConfig = field(default_factory=SurrogateConfig)
+    generator: GeneratorConfig = field(default_factory=GeneratorConfig)
 
     # 訓練參數
     epochs: int = 1000

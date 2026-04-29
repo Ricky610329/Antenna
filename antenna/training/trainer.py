@@ -198,6 +198,16 @@ class Trainer:
             criterion=custom_loss_minmax,
         )
 
+        # ── 位元遷移 / curriculum quantization ──
+        # cfg.generator.pretrained_path 指向「上一階段」run 的 result dir。
+        # 啟動時會用最後一個 generator_*.pth 預載 model + optimizer 權重，再開新 run；
+        # 通常配合 binary_mode 從 false → true 的轉換使用：
+        #   Phase 1（連續相位）→ Phase 2（位元遷移後啟用 BinarySTE）
+        gen_pretrained = getattr(self.cfg, "generator", None)
+        gen_pretrained_path = getattr(gen_pretrained, "pretrained_path", None) if gen_pretrained else None
+        if gen_pretrained_path:
+            self._load_pretrained_generator(gen_pretrained_path)
+
         # 代理模型
         config["HFSS.lr"] = self.cfg.surrogate.hfss_lr
         config["HFSS.min_loss"] = self.cfg.surrogate.hfss_min_loss
@@ -286,6 +296,29 @@ class Trainer:
         self.sc_loss = SpectralConnectivityLoss() if self.cfg.spectral_connectivity_loss_weight > 0 else None
         self.gc_loss = GapClosingLoss() if self.cfg.gap_closing_loss_weight > 0 else None
         self.r_feed = FeedReachability.single_feed()
+
+    def _load_pretrained_generator(self, pretrained_run_dir: str | Path) -> None:
+        """從另一個 run dir 載入 generator 權重（位元遷移 phase 2 用）。
+
+        會挑該 dir 內 ``checkpoint/generator_*.pth`` 中 epoch 數字最大的當作起點，
+        套 ``Models.pre_load_model`` 同時還原 model state 與 optimizer state。
+
+        若該檔不存在或無法載入，紀錄 warning 但不中斷訓練（cold start）。
+        """
+        d = Path(pretrained_run_dir) / "checkpoint"
+        if not d.exists():
+            logger.warning(f"generator.pretrained_path 指向不存在的目錄：{d}（cold start）")
+            return
+        ckpts = sorted(d.glob("generator_*.pth"), key=lambda p: int(p.stem.split("_")[1]))
+        if not ckpts:
+            logger.warning(f"{d} 內找不到 generator_*.pth（cold start）")
+            return
+        latest = ckpts[-1]
+        try:
+            self.generator.pre_load_model(latest)
+            logger.info(f"位元遷移：已從 {latest.name} 載入 generator 權重")
+        except Exception as e:
+            logger.warning(f"載入 {latest} 失敗（{e}），cold start")
 
     def _maybe_binarize(self, raw: torch.Tensor) -> torch.Tensor:
         """依 ``cfg.binary_mode`` 決定是否把 generator 輸出強制離散化。
