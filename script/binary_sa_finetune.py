@@ -52,10 +52,15 @@ def sa_finetune(
     *, main_lo: int, main_hi: int,
     steps: int = 5000, T0: float = 50.0, T_final: float = 0.01,
     flip_n: int = 1, log_every: int = 500,
+    reheat_cycles: int = 1,
 ) -> tuple[torch.Tensor, list[float]]:
     """SA：每步隨機翻 flip_n 個 pixel，按 Metropolis 接受。
 
     用 loss 作為 cost（越低越好），用 exp(-(L_new - L_old)/T) 接受 worse moves。
+
+    reheat_cycles=1 時是單輪 cooling，>1 時把 steps 平分為多輪 cooling，每輪
+    從 T0 降到 T_final，回到 best pattern（不是當前 pattern）作為新 cycle 起點。
+    這個 schedule 能 escape local minima 比單輪更穩。
     """
     n = init_pattern.shape[0]
     pattern = init_pattern.clone()
@@ -66,33 +71,42 @@ def sa_finetune(
     history = []
     rng = np.random.default_rng(0)
 
-    for step in range(steps):
-        T = T0 * (T_final / T0) ** (step / max(steps - 1, 1))
-        # 隨機選 flip_n 個 pixel 翻
-        flat = pattern.flatten()
-        idxs = rng.choice(flat.numel(), size=flip_n, replace=False)
-        flat_new = flat.clone()
-        flat_new[idxs] = 1.0 - flat_new[idxs]
-        new_pattern = flat_new.reshape(n, n)
-        new_loss, new_supp = evaluate(sim, new_pattern, target, main_lo, main_hi)
+    cycles = max(1, int(reheat_cycles))
+    steps_per_cycle = max(1, steps // cycles)
+    total_step = 0
 
-        delta = new_loss - cur_loss
-        accept = (delta < 0) or (rng.random() < math.exp(-delta / T))
-        if accept:
-            pattern = new_pattern
-            cur_loss = new_loss
-            cur_supp = new_supp
-            if new_supp > best_supp:
-                best_supp = new_supp
-                best_loss = new_loss
-                best_pattern = pattern.clone()
+    for cycle in range(cycles):
+        # Reheat 開始：每輪用同個 T0→T_final schedule，但從 best pattern 重啟
+        if cycle > 0:
+            pattern = best_pattern.clone()
+            cur_loss, cur_supp = best_loss, best_supp
+        for s in range(steps_per_cycle):
+            total_step += 1
+            T = T0 * (T_final / T0) ** (s / max(steps_per_cycle - 1, 1))
+            flat = pattern.flatten()
+            idxs = rng.choice(flat.numel(), size=flip_n, replace=False)
+            flat_new = flat.clone()
+            flat_new[idxs] = 1.0 - flat_new[idxs]
+            new_pattern = flat_new.reshape(n, n)
+            new_loss, new_supp = evaluate(sim, new_pattern, target, main_lo, main_hi)
 
-        history.append(cur_supp)
-        if (step + 1) % log_every == 0:
-            logger.info(
-                f"  step {step + 1:5d}/{steps}: T={T:.3f}, "
-                f"cur_supp={cur_supp:+.2f}, best_supp={best_supp:+.2f}"
-            )
+            delta = new_loss - cur_loss
+            accept = (delta < 0) or (rng.random() < math.exp(-delta / T))
+            if accept:
+                pattern = new_pattern
+                cur_loss = new_loss
+                cur_supp = new_supp
+                if new_supp > best_supp:
+                    best_supp = new_supp
+                    best_loss = new_loss
+                    best_pattern = pattern.clone()
+
+            history.append(cur_supp)
+            if total_step % log_every == 0:
+                logger.info(
+                    f"  cycle {cycle + 1}/{cycles} step {s + 1:5d}/{steps_per_cycle}: "
+                    f"T={T:.3f}, cur={cur_supp:+.2f}, best={best_supp:+.2f}"
+                )
 
     return best_pattern, history
 
@@ -109,6 +123,8 @@ def main() -> None:
     p.add_argument("--T0", type=float, default=50.0)
     p.add_argument("--T_final", type=float, default=0.01)
     p.add_argument("--flip_n", type=int, default=1)
+    p.add_argument("--reheat_cycles", type=int, default=1,
+                   help="多輪 reheat：把 steps 切成 N 輪，每輪從 best pattern 重啟")
     p.add_argument("--device", type=str, default=None)
     p.add_argument("--out_dir", type=str, default=None)
     args = p.parse_args()
@@ -147,6 +163,7 @@ def main() -> None:
         main_lo=main_lo, main_hi=main_hi,
         steps=args.steps, T0=args.T0, T_final=args.T_final,
         flip_n=args.flip_n,
+        reheat_cycles=args.reheat_cycles,
     )
     final_loss, final_supp = evaluate(sim, best_pattern, target, main_lo, main_hi)
     gain = final_supp - init_supp
