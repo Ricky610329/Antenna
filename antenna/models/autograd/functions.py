@@ -96,3 +96,25 @@ class BinarizeSTE(Function):
     def backward(ctx: BackwardCFunction, grad_output: Tensor):
         (mask,) = ctx.saved_tensors
         return grad_output * mask  # 只保留 mask 區域的梯度
+
+
+class BinarySTE(Function):
+    """嚴格二值化 + identity STE（標準 binary network 訓練用）。
+
+    - Forward：``(input >= 0.5).float()`` → 嚴格 {0, 1}。
+    - Backward：identity（梯度直通，不對輸入施加 mask）。
+
+    與 :class:`BinarizeSTE` 的差別在 backward 不乘 mask；當前為 0 的 cell
+    仍能收到梯度，因此可以從 0 翻成 1（mask-aware STE 永遠困住已下降的 cell）。
+
+    用於 RIS 硬體只支援 {0, π} 相位的場景，把 sigmoid 輸出強制離散化但
+    仍可端到端反傳。
+    """
+
+    @staticmethod
+    def forward(ctx: FunctionCtx, input: Tensor):
+        return (input >= 0.5).float()
+
+    @staticmethod
+    def backward(ctx: BackwardCFunction, grad_output: Tensor):
+        return grad_output

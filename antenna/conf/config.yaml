@@ -16,6 +16,12 @@ island_suppression_loss_weight: 0.0
 spectral_connectivity_loss_weight: 0.0
 gap_closing_loss_weight: 0.0
 
+# 強制 generator 輸出離散化為 {0, 1}（適用 RIS 相位 {0, π} 硬體）
+binary_mode: false
+
+# Binary balance loss 權重（懲罰 pattern 偏離 50% on-rate，反 collapse）
+binary_balance_weight: 0.0
+
 # 優化器
 optimizer:
   _target_: torch.optim.Adam

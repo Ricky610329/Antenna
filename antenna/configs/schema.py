@@ -76,11 +76,20 @@ class SurrogateConfig:
 
     目前僅使用 HFSS 相關欄位；trainer 透過 `antenna.utils.config` 的
     `HFSS.*` key 讀取 `hfss_lr` / `hfss_min_loss` / `hfss_max_epoch`。
+
+    Pretrained workflow（推薦的 RIS 訓練流程）：
+      1. 先跑 ``script/pretrain_surrogate.py`` 把 surrogate 訓練到收斂；
+         輸出落在 ``result/_pretrained_surrogate/``。
+      2. 在 yaml 設 ``surrogate.pretrained_path`` 指向該目錄。
+      3. ``surrogate.freeze=true`` 完全凍結 surrogate（最快、generator 看到固定 proxy）；
+         ``false`` 允許 trainer 繼續以 online learning 微調。
     """
 
     hfss_min_loss: float = 0.1
     hfss_max_epoch: int = 20000
     hfss_lr: float = 0.001
+    pretrained_path: str | None = None
+    freeze: bool = False
 
 
 @dataclass
@@ -108,6 +117,13 @@ class TrainConfig:
     island_suppression_loss_weight: float = 0.0
     spectral_connectivity_loss_weight: float = 0.0
     gap_closing_loss_weight: float = 0.0
+
+    # 強制 hard binarization：generator 輸出經 BinarySTE 變嚴格 {0, 1}，
+    # 用於 RIS 硬體相位只支援 {0, π} 的場景。預設 False 維持向後相容。
+    binary_mode: bool = False
+
+    # Binary balance loss 權重 — 懲罰 mean(soft_pattern) 偏離 0.5，反 collapse 用
+    binary_balance_weight: float = 0.0
 
 
 def register_configs() -> None:
