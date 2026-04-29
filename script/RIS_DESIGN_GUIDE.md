@@ -12,7 +12,8 @@
 python script/design_pattern_for_target.py \
   --plateau_start 154 \
   --plateau_w 46 \
-  --inc_theta 60 \
+  --inc_theta 30 \
+  --freq 28e9 \
   --steps 1500 \
   --n_restarts 3 \
   --sa_steps 8000 \
@@ -21,6 +22,10 @@ python script/design_pattern_for_target.py \
   --sa_reheat_cycles 2 \
   --device cuda:0
 ```
+
+> **Round 34 重大更新**：default 從 `--inc_theta 60` 改為 `--inc_theta 30`。
+> SA 後完整 heatmap 顯示 ±30° 對 5/5 target 都有最佳或近最佳結果，
+> 比 ±60° 好 ~+1 dB mean。Round 12 的「±60° 最佳」是 GD only 雜訊。
 
 **2 分鐘**輸出可部署的 binary pattern + 評估報告。實測 suppression 可達
 **+9.75 dB**（物理上限），mean **+8.38 dB**（round 25 reheat=2 benchmark），
