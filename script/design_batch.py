@@ -123,6 +123,7 @@ def main() -> None:
                    help="GD 後加 SA fine-tune 步數（0=不做）。建議 8000 + flip_n=3 + T0=20")
     p.add_argument("--sa_T0", type=float, default=20.0)
     p.add_argument("--sa_flip_n", type=int, default=3)
+    p.add_argument("--sa_reheat_cycles", type=int, default=2)
     p.add_argument("--csv", type=str, default=None,
                    help="CSV file with columns: name,plateau_start,plateau_w[,n_restarts]")
     p.add_argument("--target", action="append", default=[],
@@ -213,6 +214,7 @@ def main() -> None:
                 main_lo=start, main_hi=start + width,
                 steps=args.sa_steps, T0=args.sa_T0, T_final=0.001,
                 flip_n=args.sa_flip_n, log_every=max(1, args.sa_steps // 4),
+                reheat_cycles=args.sa_reheat_cycles,
             )
             sa_loss, sa_supp = sa_mod.evaluate(sim, sa_pat, target, start, start + width)
             if sa_supp > info["suppression"]:

@@ -116,6 +116,9 @@ def main() -> None:
                         "minimum 推到 +7 dB 級別。")
     p.add_argument("--sa_T0", type=float, default=20.0)
     p.add_argument("--sa_flip_n", type=int, default=3)
+    p.add_argument("--sa_reheat_cycles", type=int, default=2,
+                   help="SA reheat 輪數 — round 25 benchmark 證實 2 是 sweet spot "
+                        "(mean +8.38 vs reheat=1 +7.87, std 縮 34%)")
     p.add_argument("--out_dir", type=str, default=None)
     p.add_argument("--device", type=str, default=None)
     args = p.parse_args()
@@ -184,6 +187,7 @@ def main() -> None:
             main_lo=main_lo, main_hi=main_hi,
             steps=args.sa_steps, T0=args.sa_T0, T_final=0.001,
             flip_n=args.sa_flip_n, log_every=max(1, args.sa_steps // 5),
+            reheat_cycles=args.sa_reheat_cycles,
         )
         sa_loss, sa_supp = _sa_mod.evaluate(sim, sa_pattern, target, main_lo, main_hi)
         if sa_supp > info["suppression"]:

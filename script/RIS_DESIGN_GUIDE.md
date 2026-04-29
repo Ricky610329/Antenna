@@ -18,13 +18,14 @@ python script/design_pattern_for_target.py \
   --sa_steps 8000 \
   --sa_T0 20 \
   --sa_flip_n 3 \
+  --sa_reheat_cycles 2 \
   --device cuda:0
 ```
 
 **2 分鐘**輸出可部署的 binary pattern + 評估報告。實測 suppression 可達
-**+9.51 dB**（物理上限），即使 GD 全部 restart 卡 +2 dB local min，SA 也能
-推到 +7+ dB（**round 15 驗證**）。比 generator-based 路線（v6 −0.46 dB）高
-**+10 dB**。
+**+9.75 dB**（物理上限），mean **+8.38 dB**（round 25 reheat=2 benchmark），
+worst case **+7.13 dB**（即使 GD 全部 restart 卡 +2 dB local min）。比
+generator-based 路線（v6 −0.46 dB）高 **+10 dB**。
 
 ## 工具樹
 
