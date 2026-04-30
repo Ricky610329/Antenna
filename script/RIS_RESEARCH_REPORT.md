@@ -1283,6 +1283,64 @@ Free-phase 38 GHz × 25 (R61)               +24.97 dB ★ NEW GLOBAL RECORD
 
 從 v1 (-4.08) 到 R61 (+24.97) = **+29.05 dB 累計改善**
 
+### Round 62 — Larger Aperture (n=29, 31) 推到 +27.45 dB
+
+接續 R61 的 38 GHz × n sweep，繼續向更大 aperture：
+
+**38 GHz × n=29/31 × 5 seeds × free-phase + SA**：
+
+| n | aperture | best | mean (5 seeds) |
+|---|----------|------|----------------|
+| 25 | 12.5λ | +24.97 (R61) | +22.69 |
+| **29** | **14.5λ** | **+27.01 (seed 1)** | **+24.95** |
+| **31** | **15.5λ** | **+27.45 (seed 1) ★** | **+25.77** |
+
+**38 GHz × n=25 多 seeds 確認**（seeds 5-14）:
+
+| 範圍 | 最佳 |
+|------|------|
+| seeds 0-4 (R61) | +24.97 (seed 3) |
+| seeds 5-14 (R62) | +25.03 (seed 13) |
+| **全 15 seeds** | **+25.03** |
+
+mean across 15 seeds for n=25 ≈ +23.0 dB → robust performance.
+
+**新 global record**：38 GHz × n=31 × +51° × width=80 × broadside × seed=1 + SA
+= **+27.45 dB**
+
+### Aperture Scaling 規律（free-phase path）
+
+| n | aperture (λ) | best |
+|---|--------------|------|
+| 11 | 5.5λ | +15.51 |
+| 13 | 6.5λ | +18.12 |
+| 15 | 7.5λ | +23.02 |
+| 17 | 8.5λ | +20.65 |
+| 19 | 9.5λ | +21.69 |
+| 21 | 10.5λ | +23.88 |
+| 23 | 11.5λ | +22.16 |
+| 25 | 12.5λ | +25.03 |
+| 27 | 13.5λ | +24.21 |
+| 29 | 14.5λ | +27.01 |
+| **31** | **15.5λ** | **+27.45 ★** |
+
+整體單調向上 + 局部 fluctuation（如 n=23 dip vs n=25 rebound）。
+suggests 還有 even larger n 可探（待 R63）。
+
+### 紀錄歷程更新（R62）
+
+```
+v1                                          −4.08 dB
+v6 generator best                           −0.46 dB
+SA-per-restart 28 GHz × 13 (R48)           +13.44 dB
+Free-phase 28 GHz × 13 (R57)               +21.31 dB
+Free-phase 38 GHz × 21 (R60)               +23.88 dB
+Free-phase 38 GHz × 25 (R61)               +24.97 dB
+Free-phase 38 GHz × 31 (R62)               +27.45 dB ★ NEW GLOBAL RECORD
+```
+
+從 v1 (-4.08) 到 R62 (+27.45) = **+31.53 dB 累計改善**
+
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
 | Metric | GD-only | GD+SA |
