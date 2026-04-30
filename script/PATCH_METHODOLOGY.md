@@ -415,10 +415,37 @@ for x in test_points:
 
 ### 改善 gradient quality 的方法
 
-1. **Gradient supervision**: 訓練時加入 ∂y/∂x 監督（HFSS 提供 finite difference gradients）
-2. **Sobolev training**: 同時擬合 y 和 ∂y/∂x
+1. **Sobolev training** ⚠️ R80 在 RIS 失敗：
+   - Loss = MSE(f̂, f) + λ MSE(∇f̂, ∇f)
+   - RIS binary 上 grad_mse 完全不降（CNN 架構限制）
+   - Patch 連續幾何上**可能**有效（smoother gradient field, 待實證）
+   - **不能假設 work**
+
+2. **大量資料**: 經驗上 ~10× function MAE 級的 gradient 需要 10-100x 更多資料
+
 3. **Physics-informed NN**: 把 EM 方程當 inductive bias
-4. **大量資料**: 經驗上 ~10× function MAE 級的 gradient 需要 10-100x 更多資料
+
+4. **Architecture 改變**: 標準 CNN 有 smoothing bias，可能需要：
+   - Higher capacity (channels 32 → 128)
+   - Skip connections (preserve high-frequency)
+   - Fourier features (explicit high-frequency basis)
+
+5. **不依賴 gradient: Active learning (推薦)**
+   - 用 surrogate 預測 function value（OK）
+   - 用 BO acquisition (UCB / EI) 選下個 HFSS sample
+   - 不直接 GD-through-surrogate
+   - 比 Sobolev 更可靠且 dataset-efficient
+
+### R80 在 RIS 上的結論
+
+| Method | Function MAE | Cos sim | 結論 |
+|--------|-------------|---------|------|
+| R72 vanilla CNN | 3.3 dB | 0.001 | function OK, gradient 隨機 |
+| R80 + Sobolev λ=1 | 5.3 dB | 0.005 | 沒改善, function 還變差 |
+
+**RIS binary gradient 是 pathologically high-frequency。標準 CNN 無法 represent。**
+
+**Patch transition 不能假設 Sobolev 可救 — 可能仍需 active learning fallback。**
 
 
 ---
