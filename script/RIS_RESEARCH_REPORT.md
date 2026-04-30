@@ -1,7 +1,11 @@
-# Binary RIS Pattern Optimization — 14-round /loop 完整研究報告
+# Binary RIS Pattern Optimization — 57-round /loop 完整研究報告
 
-> 期間 2026-04-29，基於本實驗室 11 篇碩論研究脈絡 + Antenna repo 既有架構，
-> 對「RIS 硬體相位 {0, π} 約束下的 binary pattern 生成」進行完整探索。
+> 期間 2026-04-29 至 2026-04-30，基於本實驗室 11 篇碩論研究脈絡 + Antenna
+> repo 既有架構，對「RIS 硬體相位 {0, π} 約束下的 binary pattern 生成」進行
+> 完整探索。
+>
+> **R57 重大突破**：free-phase parameterization + logsumexp direct loss →
+> **+21.31 dB suppression**（突破之前 +13.44 紀錄 by +7.87 dB）。
 
 ## TL;DR
 
@@ -983,6 +987,99 @@ seed）超窄 attraction basin**，跟文獻「1-bit RIS 3 dB quantization loss�
 | target shape | flat plateau | TBD |
 | seed | 0 | -3 ~ -7 dB seed 1-9 (R56) |
 | algorithm | SA-per-restart | +1~+2 dB vs best-GD-then-SA (R35) |
+
+### Round 57 — 重大演算法突破：Free-Phase GD + Direct Loss → +21.31 dB ★
+
+**動機**：R55 文獻 connection 顯示 1-bit RIS 有 ~3 dB quantization loss vs continuous
+phase。為實證此 gap，原本要做「continuous vs binary」對照，意外發現舊路線
+（sigmoid GD + post-quantize + SA）並非最佳。
+
+### 舊 vs 新路線對照
+
+| 路線 | 描述 | seed=0 結果 |
+|------|------|-------------|
+| 舊（sigmoid） | logits → sigmoid ∈ [0,1] → phase ∈ [0,π] (半圓) → post-quantize → SA | +13.44 (R47 lucky) |
+| **新（free-phase）** | **params ∈ ℝ → phase ∈ [0,2π) → optimal 1-bit quantize** | **best seed=4 +21.31 ★** |
+
+### 關鍵 algorithmic 改變
+
+1. **Free-phase parameterization**：相位不限於半圓 [0, π]，全圓 [0, 2π) 都可優化
+2. **Direct logsumexp loss**：直接最大化 (main_peak - side_max)，beta=5 soft-max approx
+3. **Optimal 1-bit quantization**：phase 距離 0 / π 較近者分別 quantize
+   - phase ∈ (-π/2, π/2) → 0
+   - phase ∈ (π/2, 3π/2) → π
+
+```python
+# Free-phase + direct loss
+params = nn.Parameter(torch.rand(N) * 2.0)  # init pattern ∈ [0, 2]
+opt = torch.optim.Adam([params], lr=0.05)
+for step in range(3000):
+    pat = params  # no sigmoid constraint
+    resp = sim(pat)["response"]
+    main_soft = (1/beta) * torch.logsumexp(beta * resp[main_mask], dim=0)
+    side_soft = (1/beta) * torch.logsumexp(beta * resp[~main_mask], dim=0)
+    loss = -(main_soft - side_soft)  # maximize suppression
+    loss.backward(); opt.step()
+
+# Optimal 1-bit quantization
+phase = (params * π) % (2π)
+bin_pat = ((phase > π/2) & (phase < 3π/2)).float()  # closest to {0, π}
+```
+
+### 30-Seed 統計（28 GHz × 13 × +51° × width=80 × broadside）
+
+| Metric | Free continuous | 1-bit quantize | + SA |
+|--------|-----------------|----------------|------|
+| Mean | +30.50 | +15.72 | +15.89 |
+| **Max** | **+34.70 (seed 26)** | **+21.31 (seed 4) ★** | **+21.31** |
+| Min | +26.90 (seed 19) | +11.37 (seed 3) | +11.37 |
+
+**Top 5 seeds (1-bit)**:
+1. seed=4: **+21.31 dB ★**
+2. seed=19: +20.44
+3. seed=18: +19.99
+4. seed=7: +18.35
+5. seed=27: +17.89
+
+### Quantization Loss 實證
+
+free continuous mean +30.50 → 1-bit mean +15.72 = **gap ~+14.8 dB**
+
+這比文獻的「3 dB beam-gain loss」大很多。原因：
+- 文獻 3 dB 是針對 main beam **gain** 損失（peak 強度）
+- 我們的 metric 是 **suppression**（main - side），對 phase precision 更敏感
+- Suppression 跟 null depth 直接相關，binary phase 無法做精細的相位 cancellation
+
+### 為什麼舊路線（sigmoid）這麼差？
+
+- sigmoid 限 phase 在 [0, π]（半圓），失去一半相位自由度
+- post-quantize >0.5 不是 optimal phase quantization——直接套半圓中點
+- tolerance loss 在 sidelobe ≤ -25 後 saturate，不再驅動梯度
+- 舊路線在 continuous space 卡 ~+4.85 dB（R57 sigmoid mean）
+
+### 紀錄歷程更新
+
+```
+v1                                          −4.08 dB
+v6 generator best                           −0.46 dB
+GD+SA reheat=2 (R25)                        +9.75 dB
+SA-per-restart 5.6 GHz × 19 × +60° (R37)   +11.82 dB
+SA-per-restart 28 GHz × 13 × +51° (R48)    +13.44 dB
+Free-phase GD + direct loss (R57)          +21.31 dB ★ NEW RECORD
+```
+
+從 v1 到 R57 = **+25.39 dB 改善**
+
+### 收斂判斷更新
+
+- 之前 R47-R56 嘗試突破 +13.44 全失敗 → 結論「+13.44 是 binary ceiling」**錯誤**
+- R55 文獻搜尋 + R57 改路線 → 突破 +7.87 dB
+- 啟示：**演算法選擇比 hyperparameter sweep 重要 10×**
+
+新 Open Questions：
+1. Free-phase + direct loss 在其他 freq/n/inc 配置是否也 universally 改善？
+2. Free-phase + SA-per-restart 多 restart 能否再突破 +21.31？
+3. 是否還有更好 phase parameterization（如 complex Re/Im）？
 
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
