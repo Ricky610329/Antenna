@@ -25,9 +25,10 @@ from torch.utils.data import Dataset, DataLoader, random_split
 class RISDataset(Dataset):
     """讀 dataset_v1/entries.jsonl + 對應 .npy 檔。"""
 
-    def __init__(self, root: Path, max_n: int = 41):
+    def __init__(self, root: Path, max_n: int = 41, augment: bool = False):
         self.root = root
         self.max_n = max_n  # padding to fixed size for batching
+        self.augment = augment  # bit-flip augmentation (R70 verified invariant)
         self.entries: list[dict] = []
         with open(root / "entries.jsonl", "r", encoding="utf-8") as f:
             for line in f:
@@ -51,6 +52,9 @@ class RISDataset(Dataset):
     def __getitem__(self, idx: int):
         e = self.entries[idx]
         pat = np.load(self.root / e["pattern_file"]).astype(np.float32)
+        # Bit-flip augment (response invariant — verified R70)
+        if self.augment and np.random.rand() < 0.5:
+            pat = 1.0 - pat
         # Pad pattern to (max_n, max_n)
         n = pat.shape[0]
         padded = np.zeros((self.max_n, self.max_n), dtype=np.float32)
@@ -164,6 +168,8 @@ def main() -> None:
     p.add_argument("--out_dir", type=str, default="outputs/r68_surrogate")
     p.add_argument("--device", type=str, default="cuda:0")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--augment", action="store_true",
+                   help="Bit-flip augment (R70 verified invariant)")
     args = p.parse_args()
 
     out = Path(args.out_dir)
@@ -173,8 +179,8 @@ def main() -> None:
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
-    ds = RISDataset(Path(args.dataset))
-    print(f"Dataset: {len(ds)} entries")
+    ds = RISDataset(Path(args.dataset), augment=args.augment)
+    print(f"Dataset: {len(ds)} entries (augment={args.augment})")
 
     n_train = int(0.8 * len(ds))
     n_test = len(ds) - n_train
