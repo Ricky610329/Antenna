@@ -712,6 +712,41 @@ typical 安裝精度 ±5° 不夠精細——大多數實際部署只能達 +9 d
 **未破 +13.44 紀錄**——兩個頻率 peak 在不同 inc 但都是 knife-edge。
 **+13.44 dB（28 GHz × 13 × +51°）仍是當前物理紀錄**。
 
+### Round 50 — 60 GHz × 15 × width=60 inc Fine Grid（multi-modal）
+
+60 GHz × 15 × width=60 × broadside × inc fine grid：
+
+| inc_θ | suppression |
+|-------|-------------|
+| +50° | +10.35 |
+| +55° | +8.84 |
+| +58° | +10.48 |
+| +59° | +9.31 |
+| +60° | +10.14 |
+| +61° | +9.19 |
+| **+62°** | **+10.52 ★** |
+| +65° | +9.81 |
+
+**重大發現：60 GHz 是 multi-modal 而非 knife-edge**
+- 多個 local peaks at +50, +58, +60, +62°
+- 所有 peaks 在 +10~+10.5 dB 級別
+- 沒有單一 sharp knife-edge
+
+物理推測：60 GHz × 15 (7.5λ) aperture 較小，element pattern × main lobe
+寬度更寬，造成多個 local optima 而非單一窄 peak。
+
+**新最佳 60 GHz × 15 × width=60 × inc=+62° = +10.52 dB**（比 R45 baseline 略升）。
+
+### 三頻率 Peak Structure 完整對照
+
+| Configuration | Best inc | Suppression | Structure |
+|---------------|----------|-------------|-----------|
+| 5.6 GHz × 19 × width=46 | +60° | +11.82 | knife-edge ±1° |
+| **28 GHz × 13 × width=80** | **+51°** | **+13.44 ★** | knife-edge ±1° |
+| 60 GHz × 15 × width=60 | +62° | +10.52 | multi-modal +10~+10.5 |
+
+**Knife-edge vs Multi-modal 不同 attraction landscape**——可能 aperture 大小決定。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
