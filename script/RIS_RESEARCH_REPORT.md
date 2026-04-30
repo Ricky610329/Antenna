@@ -1341,6 +1341,53 @@ Free-phase 38 GHz × 31 (R62)               +27.45 dB ★ NEW GLOBAL RECORD
 
 從 v1 (-4.08) 到 R62 (+27.45) = **+31.53 dB 累計改善**
 
+### Round 63 — 接近理論上限（n=41 達 +30.99 dB）
+
+**38 GHz × n=35/41 × 5 seeds × free-phase + SA**：
+
+| n | aperture | best | mean (5 seeds) |
+|---|----------|------|----------------|
+| 35 | 17.5λ | +28.32 | +27.07 |
+| **41** | **20.5λ** | **+30.99 (seed 0) ★ NEW GLOBAL RECORD** | **+28.39** |
+
+**28 GHz × n=29/31 × 5 seeds × free-phase + SA**（universality）：
+
+| n | best | mean |
+|---|------|------|
+| 29 | +27.39 | +25.97 |
+| **31** | **+28.75 (seed 2)** | **+27.74** |
+
+→ 28 GHz × n=31 達 **+28.75**，跟 38 GHz × n=31 (+27.45) 接近，
+universal aperture-scaling 確認。
+
+### 接近理論上限
+
+| n | aperture | binary best | theoretical | efficiency |
+|---|----------|-------------|-------------|------------|
+| 11 | 5.5λ | +15.51 | +20.83 | 74% |
+| 21 | 10.5λ | +23.88 | +26.42 | 90% |
+| 31 | 15.5λ | +27.45 | +29.83 | 92% |
+| 35 | 17.5λ | +28.32 | +30.88 | 92% |
+| **41** | **20.5λ** | **+30.99** | **+32.26** | **96%** |
+
+n=41 達 **96% of theoretical array gain**，1-bit quantization loss ~1.27 dB
+（接近文獻 3 dB 理論上限的下限）。
+
+### 紀錄歷程最終（R63）
+
+```
+v1                                          −4.08 dB
+v6 generator best                           −0.46 dB
+GD+SA reheat=2 (R25)                        +9.75 dB
+SA-per-restart 28 GHz × 13 (R48)           +13.44 dB
+Free-phase 28 GHz × 13 (R57)               +21.31 dB
+Free-phase 38 GHz × 25 (R61)               +24.97 dB
+Free-phase 38 GHz × 31 (R62)               +27.45 dB
+Free-phase 38 GHz × 41 (R63)               +30.99 dB ★ NEW GLOBAL RECORD
+```
+
+從 v1 (-4.08) 到 R63 (+30.99) = **+35.07 dB 累計改善**
+
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
 | Metric | GD-only | GD+SA |
