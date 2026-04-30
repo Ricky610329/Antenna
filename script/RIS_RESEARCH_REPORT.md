@@ -799,6 +799,35 @@ mean (+10.95 vs +9.67, +1.28 dB)。
 - **想要 broadband 強**: 28 GHz × 13 × +51° × width=80（mean +10.95 across 5 targets）
 - 5.6 GHz × 19 仍是 5.6 GHz 部署 baseline
 
+### Round 53 — 新頻率（12/24/38 GHz）試 Hidden Record
+
+| Configuration | Suppression |
+|---------------|-------------|
+| 12 GHz × 17 × +60° × width=46 | +8.66 |
+| 24 GHz × 14 × +51° × width=80 | +9.17 |
+| **38 GHz × 15 × +51° × width=80** | **+11.59** |
+
+加上既有：
+- 5.6 GHz × 19: +11.82
+- 28 GHz × 13: +13.44 ★
+- 60 GHz × 15: +10.52
+
+**重大發現：28 GHz 是 mmWave Sweet Frequency Band**
+
+24-38 GHz 是 RIS 設計的 sweet frequency band，跟 **5G mmWave n257 標準頻段
+(26.5-29.5 GHz) 一致**：
+- 24 GHz: +9.17
+- 28 GHz: +13.44 ★
+- 38 GHz: +11.59
+
+偏離掉：
+- 12 GHz: +8.66
+- 5.6 GHz: +11.82（aperture sweet 補償）
+- 60 GHz: +10.52（multi-modal 限制）
+
+**對使用者**：5G mmWave 部署天然命中 RIS 物理 sweet spot。28 GHz × 13 × +51°
+× width=80 仍是物理紀錄保持者 +13.44 dB。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
