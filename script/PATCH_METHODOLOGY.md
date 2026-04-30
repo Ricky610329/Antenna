@@ -366,6 +366,70 @@ gradient 方向走，主動尋找：
 Patch surrogate 可能比 RIS 好（continuous geometry, smoother prediction），
 但 adversarial gap 可能仍 1-3 dB。**必須驗證**。
 
+---
+
+## R85 Critical Update: Active Learning Greedy Fails
+
+R85 直接實證 active learning **greedy acquisition** 比 random sampling 還差:
+
+| Method | Final best worst_supp |
+|--------|----------------------|
+| Greedy (predict top-K) | +1.59 dB |
+| Random sampling | +4.79 dB ★ |
+| Pool max (oracle) | +5.57 dB |
+
+Greedy 重複 exploit surrogate prediction errors → 越選越爛。
+
+### MUST DO for Patch BO Loop
+
+```python
+# CORRECT: UCB with ensemble uncertainty
+def patch_bo_iteration(surrogate_ensemble, dataset, candidates, k=10, kappa=1.5):
+    means = []
+    for surrogate in surrogate_ensemble:
+        means.append(surrogate.predict(candidates))
+    means = np.stack(means)
+    pred_mean = means.mean(axis=0)
+    pred_std = means.std(axis=0)  # ensemble variance as uncertainty
+    
+    ucb = pred_mean + kappa * pred_std  # acquisition
+    selected_idx = ucb.argsort()[-k:]
+    selected_candidates = candidates[selected_idx]
+    
+    # Run HFSS on selected
+    new_labels = [hfss_run(c) for c in selected_candidates]
+    dataset.extend(zip(selected_candidates, new_labels))
+    
+    # Retrain ensemble with new data
+    surrogate_ensemble = retrain(dataset)
+    return dataset, surrogate_ensemble
+```
+
+### NEVER DO
+
+```python
+# WRONG: greedy (R85 fail)
+selected = candidates[surrogate.predict(candidates).argsort()[-k:]]
+# 沒 uncertainty → 重複 exploit surrogate 弱點 → worse than random
+```
+
+### Ensemble Setup
+
+```python
+# 訓 5-10 surrogates with different seeds
+ensemble = []
+for seed in range(5):
+    torch.manual_seed(seed)
+    s = SurrogateCNN(...)
+    train(s, dataset, epochs=200)
+    ensemble.append(s)
+
+# 部署時 mean + std
+def ensemble_predict(ensemble, x):
+    preds = torch.stack([s(x) for s in ensemble])
+    return preds.mean(0), preds.std(0)
+```
+
 ### R78 補充：問題根源是 GRADIENT quality 不是 function quality
 
 R78 把 surrogate-in-loop GD 改成 in-distribution hard binary input（不是 R77 的
