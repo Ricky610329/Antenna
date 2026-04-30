@@ -1127,6 +1127,72 @@ Free-phase + direct loss 28 GHz (R57)      +21.31 dB ★ NEW RECORD
 
 從 v1 (-4.08) 到 R57 (+21.31) = **+25.39 dB 改善**
 
+### Round 59 — Free-Phase 跨頻率（38 GHz 達 +23.02 NEW RECORD）
+
+10 seeds × free-phase + SA 在 60 GHz 與 38 GHz：
+
+**60 GHz × 15 × +62° × width=60**：
+
+| seed | 1-bit | + SA |
+|------|-------|------|
+| 0 | +16.36 | +16.36 |
+| 1 | +17.03 | +17.03 |
+| 4 | +16.88 | +16.88 |
+| 7 | +14.90 | +16.25 |
+| **9** | +17.12 | **+17.26 ★** |
+
+mean +15.59, max **+17.26** (seed=9 + SA)
+vs R50 舊紀錄 **+10.52** = **+6.74 dB 改善**
+
+**38 GHz × 15 × +51° × width=80**：
+
+| seed | 1-bit | + SA |
+|------|-------|------|
+| 0 | +18.82 | +18.82 |
+| 3 | +20.79 | +20.79 |
+| 4 | +20.48 | +20.48 |
+| 6 | +21.32 | +21.32 |
+| **8** | **+23.02 ★** | **+23.02** |
+
+mean +18.91, max **+23.02 ★ NEW GLOBAL RECORD**
+vs R53 舊紀錄 **+11.59** = **+11.43 dB 改善**
+
+### 跨頻率 Free-Phase 完整對照（截至 R59）
+
+| Frequency | n | Old (sigmoid+SA) | **New (free-phase)** | Δ |
+|-----------|---|------------------|----------------------|---|
+| 5.6 GHz | 19 | +11.82 (R37) | +19.61 (R58) | +7.79 |
+| 28 GHz | 13 | +13.44 (R47) | +21.31 (R57) | +7.87 |
+| **38 GHz** | **15** | +11.59 (R53) | **+23.02 (R59) ★** | **+11.43** |
+| 60 GHz | 15 | +10.52 (R50) | +17.26 (R59) | +6.74 |
+
+**重要新發現：38 GHz 在 free-phase 路線下成新 sweet sweetest**
+
+之前 R47-R56 認為 28 GHz 是 sweet sweetest 是 sigmoid path-specific 結論。
+free-phase 路線下：
+- 38 GHz × 15 達 +23.02 dB（最高）
+- 28 GHz × 13 達 +21.31 dB（次之）
+- 5.6 GHz × 19 達 +19.61 dB
+- 60 GHz × 15 達 +17.26 dB
+
+**啟示**：演算法層的 attraction landscape 與物理頻率的最適配對不一樣。
+
+### 紀錄歷程更新（R59）
+
+```
+v1                                          −4.08 dB
+v6 generator best                           −0.46 dB
+GD+SA reheat=2 (R25)                        +9.75 dB
+SA-per-restart 5.6 GHz × 19 (R37)          +11.82 dB
+SA-per-restart 28 GHz × 13 (R48)           +13.44 dB
+Free-phase 5.6 GHz × 19 (R58)              +19.61 dB
+Free-phase 28 GHz × 13 (R57)               +21.31 dB
+Free-phase 60 GHz × 15 (R59)               +17.26 dB
+Free-phase 38 GHz × 15 (R59)               +23.02 dB ★ NEW GLOBAL RECORD
+```
+
+從 v1 (-4.08) 到 R59 (+23.02) = **+27.10 dB 累計改善**
+
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
 | Metric | GD-only | GD+SA |
