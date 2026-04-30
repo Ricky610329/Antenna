@@ -430,6 +430,62 @@ def ensemble_predict(ensemble, x):
     return preds.mean(0), preds.std(0)
 ```
 
+⚠️ R86 caveat: same-arch ensemble std 可能太小 (variance underestimate),
+UCB ≈ greedy。可改用:
+- Different architectures (resnet, attention, mlp)
+- MC Dropout (forward pass with active dropout)
+- Bayesian NN (weight uncertainty)
+
+R86 實證: Spearman 0.30 dataset 上 BO 不能顯著贏 random sampling。
+**Spearman > 0.5 是 BO 開始 viable 的 threshold。**
+
+---
+
+## R87 Critical: Mode-Specific Surrogate Doesn't Work
+
+### Hypothesis (Rejected)
+
+R84 mixed-mode (rw=0 + rw=2): rw=2 Spearman 0.601。
+試「拿掉 rw=0 distractor, 只訓 rw=2 → 應更高」。
+
+### Result
+
+| Setup | Train rows | rw=2 Spearman |
+|-------|-----------|----------------|
+| Mixed-mode | 173 | 0.601 |
+| **Mode-specific (rw=2 only)** | 86 | **0.028 ↓↓** |
+
+### Lesson
+
+**Mixed-mode training 提供 contrastive learning signal**，
+single-mode 拿掉這個 signal 就崩潰。
+
+對 patch:
+
+```python
+# CORRECT: Single mixed-mode surrogate
+class PatchSurrogate(nn.Module):
+    def forward(self, geometry, use_case_mode_vec):
+        # use_case_mode_vec includes:
+        #   target spec type (S11/gain/isolation)
+        #   target freq range
+        #   priority weights
+        # Single network handles ALL spec types
+        ...
+
+# WRONG: Separate surrogates per mode
+S11_surrogate = ...     # ✗ R87 reject
+gain_surrogate = ...    # ✗
+isolation_surrogate = ...  # ✗
+```
+
+### 為什麼 Mixed > Specific
+
+1. **Contrastive signal**: NN 學到 mode condition → output 變化的 mapping
+2. **Multi-task learning**: shared features 強化 representation
+3. **Larger effective dataset**: 不切割 by mode, 用全部 data
+4. **Generalization**: cross-mode patterns 強化 robustness
+
 ### R78 補充：問題根源是 GRADIENT quality 不是 function quality
 
 R78 把 surrogate-in-loop GD 改成 in-distribution hard binary input（不是 R77 的
