@@ -1081,6 +1081,52 @@ Free-phase GD + direct loss (R57)          +21.31 dB ★ NEW RECORD
 2. Free-phase + SA-per-restart 多 restart 能否再突破 +21.31？
 3. 是否還有更好 phase parameterization（如 complex Re/Im）？
 
+### Round 58 — Free-Phase Universality（5.6 GHz 也突破）
+
+**動機**：R57 在 28 GHz × 13 × +51° × width=80 達 +21.31 dB。
+測試演算法是否 universally 改善其他配置。
+
+5.6 GHz × 19 × +60° × width=46 × broadside × 10 seeds × free-phase + SA：
+
+| seed | free cont | 1-bit | + SA |
+|------|-----------|-------|------|
+| 0 | +29.24 | +16.01 | +16.19 |
+| 1 | +29.19 | +15.79 | +16.34 |
+| 2 | +29.02 | +16.78 | +17.98 |
+| 3 | +27.35 | +16.26 | +17.32 |
+| 4 | +29.52 | +15.75 | +16.70 |
+| 5 | +28.30 | +16.62 | +17.36 |
+| **6** | +29.37 | +18.64 | **+19.61 ★** |
+| 7 | +29.33 | +17.67 | +17.67 |
+| 8 | +29.81 | +14.92 | +15.04 |
+| **9** | +28.08 | **+18.94** | +18.94 |
+
+mean +17.31, max **+19.61** (seed=6 + SA)
+
+### 跨配置 Universal Improvement 確認
+
+| Configuration | Old (sigmoid+SA) | **New (free-phase+SA)** | Δ |
+|---------------|------------------|--------------------------|---|
+| 5.6 GHz × 19 × +60° × width=46 | +11.82 (R37) | **+19.61 (R58)** | +7.79 |
+| 28 GHz × 13 × +51° × width=80 | +13.44 (R47) | **+21.31 (R57)** | +7.87 |
+
+**~+7.8 dB universal improvement** 確認——不是 28 GHz 特例，是
+**演算法 + 相位 parameterization** 的全面改善。
+
+### 紀錄歷程更新（再）
+
+```
+v1                                          −4.08 dB
+v6 generator best                           −0.46 dB
+GD+SA reheat=2 (R25)                        +9.75 dB
+SA-per-restart 5.6 GHz × 19 (R37)          +11.82 dB
+SA-per-restart 28 GHz × 13 (R48)           +13.44 dB
+Free-phase + direct loss 5.6 GHz (R58)     +19.61 dB
+Free-phase + direct loss 28 GHz (R57)      +21.31 dB ★ NEW RECORD
+```
+
+從 v1 (-4.08) 到 R57 (+21.31) = **+25.39 dB 改善**
+
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
 | Metric | GD-only | GD+SA |
