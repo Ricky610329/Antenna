@@ -771,6 +771,34 @@ typical 安裝精度 ±5° 不夠精細——大多數實際部署只能達 +9 d
 - seed = 0 (lucky GD init)
 任一偏離都顯著下降。
 
+### Round 52 — 28 GHz 最佳配置的 Plateau Profile
+
+28 GHz × 13 × inc=+51° × width=80 × 5 plateau positions × SA-per-restart：
+
+| target | θ_center | suppression |
+|--------|----------|-------------|
+| left | -24.5° | +10.09 |
+| **center_left** | **-9.0°** | **+12.54** |
+| **broadside** | **-1.5°** | **+13.44 ★** |
+| center_right | +6° | +9.48 |
+| right | +22° | +9.18 |
+
+mean **+10.95**, min +9.18, max +13.44
+
+**重要新發現**：
+1. broadside 仍是 +13.44 唯一達物理上限
+2. center_left (-9°) 達 +12.54 secondary peak
+3. **整體 mean +10.95**（vs 5.6 GHz × 19 × +60° R37 mean +9.67）
+
+**28 GHz × 13 × +51° × width=80 broadband 性能更好**！
+之前以為 5.6 GHz × 19 是 broadband 王者，實際上 28 GHz 配置整體更高
+mean (+10.95 vs +9.67, +1.28 dB)。
+
+對使用者最終建議更新：
+- **想要最高 max**: 28 GHz × 13 × +51° × width=80 × broadside = +13.44
+- **想要 broadband 強**: 28 GHz × 13 × +51° × width=80（mean +10.95 across 5 targets）
+- 5.6 GHz × 19 仍是 5.6 GHz 部署 baseline
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
