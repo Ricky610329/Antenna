@@ -542,6 +542,45 @@ acquisition 真的 explore informative candidates。
 
 Same-arch + diff seeds 收斂到相似 local optima，std 太小，UCB 無效。
 
+---
+
+## R99 Calibration: 1500 GD steps is the deployment sweet spot
+
+R99 tested 1500 / 3000 / 5000 GD steps at n=51, rw=2, 5 restarts:
+
+| Steps | Best worst | Flat-top hit |
+|-------|-----------|--------------|
+| **1500** | +1.92 | **5/5 (100%) ✓** |
+| 3000 | +3.01 | 4/5 |
+| 5000 | +2.79 | 3/5 |
+
+**Counter-intuitive: longer GD reduces flat-top reliability.**
+
+### Why
+
+```
+loss = -(main_min - side_max) + λ_ripple * (main_max - main_min)
+
+深度收斂下:
+  base term -(main_min - side_max) saturate
+  ripple penalty 相對失效
+  optimizer 偏向 main_max 上升 (sharp peak)
+  → ripple 增加 → flat-top compliance 下降
+```
+
+### Recommendation
+
+```python
+# DEPLOYMENT (production reliability):
+gd_steps = 1500   # 5/5 flat-top hit rate ★
+
+# RESEARCH (chase max suppression, sacrifice reliability):
+gd_steps = 3000+  # higher worst but lower flat-top hit
+```
+
+對 patch: 預設 `gd_steps=1500` for deployment, `3000+` 只在 specific 高
+suppression 需求 (no flat-top constraint) 時用。
+
 ### R78 補充：問題根源是 GRADIENT quality 不是 function quality
 
 R78 把 surrogate-in-loop GD 改成 in-distribution hard binary input（不是 R77 的
