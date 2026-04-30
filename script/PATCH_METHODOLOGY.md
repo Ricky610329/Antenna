@@ -306,6 +306,66 @@ R68 揭露 surrogate 對 rw=0 systematic under-predict。
 - 不要訓 surrogate 預測 scalar metrics
 - 不要用 supervised BCE on geometry 訓 generator
 - 不要相信 single seed 的結果
+- **不要相信 surrogate test MAE 就直接 deploy**（R77 critical）
+  - Surrogate test set MAE 是**隨機 sample 統計**
+  - GD 過程**主動找 surrogate 弱點** → adversarial-like exploitation
+  - 必須 add: Compare surrogate-loop vs HFSS-loop on small test set
+  - 如果 gap > 2 dB → 不要 deploy，加 uncertainty/ensemble/active learning
+
+---
+
+## Surrogate Validation Protocol（必加，R77 教訓）
+
+R77 在 RIS 上實證: surrogate test MAE 2.57 dB 看起來夠好，但 GD-through-surrogate
+比 GD-through-real-sim **差 7-25 dB worst_supp**。原因是 GD 主動 exploit surrogate
+prediction errors（adversarial overfitting）。
+
+### 驗證步驟（patch deploy 前 mandatory）
+
+```python
+# 1. Train surrogate, achieve MAE < 1 dB on random test set ✓ (necessary, not sufficient)
+
+# 2. CRITICAL: Adversarial validation
+test_targets = sample_diverse_targets(n=10)
+gaps = []
+for target in test_targets:
+    # Path A: surrogate-in-loop optimization
+    pred_geom_A = optimize_through_surrogate(target, surrogate)
+    # Path B: HFSS-in-loop optimization (slow but ground truth)
+    pred_geom_B = optimize_through_hfss(target)
+    
+    # Both eval through HFSS
+    true_supp_A = hfss_run(pred_geom_A).worst_case_supp(target)
+    true_supp_B = hfss_run(pred_geom_B).worst_case_supp(target)
+    gaps.append(true_supp_B - true_supp_A)
+
+print(f"Mean gap: {np.mean(gaps)} dB")
+# < 2 dB: surrogate-in-loop OK to deploy
+# 2-5 dB: borderline, add uncertainty methods or active learning
+# > 5 dB: don't deploy, expand dataset or retrain
+
+# 3. Mitigation if gap > 2 dB:
+#    a. Ensemble surrogates (variance as uncertainty proxy)
+#       → reject patterns where ensemble disagrees > threshold
+#    b. Active learning: HFSS-verify surrogate-loop outputs, add bad ones to training
+#    c. Retrain with continuous augmentation if surrogate trained on discrete only
+```
+
+### 為什麼 random test MAE 不夠
+
+Surrogate test set 是 i.i.d. samples。GD trajectory 不是 i.i.d. — 它沿著
+gradient 方向走，主動尋找：
+- Surrogate 預測高 main 但 real sim 預測低 main 的點
+- Surrogate 預測低 sidelobe 但 real sim 預測高 sidelobe 的點
+
+這些是 surrogate prediction error 的 worst-case 方向，跟 random test set 統計
+分佈完全不同。
+
+### Patch Antenna 預估
+
+Patch surrogate 可能比 RIS 好（continuous geometry, smoother prediction），
+但 adversarial gap 可能仍 1-3 dB。**必須驗證**。
+
 
 ---
 
