@@ -486,6 +486,62 @@ isolation_surrogate = ...  # ✗
 3. **Larger effective dataset**: 不切割 by mode, 用全部 data
 4. **Generalization**: cross-mode patterns 強化 robustness
 
+---
+
+## R89 BREAKTHROUGH: Heterogeneous Architecture Ensemble Beats Random ★
+
+R85-R88 試的 BO methods 都沒顯著贏 random:
+- R85 greedy: WORSE than random
+- R86 same-arch ensemble: tied with greedy
+- R88 MC Dropout: tied with random
+
+**R89 finally found winning recipe**: heterogeneous architectures.
+
+### Final BO Result Table
+
+| Method | Final best (pool max +5.57) | Gap |
+|--------|---------------------------|-----|
+| Greedy single | +1.59 | 3.98 ✗ |
+| Same-arch ensemble | +4.42 | 1.16 ✗ |
+| MC Dropout | +4.79 | 0.79 (tied) |
+| Random | +4.79 | 0.79 (baseline) |
+| **Het ensemble** | **+5.19** | **0.38 ✓** |
+
+### Recipe (Use This)
+
+```python
+# Train heterogeneous ensemble (R89 winning recipe)
+archs = [
+    {"channels": 16, "depth": 3},   # small / simple
+    {"channels": 32, "depth": 4},   # medium / standard
+    {"channels": 64, "depth": 5},   # large / complex
+]
+ensemble = []
+for cfg in archs:
+    model = PatchSurrogate(**cfg, dropout_p=0.3)
+    train(model, dataset, epochs=200)
+    ensemble.append(model)
+
+# UCB acquisition
+preds = torch.stack([m(candidates) for m in ensemble])
+mean = preds.mean(0)
+std = preds.std(0)  # ensemble std (R89: 0.28-1.11, useful)
+ucb = mean + 2.0 * std
+selected = candidates[ucb.argsort()[-K:]]
+```
+
+### 為什麼 Heterogeneous Works
+
+不同 capacity 的模型有不同 inductive bias:
+- Small (c=16): 簡單 features, 可能 underfit
+- Medium (c=32): standard
+- Large (c=64): 複雜 features, 可能 overfit
+
+3 個模型對 edge cases 給 different predictions → meaningful std → UCB
+acquisition 真的 explore informative candidates。
+
+Same-arch + diff seeds 收斂到相似 local optima，std 太小，UCB 無效。
+
 ### R78 補充：問題根源是 GRADIENT quality 不是 function quality
 
 R78 把 surrogate-in-loop GD 改成 in-distribution hard binary input（不是 R77 的
