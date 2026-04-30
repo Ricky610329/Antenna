@@ -931,6 +931,59 @@ seed）超窄 attraction basin**，跟文獻「1-bit RIS 3 dB quantization loss�
 - 文獻 prephased 1-bit metasurface 是 explicit prephase + binary control，
   同等思路但工程實作不同
 
+### Round 56 — 10-Seed Statistics + Larger n（28 GHz 配置）
+
+**Seeds 5-9 結果**（28 GHz × 13 × +51° × width=80 × broadside × 1 restart + SA each）：
+
+| seed | suppression |
+|------|-------------|
+| **0** ★ | **+13.44** (R47/48 lucky) |
+| 1-4 | (in R51 best=+13.44 across seeds 0-4)|
+| 5 | +8.60 |
+| 6 | +7.40 |
+| 7 | +6.99 |
+| 8 | +8.18 |
+| 9 | +10.16 (secondary lucky) |
+
+**結論**：
+- seed=0 是唯一達 +13.44 的 lucky GD init（10% rate 確認）
+- seed=9 是 secondary lucky (+10.16)
+- mean of 5-9 = +8.27 dB，max = +10.16 dB
+- 沒有任何其他 seed 達 +13.44 → 真實 narrow basin
+
+**Larger n=21/23/25 sweep**（28 GHz × +51° × width=80 × broadside × 5 restart）：
+
+| n | aperture | suppression |
+|---|----------|-------------|
+| 11 | 5.5λ | +9.86 (R51) |
+| **13** | **6.5λ** | **+13.44 ★** (R47/48) |
+| 15 | 7.5λ | +11.12 (R51) |
+| 17 | 8.5λ | +9.65 (R51) |
+| 19 | 9.5λ | +9.70 (R51) |
+| 21 | 10.5λ | +8.95 (R56 NEW) |
+| 23 | 11.5λ | +9.11 (R56 NEW) |
+| 25 | 12.5λ | +10.68 (R56 NEW) |
+
+**結論**：
+- n=13 (6.5λ) 是 28 GHz × +51° × width=80 全局最佳 aperture
+- 越大 aperture 不能突破 +13.44 → **+13.44 是 binary ceiling**
+- n=25 (12.5λ) 達 +10.68 是 secondary peak
+- 跟 R51 趨勢一致：sweet aperture 跟 specific (freq × inc × width) phase
+  matching 有關，不是「越大越好」
+
+**完整 8-維度 sharp peak（R56 update）**：
+
+| 維度 | Sweet | 偏離影響 (R 編號) |
+|------|-------|-------|
+| freq | 28 GHz | -3 ~ -4 dB ±2 GHz (R54) |
+| n | 13 (6.5λ) | -2 ~ -5 dB n=11-25 (R51, R56) |
+| inc | +51° | -3 ~ -4 dB ±1° (R48 knife-edge) |
+| width | 80 | -2 ~ -4 dB ±5 (R55 knife-edge) |
+| plateau pos | broadside | -0.9 ~ -4.3 dB (R52) |
+| target shape | flat plateau | TBD |
+| seed | 0 | -3 ~ -7 dB seed 1-9 (R56) |
+| algorithm | SA-per-restart | +1~+2 dB vs best-GD-then-SA (R35) |
+
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
 | Metric | GD-only | GD+SA |
