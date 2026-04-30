@@ -1241,6 +1241,48 @@ Free-phase 38 GHz × 21 (R60)               +23.88 dB ★ NEW GLOBAL RECORD
 
 從 v1 (-4.08) 到 R60 (+23.88) = **+27.96 dB 累計改善**
 
+### Round 61 — 雙重發現（38 GHz n=25 +24.97 + 28 GHz n=21 +23.45）
+
+**38 GHz × n=23/25/27 × 5 seeds × free-phase + SA**（接續 R60 n=11-21）：
+
+| n | aperture | best | mean (5 seeds) |
+|---|----------|------|----------------|
+| 21 (R60) | 10.5λ | +23.88 | +22.55 |
+| 23 | 11.5λ | +22.16 | +21.50 |
+| **25** | **12.5λ** | **+24.97 ★ NEW RECORD** | +22.69 |
+| 27 | 13.5λ | +24.21 | +22.36 |
+
+**28 GHz × n=15/17/19/21 × 5 seeds × free-phase + SA**：
+
+| n | best | mean |
+|---|------|------|
+| 13 (R57) | +21.31 | +15.89 |
+| 15 | +19.07 | +16.62 |
+| 17 | +21.31 | +18.06 |
+| 19 | +20.28 | +19.46 |
+| **21** | **+23.45 ★** | **+21.88** |
+
+**雙重 NEW**：
+- 28 GHz × n=21 達 **+23.45 dB**（破 R57 +21.31 by +2.14）
+- 38 GHz × n=25 達 **+24.97 dB ★ NEW GLOBAL RECORD**（破 R60 +23.88 by +1.09）
+
+**重要發現**：兩頻率都偏好更大 aperture（n=21~25, 10-13λ），在 free-phase
+下與 sigmoid path 結論完全相反。
+
+### 紀錄歷程更新（R61）
+
+```
+v1                                          −4.08 dB
+v6 generator best                           −0.46 dB
+GD+SA reheat=2 (R25)                        +9.75 dB
+SA-per-restart 28 GHz × 13 (R48)           +13.44 dB
+Free-phase 28 GHz × 13 (R57)               +21.31 dB
+Free-phase 38 GHz × 21 (R60)               +23.88 dB
+Free-phase 38 GHz × 25 (R61)               +24.97 dB ★ NEW GLOBAL RECORD
+```
+
+從 v1 (-4.08) 到 R61 (+24.97) = **+29.05 dB 累計改善**
+
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
 | Metric | GD-only | GD+SA |
