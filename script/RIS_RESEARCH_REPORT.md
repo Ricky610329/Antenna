@@ -1193,6 +1193,54 @@ Free-phase 38 GHz × 15 (R59)               +23.02 dB ★ NEW GLOBAL RECORD
 
 從 v1 (-4.08) 到 R59 (+23.02) = **+27.10 dB 累計改善**
 
+### Round 60 — 38 GHz × n Sweep（n=21 達 +23.88 NEW RECORD）
+
+R59 發現 38 GHz × 15 是 sweet sweetest。掃 n={11,13,17,19,21} 看是否有更好。
+
+5 seeds × free-phase + SA × 38 GHz × +51° × width=80 × broadside：
+
+| n | aperture | best | mean (5 seeds) |
+|---|----------|------|----------------|
+| 11 | 5.5λ | +15.51 | +12.78 |
+| 13 | 6.5λ | +18.12 | +17.44 |
+| 15 (R59) | 7.5λ | +23.02 | +18.91 |
+| 17 | 8.5λ | +20.65 | +19.27 |
+| 19 | 9.5λ | +21.69 | +20.97 |
+| **21** | **10.5λ** | **+23.88 ★** | **+22.55** |
+
+n=21 mean +22.55，所有 5 seeds ≥+20.90 → robust 高 suppression。
+
+**新 global record**：38 GHz × n=21 × +51° × width=80 × broadside × seed=3
+= **+23.88 dB**
+
+### 跨配置 Sweet Aperture 對照（free-phase path）
+
+| Frequency | sigmoid 最佳 n | free-phase 最佳 n |
+|-----------|----------------|-------------------|
+| 28 GHz | 13 (R51) | TBD（待掃） |
+| **38 GHz** | **15 (R53)** | **21 (R60) ★** |
+| 60 GHz | 15 (R45) | TBD |
+
+**重要新發現**：sigmoid path 認為 n=13/15 是 sweet，free-phase 路線
+偏好更大 aperture (n=21)。原因：
+- sigmoid 半圓限制下，更多元素帶來 phase aliasing 更多 → 卡 local optimum
+- free-phase 全圓下，larger aperture 給更多 phase DoF → 更容易達高 suppression
+- aperture vs phase parameterization 是耦合的設計選擇
+
+### 紀錄歷程更新（R60）
+
+```
+v1                                          −4.08 dB
+v6 generator best                           −0.46 dB
+GD+SA reheat=2 (R25)                        +9.75 dB
+SA-per-restart 28 GHz × 13 (R48)           +13.44 dB
+Free-phase 28 GHz × 13 (R57)               +21.31 dB
+Free-phase 38 GHz × 15 (R59)               +23.02 dB
+Free-phase 38 GHz × 21 (R60)               +23.88 dB ★ NEW GLOBAL RECORD
+```
+
+從 v1 (-4.08) 到 R60 (+23.88) = **+27.96 dB 累計改善**
+
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
 | Metric | GD-only | GD+SA |
