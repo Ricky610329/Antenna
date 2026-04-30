@@ -747,6 +747,30 @@ typical 安裝精度 ±5° 不夠精細——大多數實際部署只能達 +9 d
 
 **Knife-edge vs Multi-modal 不同 attraction landscape**——可能 aperture 大小決定。
 
+### Round 51 — 28 GHz × +51° × width=80 × Size Sweep（n=13 sweet）
+
+28 GHz × inc=+51° × width=80 × broadside × 5 restart × SA-per-restart：
+
+| n | aperture | suppression |
+|---|----------|-------------|
+| 11 | 5.5λ | +9.86 |
+| **13** | **6.5λ** | **+13.44 ★** |
+| 15 | 7.5λ | +11.12 |
+| 17 | 8.5λ | +9.65 |
+| 19 | 9.5λ | +9.70 |
+
+**確認 n=13 是 28 GHz × +51° × width=80 的 sweet aperture**。
+未破 +13.44 紀錄，但 n=15 達 +11.12 是 secondary peak。
+
+**完整 28 GHz × +51° × width=80 6-維度 sharp peak 確認**：
+- freq = 28 GHz
+- n = 13 (sweet aperture 6.5λ)
+- inc = +51° (knife-edge ±1°)
+- width = 80 (main lobe match)
+- broadside target
+- seed = 0 (lucky GD init)
+任一偏離都顯著下降。
+
 **對使用者的硬體選型建議更新**：
 - 28 GHz 部署：15×15 最佳
 - 5.6 GHz 部署：應選 20×20（甚至更大）
