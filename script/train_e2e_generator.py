@@ -29,6 +29,20 @@ from antenna.ris import RISSimulator
 from antenna.utils.config import config
 
 
+class FreePhaseBinarySTE(torch.autograd.Function):
+    """Forward: free-phase → 1-bit binary quantize. Backward: identity (STE)."""
+
+    @staticmethod
+    def forward(ctx, free_phase):
+        phase = (free_phase * torch.pi) % (2 * torch.pi)
+        binary = ((phase > torch.pi / 2) & (phase < 3 * torch.pi / 2)).float()
+        return binary
+
+    @staticmethod
+    def backward(ctx, grad):
+        return grad  # straight-through
+
+
 class FreePhaseGenerator(nn.Module):
     """config → free-phase pattern (n×n)，不限值域。"""
 
@@ -110,6 +124,8 @@ def main() -> None:
     p.add_argument("--device", type=str, default="cuda:0")
     p.add_argument("--out_dir", type=str, default="outputs/r74_e2e_generator")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--ste", action="store_true",
+                   help="Use STE binary quantization during training (R75)")
     args = p.parse_args()
 
     out = Path(args.out_dir)
@@ -159,7 +175,11 @@ def main() -> None:
         losses = []
         for i, (tc, tw, rw) in enumerate(cfgs):
             main_lo, main_hi = build_target_idx(tc, tw)
-            resp = sim(free_phase[i])["response"]  # 361
+            if args.ste:
+                pat_for_sim = FreePhaseBinarySTE.apply(free_phase[i])
+            else:
+                pat_for_sim = free_phase[i]
+            resp = sim(pat_for_sim)["response"]  # 361
             losses.append(worst_case_loss(resp, main_lo, main_hi, beta=20.0, ripple_weight=rw))
         loss = torch.stack(losses).mean()
 

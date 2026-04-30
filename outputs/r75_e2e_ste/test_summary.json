@@ -1,0 +1,62 @@
+[
+  {
+    "config": [
+      -25.0,
+      12.0,
+      0.0
+    ],
+    "cont_worst": -12.860061645507812,
+    "binary_worst": -28.1350040435791,
+    "binary_ripple": 23.87186622619629,
+    "main_below_3": 24,
+    "main_total": 24
+  },
+  {
+    "config": [
+      0.0,
+      20.0,
+      2.0
+    ],
+    "cont_worst": -19.651504516601562,
+    "binary_worst": -23.264240264892578,
+    "binary_ripple": 20.746580123901367,
+    "main_below_3": 37,
+    "main_total": 40
+  },
+  {
+    "config": [
+      20.0,
+      25.0,
+      1.0
+    ],
+    "cont_worst": -23.253398895263672,
+    "binary_worst": -22.83588409423828,
+    "binary_ripple": 22.064311981201172,
+    "main_below_3": 41,
+    "main_total": 50
+  },
+  {
+    "config": [
+      -15.0,
+      10.0,
+      2.0
+    ],
+    "cont_worst": -40.530147552490234,
+    "binary_worst": -14.133708953857422,
+    "binary_ripple": 7.7735443115234375,
+    "main_below_3": 20,
+    "main_total": 20
+  },
+  {
+    "config": [
+      15.0,
+      30.0,
+      0.0
+    ],
+    "cont_worst": -19.557842254638672,
+    "binary_worst": -26.665868759155273,
+    "binary_ripple": 22.298965454101562,
+    "main_below_3": 60,
+    "main_total": 60
+  }
+]
