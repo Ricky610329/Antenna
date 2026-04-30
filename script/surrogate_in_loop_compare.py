@@ -109,6 +109,15 @@ def gd_through_surrogate(surrogate, sim_for_eval, n, max_n, freq, inc_theta, the
         ripple_w / 5.0,
     ], dtype=torch.float32, device=device).unsqueeze(0)
 
+    class HardBinSTE(torch.autograd.Function):
+        @staticmethod
+        def forward(ctx, free_phase):
+            phase = (free_phase * torch.pi) % (2 * torch.pi)
+            return ((phase > torch.pi / 2) & (phase < 3 * torch.pi / 2)).float()
+        @staticmethod
+        def backward(ctx, grad):
+            return grad
+
     best = None
     for seed in range(n_seeds):
         torch.manual_seed(seed)
@@ -116,14 +125,10 @@ def gd_through_surrogate(surrogate, sim_for_eval, n, max_n, freq, inc_theta, the
         opt = torch.optim.Adam([params_n], lr=lr)
         for step in range(steps):
             opt.zero_grad()
-            # quantize via STE-like: forward use binary, backward through params
-            phase = (params_n * torch.pi) % (2 * torch.pi)
-            soft_bin = torch.sigmoid(10 * torch.cos(phase))  # smooth approx of binary indicator
-            # ↑ smoother approximation: cos(phase) ∈ [-1, 1], threshold ~0 → sigmoid≈step
-            # But we want "binary={0,1}" representation.
-            # Actually let's do simpler: just feed continuous to surrogate (OOD but smoother)
+            # HARD binary forward (matches deployment + training distribution), STE backward
+            hard_bin = HardBinSTE.apply(params_n)  # forward = binary {0,1}, in training distribution
             pat_padded = torch.zeros(1, max_n, max_n, device=device)
-            pat_padded[0, offset:offset+n, offset:offset+n] = soft_bin
+            pat_padded[0, offset:offset+n, offset:offset+n] = hard_bin
             mask_b = pad_mask.unsqueeze(0)
             resp_pred = surrogate(pat_padded, mask_b, cfg_vec)
             loss = worst_case_loss(resp_pred[0], main_lo, main_hi, beta=20.0, ripple_weight=ripple_w)

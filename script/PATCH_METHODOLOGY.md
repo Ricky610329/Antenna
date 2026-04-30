@@ -366,6 +366,60 @@ gradient 方向走，主動尋找：
 Patch surrogate 可能比 RIS 好（continuous geometry, smoother prediction），
 但 adversarial gap 可能仍 1-3 dB。**必須驗證**。
 
+### R78 補充：問題根源是 GRADIENT quality 不是 function quality
+
+R78 把 surrogate-in-loop GD 改成 in-distribution hard binary input（不是 R77 的
+soft continuous），gap 反而**更大**（15.30 vs 13.54 dB）。
+
+**這證明 R77 失敗不是 OOD issue，是 surrogate 的 gradient quality 不夠。**
+
+```
+Surrogate quality measures:
+  ‖f - f̂‖∞       function value MAE        ← random test set 評估
+  ‖∇f - ∇f̂‖∞     gradient MAE              ← GD 用, 才是 deployment 真實 bottleneck
+
+NN 預測值 OK 但 gradient 可能完全錯。
+GD 走的是 ∂loss/∂params, 不是 loss 本身。
+```
+
+### Surrogate Gradient Quality 評估方法（patch deploy 前必跑）
+
+```python
+# 用 finite difference 測 ground-truth gradient
+def true_gradient(x, sim, eps=1e-3):
+    """∂response/∂x via finite difference."""
+    grads = []
+    for i in range(x.shape[0]):
+        x_p = x.clone(); x_p[i] += eps
+        x_m = x.clone(); x_m[i] -= eps
+        grad = (sim(x_p) - sim(x_m)) / (2 * eps)
+        grads.append(grad)
+    return torch.stack(grads)
+
+# Compare surrogate gradient vs true gradient
+test_points = sample_geometries(n=20)  # diverse
+for x in test_points:
+    g_true = true_gradient(x, hfss_run)
+    x_t = torch.tensor(x, requires_grad=True)
+    y_pred = surrogate(x_t).sum()
+    g_pred = torch.autograd.grad(y_pred, x_t)[0]
+    cos_sim = F.cosine_similarity(g_pred.flatten(), g_true.flatten(), dim=0)
+    rel_err = (g_pred - g_true).norm() / g_true.norm()
+    print(f"cos sim {cos_sim:.3f}, rel err {rel_err:.3f}")
+
+# Pass criteria for deployment:
+#   cosine similarity > 0.7 (gradient direction OK)
+#   relative error < 0.5 (gradient magnitude OK)
+# 否則 GD-through-surrogate 不可信, 即使 function MAE 好看
+```
+
+### 改善 gradient quality 的方法
+
+1. **Gradient supervision**: 訓練時加入 ∂y/∂x 監督（HFSS 提供 finite difference gradients）
+2. **Sobolev training**: 同時擬合 y 和 ∂y/∂x
+3. **Physics-informed NN**: 把 EM 方程當 inductive bias
+4. **大量資料**: 經驗上 ~10× function MAE 級的 gradient 需要 10-100x 更多資料
+
 
 ---
 
