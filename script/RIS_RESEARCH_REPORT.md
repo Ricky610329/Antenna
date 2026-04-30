@@ -833,6 +833,52 @@ mean (+10.95 vs +9.67, +1.28 dB)。
 - 5.6 GHz 部署：應選 20×20（甚至更大）
 - 60 GHz 部署：對 size 不敏感，10/15/20 都可
 
+### Round 54 — 28 GHz 鄰近頻率細網格（sweet sweetest 確認）
+
+28 GHz × 13 × +51° × width=80 × broadside × 5 restart × SA-per-restart
+（保留所有最佳維度，只變頻率）：
+
+| freq | suppression | vs 28 GHz |
+|------|-------------|-----------|
+| 26 GHz | +9.53 | -3.91 |
+| 27 GHz | +9.57 | -3.87 |
+| **28 GHz** | **+13.44 ★** | — |
+| 29 GHz | +10.04 | -3.40 |
+| 30 GHz | +10.23 | -3.21 |
+
+**重大確認：28 GHz 是 narrow-band sweet sweetest**
+
+±2 GHz 全部下降 3-4 dB——比 inc 的 ±1° knife-edge 還要 narrow（with respect
+to fractional bandwidth）。即使保留 inc=+51° / width=80 / n=13 等所有其他
+最佳維度，頻率只要稍微偏離 28 GHz 就無法重現 +13.44 紀錄。
+
+**物理解讀**：
+- inc=+51° / width=80 / n=13 是專為 28 GHz λ=10.71mm 設計的 phase-quantization
+  attraction basin
+- 偏到 26-30 GHz 時 free-space wavelength 變化 ~7%，
+  element spacing (λ/2) 與 main lobe 寬度都微移，整個 attraction landscape
+  shifts，原本的 lucky GD seed=0 不再命中 deeper basin
+- 對應 5G mmWave n257 band (26.5-29.5 GHz) 的中心 frequency 28 GHz
+
+**七頻率完整圖譜（截至 R54）**：
+
+| Frequency | Best n × inc × width | Suppression | Band |
+|-----------|----------------------|-------------|------|
+| 5.6 GHz | 19 × +60° × 46 | +11.82 | sub-6G WiFi |
+| 12 GHz | 17 × +60° × 46 | +8.66 | (R53 quick) |
+| 24 GHz | 14 × +51° × 80 | +9.17 | (R53 quick) |
+| 26 GHz | 13 × +51° × 80 | +9.53 | n257 lower |
+| 27 GHz | 13 × +51° × 80 | +9.57 | n257 |
+| **28 GHz** | **13 × +51° × 80** | **+13.44 ★** | **n257 center** |
+| 29 GHz | 13 × +51° × 80 | +10.04 | n257 |
+| 30 GHz | 13 × +51° × 80 | +10.23 | n257 upper |
+| 38 GHz | 15 × +51° × 80 | +11.59 | n260 |
+| 60 GHz | 15 × +60° × 60 | +10.52 | mmWave WiGig |
+
+**對使用者**：28 GHz 是物理紀錄頻率，硬體建置如果有頻率彈性應對齊
+此值。其他頻率（包括 26.5-29.5 GHz n257 band 邊緣）需要自己的 inc/width
+fine grid 才能找到該頻率的 attraction basin（不一定能達 +13.44）。
+
 ### Round 16 統計實驗 — GD vs GD+SA（10 seeds）
 
 | Metric | GD-only | GD+SA |
