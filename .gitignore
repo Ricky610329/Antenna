@@ -3,6 +3,29 @@ result
 _test*.py
 wandb/
 
+# Local Claude Code state
+.claude/
+
+# Transient experiment output directories — keep only the *.md summaries
+# and report figures that are explicitly committed
+outputs/2026-*/
+outputs/28ghz_*/
+outputs/6G_paper_text/
+outputs/batch_*/
+outputs/benchmark_*/
+outputs/dataset_v*/
+outputs/design_*/
+outputs/direct_search/
+outputs/per_target_*/
+outputs/plateau_*/
+outputs/r5[0-9]_*/
+outputs/r6[0-9]_*/
+outputs/r[7-9][0-9]_*/
+outputs/r1[0-9][0-9]_*/
+outputs/ris_pairs/
+outputs/sweep_*/
+outputs/test_determinism/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
