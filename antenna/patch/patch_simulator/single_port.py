@@ -1,6 +1,9 @@
 
 from . import *
 
+def get_penalty(expected_len:int=17):
+    logger.warning("模擬發生未知錯誤，回傳懲罰值")
+    return {'S11': tensor([0.0] * expected_len), 'Gain': tensor([-40.0] * expected_len)}
 
 class SinglePortSimulator(PatchSimulator):
     def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'single_port.sab'), pixel_count:int = 25):
@@ -204,25 +207,28 @@ class SinglePortSimulator(PatchSimulator):
 
         # 將Patch Pexil 畫上
         # Create PatchBlock
+        patch_names = [] # 建立一個 List 來收集所有生成的 Patch 名稱
+        patch_count = 1 # 迴圈生成 Box
         for y in range(0, pixel_row, 1):
             for x in range(0, pixel_column, 1):
                 # if pixel_matrix[x][y] > 0:
                 #     one_num = one_num + 1
                 if pixel_matrix[x][y] == 1:
+                    current_name = f"Patch_{patch_count}"
                     one_num = one_num + 1
-                    oEditor.CreateBox(
+                    actual_patch_name = oEditor.CreateBox(
                         [
                             "NAME:BoxParameters",
                             "XPosition:=", "0mm" + str("+pixel_H" * x),
                             "YPosition:=", "0mm" + str("+pixel_W" * y),
                             "ZPosition:=", "0.508mm",
-                            "XSize:=", "pixel_H",
-                            "YSize:=", "pixel_W",
+                            "XSize:=", "pixel_H + 0.01mm", #! 避免產生奇異點
+                            "YSize:=", "pixel_W + 0.01mm", #!
                             "ZSize:=", "CooperH"
                         ],
                         [
                             "NAME:Attributes",
-                            "Name:=", "Patch",
+                            "Name:=", current_name, #! 獨立命名
                             "Flags:=", "",
                             "Color:=", "(255 0 0)",
                             "Transparency:=", 0,
@@ -230,42 +236,28 @@ class SinglePortSimulator(PatchSimulator):
                             "UDMId:=", "",
                             "MaterialValue:=", "\"copper\"",
                             "SurfaceMaterialValue:=", "\"\"",
-                            "SolveInside:=", True,
+                            "SolveInside:=", True, #! 導體內部求解 (Original: True)
                             "IsMaterialEditable:=", True,
                             "UseMaterialAppearance:=", False,
                             "IsLightweight:=", False
                         ])
+                    patch_names.append(actual_patch_name)
+                    patch_count += 1
 
-        ones_buf = 0
-        for i in range(pixel_row):
-            patch_unite = ""
-            E = pixel_matrix[:, i]
-            # 使用 numpy.where 找到值為 1 的位置
-            ones_indices = np.where(E == 1)[0]
-            # 因為只有一個不能unite
-            if ones_indices.shape[0] > 1:
-                for u in range(ones_indices.shape[0]):
-                    if u+ones_buf == 0:
-                        continue
-                    patch_unite = patch_unite + "Patch_" + str(u+ones_buf) + ","
-
-                patch_unite = patch_unite[:len(patch_unite)-1]
-
-                # 因為只有一個不能unite
-                if patch_unite == "Patch_1":
-                    ones_buf = ones_buf + ones_indices.shape[0]
-                    continue
-
+        # Batch Global Unite
+        if len(patch_names) >= 1:
+            chunk_size = 20
+            # try:
+            for i in range(0, len(patch_names), chunk_size):
+                chunk_patches = patch_names[i:i+chunk_size]
+                selections_str = "feed_line," + ",".join(chunk_patches)
+                
                 oEditor.Unite(
-                    [
-                        "NAME:Selections",
-                        "Selections:=", patch_unite
-                    ],
-                    [
-                        "NAME:UniteParameters",
-                        "KeepOriginals:=", False
-                    ])
-            ones_buf = ones_buf + ones_indices.shape[0]
+                    ["NAME:Selections", "Selections:=", selections_str],
+                    ["NAME:UniteParameters", "KeepOriginals:=", False]
+                )
+            # except:
+            #     return get_penalty()
 
         # 設定邊界條件
         oModule = oDesign.GetModule("BoundarySetup")
@@ -350,7 +342,7 @@ class SinglePortSimulator(PatchSimulator):
                 "RangeStart:=", "24GHz",
                 "RangeEnd:=", "32GHz",
                 "RangeStep:=", "0.5GHz",
-                "Type:=", "Fast",
+                "Type:=", "Interpolating",       #! 掃頻演算法選擇 {EX: Fast, Interpolating(插值掃描)}
                 "SaveFields:=", True,
                 "SaveRadFields:=", False,
                 "GenerateFieldsForAllFreqs:=", False,
@@ -378,6 +370,7 @@ class SinglePortSimulator(PatchSimulator):
 
         # 開始模擬
         oDesign.AnalyzeAll()
+
 
         # 畫出結果
         oModule = oDesign.GetModule("ReportSetup")
@@ -451,14 +444,14 @@ class SinglePortSimulator(PatchSimulator):
         freqs_s11 = Sparameter_dataframe.iloc[:, 0].values
         S11_vals = Sparameter_dataframe.iloc[:, 1].values
         if len(S11_vals) != expected_len:
-            logger.warning(f"HFSS S11 模擬點數異常 (Pattern {self.num})！預期 {expected_len} 點，實際取得 {len(S11_vals)} 點，將自動進行插值補齊。")
+            # logger.warning(f"HFSS S11 模擬點數異常 (Pattern {self.num})！預期 {expected_len} 點，實際取得 {len(S11_vals)} 點，將自動進行插值補齊。")
             S11_vals:np.ndarray = np.interp(freqs_expected, freqs_s11, S11_vals)
 
         #* Gain 
-        freqs_gain = Gain_dataframe.iloc[:, 0].values
+        freqs_gain = Gain_dataframe.iloc[:, 2].values
         Gain_vals = Gain_dataframe.iloc[:, 3].values
         if len(Gain_vals) != expected_len:
-            logger.warning(f"HFSS Gain 模擬點數異常 (Pattern {self.num})！預期 {expected_len} 點，實際取得 {len(Gain_vals)} 點，將自動進行插值補齊。")
+            # logger.warning(f"HFSS Gain 模擬點數異常 (Pattern {self.num})！預期 {expected_len} 點，實際取得 {len(Gain_vals)} 點，將自動進行插值補齊。")
 
             Gain_vals:np.ndarray = np.interp(freqs_expected, freqs_gain, Gain_vals)
 
