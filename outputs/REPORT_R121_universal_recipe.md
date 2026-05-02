@@ -103,9 +103,35 @@ worst +3.45 dB, flat-top 100%**
 - 不需 3-bit 的 cost
 - main 平坦、整片 sidelobe -30 dB，HFSS 套出來不會失真
 
+### 圖 1 — Recipe progression
+
+![Figure 1: Recipe progression](report_fig1_recipe_progression.png)
+
+R94 → R119 → R121 三個 recipe 在三個 metric 上的 strict improvement：
+worst-case 從 +1.92 → +3.45 dB，side_max 從 -4.51 → -6.05 dB，
+**side_mean 整片 distribution 累計往下推 -15.09 dB**（紅色標註）。
+不是 trade-off，是三個指標同時更好。
+
+### 圖補充 — Pattern + distribution 對照
+
+`outputs/r122_three_recipes.png` 提供 R94 / R119 / R121 三排 panel
+直接畫出 binary pattern + far-field response + sidelobe histogram，
+驗證 mean penalty 把整片 sidelobe 從 -10~-40 dB 散布壓成 -30~-40 dB tight cluster。
+
 ---
 
 ## 3. R123-R127：Universal Validation 與 Boundary Discovery
+
+### 圖 2 — 4 軸 universal validation overview
+
+![Figure 2: 4-axis universal validation](report_fig2_4axis_validation.png)
+
+四個 panel 一頁總結 R121 CHAMPION (綠) vs 1-bit baseline (紅) 跨 4 軸：
+**(a)** Cross-incidence — R121 在每個 inc 都 universally rescue baseline failures；
+**(b)** Cross-frequency — sub-6G 5.8 GHz 到 mmWave 60 GHz 全 robust；
+**(c)** Cross-steering — −30° 到 +30° dominate baseline，**+45° TIE**（橙色標 boundary）；
+**(d)** Aperture sweep — bigger n 確實 break +45° boundary，但 n=71 broadside 失守 flat-top。
+數字下方標註 flat-top compliance（OK = 5/5, x/5 = 部分 fail）。
 
 ### Recipe 寫死後，需要驗證它在實際應用變化下還 hold
 
@@ -163,6 +189,15 @@ worst +3.45 dB, flat-top 100%**
 **重大 finding**：continuous phase（理論最佳 hardware）只到 +1.32。
 這不是 quantization limit，是 **n=51 aperture 在 38GHz, +45° steering 的物理上限**。
 
+### 圖 3 — +45° boundary probe
+
+![Figure 3: R126 +45deg boundary probe](report_fig3_45deg_boundary.png)
+
+左 panel：5 種 recipe 的 worst-case，紫色虛線標 **continuous phase = +1.32 dB（理論最大值）**。
+3-bit 升級（+1.33）幾乎與 continuous 相同 → hardware ceiling 確認。
+λ=1.5（+2.05）看似最高，但右 panel 顯示它把 flat-top 從 OK 換到 3/5 — trade-off，不算 break boundary。
+右 panel：side_mean，五個 recipe 都比 baseline 大幅改善。
+
 #### 3.5 Aperture verification (R127)
 
 直接 sweep n 驗證 hypothesis：
@@ -180,6 +215,16 @@ worst +3.45 dB, flat-top 100%**
 - 但 flat-top 0/5 崩潰
 - 解讀：aperture 一大，可達 worst headroom 增加，但 ripple penalty (rw=2) 強度
   不夠約束 main 平坦 → flat-top 失守
+
+### 圖 4 — Aperture scaling
+
+![Figure 4: R127 aperture scaling](report_fig4_aperture_scaling.png)
+
+左 panel：worst-case 對 n 的 line plot，broadside（藍）跟 +45°（紅）兩條線
+都隨 n 線性向上 — 平均 ~+1 dB per +20 n，**驗證 R126 physical-limit hypothesis**。
+右 panel：flat-top compliance 跨 n。n=31, n=51 兩個 aperture 都 OK，
+但 **n=71 broadside 從 100% 掉到 0%**（紅旗：R121 recipe 的 ripple_w=2 在大 aperture 失效）。
++45° 受 worst-case 不夠強的天然約束，反而 flat-top 比 broadside 好。
 
 ---
 
@@ -262,7 +307,22 @@ recipe_universal = {
 
 ---
 
-## 7. 結論
+## 7. 圖檔索引
+
+| 圖 | 檔案 | 對應段落 |
+|---|---|---|
+| Figure 1 | `outputs/report_fig1_recipe_progression.png` | §2 Recipe progression |
+| Figure 2 | `outputs/report_fig2_4axis_validation.png` | §3 4-axis validation overview |
+| Figure 3 | `outputs/report_fig3_45deg_boundary.png` | §3.4 +45° boundary probe |
+| Figure 4 | `outputs/report_fig4_aperture_scaling.png` | §3.5 Aperture scaling |
+| 補圖 | `outputs/r120_baseline_vs_winner.png` | §2 R94 vs R119 pattern + histogram |
+| 補圖 | `outputs/r122_three_recipes.png` | §2 三 recipe pattern + histogram 對照 |
+
+圖再生：`PYTHONIOENCODING=utf-8 python script/report_visualization.py`（~1 秒）
+
+---
+
+## 8. 結論
 
 127 rounds 的探索把 binary RIS optimization 從 R57-R63 的「max-max 騙 metric」
 推進到 **真實可部署的 universal recipe**。
