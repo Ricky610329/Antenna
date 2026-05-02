@@ -101,8 +101,41 @@ if __name__ == "__main__":
     base1 = KuoHung('1', port='Single')
     base2 = KuoHung('2', port='Single')
 
+    pattern1, responses1 = base1.data.load()
+    pattern2, responses2 = base2.data.load()
+
     
-    with Figure('Base', (2,3), show=True, size=(18, 9), default_axes_title_size=18, default_tick_size=16) as fig:
+    with Figure('Base', (2,3), show=True, size=(18, 9), default_axes_title_size=16, default_tick_size=14) as fig:
+            
+            # #* Base 1
+            # title1 = f"Base-1"
+
+            # pattern1_ax = fig.index(-1)
+            # AntennaPattern(pattern1).plot(pattern1_ax)
+            # pattern1_ax.set_title(title1)
+
+            # s1_ax = fig.index(-1)
+            # s1_ax.plot(base1.x, responses1[0])
+            # s1_ax.set_title(f"S11 ({title1})")
+
+            # gain1_ax = fig.index(-1)
+            # gain1_ax.plot(base1.x, responses1[1])
+            # gain1_ax.set_title(f"Gain ({title1})")
+            
+            # #* Base 2
+            # title2 = f"Base-2"
+
+            # pattern2_ax = fig.index(-1)
+            # AntennaPattern(pattern2).plot(pattern2_ax)
+            # pattern2_ax.set_title(title2)
+
+            # s2_ax = fig.index(-1)
+            # s2_ax.plot(base1.x, responses2[0])
+            # s2_ax.set_title(f"S11 ({title2})")
+
+            # gain2_ax = fig.index(-1)
+            # gain2_ax.plot(base2.x, responses2[1])
+            # gain2_ax.set_title(f"Gain ({title2})")
             
             fig.addAll()
 
@@ -114,7 +147,11 @@ if __name__ == "__main__":
 
                 fig[3*n+1].plot(base1.x, responses[0])
                 fig[3*n+1].set_title(f"S11 ({title})")
+                fig[3*n+1].set_xlabel("Frequency (GHz)")
+                fig[3*n+1].set_ylabel("dB")
 
                 fig[3*n+2].plot(base1.x, responses[1])
                 fig[3*n+2].set_title(f"Gain ({title})")
+                fig[3*n+2].set_xlabel("Frequency (GHz)")
+                fig[3*n+2].set_ylabel("dB")
 

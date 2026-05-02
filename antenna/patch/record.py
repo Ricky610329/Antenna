@@ -2,22 +2,24 @@ from antenna.utils.utils import Path, Record
 from antenna.types import Tensor
 
 class PatchTrainingRecord(Record):
-    def __init__(self, name):
+    def __init__(self, name:str):
         result_dir = Path(r"\\140.123.106.219\Temp\碩二_吳維文's\Patch Antenna\Experiment\result")
         super().__init__("temp", rootdir=result_dir.joinpath(name).absolute(), load=True)
+        self.rootdir = result_dir.joinpath(name).absolute()
+        self.name = name
         self.best_results = self.best(
             mode = min,
             key = "real_loss",
             output_keys = ['epoch', 'patch_pattern_buf', 'patch_result_buf']
         )
     @property
-    def best_epoch(self) -> list[float]:
+    def best_epoch(self) -> int:
         return self.best_results[0]
     @property
-    def best_pattern(self) -> list[float]:
+    def best_pattern(self) -> Tensor:
         return self.best_results[1]
     @property
-    def best_response(self) -> list[float]:
+    def best_response(self) -> Tensor:
         return self.best_results[2]
 
     @property
@@ -52,8 +54,8 @@ class PatchTrainingRecord(Record):
     def r_feed(self) -> list[float]:
         return self['r_feed']
     
-    def pattern(self, epoch:int):
+    def pattern(self, epoch:int) -> Tensor:
         return self.find('epoch', epoch, 'patch_pattern_buf')
     
-    def response(self, epoch:int):
+    def response(self, epoch:int) -> Tensor:
         return self.find('epoch', epoch, 'patch_result_buf')
