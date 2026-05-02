@@ -48,10 +48,10 @@ def select_1bit_recipe(n, inc_deg, freq_hz, width_deg):
             return {"rw": 5.0, "lambda_mean": 0.5, "tier": "n=71 narrow extrapolation"}
         return {"rw": 7.0, "lambda_mean": 0.5, "tier": "n=71 wide extrapolation"}
 
-    # n=51 wide cap (R129)
-    if width_deg > 15:
+    # n=51 wide cap (R129) -- boundary refined to 12 deg by R135
+    if width_deg > 12:
         if width_deg <= 20:
-            return {"rw": 3.0, "lambda_mean": 1.0, "tier": "R129 wide cap 20deg"}
+            return {"rw": 3.0, "lambda_mean": 1.0, "tier": "R129 wide cap (12-20deg)"}
         return {"rw": 3.0, "lambda_mean": 0.5, "tier": "R129 wide cap 30deg (marginal)"}
 
     # n=51 narrow cap, normal incidence + mmWave special cases (R131)
