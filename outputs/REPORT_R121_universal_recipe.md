@@ -216,6 +216,23 @@ worst-case 從 +1.92 → +3.45 dB，side_max 從 -4.51 → -6.05 dB，
 - 解讀：aperture 一大，可達 worst headroom 增加，但 ripple penalty (rw=2) 強度
   不夠約束 main 平坦 → flat-top 失守
 
+### 圖 5 — 實際 inference 結果 (4 configs)
+
+![Figure 5: R121 CHAMPION inference at 4 configurations](report_fig5_inference_examples.png)
+
+四列分別是 R121 CHAMPION 跑出來的 **實際 pattern + 遠場 + distribution**，不是統計圖：
+
+| Row | Config | Pattern (col 1) | Far-field (col 2) | Distribution (col 3) |
+|-----|--------|-----------------|-------------------|----------------------|
+| **A** | n=51 broadside | 2-bit phase mosaic | main 平整貼 0 dB cap，side 全 ≤ -5 dB | tight cluster around -30 dB |
+| **B** | n=51 +30° steer | mosaic + diagonal phase ramp | main 整片貼上蓋，side 散布 -3 ~ -40 | side_mean -31.69 |
+| **C** | n=51 +45° boundary | 更陡的 phase ramp | side_max 已 -3.0 dB（near main level）| boundary 跡象明顯 |
+| **D** | **n=71 broadside FAIL** | 大 aperture mosaic | **main 中央有凹陷（穿過 -3 dB cap 6 次）**，但 side 壓得很低 | recipe 把太多 budget 換成 worst-case，犧牲 main 平整 |
+
+直接驗證報告主張：D 列的 far-field plot 是 **「main 不再貼上蓋」的視覺證據**——
+這就是 R57-R63 max-max loss 會 reward 的失真模式，套到 patch surrogate 必出問題。
+A/B/C 三列則都符合「main 整片貼上蓋 + sidelobe 整體壓低」原則。
+
 ### 圖 4 — Aperture scaling
 
 ![Figure 4: R127 aperture scaling](report_fig4_aperture_scaling.png)
@@ -315,10 +332,13 @@ recipe_universal = {
 | Figure 2 | `outputs/report_fig2_4axis_validation.png` | §3 4-axis validation overview |
 | Figure 3 | `outputs/report_fig3_45deg_boundary.png` | §3.4 +45° boundary probe |
 | Figure 4 | `outputs/report_fig4_aperture_scaling.png` | §3.5 Aperture scaling |
+| Figure 5 | `outputs/report_fig5_inference_examples.png` | §3.5 實際 inference 4 configs |
 | 補圖 | `outputs/r120_baseline_vs_winner.png` | §2 R94 vs R119 pattern + histogram |
 | 補圖 | `outputs/r122_three_recipes.png` | §2 三 recipe pattern + histogram 對照 |
 
-圖再生：`PYTHONIOENCODING=utf-8 python script/report_visualization.py`（~1 秒）
+圖再生：
+- 圖 1-4 統計圖：`PYTHONIOENCODING=utf-8 python script/report_visualization.py`（~1 秒）
+- 圖 5 實際 inference：`PYTHONIOENCODING=utf-8 python script/inference_visualization.py`（~10 分，需 GPU）
 
 ---
 
