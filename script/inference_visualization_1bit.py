@@ -135,17 +135,16 @@ def optimize_1bit(n, inc_deg, freq_hz, width_deg, n_restarts_local=None):
     return best
 
 
-# 4 representative configs (1-BIT now)
+# 4 representative configs (1-BIT only, all n=51 to avoid VRAM ceiling)
 configs = [
-    {"label": "(A) n=51 broadside, R119 (sweet spot)",
+    {"label": "(A) n=51 broadside, 38GHz, R119 baseline",
      "n": 51, "inc": 51, "freq": 38e9, "width": 10, "color": "#55a868"},
-    {"label": "(B) n=51 wide cap (w=18deg), R129",
+    {"label": "(B) n=51 wide cap w=18, R129 wide",
      "n": 51, "inc": 51, "freq": 38e9, "width": 18, "color": "#4c72b0"},
     {"label": "(C) n=51 inc=0 + 28GHz, R131 rescue",
      "n": 51, "inc": 0,  "freq": 28e9, "width": 10, "color": "#dd8452"},
-    {"label": "(D) n=71 broadside, n=71 extrapolation",
-     "n": 71, "inc": 51, "freq": 38e9, "width": 10, "color": "#c44e52",
-     "n_restarts": 3},
+    {"label": "(D) n=51 inc=70 + 60GHz, R119 (universal validation)",
+     "n": 51, "inc": 70, "freq": 60e9, "width": 10, "color": "#c44e52"},
 ]
 
 print("=" * 100, flush=True)

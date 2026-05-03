@@ -478,7 +478,24 @@ engineering 而非 methodology 問題。
 
 ---
 
-## 14. 結論
+## 14. 補充：實驗經驗蒸餾
+
+更精煉的「不只是 timeline，而是學到了什麼」版本見 `outputs/EXPERIMENT_LESSONS.md`
+（cleanup agent 在 R156 後產出，~290 行 / 10 分鐘讀完）。
+
+組織方式 by THEME：
+- Loss design lessons
+- Optimizer & trajectory selection lessons (early stopping pitfalls)
+- Surrogate engineering lessons (cold-start 為什麼困難)
+- Hardware constraint lessons (1-bit pivot, fab tolerance margins)
+- Selector design lessons (when to grid-search vs extrapolate)
+- Multi-freq broadband lessons (joint > single, BW limit physics)
+- Failure-mode catalog (12 dead-ends 列表，避免重蹈覆轍)
+- "If you only read 5 things" 5-bullet 重點
+
+---
+
+## 15. 結論
 
 從 R57-R63 的「max-max loss 騙 metric」失敗，到 R156 的完整 deployment API +
 broadband 驗證 + surrogate noise robustness，156 個 round 重建了一套
