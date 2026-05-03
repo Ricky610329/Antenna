@@ -197,18 +197,23 @@ def select_1bit_recipe(n, inc_deg, freq_hz, width_deg):
 
 ## 6. Validation Results
 
-### 6.1 4 軸 universal 驗證（R123-R127, 用 2-bit champion）
+### 6.1 4 軸 universal 驗證（R123-R127, 歷史 2-bit champion）
 
 ![4-axis universal validation](report_fig2_4axis_validation.png)
 
-R121 CHAMPION (2-bit + λ=1) 跨 4 個物理軸全 PASS（綠色），紅色是 1-bit baseline：
-- **(a) 入射角**：R121 在每個 inc 都 dominate baseline
-- **(b) 頻率**：sub-6G 5.8GHz 到 mmWave 60GHz 全 robust
-- **(c) Steering**：-30° 到 +30° universal；+45° 是物理 boundary
-- **(d) Aperture**：bigger n 破 +45° boundary，但 n=71 broadside 需 recipe 重 tune
+R121 CHAMPION (2-bit + λ=1) 跨 4 個物理軸全 PASS（綠色），紅色是 1-bit baseline。
+**重要**：R121 是 2-bit (4 個 phase levels)，**不符合 1-bit 0/π hardware constraint**。
+這張圖是 R128 課程修正前的歷史結果，留作 methodology 演進證據。
+**正式 deployable 1-bit 結果見 §6.2 (R128/R130/R141)**。
 
-**註**：後來 R128 課程修正改用 1-bit only（R121 是 2-bit, 不可直接 deploy）。
-但 1-bit 版的 selector + joint early-stop 在 R141 重新驗證 6/6 PASS。
+### 6.2 1-bit 重新驗證（R128/R130/R141, 真實可部署）
+
+![1-bit validation across 3 axes](report_fig9_1bit_validation.png)
+
+R128 課程修正後的 1-bit 結果：
+- **(a) Width × Steering (R128)**：narrow cap (10°) 跨 steering 全 robust，wide cap broadside 退化
+- **(b) Inc × Freq grid (R130)**：13/16 PASS, 失敗集中在 inc=0 + mmWave，R131 找到 rescue recipes
+- **(c) R141 deployment 6/6 PASS**：selector + joint early-stop 端到端驗證
 
 ### 6.2 R141 deployment API 6/6 PASS
 
@@ -221,18 +226,40 @@ R121 CHAMPION (2-bit + λ=1) 跨 4 個物理軸全 PASS（綠色），紅色是 
 | n=71 inc=30° 28GHz w=10° | n=71 extrap | +4.19 | OK | PASS |
 | n=71 inc=51° 38GHz w=10° | n=71 extrap | +5.46 | OK | **PASS** ★ |
 
-### 6.3 實際 binary pattern + 響應視覺
+### 6.3 實際 binary pattern + 響應視覺（歷史 2-bit）
 
 ![Inference examples](report_fig5_inference_examples.png)
 
-4 行對應 4 個代表 config 的實際優化結果（每行：binary pattern + 遠場響應 + distribution）：
-- **A**：n=51 broadside sweet spot — main 整片貼 0 dB cap
-- **B**：n=51 +30° steering — main 整片貼上蓋
-- **C**：n=51 +45° boundary — side_max 已 -3 dB（near main level）
-- **D**：n=71 broadside FAIL — main 中央凹陷穿過 -3 dB（recipe 過 strong, R141 selector 已修）
+4 行對應 4 個代表 config 的實際優化結果。**注意：這張圖用 2-bit phase
+quantization 視覺化，不符合 1-bit hardware spec**（colorbar 顯示 4 個 phase 值
+0/π/2/π/3π/2，實際只能用 0 或 π）。留作演進證據；正式 1-bit deployable patterns
+應由 §6.2 fig9 + §6.4 selector tree 對應的 deployment pipeline 產生。
 
-D 行直接證明「max-max 風格 loss 即使 worst-case 看起來高（+8.77 dB），main beam
-中央凹下去」的失真模式。R141 修正後不再發生。
+主要視覺結論仍 valid：
+- 前 3 行：main 整片貼上蓋的成功 case
+- D 行：main 中央凹陷穿過 -3 dB 的失敗 case（max-max 風格 loss 的失真）
+
+### 6.4 1-bit Recipe Selector 決策樹
+
+![1-bit selector decision tree](report_fig6_selector_tree.png)
+
+`select_1bit_recipe(n, inc, freq, width)` 的 4D 決策樹完整視覺化：
+- **左半**（紅色 zone）：n=71 large aperture 分支
+- **右半**（藍色 zone）：n=51/31 medium aperture 分支
+- 每個葉節點 (recipe) 顯示對應的 (rw, λ_mean) + 來源 round (R119/R129/R131/R133)
+- ERROR 節點標出 envelope 邊界
+
+### 6.5 Joint Early-Stop 對比 (R140 promotion)
+
+![Joint early-stop comparison](report_fig7_early_stop.png)
+
+R138-R140 trajectory selection 的演進：
+- **上排**：每個 config 的 mean worst-case 比較 (final / simple-ES / joint-ES)
+- **下排**：每個 strategy 的 flat-top compliance bar
+- **重點 callout**：
+  - Config A 用 joint-ES 把 flat-top 從 4/5 提升到 5/5（IMPROVED）
+  - **Config B/C：simple-ES 把 flat-top 砍到 1/5（CRASH 紅色 cross-hatch）**，joint-ES 保持 5/5
+- **PROMOTION verdict**：4 configs 全 PASS，joint-ES 成為 R140 默認
 
 ---
 
@@ -280,6 +307,13 @@ filter 掉 noise-induced bad patterns，留下 noise-helped 跳出 local minima 
 
 R149 跨 4 個 selector configs 同樣 ALL PASS，surrogate 在每個 config 都 beat
 analytical baseline。
+
+![Surrogate robustness summary](report_fig8_surrogate_robustness.png)
+
+- **左 panel R148**：noise 0/5/10/20% 全 PASS，且 mean worst **隨 noise 增加而提升**
+  （regularization 效應）
+- **右 panel R149**：4 configs 全 surrogate beat truth，最大 +0.67 dB gain
+  （甚至連 truth 已經 fail 的 config D 都改善 -1.32 → -0.66）
 
 ---
 
@@ -411,13 +445,17 @@ binary pattern + far-field + sidelobe histogram。視覺證明「distribution
 | Pipeline architecture | `outputs/report_arch_pipeline.png` | §3 |
 | Development timeline | `outputs/report_arch_timeline.png` | §2 |
 | Recipe progression | `outputs/report_fig1_recipe_progression.png` | §4.4 |
-| 4-axis universal validation | `outputs/report_fig2_4axis_validation.png` | §6.1 |
+| 4-axis universal validation (2-bit) | `outputs/report_fig2_4axis_validation.png` | §6.1 |
 | +45° boundary probe | `outputs/report_fig3_45deg_boundary.png` | §9.3 |
 | Aperture scaling | `outputs/report_fig4_aperture_scaling.png` | §9.4 |
-| Inference examples | `outputs/report_fig5_inference_examples.png` | §6.3 |
+| Inference examples (2-bit, 歷史) | `outputs/report_fig5_inference_examples.png` | §6.3 |
+| **1-bit selector tree (NEW)** | `outputs/report_fig6_selector_tree.png` | §6.4 |
+| **Joint early-stop comparison (NEW)** | `outputs/report_fig7_early_stop.png` | §6.5 |
+| **Surrogate robustness (NEW)** | `outputs/report_fig8_surrogate_robustness.png` | §7.3 |
+| **1-bit validation 3 axes (NEW)** | `outputs/report_fig9_1bit_validation.png` | §6.2 |
 | R94 vs R119 visual | `outputs/r120_baseline_vs_winner.png` | §9.1 |
 | Three-recipe progression | `outputs/r122_three_recipes.png` | §9.2 |
-| **Multi-freq summary (NEW)** | `outputs/r156_multifreq_summary.png` | §8 |
+| Multi-freq summary | `outputs/r156_multifreq_summary.png` | §8 |
 
 ---
 
