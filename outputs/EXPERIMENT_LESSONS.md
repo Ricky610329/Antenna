@@ -8,6 +8,32 @@
 
 ---
 
+## ⚠️ Scope and Limitations（先讀這個！）
+
+**這份心得適用範圍**：per-task gradient descent 優化單一 binary RIS pattern
+的場景。給定 spec, 從 random init 跑 1500 GD steps × N seeds, 出單一 pattern。
+
+**不適用範圍**：
+- ✗ 不適用 lab 真實要的 amortized `G(spec) → pattern` 模型訓練。Lab 已有
+  `antenna/training/trainer.py` 的 online learning + GAN-style + binary STE
+  pipeline, 那些 setting 跟 per-task GD 不同, 教訓不能直接 1-1 套用。
+- ✗ 不適用 patch HFSS scenario 的直接 deploy。HFSS 是 black-box 分鐘級, 不能
+  per-task GD; 真要用必須先訓 surrogate 然後上 lab 的 amortized pipeline。
+- ⚠️ "Loss design 是 framework-agnostic" 這條雖然對, 但 G 在 amortized 訓練
+  下會 expose 不同 failure mode (mode collapse / discretization bias /
+  multi-modal output collapse), per-task GD 教訓不夠用。
+
+**真正能 transfer 的**: loss 結構 (worst+ripple+mean), surrogate 對 noise
+robust 的證據, recipe selector 的 axis-by-axis 探索方法論。
+
+**不能 transfer 的**: per-task optimization 的 trajectory selection 策略
+(joint early-stop in particular)、recipe selector 的 4D table 形式 (amortized
+要 conditional input)、warm-start surrogate trick (patch 沒 closed-form)。
+
+詳細補強路徑見 `outputs/INTEGRATION_WITH_LAB_PIPELINE.md`。
+
+---
+
 ## 0. 如果你只讀 5 句話
 
 1. **Loss 設計 = use case 翻譯**。`max(main) − max(side)` 那種

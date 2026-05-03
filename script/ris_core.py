@@ -1,9 +1,31 @@
-"""ris_core — 整合後的 1-bit RIS beamforming 核心演算法。
+"""ris_core — 1-bit RIS per-task GD beamforming 工具箱（research tool, NOT production API）。
 
-本模組是 R94->R156 全部研究的「決定版」蒸餾。從這裡可以直接：
+⚠️  SCOPE 警告（必讀）⚠️
+========================
+本模組是 R94->R156 per-task gradient descent 研究的蒸餾，**不是 lab 真實
+production 路徑**。Lab 真實要的是 `G(spec) → pattern` 的 amortized 模型
+（在 `antenna/training/trainer.py`, ms 級 inference）, 本模組是
+per-task GD（每給一個 spec 跑 30 秒到 5 分鐘出一個 pattern）。
+
+**該用本模組的場景**:
+  - 對特定 spec 跑出 gold-standard pattern 當 supervised pretraining data
+    供應給 lab amortized G
+  - 當 validation oracle 比對 G(spec) 的品質
+  - 研究 loss design / surrogate noise robustness 等 sub-problem
+
+**不該用本模組的場景**:
+  - 直接當 production inference path（per-task GD 不夠快）
+  - 取代 lab 的 `antenna/training/trainer.py` pipeline（架構不一樣）
+  - patch antenna 場景的直接 deploy（HFSS 無 closed-form, per-task GD 不可行）
+
+詳細整合計劃見 `outputs/INTEGRATION_WITH_LAB_PIPELINE.md`。
+
+========================
+功能 (per-task GD scope)
+========================
   - 用 4D 決策樹挑 recipe (R134/R135)
   - 跑 unified pipeline (selector + joint early-stop, R140/R141/R150)
-  - 把解析模擬器換成 surrogate forward 取得加速 (R146/R147)
+  - 把解析模擬器換成 warm-start surrogate forward 取得加速 (R146/R147)
   - 對多頻率聯合最佳化 (R154)
 
 使用範例見 `script/ris_demo.py`。

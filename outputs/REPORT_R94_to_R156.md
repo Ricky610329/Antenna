@@ -1,9 +1,54 @@
 # Binary RIS 優化方法論：R94 → R156 完整報告
 
-> 報告日期：2026-05-03
+> 報告日期：2026-05-03（最後修訂 2026-05-03 加 §0 scope disclaimer）
 > 涵蓋：R94 (worst-case loss baseline) → R156 (multi-freq broadband + visualization)
-> 目標：為 patch antenna surrogate-in-the-loop transition 建立可信賴方法論
 > Branch：`ricky/modernize`，累計 200+ commits
+
+---
+
+## ⚠️ Scope and Limitations（先讀這個！）
+
+### 這份報告的 R94-R156 工作 IS
+
+- 一個 **per-task gradient descent** 工具鏈，每給一個 spec (n, inc, freq, width)
+  跑 1500 steps × 5 seeds (~30 秒到 5 分鐘) 出**單一 binary pattern**
+- 提供 `script/ris_core.py` 的 `optimize_ris_1bit()` API
+- 探索了 loss design (worst+ripple+mean, R94/R119)、recipe selector
+  decision tree (R134/R135)、joint early-stop trajectory selection (R140)、
+  warm-start surrogate (R146/R147)、surrogate noise robustness (R148/R149)、
+  multi-freq broadband sum loss (R154)
+- 涵蓋 `n ∈ {15, 31, 51, 71}` × `inc ∈ [0, 70°]` × `freq ∈ [5.8, 60] GHz`
+  × `width ∈ [10, 30°]` × `steering ∈ [-30, +30°]` 的 boundary 探索
+
+### 這份報告的 R94-R156 工作 IS NOT
+
+- ✗ **不是** lab 真實研究目標的 amortized model `G(spec) → pattern`
+  - Production inference 需要 ms 級, 我這個要 30秒+
+  - Lab 已有完整 amortized + online learning pipeline 在
+    `antenna/training/trainer.py` (478 行), 用 `BiasedGumbelSigmoidGEN`
+    + `custom_loss_tolerance` + `BinarySTE` + active surrogate refinement
+- ✗ **不是** patch antenna 的 deployable 方法論
+  - 我用 RIS analytical sim (closed-form, ms 級可微) 做 per-task GD
+  - Patch HFSS 是 black-box 分鐘級 sim, 純 per-task GD 無法 deploy
+  - "Patch transition methodology" 這個 framing 我之前用過, 是錯的
+- ✗ **沒解** generator architecture / GAN training stability /
+  binary discretization tricks (Gumbel-softmax, STE) /
+  multi-modal output (一個 spec 對應多解) / active learning acquisition
+  function — 這些都是 lab 真實 production 路徑的核心難題, 我**一個都沒碰**
+
+### R94-R156 對 lab 真實貢獻的位置（補強, 不替代）
+
+| Lab pipeline slot | R94-R156 提供的 |
+|---|---|
+| `custom_loss_tolerance` 第三項 | R119 的 `λ * mean(side)` area-penalty |
+| Generator pretraining data | per-task GD 跑出 (spec, gold pattern) pairs |
+| G(spec) 品質驗證 oracle | 任意 spec 比對 `optimize_ris_1bit(spec)` |
+| Surrogate retrain frequency 決策 | R148/R149 的 noise robustness 證據 |
+| Broadband target encoding | R154 multi-freq sum loss |
+
+詳細 plug-in plan 見 `outputs/INTEGRATION_WITH_LAB_PIPELINE.md`。
+
+---
 
 ---
 
@@ -508,22 +553,38 @@ binary pattern + far-field + sidelobe histogram。視覺證明「distribution
 
 ---
 
-## 13. Phase 3 後續路線
+## 13. Phase 3 後續路線（修訂版）
 
-Phase 1-2 完整收尾。Phase 3 卡在 HFSS 取得，但 methodology 已 derisked：
+> ⚠️ **本節已修訂**。原版（archived 在 git history）寫成「Phase 1-2 完整收尾,
+> patch 直接接我的 R150 unified API」, 該 framing 是錯的 — audit lab codebase
+> 後發現 lab 已有完整 amortized G(spec)→pattern + online learning pipeline 在
+> `antenna/training/trainer.py`. R94-R156 是 sub-problem methodology, 不是
+> patch transition main path. 詳見 §0 Scope and Limitations 與
+> `outputs/INTEGRATION_WITH_LAB_PIPELINE.md`.
 
-1. **R154-R155 已驗證 broadband adaptation**：multi-freq joint loss 結構直接對應
-   patch S-parameter 多頻 spec
-2. **R148-R149 已驗證 noise robustness**：HFSS surrogate 典型 R²~0.85-0.95 在 envelope 內
-3. **R150 unified API 已 ready**：直接接 HFSSNet/EnhancedHFSSUNet 即可
+實際接下來該做的:
 
-實際 patch deployment 需要：
-- R157+: HFSS access window，跑 ~50-200 patterns 建 dataset
-- R158+: 訓 patch surrogate，套 selector + joint early-stop
-- R159+: HFSS validation + active learning loop
+1. **跑通 lab 既有 pipeline**:
+   ```bash
+   python -m antenna train +experiment=train_ris_binary_pretrained
+   ```
+   觀察 100-epoch 收斂、debug `饋入點座標越界` 等阻塞問題。
 
-整套 methodology 在 RIS playground 已 derisk 完，patch transition 是 data
-engineering 而非 methodology 問題。
+2. **R94-R156 工具當 plug-in 補強** (`outputs/INTEGRATION_WITH_LAB_PIPELINE.md`):
+   - Plug-in #1: 加 `mean(side)` term 到 `custom_loss_tolerance`
+   - Plug-in #2: 用 `optimize_ris_1bit()` 跑 supervised pretraining pairs
+   - Plug-in #3: 當 G(spec) validation oracle
+   - Plug-in #4: surrogate retrain frequency 調整建議
+   - Plug-in #5: multi-band loss for broadband G
+
+3. **Patch HFSS data collection + surrogate train**: 上 lab pipeline,
+   不另外建 patch-specific optimizer.
+
+### 不再做的事
+
+- ❌ 寫 `optimize_patch_1bit()` per-task GD pipeline
+- ❌ 把 R150 unified API 包成 patch deployment ready
+- ❌ R157-R159+ 的「沿用 R94-R156 路線推進」規劃
 
 ---
 

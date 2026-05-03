@@ -1,4 +1,14 @@
-# Patch Transition Bridge Plan (R151)
+# Patch Transition Bridge Plan (R151) — SUPERSEDED
+
+> ⚠️ **這份文件已過時, 不要當有效 plan**。寫於 audit `antenna/training/trainer.py`
+> 之前, 假設 patch 要從零建 per-task GD pipeline. 真實狀況是 lab 早已有
+> amortized G + online learning pipeline. 看新版:
+> **`outputs/INTEGRATION_WITH_LAB_PIPELINE.md`**
+>
+> 留檔目的: 紀錄 R151 當下對「patch transition」的 (錯誤) 理解, 提醒不要
+> 沒 audit 既有 codebase 就寫 plan.
+>
+> ---
 
 > Concrete plan for adapting the R141/R150 RIS pipeline to run on patch
 > antenna (HFSS surrogate-in-the-loop). Written 2026-05-03.
