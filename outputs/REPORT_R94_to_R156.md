@@ -208,12 +208,61 @@ R121 CHAMPION (2-bit + λ=1) 跨 4 個物理軸全 PASS（綠色），紅色是 
 
 ### 6.2 1-bit 重新驗證（R128/R130/R141, 真實可部署）
 
+#### 為什麼需要「重新」驗證？
+
+§6.1 的 4 軸 universal validation 是用 R121 的 **2-bit phase**（4 個 phase
+levels: 0, π/2, π, 3π/2）。但你的 hardware constraint 是「整能用 0 or 180
+度的相位去做 RIS pattern」— 也就是 **1-bit binary**（只有 2 個 phase: 0, π）。
+R121 的 +3.45 dB worst-case 是用 4 個 phase levels 做出來的，**不是 hardware
+可以實際 deploy 的數字**。
+
+所以 R128 起整套方法論重新 pivot 到 1-bit only，重跑所有關鍵 axis。
+這張圖（fig9）就是 1-bit only constraint 下的對應結果，**這才是可以拿去
+deploy 的 baseline numbers**。
+
 ![1-bit validation across 3 axes](report_fig9_1bit_validation.png)
 
-R128 課程修正後的 1-bit 結果：
-- **(a) Width × Steering (R128)**：narrow cap (10°) 跨 steering 全 robust，wide cap broadside 退化
-- **(b) Inc × Freq grid (R130)**：13/16 PASS, 失敗集中在 inc=0 + mmWave，R131 找到 rescue recipes
-- **(c) R141 deployment 6/6 PASS**：selector + joint early-stop 端到端驗證
+#### 三個 panel 各別在驗證什麼
+
+**(a) R128：1-bit width × steering grid**
+
+對 9 種 (帽蓋寬度 × steering 角度) 組合用 R119 baseline recipe（rw=2, λ=1）
+看是否還 robust。Heatmap cell 顏色 = worst-case (越綠越好)，cell 內標
+flat-top compliance（5/5 = OK，否則標分數）。
+
+關鍵發現：
+- narrow cap (10°) 跨 steering 全 PASS
+- 寬帽蓋 broadside 退化（30° broadside flat-top 從 5/5 掉到 2/5）
+- 直接導致 R129 的 wide-cap (rw, λ) re-grid，找到 rw=3 的 wide recipe
+
+**(b) R130：1-bit narrow-cap (w=10) inc × freq universal grid**
+
+固定 width=10° broadside 用 R119 recipe 跑 4 inc × 4 freq = 16 configs。
+左 heatmap = worst-case，右 heatmap = flat-top compliance。
+
+關鍵發現：
+- **13/16 PASS** — 大多數 (inc, freq) 組合 R119 直接 work
+- 3 個失敗全在 **inc=0° + mmWave** 角落（28/38/60 GHz）— 紅色虛線框標出
+- 這是 normal incidence + 高頻的 1-bit weak axis
+- R131 後續 grid search 找到 rescue: 28GHz 用 λ=0.3, 38GHz 用 λ=0.5
+- 60GHz 在 n=51 是物理 boundary，需 R133 升級到 n=71
+
+**(c) R141：deployment API end-to-end validation**
+
+把上面所有發現整合成 `select_1bit_recipe()` 4D 決策樹（見 §6.4），
+然後跑 6 個 held-out config（grid search 時沒用過的）：
+
+- 6/6 全 PASS
+- 包括之前 R134 fail 的 width=15° transition zone（被 R135 boundary 修正
+  + R140 joint early-stop 雙修救起來）
+- 包括 R141 selector 在 n=71 的 extrapolation 也全 PASS
+
+#### Bottom line
+
+§6.1 的 R121 2-bit 數字是 methodology 上限的指標；§6.2 的 R128/R130/R141
+1-bit 數字才是「拿去 patch 找 PCB 廠下單就會 work」的 deployable baseline。
+1-bit 比 2-bit 在 worst-case 上 cost 約 0.5-1 dB，但 side_mean (整片 distribution)
+仍能維持 -22 ~ -29 dB，且通過 fab tolerance + surrogate noise 兩個 robustness 測試。
 
 ### 6.2 R141 deployment API 6/6 PASS
 
