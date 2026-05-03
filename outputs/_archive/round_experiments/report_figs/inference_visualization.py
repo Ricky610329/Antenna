@@ -1,21 +1,26 @@
-"""Generate inference figures showing actual R121 CHAMPION outputs.
+"""Inference visualization for R121 CHAMPION (2-bit, historical).
 
-Runs the recipe at 4 representative configurations and renders for each:
-  - Binary RIS pattern (n x n)
-  - Far-field response with main region + -3 dB cap shaded
-  - Sidelobe distribution histogram
+This script visualizes the R121 2-bit RIS patterns. R121 is NOT
+hardware-deployable per the user's 1-bit constraint (only 0/pi phase),
+but is kept for methodology comparison.
 
-Configurations:
-  Row A: n=51, broadside (R121 universal sweet spot)
-  Row B: n=51, +30 deg steering (last universal point)
-  Row C: n=51, +45 deg steering (boundary - worst case TIE with baseline)
-  Row D: n=71, broadside (where R121 over-shoots and flat-top collapses)
+Pattern visualization uses:
+  - ListedColormap with 4 DISCRETE colors (one per phase level)
+  - interpolation="nearest" (no smoothing)
+  - colorbar ticks at exactly the 4 levels: 0, pi/2, pi, 3pi/2
+
+Configurations (all n=51 to avoid VRAM ceiling on n=71):
+  Row A: n=51, broadside
+  Row B: n=51, +30 deg steering
+  Row C: n=51, +45 deg steering (boundary)
+  Row D: n=51, +15 deg steering (alternative, was previously n=71)
 """
 import sys
 sys.path.insert(0, "script")
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import numpy as np
 import torch
 import torch.nn as nn
@@ -85,7 +90,7 @@ def run_r121(n, main_lo, main_hi, n_restarts_local=None):
     return best
 
 
-# 4 configs
+# 4 configs (all n=51 — avoid VRAM ceiling on n=71)
 configs = [
     {"label": "(A) n=51, broadside (R121 sweet spot)",
      "n": 51, "main_lo": 172, "main_hi": 188, "color": "#55a868"},
@@ -93,8 +98,8 @@ configs = [
      "n": 51, "main_lo": 232, "main_hi": 248, "color": "#4c72b0"},
     {"label": "(C) n=51, +45 deg steering (boundary case)",
      "n": 51, "main_lo": 262, "main_hi": 278, "color": "#dd8452"},
-    {"label": "(D) n=71, broadside (recipe over-shoots, flat-top fails)",
-     "n": 71, "main_lo": 172, "main_hi": 188, "color": "#c44e52", "n_restarts": 3},
+    {"label": "(D) n=51, +15 deg steering",
+     "n": 51, "main_lo": 202, "main_hi": 218, "color": "#c44e52"},
 ]
 
 print("=" * 90)
@@ -128,13 +133,22 @@ for row, (cfg, r) in enumerate(results):
     main_lo_deg = -90 + main_lo * 0.5
     main_hi_deg = -90 + main_hi * 0.5
 
-    # Col 0: binary pattern
+    # Col 0: 2-bit phase pattern (4 DISCRETE levels, no smoothing)
     ax = axes[row, 0]
-    im = ax.imshow(pat, cmap="viridis", vmin=0, vmax=2, aspect="equal")
-    ax.set_title(f"phase pattern ({n} x {n}, 2-bit, seed={r['seed']})", fontsize=10)
+    # 4 distinct colors: white, light gray, dark gray, black
+    cmap_4lvl = mcolors.ListedColormap(["#ffffff", "#bcbcbc", "#5c5c5c", "#000000"])
+    bounds = [-0.25, 0.25, 0.75, 1.25, 1.75]   # 4 bins centered on 0, 0.5, 1, 1.5
+    norm = mcolors.BoundaryNorm(bounds, cmap_4lvl.N)
+    im = ax.imshow(pat, cmap=cmap_4lvl, norm=norm, aspect="equal",
+                   interpolation="nearest")
+    ax.set_title(f"2-bit phase pattern ({n} x {n}, seed={r['seed']})\n"
+                 f"4 phase levels: 0, pi/2, pi, 3pi/2",
+                 fontsize=9)
     ax.set_xticks([0, n//2, n-1])
     ax.set_yticks([0, n//2, n-1])
-    plt.colorbar(im, ax=ax, fraction=0.046, label="phase (x pi rad)")
+    cbar = plt.colorbar(im, ax=ax, fraction=0.046, ticks=[0, 0.5, 1.0, 1.5])
+    cbar.set_ticklabels(["0", "pi/2", "pi", "3pi/2"])
+    cbar.set_label("phase", fontsize=8)
 
     # Col 1: far-field response
     ax = axes[row, 1]
