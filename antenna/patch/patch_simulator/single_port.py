@@ -236,7 +236,7 @@ class SinglePortSimulator(PatchSimulator):
                             "UDMId:=", "",
                             "MaterialValue:=", "\"copper\"",
                             "SurfaceMaterialValue:=", "\"\"",
-                            "SolveInside:=", True, #! 導體內部求解 (Original: True)
+                            "SolveInside:=", False, #! 導體內部求解 (Original: True)
                             "IsMaterialEditable:=", True,
                             "UseMaterialAppearance:=", False,
                             "IsLightweight:=", False
@@ -244,20 +244,37 @@ class SinglePortSimulator(PatchSimulator):
                     patch_names.append(actual_patch_name)
                     patch_count += 1
 
-        # Batch Global Unite
+        # Batch Global Unite (修正後的安全邏輯)
         if len(patch_names) >= 1:
-            chunk_size = 20
-            # try:
+            chunk_size = 20 # 可以稍微調高以增加運算速度
+            united_chunk_names = []
+            
+            # 階段 1：將所有的 Patch 進行分批互相聯集 (不捲入 feed_line)
             for i in range(0, len(patch_names), chunk_size):
                 chunk_patches = patch_names[i:i+chunk_size]
-                selections_str = "feed_line," + ",".join(chunk_patches)
-                
+                if len(chunk_patches) > 1:
+                    selections_str = ",".join(chunk_patches)
+                    oEditor.Unite(
+                        ["NAME:Selections", "Selections:=", selections_str],
+                        ["NAME:UniteParameters", "KeepOriginals:=", False]
+                    )
+                # Unite 預設會保留清單中的第一個名稱，將其收集起來
+                united_chunk_names.append(chunk_patches[0])
+            
+            # 階段 2：將分批聯集產生的幾個大區塊，再次全部聯集成單一 Patch 實體
+            if len(united_chunk_names) > 1:
+                selections_str = ",".join(united_chunk_names)
                 oEditor.Unite(
                     ["NAME:Selections", "Selections:=", selections_str],
                     ["NAME:UniteParameters", "KeepOriginals:=", False]
                 )
-            # except:
-            #     return get_penalty()
+            
+            # 階段 3：最終步驟，將完整融合的 Patch 實體與 feed_line 進行聯集
+            final_patch_body = united_chunk_names[0]
+            oEditor.Unite(
+                ["NAME:Selections", "Selections:=", f"feed_line,{final_patch_body}"],
+                ["NAME:UniteParameters", "KeepOriginals:=", False]
+            )
 
         # 設定邊界條件
         oModule = oDesign.GetModule("BoundarySetup")
