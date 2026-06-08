@@ -1,0 +1,12 @@
+{
+  "binarization_soft_mean": 0.49874794483184814,
+  "binarization_soft_sum": 311.71746826171875,
+  "tv_loss": 0.9616000056266785,
+  "island_loss": 0.4744320213794708,
+  "sc_loss": 2445.17236328125,
+  "gap_closing_loss": 0.4959999918937683,
+  "r_feed_single": 0.07119741100323625,
+  "minmax_gain_high": 0.43112048506736755,
+  "interval_gain": 0.14235998690128326,
+  "island_uniform": 0.0936959981918335
+}
