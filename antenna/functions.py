@@ -40,38 +40,6 @@ from collections import defaultdict
 import numpy as np
 from loguru import logger
 
-def custom_loss_interval(prediction:Tensor, target_low:Tensor, target_high:Tensor, loss_type='SmoothL1Loss'):
-    """
-    計算基於目標區間的自定義 loss。
-    如果 prediction 在 [target_low, target_high] 區間內，則 loss 為 0。
-    否則，計算 prediction 與最近的區間邊界之間的 loss。
-    """
-    #* 為何用「區間」而非單一目標值？天線規格(如 |S11| 需 < -10dB)通常是一段
-    #* 可接受範圍，而非精確點。容差帶(dead-zone)讓任何達標的響應都 0 懲罰，
-    #* 避免 GEN 為了硬湊單一目標值而過度扭曲 pattern，給足合法解的探索空間。
-    #* reduction='none'：逐元素回傳，後面再用 mask 對「超出邊界」的元素挑出計算。
-    criterion = nn.SmoothL1Loss(reduction='none') if loss_type == 'SmoothL1Loss' else nn.MSELoss(reduction='none')
-    #? SmoothL1(Huber) 對離群點較魯棒：誤差大時近似 L1，可避免響應遠離規格時梯度爆掉。
-
-    # 初始化 loss tensor
-    losses = torch.zeros_like(prediction)   #* 預設 0；只有越界的元素才會被填入懲罰值
-
-    # 1. 處理 prediction > target_high 的情況
-    mask_above = prediction > target_high   #* 超過上界 → 對齊到上界計算距離
-    if mask_above.sum() > 0:
-        #* expand_as 把(可能是純量/廣播形狀的)邊界展開成與 prediction 同形，再用同一遮罩取出對應元素
-        losses[mask_above] = criterion(prediction[mask_above], target_high.expand_as(prediction)[mask_above])
-
-    # 2. 處理 prediction < target_low 的情況
-    mask_below = prediction < target_low    #* 低於下界 → 對齊到下界計算距離
-    if mask_below.sum() > 0:
-        losses[mask_below] = criterion(prediction[mask_below], target_low.expand_as(prediction)[mask_below])
-
-    # 3. prediction 在區間內的情況 (target_low <= prediction <= target_high)
-    #    此時 losses[mask_in_interval] 仍然是 0，不需要額外處理
-    #?   區間內梯度為 0：達標即停止施力，是此 loss 的核心「容差」行為。
-
-    return losses.mean() # 返回平均 loss
 
 class FlipMode(Enum):
     """鏡像模式"""

@@ -222,7 +222,7 @@ class Sizable(Protocol):
 ###* ─────────────────────────────────────────────────────
 
 # 批次 + 攤平形狀 (B, N)；用於 size_converter flatten=True, batch=True 的回傳值，
-# 以及 CVAE encode/decode 的 pattern/response 輸入（如 models.py:697、727）。
+# 例如送入 SM / GEN 前，用來統一「批次攤平」表示的張量形狀。
 Tensor_B_N:TypeAlias = Tensor
 
 # 批次 + 影像形狀 (B, W, H) 或 (B, 1, H, W)；
