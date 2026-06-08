@@ -24,7 +24,7 @@ train_dual.py — 雙埠 (Dual-Port) 微帶貼片天線「反向設計」訓練�
     1. 模擬器：DualPortSimulator (兩個 lumped port)。
     2. 響應：S11 + S21 + S22 (single 是 S11 + Gain)。
     3. 損失：interval_loss (要求預測落在「目標 ± 容差」區間內)，
-             而非 single 的 custom_loss_minmax；另備有 custom_loss_r / custom_loss_g。
+             而非 single 的 custom_loss_minmax。
     4. 饋電塊：同時疊 upper (頂部中央) 與 lower (底部中央) 兩塊金屬 (對應兩個 port)。
     5. 回滾重訓 SM 時，會用 online_dataset.filter(upper=平均loss) 只挑「較好的樣本」訓練。
     6. SM 未預訓練時：本檔會「先預訓練 SM 然後 exit()」，需再執行一次才會進入主訓練迴圈。
@@ -43,14 +43,13 @@ import torch
 from antenna import *
 # functions.py：饋電連通度、自適應排程器、兩種圖樣連通性正則化損失。
 from antenna.functions import FeedReachability, AdaptiveCyclicalScheduler, GapClosingLoss, SpectralConnectivityLoss
-# models.py：Models(模型外殼)、OldGEN/SigmoidGEN(生成器)。
+# models.py：Models(模型外殼)、SigmoidGEN(生成器)。
 from antenna.models import (
-    Models, OldGEN, SigmoidGEN
+    Models, SigmoidGEN
 )
-# patch：DualPortSimulator(雙埠 HFSS 模擬器)、interval_loss(區間損失)、
-#        custom_loss_r(反射損失)、custom_loss_g(增益/耦合損失)。
+# patch：DualPortSimulator(雙埠 HFSS 模擬器)、interval_loss(區間損失)。
 from antenna.patch import (
-    DualPortSimulator, interval_loss, custom_loss_r, custom_loss_g
+    DualPortSimulator, interval_loss
 )
 # smodels.py：OldSM(代理模型工廠)。
 from antenna.smodels import OldSM

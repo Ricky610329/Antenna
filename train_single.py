@@ -57,9 +57,9 @@ import torch
 from antenna import *
 # functions.py：饋電連通度指標、自適應週期排程器、兩種「圖樣連通性」正則化損失。
 from antenna.functions import FeedReachability, AdaptiveCyclicalScheduler, GapClosingLoss, SpectralConnectivityLoss
-# models.py：Models(模型管理外殼，含存讀檔/換label/step)、OldGEN/SigmoidGEN(生成器)。
+# models.py：Models(模型管理外殼，含存讀檔/換label/step)、SigmoidGEN(生成器)。
 from antenna.models import (
-    Models, OldGEN, SigmoidGEN
+    Models, SigmoidGEN
 )
 # patch：SinglePortSimulator(單埠 HFSS 模擬器)、custom_loss_minmax(單埠用的目標損失函數)。
 from antenna.patch import (

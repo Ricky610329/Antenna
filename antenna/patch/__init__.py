@@ -20,9 +20,7 @@ antenna.patch — 微帶貼片天線「反向設計」的損失函數 (Loss Func
     「單邊懲罰 (one-sided)」或「區間容差 (interval)」設計 ──「夠好就不罰、過頭也不罰」，
     只在「沒達到規格」的方向上產生梯度，引導 GEN 往滿足規格的可行域移動。
 
-【本檔四個損失函數】
-    - custom_loss_r      反射損失：只在目標「最高點」與「最低點」處，且預測「未達標」時才罰。
-    - custom_loss_g      增益損失：同上邏輯，方向對應「增益要高」的需求。
+【本檔兩個損失函數】
     - custom_loss_minmax 單邊極值損失：method='low' 只罰「目標最低點處預測偏高」、
                          method='high' 只罰「目標最高點處預測偏低」(單埠 train_single 使用)。
     - interval_loss      區間損失：要求預測落在 [target+lower, target+upper] (相對) 或
@@ -37,99 +35,12 @@ from .patch_simulator.single_port import SinglePortSimulator  # 單埠 HFSS 模�
 
 import torch
 
-def custom_loss_r(prediciton, target, loss_type='SmoothL1Loss'):
-    """
-    反射損失 (Reflection Loss)：針對 S11/S22 等反射型 S 參數的單邊懲罰損失。
-
-    設計意圖：
-        反射響應的目標曲線通常呈「兩端高、中央低」(如 side=-1.25dB、center=-12dB)，
-        中央凹陷代表諧振頻段匹配良好 (能量幾乎全進天線、反射很小)。
-        我們只在「目標的兩個極值點」(最高點 high_response、最低點 low_response) 上
-        檢查預測是否達標，且只在「未達標的方向」才計入損失：
-          - 在最高點 (兩端、要求反射高/未諧振)：只罰「預測 < 目標」(預測太低)；
-          - 在最低點 (中央、要求反射夠低/匹配好)：只罰「預測 > 目標」(凹陷不夠深)。
-        如此即可避免用 MSE 把「比目標更好」的預測也拉回目標線，符合「夠好就不罰」的物理需求。
-
-    :param prediciton: SM 對該條 S 參數的預測響應。
-    :param target: 目標響應曲線。
-    :param loss_type: 'SmoothL1Loss' (對離群值較穩健) 或 'MSELoss'。
-    """
-    # 距離度量：SmoothL1 在誤差小時近似 L2、大時近似 L1，對偶發大偏差較不敏感。
-    criterion_r = nn.SmoothL1Loss() if loss_type=='SmoothL1Loss' else nn.MSELoss()
-
-    high_response = target.max()   # 目標最高點 (反射型：對應兩端、要求未諧振處反射高)
-    low_response = target.min()    # 目標最低點 (反射型：對應中央諧振凹陷、要求匹配最好處)
-
-    mask_25 = target == high_response  # mask == -2.5 index  #* 選出所有「等於目標最高值」的頻點
-    mask_b_25 = prediciton[mask_25] < high_response          #* 其中「預測低於目標」者才算未達標 (要罰)
-
-    if mask_b_25.sum()==0:
-        # 全部達標 (預測都 >= 目標最高值)：此項不貢獻梯度，回傳 0。
-        loss_25 = torch.tensor(0.0, dtype=torch.float32, requires_grad=True)
-    else:
-        # 只對「未達標」的頻點計算誤差，避免懲罰「比目標更好」的預測。
-        loss_25 = criterion_r(prediciton[mask_25][mask_b_25], target[mask_25][mask_b_25])
-
-    mask_10 = target == low_response  # mask == -2.5 index  #* 選出所有「等於目標最低值」的頻點
-    mask_b_10 = prediciton[mask_10] > low_response          #* 其中「預測高於目標」者才算未達標 (凹陷不夠深)
-
-    if mask_b_10.sum()==0:
-        # 全部達標 (預測都 <= 目標最低值，匹配夠好甚至更好)：不罰，回傳 0。
-        loss_10 = torch.tensor(0.0, dtype=torch.float32, requires_grad=True)
-    else:
-        loss_10 = criterion_r(prediciton[mask_10][mask_b_10], target[mask_10][mask_b_10])
-
-    loss = loss_25 + loss_10   # 兩個極值點的單邊懲罰相加
-    return loss
-
-def custom_loss_g(prediciton, target, loss_type='SmoothL1Loss'):
-    """
-    增益損失 (Gain Loss)：針對 Gain/S21 等「越大越好」響應的單邊懲罰損失。
-
-    設計意圖：
-        增益型目標曲線通常呈「兩端低、中央高」(如 side=-19dB、center=+4dB)，
-        代表只在工作頻段 (中央) 要有高增益、頻段外則希望低 (抑制旁波/雜訊)。
-        與 custom_loss_r 同為單邊懲罰，但方向對調以符合增益的物理需求：
-          - 在最低點 (兩端、要求頻段外增益低)：只罰「預測 > 目標」(沒壓夠低)；
-          - 在最高點 (中央、要求工作頻段增益高)：只罰「預測 < 目標」(增益不足)。
-        「增益比目標更高、或頻段外比目標更低」皆視為達標，不予懲罰 (避免 MSE 把好解拉回)。
-
-    :param prediciton: SM 對 Gain/S21 的預測響應。
-    :param target: 目標增益曲線。
-    :param loss_type: 'SmoothL1Loss' 或 'MSELoss'。
-    """
-    criterion_g = nn.SmoothL1Loss() if loss_type=='SmoothL1Loss' else nn.MSELoss()
-
-    high_gain = target.max()   # 目標最高增益 (對應工作頻段中央，要求增益高)
-    low_gain = target.min()    # 目標最低增益 (對應頻段外兩端，要求增益被壓低)
-
-    mask_10 = target == low_gain  # mask == -10 index  #* 選出「等於目標最低增益」的頻點 (兩端)
-    mask_b_10 = prediciton[mask_10] > low_gain         #* 其中「預測高於目標」者未達標 (沒壓夠低)
-
-    if mask_b_10.sum()==0:
-        # 兩端增益都已壓到目標以下：達標，不罰。
-        loss_10 = torch.tensor(0.0, dtype=torch.float32, requires_grad=True)
-    else:
-        loss_10 = criterion_g(prediciton[mask_10][mask_b_10], target[mask_10][mask_b_10])
-
-    mask_4 = target == high_gain  # mask == 4 index  #* 選出「等於目標最高增益」的頻點 (中央)
-    mask_b_4 = prediciton[mask_4] < high_gain         #* 其中「預測低於目標」者未達標 (增益不足)
-
-    if mask_b_4.sum()==0:
-        # 中央增益都已達到或超過目標：達標 (更高更好)，不罰。
-        loss_4 = torch.tensor(0.0, dtype=torch.float32, requires_grad=True)
-    else:
-        loss_4 = criterion_g(prediciton[mask_4][mask_b_4], target[mask_4][mask_b_4])
-
-    loss = loss_10 + loss_4   # 兩端「壓低」與中央「拉高」兩項單邊懲罰相加
-    return loss
-
 def custom_loss_minmax(prediciton:Tensor, target:Tensor, method:Literal['low', 'high'], loss_type='SmoothL1Loss'):
     """
     單邊極值損失 (Min/Max One-sided Loss)：單埠 train_single 的主損失函數。
 
     設計意圖：
-        custom_loss_r/g 同時管目標的「最高點與最低點」兩端；本函數則「只挑一個極值點」
+        相對於同時管目標「最高點與最低點」兩端的寫法，本函數「只挑一個極值點」
         並只做單一方向的懲罰，把「達標即可」的不等式規格表達得最乾淨：
           - method='high'：只看「目標最高點」(如 Gain 中央 +4dB)，只罰「預測偏低」
                            (預測 < 目標)；預測更高視為更好，不罰。

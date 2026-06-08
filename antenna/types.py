@@ -78,12 +78,12 @@ if TYPE_CHECKING:
 ###* ─────────────────────────────────────────────────────
 
 # 代表任何繼承自 torch.nn.Module 的神經網路模型；
-# 用於 Models[CustomModule, ...] 及 MirrorCVAE 等泛型簽章，
+# 用於 Models[CustomModule, ...] 等泛型簽章，
 # 讓 GEN / SM 等不同網路架構可共用同一套訓練框架。
 CustomModule = TypeVar('CustomModule', bound=Module, covariant=True)
 
 # 代表任何繼承自 SurrogateModel 的代理模型（SM）；
-# 用於 MirrorCVAE(Generic[CustomSModel])，允許將預先訓練好的 SM 嵌入 GEN 推理流程。
+# 可用於把預先訓練好的 SM 嵌入生成流程的泛型簽章 (Generic[CustomSModel])。
 CustomSModel = TypeVar('CustomSModel', bound="SurrogateModel", covariant=True)
 
 # 代表任何繼承自 torch Optimizer 的優化器（如 Adam、SGD）；
@@ -129,7 +129,7 @@ class CallableModule(Protocol[ModelParams, ReturnType]):
 #* General Callable
 #? fn: Callable[CallableParam, CallableReturn]
 
-# 通用可呼叫物件的參數規格，用於非模型場景（如 SPGEN 的 gumbel_fn、size_converter 的鉤子）。
+# 通用可呼叫物件的參數規格，用於非模型場景（如 size_converter 的鉤子等）。
 CallableParam = ParamSpec('CallableParam')
 
 # 通用可呼叫物件的回傳型別，與 CallableParam 搭配標註任意函數。
@@ -150,7 +150,7 @@ class RecordStateDict(TypedDict):
 
 # 描述一次完整「生成→模擬→評估」循環的結果快照；
 # 同時保存 GEN 生成的 pattern、SM 預測響應（fake）與 HFSS 模擬響應（real），
-# 以及對應的損失值與排序鍵，供 MirrorCVAE 多候選排序與最佳解選取使用。
+# 以及對應的損失值與排序鍵，供多候選排序與最佳解選取使用。
 class ResultType(TypedDict):
     """
     Real: The results after simulation
