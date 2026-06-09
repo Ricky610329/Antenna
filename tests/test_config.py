@@ -37,6 +37,18 @@ def test_production_configs_parse():
         assert set(PORT_SPECS[cfg.port]["labels"]).issubset(cfg.targets)
 
 
+def test_surrogate_section_parsed():
+    """模型載入 (surrogate) 區段要能從 YAML 載入。"""
+    s = load_config(os.path.join(CONFIGS, "single_base.yaml"))
+    assert s.surrogate["pretrained"] == "old_sm.pth"
+    assert s.surrogate["offline_dataset"] == "patch_single_mirror"
+    d = load_config(os.path.join(CONFIGS, "dual_base.yaml"))
+    assert d.surrogate["pretrained"] == "patch_dual.pth"
+    # 測試 fixture 無 surrogate 區段 → 預設空 dict (prepare_surrogate 變 no-op)
+    t = load_config(os.path.join(FIX, "single_test.yaml"))
+    assert t.surrogate == {}
+
+
 def test_port_resolves_to_components():
     single = load_config(os.path.join(FIX, "single_test.yaml"))
     dual = load_config(os.path.join(FIX, "dual_test.yaml"))

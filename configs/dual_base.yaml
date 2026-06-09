@@ -20,6 +20,10 @@ hfss:
 scheduler:
   on_plateau: linear
 
+surrogate:                  # 模型 (代理 SM) 載入策略
+  pretrained: patch_dual.pth        # DATASET_PATH 下的 SM 權重檔；null → 不載入
+  offline_dataset: patch_dual       # 無預訓練檔時，用此離線資料集預訓練 SM；null → 不預訓練
+
 # 雙埠：S11/S22 為兩埠反射，S21 為互耦。loss 用區間容差 [target-1, target+1]
 targets:
   S11: { side: -1.25, center: -12, width: [4, 2, 5, 2, 4], interval: [-1, 1] }

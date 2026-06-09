@@ -63,6 +63,7 @@ class TrainConfig:
     loss: dict = field(default_factory=dict)        # total_variation / island_suppression / spectral_connectivity / gap_closing
     hfss: dict = field(default_factory=dict)        # lr / min_loss / max_epoch (代理模型線上訓練)
     scheduler: dict = field(default_factory=dict)   # on_plateau
+    surrogate: dict = field(default_factory=dict)   # 模型載入：pretrained(SM 權重檔) / offline_dataset(離線預訓練資料集)
     targets: dict = field(default_factory=dict)     # {label: {side, center, width, method|interval}}
 
     def __post_init__(self):
@@ -121,6 +122,9 @@ def run_training(
     max_epochs: Optional[int] = None,           # 覆寫 cfg.epochs (測試用)
     patience: Optional[int] = None,             # 覆寫 cfg.patience (測試用)
     on_epoch: Optional[Callable[[int, dict], None]] = None,  # 每 epoch 回呼 (繪圖/記錄/捕捉)
+    continue_run: bool = False,                 # 結果夾已存在 → 嘗試斷點續跑
+    pretrained_sm_path: Optional[str] = None,   # 預訓練 SM 權重檔
+    offline_dataset=None,                       # 離線資料集 (無預訓練檔時用來預訓練 SM)
 ) -> Record:
     """單/雙埠共用訓練迴圈。回傳 TEMP(Record)。"""
     record_path = Path(record_path)
@@ -130,6 +134,7 @@ def run_training(
     config["HFSS.min_loss"] = cfg.hfss.get("min_loss", 0.1)
     config["HFSS.max_epoch"] = cfg.hfss.get("max_epoch", 20000)
     config.checkpoint_save_path = record_path / "checkpoint"
+    (record_path / "checkpoint").mkdir(parents=True, exist_ok=True)   # GEN/SM 權重存放處
 
     setup_responses(cfg)                        # 須在建 GEN/SM 前 (尺寸才正確)
     if seed is not None:
@@ -162,10 +167,18 @@ def run_training(
     sc_w = cfg.loss.get("spectral_connectivity", 0.0)
     gap_w = cfg.loss.get("gap_closing", 0.0)
 
+    # 預訓練 / 斷點續跑 (回傳續跑起始 epoch；測試不傳這些 → start_epoch=0)
+    start_epoch = prepare_surrogate(
+        cfg, generator, smodel, TEMP,
+        continue_run=continue_run,
+        pretrained_sm_path=pretrained_sm_path,
+        offline_dataset=offline_dataset,
+    )
+
     epochs = max_epochs if max_epochs is not None else cfg.epochs
     pat = patience if patience is not None else cfg.patience
 
-    epoch = 0
+    epoch = start_epoch
     while epoch < epochs:
         epoch += 1
         generator.change(epoch)
@@ -196,6 +209,7 @@ def run_training(
             real_loss = result.criterion()
             stack = result.stack()
             smodel.train_one_data(output_element.series, stack, verbose=False)
+            smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
             TEMP["real_loss"] = real_loss.item()
             if TEMP("real_loss") < TEMP.average("real_loss"):
                 online.add_and_save([~output_element, stack])
@@ -232,10 +246,14 @@ def run_training(
         generator.step(scheduler_param=real_loss)
         generator.model.eval()
         TEMP["fake_loss"] = loss.item()
-        TEMP["epoch"] = epoch
+
+        generator.save()                       # 存 GEN (供 rollback 載回 / 斷點續跑)
 
         simulator.end()
         simulator.clean()
+
+        TEMP["epoch"] = epoch
+        TEMP.save(f"{epoch} times")            # 斷點續跑檢查點
 
         if on_epoch is not None:
             on_epoch(epoch, dict(
@@ -248,3 +266,34 @@ def run_training(
             ))
 
     return TEMP
+
+
+def prepare_surrogate(cfg, generator, smodel, TEMP, *, continue_run=False,
+                      pretrained_sm_path=None, offline_dataset=None) -> int:
+    """SM 的「載入策略」(模組化、由 config 的 surrogate 區段指定)。回傳續跑起始 epoch。
+
+    優先序：
+      (1) 斷點續跑：結果夾已存在且 TEMP 有 epoch → 載回 GEN/SM，從上次 epoch 續跑。
+      (2) 預訓練權重檔存在 → 直接載入 (cfg.surrogate.pretrained 解析而來)。
+      (3) 離線資料集 → 從頭預訓練 SM (cfg.surrogate.offline_dataset)。
+      (4) 皆無 → SM 從隨機權重開始 (純靠線上學習)。
+    """
+    if continue_run and ("epoch" in TEMP):
+        last = TEMP("epoch")
+        generator.change(last, load=True)
+        smodel.load()
+        return int(last)
+    if pretrained_sm_path is not None and Path(pretrained_sm_path).exists():
+        smodel.pre_load_model(pretrained_sm_path)
+        return 0
+    if offline_dataset is not None and len(offline_dataset) > 0:
+        smodel.train_by_datas(offline_dataset)
+        return 0
+    return 0
+
+
+def build_simulator(cfg: "TrainConfig", record_path):
+    """依 port 建真實 HFSS 模擬器 (production 用；測試以 mock 注入)。"""
+    from antenna.patch import SinglePortSimulator, DualPortSimulator
+    cls = {"single": SinglePortSimulator, "dual": DualPortSimulator}[cfg.port]
+    return cls(record_path=record_path)

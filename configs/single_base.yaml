@@ -20,6 +20,10 @@ hfss:                       # 代理模型 (SM) 線上訓練
 scheduler:
   on_plateau: linear
 
+surrogate:                  # 模型 (代理 SM) 載入策略
+  pretrained: old_sm.pth            # DATASET_PATH 下的 SM 權重檔；null → 不載入
+  offline_dataset: patch_single_mirror   # 無預訓練檔時，用此離線資料集預訓練 SM；null → 不預訓練
+
 # 目標響應 (side=兩端值, center=中央值, width=梯形寬度, method=low/high)
 targets:
   S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }   # 中央凹 → 良好匹配
