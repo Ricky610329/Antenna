@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antenna 專案 — 程式碼架構說明（對齊論文）</title>
+<style>
+  :root{
+    --g:#2563eb; --g-bg:#eff6ff;       /* 生成器 G */
+    --gen:#059669;--gen-bg:#ecfdf5;     /* 代理模型 = 論文 GEN */
+    --sim:#ea580c; --sim-bg:#fff7ed;
+    --data:#7c3aed;--data-bg:#f5f3ff;
+    --ink:#1e293b; --muted:#64748b; --line:#e2e8f0; --card:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#f1f5f9;color:var(--ink);line-height:1.7;
+    font-family:-apple-system,"Segoe UI","Microsoft JhengHei","PingFang TC",system-ui,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
+  header.hero{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;border-radius:18px;
+    padding:34px 36px;margin-bottom:24px;box-shadow:0 10px 30px rgba(2,6,23,.25)}
+  header.hero h1{margin:0 0 8px;font-size:28px}
+  header.hero p{margin:0;opacity:.9;font-size:15px}
+  .tagrow{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+  .tag{font-size:12px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25)}
+  h2{font-size:21px;margin:36px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h2 .num{display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;border-radius:8px;background:#0f172a;color:#fff;font-size:14px;margin-right:10px}
+  h3{font-size:16px;margin:22px 0 8px}
+  code{background:#eef2f7;padding:1px 6px;border-radius:5px;font-size:13px;font-family:"SF Mono",Consolas,monospace}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .role{border-radius:14px;padding:18px;border:1px solid}
+  .role h3{margin:0 0 6px;display:flex;align-items:center;gap:8px}
+  .role .badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;color:#fff}
+  .role small{color:var(--muted)}
+  .role.g{background:var(--g-bg);border-color:#bfdbfe}.role.g .badge{background:var(--g)}
+  .role.gen{background:var(--gen-bg);border-color:#a7f3d0}.role.gen .badge{background:var(--gen)}
+  .role.sim{background:var(--sim-bg);border-color:#fed7aa}.role.sim .badge{background:var(--sim)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:6px 0}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;font-weight:600}
+  .trap{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px 18px;margin:14px 0}
+  .trap .h{font-weight:700;color:#b91c1c;margin-bottom:4px}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:13.5px}
+  .flow{counter-reset:step;margin:6px 0}
+  .flow .step{position:relative;padding:10px 14px 10px 50px;border-left:3px solid var(--line);margin-left:14px}
+  .flow .step::before{counter-increment:step;content:counter(step,upper-latin);position:absolute;left:-16px;top:8px;width:30px;height:30px;line-height:30px;text-align:center;border-radius:50%;background:#0f172a;color:#fff;font-weight:700;font-size:13px}
+  .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;margin-left:6px}
+  .pill.g{background:var(--g-bg);color:var(--g);border:1px solid #bfdbfe}
+  .pill.gen{background:var(--gen-bg);color:var(--gen);border:1px solid #a7f3d0}
+  .pill.sim{background:var(--sim-bg);color:var(--sim);border:1px solid #fed7aa}
+  .diagram{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;overflow-x:auto}
+  .muted{color:var(--muted)}.small{font-size:12.5px}
+  ul{margin:6px 0;padding-left:22px}li{margin:3px 0}
+  .filetag{font-family:"SF Mono",Consolas,monospace;font-size:12px;color:var(--muted)}
+  @media(max-width:720px){.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>Antenna — 微帶貼片天線「反向設計」系統</h1>
+    <p>用神經網路「反推」出能達成目標電磁響應的金屬像素圖樣，搭配代理模型與 HFSS 模擬形成線上學習閉迴路。本檔術語已對齊學長論文（吳維文碩論）。</p>
+    <div class="tagrow">
+      <span class="tag">入口：train_single.py / train_dual.py</span>
+      <span class="tag">論文：docs/Paper.pdf</span>
+      <span class="tag">已精簡：Tier A + Tier B</span>
+    </div>
+  </header>
+
+  <!-- 命名陷阱：最重要，放最前面 -->
+  <div class="trap">
+    <div class="h">⚠ 命名陷阱（先看這個，否則整份都會理解錯）</div>
+    <p style="margin:6px 0">論文與程式碼的「GEN」<b>同名、角色卻相反</b>：</p>
+    <ul style="margin:6px 0">
+      <li><b>論文的 GEN</b> = <b>Gradient Estimation Network（梯度估計網路）= 代理模型</b>（程式碼 <code>OldSM</code> / <code>HFSSNet</code>）。它當不可微分 HFSS 的「可微替身、提供梯度」，故名「梯度估計」。</li>
+      <li><b>程式碼的 <code>SigmoidGEN</code></b> = <b>生成器 G</b>（目標響應→pattern）。它名字裡的 GEN 只是 <i>Generator</i> 的縮寫，<b>不是</b>論文的 GEN。</li>
+    </ul>
+    <p style="margin:6px 0 0">因此本檔一律：<b>生成器 G</b>（藍）＝<code>SigmoidGEN</code>；<b>代理模型（論文 GEN）</b>（綠）＝<code>OldSM/HFSSNet</code>。</p>
+  </div>
+
+  <!-- 1 -->
+  <h2><span class="num">1</span>核心概念：三個角色 + 一條閉迴路</h2>
+  <p>傳統流程是「先畫結構 → 丟 HFSS → 看響應」。本專案<strong>反過來</strong>：先指定目標響應（如 28&nbsp;GHz 處 S11 要凹、Gain 要高），再讓網路生成達成它的 25×25 二元金屬 pattern。三個角色：</p>
+
+  <div class="grid3">
+    <div class="role g">
+      <h3><span class="badge">G</span>生成器</h3>
+      <p style="margin:6px 0"><b>目標響應 → pattern</b></p>
+      <small>程式碼 <code>SigmoidGEN</code>。MLP 把目標響應映成 logits，再用 STE 可微分二值化輸出 0/1 圖樣。是「要被訓練」的對象（論文的 G）。</small>
+    </div>
+    <div class="role gen">
+      <h3><span class="badge">GEN</span>代理模型</h3>
+      <p style="margin:6px 0"><b>pattern → 預測響應</b></p>
+      <small>程式碼 <code>OldSM</code>（內部 <code>HFSSNet</code>）。<b>論文稱此為 GEN（Gradient Estimation Network）</b>。一個「可微分、毫秒級」的網路，當不可微分 HFSS 的替身，讓 G 的梯度能借道反傳。</small>
+    </div>
+    <div class="role sim">
+      <h3><span class="badge">SIM</span>模擬器</h3>
+      <p style="margin:6px 0"><b>pattern → 真實響應</b></p>
+      <small><code>SinglePortSimulator</code>/<code>DualPortSimulator</code>。透過 COM 驅動 Ansys HFSS 做真正電磁模擬，慢但準確，是 ground truth。</small>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3 style="margin-top:0">為什麼需要「代理模型（論文 GEN）」？</h3>
+    <ul>
+      <li><b>HFSS 不可微分</b>：無法對它 <code>backward()</code> 取梯度 → 生成器 G 沒辦法直接靠它訓練。</li>
+      <li><b>HFSS 很慢</b>：每次模擬要數分鐘。</li>
+      <li>於是引入代理模型當「可微分替身」：G→pattern→代理→loss 可反傳更新 G；每跑一次真實 HFSS，就用 (pattern, 真實響應) <b>線上訓練</b>代理，讓它在「G 當前常產生的圖樣」附近越來越貼近真實。論文稱這個替身為 GEN。</li>
+    </ul>
+  </div>
+
+  <h3>閉迴路資料流</h3>
+  <div class="diagram">
+  <svg viewBox="0 0 1000 430" width="100%" role="img" aria-label="閉迴路資料流圖">
+    <defs>
+      <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#475569"/></marker>
+      <marker id="arrG" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#2563eb"/></marker>
+      <marker id="arrS" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#059669"/></marker>
+      <style>
+        .lbl{font:600 13px sans-serif;fill:#1e293b}.sub{font:11px sans-serif;fill:#64748b}
+        .edge{stroke:#475569;stroke-width:2;fill:none}.elabel{font:11px sans-serif;fill:#475569}
+      </style>
+    </defs>
+    <rect x="20" y="30" width="130" height="52" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text x="85" y="52" text-anchor="middle" class="lbl">目標響應 spec</text>
+    <text x="85" y="69" text-anchor="middle" class="sub">S11 / Gain / S21…</text>
+
+    <rect x="210" y="30" width="130" height="52" rx="10" fill="#eff6ff" stroke="#2563eb"/>
+    <text x="275" y="52" text-anchor="middle" class="lbl">生成器 G</text>
+    <text x="275" y="69" text-anchor="middle" class="sub">SigmoidGEN</text>
+
+    <rect x="400" y="30" width="150" height="52" rx="10" fill="#fafafa" stroke="#94a3b8"/>
+    <text x="475" y="52" text-anchor="middle" class="lbl">pattern 25×25</text>
+    <text x="475" y="69" text-anchor="middle" class="sub">(+ 固定饋電金屬塊)</text>
+
+    <rect x="360" y="190" width="170" height="56" rx="10" fill="#ecfdf5" stroke="#059669"/>
+    <text x="445" y="210" text-anchor="middle" class="lbl">代理模型（論文 GEN）</text>
+    <text x="445" y="231" text-anchor="middle" class="sub">OldSM / 可微分</text>
+
+    <rect x="680" y="190" width="180" height="56" rx="10" fill="#fff7ed" stroke="#ea580c"/>
+    <text x="770" y="213" text-anchor="middle" class="lbl">SIM / HFSS 模擬</text>
+    <text x="770" y="231" text-anchor="middle" class="sub">真實、不可微分、慢</text>
+
+    <rect x="360" y="320" width="170" height="50" rx="10" fill="#ecfdf5" stroke="#34d399"/>
+    <text x="445" y="341" text-anchor="middle" class="lbl">預測響應 → loss</text>
+    <text x="445" y="358" text-anchor="middle" class="sub">vs 目標 + pattern 正則化</text>
+
+    <rect x="680" y="320" width="180" height="50" rx="10" fill="#fff7ed" stroke="#fb923c"/>
+    <text x="770" y="341" text-anchor="middle" class="lbl">真實響應 → real_loss</text>
+    <text x="770" y="358" text-anchor="middle" class="sub">Ground Truth 指標</text>
+
+    <path class="edge" d="M150,56 H205" marker-end="url(#arr)"/>
+    <path class="edge" d="M340,56 H395" marker-end="url(#arr)"/>
+    <path class="edge" d="M455,82 C455,130 445,150 445,185" marker-end="url(#arrS)"/>
+    <text x="462" y="135" class="elabel">可微分路徑</text>
+    <path class="edge" d="M520,72 C640,110 720,140 760,185" marker-end="url(#arr)"/>
+    <text x="612" y="120" class="elabel">送 HFSS 求真值</text>
+    <path class="edge" d="M445,246 V315" marker-end="url(#arrS)"/>
+    <path class="edge" d="M770,246 V315" marker-end="url(#arr)"/>
+    <path class="edge" d="M360,345 C150,345 150,120 215,82" stroke="#2563eb" stroke-dasharray="6 5" marker-end="url(#arrG)"/>
+    <text x="55" y="220" class="elabel" fill="#2563eb">loss 經代理反傳，更新生成器 G</text>
+    <path class="edge" d="M680,335 C580,335 555,250 530,232" stroke="#059669" stroke-dasharray="6 5" marker-end="url(#arrS)"/>
+    <text x="556" y="300" class="elabel" fill="#059669">(pattern,真實響應)</text>
+    <text x="556" y="314" class="elabel" fill="#059669">線上訓練代理</text>
+  </svg>
+  </div>
+  <p class="muted small">藍虛線＝梯度反傳（更新 G）；綠虛線＝用真實資料線上訓練代理（論文 GEN）；實線＝前向流。HFSS 不可微，故 G 借道代理取得梯度。</p>
+
+  <!-- 2 -->
+  <h2><span class="num">2</span>每個 epoch 的流程（A–G）</h2>
+  <div class="flow">
+    <div class="step"><b>早停 / 回滾判斷</b>：若 <code>real_loss</code> 連續 <code>patience</code> 次沒進步 → 回滾 G 到歷史最佳 epoch，並重訓代理。<span class="pill gen">代理</span><span class="note" style="display:inline;padding:1px 7px;margin-left:6px">★ 這是<b>獨立於 ACP</b> 的機制，見第 3 節</span></div>
+    <div class="step"><b>生成 pattern</b>：G 依目標響應生成 pattern，疊上固定饋電金屬塊（single 疊 lower；dual 疊 upper+lower）。<span class="pill g">G</span></div>
+    <div class="step"><b>去重</b>：若這張 pattern 先前模擬過 → 直接取快取結果（jump），省下昂貴的 HFSS。</div>
+    <div class="step"><b>真實模擬</b>：跑 HFSS 得真實響應與 <code>real_loss</code>，並用這筆真實資料線上訓練代理。<span class="pill sim">SIM</span><span class="pill gen">代理</span></div>
+    <div class="step"><b>更新歷史最佳</b>：維護 <code>min_loss</code> / <code>best_epoch</code>。</div>
+    <div class="step"><b>更新 G</b>：pattern 經代理得預測響應，算 loss（= 響應誤差 + pattern 正則化）→ <code>backward()</code> → <code>step()</code>。<span class="pill g">G</span><span class="pill gen">代理</span></div>
+    <div class="step"><b>存檔 / 繪圖 / 記錄</b>：寫入 <code>TEMP</code>（Record），支援斷點續跑。</div>
+  </div>
+  <div class="note"><b>pattern 正則化（可製造性約束）</b>：論文主方法是 <b>SC Loss</b>（<code>SpectralConnectivityLoss</code>，圖譜連通度）；其餘 <code>total_variation_loss</code>、<code>island_suppression_loss</code>(≈論文 KNS Loss)、<code>GapClosingLoss</code> 多為對照基準。<code>FeedReachability</code>（R_feed）是<strong>評估指標、非訓練 loss</strong>。</div>
+
+  <!-- 3 論文機制與術語 -->
+  <h2><span class="num">3</span>論文核心機制與術語對照</h2>
+  <p>論文（吳維文碩論）在線上反向設計框架上，用三個機制解決前人三大缺陷：</p>
+  <table>
+    <tr><th>前人缺陷</th><th>論文機制</th><th>程式碼</th></tr>
+    <tr><td>收斂卡局部最小</td><td><b>ACP</b>（自適應循環策略 / Adaptive Cyclical Policy）</td><td><code>AdaptiveCyclicalScheduler</code></td></tr>
+    <tr><td>金屬孤島不連通</td><td><b>SC Loss</b>（圖譜連通度，Fiedler 值 1/λ₂）</td><td><code>SpectralConnectivityLoss</code></td></tr>
+    <tr><td>冷啟動樣本效率低</td><td><b>DLF</b>（動態損失過濾）+ <b>Warm Start</b>（物理初始解）</td><td><code>online_dataset</code> 篩選 + 疊 <code>lower/upper</code></td></tr>
+  </table>
+
+  <div class="trap" style="background:#fffbeb;border-color:#fde68a">
+    <div class="h" style="color:#92400e">★ ACP 與 rollback（回滾）是兩個獨立機制 — 不要混為一談</div>
+    <ul style="margin:6px 0 0">
+      <li><b>ACP</b>（<code>AdaptiveCyclicalScheduler</code>）<b>只含</b>「主動式高原偵測 + 自適應重啟 + lr/tau 雙耦合退火」——<b>只動學習率 lr 與溫度 tau，不碰權重</b>。論文第 3.2 節通篇無「回滾」。</li>
+      <li><b>rollback</b>（載回歷史最佳 epoch + 重訓代理）是<b>主迴圈層級</b>的獨立動作（<code>train_single.py</code> 主迴圈）。ACP 只提供「停滯訊號」。</li>
+      <li>兩者用<b>各自獨立的 patience 計數器</b>：rollback 用主迴圈的 <code>TEMP.early_stop('real_loss', config['patience']=10)</code>；ACP 內部另有一套 patience（只重啟 lr/tau）。</li>
+    </ul>
+  </div>
+
+  <div class="note"><b>tau（溫度）的角色</b>：lr 與 tau 由 ACP 同步退火——暖身期高溫（輸出平滑、廣域探索）→ 退火期低溫（輸出趨近乾淨 0/1、可製造、收斂定形）。tau 控制 <code>AntennaPattern.binarization</code> 的 STE 軟硬程度。</div>
+
+  <div class="note" style="background:#fef2f2;border-color:#fecaca"><b>疑似落差（待確認）</b>：論文 <b>DLF</b> 是「每輪用累計平均<b>重新過濾整個 buffer</b>、汰除舊次佳樣本」；但 <code>train_single.py</code> 目前只做「<code>real_loss &lt; 平均才寫入</code>」——這是論文點名批判的<b>對照基準</b>，非 DLF 本體。（<code>train_dual</code> 的 rollback 有 <code>filter(upper=avg)</code>，較接近。）</div>
+
+  <!-- 4 模組地圖 -->
+  <h2><span class="num">4</span>模組地圖（Tier A/B 精簡後現況）</h2>
+  <h3>入口腳本（根目錄）</h3>
+  <table>
+    <tr><th>檔案</th><th>角色</th></tr>
+    <tr><td><code>train_single.py</code></td><td>單埠：響應 = S11 + Gain，損失 = <code>custom_loss_minmax</code>，疊 lower 一塊饋電。</td></tr>
+    <tr><td><code>train_dual.py</code></td><td>雙埠：響應 = S11 + S21 + S22，損失 = <code>interval_loss</code>，疊 upper+lower 兩塊饋電。</td></tr>
+    <tr><td><code>KuoHung.py</code></td><td>載入參考天線圖樣與響應，供代理暖身微調（Warm Start 的一環）。</td></tr>
+  </table>
+  <h3>antenna/ 核心套件</h3>
+  <table>
+    <tr><th>模組</th><th class="filetag">行</th><th>內容（精簡後）</th></tr>
+    <tr><td><code>antenna/__init__.py</code></td><td class="filetag">1046</td><td><b>資料抽象核心</b>：<code>AntennaPattern</code>（座標/merge/STE 二值化/simulate/正則化）、<code>AntennaResponse</code> 家族（響應與目標、criterion）。</td></tr>
+    <tr><td><code>antenna/models.py</code></td><td class="filetag">271</td><td><b>生成器 G</b>：<code>Models</code>（模型外殼）、<code>BiScaleNorm</code>、<code>SigmoidGEN</code>。</td></tr>
+    <tr><td><code>antenna/smodels.py</code></td><td class="filetag">280</td><td><b>代理模型（論文 GEN）</b>：<code>SurrogateModel</code> 基類、<code>HFSSNet</code>（MLP）、<code>OldSM</code>（實際使用的工廠）。</td></tr>
+    <tr><td><code>antenna/functions.py</code></td><td class="filetag">643</td><td><b>ACP 與損失</b>：<code>AdaptiveCyclicalScheduler</code>(=ACP)、<code>SpectralConnectivityLoss</code>(=SC Loss)、<code>GapClosingLoss</code>、<code>FeedReachability</code>(R_feed)、<code>total_variation_loss</code>。</td></tr>
+    <tr><td><code>antenna/ranger.py</code></td><td class="filetag">300</td><td>Ranger 優化器（RAdam + Lookahead），代理訓練使用。</td></tr>
+    <tr><td><code>antenna/patch/__init__.py</code></td><td class="filetag">174</td><td><b>損失函數</b>：<code>custom_loss_minmax</code>（單埠）、<code>interval_loss</code>（雙埠）。</td></tr>
+    <tr><td><code>antenna/patch/patch_simulator/</code></td><td class="filetag">—</td><td><b>SIM</b>：PatchSimulator 基類（HFSS COM 生命週期+容錯重生）、<code>single_port.py</code>、<code>dual_port.py</code>。</td></tr>
+    <tr><td><code>antenna/utils/utils.py</code></td><td class="filetag">1451</td><td><b>工具核心</b>：<code>config</code>、<code>MultiConfig</code>、<code>Figure</code>、<code>Record</code>（=TEMP，斷點續跑）、<code>Path</code>。</td></tr>
+    <tr><td><code>antenna/utils/data.py</code></td><td class="filetag">725</td><td><code>DataManager</code>（去重持久化 Dataset）、<code>size_converter</code>。</td></tr>
+  </table>
+  <table>
+    <tr><th>第二消費者 / 輔助</th><th>用途</th></tr>
+    <tr><td><code>application/app.py</code></td><td><b>Flask 結果瀏覽器</b>（活躍第二消費者）：用 <code>Record</code>/<code>DataManager</code>/<code>Data</code> 讀回實驗結果。<b>其序列化格式不可破壞。</b></td></tr>
+    <tr><td><code>script/</code></td><td><code>img2video.py</code>、<code>process_files.py</code>（複製腳本到結果夾，可重現）、<code>kill.py</code>（強砍 ansysedt.exe）等。</td></tr>
+  </table>
+
+  <!-- 5 關鍵抽象 -->
+  <h2><span class="num">5</span>關鍵資料抽象</h2>
+  <div class="grid3">
+    <div class="card" style="border-top:3px solid var(--data)">
+      <h3 style="margin-top:0">AntennaPattern</h3>
+      <small>G 輸出的像素圖樣包裝。<code>merge()</code>（多塊疊合）、<code>binarization()</code>（STE 可微分二值化，tau 控制軟硬）、<code>simulate()</code>、<code>series</code>（攤平餵代理）、<code>+</code> 疊饋電塊、<code>~</code> 取 detach 版做去重。</small>
+    </div>
+    <div class="card" style="border-top:3px solid var(--data)">
+      <h3 style="margin-top:0">AntennaResponse 家族</h3>
+      <small><code>TargetResponse</code> 設計目標曲線+綁 loss hook；<code>MultiResponses</code> 包多條 S 參數；<code>criterion()</code> 依註冊 loss 算「響應 vs 目標」，是 G→代理 反傳鏈的末端。</small>
+    </div>
+    <div class="card" style="border-top:3px solid var(--data)">
+      <h3 style="margin-top:0">Record（TEMP）</h3>
+      <small>逐 epoch 時序記錄器：<code>early_stop</code>（觸發回滾）、<code>find</code>（反查最佳 epoch）、<code>index</code>（pattern 去重）、<code>save/load</code>（斷點續跑）。<b>app.py 依賴其序列化格式。</b></small>
+    </div>
+  </div>
+
+  <!-- 6 single vs dual -->
+  <h2><span class="num">6</span>single 與 dual 的差異</h2>
+  <table>
+    <tr><th>面向</th><th>train_single（單埠）</th><th>train_dual（雙埠）</th></tr>
+    <tr><td>模擬器</td><td><code>SinglePortSimulator</code></td><td><code>DualPortSimulator</code></td></tr>
+    <tr><td>響應</td><td>S11 + Gain</td><td>S11 + S21 + S22（含互耦 S21）</td></tr>
+    <tr><td>損失</td><td><code>custom_loss_minmax</code></td><td><code>interval_loss</code></td></tr>
+    <tr><td>饋電塊</td><td>lower</td><td>upper + lower</td></tr>
+    <tr><td>回滾重訓代理</td><td>用整個 online_dataset</td><td>用 <code>filter(upper=平均loss)</code> 挑較好樣本（較接近論文 DLF）</td></tr>
+  </table>
+
+  <!-- 7 精簡歷程 -->
+  <h2><span class="num">7</span>本輪精簡做了什麼</h2>
+  <div class="trap" style="background:#f8fafc;border-color:#e2e8f0">
+    <p style="margin-top:0"><b>Tier A</b>：移除完全死碼（CVAE、GradientEstimator、_GumbelSigmoid、BinarizeSTE、EnhancedHFSSUNet/SelfAttention/DoubleConvWithDropout/UNetSM、custom_loss_interval）。</p>
+    <p><b>歸檔變體腳本</b>：train_selection_*、train_single_mirror、train_ris* 移到本機 <code>archive/</code>（gitignored）。</p>
+    <p style="margin-bottom:0"><b>Tier B</b>：移除變體專屬組件（OldGEN、GumbelSigmoidGEN、GumbelSigmoid、sign_f、SPGEN、MirrorCVAE、custom_loss_r/g、FlipMode、mirror、gumbel_sinkhorn_rectangular）及 <code>antenna/ris/</code>、<code>abandon/</code>。</p>
+  </div>
+  <p class="muted small" style="margin-top:16px">本檔由架構梳理產生，位於 <code>docs/</code>。術語已對齊論文 <code>docs/Paper.pdf</code>。</p>
+
+</div>
+</body>
+</html>

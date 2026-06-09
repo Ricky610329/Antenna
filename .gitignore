@@ -197,3 +197,11 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# === Antenna 專案自訂 ===
+# 本機歸檔的舊變體腳本備份 (train_selection_*/mirror/ris)，不進 repo
+archive/
+# 草稿/暫存 (設計 HTML 已移到 docs/；paper_text.txt 可從 PDF 再生)
+tmp/
+# 學長論文 (約 5MB binary)，留本機，不進 git 歷史
+docs/Paper.pdf
