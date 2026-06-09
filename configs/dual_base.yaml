@@ -1,0 +1,27 @@
+# 雙埠 production 範例 (含論文主方法 SC loss)。執行：python train.py configs/dual_base.yaml
+name: pixel_dual_sc
+port: dual
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  total_variation: 0.0
+  island_suppression: 0.0
+  spectral_connectivity: 0.0005   # 圖譜連通度損失 (論文主方法)
+  gap_closing: 0.0
+
+hfss:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+# 雙埠：S11/S22 為兩埠反射，S21 為互耦。loss 用區間容差 [target-1, target+1]
+targets:
+  S11: { side: -1.25, center: -12, width: [4, 2, 5, 2, 4], interval: [-1, 1] }
+  S21: { side: -20,   center: -3,  width: [3, 0, 11, 0, 3], interval: [-1, 1] }
+  S22: { side: -1.25, center: -12, width: [4, 2, 5, 2, 4], interval: [-1, 1] }

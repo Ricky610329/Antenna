@@ -1,0 +1,26 @@
+# 單埠 production 範例。執行：python train.py configs/single_base.yaml
+name: pixel_base
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:                       # 正則化權重 (0 = 不啟用)
+  total_variation: 0.0
+  island_suppression: 0.0
+  spectral_connectivity: 0.0
+  gap_closing: 0.0
+
+hfss:                       # 代理模型 (SM) 線上訓練
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+# 目標響應 (side=兩端值, center=中央值, width=梯形寬度, method=low/high)
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }   # 中央凹 → 良好匹配
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }  # 中央高 → 增益拉高

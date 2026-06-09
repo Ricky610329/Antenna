@@ -1,0 +1,26 @@
+# 測試用 (對齊 golden_loop_dual.json 的設定)；非 production
+name: test_dual
+port: dual
+
+epochs: 6
+lr: 0.005
+patience: 50          # 高 → 不觸發 rollback (確定性)
+
+loss:
+  total_variation: 0.01
+  island_suppression: 0.0
+  spectral_connectivity: 0.0005
+  gap_closing: 0.0
+
+hfss:
+  lr: 0.001
+  min_loss: 0.5
+  max_epoch: 30
+
+scheduler:
+  on_plateau: linear
+
+targets:
+  S11: { side: -1.25, center: -12, width: [4, 2, 5, 2, 4], interval: [-1, 1] }
+  S21: { side: -20,   center: -3,  width: [3, 0, 11, 0, 3], interval: [-1, 1] }
+  S22: { side: -1.25, center: -12, width: [4, 2, 5, 2, 4], interval: [-1, 1] }

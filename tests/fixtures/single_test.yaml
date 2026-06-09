@@ -1,0 +1,25 @@
+# 測試用 (對齊 golden_loop.json 的設定)；非 production
+name: test_single
+port: single
+
+epochs: 6
+lr: 0.005
+patience: 50          # 高 → 不觸發 rollback (確定性)
+
+loss:
+  total_variation: 0.01
+  island_suppression: 0.0
+  spectral_connectivity: 0.0005
+  gap_closing: 0.0
+
+hfss:
+  lr: 0.001
+  min_loss: 0.5
+  max_epoch: 30
+
+scheduler:
+  on_plateau: linear
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
