@@ -531,13 +531,10 @@ class AntennaPattern:
     _history_datas:List[List[torch.Tensor]] = []
     _best_loss = float('inf')           #? 記錄迄今最佳 loss (供 early-stop / rollback 邏輯參考)
 
-    tau:float = 1.0
-    """
-    The temperature parameter controls the steepness of the Sigmoid. 
-    - A smaller tau (e.g., 0.1) makes the approximation closer to hard binarization. 
-    - It must be > 0.
-    """
-    
+    #? tau(二值化溫度) 不再是「會被動態改寫的全域類別屬性」：改由排程器
+    #? (AdaptiveCyclicalScheduler) 產生 → 訓練迴圈讀取 → 顯式傳入 binarization()。
+    #? 控制 sigmoid 陡峭度 (越小越接近硬 0/1，須 > 0)；binarization 未提供時預設 1.0。
+
     def __new__(cls, pattern:"AntennaPattern", *args) -> "AntennaPattern":
         #? 冪等工廠: 傳入的已是 AntennaPattern 就原樣返回, 避免重複包裝
         if isinstance(pattern, AntennaPattern):
@@ -802,9 +799,10 @@ class AntennaPattern:
         #! 核心: 這是讓「不可微分的 0/1 二值化」可以反傳的關鍵, 是 GEN 能被梯度優化的前提。
         #*  Gradient is required
         pattern.requires_grad_(True)
-        #? tau(溫度) 控制 sigmoid 陡峭度: 越小越接近硬階梯, 但梯度越尖; 設下限 1e-4 避免除零/數值爆炸
-        cls.tau:float = tau or getattr(cls, 'tau', 1.0)
-        if cls.tau < 1e-4: cls.tau = 1e-4
+        #? tau(溫度) 控制 sigmoid 陡峭度: 越小越接近硬階梯, 但梯度越尖; 設下限 1e-4 避免除零/數值爆炸。
+        #? tau 為顯式參數 (由排程器產生、迴圈傳入); 未提供時預設 1.0, 不再讀寫全域。
+        _tau = tau or 1.0
+        if _tau < 1e-4: _tau = 1e-4
 
         if len(pattern.shape) == 1:
             pattern = pattern.reshape(*cls.size())      #? GEN 輸出常是攤平向量, 依預設座標還原成二維圖
@@ -815,7 +813,7 @@ class AntennaPattern:
         #* Calculate threshold and steepness
         #? 門檻預設取整張圖均值 (detach 不讓門檻參與梯度), 等效自適應「中位線」; steepness=1/tau 即陡峭度
         threshold = threshold or pattern.mean().detach() # avg
-        steepness = 1/cls.tau
+        steepness = 1/_tau
 
         #* Produces a "soft" approximation
         #  This is to provide a smooth gradient during "backward" propagation.

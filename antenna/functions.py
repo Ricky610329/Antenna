@@ -71,14 +71,14 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
     """
     #* 在閉迴路中的角色：本排程器同時驅動兩條曲線——
     #*   (1) GEN 優化器的學習率 lr：暖身→退火，決定每步更新 pattern 的步幅。
-    #*   (2) 二值化溫度 tau(AntennaPattern.tau)：高溫探索→低溫定形(見檔頭 STE 說明)。
+    #*   (2) 二值化溫度 tau：高溫探索→低溫定形(見檔頭 STE 說明)。由 get_temp() 取出、迴圈顯式傳給 GEN。
     #* 三種思想融合：
     #*   OneCycle：每個週期開頭先「暖身」緩升，避免一開始大步長把 GEN 帶歪。
     #*   CosineAnnealingWarmRestarts：暖身後餘弦退火，週期性回到高點(warm restart)
     #*       讓 GEN 有機會跳出破碎的局部解、重新廣域探索。
     #*   ReduceLROnPlateau：監控真實 loss，停滯(patience 耗盡)時「強制重啟」並縮短週期。
-    #! 關鍵副作用：step() 內會寫 AntennaPattern.tau —— lr 與 tau 永遠同步，不可
-    #! 期望單獨調整其一。
+    #? lr 與 tau 由同一條進度(同一 T_cur)計算 → 永遠同步退火，不可期望單獨調整其一。
+    #? tau 不寫入全域：排程器只「產生」tau(get_temp())，由訓練迴圈讀取後顯式傳給 binarization。
     def __init__(
         self,
         optimizer: CustomOptimizer,
@@ -268,11 +268,8 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
         self._last_lr = [group['lr'] for group in self.optimizer.param_groups]
 
         # 更新溫度(tau)
-        #! 關鍵跨模組副作用：直接設定 AntennaPattern.tau(類別屬性)，GEN 下次二值化即套用
-        #! 新溫度。這是 lr 與 tau「同步退火」的實際接點。
-        from . import AntennaPattern
-        AntennaPattern.tau = self.get_temp()
-
+        #? tau 不再由此寫入全域：排程器只負責「產生」tau(get_temp())，由訓練迴圈讀取後
+        #? 顯式傳給 GEN.forward / binarization。此處僅記錄 lr/tau 供繪圖。
         self.record['lr'] = self.get_lr()[0]   #* 記錄供 plot() 畫雙軸曲線
         self.record['tau'] = self.get_temp()
 

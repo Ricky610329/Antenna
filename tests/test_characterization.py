@@ -34,8 +34,7 @@ def test_binarization_forward_is_binary():
 
 
 def test_binarization_explicit_tau_matches_manual():
-    """顯式 tau 必須等於『手算 STE(tau)』——與全域 tau 無關。這是 tau 去耦合要保留的契約。"""
-    AntennaPattern.tau = 5.0  # 故意把全域設成別的值
+    """顯式 tau 必須等於『手算 STE(tau)』。tau 去耦合後 binarization 只用傳入的 tau (無全域 cls.tau)。"""
     torch.manual_seed(2)
     x = torch.randn(25, 25)
     tau = 0.5

@@ -353,7 +353,7 @@ while epoch < config.epochs + 1:
         #? target response -> 生成模型 -> pattern
         # 回滾後，重新用「目標響應」生成一張新的 pattern。
         output_element = AntennaPattern(
-            generator(AntennaResponse.target.concat())
+            generator(AntennaResponse.target.concat(), tau=generator.scheduler.get_temp())
         )
 
         ###* Mutation ###
@@ -364,7 +364,7 @@ while epoch < config.epochs + 1:
     else:
         # 未觸發回滾：正常生成 pattern。
         output_element = AntennaPattern(
-            generator(AntennaResponse.target.concat())
+            generator(AntennaResponse.target.concat(), tau=generator.scheduler.get_temp())
         )
         TEMP['mutation'] = 0
         skip += 1

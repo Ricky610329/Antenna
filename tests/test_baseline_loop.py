@@ -93,7 +93,7 @@ def _run_baseline(tmpdir):
         generator.optimizer.zero_grad()
 
         # (高 patience → early_stop 永遠 False，不走 rollback 分支)
-        output_element = AntennaPattern(generator(AntennaResponse.target.concat()))
+        output_element = AntennaPattern(generator(AntennaResponse.target.concat(), tau=generator.scheduler.get_temp()))
         output_element = output_element + lower
 
         # 去重
@@ -145,7 +145,7 @@ def _run_baseline(tmpdir):
         series["min_loss"].append(float(TEMP("min_loss")))
         series["fake_loss"].append(float(TEMP("fake_loss")))
         series["r_feed"].append(float(TEMP("r_feed")))
-        series["tau"].append(float(AntennaPattern.tau))
+        series["tau"].append(float(generator.scheduler.get_temp()))
         series["lr"].append(float(optimizer.param_groups[0]["lr"]))
 
     return series
