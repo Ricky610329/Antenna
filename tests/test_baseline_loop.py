@@ -14,6 +14,7 @@ import json
 import pytest
 import torch
 
+from conftest import golden_tol
 from antenna.training import load_config, run_training, setup_responses
 
 EPOCHS = 6
@@ -68,7 +69,8 @@ def _compare_golden(series, golden_file):
         for key, gvals in golden.items():
             assert key in series and len(series[key]) == len(gvals), f"{golden_file} {key} 長度不符"
             for i, (a, b) in enumerate(zip(series[key], gvals)):
-                assert abs(a - b) <= 1e-4, (
+                # 容差：本機絕對 1e-4 / CI 相對 1% (跨硬體漂移，見 conftest.golden_tol)
+                assert abs(a - b) <= golden_tol(b), (
                     f"[golden drift] {golden_file} {key}[{i}]: 現在={a:.8g} vs 基準={b:.8g}"
                 )
     else:

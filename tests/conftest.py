@@ -35,6 +35,19 @@ def _setup_globals():
 # ---- golden 快照機制（approval testing）----------------------------------
 # 第一次執行：golden.json 不存在 → 自動把目前數值寫入（捕捉現況）。
 # 之後執行（重構後）：與 golden 比對，數值漂移即 fail。
+#
+# 容差雙軌制（見 docs/development.md 第 3 節）：
+#   本機 = 精檢 (絕對 1e-4)，是數值真相的來源。
+#   CI   = 粗檢 (相對 1%)：GitHub runner 的 CPU 與開發機不同，SIMD/MKL kernel
+#   路徑差異造成跨硬體浮點漂移 (特徵值分解最敏感、迴圈逐 epoch 放大，實測 ~0.4%)。
+_CI = bool(os.environ.get("CI"))  # GitHub Actions 自帶 CI=true
+
+
+def golden_tol(base, tol=1e-4):
+    """本機回傳絕對容差；CI 放寬為 max(絕對, 相對 1%)。"""
+    return max(tol, 0.01 * abs(base)) if _CI else tol
+
+
 _GOLDEN = os.path.join(os.path.dirname(__file__), "golden.json")
 
 
@@ -47,9 +60,10 @@ def golden():
         def check(self, key, value, tol=1e-4):
             v = float(value)
             if key in data:
-                assert abs(v - data[key]) <= tol, (
+                eff = golden_tol(data[key], tol)
+                assert abs(v - data[key]) <= eff, (
                     f"[golden drift] {key}: 現在={v:.8g} vs 基準={data[key]:.8g} "
-                    f"(Δ={abs(v - data[key]):.2e} > tol={tol})"
+                    f"(Δ={abs(v - data[key]):.2e} > tol={eff:.2e})"
                 )
             rec[key] = v  # 通過比對（或新鍵）才記錄
 
