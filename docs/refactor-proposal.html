@@ -63,13 +63,23 @@
 
   <header class="hero">
     <h1>重構提案：元件整合類別 ＋ ACP 排程 ＋ 回滾機制分離</h1>
-    <p>把「兩個 ~95% 重複的單體腳本」拆成清楚的三層職責。<strong>術語已對齊論文，尚未動任何程式碼。</strong></p>
+    <p>把「兩個 ~95% 重複的單體腳本」拆成清楚的三層職責。<strong>本提案已實作完成，此頁存為設計紀錄（rationale）。</strong></p>
     <div class="statusbar">
+      <span class="tag ok">✅ 已實作</span>
       <span class="tag ok">已讀論文確認核心機制</span>
-      <span class="tag warn">狀態：提案 / 待你定案</span>
-      <span class="tag">不影響現有 train_single/dual</span>
+      <span class="tag">現況/用法見 docs/training.md</span>
     </div>
   </header>
+
+  <div class="q resolved" style="margin-bottom:22px">
+    <div class="qh">✅ 此提案已落地</div>
+    <div class="opts">
+      本文所述的三層拆分已實作：<b>整合/核心</b>＝<code>antenna/training.py</code>（<code>run_training</code> + <code>build_generator</code>/<code>build_surrogate</code> + <code>prepare_models</code>）；
+      <b>入口</b>＝<code>train.py</code> + <code>configs/*.yaml</code>；舊 <code>train_single.py</code>/<code>train_dual.py</code> 已移除。
+      <b>實際用法與 config 結構請看 <a href="training.md">docs/training.md</a></b>；系統全貌看 <a href="architecture.html">architecture.html</a>。
+      以下保留當初的設計脈絡與取捨，供日後回溯。
+    </div>
+  </div>
 
   <!-- 0 論文已確認 -->
   <h2><span class="num">0</span>讀完論文後，先確立兩個事實（取代先前的「待確認」）</h2>
@@ -224,7 +234,9 @@ trainer.run()
   </table>
 
   <!-- 5 -->
-  <h2><span class="num">5</span>待你定案的設計決策</h2>
+  <h2><span class="num">5</span>設計決策（已定案，皆採下方標「推薦」選項）</h2>
+  <div class="q resolved" style="margin-bottom:14px"><div class="qh">✅ 全部已定案並實作</div>
+    <div class="opts">Q2 迴圈在 <code>run_training</code>（非整合類別內）；Q3 單一 pipeline 由 <code>port</code> 驅動；Q4 命名對齊論文（文件統一稱「代理/Surrogate＝論文 GEN」，避免用 GEN 指生成器）；Q5 先數值等價（golden 把關），dual island 鍵名 bug 後續另修；Q6 新檔 <code>antenna/training.py</code> 驗證等價後再移除舊腳本；Q7 DLF 維持原行為、另案處理。以下保留原始選項供回溯。</div></div>
 
   <div class="q"><div class="qh">Q2　整合類別要不要自己跑迴圈？</div>
     <div class="opts">(a) 只「持有元件 + 原子操作」，迴圈交給 Trainer <span class="reco">推薦</span>。　(b) 自己也跑迴圈（把 Trainer 併進去，但又耦合回來）。</div></div>

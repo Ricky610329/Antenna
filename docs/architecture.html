@@ -194,14 +194,14 @@
     <div class="h" style="color:#92400e">★ ACP 與 rollback（回滾）是兩個獨立機制 — 不要混為一談</div>
     <ul style="margin:6px 0 0">
       <li><b>ACP</b>（<code>AdaptiveCyclicalScheduler</code>）<b>只含</b>「主動式高原偵測 + 自適應重啟 + lr/tau 雙耦合退火」——<b>只動學習率 lr 與溫度 tau，不碰權重</b>。論文第 3.2 節通篇無「回滾」。</li>
-      <li><b>rollback</b>（載回歷史最佳 epoch + 重訓代理）是<b>主迴圈層級</b>的獨立動作（<code>train_single.py</code> 主迴圈）。ACP 只提供「停滯訊號」。</li>
+      <li><b>rollback</b>（載回歷史最佳 epoch + 重訓代理）是<b>主迴圈層級</b>的獨立動作（<code>antenna/training.py</code> 的 <code>run_training</code> 迴圈）。ACP 只提供「停滯訊號」。</li>
       <li>兩者用<b>各自獨立的 patience 計數器</b>：rollback 用主迴圈的 <code>TEMP.early_stop('real_loss', config['patience']=10)</code>；ACP 內部另有一套 patience（只重啟 lr/tau）。</li>
     </ul>
   </div>
 
   <div class="note"><b>tau（溫度）的角色</b>：lr 與 tau 由 ACP 同步退火——暖身期高溫（輸出平滑、廣域探索）→ 退火期低溫（輸出趨近乾淨 0/1、可製造、收斂定形）。tau 控制 <code>AntennaPattern.binarization</code> 的 STE 軟硬程度。</div>
 
-  <div class="note" style="background:#fef2f2;border-color:#fecaca"><b>疑似落差（待確認）</b>：論文 <b>DLF</b> 是「每輪用累計平均<b>重新過濾整個 buffer</b>、汰除舊次佳樣本」；但 <code>train_single.py</code> 目前只做「<code>real_loss &lt; 平均才寫入</code>」——這是論文點名批判的<b>對照基準</b>，非 DLF 本體。（<code>train_dual</code> 的 rollback 有 <code>filter(upper=avg)</code>，較接近。）</div>
+  <div class="note" style="background:#fef2f2;border-color:#fecaca"><b>疑似落差（待確認）</b>：論文 <b>DLF</b> 是「每輪用累計平均<b>重新過濾整個 buffer</b>、汰除舊次佳樣本」；但 <code>run_training</code> 的單埠路徑目前只做「<code>real_loss &lt; 平均才寫入</code>」——這是論文點名批判的<b>對照基準</b>，非 DLF 本體。（雙埠路徑的 rollback 有 <code>filter(upper=avg)</code>，較接近。）</div>
 
   <!-- 4 模組地圖 -->
   <h2><span class="num">4</span>模組地圖（Tier A/B 精簡後現況）</h2>
@@ -209,19 +209,19 @@
   <table>
     <tr><th>檔案</th><th>角色</th></tr>
     <tr><td><code>train.py</code></td><td>唯一入口：<code>python train.py configs/xxx.yaml</code>。掛 NAS、結果路徑、建真實模擬器、跑核心訓練。</td></tr>
-    <tr><td><code>antenna/training.py</code></td><td>單/雙埠共用核心：<code>run_training</code>(迴圈) + <code>load_config</code>(YAML) + <code>prepare_surrogate</code>(模型載入)。port 決定結構性元件。</td></tr>
-    <tr><td><code>configs/*.yaml</code></td><td>一檔一實驗（single/dual + 超參數 + 目標響應 + 模型載入）。</td></tr>
-    <tr><td><code>KuoHung.py</code></td><td>載入參考天線圖樣與響應，供代理暖身微調（目前 config 驅動尚未接上）。</td></tr>
+    <tr><td><code>antenna/training.py</code></td><td>單/雙埠共用核心：<code>run_training</code>(迴圈) + <code>load_config</code>(YAML) + <code>prepare_models</code>(GEN/SM 載入) + <code>build_generator</code>/<code>build_surrogate</code>(registry：架構由 config 的 <code>type</code>/<code>hidden</code> 決定)。port 決定結構性元件。</td></tr>
+    <tr><td><code>configs/*.yaml</code></td><td>一檔一實驗（single/dual + 超參數 + 目標響應 + 模型架構/載入）。</td></tr>
+    <tr><td><code>KuoHung.py</code></td><td>載入參考天線圖樣與響應，供代理暖身微調（由 config 的 <code>surrogate.warmup</code> 接上）。</td></tr>
   </table>
   <h3>antenna/ 核心套件</h3>
   <table>
     <tr><th>模組</th><th class="filetag">行</th><th>內容（精簡後）</th></tr>
-    <tr><td><code>antenna/__init__.py</code></td><td class="filetag">1046</td><td><b>資料抽象核心</b>：<code>AntennaPattern</code>（座標/merge/STE 二值化/simulate/正則化）、<code>AntennaResponse</code> 家族（響應與目標、criterion）。</td></tr>
-    <tr><td><code>antenna/models.py</code></td><td class="filetag">271</td><td><b>生成器 G</b>：<code>Models</code>（模型外殼）、<code>BiScaleNorm</code>、<code>SigmoidGEN</code>。</td></tr>
-    <tr><td><code>antenna/smodels.py</code></td><td class="filetag">280</td><td><b>代理模型（論文 GEN）</b>：<code>SurrogateModel</code> 基類、<code>HFSSNet</code>（MLP）、<code>OldSM</code>（實際使用的工廠）。</td></tr>
-    <tr><td><code>antenna/functions.py</code></td><td class="filetag">643</td><td><b>ACP 與損失</b>：<code>AdaptiveCyclicalScheduler</code>(=ACP)、<code>SpectralConnectivityLoss</code>(=SC Loss)、<code>GapClosingLoss</code>、<code>FeedReachability</code>(R_feed)、<code>total_variation_loss</code>。</td></tr>
+    <tr><td><code>antenna/__init__.py</code></td><td class="filetag">1044</td><td><b>資料抽象核心</b>：<code>AntennaPattern</code>（座標/merge/STE 二值化/simulate/正則化）、<code>AntennaResponse</code> 家族（響應與目標、criterion）。</td></tr>
+    <tr><td><code>antenna/models.py</code></td><td class="filetag">273</td><td><b>生成器 G</b>：<code>Models</code>（模型外殼）、<code>BiScaleNorm</code>、<code>SigmoidGEN</code>（<code>hidden</code> 可由 config 指定）。</td></tr>
+    <tr><td><code>antenna/smodels.py</code></td><td class="filetag">274</td><td><b>代理模型（論文 GEN）</b>：<code>SurrogateModel</code> 基類、<code>HFSSNet</code>（MLP，<code>hidden</code> 可由 config 指定）、<code>OldSM</code>（實際使用的工廠）。</td></tr>
+    <tr><td><code>antenna/functions.py</code></td><td class="filetag">639</td><td><b>ACP 與損失</b>：<code>AdaptiveCyclicalScheduler</code>(=ACP)、<code>SpectralConnectivityLoss</code>(=SC Loss)、<code>GapClosingLoss</code>、<code>FeedReachability</code>(R_feed)、<code>total_variation_loss</code>。</td></tr>
     <tr><td><code>antenna/ranger.py</code></td><td class="filetag">300</td><td>Ranger 優化器（RAdam + Lookahead），代理訓練使用。</td></tr>
-    <tr><td><code>antenna/patch/__init__.py</code></td><td class="filetag">174</td><td><b>損失函數</b>：<code>custom_loss_minmax</code>（單埠）、<code>interval_loss</code>（雙埠）。</td></tr>
+    <tr><td><code>antenna/patch/__init__.py</code></td><td class="filetag">173</td><td><b>損失函數</b>：<code>custom_loss_minmax</code>（單埠）、<code>interval_loss</code>（雙埠）。</td></tr>
     <tr><td><code>antenna/patch/patch_simulator/</code></td><td class="filetag">—</td><td><b>SIM</b>：PatchSimulator 基類（HFSS COM 生命週期+容錯重生）、<code>single_port.py</code>、<code>dual_port.py</code>。</td></tr>
     <tr><td><code>antenna/utils/utils.py</code></td><td class="filetag">1451</td><td><b>工具核心</b>：<code>config</code>、<code>MultiConfig</code>、<code>Figure</code>、<code>Record</code>（=TEMP，斷點續跑）、<code>Path</code>。</td></tr>
     <tr><td><code>antenna/utils/data.py</code></td><td class="filetag">725</td><td><code>DataManager</code>（去重持久化 Dataset）、<code>size_converter</code>。</td></tr>
@@ -252,7 +252,7 @@
   <!-- 6 single vs dual -->
   <h2><span class="num">6</span>single 與 dual 的差異</h2>
   <table>
-    <tr><th>面向</th><th>train_single（單埠）</th><th>train_dual（雙埠）</th></tr>
+    <tr><th>面向</th><th>single（單埠）</th><th>dual（雙埠）</th></tr>
     <tr><td>模擬器</td><td><code>SinglePortSimulator</code></td><td><code>DualPortSimulator</code></td></tr>
     <tr><td>響應</td><td>S11 + Gain</td><td>S11 + S21 + S22（含互耦 S21）</td></tr>
     <tr><td>損失</td><td><code>custom_loss_minmax</code></td><td><code>interval_loss</code></td></tr>
