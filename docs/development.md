@@ -55,6 +55,13 @@ CI（GitHub Actions，`.github/workflows/tests.yml`）在 push / PR 時自動跑
      並在 **commit message 裡寫明為什麼更新 golden**（這是行為改變的紀錄點）。
 3. 經驗法則：**重構（不改行為）絕不該動 golden**；golden 動了 = 行為變了，要嘛是 bug、要嘛要說清楚。
 
+### Golden 的參考環境：torch 2.7.1（重要）
+
+golden 數值**綁定 torch 版本**：換版本會造成浮點漂移（SC loss 走特徵值分解最敏感，2.7→2.12 漂 Δ≈1.0；迴圈 golden 會逐 epoch 放大）。因此：
+
+- CI 釘住 `torch==2.7.1`（= 開發機 `ant` env 的版本），**不要**為了漂移放寬 `tol`（會讓真 bug 躲過去）。
+- **要升級 torch 時**的正確順序：升開發機 → 刪三個 golden 檔重生基準 → 同步改 `.github/workflows/tests.yml` 的釘版 → 一個 commit 一起進，message 說明。
+
 ### 已知的非直覺行為（別「修」它們）
 
 - `island_suppression_loss` 對全金屬 pattern **不是 0**（≈0.0937）：`avg_pool2d` 零填充所致，是既有行為。

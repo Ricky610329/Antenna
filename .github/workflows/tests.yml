@@ -22,8 +22,11 @@ jobs:
       # 測試的最小依賴集（torch 在 Windows 預設即 CPU 版）。
       # 完整 requirements.txt 含 wandb/sentry/torchvision 等訓練端依賴，CI 不需要。
       # scipy：functions.py 的 FeedReachability/island 在函式內 lazy import scipy.ndimage。
+      #! torch 必須釘住 2.7.1 = golden 基準的參考版本（開發機 ant env）。
+      #! 換 torch 版本會造成數值漂移（SC loss 走特徵值分解最敏感）→ golden 全紅。
+      #! 要升級 torch：先升開發機 → 重生 golden（見 docs/development.md 第 3 節）→ 再改這裡。
       - name: Install dependencies
-        run: pip install torch numpy scipy matplotlib pandas loguru tqdm PyYAML pywin32 psutil typing_extensions pytest
+        run: pip install torch==2.7.1 numpy scipy matplotlib pandas loguru tqdm PyYAML pywin32 psutil typing_extensions pytest
 
       - name: Run tests
         run: pytest tests/ -q
