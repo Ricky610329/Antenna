@@ -28,7 +28,9 @@ jobs:
       - name: Install dependencies
         run: pip install torch==2.7.1 numpy scipy matplotlib pandas loguru tqdm PyYAML pywin32 psutil typing_extensions pytest
 
+      # 必須用 python -m pytest：把 cwd (repo root) 加進 sys.path 才找得到 antenna 套件。
+      # 裸 pytest 不會加 cwd → ModuleNotFoundError: No module named 'antenna'。
       - name: Run tests
-        run: pytest tests/ -q
+        run: python -m pytest tests/ -q
         env:
           PYTHONIOENCODING: utf-8

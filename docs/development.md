@@ -14,10 +14,12 @@
 
 ```bash
 conda activate ant
-pytest tests/ -q        # 在 repo 根目錄執行（沒有 pytest.ini，靠 cwd 解析 antenna 套件）
+python -m pytest tests/ -q   # 在 repo 根目錄執行
 ```
 
-> 注意：**一定要在 repo 根目錄跑**。在別處（含 git worktree）跑會 import 到錯的 `antenna/`。
+> 注意：**一定要 `python -m pytest`、且在 repo 根目錄跑**。`python -m` 會把 cwd 加進
+> `sys.path`（這是找到 `antenna` 套件的唯一機制，沒有 pytest.ini）；裸 `pytest` 會直接
+> `ModuleNotFoundError`。在別處（含 git worktree）跑則會 import 到錯的 `antenna/`。
 
 ## 2. 測試結構
 
