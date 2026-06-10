@@ -102,6 +102,20 @@ golden 數值**綁定 torch 版本與 CPU**：
 ### 新的 port 模式（罕見）
 在 `antenna/training.py` 的 `PORT_SPECS` 加一組（labels、register_order、feeds、make_r_feed），並準備對應模擬器。
 
+## 4.5 資料層（新舊雙軌）
+
+| | 新格式 `SampleStore`（未來標準） | 舊 `DataManager`（保留給學長 code） |
+| --- | --- | --- |
+| 形式 | **一筆一檔**：`<資料夾>/<內容hash>.pt` | 整個資料集一個 pickle（`<name>.data`） |
+| append | 寫一個 ~3KB 小檔，O(1) | **全量重寫**整個 pkl（NAS 上很慢） |
+| 去重 | 檔名 = 內容 hash，存在即重複 | 自維護指紋集 |
+| 損壞 | 壞一檔損一筆 | 壞一檔全滅（有 backup 緩解） |
+
+- **online**（訓練中收集）已用新格式；**offline**（NAS 舊資料集）過渡期仍走 DataManager。
+- `train.py` 的 `load_dataset()` 自動偵測：資料夾→新格式、否則→舊 pkl。
+- 正式轉換：`python -m script.convert_dataset patch_single_mirror`（**先與維護者確認再跑**；
+  不刪舊檔，轉完自動切新格式）。app.py 的 dataset 瀏覽頁只認舊格式。
+
 ## 5. Branch / commit 慣例
 
 - 開發都在 **`GAN`** 分支；測試全綠後 `main` 以 fast-forward 同步：

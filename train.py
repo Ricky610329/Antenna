@@ -21,8 +21,18 @@ import torch
 from antenna import AntennaPattern, get_result_path
 from antenna.training import load_config, build_simulator, run_training
 from antenna.utils.data import DataManager
+from antenna.utils.store import SampleStore
 
 torch.autograd.set_detect_anomaly(True)
+
+
+def load_dataset(name):
+    """載入離線資料集：資料夾 = 新格式 (SampleStore)；否則走舊 DataManager (單一 pickle)。
+    NAS 上舊資料集正式轉換後 (script/convert_dataset.py)，這裡會自動切到新格式。"""
+    path = DATASET_PATH.joinpath(name)
+    if path.is_dir():
+        return SampleStore(path)
+    return DataManager(name, rootdir=DATASET_PATH)
 
 
 def resolve_models(cfg):
@@ -50,7 +60,7 @@ def resolve_models(cfg):
     return dict(
         gen_pretrained_path=_path(cfg.generator.get("pretrained")),
         sm_pretrained_path=_path(cfg.surrogate.get("pretrained")),
-        offline_dataset=(DataManager(cfg.surrogate["offline_dataset"], rootdir=DATASET_PATH)
+        offline_dataset=(load_dataset(cfg.surrogate["offline_dataset"])
                          if cfg.surrogate.get("offline_dataset") else None),
         warmup=warmup,
     )

@@ -28,7 +28,7 @@ from antenna.functions import (
     SpectralConnectivityLoss, GapClosingLoss,
 )
 from antenna.patch import custom_loss_minmax, interval_loss
-from antenna.utils.data import DataManager
+from antenna.utils.store import SampleStore
 from antenna.utils.utils import Record
 
 
@@ -195,7 +195,10 @@ def run_training(
                        criterion=custom_loss_minmax)
     smodel = build_surrogate(cfg, config.checkpoint_save_path, spec)
 
-    online = DataManager("online", rootdir=str(record_path), verbose=False)
+    #? online 樣本庫用新格式 (一筆一檔，見 antenna/utils/store.py)：append O(1)、去重免維護。
+    #! 舊 run 的 online.data (單一 pickle) 不會帶進來 —— 續跑時 rollback 從新樣本重新累積
+    #! (SM checkpoint 不受影響；train_by_datas 對空資料集是 no-op)。
+    online = SampleStore(record_path / "online", verbose=False)
     TEMP = Record("temp", rootdir=str(record_path))
     r_feed = PORT_SPECS[cfg.port]["make_r_feed"]()
     sc = SpectralConnectivityLoss()
@@ -255,7 +258,7 @@ def run_training(
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
             TEMP["real_loss"] = real_loss.item()
             if TEMP("real_loss") < TEMP.average("real_loss"):
-                online.add_and_save([~output_element, stack])
+                online.add(~output_element, stack)
         else:
             if verbose: logger.info(f"[{epoch}] pattern 重複 → 取快取結果 (跳過 HFSS)")
             stack, rl = TEMP.find("patch_pattern_buf", ~output_element,
