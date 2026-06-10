@@ -11,45 +11,30 @@
 #? 「forward 是離散硬值 (0/1)、backward 卻有可用梯度」，繞過二值化本身不可導的斷點。
 
 from types import FunctionType
-from typing import Callable, Generic, Optional, Union
+from typing import Optional, Union
 
 from antenna.utils import Path, Record, config, logger
-from antenna.types import (
-    CallableModule, Checkpoint, CustomModule, CustomOptimizer, CustomScheduler,
-    LossParams, ModelParams, ReturnType,
-)
 
 import torch
 from torch import Tensor, nn
-from torch.autograd.function import (
-    Function,          #? 自訂 autograd 運算的基底：可分別定義 forward(離散) 與 backward(給梯度)
-    FunctionCtx ,      #? forward 中的 context，save_for_backward 暫存張量供 backward 使用
-    BackwardCFunction,
-)
-from torch.autograd import Variable
-
-
-import numpy as np
-from math import sqrt
 
 
 ###* Models — 模型管理外殼 (model/optimizer/scheduler/criterion + Record 打包) ###
-#? 泛型參數讓型別檢查能追蹤被包住的 module/optimizer 等具體型別。
-#? 設計動機：訓練腳本 (train_single.py / train_dual.py) 想用單一物件就完成
-#? 「呼叫模型、存讀 checkpoint、依 label 換存檔、凍結梯度、early-stop rollback」等操作，
-#? 不必各自手動管理 state_dict。GEN 與 SM 都會被包進各自的 Models 實例。
-class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, LossParams]):
+#? 設計動機：訓練端想用單一物件就完成「呼叫模型、存讀 checkpoint、依 label 換存檔、
+#? 凍結梯度、early-stop rollback」等操作，不必各自手動管理 state_dict。
+#? GEN 與 SM 都會被包進各自的 Models 實例 (SM 經 SurrogateModel 繼承)。
+class Models:
     def __init__(
-            self, 
-            name:str = "models_{label}", 
-            rootdir:Optional[Union[str, Path]] = None, 
-            model:Optional[ CustomModule | CallableModule[ModelParams, ReturnType]] = None, 
-            optimizer:Optional[CustomOptimizer] = None, 
-            scheduler:Optional[CustomScheduler] = None, 
-            criterion:Optional[Callable[LossParams, Tensor]] = None,
+            self,
+            name: str = "models_{label}",
+            rootdir=None,
+            model: Optional[nn.Module] = None,
+            optimizer=None,
+            scheduler=None,
+            criterion=None,
             *,
-            load:bool = False,
-            device = config.device
+            load: bool = False,
+            device=config.device
         ):
         #? name 內若含 "{label}" 佔位符 → 走「可換存檔」模式：先把樣板存進 self._name，
         #  真正的檔名 self.name 留空 (None)，等 change(label) 帶入 label 後才確定。
@@ -77,8 +62,8 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
     
     #? 讓 Models 實例可直接像函式般呼叫，等同呼叫底層 model 的 forward。
     #  在 pipeline 中 gen(target) / sm(pattern) 都是走這條。
-    def __call__(self, *args:ModelParams.args, **kwargs:ModelParams.kwargs) -> ReturnType:
-        return  self.model(*args, **kwargs)
+    def __call__(self, *args, **kwargs):
+        return self.model(*args, **kwargs)
 
     #? __str__ 會被當成 checkpoint 的 "title"。load() 時用它比對檔案是否與當前
     #  (模型+優化器+排程器+損失) 組合一致，避免把錯誤的權重載進不相容的架構。
@@ -111,12 +96,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         #? 設定裝置等同把整個 model 搬過去；故 self.device = x 是合法且有副作用的寫法。
         self.model.to(device = device)
 
-    @property
-    def FloatTensor(self):
-        #? 依當前裝置回傳對應的 FloatTensor 類別 (CPU/CUDA)，方便建立與模型同裝置的張量。
-        return torch.FloatTensor if str(self.device) == 'cpu' else torch.cuda.FloatTensor # type: ignore
-    
-    def change(self, label:str, *, load:bool=False, save:bool=False):
+    def change(self, label, *, load: bool = False, save: bool = False):
         """
         Change model label.
 
@@ -163,7 +143,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         try:
             torch.save(self.checkpoint(load=False), temp_file)
             temp_file.replace(filename)              #? replace 在多數平台是原子操作
-        except Exception as e:
+        except Exception:
             if temp_file.exists():
                 temp_file.unlink()                   #! 失敗時清掉殘留的 .tmp，保持目錄乾淨
             raise
@@ -171,9 +151,9 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
 
     #? pre_load_model：只載「權重 + 優化器」而不比對 title，用於把預訓練 (pretrain) 的
     #  SM/GEN 權重灌進當前模型作為閉迴路的起點，跳過 load() 的嚴格架構檢查。
-    def pre_load_model(self, path:Union[str, Path]):
+    def pre_load_model(self, path: Union[str, Path]):
         path = Path(path)
-        checkpoint_loaded:Checkpoint = path.load_torch()
+        checkpoint_loaded = path.load_torch()
         self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
         #! 載入後立即檢查所有參數有限性：預訓練檔若含 NaN/inf 會在閉迴路一開始就汙染梯度，
@@ -189,7 +169,7 @@ class Models(Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, Cus
         if self.scheduler: self.scheduler.step(scheduler_param)
 
     #? 組裝/載入 checkpoint 字典。load=True 直接從檔讀；load=False 則即時蒐集當前狀態用於存檔。
-    def checkpoint(self, load:bool = False) -> Checkpoint:
+    def checkpoint(self, load: bool = False) -> dict:
         if load:
             checkpoint:dict = self.model_file.load_torch()
         else:

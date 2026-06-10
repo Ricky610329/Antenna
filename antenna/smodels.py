@@ -18,7 +18,7 @@
 #?   HFSSNet        — 純 MLP 骨幹：625 像素 → (3,17) 響應 (學長版 OldSM 實際使用)。
 #?   OldSM — 工廠函式：把 model + criterion + optimizer + scheduler 組成一個 SurrogateModel。
 
-from typing import Callable, Generic, List, Optional, cast
+from typing import List, Optional
 
 import torch
 from torch import Tensor, nn
@@ -27,17 +27,10 @@ from tqdm import tqdm
 from antenna import AntennaPattern, AntennaResponse, MultiResponses
 from antenna.models import Models     #? Models 管理外殼 (存讀檔/換 label/step/凍結梯度)
 from antenna.ranger import Ranger     #? Ranger = RAdam + Lookahead，SM 訓練用的優化器
-from antenna.types import (
-    CallableParam, CustomModule, CustomOptimizer, CustomScheduler,
-    LossParams, ModelParams, ReturnType,
-)
 from antenna.utils import TQDM_BAR_SIMPLE, TQDM_CONFIG, config, logger, tensor
 from antenna.utils.data import size_converter
 
-from torch.optim.optimizer import Optimizer
-from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
-from abc import ABC, abstractmethod
 from antenna.utils.data import DataManager  #? 可持久化/可去重/可當 PyTorch Dataset 的資料集容器 (供 train_by_datas 使用)
 
 ###* SurrogateModel — SM 基類 (繼承 Models 管理外殼) ###
@@ -46,14 +39,10 @@ from antenna.utils.data import DataManager  #? 可持久化/可去重/可當 PyT
 #?   __call__       — 推論：pattern → MultiResponses (預測響應)，供 GEN 反傳取梯度。
 #?   train_one_data — 單筆線上微調：每跑一次新 HFSS 就用該筆 (pattern, 真實響應) 把 SM 訓到收斂。
 #?   train_by_datas — 整批重訓：rollback 時用整個 online_dataset 重訓，糾正 SM 的整體偏差。
-#? 泛型參數沿用 Models 的型別變數，讓型別檢查能追蹤被包住的具體 module/optimizer 等型別。
-class SurrogateModel(
-    Models[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, LossParams],
-    Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, LossParams]
-):
-    def __init__(self, model:CustomModule, criterion:Callable[CallableParam, Tensor], optimizer:CustomOptimizer, scheduler:Optional[CustomScheduler]=None, *,
-                 rootdir=None, min_loss:float=0.1, max_epoch:int=20000,
-                 response_shape:Optional[tuple]=None):
+class SurrogateModel(Models):
+    def __init__(self, model: nn.Module, criterion, optimizer, scheduler=None, *,
+                 rootdir=None, min_loss: float = 0.1, max_epoch: int = 20000,
+                 response_shape: Optional[tuple] = None):
         """
         SM 外殼：包住骨幹網路 + 優化器 + 損失，提供線上/離線訓練與存讀檔。
 
@@ -120,7 +109,7 @@ class SurrogateModel(
 
         epoch_bar = tqdm(range(epochs), desc='Training...', disable=not verbose, **TQDM_CONFIG)
         for epoch in epoch_bar:
-            for n, (patterns, real_responses) in enumerate(cast(tuple[Tensor, Tensor], dataloader)):
+            for n, (patterns, real_responses) in enumerate(dataloader):
 
                 #? 統一形狀：pattern 攤平成 (B, 625) 餵 MLP；響應保留 (B, C, L) 不攤平 (與骨幹輸出對齊)
                 patterns = self.size_converter(AntennaPattern, patterns, flatten=True, batch=True)

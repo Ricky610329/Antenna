@@ -26,7 +26,13 @@ jobs:
       #! 換 torch 版本會造成數值漂移（SC loss 走特徵值分解最敏感）→ golden 全紅。
       #! 要升級 torch：先升開發機 → 重生 golden（見 docs/development.md 第 3 節）→ 再改這裡。
       - name: Install dependencies
-        run: pip install torch==2.7.1 numpy scipy matplotlib pandas loguru tqdm PyYAML pywin32 psutil typing_extensions pytest
+        run: pip install torch==2.7.1 numpy scipy matplotlib pandas loguru tqdm PyYAML pywin32 psutil typing_extensions pytest pyflakes
+
+      # pyflakes 守門：只擋 undefined name (這類錯 runtime 才會炸，曾抓到被同名
+      # method 遮蔽的 stack/concat)。unused import 不擋 (facade 轉手是刻意的)。
+      - name: Pyflakes (undefined names)
+        run: |
+          python -c "import subprocess, sys; out = subprocess.run([sys.executable, '-m', 'pyflakes', 'antenna', 'train.py', 'KuoHung.py', 'tests', 'script'], capture_output=True, text=True).stdout; bad = [l for l in out.splitlines() if 'undefined name' in l]; print(chr(10).join(bad) if bad else 'clean'); sys.exit(1 if bad else 0)"
 
       # 必須用 python -m pytest：把 cwd (repo root) 加進 sys.path 才找得到 antenna 套件。
       # 裸 pytest 不會加 cwd → ModuleNotFoundError: No module named 'antenna'。

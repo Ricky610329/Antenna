@@ -33,9 +33,8 @@
 import torch
 from torch import Tensor, nn
 import torch.nn.functional as F
-from enum import Enum
-from typing import Generic, Literal, Optional, Union
-from antenna.types import Axes, CustomOptimizer, FeedReachabilityDictType
+from typing import Literal, Optional, Union
+from antenna.types import Axes, FeedReachabilityDictType
 from antenna.utils.figure import Figure
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -58,13 +57,11 @@ def total_variation_loss(img, weight=0.01):
     tv_w = torch.pow(img[:,:,:,1:] - img[:,:,:,:-1], 2).sum()   #* 水平方向相鄰行差平方和
     return weight * (tv_h + tv_w) / (bs_img * c_img * h_img * w_img)   #* 除以元素數做正規化，使量級不隨解析度漂移
 
-import torch
 import math
-from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 import warnings
 
-class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
+class AdaptiveCyclicalScheduler(_LRScheduler):
     """
     一個融合了 OneCycle、CosineAnnealingWarmRestarts 和 ReduceLROnPlateau 思想的排程器。
     
@@ -83,7 +80,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler, Generic[CustomOptimizer]):
     #? tau 不寫入全域：排程器只「產生」tau(get_temp())，由訓練迴圈讀取後顯式傳給 binarization。
     def __init__(
         self,
-        optimizer: CustomOptimizer,
+        optimizer,
         T_0: int = 50,
         T_mult: int = 1,
         lr_max: float = 0.01,

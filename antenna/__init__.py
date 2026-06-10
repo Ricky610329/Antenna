@@ -41,13 +41,13 @@ Example::
 from collections import defaultdict
 from types import FunctionType
 from typing import (
-    Callable, Dict, Generic, Iterable, List, Literal,
-    Optional, Self, Tuple, Union, cast, overload,
+    Callable, Dict, Iterable, List, Literal,
+    Optional, Self, Tuple, Union, cast,
 )
 
 from antenna.utils import Path, config, get_local_ip, tensor   #? config(全域設定)、自訂 Path、自訂 tensor
 from antenna.utils.utils import TID, get_shake_128, global_exception_handler
-from antenna.types import Axes, LossParams, Tensor_N, Tensor_W_H   #? 形狀語意別名與 loss 參數型別
+from antenna.types import Axes, Tensor_N, Tensor_W_H   #? 形狀語意別名
 from antenna.utils.data import size_converter   #? 統一的形狀轉換器 (flatten / batch / 自訂 output_shape)
 from antenna.patch.patch_simulator import PatchSimulator   #? SIM 模擬器基底 (COM 驅動 HFSS), 僅作型別標註用
 
@@ -57,8 +57,7 @@ from torch import Tensor, concat, stack
 import torch.nn.functional as F      #? island_suppression_loss 用 avg_pool2d 算局部平均
 import matplotlib.pyplot as plt
 from loguru import logger #? pip3 install loguru
-from functools import partial         #? registerLossHook 用 partial 把 loss_fn 的固定參數預先綁定
-import sys
+from functools import partial         #? register_loss_fn 用 partial 把 loss_fn 的固定參數預先綁定
 from os.path import normpath
 from time import time
 
@@ -369,7 +368,7 @@ class TargetResponse(MultiResponses):
         )
         return f"TargetResponse({_})"
     
-class AntennaResponse(Generic[LossParams]):
+class AntennaResponse:
     """
     Antenna Response Design.
 
@@ -387,11 +386,6 @@ class AntennaResponse(Generic[LossParams]):
     #! (MultiResponses 的 Tensor 還原 / criterion 對齊 / SM 推論包裝) 透過它解析。
     #! 訓練端的「讀取」(維度/GEN 輸入) 請直接拿著 spec 實例, 不要讀類別狀態。
     target = TargetResponse()
-
-    @overload
-    def __new__(cls, response:Tensor) -> "AntennaResponse":...
-    @overload
-    def __new__(cls, responses:Dict) -> "MultiResponses":...
 
     def __new__(cls, response):
         #? 工廠式分派: 傳 dict 會「改建」成 MultiResponses; 傳已是 AntennaResponse 則原樣返回 (冪等)
@@ -474,17 +468,9 @@ class AntennaResponse(Generic[LossParams]):
             raise RuntimeError("No spec installed. Please use `AntennaResponse.use(spec)` first.")
         return np.linspace(*cls._x)
 
-    @overload
-    @classmethod
-    def size(cls, flatten: Literal[True]) -> int: ...
-    @overload
-    @classmethod
-    def size(cls, flatten: Literal[False]) -> Tuple[int, int]: ...
-    @overload
-    @classmethod
-    def size(cls) -> Tuple[int, int]: ...
     @classmethod
     def size(cls, flatten:bool = False):
+        #? flatten=True 回傳總元素數 (int)；否則回傳 (列數, 行數) tuple
         """The number of labels used to calculate loss and the number of points in their labels."""
         if not cls.target.labels:
             raise RuntimeError("No spec installed. Please use `AntennaResponse.use(spec)` first.")
@@ -497,7 +483,7 @@ class AntennaResponse(Generic[LossParams]):
         """Get response information and default values."""
         return f"AntennaResponse(size={cls.size()}, x={cls._x}, target={cls.target})"
 
-    def criterion(self, label:str = "response", **param:LossParams.kwargs) -> Tensor:
+    def criterion(self, label:str = "response", **param) -> Tensor:
         """[Loss Function] spec 須先以 register_loss_fn 綁好該 label 的 loss hook。"""
         #! 未註冊 loss hook 就呼叫會直接報錯, 避免靜默回傳無意義的 loss
         if label not in self.target.labels:
@@ -534,22 +520,11 @@ class AntennaPattern:
         else:
             return super(AntennaPattern, cls).__new__(cls)
     
-    @overload
-    def __init__(self, pattern:Tensor, coordinate:Optional[Tuple[int,int, int, int]] = None):
-        """
-        Example:
-        ```
-        AntennaPattern.setCoordinate((0, 25, 0, 25))
-        ```
-        """
-    @overload
-    def __init__(self, patterns:List[Tuple[Tensor, int, int, int, int]]):
-        """
-        Args:
-            pattern: [(pattern, x1, x2, y1, y2), ...] >>> pattern is 2D
-        """
-    
     def __init__(self, pattern:Union[Tensor, List], coordinate:Optional[Tuple[int,int, int, int]] = None):
+        """
+        pattern 可以是：單張 2D Tensor (搭配 coordinate 或類別預設座標)，
+        或多塊清單 [(pattern, x1, x2, y1, y2), ...] (各自帶座標)。
+        """
 
         #! __new__ 已把既有實例原樣返回, 這裡再判一次以免重複初始化清空 patterns
         if isinstance(pattern, AntennaPattern):
@@ -630,17 +605,9 @@ class AntennaPattern:
         x1, x2, y1, y2 = cast(Tuple[int,int, int, int], getattr(cls, '_antenna_pattern_coordinate', (0,0,0,0)))
         return (x2-x1)*(y2-y1)
     
-    @overload
-    @classmethod
-    def size(cls, flatten: Literal[True]) -> int: ...
-    @overload
-    @classmethod
-    def size(cls, flatten: Literal[False]) -> Tuple[int, int]: ...
-    @overload
-    @classmethod
-    def size(cls) -> Tuple[int, int]: ...
     @classmethod
     def size(cls, flatten:bool = False):
+        #? flatten=True 回傳總元素數 (int)；否則回傳 (列數, 行數) tuple
         """The number of labels used to calculate loss and the number of points in their labels."""
         #! 尺寸取自類別預設座標, 因此必須先 setDefaultCoordinate(); flatten=True 給出 PATTERN_SIZE(總像素數)
         if not hasattr(cls, '_antenna_pattern_coordinate'):

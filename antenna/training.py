@@ -53,6 +53,19 @@ PORT_SPECS = {
 }
 
 
+#! 各區段允許的鍵 (白名單)。鍵打錯「必須報錯」而不是默默用預設值 ——
+#! 歷史教訓：舊 dual 的 island_suppression 鍵名打錯，正則化默默沒開、實驗白跑。
+SECTION_KEYS = {
+    "loss":      {"total_variation", "island_suppression", "spectral_connectivity", "gap_closing"},
+    "hfss":      {"lr", "min_loss", "max_epoch"},
+    "scheduler": {"on_plateau", "T_0", "T_mult", "lr_min", "temp_max", "temp_min",
+                  "warmup_ratio", "patience", "factor"},
+    "generator": {"name", "hidden", "pretrained"},
+    "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
+}
+TARGET_KEYS = {"side", "center", "width", "method", "interval"}
+
+
 @dataclass
 class TrainConfig:
     """一組實驗的設定 (從 YAML 載入)。"""
@@ -61,9 +74,10 @@ class TrainConfig:
     epochs: int = 1000
     lr: float = 0.005
     patience: int = 10
-    loss: dict = field(default_factory=dict)        # total_variation / island_suppression / spectral_connectivity / gap_closing
+    seed: Optional[int] = None                      # 設了 → torch.manual_seed (可重現性)
+    loss: dict = field(default_factory=dict)        # 見 SECTION_KEYS["loss"]
     hfss: dict = field(default_factory=dict)        # lr / min_loss / max_epoch (代理模型線上訓練)
-    scheduler: dict = field(default_factory=dict)   # on_plateau
+    scheduler: dict = field(default_factory=dict)   # ACP 超參數 (見 SECTION_KEYS["scheduler"])
     generator: dict = field(default_factory=dict)   # GEN：zoo 名字 (字串) 或 {name, hidden, pretrained}
     surrogate: dict = field(default_factory=dict)   # SM：{name, hidden, pretrained, offline_dataset, warmup}
     targets: dict = field(default_factory=dict)     # {label: {side, center, width, method|interval}}
@@ -77,6 +91,15 @@ class TrainConfig:
             raise ValueError(f"port={self.port} 缺少 targets: {sorted(missing)}")
         if isinstance(self.generator, str):     # 簡寫 generator: sigmoid → {name: sigmoid}
             self.generator = {"name": self.generator}
+        # 區段鍵白名單驗證 (打錯鍵 → 明確報錯，不默默吃預設)
+        for section, allowed in SECTION_KEYS.items():
+            unknown = set(getattr(self, section)) - allowed
+            if unknown:
+                raise ValueError(f"{section} 區段含未知鍵: {sorted(unknown)} (允許: {sorted(allowed)})")
+        for label, t in self.targets.items():
+            unknown = set(t) - TARGET_KEYS
+            if unknown:
+                raise ValueError(f"targets.{label} 含未知鍵: {sorted(unknown)} (允許: {sorted(TARGET_KEYS)})")
 
 
 def load_config(path) -> TrainConfig:
@@ -122,6 +145,22 @@ def _arch_params(section: dict, loading_keys=("name", "pretrained", "offline_dat
     if "hidden" in params:
         params["hidden"] = tuple(params["hidden"])
     return params
+
+
+def build_scheduler(cfg: TrainConfig, optimizer):
+    """依 cfg.scheduler 建 ACP (AdaptiveCyclicalScheduler)。
+    ACP 是論文核心機制，超參數可在 YAML 調整；預設值 = 原 train_single/dual 的設定。
+    lr_max 與 cfg.lr 綁定 (週期高點 = 訓練 lr)；mode 固定 min (監控 real_loss)。"""
+    s = cfg.scheduler
+    return AdaptiveCyclicalScheduler(
+        optimizer,
+        T_0=s.get("T_0", 100), T_mult=s.get("T_mult", 1),
+        lr_max=cfg.lr, lr_min=s.get("lr_min", 1e-6),
+        temp_max=s.get("temp_max", 4.0), temp_min=s.get("temp_min", 0.1),
+        warmup_ratio=s.get("warmup_ratio", 0.2),
+        patience=s.get("patience", 25), factor=s.get("factor", 0.7),
+        mode="min", on_plateau=s.get("on_plateau", "linear"),
+    )
 
 
 def build_generator(cfg: TrainConfig, spec: TargetResponse):
@@ -176,6 +215,7 @@ def run_training(
     (record_path / "checkpoint").mkdir(parents=True, exist_ok=True)   # GEN/SM 權重存放處
 
     spec = setup_responses(cfg)                 # 建立並安裝響應規格；後續維度/GEN 輸入都從 spec 讀
+    seed = seed if seed is not None else cfg.seed   # 參數優先，否則吃 YAML 的 seed (可重現性)
     if seed is not None:
         torch.manual_seed(seed)
 
@@ -186,11 +226,7 @@ def run_training(
 
     model = build_generator(cfg, spec)          # 架構查 zoo；維度從 spec (顯式，不依賴安裝時序)
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, betas=(0.5, 0.999))
-    scheduler = AdaptiveCyclicalScheduler(
-        optimizer, T_0=100, T_mult=1, lr_max=cfg.lr, lr_min=1e-6,
-        temp_max=4.0, temp_min=0.1, warmup_ratio=0.2, patience=25,
-        factor=0.7, mode="min", on_plateau=cfg.scheduler.get("on_plateau", "linear"),
-    )
+    scheduler = build_scheduler(cfg, optimizer)
     generator = Models(name="generator_{label}", rootdir=config.checkpoint_save_path,
                        model=model, optimizer=optimizer, scheduler=scheduler,
                        criterion=custom_loss_minmax)

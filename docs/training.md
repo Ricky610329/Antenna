@@ -13,6 +13,7 @@ python train.py configs/dual_sc.yaml           # 雙埠 + 論文 SC 連通性損
 ```
 
 一個 YAML = 一組實驗的完整設定。要跑新實驗就複製一個 config 改參數。
+**鍵名有白名單把關**：任何區段內打錯鍵會直接報錯（不會默默用預設值跑完整個實驗）。
 
 ## 2. config 結構
 
@@ -35,8 +36,12 @@ hfss:                         # 代理模型 (SM) 線上訓練
   min_loss: 0.1
   max_epoch: 20000
 
-scheduler:
+# seed: 0                     # 選填：固定隨機種子 (可重現性，論文實驗建議設)
+
+scheduler:                    # ACP (論文核心機制) 超參數，全部可調；預設值=原腳本設定
   on_plateau: linear          # linear | peak
+  # T_0: 100  T_mult: 1  lr_min: 1.0e-6  temp_max: 4.0  temp_min: 0.1
+  # warmup_ratio: 0.2  patience: 25  factor: 0.7
 
 generator: sigmoid            # 生成器：antenna/zoo.py 的名字 (可省略 → sigmoid)；見第 4 節
                               # 微調/暖啟動: {name: sigmoid, hidden: [...], pretrained: xxx.pth}

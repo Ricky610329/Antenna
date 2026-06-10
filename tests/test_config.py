@@ -72,6 +72,57 @@ def test_port_resolves_to_components():
     assert PORT_SPECS["dual"]["labels"] == ["S11", "S21", "S22"]
 
 
+def _ok_targets():
+    return {
+        "S11": {"side": 0, "center": -10, "width": [5, 0, 7, 0, 5], "method": "low"},
+        "Gain": {"side": -19, "center": 4, "width": [5, 0, 7, 0, 5], "method": "high"},
+    }
+
+
+def test_unknown_section_key_rejected():
+    """區段內鍵打錯不可默默變預設值 (歷史教訓：dual island_suppression 鍵名 bug)。"""
+    with pytest.raises(ValueError, match="loss"):
+        TrainConfig(name="x", port="single", targets=_ok_targets(),
+                    loss={"total_variaton": 1.0})            # 少個 t
+    with pytest.raises(ValueError, match="hfss"):
+        TrainConfig(name="x", port="single", targets=_ok_targets(), hfss={"lrr": 1})
+    with pytest.raises(ValueError, match="scheduler"):
+        TrainConfig(name="x", port="single", targets=_ok_targets(), scheduler={"on_plato": "linear"})
+    with pytest.raises(ValueError, match="generator"):
+        TrainConfig(name="x", port="single", targets=_ok_targets(), generator={"hiden": [64]})
+    with pytest.raises(ValueError, match="surrogate"):
+        TrainConfig(name="x", port="single", targets=_ok_targets(), surrogate={"pretrain": "x.pth"})
+
+
+def test_unknown_target_key_rejected():
+    t = _ok_targets(); t["S11"]["widht"] = [1, 2, 3]          # 拼錯
+    with pytest.raises(ValueError, match="S11"):
+        TrainConfig(name="x", port="single", targets=t)
+
+
+def test_seed_parsed():
+    """seed 進 config (可重現性)；未設 → None (維持現行為)。"""
+    cfg = TrainConfig(name="x", port="single", targets=_ok_targets(), seed=7)
+    assert cfg.seed == 7
+    assert TrainConfig(name="x", port="single", targets=_ok_targets()).seed is None
+
+
+def test_scheduler_params_flow_to_acp():
+    """YAML scheduler 區段可調 ACP 超參數 (預設值=原寫死值，golden 不變)。"""
+    import torch
+    from antenna.training import build_scheduler
+    cfg = TrainConfig(name="x", port="single", targets=_ok_targets(),
+                      lr=0.005, scheduler={"T_0": 50, "temp_max": 2.0, "patience": 7})
+    opt = torch.optim.Adam([torch.nn.Parameter(torch.zeros(1))], lr=0.005)
+    sch = build_scheduler(cfg, opt)
+    assert sch.T_i == 50 and sch.temp_max == 2.0 and sch.patience == 7
+    assert sch.lr_max == 0.005                                 # 與 cfg.lr 綁定
+    # 預設值 = 原本寫死在 run_training 的值
+    sch2 = build_scheduler(TrainConfig(name="y", port="single", targets=_ok_targets(), lr=0.005), opt)
+    assert sch2.T_i == 100 and sch2.temp_max == 4.0 and sch2.patience == 25
+    assert sch2.warmup_ratio == 0.2 and sch2.factor == 0.7
+
+
 def test_bad_port_rejected():
     with pytest.raises(ValueError):
         TrainConfig(name="x", port="triple", targets={})
