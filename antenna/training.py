@@ -137,12 +137,17 @@ def build_generator(cfg: TrainConfig):
 
 
 def build_surrogate(cfg: TrainConfig, checkpoint):
-    """依 cfg.surrogate (zoo 名字 + 架構參數) 建代理模型 SM。未指定 → mlp 預設。"""
+    """依 cfg.surrogate (zoo 名字 + 架構參數) 建代理模型 SM。未指定 → mlp 預設。
+
+    YAML 的 hfss 區段 (lr / 單筆訓練門檻) 在此顯式傳入 SM，不經全域 config。"""
     name = cfg.surrogate.get("name", "mlp")
     if name not in zoo.SURROGATES:
         raise ValueError(f"未知的 surrogate {name!r}，可用: {sorted(zoo.SURROGATES)} (見 antenna/zoo.py)")
     return zoo.SURROGATES[name](
         checkpoint, AntennaPattern.size(flatten=True), AntennaResponse.size(),
+        lr=cfg.hfss.get("lr", 0.001),
+        min_loss=cfg.hfss.get("min_loss", 0.1),
+        max_epoch=cfg.hfss.get("max_epoch", 20000),
         **_arch_params(cfg.surrogate),
     )
 
@@ -165,10 +170,6 @@ def run_training(
     """單/雙埠共用訓練迴圈。回傳 TEMP(Record)。"""
     record_path = Path(record_path)
     config.device = "cpu"
-    config.lr = cfg.lr
-    config["HFSS.lr"] = cfg.hfss.get("lr", 0.001)
-    config["HFSS.min_loss"] = cfg.hfss.get("min_loss", 0.1)
-    config["HFSS.max_epoch"] = cfg.hfss.get("max_epoch", 20000)
     config.checkpoint_save_path = record_path / "checkpoint"
     (record_path / "checkpoint").mkdir(parents=True, exist_ok=True)   # GEN/SM 權重存放處
 

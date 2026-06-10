@@ -17,15 +17,7 @@ from antenna.training import (
     TrainConfig, prepare_models, build_simulator,
     build_generator, build_surrogate,
 )
-from antenna.utils import config
 from antenna.utils.utils import Record
-
-
-@pytest.fixture
-def _hfss_lr():
-    """build_surrogate 經 OldSM → Ranger 需要 config['HFSS.lr'] (平時由 run_training 設定)。"""
-    config["HFSS.lr"] = 0.001
-    yield
 
 
 def _single_cfg():
@@ -95,20 +87,29 @@ def test_unknown_model_name_rejected():
         build_generator(cfg)
 
 
-def test_build_surrogate_default_arch(tmp_path, _hfss_lr):
-    """未指定 surrogate.hidden → 預設 (2048,1024,512,128,64) → 5 隱藏 + 1 輸出。"""
+def test_build_surrogate_default_arch(tmp_path):
+    """未指定 surrogate.hidden → 預設 (2048,1024,512,128,64) → 5 隱藏 + 1 輸出。
+    (不需要任何全域 config 設定 —— hfss 參數由 build_surrogate 顯式傳入。)"""
     sm = build_surrogate(_single_cfg(), tmp_path)
     ls = _linears(sm.model.fc_patch)
     assert len(ls) == 6
     assert [l.out_features for l in ls[:5]] == [2048, 1024, 512, 128, 64]
 
 
-def test_build_surrogate_custom_hidden(tmp_path, _hfss_lr):
+def test_build_surrogate_custom_hidden(tmp_path):
     cfg = _single_cfg(); cfg.surrogate = {"name": "mlp", "hidden": [128, 64]}
     sm = build_surrogate(cfg, tmp_path)
     ls = _linears(sm.model.fc_patch)
     assert len(ls) == 3                                  # 2 隱藏 + 1 輸出
     assert [l.out_features for l in ls[:2]] == [128, 64]
+
+
+def test_hfss_params_flow_to_sm(tmp_path):
+    """YAML hfss 區段 (lr / 單筆訓練門檻) 顯式流進 SM，不經全域 config。"""
+    cfg = _single_cfg(); cfg.hfss = {"lr": 0.005, "min_loss": 0.05, "max_epoch": 123}
+    sm = build_surrogate(cfg, tmp_path)
+    assert sm.min_loss == 0.05 and sm.max_epoch == 123
+    assert sm.optimizer.param_groups[0]["lr"] == 0.005
 
 
 # ── prepare_models：載入策略分支 ──────────────────────────────────────────

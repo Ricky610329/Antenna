@@ -40,34 +40,14 @@ class SurrogateModel(
     Models[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, LossParams],
     Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, LossParams]
 ):
-    def __init__(self, model:CustomModule, criterion:Callable[CallableParam, Tensor], optimizer:CustomOptimizer, scheduler:Optional[CustomScheduler]=None, *, rootdir=None):
+    def __init__(self, model:CustomModule, criterion:Callable[CallableParam, Tensor], optimizer:CustomOptimizer, scheduler:Optional[CustomScheduler]=None, *,
+                 rootdir=None, min_loss:float=0.1, max_epoch:int=20000):
         """
-        Global Variable
-        ---------------
-        ```
-        config['HFSS.min_loss'] = ...
-        config['HFSS.max_epoch'] = ...
-        ```
+        SM 外殼：包住骨幹網路 + 優化器 + 損失，提供線上/離線訓練與存讀檔。
 
-        Parameters
-        ----------
-        progress_callback: function 
-            A callback function that will be called for every frame to notify
-            the saving progress. It must have the signature ::
-
-                def func(current_frame: int, total_frames: int) -> Any
-
-            where *current_frame* is the current frame number and
-            *total_frames* is the total number of frames to be saved.
-            *total_frames* is set to None, if the total number of frames can
-            not be determined. Return values may exist but are ignored.
-
-            Example code to write the progress to stdout::
-
-                progress_callback = lambda i, n: print(f'Saving frame {i}/{n}')
+        min_loss / max_epoch 是 train_one_data 單筆收斂的預設門檻
+        (呼叫時可逐次覆寫)。由建構端顯式傳入，不讀全域 config。
         """
-        #? config['HFSS.min_loss'] / config['HFSS.max_epoch'] 是 train_one_data 單筆收斂的全域預設門檻
-        #? (呼叫時若未明確傳入就回退到這兩個值)；config['HFSS.lr'] 則由 OldSM 工廠用來設定 Ranger 學習率。
         super().__init__(
             name='sm',          #? 固定名稱 → checkpoint 存成 sm.pth (SM 不像 GEN 需要逐 epoch rollback)
             rootdir=rootdir,
@@ -83,6 +63,8 @@ class SurrogateModel(
         self.response_size = AntennaResponse.size    #? 輸出維度資訊 (e.g. (3,17))
         self.size_converter = size_converter         #? 在 (B,N) 攤平 / (B,H,W) 影像 / 批次維度間轉換的工具
 
+        self.min_loss = min_loss     #? train_one_data 預設收斂門檻 (建構時顯式傳入)
+        self.max_epoch = max_epoch   #? train_one_data 預設迭代上限
         self.epoch = 0  #? 累計被 GEN 呼叫推論的次數 (僅作計數，不影響訓練)
 
     #? 推論入口：GEN 生成 pattern → 餵入 SM 骨幹 → 包成 MultiResponses。
@@ -185,8 +167,8 @@ class SurrogateModel(
         input = tensor(pattern,  requires_grad=True)        #? 該 pattern (GEN 產生 / 模擬過的圖樣)
         label = tensor(real_response,  requires_grad=True)  #? 對應的 HFSS 真實響應 (訓練目標)
 
-        min_loss = min_loss or config['HFSS.min_loss']    #? 收斂門檻：loss 降到此值以下即停 (未傳入則用全域預設)
-        max_epoch = max_epoch or config['HFSS.max_epoch'] #? 迭代上限：避免某些難擬合的單筆資料無限迭代
+        min_loss = min_loss or self.min_loss    #? 收斂門檻：loss 降到此值以下即停 (未傳入則用建構時的預設)
+        max_epoch = max_epoch or self.max_epoch #? 迭代上限：避免某些難擬合的單筆資料無限迭代
 
         epoch_bar = tqdm(
             total=max_epoch, desc="Training one data",
@@ -253,22 +235,25 @@ class HFSSNet(nn.Module):
 #? 訓練腳本 (train_single.py / train_dual.py) 實際使用的就是這個工廠 (見各腳本 from ... import OldSM)。
 #? 輕量穩定：純 MLP 骨幹 + MSE 回歸 + 「loss 卡住就降 lr」的 ReduceLROnPlateau，
 #? 適合 SM 這種需頻繁線上微調、且每筆資料都要快速收斂的場景。
-def OldSM(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 128, 64)):
+def OldSM(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 128, 64),
+          lr=0.001, min_loss=0.1, max_epoch=20000):
     """
-    學長的做法。維度由訓練端傳入 (不碰全域註冊狀態)；hidden 可由 config 指定。
+    學長的做法。維度與超參數 (lr / 單筆訓練門檻) 全由訓練端顯式傳入，
+    不讀全域 config (對應 YAML 的 hfss 區段)。
     """
     model_ge = HFSSNet( # Pattern -> Response
         in_dim, response_shape, hidden=hidden
     )
     criterion_ge = nn.MSELoss()  #? 均方誤差：SM 是響應回歸任務，懲罰大偏差
     optimizer_ge = Ranger(
-        params=model_ge.parameters(), lr=config['HFSS.lr']  #? lr 取自全域 config['HFSS.lr] (train 腳本設 0.001)
+        params=model_ge.parameters(), lr=lr
     )
     #? 高原排程：當 loss 連續 patience 個 step 不再下降，就把 lr 砍半 (factor=0.5)，下限 min_lr，幫助收斂後期細修
     scheduler_ge = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer_ge, mode="min", factor=0.5, patience=10, min_lr=1e-6
     )
     return SurrogateModel(
-        model_ge, criterion_ge, optimizer_ge, scheduler_ge, rootdir=checkpoint
+        model_ge, criterion_ge, optimizer_ge, scheduler_ge, rootdir=checkpoint,
+        min_loss=min_loss, max_epoch=max_epoch,
     )
 

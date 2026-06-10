@@ -44,7 +44,7 @@ def resolve_models(cfg):
         from KuoHung import KuoHung          # lazy：僅暖身時才需要 (讀 NAS 上的參考圖樣)
         pattern, response = KuoHung.load(str(warmup_name))
         series = AntennaPattern(pattern).series
-        #! 沿用舊 single 3/4 的暖身門檻 (比全域 HFSS.min_loss 更緊，max_epoch=1e4)
+        #! 沿用舊 single 3/4 的暖身門檻 (比 hfss.min_loss 預設更緊，max_epoch=1e4)
         warmup = lambda sm: sm.train_one_data(series, response, min_loss=0.001, max_epoch=int(1e4))
 
     return dict(

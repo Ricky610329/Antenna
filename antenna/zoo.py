@@ -11,8 +11,9 @@ config 用名字指定：
 - GEN 建構簽名 (in_dim, out_dim, **架構參數)；forward: spec 向量 → pattern logits。
   模型「不做」STE 二值化、不認識 tau —— 那是訓練管線的固定一步 (run_training)，
   tau 由 ACP (AdaptiveCyclicalScheduler) 單獨控制。
-- SM 建構簽名 (checkpoint, in_dim, response_shape, **架構參數)，回傳 SurrogateModel。
-- 維度由訓練端推好傳入，模型不碰全域註冊狀態 (AntennaResponse/AntennaPattern)。
+- SM 建構簽名 (checkpoint, in_dim, response_shape, lr, min_loss, max_epoch, **架構參數)，
+  回傳 SurrogateModel；lr 與單筆訓練門檻來自 YAML 的 hfss 區段，由訓練端顯式傳入。
+- 維度由訓練端推好傳入，模型不碰全域註冊狀態、不讀全域 config。
 """
 from antenna.models import SigmoidGEN
 from antenna.smodels import OldSM
