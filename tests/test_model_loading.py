@@ -17,7 +17,7 @@ from antenna.training import (
     TrainConfig, prepare_models, build_simulator,
     build_generator, build_surrogate,
 )
-from antenna.utils.utils import Record
+from antenna.utils.record import Record
 
 
 @pytest.fixture

@@ -29,7 +29,7 @@ from antenna.functions import (
 )
 from antenna.patch import custom_loss_minmax, interval_loss
 from antenna.utils.store import SampleStore
-from antenna.utils.utils import Record
+from antenna.utils.record import Record
 
 
 # ── port → 結構性元件 (不放 YAML，由 code 解析) ──────────────────────────────

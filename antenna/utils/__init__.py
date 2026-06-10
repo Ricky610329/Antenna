@@ -25,14 +25,12 @@ from .utils import plot
 from .utils import Config
 #? config        : 全域預設 Config 實例，訓練腳本可直接存取共用參數
 from .utils import config
-#? Figure        : 封裝 matplotlib Figure，提供儲存/顯示快捷方法
-from .utils import Figure
+#? Figure        : 封裝 matplotlib Figure，提供儲存/顯示快捷方法 (figure.py)
+from .figure import Figure
 #? Axes          : matplotlib Axes 的 re-export，供型別提示使用
 from .utils import Axes
-#? Record        : 訓練紀錄物件，負責儲存每輪 loss / metric 並輸出報表
-from .utils import Record
-#? json          : 標準庫 json 模組的 re-export，讓腳本免再 import json
-from .utils import json
+#? Record        : 訓練紀錄物件 (=TEMP)，斷點續跑/rollback 的核心 (record.py)
+from .record import Record
 #? logger        : loguru logger（全專案統一的日誌器）
 from .utils import logger
 #? Complete      : 訓練完成通知（log + 可選 Email）

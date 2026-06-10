@@ -14,7 +14,8 @@
 #     不建立額外副本，確保記憶體效率。
 # ============================================================
 
-from antenna.utils.utils import Path, Record
+from antenna.utils.utils import Path
+from antenna.utils.record import Record
 from antenna.types import Tensor
 
 class PatchTrainingRecord(Record):

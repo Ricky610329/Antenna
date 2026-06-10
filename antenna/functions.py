@@ -36,7 +36,8 @@ import torch.nn.functional as F
 from enum import Enum
 from typing import Generic, Literal, Optional, Union
 from antenna.types import Axes, CustomOptimizer, FeedReachabilityDictType
-from antenna.utils.utils import Figure, plt
+from antenna.utils.figure import Figure
+import matplotlib.pyplot as plt
 from collections import defaultdict
 import numpy as np
 from loguru import logger
