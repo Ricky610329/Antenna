@@ -1,5 +1,5 @@
-# 單埠基準 (原 MultiConfig 1/2/5)  (port=single)
-name: pixel_single_base
+# 單埠 + 孤島抑制 1 (原 10)  (port=single)
+name: pixel_single_island1
 port: single
 
 epochs: 1000
@@ -7,7 +7,7 @@ lr: 0.005
 patience: 10
 
 loss:
-  total_variation: 0.0
+  island_suppression: 1
 
 hfss:
   lr: 0.001

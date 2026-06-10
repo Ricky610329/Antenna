@@ -1,5 +1,5 @@
-# 單埠基準 (原 MultiConfig 1/2/5)  (port=single)
-name: pixel_single_base
+# 單埠 + on_plateau peak (原 6)  (port=single)
+name: pixel_single_peak
 port: single
 
 epochs: 1000
@@ -15,7 +15,7 @@ hfss:
   max_epoch: 20000
 
 scheduler:
-  on_plateau: linear
+  on_plateau: peak
 
 surrogate:
   pretrained: old_sm.pth

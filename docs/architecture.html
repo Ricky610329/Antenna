@@ -62,7 +62,7 @@
     <h1>Antenna — 微帶貼片天線「反向設計」系統</h1>
     <p>用神經網路「反推」出能達成目標電磁響應的金屬像素圖樣，搭配代理模型與 HFSS 模擬形成線上學習閉迴路。本檔術語已對齊學長論文（吳維文碩論）。</p>
     <div class="tagrow">
-      <span class="tag">入口：train_single.py / train_dual.py</span>
+      <span class="tag">入口：train.py + YAML config</span>
       <span class="tag">論文：docs/Paper.pdf</span>
       <span class="tag">已精簡：Tier A + Tier B</span>
     </div>
@@ -205,12 +205,13 @@
 
   <!-- 4 模組地圖 -->
   <h2><span class="num">4</span>模組地圖（Tier A/B 精簡後現況）</h2>
-  <h3>入口腳本（根目錄）</h3>
+  <h3>入口（config 驅動）</h3>
   <table>
     <tr><th>檔案</th><th>角色</th></tr>
-    <tr><td><code>train_single.py</code></td><td>單埠：響應 = S11 + Gain，損失 = <code>custom_loss_minmax</code>，疊 lower 一塊饋電。</td></tr>
-    <tr><td><code>train_dual.py</code></td><td>雙埠：響應 = S11 + S21 + S22，損失 = <code>interval_loss</code>，疊 upper+lower 兩塊饋電。</td></tr>
-    <tr><td><code>KuoHung.py</code></td><td>載入參考天線圖樣與響應，供代理暖身微調（Warm Start 的一環）。</td></tr>
+    <tr><td><code>train.py</code></td><td>唯一入口：<code>python train.py configs/xxx.yaml</code>。掛 NAS、結果路徑、建真實模擬器、跑核心訓練。</td></tr>
+    <tr><td><code>antenna/training.py</code></td><td>單/雙埠共用核心：<code>run_training</code>(迴圈) + <code>load_config</code>(YAML) + <code>prepare_surrogate</code>(模型載入)。port 決定結構性元件。</td></tr>
+    <tr><td><code>configs/*.yaml</code></td><td>一檔一實驗（single/dual + 超參數 + 目標響應 + 模型載入）。</td></tr>
+    <tr><td><code>KuoHung.py</code></td><td>載入參考天線圖樣與響應，供代理暖身微調（目前 config 驅動尚未接上）。</td></tr>
   </table>
   <h3>antenna/ 核心套件</h3>
   <table>

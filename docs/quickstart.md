@@ -1,6 +1,6 @@
 # 速查：環境 + 切 branch + 執行
 
-> 一頁搞定。詳細參數請看 [`train_single_dual_usage.md`](train_single_dual_usage.md)。
+> 一頁搞定。完整說明見 [`training.md`](training.md)。
 
 ## 1. 啟用環境（每次開新終端都要）
 
@@ -26,16 +26,18 @@ git status              # 看目前在哪個分支 + 有無改動
 git branch -a           # 列出所有分支
 ```
 
-## 3. 執行（必帶設定編號）
+## 3. 執行（config 驅動）
 
 ```bash
-python train_single.py 1     # 單埠，編號 1–10
-python train_dual.py 1       # 雙埠，編號 1–9
+python train.py configs/single_base.yaml      # 單埠
+python train.py configs/dual_base.yaml         # 雙埠
+python train.py configs/dual_sc.yaml           # 雙埠 + SC 連通性損失
 ```
 
-- **一定要帶編號**，否則會 `IndexError`。編號對照表見 usage 文件第 5 節。
-- **雙埠第一次**沒有 `patch_dual.pth` 時，會先預訓練代理模型後 `exit()` → **要再跑第二次**才進主訓練。
-- 用**相同編號**再跑會自動斷點續跑（從上次 epoch 接著跑）。
+- **一個 YAML = 一組實驗**。要跑別的就指定別的 config（`configs/` 下有現成的）。
+- 跑新實驗：複製一個 config 改參數即可。各 config 與舊編號對照見 `training.md` 第 5 節。
+- 用**相同 config** 再跑會自動斷點續跑。
+- 舊指令 `python train_single.py <編號>` 已移除，改用上面的方式。
 
 ## 4. 前置需求（正式機）
 
@@ -47,5 +49,6 @@ python train_dual.py 1       # 雙埠，編號 1–9
 | 訊息 | 原因 / 解法 |
 | --- | --- |
 | `ImportError: ... 'Self' from 'typing'` | 沒 `conda activate patch`（用到舊 Python）。 |
-| `IndexError`（在 MultiConfig） | 忘了帶設定編號，例 `python train_single.py 1`。 |
+| `用法: python train.py configs/...` | 忘了帶 config 路徑。 |
+| `FileNotFoundError: configs/...` | config 路徑打錯。 |
 | `simulator.open()` 失敗 | 沒有 HFSS / COM 被佔用。 |

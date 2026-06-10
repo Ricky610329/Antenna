@@ -1,5 +1,5 @@
-# 雙埠基準 (原 6/7/8)  (port=dual)
-name: pixel_dual_base
+# 雙埠 + SC 連通性 (論文主方法，原 9)  (port=dual)
+name: pixel_dual_sc
 port: dual
 
 epochs: 1000
@@ -7,7 +7,7 @@ lr: 0.005
 patience: 10
 
 loss:
-  total_variation: 0.0
+  spectral_connectivity: 0.0005
 
 hfss:
   lr: 0.001

@@ -1,5 +1,5 @@
-# 雙埠基準 (原 6/7/8)  (port=dual)
-name: pixel_dual_base
+# 雙埠 + 孤島抑制 100 (原 3/5；原鍵名 bug 已修正生效)  (port=dual)
+name: pixel_dual_island100
 port: dual
 
 epochs: 1000
@@ -7,7 +7,7 @@ lr: 0.005
 patience: 10
 
 loss:
-  total_variation: 0.0
+  island_suppression: 100
 
 hfss:
   lr: 0.001
