@@ -63,7 +63,8 @@ class TrainConfig:
     loss: dict = field(default_factory=dict)        # total_variation / island_suppression / spectral_connectivity / gap_closing
     hfss: dict = field(default_factory=dict)        # lr / min_loss / max_epoch (代理模型線上訓練)
     scheduler: dict = field(default_factory=dict)   # on_plateau
-    surrogate: dict = field(default_factory=dict)   # 模型載入：pretrained(SM 權重檔) / offline_dataset(離線預訓練資料集)
+    generator: dict = field(default_factory=dict)   # 生成器 GEN：type / hidden / pretrained(預載入權重)
+    surrogate: dict = field(default_factory=dict)   # 代理 SM：type / hidden / pretrained / offline_dataset / warmup
     targets: dict = field(default_factory=dict)     # {label: {side, center, width, method|interval}}
 
     def __post_init__(self):
@@ -113,6 +114,27 @@ def build_feeds(cfg: TrainConfig):
             for (shape, coord) in PORT_SPECS[cfg.port]["feeds"]]
 
 
+# ── 模型 registry：架構由 config 的 type 決定 (可擴展；之後加新架構只要註冊) ──
+GENERATOR_REGISTRY = {
+    "sigmoid": lambda hidden=(1024, 1024): SigmoidGEN(hidden=tuple(hidden)),
+}
+SURROGATE_REGISTRY = {
+    "mlp": lambda checkpoint, hidden=(2048, 1024, 512, 128, 64): OldSM(checkpoint, hidden=tuple(hidden)),
+}
+
+
+def build_generator(cfg: TrainConfig):
+    """依 cfg.generator (type / hidden) 建生成器 GEN (nn.Module)。未指定 → 預設架構。"""
+    g = cfg.generator
+    return GENERATOR_REGISTRY[g.get("type", "sigmoid")](hidden=tuple(g.get("hidden", (1024, 1024))))
+
+
+def build_surrogate(cfg: TrainConfig, checkpoint):
+    """依 cfg.surrogate (type / hidden) 建代理模型 SM (SurrogateModel)。未指定 → 預設架構。"""
+    s = cfg.surrogate
+    return SURROGATE_REGISTRY[s.get("type", "mlp")](checkpoint, hidden=tuple(s.get("hidden", (2048, 1024, 512, 128, 64))))
+
+
 def run_training(
     cfg: TrainConfig,
     *,
@@ -123,8 +145,10 @@ def run_training(
     patience: Optional[int] = None,             # 覆寫 cfg.patience (測試用)
     on_epoch: Optional[Callable[[int, dict], None]] = None,  # 每 epoch 回呼 (繪圖/記錄/捕捉)
     continue_run: bool = False,                 # 結果夾已存在 → 嘗試斷點續跑
-    pretrained_sm_path: Optional[str] = None,   # 預訓練 SM 權重檔
+    sm_pretrained_path: Optional[str] = None,   # 預訓練 SM 權重檔 (L1)
+    gen_pretrained_path: Optional[str] = None,  # 預載入 GEN 權重檔 (L2 暖啟動)
     offline_dataset=None,                       # 離線資料集 (無預訓練檔時用來預訓練 SM)
+    warmup=None,                                # KuoHung 暖身：(pattern, response) 對 SM 做單筆訓練
 ) -> Record:
     """單/雙埠共用訓練迴圈。回傳 TEMP(Record)。"""
     record_path = Path(record_path)
@@ -144,7 +168,7 @@ def run_training(
     simulator.open()
     feeds = build_feeds(cfg)
 
-    model = SigmoidGEN()
+    model = build_generator(cfg)                # 架構由 cfg.generator (type/hidden) 決定
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, betas=(0.5, 0.999))
     scheduler = AdaptiveCyclicalScheduler(
         optimizer, T_0=100, T_mult=1, lr_max=cfg.lr, lr_min=1e-6,
@@ -154,7 +178,7 @@ def run_training(
     generator = Models(name="generator_{label}", rootdir=config.checkpoint_save_path,
                        model=model, optimizer=optimizer, scheduler=scheduler,
                        criterion=custom_loss_minmax)
-    smodel = OldSM(checkpoint=config.checkpoint_save_path)
+    smodel = build_surrogate(cfg, config.checkpoint_save_path)   # 架構由 cfg.surrogate (type/hidden) 決定
 
     online = DataManager("online", rootdir=str(record_path), verbose=False)
     TEMP = Record("temp", rootdir=str(record_path))
@@ -167,12 +191,14 @@ def run_training(
     sc_w = cfg.loss.get("spectral_connectivity", 0.0)
     gap_w = cfg.loss.get("gap_closing", 0.0)
 
-    # 預訓練 / 斷點續跑 (回傳續跑起始 epoch；測試不傳這些 → start_epoch=0)
-    start_epoch = prepare_surrogate(
+    # 模型載入 (續跑 / GEN 預載入 / SM 預訓練 / KuoHung 暖身)；回傳續跑起始 epoch
+    start_epoch = prepare_models(
         cfg, generator, smodel, TEMP,
         continue_run=continue_run,
-        pretrained_sm_path=pretrained_sm_path,
+        gen_pretrained_path=gen_pretrained_path,
+        sm_pretrained_path=sm_pretrained_path,
         offline_dataset=offline_dataset,
+        warmup=warmup,
     )
 
     epochs = max_epochs if max_epochs is not None else cfg.epochs
@@ -268,27 +294,37 @@ def run_training(
     return TEMP
 
 
-def prepare_surrogate(cfg, generator, smodel, TEMP, *, continue_run=False,
-                      pretrained_sm_path=None, offline_dataset=None) -> int:
-    """SM 的「載入策略」(模組化、由 config 的 surrogate 區段指定)。回傳續跑起始 epoch。
+def prepare_models(cfg, generator, smodel, TEMP, *, continue_run=False,
+                   gen_pretrained_path=None, sm_pretrained_path=None,
+                   offline_dataset=None, warmup=None) -> int:
+    """GEN/SM 的「載入策略」(模組化、由 config 的 generator/surrogate 區段指定)。
+    回傳續跑起始 epoch。
 
     優先序：
-      (1) 斷點續跑：結果夾已存在且 TEMP 有 epoch → 載回 GEN/SM，從上次 epoch 續跑。
-      (2) 預訓練權重檔存在 → 直接載入 (cfg.surrogate.pretrained 解析而來)。
-      (3) 離線資料集 → 從頭預訓練 SM (cfg.surrogate.offline_dataset)。
-      (4) 皆無 → SM 從隨機權重開始 (純靠線上學習)。
+      (1) 斷點續跑：結果夾已存在且 TEMP 有 epoch → 載回 GEN/SM，從上次 epoch 續跑 (其餘略過)。
+      (2) GEN 預載入 (L2 暖啟動)：gen_pretrained_path 存在 → 載入 GEN 權重。
+      (3) SM 載入 (L1)：sm_pretrained_path 存在 → 直接載入；否則若有離線資料集 → 從頭預訓練。
+      (4) KuoHung 暖身：warmup 是可呼叫物 warmup(smodel) → 對 SM 做單筆暖身訓練
+          (補齊舊 single 3/4 行為；資料與收斂門檻由呼叫端綁定，prepare_models 不耦合 KuoHung)。
+    皆無 → GEN/SM 從隨機權重開始 (純靠線上學習)。
     """
+    # (1) 斷點續跑：載回 GEN+SM，後續載入策略全部略過
     if continue_run and ("epoch" in TEMP):
         last = TEMP("epoch")
         generator.change(last, load=True)
         smodel.load()
         return int(last)
-    if pretrained_sm_path is not None and Path(pretrained_sm_path).exists():
-        smodel.pre_load_model(pretrained_sm_path)
-        return 0
-    if offline_dataset is not None and len(offline_dataset) > 0:
+    # (2) GEN 預載入 (暖啟動)
+    if gen_pretrained_path is not None and Path(gen_pretrained_path).exists():
+        generator.pre_load_model(gen_pretrained_path)
+    # (3) SM 載入：預訓練檔 > 離線預訓練
+    if sm_pretrained_path is not None and Path(sm_pretrained_path).exists():
+        smodel.pre_load_model(sm_pretrained_path)
+    elif offline_dataset is not None and len(offline_dataset) > 0:
         smodel.train_by_datas(offline_dataset)
-        return 0
+    # (4) KuoHung 暖身：呼叫端綁好的 warmup(smodel)，對 SM 做單筆暖身訓練
+    if warmup is not None:
+        warmup(smodel)
     return 0
 
 

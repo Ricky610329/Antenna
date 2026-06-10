@@ -44,9 +44,27 @@ def test_surrogate_section_parsed():
     assert s.surrogate["offline_dataset"] == "patch_single_mirror"
     d = load_config(os.path.join(CONFIGS, "dual_base.yaml"))
     assert d.surrogate["pretrained"] == "patch_dual.pth"
-    # 測試 fixture 無 surrogate 區段 → 預設空 dict (prepare_surrogate 變 no-op)
+    # 測試 fixture 無 surrogate 區段 → 預設空 dict (prepare_models 變 no-op)
     t = load_config(os.path.join(FIX, "single_test.yaml"))
     assert t.surrogate == {}
+
+
+def test_generator_section_parsed():
+    """generator 架構區段 + surrogate.type/hidden 要能從 YAML 載入。"""
+    s = load_config(os.path.join(CONFIGS, "single_base.yaml"))
+    assert s.generator["type"] == "sigmoid"
+    assert s.generator["hidden"] == [1024, 1024]
+    assert s.surrogate["type"] == "mlp"
+    assert s.surrogate["hidden"] == [2048, 1024, 512, 128, 64]
+    # 無 generator 區段 → 預設空 dict (build_generator 用預設架構)
+    t = load_config(os.path.join(FIX, "single_test.yaml"))
+    assert t.generator == {}
+
+
+def test_warmup_section_parsed():
+    """KuoHung 暖身編號要能從 YAML 載入 (補齊舊 single 3/4)。"""
+    cfg = load_config(os.path.join(CONFIGS, "single_tv.yaml"))
+    assert cfg.surrogate["warmup"] == "1"
 
 
 def test_port_resolves_to_components():

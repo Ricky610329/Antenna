@@ -226,25 +226,19 @@ class SurrogateModel(
 class HFSSNet(nn.Module):
 
     #? num_pattern_pixel: 輸入像素數 (25x25=625)；num_response: 輸出響應形狀 (通道數 x 頻點數)
-    def __init__(self, num_pattern_pixel = 625, num_response:tuple = (3, 17)):
+    def __init__(self, num_pattern_pixel = 625, num_response:tuple = (3, 17), hidden=(2048, 1024, 512, 128, 64)):
         super(HFSSNet, self).__init__()
         self.num_response = num_response
         self.num_pattern_pixel = num_pattern_pixel
 
-        #? 6 層 MLP：每層後接 PReLU，逐步壓縮維度，末層輸出攤平的響應 (3*17=51) 個值
-        self.fc_patch = nn.Sequential(
-            nn.Linear(num_pattern_pixel, 2048),
-            nn.PReLU(),
-            nn.Linear(2048, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, 512),
-            nn.PReLU(),
-            nn.Linear(512, 128),
-            nn.PReLU(),
-            nn.Linear(128, 64),
-            nn.PReLU(),
-            nn.Linear(64, num_response[0]*num_response[1])  #? 末層維度 = 響應總元素數，無激活 (回歸輸出)
-        )
+        #? hidden 由 config 指定 (預設 (2048,1024,512,128,64) 與原架構完全相同)。每層 Linear→PReLU，
+        #? 末層 Linear 無激活 (回歸輸出)，維度 = 響應總元素數 (如 3*17=51)。
+        layers, prev = [], num_pattern_pixel
+        for h in hidden:
+            layers += [nn.Linear(prev, h), nn.PReLU()]
+            prev = h
+        layers += [nn.Linear(prev, num_response[0] * num_response[1])]
+        self.fc_patch = nn.Sequential(*layers)
         self.to(config.device)
 
     def __repr__(self):
@@ -259,12 +253,12 @@ class HFSSNet(nn.Module):
 #? 訓練腳本 (train_single.py / train_dual.py) 實際使用的就是這個工廠 (見各腳本 from ... import OldSM)。
 #? 輕量穩定：純 MLP 骨幹 + MSE 回歸 + 「loss 卡住就降 lr」的 ReduceLROnPlateau，
 #? 適合 SM 這種需頻繁線上微調、且每筆資料都要快速收斂的場景。
-def OldSM(checkpoint):
+def OldSM(checkpoint, hidden=(2048, 1024, 512, 128, 64)):
     """
-    學長的做法
+    學長的做法。hidden 由 config 指定 HFSSNet 的隱藏層 (預設與原架構相同)。
     """
     model_ge = HFSSNet( # Pattern -> Response
-        AntennaPattern.size(flatten=True), AntennaResponse.size()
+        AntennaPattern.size(flatten=True), AntennaResponse.size(), hidden=hidden
     )
     criterion_ge = nn.MSELoss()  #? 均方誤差：SM 是響應回歸任務，懲罰大偏差
     optimizer_ge = Ranger(

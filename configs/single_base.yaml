@@ -17,9 +17,17 @@ hfss:
 scheduler:
   on_plateau: linear
 
-surrogate:
+generator:                    # GEN 架構 (可省略 → 預設)；type=registry 名稱，hidden=隱藏層
+  type: sigmoid
+  hidden: [1024, 1024]
+  # pretrained: gen_xxx.pth   # 選填：預載入 GEN 權重 (暖啟動，架構需相容)
+
+surrogate:                    # SM 架構 + 載入策略
+  type: mlp
+  hidden: [2048, 1024, 512, 128, 64]
   pretrained: old_sm.pth
   offline_dataset: patch_single_mirror
+  # warmup: "1"               # 選填：KuoHung 參考圖樣編號，對 SM 做單筆暖身
 
 targets:
   S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }

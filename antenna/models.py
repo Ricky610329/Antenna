@@ -252,16 +252,18 @@ class SigmoidGEN(nn.Module):
     """
     Generator Model
     """
-    def __init__(self):
+    def __init__(self, hidden=(1024, 1024)):
         super(SigmoidGEN,self).__init__()
-        self.fc_patch = nn.Sequential( # Can use BiScaleNorm or nn.PReLU, except the last layer.
-            nn.Linear(AntennaResponse.size(flatten=True), 1024),
-            nn.PReLU(),
-            nn.Linear(1024, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, AntennaPattern.size(flatten=True)),
-            BiScaleNorm(),
-        )
+        #? hidden 由 config 指定 (預設 (1024,1024) 與原架構完全相同)。每層 Linear→PReLU，
+        #? 末層 Linear→BiScaleNorm。可換層數/寬度而不必改 code。
+        in_dim = AntennaResponse.size(flatten=True)
+        out_dim = AntennaPattern.size(flatten=True)
+        layers, prev = [], in_dim
+        for h in hidden:
+            layers += [nn.Linear(prev, h), nn.PReLU()]
+            prev = h
+        layers += [nn.Linear(prev, out_dim), BiScaleNorm()]   # 末層用 BiScaleNorm (不接 PReLU)
+        self.fc_patch = nn.Sequential(*layers)
         self.to(config.device)
 
     def forward(self, input, tau:Optional[float] = None) -> Tensor:

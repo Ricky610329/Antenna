@@ -17,7 +17,13 @@ hfss:
 scheduler:
   on_plateau: linear
 
-surrogate:
+generator:                    # GEN 架構 (可省略 → 預設)；type=registry 名稱，hidden=隱藏層
+  type: sigmoid
+  hidden: [1024, 1024]
+
+surrogate:                    # SM 架構 + 載入策略
+  type: mlp
+  hidden: [2048, 1024, 512, 128, 64]
   pretrained: patch_dual.pth
   offline_dataset: patch_dual
 

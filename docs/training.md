@@ -38,9 +38,17 @@ hfss:                         # 代理模型 (SM) 線上訓練
 scheduler:
   on_plateau: linear          # linear | peak
 
-surrogate:                    # 模型載入策略 (見第 4 節)
+generator:                    # 生成器 GEN 架構 (可省略 → 預設)；見第 4 節
+  type: sigmoid               # registry 名稱
+  hidden: [1024, 1024]        # 隱藏層寬度/層數
+  # pretrained: gen_xxx.pth   # 選填：預載入 GEN 權重 (暖啟動)
+
+surrogate:                    # 代理 SM 架構 + 載入策略 (見第 4 節)
+  type: mlp                   # registry 名稱 (mlp = HFSSNet)
+  hidden: [2048, 1024, 512, 128, 64]
   pretrained: old_sm.pth
   offline_dataset: patch_single_mirror
+  # warmup: "1"               # 選填：KuoHung 參考圖樣編號，對 SM 做單筆暖身
 
 targets:                      # 目標響應 (side=兩端, center=中央, width=梯形寬度)
   S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
@@ -54,23 +62,37 @@ targets:                      # 目標響應 (side=兩端, center=中央, width=
 | `single` | SinglePortSimulator | custom_loss_minmax (`method: low/high`) | lower | S11, Gain |
 | `dual` | DualPortSimulator | interval_loss (`interval: [-1, 1]`) | lower + upper | S11, S21, S22 |
 
-## 4. 模型載入（`surrogate` 區段，可在 config 指定）
+## 4. 模型架構 + 載入（`generator` / `surrogate` 區段）
 
-`prepare_surrogate()` 依序判斷：
+### 架構（`type` + `hidden`）
 
-1. **斷點續跑**：結果夾已存在且 `temp` 有 epoch → 載回 GEN/SM，從上次續跑。
-2. **預訓練檔**：`surrogate.pretrained` 指向的權重檔存在 → 直接載入。
-3. **離線預訓練**：否則用 `surrogate.offline_dataset` 從頭預訓練 SM。
-4. **全新**：皆無 → SM 從隨機權重起步（純靠線上學習）。
+GEN / SM 的架構由 config 指定，經 registry 解析（之後加新架構只要註冊一個 `type`）：
 
-`surrogate.pretrained` / `offline_dataset` 相對於 `DATASET_PATH`；設 `null` 則略過該步。
+| 區段 | `type` | 預設 `hidden` | 對應實作 |
+| --- | --- | --- | --- |
+| `generator` | `sigmoid` | `[1024, 1024]` | `SigmoidGEN` |
+| `surrogate` | `mlp` | `[2048, 1024, 512, 128, 64]` | `HFSSNet`（`OldSM`） |
+
+兩區段都可省略 → 用預設架構（與舊 `train_single/dual` **完全相同**）。改 `hidden` 即可調層數/寬度，不必動 code。
+
+### 載入策略（`prepare_models()` 依序判斷）
+
+1. **斷點續跑**：結果夾已存在且 `temp` 有 epoch → 載回 GEN/SM，從上次續跑（其餘略過）。
+2. **GEN 預載入**：`generator.pretrained` 權重檔存在 → 載入 GEN（暖啟動；架構需相容）。
+3. **SM 載入**：`surrogate.pretrained` 存在 → 直接載入；否則用 `surrogate.offline_dataset` 從頭預訓練。
+4. **KuoHung 暖身**：`surrogate.warmup`（參考圖樣編號，如 `"1"`）→ 取 `KuoHung.load()` 對 SM 做單筆暖身微調。
+
+皆無 → GEN/SM 從隨機權重起步（純靠線上學習）。
+
+`*.pretrained` / `offline_dataset` 相對於 `DATASET_PATH`；設 `null` 或省略則略過該步。
+> 目前僅支援**完整權重載入**（L1/L2，架構需相同）。架構不同時的部分載入（transfer learning，L3）尚未實作。
 
 ## 5. 現成 configs（對照舊 `MultiConfig` 編號）
 
 | config | port | 重點 | 舊編號 |
 | --- | --- | --- | --- |
 | `single_base.yaml` | single | 基準 | 1 / 2 / 5 |
-| `single_tv.yaml` | single | TV 0.01 | 3 / 4 ※ |
+| `single_tv.yaml` | single | TV 0.01 + KuoHung 暖身 | 3 / 4 ※ |
 | `single_tv50.yaml` | single | TV 50 | 7 |
 | `single_island.yaml` | single | 孤島抑制 100 | 8 / 9 |
 | `single_island1.yaml` | single | 孤島抑制 1 | 10 |
@@ -81,7 +103,7 @@ targets:                      # 目標響應 (side=兩端, center=中央, width=
 | `dual_tv1.yaml` | dual | TV 1 | 2 |
 | `dual_island.yaml` | dual | 孤島抑制 100 | 3 / 5 ※※ |
 
-- ※ 舊 3/4 還含 KuoHung SM 暖身，目前 config 驅動尚未支援（規劃中）。
+- ※ 舊 3/4 含 KuoHung SM 暖身，已由 `surrogate.warmup` 支援（`single_tv.yaml` 設 `"1"`＝舊 3 的 KuoHung-1；舊 4 用 KuoHung-2，改成 `"2"` 即可）。
 - ※※ 舊 dual 3/5 的 `island_suppression` 鍵名打錯而失效；轉成 config 後鍵名正確 → **孤島抑制實際生效**。舊 5 的 `relu` 從未被讀取，已捨棄。
 
 ## 6. 前置需求（正式機）

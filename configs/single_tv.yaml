@@ -1,4 +1,4 @@
-# 單埠 + TV 0.01 (原 3/4；KuoHung 暖身暫不支援)  (port=single)
+# 單埠 + TV 0.01 + KuoHung 暖身 (原 3=KuoHung-1 / 4=KuoHung-2)  (port=single)
 name: pixel_single_tv001
 port: single
 
@@ -20,6 +20,7 @@ scheduler:
 surrogate:
   pretrained: old_sm.pth
   offline_dataset: patch_single_mirror
+  warmup: "1"                 # KuoHung-1 暖身 (舊 4 用 KuoHung-2，改成 "2" 即可)
 
 targets:
   S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }

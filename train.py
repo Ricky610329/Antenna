@@ -25,14 +25,35 @@ from antenna.utils.data import DataManager
 torch.autograd.set_detect_anomaly(True)
 
 
-def resolve_surrogate(cfg):
-    """把 config 的 surrogate 區段解析成 (預訓練權重路徑, 離線 DataManager)。
-    模型載入完全由 config 指定：未設則回 (None, None) → SM 從隨機權重起步。"""
-    pretrained = cfg.surrogate.get("pretrained")
-    offline_name = cfg.surrogate.get("offline_dataset")
-    pretrained_path = str(DATASET_PATH.joinpath(pretrained)) if pretrained else None
-    offline = DataManager(offline_name, rootdir=DATASET_PATH) if offline_name else None
-    return pretrained_path, offline
+def resolve_models(cfg):
+    """把 config 的 generator/surrogate 區段解析成 run_training 的模型載入參數。
+    路徑相對 DATASET_PATH；未設的項目回 None → 對應模型從隨機權重起步。
+
+    回傳 dict：
+      - gen_pretrained_path : GEN 預載入權重 (generator.pretrained)        [L2 暖啟動]
+      - sm_pretrained_path  : SM 預訓練權重    (surrogate.pretrained)        [L1]
+      - offline_dataset     : 離線預訓練資料集 (surrogate.offline_dataset)
+      - warmup              : KuoHung 暖身 callable (surrogate.warmup) 或 None
+    """
+    def _path(rel):
+        return str(DATASET_PATH.joinpath(rel)) if rel else None
+
+    warmup = None
+    warmup_name = cfg.surrogate.get("warmup")
+    if warmup_name:
+        from KuoHung import KuoHung          # lazy：僅暖身時才需要 (讀 NAS 上的參考圖樣)
+        pattern, response = KuoHung.load(str(warmup_name))
+        series = AntennaPattern(pattern).series
+        #! 沿用舊 single 3/4 的暖身門檻 (比全域 HFSS.min_loss 更緊，max_epoch=1e4)
+        warmup = lambda sm: sm.train_one_data(series, response, min_loss=0.001, max_epoch=int(1e4))
+
+    return dict(
+        gen_pretrained_path=_path(cfg.generator.get("pretrained")),
+        sm_pretrained_path=_path(cfg.surrogate.get("pretrained")),
+        offline_dataset=(DataManager(cfg.surrogate["offline_dataset"], rootdir=DATASET_PATH)
+                         if cfg.surrogate.get("offline_dataset") else None),
+        warmup=warmup,
+    )
 
 
 def main(yaml_path):
@@ -47,7 +68,7 @@ def main(yaml_path):
     AntennaPattern.setDefaultCoordinate((0, 25, 0, 25))
 
     simulator = build_simulator(cfg, RESULT_PATH)
-    pretrained_path, offline = resolve_surrogate(cfg)
+    model_kwargs = resolve_models(cfg)
 
     def on_epoch(epoch, m):
         logger.info(
@@ -60,9 +81,8 @@ def main(yaml_path):
         simulator=simulator,
         record_path=RESULT_PATH,
         continue_run=CONTINUE_RUN,
-        pretrained_sm_path=pretrained_path,
-        offline_dataset=offline,
         on_epoch=on_epoch,
+        **model_kwargs,             # gen_pretrained_path / sm_pretrained_path / offline_dataset / warmup
     )
 
     Complete(
