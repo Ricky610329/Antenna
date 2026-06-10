@@ -29,10 +29,13 @@ from datetime import datetime
 
 import torch
 import numpy as np
+from torch import Tensor
 from torch.utils.data import Dataset, Subset
 from loguru import logger
 from hashlib import md5
-from antenna.types import *
+from typing import Any, Callable, Generic, Literal, Optional, Tuple, Union, overload
+#! Hashable 是 antenna.types 定義的 TypeVar (bound=typing.Hashable)，不是 typing.Hashable
+from antenna.types import DataType, Hashable, Sizable, Tensor_B_N, Tensor_B_W_H, Tensor_N, Tensor_W_H
 
 ###* ----------------------------------------------------------------------------
 ###* make_hashable：去重機制的地基

@@ -1,8 +1,8 @@
-
-# 從套件 __init__.py 匯入共用相依：win32com COM 介面、numpy、pandas.read_csv、
-# torch.tensor/Tensor、Path/config、logger，以及抽象基底類別 PatchSimulator。
-# 與 single_port.py 共用同一組 import，確保兩種模擬器行為一致。
-from . import *
+import numpy as np
+from pandas import read_csv
+from torch import Tensor, tensor   # 注意：torch.tensor (與 antenna.utils 的自訂 tensor 不同)
+from ...utils import Path
+from . import PatchSimulator
 
 
 class DualPortSimulator(PatchSimulator):

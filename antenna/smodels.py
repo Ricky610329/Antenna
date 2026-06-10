@@ -18,10 +18,21 @@
 #?   HFSSNet        — 純 MLP 骨幹：625 像素 → (3,17) 響應 (學長版 OldSM 實際使用)。
 #?   OldSM — 工廠函式：把 model + criterion + optimizer + scheduler 組成一個 SurrogateModel。
 
-from antenna.utils import *
-from antenna.models import *          #? 取得 Models 管理外殼 (存讀檔/換 label/step/凍結梯度) 與型別變數
+from typing import Callable, Generic, List, Optional, cast
+
+import torch
+from torch import Tensor, nn
+from tqdm import tqdm
+
+from antenna import AntennaPattern, AntennaResponse, MultiResponses
+from antenna.models import Models     #? Models 管理外殼 (存讀檔/換 label/step/凍結梯度)
 from antenna.ranger import Ranger     #? Ranger = RAdam + Lookahead，SM 訓練用的優化器
-from antenna import *                 #? AntennaPattern / AntennaResponse / MultiResponses / config / size_converter 等核心物件
+from antenna.types import (
+    CallableParam, CustomModule, CustomOptimizer, CustomScheduler,
+    LossParams, ModelParams, ReturnType,
+)
+from antenna.utils import TQDM_BAR_SIMPLE, TQDM_CONFIG, config, logger, tensor
+from antenna.utils.data import size_converter
 
 from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import LRScheduler

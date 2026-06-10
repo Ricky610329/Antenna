@@ -5,7 +5,12 @@
 # 建成 3D 微帶貼片天線 (microstrip patch antenna)，跑完整全波模擬後回傳該天線的
 # 反射係數 S11 (回波損耗) 與正向 (boresight, theta=phi=0) Realized Gain 隨頻率變化曲線，
 # 作為訓練 SM/GEN 的「真值 (ground truth)」。本模擬器只有「單一」訊號埠 (對比 dual_port.py 的雙埠)。
-from . import *
+import numpy as np
+from loguru import logger
+from pandas import read_csv
+from torch import Tensor, tensor   # 注意：torch.tensor (與 antenna.utils 的自訂 tensor 不同)
+from ...utils import Path
+from . import PatchSimulator
 
 def get_penalty(expected_len:int=17):
     #? 當 __call__ 模擬流程在外層被例外攔截 (例如 HFSS COM 崩潰、幾何建模失敗、求解不收斂) 時，

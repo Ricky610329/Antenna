@@ -2,9 +2,9 @@
 antenna.utils — 工具子套件匯出聚合層
 ======================================
 本模組作為 utils 子套件的「單一入口」，將分散在各子模組的
-常用符號集中 re-export，讓訓練腳本只需
-    from antenna.utils import *
-即可一次取得所有常用工具、型別別名與實驗路徑常數。
+常用符號集中 re-export（全部顯式列名，無萬用字元），讓使用端
+    from antenna.utils import config, Record, ...
+即可取得常用工具與實驗路徑常數。
 
 子模組分工：
   utils.py       — 通用基礎工具（Config、Figure、Record、Path 等）
@@ -33,8 +33,12 @@ from .utils import Axes
 from .utils import Record
 #? json          : 標準庫 json 模組的 re-export，讓腳本免再 import json
 from .utils import json
-#* 以萬用字元補充匯出 utils.py 中 __all__ 定義的其餘符號
-from .utils import *
+#? logger        : loguru logger（全專案統一的日誌器）
+from .utils import logger
+#? Complete      : 訓練完成通知（log + 可選 Email）
+from .utils import Complete
+#? TQDM_*        : tqdm 進度條的統一樣式設定
+from .utils import TQDM_BAR_SIMPLE, TQDM_CONFIG
 
 ###* ── web.py ────────────────────────────────────────────────────────────────
 #? connect_network_drive : 掛載實驗室 NAS 網路磁碟機（對應 T:\ 路徑）；
@@ -59,13 +63,6 @@ from torch import Tensor
 from .torch_utils import tensor
 #? cTensor : 複數張量 (complex Tensor) 輔助函式，用於 S-parameter 計算
 from .torch_utils import cTensor
-#* 補充匯出 torch_utils.py 的其餘輔助符號
-from .torch_utils import *
-
-###* ── types.py ──────────────────────────────────────────────────────────────
-#* 匯出天線閉迴路系統（GEN 生成器 / SM 代理模型 / SIM HFSS 模擬器）
-#* 所有共用型別別名，讓各訓練腳本統一使用相同的介面型別
-from antenna.types import *
 
 ###* ── 實驗室 NAS 根路徑常數 ──────────────────────────────────────────────
 #! ROOTDIR      : 指向實驗室 NAS 的實驗資料根目錄（T:\ 對應網路磁碟機）；

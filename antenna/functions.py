@@ -31,10 +31,11 @@
 ###*   early-stop rollback 一起把 GEN 推向可製造解。
 ###* ============================================================================
 import torch
-from torch import Tensor, nn, nn
+from torch import Tensor, nn
 import torch.nn.functional as F
 from enum import Enum
-from antenna.types import *
+from typing import Generic, Literal, Optional, Union
+from antenna.types import Axes, CustomOptimizer, FeedReachabilityDictType
 from antenna.utils.utils import Figure, plt
 from collections import defaultdict
 import numpy as np

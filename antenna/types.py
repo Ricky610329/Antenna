@@ -7,7 +7,7 @@ antenna/types.py — 全專案共用型別定義模組
   - TypedDict：描述固定鍵名的字典結構（如 Checkpoint、ResultType、RecordStateDict）
   - TypeAlias：為 Tensor 形狀賦予語意名稱（如 Tensor_B_N、Tensor_W_H）
 
-所有可執行模組皆透過 `from antenna.types import *`（經由 antenna/__init__.py）取得此處定義。
+各模組依需要顯式 `from antenna.types import <名字>` 取得此處定義。
 型別 import 順序對循環引用的解析至關重要，請勿任意調整。
 """
 # Defer type annotation evaluation to resolve forward reference and circular import issues.

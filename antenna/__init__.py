@@ -3,10 +3,10 @@ It includes a microstrip patch antenna and a reconfigurable intelligent surface 
 
 Example::
 
-    from antenna import *
+    from antenna import AntennaPattern, AntennaResponse, get_result_path
+    from antenna.utils import config, connect_network_drive, ROOTDIR
     config.device = "cuda:0"
 
-    from antenna.utils import *
     from antenna.models import ...
     from antenna.smodels import ...
 
@@ -36,13 +36,22 @@ Example::
 #?     以及給 GEN 用的圖樣正則化損失 (total_variation_loss / island_suppression_loss)。
 #?   - AntennaResponse / TargetResponse / MultiResponses：把 SM/SIM 吐出的頻率響應包裝起來,
 #?     並依「註冊的 loss hook」計算 loss, 是 GEN→SM 反傳鏈的損失來源。
-from antenna.utils import *           #? 帶入 config(全域設定)、tensor/stack/concat、Path、TID、logger 工具等
-from antenna.types import *           #? 帶入 Tensor、型別別名 (Tensor_N / Tensor_W_H)、LossParams 等型別標註
+from collections import defaultdict
+from types import FunctionType
+from typing import (
+    Callable, Dict, Generic, Iterable, List, Literal,
+    Optional, Self, Tuple, Union, cast, overload,
+)
+
+from antenna.utils import Path, config, get_local_ip, tensor   #? config(全域設定)、自訂 Path、自訂 tensor
+from antenna.utils.utils import TID, get_shake_128, global_exception_handler
+from antenna.types import Axes, LossParams, Tensor_N, Tensor_W_H   #? 形狀語意別名與 loss 參數型別
 from antenna.utils.data import size_converter   #? 統一的形狀轉換器 (flatten / batch / 自訂 output_shape)
 from antenna.patch.patch_simulator import PatchSimulator   #? SIM 模擬器基底 (COM 驅動 HFSS), 僅作型別標註用
-# import numpy as np
 
+import numpy as np
 import torch
+from torch import Tensor, concat, stack
 import torch.nn.functional as F      #? island_suppression_loss 用 avg_pool2d 算局部平均
 import matplotlib.pyplot as plt
 from loguru import logger #? pip3 install loguru

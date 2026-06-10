@@ -26,11 +26,16 @@
 ###*   - 檔案名稱：KuoHung-{name}.data (pickle，由 Data 類別管理)
 ###*   - KuoHung-1 對應 single_1() 定義的圖樣，KuoHung-2 對應 single_2()
 ###* ============================================================================
-from antenna import *
-config.device = "cpu"
+from typing import Literal, Optional
 
-from antenna.utils import *
+import torch
+from torch import Tensor
+
+from antenna import AntennaPattern, AntennaResponse
+from antenna.utils import DATASET_PATH, Figure, config, connect_network_drive
 from antenna.utils.data import Data
+
+config.device = "cpu"
 
 #* Select according to actual application.
 from antenna.patch import SinglePortSimulator, DualPortSimulator

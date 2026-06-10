@@ -10,11 +10,17 @@
 #? 取得梯度；GEN 生 pattern → SM 預測響應 → loss 經 SM 反傳到 GEN。STE 的角色就是讓
 #? 「forward 是離散硬值 (0/1)、backward 卻有可用梯度」，繞過二值化本身不可導的斷點。
 
-from antenna.utils import *
-from antenna.types import *
-from antenna import *
+from types import FunctionType
+from typing import Callable, Generic, Optional, Union
+
+from antenna.utils import Path, Record, config, logger
+from antenna.types import (
+    CallableModule, Checkpoint, CustomModule, CustomOptimizer, CustomScheduler,
+    LossParams, ModelParams, ReturnType,
+)
 
 import torch
+from torch import Tensor, nn
 from torch.autograd.function import (
     Function,          #? 自訂 autograd 運算的基底：可分別定義 forward(離散) 與 backward(給梯度)
     FunctionCtx ,      #? forward 中的 context，save_for_backward 暫存張量供 backward 使用

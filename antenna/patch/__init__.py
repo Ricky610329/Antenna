@@ -26,8 +26,8 @@ antenna.patch — 微帶貼片天線「反向設計」的損失函數 (Loss Func
     - interval_loss      區間損失：要求預測落在 [target+lower, target+upper] (相對) 或
                          [lower, upper] (絕對) 區間內，區間內 loss=0 (雙埠 train_dual 使用)。
 """
-# ..utils：帶入 nn、Tensor、config、Literal/Union/overload 等型別與工具 (見 antenna/utils 與 antenna/types)。
-from ..utils import *
+from typing import Literal, Union, overload
+from torch import Tensor, nn
 # patch_simulator：HFSS COM 介接相關 (本檔損失函數不直接用到，屬套件子模組匯出)。
 from .patch_simulator import  com_error
 from .patch_simulator.dual_port import DualPortSimulator      # 雙埠 HFSS 模擬器 (供 train_dual 匯入)

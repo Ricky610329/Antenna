@@ -14,7 +14,7 @@ train.py — 由「外部 YAML config」驅動的訓練入口 (取代 train_sing
 """
 import sys
 
-from antenna.utils import *        # config, connect_network_drive, ROOTDIR, DATASET_PATH, logger, Complete
+from antenna.utils import Complete, DATASET_PATH, ROOTDIR, config, connect_network_drive, logger
 config.device = "cpu"
 
 import torch
