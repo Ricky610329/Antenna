@@ -23,10 +23,12 @@ Example::
     simulator = ...
     AntennaPattern.register_simulator(simulator)
 
-    #* Set Antenna Response
-    AntennaResponse.registerLabels('response', ..., x = '...')
-    x = AntennaResponse.x()
-    RESPONSE_SIZE = AntennaResponse.size(flatten=True)
+    #* Set Antenna Response (建 spec → 一次安裝)
+    spec = TargetResponse(labels=('S11', ...), x='n257')
+    spec(side, center, width, label='S11', add=True)          # 加目標曲線
+    spec.register_loss_fn('S11', loss_fn, **params)           # 綁 loss hook
+    AntennaResponse.use(spec)
+    RESPONSE_SIZE = spec.size(flatten=True)
 
 """
 ###* 套件匯入 ###
@@ -231,18 +233,41 @@ class MultiResponses:
 
 class TargetResponse(MultiResponses):
     """
-    目標響應 (期望曲線) 的容器, 是 MultiResponses 的特化版。
+    一組實驗的「響應規格」實例：labels 順序、x 軸、目標曲線 (期望響應)、loss hooks。
 
-    #? 角色: 描述「我們希望天線長成什麼樣子」的理想頻率響應 (例如某頻段要低 S11)。
-    #?       它同時保管每個 label 的「目標曲線」與「對應的 loss 函式 (loss hook)」,
+    #? 角色: 描述「我們希望天線長成什麼樣子」的理想頻率響應 (例如某頻段要低 S11),
+    #?       同時保管每個 label 的「目標曲線」與「對應的 loss 函式 (loss hook)」,
     #?       因此 criterion 計算時才能依 label 找到正確的目標與比較方式。
-    #! 設計重點: AntennaResponse.target 是「類別層級的單例」, 全 pipeline 共用同一份目標設定,
-    #!          透過 registerTargetResponse()/registerLossHook() 注入後, 所有 AntennaResponse 實例共享。
+    #! 用法: 建好一個自包含的 spec 實例後, 以 AntennaResponse.use(spec) 整組安裝 (原子切換)。
+    #!       建構過程不碰任何全域狀態; 兩組 spec 可在同一 process 共存, 安裝哪組由 use() 決定。
+    #! 順序的雙軌制 (dual 的既有行為, 勿改):
+    #!   - criterion/labels 對齊順序 = labels 參數順序 (metadata 槽位預建)。
+    #!   - concat() (GEN 輸入排列) = 目標「加入」順序 (responses dict 插入序), 可與 labels 順序不同。
     """
-    def __init__(self):
-        super().__init__(None)                              #? 以空容器起始, 目標之後逐項註冊
+    def __init__(self, labels=None, x=None):
+        super().__init__(None)                              #? 以空容器起始, 目標之後逐項加入
         self._note = {}                                     #? label -> 人類可讀的設定字串 (供除錯/列印)
         self.metadata:dict[str, dict] = defaultdict(dict)   #? label -> {response, loss_fn, side/center/width…} 完整中繼資料
+        #? x 可給代號 ('ris'/'n257') 或自訂 (start, stop, total); total 即每條響應的點數
+        match x:
+            case 'ris':   self.x_range = (0, 360, 361)
+            case 'n257':  self.x_range = (24, 32, 17)   #? 26.5 - 28 - 29.5
+            case _:       self.x_range = x              #? tuple 或 None (之後再補)
+        if labels:
+            self.labels = labels                        #? 走 setter: 預建 metadata 槽位, 鎖定對齊順序
+
+    def x(self):
+        """x 軸取樣點 (np.linspace 展開)。"""
+        if self.x_range is None:
+            raise RuntimeError("此 spec 未設定 x。建構時傳入 x= ('ris'/'n257'/(start, stop, total))。")
+        return np.linspace(*self.x_range)
+
+    def size(self, flatten:bool = False):
+        """(label數, 每條響應點數)；flatten=True 回傳兩者相乘的總長度。"""
+        if not self.labels or self.x_range is None:
+            raise RuntimeError("此 spec 尚未設定 labels 或 x。")
+        _ = (len(self.labels), self.x_range[2])
+        return _[0] * _[1] if flatten else _
 
     def __getitem__(self, key):
         """
@@ -323,14 +348,14 @@ class TargetResponse(MultiResponses):
             _ = self.metadata[label]
     
     def concat(self):
-        #? 把所有目標曲線串成一維, 並順手「驗證」總長度是否等於 registerLabels() 宣告的尺寸
+        #? 把所有目標曲線串成一維, 並順手「驗證」總長度是否等於 spec 宣告的 (label數 x 點數)
         _result = super().concat()
-        #! 尺寸不符通常代表 registerLabels() 的 (label數, 點數) 與實際註冊的目標對不上, 直接報錯避免後續靜默錯誤
-        if _result.size(0) != AntennaResponse.size(flatten = True):
+        #! 尺寸不符通常代表 labels 宣告與實際加入的目標對不上, 直接報錯避免後續靜默錯誤
+        if _result.size(0) != self.size(flatten = True):
             raise RuntimeError(
                 'The concat size does not match the set size. ' \
-                'Please check `AntennaResponse.registerLabels()`' \
-                f'\n{_result.size(0)} != {AntennaResponse.size(flatten = True)}{AntennaResponse.size()}'
+                'Please check the spec labels.' \
+                f'\n{_result.size(0)} != {self.size(flatten = True)}{self.size()}'
             )
         return _result
     
@@ -358,7 +383,9 @@ class AntennaResponse(Generic[LossParams]):
     x_patch_n257 = np.linspace(24, 32, 17) #? 26.5 - 28 - 29.5
     x_ris = np.linspace(0, 360, 361)
 
-    #! 類別層級單例: 全 pipeline 共用同一份目標響應與 loss hook 設定 (見 TargetResponse 說明)
+    #! 類別層級的「當前規格」: 由 use(spec) 整組安裝 (唯一的寫入點), 深層內部
+    #! (MultiResponses 的 Tensor 還原 / criterion 對齊 / SM 推論包裝) 透過它解析。
+    #! 訓練端的「讀取」(維度/GEN 輸入) 請直接拿著 spec 實例, 不要讀類別狀態。
     target = TargetResponse()
 
     @overload
@@ -427,31 +454,24 @@ class AntennaResponse(Generic[LossParams]):
         return ax
 
     @classmethod
-    def registerLabels(cls, *labels:str, x:Union[tuple[int, int, int], Literal['ris', 'n257']] = 'ris') -> Tensor:
-        """
-        The loss will be calculated from the registered labels.
+    def use(cls, spec:TargetResponse) -> TargetResponse:
+        """安裝一組響應規格 (原子切換)。這是類別層級狀態「唯一」的寫入點。
 
-        :param x: (start, stop, total)
+        spec 需自包含 (labels + x)；安裝後深層內部 (MultiResponses 還原/criterion)
+        即依此 spec 解析。回傳 spec 本身, 方便呼叫端繼續持有實例使用。
         """
-        #? x 可給預設代號 ('ris'/'n257') 或自訂 (start, stop, total); 代號會展開成對應取樣設定
-        match x:
-            case 'ris':
-                x = (0, 360, 361)
-            case 'n257': #? 26.5 - 28 - 29.5
-                x = (24, 32, 17)
-            case _:
-                pass
-
-        #! 一次性把 labels(順序) 與 x 軸寫到「類別層級」, 後續 size()/criterion()/concat() 全靠這份設定對齊
-        cls.target.labels = labels      #? 同步給目標容器, 鎖定 label 順序
-        cls.labels = labels
-        cls._x = x                      #? 記住 x 軸 (start, stop, total), total 即每條響應的點數
+        if not spec.labels or spec.x_range is None:
+            raise ValueError("spec 必須自包含 labels 與 x (TargetResponse(labels=..., x=...))。")
+        cls.target = spec
+        cls.labels = tuple(spec.labels)
+        cls._x = spec.x_range
+        return spec
 
     @classmethod
     def x(cls):
         """Get the x-axis value of this response."""
         if not hasattr(cls, '_x'):
-            RuntimeError("No x registered. Please use `registerLabels()` first.")
+            raise RuntimeError("No spec installed. Please use `AntennaResponse.use(spec)` first.")
         return np.linspace(*cls._x)
 
     @overload
@@ -467,58 +487,21 @@ class AntennaResponse(Generic[LossParams]):
     def size(cls, flatten:bool = False):
         """The number of labels used to calculate loss and the number of points in their labels."""
         if not cls.target.labels:
-            raise RuntimeError("No labels registered. Please use `registerLabels()` first.")
+            raise RuntimeError("No spec installed. Please use `AntennaResponse.use(spec)` first.")
         #? 尺寸 = (label數, 每條響應點數); flatten=True 回傳兩者相乘的總長度 (給 RESPONSE_SIZE)
         _ = (len(cls.target.labels), cls._x[2])
         return _[0] * _[1] if flatten else _
-    
+
     @classmethod
     def to_str(cls):
         """Get response information and default values."""
         return f"AntennaResponse(size={cls.size()}, x={cls._x}, target={cls.target})"
-    
-    @classmethod
-    def registerTargetResponse(cls, side:float, center:float, width:Tuple[int,int,int,int,int], label:str = "response") -> Tensor:
-        """
-        Target Response Design.
-
-        :param side: The Y value at both ends of the response.
-        :param center: The y value of the center point of the response.
-
-        :return: AntennaResponse
-        
-        """
-        if not cls.target.labels:
-            raise RuntimeError(
-                "No labels registered. Please use `registerLabels()` first."
-            )
-        #? 只有當 label 已在 registerLabels() 宣告過時才 add=True(真正寫入目標表), 否則僅回傳預覽曲線
-        is_add = label in cls.target.labels
-        return cls.target(side, center, width, label = label, add = is_add)
-
-    @classmethod
-    def registerLossHook(cls, loss_hook:Callable[LossParams, Tensor], label:str = "response", **loss_hook_param:LossParams.kwargs):
-        """
-        Args:
-        
-            loss_hook: Used for `criterion()`
-
-            ```
-            def criterion(response, target_response, ...):...
-            ```
-
-        """
-        #? 把某 label 的「比較方式 (loss 函式)」註冊進共用 target; 之後 criterion() 才知道要怎麼算 loss
-        #? 角色: 這是把「設計目標」變成「可反傳 loss」的關鍵掛鉤, 決定 GEN 往哪個方向被優化
-        cls.target.register_loss_fn(
-            label, loss_hook, **loss_hook_param
-        )
 
     def criterion(self, label:str = "response", **param:LossParams.kwargs) -> Tensor:
-        """[Loss Function] Register LossHook using `registerLossHook()` before use."""
+        """[Loss Function] spec 須先以 register_loss_fn 綁好該 label 的 loss hook。"""
         #! 未註冊 loss hook 就呼叫會直接報錯, 避免靜默回傳無意義的 loss
         if label not in self.target.labels:
-            raise RuntimeError(f"The {label} of LossHook is not registered. Please use `registerLossHook()` first.")
+            raise RuntimeError(f"The {label} of LossHook is not registered in the installed spec.")
 
         #? 取出該 label 已綁好參數的 loss 函式, 餵入「本條響應 self.response」算出純量 loss
         #! loss 函式通常會內部存取 target[label] 取得目標曲線; 此處只負責把模擬響應傳進去

@@ -3,7 +3,7 @@ from sys import path
 from os.path import dirname, join
 path.append(join(dirname(__file__),'..'))
 
-from antenna import get_result_path, AntennaResponse
+from antenna import get_result_path, TargetResponse
 from antenna.utils import Figure, Path, Record, config
 from matplotlib.pyplot import imread
 from numpy import linspace
@@ -18,10 +18,12 @@ print(repr(temp))
 print(len(temp['patch_result_buf'][-1][1]))
 loss = temp['pilotLoss'][-1]
 
-returnloss_upper = AntennaResponse.registerTargetResponse(0, -10, (4, 2, 5, 2, 4), label="returnloss_upper")
-returnloss_lower = AntennaResponse.registerTargetResponse(-2.5, -50, (3, 4, 3, 4, 3), label="returnloss_lower")
-gain_upper = AntennaResponse.registerTargetResponse(-17, 0, (2, 3, 7, 3, 2), label="gain_upper")
-gain_lower = AntennaResponse.registerTargetResponse(-22, -3, (4, 2, 5, 2, 4), label="gain_lower")
+# 只是要四條目標曲線當圖上的紅線 (預覽用，add=False 不寫入任何狀態)
+_preview = TargetResponse()
+returnloss_upper = _preview(0, -10, (4, 2, 5, 2, 4))
+returnloss_lower = _preview(-2.5, -50, (3, 4, 3, 4, 3))
+gain_upper = _preview(-17, 0, (2, 3, 7, 3, 2))
+gain_lower = _preview(-22, -3, (4, 2, 5, 2, 4))
 
 epochs = len(temp)
 x = linspace(24, 32, 17)

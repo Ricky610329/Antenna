@@ -242,7 +242,7 @@
     </div>
     <div class="card" style="border-top:3px solid var(--data)">
       <h3 style="margin-top:0">AntennaResponse 家族</h3>
-      <small><code>TargetResponse</code> 設計目標曲線+綁 loss hook；<code>MultiResponses</code> 包多條 S 參數；<code>criterion()</code> 依註冊 loss 算「響應 vs 目標」，是 G→代理 反傳鏈的末端。</small>
+      <small><code>TargetResponse</code>＝一組實驗的「響應規格」實例（labels/x 軸/目標曲線/loss hook，自包含），以 <code>AntennaResponse.use(spec)</code> 原子安裝；<code>MultiResponses</code> 包多條 S 參數；<code>criterion()</code> 依規格算「響應 vs 目標」，是 G→代理 反傳鏈的末端。</small>
     </div>
     <div class="card" style="border-top:3px solid var(--data)">
       <h3 style="margin-top:0">Record（TEMP）</h3>

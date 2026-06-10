@@ -15,20 +15,21 @@ import torch
 from antenna.utils import config
 config.device = "cpu"  # 強制 CPU，確保確定性
 
-from antenna import AntennaPattern, AntennaResponse
+from antenna import AntennaPattern, AntennaResponse, TargetResponse
 from antenna.patch import custom_loss_minmax
 
 
 @pytest.fixture(scope="session", autouse=True)
 def _setup_globals():
-    """對齊 train_single.py 的全域註冊（單埠 S11+Gain）。"""
+    """安裝單埠 (S11+Gain) 的響應規格：建 spec → AntennaResponse.use(spec) 原子安裝。"""
     config.device = "cpu"
     AntennaPattern.setDefaultCoordinate((0, 25, 0, 25))
-    AntennaResponse.registerLabels("S11", "Gain", x="n257")
-    s11 = AntennaResponse.registerTargetResponse(0, -10, (5, 0, 7, 0, 5), label="S11")
-    AntennaResponse.registerLossHook(custom_loss_minmax, label="S11", target=s11, method="low")
-    gain = AntennaResponse.registerTargetResponse(-19, 4, (5, 0, 7, 0, 5), label="Gain")
-    AntennaResponse.registerLossHook(custom_loss_minmax, label="Gain", target=gain, method="high")
+    spec = TargetResponse(labels=("S11", "Gain"), x="n257")
+    s11 = spec(0, -10, (5, 0, 7, 0, 5), label="S11", add=True)
+    spec.register_loss_fn("S11", custom_loss_minmax, target=s11, method="low")
+    gain = spec(-19, 4, (5, 0, 7, 0, 5), label="Gain", add=True)
+    spec.register_loss_fn("Gain", custom_loss_minmax, target=gain, method="high")
+    AntennaResponse.use(spec)
     yield
 
 

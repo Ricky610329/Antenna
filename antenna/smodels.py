@@ -52,12 +52,14 @@ class SurrogateModel(
     Generic[CustomModule, ModelParams, ReturnType, CustomOptimizer, CustomScheduler, LossParams]
 ):
     def __init__(self, model:CustomModule, criterion:Callable[CallableParam, Tensor], optimizer:CustomOptimizer, scheduler:Optional[CustomScheduler]=None, *,
-                 rootdir=None, min_loss:float=0.1, max_epoch:int=20000):
+                 rootdir=None, min_loss:float=0.1, max_epoch:int=20000,
+                 response_shape:Optional[tuple]=None):
         """
         SM 外殼：包住骨幹網路 + 優化器 + 損失，提供線上/離線訓練與存讀檔。
 
-        min_loss / max_epoch 是 train_one_data 單筆收斂的預設門檻
-        (呼叫時可逐次覆寫)。由建構端顯式傳入，不讀全域 config。
+        min_loss / max_epoch 是 train_one_data 單筆收斂的預設門檻 (呼叫時可逐次覆寫)；
+        response_shape 是響應形狀 (label數, 點數)，供 train_one_data reshape 對齊。
+        全部由建構端顯式傳入，不讀全域 config / AntennaResponse 類別狀態。
         """
         super().__init__(
             name='sm',          #? 固定名稱 → checkpoint 存成 sm.pth (SM 不像 GEN 需要逐 epoch rollback)
@@ -70,8 +72,7 @@ class SurrogateModel(
         )
 
         self.device = config['device']
-        self.pattern_size = AntennaPattern.size      #? 輸入維度資訊 (25x25=625 像素)
-        self.response_size = AntennaResponse.size    #? 輸出維度資訊 (e.g. (3,17))
+        self.response_shape = tuple(response_shape) if response_shape else None  #? 響應形狀 (label數, 點數)，建構端傳入
         self.size_converter = size_converter         #? 在 (B,N) 攤平 / (B,H,W) 影像 / 批次維度間轉換的工具
 
         self.min_loss = min_loss     #? train_one_data 預設收斂門檻 (建構時顯式傳入)
@@ -191,10 +192,10 @@ class SurrogateModel(
 
             outputs_result:Tensor = self.model(input)  #? SM 對這筆 pattern 的當前預測
 
-            #? reshape 成 (-1, *response_size) 讓預測與目標形狀對齊，再算回歸誤差
+            #? reshape 成 (-1, *response_shape) 讓預測與目標形狀對齊，再算回歸誤差
             loss:Tensor = self.criterion(
-                outputs_result.reshape(-1, *AntennaResponse.size()),
-                label.reshape(-1, *AntennaResponse.size())
+                outputs_result.reshape(-1, *self.response_shape),
+                label.reshape(-1, *self.response_shape)
             )
 
             loss.backward()
@@ -265,6 +266,6 @@ def OldSM(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 128, 64),
     )
     return SurrogateModel(
         model_ge, criterion_ge, optimizer_ge, scheduler_ge, rootdir=checkpoint,
-        min_loss=min_loss, max_epoch=max_epoch,
+        min_loss=min_loss, max_epoch=max_epoch, response_shape=response_shape,
     )
 

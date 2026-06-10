@@ -8,8 +8,8 @@ antenna.patch — 微帶貼片天線「反向設計」的損失函數 (Loss Func
     (GEN 目標響應→pattern；SM pattern→預測響應；SIM 真實 HFSS 模擬) 的「評分尺」。
     GEN 生成 pattern 後，SM 算出預測響應，再用這裡的 loss 與「想要的目標」比較，
     梯度沿 loss → SM → pattern → GEN 反向傳播以更新 GEN。
-    這些函數同時也用來在 train_single.py / train_dual.py 中經
-    `AntennaResponse.registerLossHook(...)` 註冊成各條 S 參數曲線的評分函數。
+    這些函數由 antenna.training.setup_responses 經 `spec.register_loss_fn(...)`
+    綁進響應規格 (TargetResponse)，成為各條 S 參數曲線的評分函數。
 
 【共同的核心設計哲學：為什麼不直接用 MSE？】
     天線規格本質上是「不等式」而非「等式」：

@@ -89,25 +89,23 @@ def load_config(path) -> TrainConfig:
     return TrainConfig(**data)
 
 
-def setup_responses(cfg: TrainConfig):
-    """依 port + cfg.targets 註冊響應標籤、目標曲線與損失 hook (全域狀態)。"""
-    spec = PORT_SPECS[cfg.port]
-    AntennaResponse.target = TargetResponse()                  # reset，避免殘留污染
-    AntennaResponse.registerLabels(*spec["labels"], x="n257")  # labels 順序 (criterion/SM)
-    for label in spec["register_order"]:                       # 註冊順序 (決定 GEN 輸入 concat 排列)
+def setup_responses(cfg: TrainConfig) -> TargetResponse:
+    """依 port + cfg.targets 建一組「全新的」響應規格 (spec) 並安裝。
+
+    建構過程不碰全域狀態，最後以 AntennaResponse.use(spec) 原子安裝；
+    回傳 spec 實例 —— 訓練端後續的維度/GEN 輸入請拿著它讀，不要讀類別狀態。
+    """
+    port = PORT_SPECS[cfg.port]
+    spec = TargetResponse(labels=port["labels"], x="n257")     # labels 順序 (criterion/SM 對齊)
+    for label in port["register_order"]:                       # 加入順序 (決定 GEN 輸入 concat 排列)
         t = cfg.targets[label]
-        resp = AntennaResponse.registerTargetResponse(
-            t["side"], t["center"], tuple(t["width"]), label=label
-        )
+        resp = spec(t["side"], t["center"], tuple(t["width"]), label=label, add=True)
         if cfg.port == "single":
-            AntennaResponse.registerLossHook(
-                custom_loss_minmax, label=label, target=resp, method=t["method"]
-            )
+            spec.register_loss_fn(label, custom_loss_minmax, target=resp, method=t["method"])
         else:  # dual
             lo, hi = t.get("interval", [-1, 1])
-            AntennaResponse.registerLossHook(
-                interval_loss, label=label, lower_response=lo, upper_response=hi, target=resp
-            )
+            spec.register_loss_fn(label, interval_loss, lower_response=lo, upper_response=hi, target=resp)
+    return AntennaResponse.use(spec)
 
 
 def build_feeds(cfg: TrainConfig):
@@ -125,26 +123,28 @@ def _arch_params(section: dict, loading_keys=("name", "pretrained", "offline_dat
     return params
 
 
-def build_generator(cfg: TrainConfig):
-    """依 cfg.generator (zoo 名字 + 架構參數) 建生成器 GEN。未指定 → sigmoid 預設。"""
+def build_generator(cfg: TrainConfig, spec: TargetResponse):
+    """依 cfg.generator (zoo 名字 + 架構參數) 建生成器 GEN。未指定 → sigmoid 預設。
+
+    響應維度從傳入的 spec 讀 (顯式資料流)，不讀 AntennaResponse 類別狀態。"""
     name = cfg.generator.get("name", "sigmoid")
     if name not in zoo.GENERATORS:
         raise ValueError(f"未知的 generator {name!r}，可用: {sorted(zoo.GENERATORS)} (見 antenna/zoo.py)")
     return zoo.GENERATORS[name](
-        AntennaResponse.size(flatten=True), AntennaPattern.size(flatten=True),
+        spec.size(flatten=True), AntennaPattern.size(flatten=True),
         **_arch_params(cfg.generator),
     )
 
 
-def build_surrogate(cfg: TrainConfig, checkpoint):
+def build_surrogate(cfg: TrainConfig, checkpoint, spec: TargetResponse):
     """依 cfg.surrogate (zoo 名字 + 架構參數) 建代理模型 SM。未指定 → mlp 預設。
 
-    YAML 的 hfss 區段 (lr / 單筆訓練門檻) 在此顯式傳入 SM，不經全域 config。"""
+    YAML 的 hfss 區段 (lr / 單筆訓練門檻) 顯式傳入 SM；響應維度從 spec 讀。"""
     name = cfg.surrogate.get("name", "mlp")
     if name not in zoo.SURROGATES:
         raise ValueError(f"未知的 surrogate {name!r}，可用: {sorted(zoo.SURROGATES)} (見 antenna/zoo.py)")
     return zoo.SURROGATES[name](
-        checkpoint, AntennaPattern.size(flatten=True), AntennaResponse.size(),
+        checkpoint, AntennaPattern.size(flatten=True), spec.size(),
         lr=cfg.hfss.get("lr", 0.001),
         min_loss=cfg.hfss.get("min_loss", 0.1),
         max_epoch=cfg.hfss.get("max_epoch", 20000),
@@ -173,7 +173,7 @@ def run_training(
     config.checkpoint_save_path = record_path / "checkpoint"
     (record_path / "checkpoint").mkdir(parents=True, exist_ok=True)   # GEN/SM 權重存放處
 
-    setup_responses(cfg)                        # 須在建 GEN/SM 前 (尺寸才正確)
+    spec = setup_responses(cfg)                 # 建立並安裝響應規格；後續維度/GEN 輸入都從 spec 讀
     if seed is not None:
         torch.manual_seed(seed)
 
@@ -181,7 +181,7 @@ def run_training(
     simulator.open()
     feeds = build_feeds(cfg)
 
-    model = build_generator(cfg)                # 架構查 zoo (cfg.generator 的名字 + 參數)
+    model = build_generator(cfg, spec)          # 架構查 zoo；維度從 spec (顯式，不依賴安裝時序)
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, betas=(0.5, 0.999))
     scheduler = AdaptiveCyclicalScheduler(
         optimizer, T_0=100, T_mult=1, lr_max=cfg.lr, lr_min=1e-6,
@@ -191,7 +191,7 @@ def run_training(
     generator = Models(name="generator_{label}", rootdir=config.checkpoint_save_path,
                        model=model, optimizer=optimizer, scheduler=scheduler,
                        criterion=custom_loss_minmax)
-    smodel = build_surrogate(cfg, config.checkpoint_save_path)   # 架構由 cfg.surrogate (type/hidden) 決定
+    smodel = build_surrogate(cfg, config.checkpoint_save_path, spec)
 
     online = DataManager("online", rootdir=str(record_path), verbose=False)
     TEMP = Record("temp", rootdir=str(record_path))
@@ -234,7 +234,7 @@ def run_training(
             smodel.train_by_datas(online)
 
         # 生成：模型只出 logits；STE 二值化是管線的固定一步，tau 由 ACP 單獨控制
-        logits = generator(AntennaResponse.target.concat())
+        logits = generator(spec.concat())
         output_element = AntennaPattern(
             AntennaPattern.binarization(logits, generator.scheduler.get_temp())
         )

@@ -31,7 +31,7 @@ from typing import Literal, Optional
 import torch
 from torch import Tensor
 
-from antenna import AntennaPattern, AntennaResponse
+from antenna import AntennaPattern, AntennaResponse, TargetResponse
 from antenna.utils import DATASET_PATH, Figure, config, connect_network_drive
 from antenna.utils.data import Data
 
@@ -73,18 +73,17 @@ class KuoHung:
                 self.nrowcol = (1, 3)
                 self.label = ('S11', 'Gain')
 
-                AntennaResponse.registerLabels(*self.label, x = 'n257')
-
             case 'Dual':
                 #* 雙埠模式：S11 + S21 + S22，圖表排版 2 行 × 2 欄
                 self.simulator = DualPortSimulator(self.result_path)
                 self.nrowcol = (2, 2)
                 self.label = ('S11', 'S21', 'S22')
 
-                AntennaResponse.registerLabels(*self.label, x = 'n257')
-
             case _:
                 raise ValueError(f"{port}")
+
+        #* 安裝響應規格 (labels + x 軸)，供 simulate/draw 的響應包裝與 x() 使用
+        AntennaResponse.use(TargetResponse(labels=self.label, x='n257'))
 
         AntennaPattern.register_simulator(self.simulator)
         self.x = AntennaResponse.x()        #* 頻率軸向量，用於繪圖 x 座標
