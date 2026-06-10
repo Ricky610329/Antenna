@@ -7,9 +7,8 @@
 #   - Complete：訓練完成通知 (可寄信)。
 #   - Path：pathlib 擴充 (自動建目錄、舊檔輪替、load_torch 載入 checkpoint 等)。
 #   - Config + 全域 config：dict 子類，集中管理 device / checkpoint 路徑 / 例外處理開關等。
-#   - MultiConfig：用命令列 sys.argv[1] 挑選一組「具名實驗設定」。
 #   - Figure：matplotlib 的 with-context 包裝 (可存 GIF/MP4)。
-#   - Record (★)：訓練狀態的「時序記錄器」，也就是 train_single/dual 裡的 TEMP；
+#   - Record (★)：訓練狀態的「時序記錄器」，也就是 run_training 裡的 TEMP；
 #                 是斷點續跑與 rollback 的核心。
 #   - json / TID / get_shake_128：JSON 點路徑存取、時間 ID、短雜湊 ID。
 # ==============================================================================
@@ -576,69 +575,6 @@ class Config(dict):
 # 全域單例設定：整個專案 (各模組、訓練腳本) 透過 import 共用這一份 config。
 config = Config()
 
-class MultiConfig:
-    """
-    「多組具名實驗設定」的選擇器。
-
-    用法情境：把多種超參組合 (例如不同正則化權重、不同 base) 預先放成一個
-    {label: {設定...}} 的字典，再用「命令列第一個參數 sys.argv[1]」決定本次採用哪一組。
-    例如 `python train_single.py 3` → 採用標籤 '3' 那組設定。
-    train_single/dual 的 MULTICONFIG 就是這樣切換實驗版本而不必改程式碼。
-    """
-    def __init__(self, congig:dict[str, dict[str, Any]]={}, label=None):
-        '''
-
-        Example ::
-
-            MULTICONFIG = MultiConfig(
-                {
-                    'default': {
-                        ...
-                    }
-                },
-                label = 'default'
-            )
-        '''
-        self.metadata:dict[str, dict] = congig  # 所有具名設定 (注意：原始碼參數名拼字為 congig)
-
-        # 必須能取得一個標籤來源：要嘛建構時直接給 label，要嘛從命令列帶入。
-        if len(sys.argv) < 1 and label is None:
-            raise ValueError(
-                "Must provide a configuration label either as a command-line argument "
-                "or directly to the MultiConfig constructor."
-            )
-        # 優先採用顯式傳入的 label；否則取命令列第一個參數 sys.argv[1] 當作本次標籤。
-        self.config_label = str(label if label is not None else sys.argv[1])
-
-    @property
-    def label(self):
-        return self.config_label
-
-    @label.setter
-    def label(self, value):
-        # 允許執行期切換到另一組設定 (轉成 str 與字典鍵型別一致)。
-        self.config_label = str(value)
-
-    def get_label_data(self, label:Optional[str] = None):
-        # 取出某標籤對應的整組設定字典 (預設為當前 label)。
-        return self.metadata[label or self.config_label]
-
-    def __setitem__(self, key, value):
-        # mc[key] = value：寫入「當前所選那組」的設定。
-        self.metadata[self.config_label][key] = value
-
-    def __getitem__(self, key):
-        # mc[key]：從當前所選那組取值；鍵不存在會 KeyError (要安全取值請用 __call__)。
-        return self.metadata[self.config_label][key]
-
-    def __call__(self, key:str, default=None):
-        # mc(key, default)：類似 dict.get，從當前組安全取值，缺鍵回傳 default。
-        # 訓練腳本常用這個讀「某些實驗才開啟」的選用參數 (例如 total_variation_loss)。
-        if key in self.metadata[self.config_label]:
-            return  self.metadata[self.config_label][key]
-        else:
-            return default
-    
 class Figure:
     """
     matplotlib Figure 的 with-context 包裝。

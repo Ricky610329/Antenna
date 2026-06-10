@@ -10,7 +10,9 @@ from numpy import linspace
 
 config.setWarning()
 
-result_path, _  = get_result_path(1751203248)
+# 結果資料夾識別字必須是字串 (get_result_path 內部對 name 做雜湊需 .encode())；
+# 換目標時改這個字串即可。
+result_path, _  = get_result_path("1751203248")
 temp = Record('temp', result_path, load=True)
 print(repr(temp))
 print(len(temp['patch_result_buf'][-1][1]))
