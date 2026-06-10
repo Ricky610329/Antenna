@@ -68,7 +68,11 @@ golden 數值**綁定 torch 版本與 CPU**：
 | 環境 | 容差 | 角色 |
 | --- | --- | --- |
 | 本機（開發機） | 絕對 `1e-4` | **精檢**，數值真相的來源；0.1% 級的細微 bug 在這裡抓 |
-| CI（`CI=true` 自動判斷） | 相對 `1%` | **粗檢**：import / config / 單元測試全部嚴格，golden 擋大方向 |
+| CI（`CI=true` 自動判斷） | 相對 `1%`；**`r_feed` 只檢查值域** | **粗檢**：import / config / 單元測試全部嚴格，golden 擋大方向 |
+
+> `r_feed` 為何 CI 不比數值：它是離散指標（可達金屬比例，由連通分量決定）。跨硬體浮點
+> 漂移可能讓 STE 二值化翻轉個別像素 → 整塊連通性改變 → r_feed **跳階** >1%，任何容差
+> 都會偶爾爆（flaky）。本機 golden 仍以 1e-4 精檢 r_feed。
 
 > 誠實的代價：0.2% 級的細微行為差異（如當年 dual register_order bug）CI 抓不到，
 > **commit 前本機跑 `python -m pytest tests/ -q` 仍是必要紀律**。
