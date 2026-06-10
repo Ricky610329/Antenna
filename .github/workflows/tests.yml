@@ -1,0 +1,30 @@
+# CI：push / PR 自動跑 pytest（全部測試用 mock，不需要 HFSS / NAS）。
+# runner 用 windows-latest：antenna.patch 的 import 鏈含 win32com (pywin32)，Linux 裝不起來。
+name: tests
+
+on:
+  push:
+    branches: [GAN, main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: .github/workflows/tests.yml
+
+      # 測試的最小依賴集（torch 在 Windows 預設即 CPU 版）。
+      # 完整 requirements.txt 含 wandb/sentry/torchvision 等訓練端依賴，CI 不需要。
+      - name: Install dependencies
+        run: pip install torch numpy matplotlib pandas loguru tqdm PyYAML pywin32 psutil typing_extensions pytest
+
+      - name: Run tests
+        run: pytest tests/ -q
+        env:
+          PYTHONIOENCODING: utf-8
