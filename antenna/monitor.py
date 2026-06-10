@@ -73,43 +73,43 @@ class TrainingMonitor:
         self.writer.flush()             # 每 epoch 都 flush：TB 端即時可見 (epoch 以分鐘計，開銷可忽略)
 
     # ── 結尾總覽圖 (存進結果夾，與 TB 無關、無 TB 也會產生) ───────────────────
-    def summary(self, TEMP, save_dir):
-        """依 TEMP 的完整歷史畫總覽圖 → <save_dir>/summary.png。
+    def summary(self, state, save_dir):
+        """依 RunState 的完整歷史畫總覽圖 → <save_dir>/summary.png。
         排版：上排 = 最佳 pattern + 各響應 vs 目標 (依 label 數伸縮)；下排 = loss / r_feed·time / 摘要。"""
         spec = self._spec
-        losses = TEMP["real_loss"]
-        best = losses.index(min(losses))
+        losses = state.series("real_loss")
+        best_epoch = state.best_epoch("real_loss")
+        pattern, response = state.pattern_at(best_epoch)
         labels = list(spec.labels)
         cols = max(3, 1 + len(labels))
         fig, axes = plt.subplots(2, cols, figsize=(6 * cols, 9))
 
-        axes[0][0].imshow(TEMP["patch_pattern_buf"][best])   # ~pattern 是 merge 後的 2D 圖
-        axes[0][0].set_title(f"Best Pattern (epoch {best + 1})")
+        axes[0][0].imshow(pattern)                       # ~pattern 是 merge 後的 2D 圖
+        axes[0][0].set_title(f"Best Pattern (epoch {best_epoch})")
 
         x = spec.x()
-        response = TEMP["patch_result_buf"][best]
         for n, (label, sim) in enumerate(zip(labels, response), start=1):
             ax = axes[0][n]
-            ax.plot(x, sim.detach().cpu(), color="blue", label="Simulation")
+            ax.plot(x, sim, color="blue", label="Simulation")
             ax.plot(x, spec[label].response.detach().cpu(), "b--", label="Target")
             ax.set_title(label); ax.legend()
         for n in range(1 + len(labels), cols):
             axes[0][n].axis("off")
 
         ax_loss = axes[1][0]
-        ax_loss.plot(TEMP["real_loss"], color="red", label="real_loss")
-        ax_loss.plot(TEMP["fake_loss"], color="purple", label="fake_loss", alpha=0.8)
-        ax_loss.plot(TEMP["min_loss"], label="min_loss")
+        ax_loss.plot(losses, color="red", label="real_loss")
+        ax_loss.plot(state.series("fake_loss"), color="purple", label="fake_loss", alpha=0.8)
+        ax_loss.plot(state.series("min_loss"), label="min_loss")
         ax_loss.set_title("Loss Curve"); ax_loss.legend()
 
         ax_idx = axes[1][1]
-        ax_idx.plot(TEMP["r_feed"], color="tab:blue", label="r_feed")
+        ax_idx.plot(state.series("r_feed"), color="tab:blue", label="r_feed")
         ax_t = ax_idx.twinx()
-        ax_t.plot(TEMP["time"], color="tab:orange", label="time (s)")
+        ax_t.plot(state.series("time"), color="tab:orange", label="time (s)")
         ax_idx.set_title("R_feed / Time"); ax_idx.legend(loc="upper left"); ax_t.legend(loc="upper right")
 
         axes[1][2].axis("off")
-        axes[1][2].text(0.05, 0.6, f"best epoch: {best + 1}\nmin real_loss: {min(losses):.4f}\n"
+        axes[1][2].text(0.05, 0.6, f"best epoch: {best_epoch}\nmin real_loss: {min(losses):.4f}\n"
                                    f"epochs: {len(losses)}", fontsize=14, family="monospace")
         for n in range(3, cols):
             axes[1][n].axis("off")

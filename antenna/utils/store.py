@@ -28,10 +28,10 @@ from loguru import logger
 from .utils import Path
 
 
-def fingerprint(x: Tensor, y: Tensor) -> str:
-    """(x, y) 內容指紋：shape + 原始 bytes 的 SHA-1 前 16 碼 (同內容必同名)。"""
+def fingerprint(*tensors: Tensor) -> str:
+    """張量內容指紋：shape + 原始 bytes 的 SHA-1 前 16 碼 (同內容必同名)。"""
     h = sha1()
-    for t in (x, y):
+    for t in tensors:
         t = t.detach().cpu().contiguous()
         h.update(str(tuple(t.shape)).encode())
         h.update(t.numpy().tobytes())

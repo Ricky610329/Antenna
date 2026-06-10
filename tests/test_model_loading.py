@@ -17,7 +17,7 @@ from antenna.training import (
     TrainConfig, prepare_models, build_simulator,
     build_generator, build_surrogate,
 )
-from antenna.utils.record import Record
+from antenna.utils.runstate import RunState
 
 
 @pytest.fixture
@@ -123,7 +123,7 @@ def test_hfss_params_flow_to_sm(tmp_path, spec):
 
 def test_prepare_resume(tmp_path):
     """(1) 續跑：TEMP 有 epoch → 載回 GEN/SM、回傳該 epoch；其餘分支全部略過。"""
-    TEMP = Record("t", rootdir=str(tmp_path)); TEMP["epoch"] = 5
+    TEMP = RunState(tmp_path, verbose=False); TEMP.append("epoch", 5)
     gen, sm = MagicMock(), MagicMock()
     start = prepare_models(_single_cfg(), gen, sm, TEMP, continue_run=True,
                            gen_pretrained_path=str(tmp_path / "g.pth"),
@@ -141,7 +141,7 @@ def test_prepare_gen_pretrained(tmp_path):
     """(2) GEN 預載入：gen_pretrained_path 存在 → generator.pre_load_model。"""
     f = tmp_path / "gen.pth"; f.write_bytes(b"x")
     gen, sm = MagicMock(), MagicMock()
-    prepare_models(_single_cfg(), gen, sm, Record("t", rootdir=str(tmp_path)),
+    prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False),
                    gen_pretrained_path=str(f))
     gen.pre_load_model.assert_called_once_with(str(f))
 
@@ -149,7 +149,7 @@ def test_prepare_gen_pretrained(tmp_path):
 def test_prepare_gen_pretrained_missing(tmp_path):
     """GEN 預載入路徑不存在 → 跳過、不報錯。"""
     gen, sm = MagicMock(), MagicMock()
-    prepare_models(_single_cfg(), gen, sm, Record("t", rootdir=str(tmp_path)),
+    prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False),
                    gen_pretrained_path=str(tmp_path / "nope.pth"))
     gen.pre_load_model.assert_not_called()
 
@@ -158,7 +158,7 @@ def test_prepare_sm_pretrained(tmp_path):
     """(3) SM 預訓練檔存在 → smodel.pre_load_model；不走離線預訓練。"""
     f = tmp_path / "sm.pth"; f.write_bytes(b"x")
     gen, sm = MagicMock(), MagicMock()
-    start = prepare_models(_single_cfg(), gen, sm, Record("t", rootdir=str(tmp_path)),
+    start = prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False),
                            sm_pretrained_path=str(f), offline_dataset=_FakeDS(3))
     assert start == 0
     sm.pre_load_model.assert_called_once_with(str(f))
@@ -169,7 +169,7 @@ def test_prepare_sm_pretrained(tmp_path):
 def test_prepare_offline(tmp_path):
     """(3) 無 SM 預訓練檔但有離線資料集 → smodel.train_by_datas。"""
     gen, sm = MagicMock(), MagicMock()
-    prepare_models(_single_cfg(), gen, sm, Record("t", rootdir=str(tmp_path)),
+    prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False),
                    sm_pretrained_path=None, offline_dataset=_FakeDS(3))
     sm.train_by_datas.assert_called_once()
     sm.pre_load_model.assert_not_called()
@@ -178,7 +178,7 @@ def test_prepare_offline(tmp_path):
 def test_prepare_sm_pretrained_missing_falls_to_offline(tmp_path):
     """SM 預訓練路徑不存在 → 跳過，改走離線預訓練。"""
     gen, sm = MagicMock(), MagicMock()
-    prepare_models(_single_cfg(), gen, sm, Record("t", rootdir=str(tmp_path)),
+    prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False),
                    sm_pretrained_path=str(tmp_path / "nope.pth"), offline_dataset=_FakeDS(2))
     sm.pre_load_model.assert_not_called()
     sm.train_by_datas.assert_called_once()
@@ -187,7 +187,7 @@ def test_prepare_sm_pretrained_missing_falls_to_offline(tmp_path):
 def test_prepare_warmup_called(tmp_path):
     """(4) 暖身：warmup(smodel) 被呼叫。"""
     gen, sm = MagicMock(), MagicMock(); warmup = MagicMock()
-    prepare_models(_single_cfg(), gen, sm, Record("t", rootdir=str(tmp_path)), warmup=warmup)
+    prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False), warmup=warmup)
     warmup.assert_called_once_with(sm)
 
 
@@ -196,7 +196,7 @@ def test_prepare_compose_gen_sm_warmup(tmp_path):
     gf = tmp_path / "g.pth"; gf.write_bytes(b"x")
     sf = tmp_path / "s.pth"; sf.write_bytes(b"x")
     gen, sm = MagicMock(), MagicMock(); warmup = MagicMock()
-    prepare_models(_single_cfg(), gen, sm, Record("t", rootdir=str(tmp_path)),
+    prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False),
                    gen_pretrained_path=str(gf), sm_pretrained_path=str(sf), warmup=warmup)
     gen.pre_load_model.assert_called_once_with(str(gf))
     sm.pre_load_model.assert_called_once_with(str(sf))
@@ -206,7 +206,7 @@ def test_prepare_compose_gen_sm_warmup(tmp_path):
 def test_prepare_fresh(tmp_path):
     """皆無 → 不載入任何東西 (GEN/SM 從隨機權重起步)。"""
     gen, sm = MagicMock(), MagicMock()
-    start = prepare_models(_single_cfg(), gen, sm, Record("t", rootdir=str(tmp_path)))
+    start = prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False))
     assert start == 0
     sm.load.assert_not_called(); sm.pre_load_model.assert_not_called()
     sm.train_by_datas.assert_not_called()

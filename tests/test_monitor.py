@@ -10,7 +10,7 @@ import torch
 
 from antenna import TargetResponse
 from antenna.monitor import TrainingMonitor
-from antenna.utils.record import Record
+from antenna.utils.runstate import RunState
 
 
 def _spec():
@@ -94,13 +94,15 @@ def test_image_every_throttles():
 
 
 def test_summary_png(tmp_path):
-    """結尾總覽圖：不依賴 TB (writer=None) 也能從 TEMP 歷史產生。"""
+    """結尾總覽圖：不依賴 TB (writer=None) 也能從 RunState 歷史產生。"""
     mon = _bare_monitor(None, spec=_spec())
-    TEMP = Record("t", rootdir=str(tmp_path))
-    for e in range(3):
-        TEMP["real_loss"] = 3.0 - e; TEMP["fake_loss"] = 2.0; TEMP["min_loss"] = 3.0 - e
-        TEMP["r_feed"] = 0.5; TEMP["time"] = 3.0
-        TEMP["patch_pattern_buf"] = torch.rand(25, 25)
-        TEMP["patch_result_buf"] = torch.rand(2, 17)
-    mon.summary(TEMP, tmp_path)
+    state = RunState(tmp_path, verbose=False)
+    for e in range(1, 4):
+        loss = 4.0 - e
+        h = state.add_pattern(torch.rand(25, 25), torch.rand(2, 17), loss)
+        for k, v in dict(epoch=e, real_loss=loss, fake_loss=2.0, min_loss=loss,
+                         real_loss_average=loss, r_feed=0.5, time=3.0, pattern_hash=h).items():
+            state.append(k, v)
+        state.save_row()
+    mon.summary(state, tmp_path)
     assert (tmp_path / "summary.png").exists()

@@ -30,7 +30,7 @@ from antenna.functions import (
 )
 from antenna.patch import custom_loss_minmax, interval_loss
 from antenna.utils.store import SampleStore
-from antenna.utils.record import Record
+from antenna.utils.runstate import RunState
 
 
 # ── port → 結構性元件 (不放 YAML，由 code 解析) ──────────────────────────────
@@ -168,8 +168,8 @@ def run_training(
     offline_dataset=None,                       # 離線資料集 (無預訓練檔時用來預訓練 SM)
     warmup=None,                                # KuoHung 暖身：(pattern, response) 對 SM 做單筆訓練
     verbose: bool = True,                       # SM 訓練進度條 + 慢步驟 log (測試關閉)
-) -> Record:
-    """單/雙埠共用訓練迴圈。回傳 TEMP(Record)。"""
+) -> RunState:
+    """單/雙埠共用訓練迴圈。回傳 RunState (metrics.csv + patterns/ 的訓練狀態)。"""
     record_path = Path(record_path)
     config.device = "cpu"
     config.checkpoint_save_path = record_path / "checkpoint"
@@ -200,7 +200,9 @@ def run_training(
     #! 舊 run 的 online.data (單一 pickle) 不會帶進來 —— 續跑時 rollback 從新樣本重新累積
     #! (SM checkpoint 不受影響；train_by_datas 對空資料集是 no-op)。
     online = SampleStore(record_path / "online", verbose=False)
-    TEMP = Record("temp", rootdir=str(record_path))
+    #? 訓練狀態走「結果夾即資料庫」：metrics.csv (純量) + patterns/ (模擬快取)。
+    #? 取代舊 temp.record —— 那是每 epoch 全量重寫的單一 pickle (最後的 O(n²) NAS 寫入者)。
+    state = RunState(record_path, verbose=verbose)
     r_feed = PORT_SPECS[cfg.port]["make_r_feed"]()
     sc = SpectralConnectivityLoss()
     gc = GapClosingLoss()
@@ -212,7 +214,7 @@ def run_training(
 
     # 模型載入 (續跑 / GEN 預載入 / SM 預訓練 / KuoHung 暖身)；回傳續跑起始 epoch
     start_epoch = prepare_models(
-        cfg, generator, smodel, TEMP,
+        cfg, generator, smodel, state,
         continue_run=continue_run,
         gen_pretrained_path=gen_pretrained_path,
         sm_pretrained_path=sm_pretrained_path,
@@ -233,12 +235,9 @@ def run_training(
         generator.optimizer.zero_grad()
 
         # 早停 → 回滾 (測試用高 patience 不觸發)
-        if TEMP.early_stop("real_loss", pat):
+        if state.early_stop("real_loss", pat):
             if verbose: logger.info(f"[{epoch}] real_loss 連續 {pat} 次未改善 → 回滾至最佳 epoch、重訓 SM (online {len(online)} 筆)")
-            generator.change(
-                TEMP.find("real_loss", TEMP("min_loss", float("inf")), "epoch"),
-                save=True, load=True,
-            )
+            generator.change(state.best_epoch("real_loss"), save=True, load=True)
             smodel.train_by_datas(online, verbose=verbose)
 
         # 生成：模型只出 logits；STE 二值化是管線的固定一步，tau 由 ACP 單獨控制
@@ -249,8 +248,9 @@ def run_training(
         for f in feeds:
             output_element = output_element + f
 
-        # 去重：沒模擬過才跑 (mock/HFSS)
-        if "patch_pattern_buf" not in TEMP or TEMP.index("patch_pattern_buf", ~output_element) is None:
+        # 去重：patterns/ 的 hash 檔名即「模擬過」快取，沒見過才跑 (mock/HFSS)
+        cached = state.lookup(~output_element)
+        if cached is None:
             if verbose: logger.info(f"[{epoch}] HFSS 模擬中…")
             result = output_element.simulate()
             real_loss = result.criterion()
@@ -258,29 +258,24 @@ def run_training(
             #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
             smodel.train_one_data(output_element.series, stack, verbose=verbose)
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
-            TEMP["real_loss"] = real_loss.item()
-            if TEMP("real_loss") < TEMP.average("real_loss"):
+            state.append("real_loss", real_loss.item())
+            phash = state.add_pattern(~output_element, stack, real_loss.item())
+            if state.last("real_loss") < state.average("real_loss"):
                 online.add(~output_element, stack)
         else:
             if verbose: logger.info(f"[{epoch}] pattern 重複 → 取快取結果 (跳過 HFSS)")
-            stack, rl = TEMP.find("patch_pattern_buf", ~output_element,
-                                  ("patch_result_buf", "real_loss"))
-            real_loss = rl
-            TEMP["real_loss"] = rl
+            stack, real_loss, phash = cached
+            state.append("real_loss", real_loss)
 
-        TEMP["real_loss_average"] = TEMP.average("real_loss")
+        state.append("real_loss_average", state.average("real_loss"))
 
-        min_loss = TEMP("min_loss", float("inf"))
-        if TEMP("real_loss") <= min_loss:
-            min_loss = TEMP("real_loss")
-            TEMP["de"] = 0
-        else:
-            TEMP.add("de", 1, default=0)
-        TEMP["min_loss"] = min_loss
+        min_loss = state.last("min_loss", float("inf"))
+        if state.last("real_loss") <= min_loss:
+            min_loss = state.last("real_loss")
+        state.append("min_loss", min_loss)
 
-        TEMP["patch_pattern_buf"] = ~output_element
-        TEMP["patch_result_buf"] = stack
-        TEMP["r_feed"] = r_feed(~output_element)
+        state.append("pattern_hash", phash)
+        state.append("r_feed", r_feed(~output_element))
 
         # 更新 GEN (借道可微分 SM)
         response = smodel(output_element.series)
@@ -294,44 +289,44 @@ def run_training(
         loss.backward()
         generator.step(scheduler_param=real_loss)
         generator.model.eval()
-        TEMP["fake_loss"] = loss.item()
+        state.append("fake_loss", loss.item())
 
         generator.save()                       # 存 GEN (供 rollback 載回 / 斷點續跑)
 
         simulator.end()
         simulator.clean()
 
-        TEMP["epoch"] = epoch
-        TEMP["time"] = round(time() - epoch_t0, 1)   # 本 epoch 耗時 (HFSS 為主)
-        TEMP.save(f"{epoch} times")            # 斷點續跑檢查點
+        state.append("epoch", epoch)
+        state.append("time", round(time() - epoch_t0, 1))   # 本 epoch 耗時 (HFSS 為主)
+        state.save_row()                       # metrics.csv append 一行 (斷點續跑檢查點)
 
         # on_epoch 收到「本 epoch 快照」：純量指標 + 繪圖素材 (監控端畫 pattern/響應用)
         if on_epoch is not None:
             on_epoch(epoch, dict(
-                real_loss=float(TEMP("real_loss")),
-                min_loss=float(TEMP("min_loss")),
-                fake_loss=float(TEMP("fake_loss")),
-                r_feed=float(TEMP("r_feed")),
+                real_loss=float(state.last("real_loss")),
+                min_loss=float(state.last("min_loss")),
+                fake_loss=float(state.last("fake_loss")),
+                r_feed=float(state.last("r_feed")),
                 tau=float(generator.scheduler.get_temp()),
                 lr=float(optimizer.param_groups[0]["lr"]),
-                time=float(TEMP("time")),
+                time=float(state.last("time")),
                 pattern=~output_element,               # 本 epoch 的 pattern (已 detach)
                 response=stack.detach().cpu(),         # 本 epoch 的響應 (labels, 點數)
                 spec=spec,                             # 響應規格 (labels/x/目標曲線)
                 r_feed_painter=r_feed,                 # 饋電連通圖的繪圖器 (plot 最新一筆)
             ))
 
-    return TEMP
+    return state
 
 
-def prepare_models(cfg, generator, smodel, TEMP, *, continue_run=False,
+def prepare_models(cfg, generator, smodel, state, *, continue_run=False,
                    gen_pretrained_path=None, sm_pretrained_path=None,
                    offline_dataset=None, warmup=None) -> int:
     """GEN/SM 的「載入策略」(模組化、由 config 的 generator/surrogate 區段指定)。
     回傳續跑起始 epoch。
 
     優先序：
-      (1) 斷點續跑：結果夾已存在且 TEMP 有 epoch → 載回 GEN/SM，從上次 epoch 續跑 (其餘略過)。
+      (1) 斷點續跑：結果夾已存在且 metrics.csv 有 epoch → 載回 GEN/SM，從上次 epoch 續跑 (其餘略過)。
       (2) GEN 預載入 (L2 暖啟動)：gen_pretrained_path 存在 → 載入 GEN 權重。
       (3) SM 載入 (L1)：sm_pretrained_path 存在 → 直接載入；否則若有離線資料集 → 從頭預訓練。
       (4) KuoHung 暖身：warmup 是可呼叫物 warmup(smodel) → 對 SM 做單筆暖身訓練
@@ -339,8 +334,8 @@ def prepare_models(cfg, generator, smodel, TEMP, *, continue_run=False,
     皆無 → GEN/SM 從隨機權重開始 (純靠線上學習)。
     """
     # (1) 斷點續跑：載回 GEN+SM，後續載入策略全部略過
-    if continue_run and ("epoch" in TEMP):
-        last = TEMP("epoch")
+    if continue_run and state.last_epoch > 0:
+        last = state.last_epoch
         logger.info(f"斷點續跑：載回 epoch {last} 的 GEN/SM，從 epoch {int(last) + 1} 繼續")
         generator.change(last, load=True)
         smodel.load()

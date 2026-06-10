@@ -12,7 +12,11 @@ train.py — 由「外部 YAML config」驅動的訓練入口 (取代 train_sing
   解析模型載入設定、呼叫 antenna.training.run_training，最後寄完成通知。
 - 核心訓練迴圈在 antenna.training.run_training (有 golden 測試把關)。
 """
+import json
+import shutil
+import socket
 import sys
+from datetime import datetime
 
 from antenna.utils import Complete, DATASET_PATH, ROOTDIR, config, connect_network_drive, logger
 config.device = "cpu"
@@ -67,6 +71,15 @@ def resolve_models(cfg):
     )
 
 
+def write_status(result_path, **fields):
+    """運行管理心跳：<結果夾>/status.json (state/機器/epoch/updated_at)。
+    與「監控」(TB) 是兩件事 —— 這個回答的是「哪個 run 還活著、跑到哪、在哪台機器」。"""
+    fields.update(machine=socket.gethostname(),
+                  updated_at=datetime.now().isoformat(timespec="seconds"))
+    (result_path / "status.json").write_text(
+        json.dumps(fields, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def main(yaml_path):
     cfg = load_config(yaml_path)
     logger.info(f"Loaded config: {cfg.name} (port={cfg.port})")
@@ -76,6 +89,7 @@ def main(yaml_path):
         f"[Patch-{cfg.port}-{{device}}-{{hash_id}}] {cfg.name}",
         rootdir=ROOTDIR, generate_code=__file__, enable_exception_handler=True,
     )
+    shutil.copy(yaml_path, RESULT_PATH / "config.yaml")   # 設定快照：結果夾自我說明
     AntennaPattern.setDefaultCoordinate((0, 25, 0, 25))
 
     simulator = build_simulator(cfg, RESULT_PATH)
@@ -93,21 +107,31 @@ def main(yaml_path):
             f"({m['time']:.0f}s)"
         )
         monitor.on_epoch(epoch, m)
+        write_status(RESULT_PATH, state="running", epoch=epoch, total=cfg.epochs,
+                     real_loss=m["real_loss"], min_loss=m["min_loss"])
 
-    TEMP = run_training(
-        cfg,
-        simulator=simulator,
-        record_path=RESULT_PATH,
-        continue_run=CONTINUE_RUN,
-        on_epoch=on_epoch,
-        **model_kwargs,             # gen_pretrained_path / sm_pretrained_path / offline_dataset / warmup
-    )
+    write_status(RESULT_PATH, state="running", epoch=0, total=cfg.epochs)
+    try:
+        state = run_training(
+            cfg,
+            simulator=simulator,
+            record_path=RESULT_PATH,
+            continue_run=CONTINUE_RUN,
+            on_epoch=on_epoch,
+            **model_kwargs,         # gen_pretrained_path / sm_pretrained_path / offline_dataset / warmup
+        )
+    except BaseException:
+        write_status(RESULT_PATH, state="crashed")
+        raise
 
-    monitor.summary(TEMP, RESULT_PATH)   # 結尾總覽圖 summary.png (不依賴 TB)
+    monitor.summary(state, RESULT_PATH)   # 結尾總覽圖 summary.png (不依賴 TB)
     monitor.close()
+    min_loss = min(state.series("real_loss"))
+    write_status(RESULT_PATH, state="finished", epoch=state.last_epoch,
+                 total=cfg.epochs, min_loss=min_loss)
 
     Complete(
-        f"Training Finished! ({cfg.name}, Min Loss: {TEMP.custom('real_loss', min)})",
+        f"Training Finished! ({cfg.name}, Min Loss: {min_loss})",
         name=cfg.name, send_email=True,
     )
 

@@ -116,6 +116,24 @@ golden 數值**綁定 torch 版本與 CPU**：
 - 正式轉換：`python -m script.convert_dataset patch_single_mirror`（**先與維護者確認再跑**；
   不刪舊檔，轉完自動切新格式）。app.py 的 dataset 瀏覽頁只認舊格式。
 
+### 結果夾即資料庫（訓練狀態，新格式）
+
+訓練狀態也去 pickle 化（`RunState`，`antenna/utils/runstate.py`），取代舊 `temp.record`
+（那是每 epoch 全量重寫的單一 pickle——最後一個 O(n²) NAS 寫入者）：
+
+```
+result/[實驗]/
+  config.yaml      # 設定快照 (原文)
+  status.json      # 運行管理心跳：state(running/finished/crashed)/機器/epoch/updated_at
+  metrics.csv      # 純量時序，一 epoch 一行 → pd.read_csv 三行就能 pyplot 自訂畫圖
+  patterns/        # 每筆模擬過的 (pattern, response, loss)，hash 即檔名 = 去重快取
+  checkpoint/  online/  tb/  summary.png
+```
+
+- **監控 vs 運行管理是兩件事**：TB 看曲線/圖（監控）；`status.json` 回答「誰還活著、跑到哪、在哪台機器」（管理）。
+- 斷點續跑改讀 `metrics.csv`：升級前還在半路的舊 run（只有 temp.record）續跑不相容——跑完再升級或重來。
+- `Record` 與舊 `temp.record` 完全保留（app.py 歷史檔案館用）。
+
 ## 5. Branch / commit 慣例
 
 - 開發都在 **`GAN`** 分支；測試全綠後 `main` 以 fast-forward 同步：
