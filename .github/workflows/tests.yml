@@ -21,8 +21,9 @@ jobs:
 
       # 測試的最小依賴集（torch 在 Windows 預設即 CPU 版）。
       # 完整 requirements.txt 含 wandb/sentry/torchvision 等訓練端依賴，CI 不需要。
+      # scipy：functions.py 的 FeedReachability/island 在函式內 lazy import scipy.ndimage。
       - name: Install dependencies
-        run: pip install torch numpy matplotlib pandas loguru tqdm PyYAML pywin32 psutil typing_extensions pytest
+        run: pip install torch numpy scipy matplotlib pandas loguru tqdm PyYAML pywin32 psutil typing_extensions pytest
 
       - name: Run tests
         run: pytest tests/ -q
