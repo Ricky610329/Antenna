@@ -37,6 +37,13 @@ class TrainingMonitor:
             logger.warning("tensorboard 未安裝 → TB 監控停用 (pip install tensorboard)；訓練照常進行")
             self.writer = None
 
+    # ── 一次性：實驗設定 ──────────────────────────────────────────────────────
+    def log_config(self, text: str):
+        """把實驗 config (YAML 原文) 記進 TB 的 Text 分頁 —— 點開任何 run 即見其完整設定。"""
+        if self.writer is not None:
+            self.writer.add_text("config", f"```yaml\n{text}\n```")
+            self.writer.flush()
+
     # ── 每 epoch ────────────────────────────────────────────────────────────
     def on_epoch(self, epoch: int, m: dict):
         self._spec = m.get("spec", self._spec)

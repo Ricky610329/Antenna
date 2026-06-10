@@ -21,9 +21,10 @@ def _spec():
 
 
 class _FakeWriter:
-    def __init__(self): self.scalars = []; self.figures = []
+    def __init__(self): self.scalars = []; self.figures = []; self.texts = []
     def add_scalar(self, tag, v, step): self.scalars.append(tag)
     def add_figure(self, tag, fig, step=None): self.figures.append(tag)
+    def add_text(self, tag, text): self.texts.append((tag, text))
     def flush(self): pass
     def close(self): pass
 
@@ -51,6 +52,7 @@ def test_disabled_without_tensorboard(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "torch.utils.tensorboard", None)
     mon = TrainingMonitor(tmp_path / "tb")
     assert mon.writer is None
+    mon.log_config("port: single")
     mon.on_epoch(1, _metrics(_spec()))
     mon.close()
 
@@ -64,6 +66,14 @@ def test_scalars_and_figures_logged():
         assert tag in mon.writer.scalars
     for tag in ("target/curves", "pattern/feed_reachability", "response/sim_vs_target"):
         assert tag in mon.writer.figures
+
+
+def test_config_logged_as_yaml_text():
+    """config 原文以 markdown code block 記進 Text 分頁。"""
+    mon = _bare_monitor(_FakeWriter())
+    mon.log_config("port: single\nlr: 0.005")
+    (tag, text), = mon.writer.texts
+    assert tag == "config" and "port: single" in text and text.startswith("```yaml")
 
 
 def test_target_curves_logged_once():

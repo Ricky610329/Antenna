@@ -84,6 +84,7 @@ def main(yaml_path):
     #* 監控：寫 TB 事件檔到 <結果夾>/tb (多機實驗在任一台跑
     #*   tensorboard --logdir "T:\...\result" 即可並排監看全部)
     monitor = TrainingMonitor(RESULT_PATH / "tb")
+    monitor.log_config(open(yaml_path, encoding="utf-8").read())   # config 原文進 TB Text 分頁
 
     def on_epoch(epoch, m):
         logger.info(
