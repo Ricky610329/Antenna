@@ -57,12 +57,23 @@ CI（GitHub Actions，`.github/workflows/tests.yml`）在 push / PR 時自動跑
      並在 **commit message 裡寫明為什麼更新 golden**（這是行為改變的紀錄點）。
 3. 經驗法則：**重構（不改行為）絕不該動 golden**；golden 動了 = 行為變了，要嘛是 bug、要嘛要說清楚。
 
-### Golden 的參考環境：torch 2.7.1（重要）
+### Golden 的參考環境：torch 2.7.1 + 開發機硬體（重要）
 
-golden 數值**綁定 torch 版本**：換版本會造成浮點漂移（SC loss 走特徵值分解最敏感，2.7→2.12 漂 Δ≈1.0；迴圈 golden 會逐 epoch 放大）。因此：
+golden 數值**綁定 torch 版本與 CPU**：
+- 換 torch 版本會漂（SC loss 走特徵值分解最敏感，2.7→2.12 漂 Δ≈1.0）→ CI 釘住 `torch==2.7.1`（= 開發機 `ant` env 版本）。
+- 換 CPU 也會漂（SIMD/MKL kernel 路徑不同；GitHub runner 實測相對漂移 ~0.4%）→ 無法跨硬體精確比對。
 
-- CI 釘住 `torch==2.7.1`（= 開發機 `ant` env 的版本），**不要**為了漂移放寬 `tol`（會讓真 bug 躲過去）。
-- **要升級 torch 時**的正確順序：升開發機 → 刪三個 golden 檔重生基準 → 同步改 `.github/workflows/tests.yml` 的釘版 → 一個 commit 一起進，message 說明。
+因此採**雙軌容差**（`conftest.golden_tol`）：
+
+| 環境 | 容差 | 角色 |
+| --- | --- | --- |
+| 本機（開發機） | 絕對 `1e-4` | **精檢**，數值真相的來源；0.1% 級的細微 bug 在這裡抓 |
+| CI（`CI=true` 自動判斷） | 相對 `1%` | **粗檢**：import / config / 單元測試全部嚴格，golden 擋大方向 |
+
+> 誠實的代價：0.2% 級的細微行為差異（如當年 dual register_order bug）CI 抓不到，
+> **commit 前本機跑 `python -m pytest tests/ -q` 仍是必要紀律**。
+
+**要升級 torch 時**：升開發機 → 刪三個 golden 檔重生基準 → 同步改 `.github/workflows/tests.yml` 的釘版 → 一個 commit 一起進，message 說明。
 
 ### 已知的非直覺行為（別「修」它們）
 
@@ -75,11 +86,14 @@ golden 數值**綁定 torch 版本**：換版本會造成浮點漂移（SC loss 
 ### 新實驗（最常見）
 複製一個 `configs/*.yaml`、改 `name` 和參數即可，**不用改 code**。欄位說明見 [`training.md`](training.md)。
 
-### 新的 GEN / SM 架構
-1. 在 `antenna/models.py`（GEN）或 `antenna/smodels.py`（SM）寫新的 `nn.Module`。
-2. 在 `antenna/training.py` 的 `GENERATOR_REGISTRY` / `SURROGATE_REGISTRY` 註冊一個 `type` 名稱。
-3. config 裡 `generator.type` / `surrogate.type` 指定它。
-4. 在 `tests/test_model_loading.py` 加架構測試（照現有測試的樣子，斷層數/寬度即可）。
+### 新的 GEN / SM 架構（模型動物園）
+1. 寫一個純 `nn.Module`。**GEN 約定**：建構簽名 `(in_dim, out_dim, **參數)`、forward 是
+   spec 向量 → logits，**不做** STE 二值化、不碰 tau（那是訓練管線的固定一步，tau 由 ACP 控制）。
+2. 在 **`antenna/zoo.py`** 的 `GENERATORS` / `SURROGATES` 加一行。
+3. config 寫名字：`generator: <名字>`。
+4. 在 `tests/test_model_loading.py` 加架構測試（斷層數/寬度即可）。
+
+只調層數/寬度不用走上面流程：config 寫 `{name: sigmoid, hidden: [...]}` 即可。
 
 ### 新的 port 模式（罕見）
 在 `antenna/training.py` 的 `PORT_SPECS` 加一組（labels、register_order、feeds、make_r_feed），並準備對應模擬器。

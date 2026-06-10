@@ -50,13 +50,9 @@ def test_surrogate_section_parsed():
 
 
 def test_generator_section_parsed():
-    """generator 架構區段 + surrogate.type/hidden 要能從 YAML 載入。"""
+    """generator: <名字> 簡寫要正規化成 {name: ...}；無區段 → 空 dict (zoo 預設)。"""
     s = load_config(os.path.join(CONFIGS, "single_base.yaml"))
-    assert s.generator["type"] == "sigmoid"
-    assert s.generator["hidden"] == [1024, 1024]
-    assert s.surrogate["type"] == "mlp"
-    assert s.surrogate["hidden"] == [2048, 1024, 512, 128, 64]
-    # 無 generator 區段 → 預設空 dict (build_generator 用預設架構)
+    assert s.generator == {"name": "sigmoid"}
     t = load_config(os.path.join(FIX, "single_test.yaml"))
     assert t.generator == {}
 

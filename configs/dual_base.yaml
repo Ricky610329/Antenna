@@ -17,13 +17,9 @@ hfss:
 scheduler:
   on_plateau: linear
 
-generator:                    # GEN 架構 (可省略 → 預設)；type=registry 名稱，hidden=隱藏層
-  type: sigmoid
-  hidden: [1024, 1024]
+generator: sigmoid            # zoo 名字 (antenna/zoo.py)；可省略 → sigmoid
 
-surrogate:                    # SM 架構 + 載入策略
-  type: mlp
-  hidden: [2048, 1024, 512, 128, 64]
+surrogate:                    # SM 載入策略 (name 可省略 → mlp；hidden 選填微調)
   pretrained: patch_dual.pth
   offline_dataset: patch_dual
 

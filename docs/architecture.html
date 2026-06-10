@@ -87,7 +87,7 @@
     <div class="role g">
       <h3><span class="badge">G</span>生成器</h3>
       <p style="margin:6px 0"><b>目標響應 → pattern</b></p>
-      <small>程式碼 <code>SigmoidGEN</code>。MLP 把目標響應映成 logits，再用 STE 可微分二值化輸出 0/1 圖樣。是「要被訓練」的對象（論文的 G）。</small>
+      <small>程式碼 <code>SigmoidGEN</code>（登記於 <code>antenna/zoo.py</code>）。MLP 把目標響應映成 logits；STE 可微分二值化由訓練管線統一套用（tau 由 ACP 控制，模型不認識 tau）。是「要被訓練」的對象（論文的 G）。</small>
     </div>
     <div class="role gen">
       <h3><span class="badge">GEN</span>代理模型</h3>
@@ -209,7 +209,8 @@
   <table>
     <tr><th>檔案</th><th>角色</th></tr>
     <tr><td><code>train.py</code></td><td>唯一入口：<code>python train.py configs/xxx.yaml</code>。掛 NAS、結果路徑、建真實模擬器、跑核心訓練。</td></tr>
-    <tr><td><code>antenna/training.py</code></td><td>單/雙埠共用核心：<code>run_training</code>(迴圈) + <code>load_config</code>(YAML) + <code>prepare_models</code>(GEN/SM 載入) + <code>build_generator</code>/<code>build_surrogate</code>(registry：架構由 config 的 <code>type</code>/<code>hidden</code> 決定)。port 決定結構性元件。</td></tr>
+    <tr><td><code>antenna/training.py</code></td><td>單/雙埠共用核心：<code>run_training</code>(迴圈，含管線層 STE 二值化) + <code>load_config</code>(YAML) + <code>prepare_models</code>(GEN/SM 載入) + <code>build_generator</code>/<code>build_surrogate</code>(名字查 zoo)。port 決定結構性元件。</td></tr>
+    <tr><td><code>antenna/zoo.py</code></td><td><b>模型動物園</b>：所有可用 GEN/SM 架構的唯一註冊處，config 用名字指定（<code>generator: sigmoid</code>）。新增模型在此加一行。</td></tr>
     <tr><td><code>configs/*.yaml</code></td><td>一檔一實驗（single/dual + 超參數 + 目標響應 + 模型架構/載入）。</td></tr>
     <tr><td><code>KuoHung.py</code></td><td>載入參考天線圖樣與響應，供代理暖身微調（由 config 的 <code>surrogate.warmup</code> 接上）。</td></tr>
   </table>

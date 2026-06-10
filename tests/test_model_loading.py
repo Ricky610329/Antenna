@@ -2,7 +2,7 @@
 模型建構與載入的 mock 測試（config 驅動）。
 
 涵蓋三塊（皆無需真實權重檔 / HFSS）：
-  - build_generator / build_surrogate：架構由 cfg.generator / cfg.surrogate 的 type/hidden 決定。
+  - build_generator / build_surrogate：名字查 antenna/zoo.py，hidden 微調架構。
   - prepare_models：模型載入策略（續跑 / GEN 預載入 / SM 預訓練 / KuoHung 暖身）的分支。
   - build_simulator：port → 真實模擬器 class。
 """
@@ -12,10 +12,10 @@ import pytest
 import torch
 import torch.nn as nn
 
+from antenna import zoo
 from antenna.training import (
     TrainConfig, prepare_models, build_simulator,
     build_generator, build_surrogate,
-    GENERATOR_REGISTRY, SURROGATE_REGISTRY,
 )
 from antenna.utils import config
 from antenna.utils.utils import Record
@@ -56,28 +56,43 @@ def _linears(seq):
     return [m for m in seq if isinstance(m, nn.Linear)]
 
 
-# ── build_generator / build_surrogate：架構由 config 的 type/hidden 決定 ─────
+# ── build_generator / build_surrogate：名字查 zoo，hidden 微調 ───────────────
 
-def test_registries_have_defaults():
-    assert "sigmoid" in GENERATOR_REGISTRY
-    assert "mlp" in SURROGATE_REGISTRY
+def test_zoo_has_defaults():
+    assert "sigmoid" in zoo.GENERATORS
+    assert "mlp" in zoo.SURROGATES
 
 
 def test_build_generator_default_arch():
-    """未指定 generator → 預設架構 (hidden=(1024,1024) → 2 隱藏層 + 1 輸出)。"""
+    """未指定 generator → zoo 預設 sigmoid (hidden=(1024,1024) → 2 隱藏層 + 1 輸出)。"""
     g = build_generator(_single_cfg())
     ls = _linears(g.fc_patch)
     assert len(ls) == 3
     assert ls[0].out_features == 1024 and ls[1].out_features == 1024
 
 
+def test_generator_string_shorthand():
+    """YAML 簡寫 generator: sigmoid (字串) → __post_init__ 正規化成 {name: sigmoid}。"""
+    cfg = _single_cfg(); cfg2 = TrainConfig(name="t2", port="single",
+                                            generator="sigmoid", targets=cfg.targets)
+    assert cfg2.generator == {"name": "sigmoid"}
+    assert _linears(build_generator(cfg2).fc_patch)[0].out_features == 1024
+
+
 def test_build_generator_custom_hidden():
     """cfg.generator.hidden 改變寬度/層數。"""
-    cfg = _single_cfg(); cfg.generator = {"type": "sigmoid", "hidden": [64, 32, 16]}
+    cfg = _single_cfg(); cfg.generator = {"name": "sigmoid", "hidden": [64, 32, 16]}
     g = build_generator(cfg)
     ls = _linears(g.fc_patch)
     assert len(ls) == 4                                  # 3 隱藏 + 1 輸出
     assert [l.out_features for l in ls[:3]] == [64, 32, 16]
+
+
+def test_unknown_model_name_rejected():
+    """zoo 沒有的名字 → 明確報錯 (列出可用名單)。"""
+    cfg = _single_cfg(); cfg.generator = {"name": "transformer"}
+    with pytest.raises(ValueError, match="zoo"):
+        build_generator(cfg)
 
 
 def test_build_surrogate_default_arch(tmp_path, _hfss_lr):
@@ -89,7 +104,7 @@ def test_build_surrogate_default_arch(tmp_path, _hfss_lr):
 
 
 def test_build_surrogate_custom_hidden(tmp_path, _hfss_lr):
-    cfg = _single_cfg(); cfg.surrogate = {"type": "mlp", "hidden": [128, 64]}
+    cfg = _single_cfg(); cfg.surrogate = {"name": "mlp", "hidden": [128, 64]}
     sm = build_surrogate(cfg, tmp_path)
     ls = _linears(sm.model.fc_patch)
     assert len(ls) == 3                                  # 2 隱藏 + 1 輸出

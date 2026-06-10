@@ -253,12 +253,12 @@ class HFSSNet(nn.Module):
 #? 訓練腳本 (train_single.py / train_dual.py) 實際使用的就是這個工廠 (見各腳本 from ... import OldSM)。
 #? 輕量穩定：純 MLP 骨幹 + MSE 回歸 + 「loss 卡住就降 lr」的 ReduceLROnPlateau，
 #? 適合 SM 這種需頻繁線上微調、且每筆資料都要快速收斂的場景。
-def OldSM(checkpoint, hidden=(2048, 1024, 512, 128, 64)):
+def OldSM(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 128, 64)):
     """
-    學長的做法。hidden 由 config 指定 HFSSNet 的隱藏層 (預設與原架構相同)。
+    學長的做法。維度由訓練端傳入 (不碰全域註冊狀態)；hidden 可由 config 指定。
     """
     model_ge = HFSSNet( # Pattern -> Response
-        AntennaPattern.size(flatten=True), AntennaResponse.size(), hidden=hidden
+        in_dim, response_shape, hidden=hidden
     )
     criterion_ge = nn.MSELoss()  #? 均方誤差：SM 是響應回歸任務，懲罰大偏差
     optimizer_ge = Ranger(

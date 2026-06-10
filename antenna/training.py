@@ -21,8 +21,8 @@ import torch
 
 from antenna.utils import config
 from antenna import AntennaPattern, AntennaResponse, TargetResponse
-from antenna.models import Models, SigmoidGEN
-from antenna.smodels import OldSM
+from antenna import zoo
+from antenna.models import Models
 from antenna.functions import (
     FeedReachability, AdaptiveCyclicalScheduler,
     SpectralConnectivityLoss, GapClosingLoss,
@@ -63,8 +63,8 @@ class TrainConfig:
     loss: dict = field(default_factory=dict)        # total_variation / island_suppression / spectral_connectivity / gap_closing
     hfss: dict = field(default_factory=dict)        # lr / min_loss / max_epoch (代理模型線上訓練)
     scheduler: dict = field(default_factory=dict)   # on_plateau
-    generator: dict = field(default_factory=dict)   # 生成器 GEN：type / hidden / pretrained(預載入權重)
-    surrogate: dict = field(default_factory=dict)   # 代理 SM：type / hidden / pretrained / offline_dataset / warmup
+    generator: dict = field(default_factory=dict)   # GEN：zoo 名字 (字串) 或 {name, hidden, pretrained}
+    surrogate: dict = field(default_factory=dict)   # SM：{name, hidden, pretrained, offline_dataset, warmup}
     targets: dict = field(default_factory=dict)     # {label: {side, center, width, method|interval}}
 
     def __post_init__(self):
@@ -74,6 +74,8 @@ class TrainConfig:
         missing = need - set(self.targets)
         if missing:
             raise ValueError(f"port={self.port} 缺少 targets: {sorted(missing)}")
+        if isinstance(self.generator, str):     # 簡寫 generator: sigmoid → {name: sigmoid}
+            self.generator = {"name": self.generator}
 
 
 def load_config(path) -> TrainConfig:
@@ -114,25 +116,35 @@ def build_feeds(cfg: TrainConfig):
             for (shape, coord) in PORT_SPECS[cfg.port]["feeds"]]
 
 
-# ── 模型 registry：架構由 config 的 type 決定 (可擴展；之後加新架構只要註冊) ──
-GENERATOR_REGISTRY = {
-    "sigmoid": lambda hidden=(1024, 1024): SigmoidGEN(hidden=tuple(hidden)),
-}
-SURROGATE_REGISTRY = {
-    "mlp": lambda checkpoint, hidden=(2048, 1024, 512, 128, 64): OldSM(checkpoint, hidden=tuple(hidden)),
-}
+# ── 模型建構：名字查 antenna/zoo.py，維度在此推好傳入 (模型不碰全域註冊狀態)。
+#    架構參數 (如 hidden) 直接透傳給模型；載入欄位 (pretrained 等) 不屬於架構，先剔除。
+def _arch_params(section: dict, loading_keys=("name", "pretrained", "offline_dataset", "warmup")):
+    params = {k: v for k, v in section.items() if k not in loading_keys}
+    if "hidden" in params:
+        params["hidden"] = tuple(params["hidden"])
+    return params
 
 
 def build_generator(cfg: TrainConfig):
-    """依 cfg.generator (type / hidden) 建生成器 GEN (nn.Module)。未指定 → 預設架構。"""
-    g = cfg.generator
-    return GENERATOR_REGISTRY[g.get("type", "sigmoid")](hidden=tuple(g.get("hidden", (1024, 1024))))
+    """依 cfg.generator (zoo 名字 + 架構參數) 建生成器 GEN。未指定 → sigmoid 預設。"""
+    name = cfg.generator.get("name", "sigmoid")
+    if name not in zoo.GENERATORS:
+        raise ValueError(f"未知的 generator {name!r}，可用: {sorted(zoo.GENERATORS)} (見 antenna/zoo.py)")
+    return zoo.GENERATORS[name](
+        AntennaResponse.size(flatten=True), AntennaPattern.size(flatten=True),
+        **_arch_params(cfg.generator),
+    )
 
 
 def build_surrogate(cfg: TrainConfig, checkpoint):
-    """依 cfg.surrogate (type / hidden) 建代理模型 SM (SurrogateModel)。未指定 → 預設架構。"""
-    s = cfg.surrogate
-    return SURROGATE_REGISTRY[s.get("type", "mlp")](checkpoint, hidden=tuple(s.get("hidden", (2048, 1024, 512, 128, 64))))
+    """依 cfg.surrogate (zoo 名字 + 架構參數) 建代理模型 SM。未指定 → mlp 預設。"""
+    name = cfg.surrogate.get("name", "mlp")
+    if name not in zoo.SURROGATES:
+        raise ValueError(f"未知的 surrogate {name!r}，可用: {sorted(zoo.SURROGATES)} (見 antenna/zoo.py)")
+    return zoo.SURROGATES[name](
+        checkpoint, AntennaPattern.size(flatten=True), AntennaResponse.size(),
+        **_arch_params(cfg.surrogate),
+    )
 
 
 def run_training(
@@ -168,7 +180,7 @@ def run_training(
     simulator.open()
     feeds = build_feeds(cfg)
 
-    model = build_generator(cfg)                # 架構由 cfg.generator (type/hidden) 決定
+    model = build_generator(cfg)                # 架構查 zoo (cfg.generator 的名字 + 參數)
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, betas=(0.5, 0.999))
     scheduler = AdaptiveCyclicalScheduler(
         optimizer, T_0=100, T_mult=1, lr_max=cfg.lr, lr_min=1e-6,
@@ -219,13 +231,12 @@ def run_training(
                 save=True, load=True,
             )
             smodel.train_by_datas(online)
-            output_element = AntennaPattern(
-                generator(AntennaResponse.target.concat(), tau=generator.scheduler.get_temp())
-            )
-        else:
-            output_element = AntennaPattern(
-                generator(AntennaResponse.target.concat(), tau=generator.scheduler.get_temp())
-            )
+
+        # 生成：模型只出 logits；STE 二值化是管線的固定一步，tau 由 ACP 單獨控制
+        logits = generator(AntennaResponse.target.concat())
+        output_element = AntennaPattern(
+            AntennaPattern.binarization(logits, generator.scheduler.get_temp())
+        )
         for f in feeds:
             output_element = output_element + f
 

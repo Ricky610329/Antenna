@@ -38,14 +38,10 @@ hfss:                         # 代理模型 (SM) 線上訓練
 scheduler:
   on_plateau: linear          # linear | peak
 
-generator:                    # 生成器 GEN 架構 (可省略 → 預設)；見第 4 節
-  type: sigmoid               # registry 名稱
-  hidden: [1024, 1024]        # 隱藏層寬度/層數
-  # pretrained: gen_xxx.pth   # 選填：預載入 GEN 權重 (暖啟動)
+generator: sigmoid            # 生成器：antenna/zoo.py 的名字 (可省略 → sigmoid)；見第 4 節
+                              # 微調/暖啟動: {name: sigmoid, hidden: [...], pretrained: xxx.pth}
 
-surrogate:                    # 代理 SM 架構 + 載入策略 (見第 4 節)
-  type: mlp                   # registry 名稱 (mlp = HFSSNet)
-  hidden: [2048, 1024, 512, 128, 64]
+surrogate:                    # 代理 SM：載入策略 (name 可省略 → mlp)；見第 4 節
   pretrained: old_sm.pth
   offline_dataset: patch_single_mirror
   # warmup: "1"               # 選填：KuoHung 參考圖樣編號，對 SM 做單筆暖身
@@ -64,16 +60,18 @@ targets:                      # 目標響應 (side=兩端, center=中央, width=
 
 ## 4. 模型架構 + 載入（`generator` / `surrogate` 區段）
 
-### 架構（`type` + `hidden`）
+### 架構：模型動物園（`antenna/zoo.py`）
 
-GEN / SM 的架構由 config 指定，經 registry 解析（之後加新架構只要註冊一個 `type`）：
+所有可用的 GEN / SM 架構都登記在 **`antenna/zoo.py`**（唯一的註冊文件），config 用**名字**指定：
 
-| 區段 | `type` | 預設 `hidden` | 對應實作 |
+| 區段 | 預設名字 | 對應實作 | 預設 `hidden` |
 | --- | --- | --- | --- |
-| `generator` | `sigmoid` | `[1024, 1024]` | `SigmoidGEN` |
-| `surrogate` | `mlp` | `[2048, 1024, 512, 128, 64]` | `HFSSNet`（`OldSM`） |
+| `generator` | `sigmoid` | `SigmoidGEN` | `[1024, 1024]` |
+| `surrogate` | `mlp` | `HFSSNet`（`OldSM`） | `[2048, 1024, 512, 128, 64]` |
 
-兩區段都可省略 → 用預設架構（與舊 `train_single/dual` **完全相同**）。改 `hidden` 即可調層數/寬度，不必動 code。
+- 兩區段都可省略 → 用預設（與舊 `train_single/dual` **完全相同**）。
+- `hidden` 為選填微調（一次性實驗用）；常用的變體請在 zoo 登記成新名字。
+- **新增模型**：寫一個純 `nn.Module`（GEN 約定：spec 向量 → logits，**不做**二值化、不碰 tau——STE 二值化由訓練管線統一套用、tau 由 ACP 控制），在 zoo 加一行即可。
 
 ### 載入策略（`prepare_models()` 依序判斷）
 

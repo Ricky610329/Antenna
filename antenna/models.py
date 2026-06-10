@@ -245,29 +245,26 @@ class BiScaleNorm(nn.Module):
 ###* SigmoidGEN — 主用生成器 (MLP + BiScaleNorm + AntennaPattern.binarization) ###
 #? 本專案實際主用的生成器，入口 train_single.py / train_dual.py 即用它。
 #? 結構：response → MLP 1024-1024 → BiScaleNorm，最後接
-#? AntennaPattern.binarization：它內部用「sigmoid 軟近似 + STE」做可微分二值化——
-#? forward 取硬 0/1、backward 用陡峭 sigmoid (steepness=1/tau) 的平滑梯度繞過不可導斷點，
-#? 閾值預設取輸入平均值。tau 由外部 (排程) 控制退火，故 forward 多收一個 tau 參數。
 class SigmoidGEN(nn.Module):
     """
-    Generator Model
+    生成器 G (純模型)：目標響應向量 → pattern logits。
+
+    刻意「不做」STE 二值化、不認識 tau —— 二值化是訓練管線的固定一步
+    (run_training 用 ACP 的 tau 統一套用)，模型只負責映射；新模型照此約定
+    寫好後在 antenna/zoo.py 登記一行即可。
     """
-    def __init__(self, hidden=(1024, 1024)):
+    def __init__(self, in_dim, out_dim, hidden=(1024, 1024)):
         super(SigmoidGEN,self).__init__()
-        #? hidden 由 config 指定 (預設 (1024,1024) 與原架構完全相同)。每層 Linear→PReLU，
-        #? 末層 Linear→BiScaleNorm。可換層數/寬度而不必改 code。
-        in_dim = AntennaResponse.size(flatten=True)
-        out_dim = AntennaPattern.size(flatten=True)
+        #? 維度由訓練端傳入 (不碰 AntennaResponse/AntennaPattern 的全域註冊狀態)。
+        #? hidden 可由 config 指定；每層 Linear→PReLU，末層 Linear→BiScaleNorm (不接 PReLU)。
         layers, prev = [], in_dim
         for h in hidden:
             layers += [nn.Linear(prev, h), nn.PReLU()]
             prev = h
-        layers += [nn.Linear(prev, out_dim), BiScaleNorm()]   # 末層用 BiScaleNorm (不接 PReLU)
+        layers += [nn.Linear(prev, out_dim), BiScaleNorm()]
         self.fc_patch = nn.Sequential(*layers)
         self.to(config.device)
 
-    def forward(self, input, tau:Optional[float] = None) -> Tensor:
-        x = self.fc_patch(input)
-        #? 把 MLP 輸出的 logits 交給 AntennaPattern.binarization 做 STE 二值化 (tau 控制軟硬程度)。
-        return AntennaPattern.binarization(x, tau)
+    def forward(self, input) -> Tensor:
+        return self.fc_patch(input)
 
