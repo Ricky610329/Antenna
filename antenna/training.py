@@ -19,7 +19,7 @@ from typing import Optional, Callable
 
 import torch
 
-from antenna.utils import config
+from antenna.utils import config, logger
 from antenna import AntennaPattern, AntennaResponse, TargetResponse
 from antenna import zoo
 from antenna.models import Models
@@ -166,6 +166,7 @@ def run_training(
     gen_pretrained_path: Optional[str] = None,  # 預載入 GEN 權重檔 (L2 暖啟動)
     offline_dataset=None,                       # 離線資料集 (無預訓練檔時用來預訓練 SM)
     warmup=None,                                # KuoHung 暖身：(pattern, response) 對 SM 做單筆訓練
+    verbose: bool = True,                       # SM 訓練進度條 + 慢步驟 log (測試關閉)
 ) -> Record:
     """單/雙埠共用訓練迴圈。回傳 TEMP(Record)。"""
     record_path = Path(record_path)
@@ -178,6 +179,7 @@ def run_training(
         torch.manual_seed(seed)
 
     AntennaPattern.register_simulator(simulator)
+    if verbose: logger.info("啟動模擬器 (HFSS COM)…")
     simulator.open()
     feeds = build_feeds(cfg)
 
@@ -227,11 +229,12 @@ def run_training(
 
         # 早停 → 回滾 (測試用高 patience 不觸發)
         if TEMP.early_stop("real_loss", pat):
+            if verbose: logger.info(f"[{epoch}] real_loss 連續 {pat} 次未改善 → 回滾至最佳 epoch、重訓 SM (online {len(online)} 筆)")
             generator.change(
                 TEMP.find("real_loss", TEMP("min_loss", float("inf")), "epoch"),
                 save=True, load=True,
             )
-            smodel.train_by_datas(online)
+            smodel.train_by_datas(online, verbose=verbose)
 
         # 生成：模型只出 logits；STE 二值化是管線的固定一步，tau 由 ACP 單獨控制
         logits = generator(spec.concat())
@@ -243,15 +246,18 @@ def run_training(
 
         # 去重：沒模擬過才跑 (mock/HFSS)
         if "patch_pattern_buf" not in TEMP or TEMP.index("patch_pattern_buf", ~output_element) is None:
+            if verbose: logger.info(f"[{epoch}] HFSS 模擬中…")
             result = output_element.simulate()
             real_loss = result.criterion()
             stack = result.stack()
-            smodel.train_one_data(output_element.series, stack, verbose=False)
+            #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
+            smodel.train_one_data(output_element.series, stack, verbose=verbose)
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
             TEMP["real_loss"] = real_loss.item()
             if TEMP("real_loss") < TEMP.average("real_loss"):
                 online.add_and_save([~output_element, stack])
         else:
+            if verbose: logger.info(f"[{epoch}] pattern 重複 → 取快取結果 (跳過 HFSS)")
             stack, rl = TEMP.find("patch_pattern_buf", ~output_element,
                                   ("patch_result_buf", "real_loss"))
             real_loss = rl
@@ -323,6 +329,7 @@ def prepare_models(cfg, generator, smodel, TEMP, *, continue_run=False,
     # (1) 斷點續跑：載回 GEN+SM，後續載入策略全部略過
     if continue_run and ("epoch" in TEMP):
         last = TEMP("epoch")
+        logger.info(f"斷點續跑：載回 epoch {last} 的 GEN/SM，從 epoch {int(last) + 1} 繼續")
         generator.change(last, load=True)
         smodel.load()
         return int(last)

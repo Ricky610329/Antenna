@@ -55,7 +55,7 @@ def _run(yaml_name, labels, tmpdir):
         for k in series:
             series[k].append(m[k])
 
-    run_training(cfg, simulator=sim, record_path=tmpdir, seed=0, on_epoch=capture)
+    run_training(cfg, simulator=sim, record_path=tmpdir, seed=0, on_epoch=capture, verbose=False)
     return series, sim.calls
 
 
