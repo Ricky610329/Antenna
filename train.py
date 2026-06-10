@@ -19,6 +19,7 @@ config.device = "cpu"
 
 import torch
 from antenna import AntennaPattern, get_result_path
+from antenna.monitor import TrainingMonitor
 from antenna.training import load_config, build_simulator, run_training
 from antenna.utils.data import DataManager
 from antenna.utils.store import SampleStore
@@ -80,11 +81,17 @@ def main(yaml_path):
     simulator = build_simulator(cfg, RESULT_PATH)
     model_kwargs = resolve_models(cfg)
 
+    #* 監控：寫 TB 事件檔到 <結果夾>/tb (多機實驗在任一台跑
+    #*   tensorboard --logdir "T:\...\result" 即可並排監看全部)
+    monitor = TrainingMonitor(RESULT_PATH / "tb")
+
     def on_epoch(epoch, m):
         logger.info(
             f"[{epoch}/{cfg.epochs}] real={m['real_loss']:.4f} min={m['min_loss']:.4f} "
-            f"fake={m['fake_loss']:.4f} r_feed={m['r_feed']:.2%} tau={m['tau']:.3f}"
+            f"fake={m['fake_loss']:.4f} r_feed={m['r_feed']:.2%} tau={m['tau']:.3f} "
+            f"({m['time']:.0f}s)"
         )
+        monitor.on_epoch(epoch, m)
 
     TEMP = run_training(
         cfg,
@@ -94,6 +101,9 @@ def main(yaml_path):
         on_epoch=on_epoch,
         **model_kwargs,             # gen_pretrained_path / sm_pretrained_path / offline_dataset / warmup
     )
+
+    monitor.summary(TEMP, RESULT_PATH)   # 結尾總覽圖 summary.png (不依賴 TB)
+    monitor.close()
 
     Complete(
         f"Training Finished! ({cfg.name}, Min Loss: {TEMP.custom('real_loss', min)})",

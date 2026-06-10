@@ -53,4 +53,4 @@ tzdata==2025.1
 urllib3==2.5.0
 wandb==0.21.4
 win32_setctime==1.2.0
-Flask
+Flasktensorboard

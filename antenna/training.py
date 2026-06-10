@@ -15,6 +15,7 @@ antenna/training.py — 由「外部 YAML config」驅動的單/雙埠共用訓�
 """
 from dataclasses import dataclass, field
 from pathlib import Path
+from time import time
 from typing import Optional, Callable
 
 import torch
@@ -225,6 +226,7 @@ def run_training(
     epoch = start_epoch
     while epoch < epochs:
         epoch += 1
+        epoch_t0 = time()
         generator.change(epoch)
         simulator.start(epoch)
         generator.requires_grad(True, train=True)
@@ -300,8 +302,10 @@ def run_training(
         simulator.clean()
 
         TEMP["epoch"] = epoch
+        TEMP["time"] = round(time() - epoch_t0, 1)   # 本 epoch 耗時 (HFSS 為主)
         TEMP.save(f"{epoch} times")            # 斷點續跑檢查點
 
+        # on_epoch 收到「本 epoch 快照」：純量指標 + 繪圖素材 (監控端畫 pattern/響應用)
         if on_epoch is not None:
             on_epoch(epoch, dict(
                 real_loss=float(TEMP("real_loss")),
@@ -310,6 +314,11 @@ def run_training(
                 r_feed=float(TEMP("r_feed")),
                 tau=float(generator.scheduler.get_temp()),
                 lr=float(optimizer.param_groups[0]["lr"]),
+                time=float(TEMP("time")),
+                pattern=~output_element,               # 本 epoch 的 pattern (已 detach)
+                response=stack.detach().cpu(),         # 本 epoch 的響應 (labels, 點數)
+                spec=spec,                             # 響應規格 (labels/x/目標曲線)
+                r_feed_painter=r_feed,                 # 饋電連通圖的繪圖器 (plot 最新一筆)
             ))
 
     return TEMP

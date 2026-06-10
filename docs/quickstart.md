@@ -39,6 +39,19 @@ python train.py configs/dual_sc.yaml           # 雙埠 + SC 連通性損失
 - 用**相同 config** 再跑會自動斷點續跑。
 - 舊指令 `python train_single.py <編號>` 已移除，改用上面的方式。
 
+## 3.5 監看訓練（TensorBoard）
+
+```bash
+# 任一台機器（含自己電腦，需 pip install tensorboard）：
+tensorboard --logdir "T:\碩二_吳維文's\Patch Antenna\Experiment\result"
+# 瀏覽器開 http://localhost:6006 → 所有機器的實驗並排比較
+```
+
+- **Scalars**：loss（real/fake/min）、lr/tau、r_feed、每 epoch 耗時。
+- **Images**：pattern+饋電連通圖、各響應 vs 目標（有 epoch 滑桿可回放）。
+- 訓練結束結果夾另有 `summary.png` 總覽圖（不開 TB 也能看結果）。
+- 舊實驗仍用學長的 app.py 看（歷史 `pic/` 不受影響）。
+
 ## 4. 前置需求（正式機）
 
 - Windows + 已安裝 ANSYS HFSS（透過 COM 啟動）。
