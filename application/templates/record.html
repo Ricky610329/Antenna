@@ -229,8 +229,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     html += `
                         <div class="col">
                             <div class="card h-100 border-0">
-                                <a href="/result/${recordId}/pic/${img}" target="_blank">
-                                    <img src="/result/${recordId}/pic/${img}" class="gallery-img" alt="${img}" loading="lazy">
+                                <a href="/result/${recordId}/${img}" target="_blank">
+                                    <img src="/result/${recordId}/${img}" class="gallery-img" alt="${img}" loading="lazy">
+
                                 </a>
                                 <div class="card-body p-1 text-center">
                                     <small class="text-muted text-truncate d-block">${img}</small>

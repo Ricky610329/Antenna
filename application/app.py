@@ -17,10 +17,8 @@ if DEV_MODE:
 else:
     print("----- Running in Production Mode (debug=False) -----")
 
-# Define Result Directory (always use production path)
-RESULT_DIR = Path(r"T:\\碩二_吳維文's\\Patch Antenna\\Experiment\\result")
-# We assume dataset directory is sibling to result or explicitly defined
-DATASET_DIR = Path(r"T:\\碩二_吳維文's\\Patch Antenna\\Experiment\\dataset")
+# RESULT_DIR / DATASET_DIR 改為跟隨 antenna.utils 的工作區 (ROOTDIR/DATASET_PATH)，
+# 不再硬編學長路徑；實際定義在下方 antenna 匯入之後。
 
 # Temp dir for downloads is always local
 TEMP_DIR = Path(os.getcwd()).joinpath('temp_downloads').absolute()
@@ -35,14 +33,19 @@ matplotlib.use('Agg')
 # Ensure PYTHONPATH is set in the shell script, or sys.path.append here if needed
 sys.path.append(os.getcwd())
 
-from antenna.utils import Record, config
+from antenna.utils import config, ROOTDIR, DATASET_PATH
 from antenna.legacy import DataManager, Data
+import yaml
+import subprocess
 import torch
 import numpy as np
-import shutil
 
 # Force CPU to avoid CUDA errors in the viewer
 config.device = 'cpu'
+
+# 結果夾 / 資料集目錄跟隨工作區 (antenna.utils.ROOTDIR)
+RESULT_DIR = ROOTDIR / 'result'
+DATASET_DIR = DATASET_PATH
 
 app = Flask(__name__)
 
@@ -101,76 +104,79 @@ def index():
     """Serves the skeleton of the index page. Data is fetched asynchronously."""
     return render_template('index.html')
 
+def _read_run_summary(d):
+    """讀單一 run 夾的總覽 (新格式)：status.json + metrics.csv + config.yaml + summary.png。"""
+    info = {'id': d.name, 'mtime': d.stat().st_mtime}
+    sj = d / 'status.json'
+    if sj.exists():
+        try:
+            s = json.loads(sj.read_text(encoding='utf-8'))
+            info.update(state=s.get('state'), machine=s.get('machine'),
+                        updated_at=s.get('updated_at'), epoch=s.get('epoch'))
+        except Exception:
+            pass
+    cy = d / 'config.yaml'
+    if cy.exists():
+        try:
+            c = yaml.safe_load(cy.read_text(encoding='utf-8')) or {}
+            info['name'] = c.get('name')
+            info['port'] = c.get('port')
+        except Exception:
+            pass
+    mc = d / 'metrics.csv'
+    if mc.exists():
+        try:
+            df = pd.read_csv(mc)
+            if len(df):
+                # 兼容新舊欄名 (best_loss←min_loss)
+                best_col = next((c for c in ('best_loss', 'min_loss') if c in df.columns), None)
+                if best_col:
+                    info['best_loss'] = round(float(df[best_col].min()), 4)
+                if 'r_feed' in df.columns:
+                    info['r_feed'] = round(float(df['r_feed'].iloc[-1]), 4)
+                if 'epoch' in df.columns:
+                    info['epoch'] = int(df['epoch'].iloc[-1])
+                info['rows'] = int(len(df))
+        except Exception:
+            pass
+    if (d / 'summary.png').exists():
+        info['summary'] = 'summary.png'
+    info['has_tb'] = (d / 'tb').exists()
+    return info
+
+
 @app.route('/api/main-page-data')
 def get_main_page_data():
-    """API endpoint to fetch all data needed for the main index page."""
-    # 1. Records
-    if not RESULT_DIR.exists():
-        records = []
-    else:
-        records = []
-        current_record_ids = set()
+    """首頁資料：所有 run 的總覽 (新格式 status.json + metrics.csv) + 資料集清單。"""
+    records = []
+    if RESULT_DIR.exists():
         for d in RESULT_DIR.iterdir():
-            if d.is_dir():
-                current_record_ids.add(d.name)
-                rec_mtime = d.stat().st_mtime
-                pic_dir = d / 'pic'
-                pic_mtime = 0
-                if pic_dir.exists():
-                    pic_mtime = pic_dir.stat().st_mtime
-                
-                cache_key = (rec_mtime, pic_mtime)
-                
-                cached = RECORD_CACHE.get(d.name)
-                if cached and cached['key'] == cache_key:
-                    records.append(cached['data'])
-                    continue
-
-                stat = d.stat()
-                best_image = None
-                if pic_dir.exists():
-                    images = list(pic_dir.glob('*.png'))
-                    if images:
-                        images.sort(key=natural_sort_key)
-                        best_candidates = [img for img in images if 'best' in img.name.lower()]
-                        if best_candidates:
-                            best_image = best_candidates[-1].name
-                        else:
-                            best_image = images[-1].name
-
-                record_data = {
-                    'id': d.name,
-                    'mtime': stat.st_mtime,
-                    'ctime': stat.st_ctime,
-                    'best_image': best_image
-                }
-                
-                RECORD_CACHE[d.name] = {'key': cache_key, 'data': record_data}
-                records.append(record_data)
-        
+            if not d.is_dir():
+                continue
+            cache_key = d.stat().st_mtime           # live run 心跳會更新 mtime → 自動刷新
+            cached = RECORD_CACHE.get(d.name)
+            if cached and cached['key'] == cache_key:
+                records.append(cached['data'])
+                continue
+            data = _read_run_summary(d)
+            RECORD_CACHE[d.name] = {'key': cache_key, 'data': data}
+            records.append(data)
         records.sort(key=lambda x: x.get('mtime', 0), reverse=True)
-    
-    # 2. Datasets
+
     datasets = []
     if DATASET_DIR.exists():
-        for f in DATASET_DIR.glob('*.dataset'):
-            stat = f.stat()
-            datasets.append({
-                'id': f.stem,
-                'name': f.name,
-                'mtime': stat.st_mtime,
-                'size': stat.st_size
-            })
+        for f in DATASET_DIR.glob('*.dataset'):      # 舊 legacy 單檔 pickle
+            st = f.stat()
+            datasets.append({'id': f.stem, 'name': f.name, 'kind': 'legacy',
+                             'mtime': st.st_mtime, 'size': st.st_size})
+        for d in DATASET_DIR.iterdir():              # 新 SampleStore 資料夾 (有 .pt 即是)
+            if d.is_dir() and next(d.glob('*.pt'), None) is not None:
+                datasets.append({'id': d.name, 'name': d.name, 'kind': 'SampleStore',
+                                 'mtime': d.stat().st_mtime, 'size': 0})
         datasets.sort(key=lambda x: x.get('mtime', 0), reverse=True)
 
-    # 3. Get active users
-    active_ips = get_active_ip_list()
-        
-    return jsonify({
-        'records': records,
-        'datasets': datasets,
-        'active_ips': active_ips
-    })
+    return jsonify({'records': records, 'datasets': datasets,
+                    'active_ips': get_active_ip_list()})
 
 @app.route('/generator')
 def generator():
@@ -225,49 +231,39 @@ def save_generated_pattern():
 
 @app.route('/dataset/<dataset_name>')
 def view_dataset(dataset_name):
-    """View details of a specific dataset."""
+    """瀏覽資料集前 50 筆：資料夾 → SampleStore 一筆一檔；否則 → 舊 DataManager (.dataset)。
+    SampleStore 走「直接 glob 早停」只抓前 50 個 .pt，避免在 NAS 上枚舉數萬檔造成頁面卡死。"""
+    PREVIEW = 50
+
+    def to_list(t):
+        if t is None:
+            return None
+        return t.tolist() if hasattr(t, 'tolist') else t
+
     try:
-        # Load dataset using DataManager
-        # Note: DataManager expects name without extension if it manages suffixes, 
-        # but here we might need to be careful. DataManager(name, rootdir) looks for name.dataset
-        dm = DataManager(dataset_name, rootdir=DATASET_DIR, verbose=False)
-        
-        # Metadata
-        total_items = len(dm)
-        
-        # Prepare samples for visualization (limit to first 50 to avoid browser crash)
-        limit = 50
+        path = DATASET_DIR / dataset_name
         samples = []
-        
-        # DataManager items are usually (input, output) tuples of tensors
-        # We need to convert them to lists for JSON serialization
-        for i in range(min(total_items, limit)):
-            item = dm[i]
-            # Handle list/tuple of tensors
-            if isinstance(item, (list, tuple)):
-                inp, outp = item[0], item[1]
-            else:
-                inp, outp = item, None
+        if path.is_dir():                              # 新格式 SampleStore：只抓前 50 檔
+            files = []
+            for pf in path.glob('*.pt'):
+                files.append(pf)
+                if len(files) >= PREVIEW:
+                    break
+            for i, pf in enumerate(files):
+                x, y = torch.load(pf, weights_only=True)
+                samples.append({'id': i, 'input': to_list(x), 'output': to_list(y)})
+            total_items = f"{len(samples)}+（一筆一檔，預覽前 {len(samples)} 筆）"
+        else:                                          # 舊 legacy 單檔 .dataset
+            dm = DataManager(dataset_name, rootdir=DATASET_DIR, verbose=False)
+            total = len(dm)
+            for i in range(min(total, PREVIEW)):
+                item = dm[i]
+                inp, outp = (item[0], item[1]) if isinstance(item, (list, tuple)) else (item, None)
+                samples.append({'id': i, 'input': to_list(inp), 'output': to_list(outp)})
+            total_items = total
 
-            # Convert to list helper
-            def to_list(tensor_or_arr):
-                if tensor_or_arr is None: return None
-                if hasattr(tensor_or_arr, 'tolist'):
-                    return tensor_or_arr.tolist()
-                return tensor_or_arr
-
-            samples.append({
-                'id': i,
-                'input': to_list(inp),
-                'output': to_list(outp)
-            })
-
-        return render_template(
-            'dataset.html',
-            dataset_name=dataset_name,
-            total_items=total_items,
-            samples=samples
-        )
+        return render_template('dataset.html', dataset_name=dataset_name,
+                               total_items=total_items, samples=samples)
     except Exception as e:
         return f"Error loading dataset: {str(e)}", 500
 
@@ -284,110 +280,66 @@ def view_record(record_id):
 
 @app.route('/api/record/<record_id>')
 def get_record_data(record_id):
-    """API endpoint to fetch data for a specific record."""
+    """API：讀新格式 RunState — metrics.csv (純量曲線) + patterns/ (pattern/response 演化)
+    + config.yaml + summary.png。取代舊的 temp.record/Record。"""
     record_path = RESULT_DIR / record_id
     if not record_path.exists():
         abort(404, description="Record not found")
-    
-    # Initialize variables to avoid UnboundLocalError
-    data_dict = {}
-    matrix_dict = {}
-    history_list = []
-    error_msg = None
-    record_name_loaded = None
-    images = []
-    config_data = {}
 
-    # 1. Load Record Data
-    try:
-        # Search for .record files
-        record_files = list(record_path.glob('*.record'))
-        target_file = None
-        
-        # Priority: temp.record > {record_id}.record > any .record
-        if record_files:
-            file_map = {f.name: f for f in record_files}
-            if 'temp.record' in file_map:
-                target_file = file_map['temp.record']
-            elif f'{record_id}.record' in file_map:
-                target_file = file_map[f'{record_id}.record']
-            else:
-                target_file = record_files[0]
-        
-        if target_file:
-            record_name_loaded = target_file.name
-            # Initialize with the found name
-            record = Record(target_file.stem, rootdir=record_path, load=False)
-            
-            # Manual load
-            with open(target_file, 'rb') as f:
-                state = PathFixUnpickler(f).load()
-            record.load_state_dict(state)
-            
-            # Convert DataFrame to simple dict for JSON serialization
-            df = record.dataframe
-            df = df.where(pd.notnull(df), None)
-            all_data = df.to_dict(orient='list')
-            
-            # Separate scalars and matrices
-            for key, values in all_data.items():
-                # Find first non-none value to determine type
-                first_val = next((v for v in values if v is not None), None)
-                if first_val is None:
-                    continue
-                    
-                if isinstance(first_val, list):
-                    # Assume list implies array/matrix data
-                    matrix_dict[key] = values
-                else:
-                    # Assume scalar
-                    data_dict[key] = values
-            
-            # History
-            history_df = record.history
-            history_df = history_df.where(pd.notnull(history_df), None)
-            history_list = history_df.to_dict(orient='records')
-        else:
-            error_msg = "No .record file found in this directory."
-        
-    except Exception as e:
-        error_msg = f"Failed to load record data: {str(e)}"
-        print(error_msg)
+    data_dict, matrix_dict, history_list, config_data, images = {}, {}, [], {}, []
+    error_msg = record_name_loaded = None
 
-    # 2. Get Images
-    # Images are in 'pic' subdirectory
-    pic_dir = record_path / 'pic'
-    if pic_dir.exists():
-        # Get all png images
-        for img_path in pic_dir.glob('*.png'):
-            images.append(img_path.name)
-        
-        # Sort images naturally (e.g. 1.png, 2.png, 10.png)
-        def natural_sort_key(s):
-            import re
-            return [int(text) if text.isdigit() else text.lower()
-                    for text in re.split('([0-9]+)', s)]
-        
-        images.sort(key=natural_sort_key)
-
-    # 3. Load Config
-    config_path = record_path / 'config.json'
-    if config_path.exists():
+    # 1. metrics.csv → 純量序列 (data) + pattern/response 隨 epoch 演化 (matrix)
+    mc = record_path / 'metrics.csv'
+    if mc.exists():
+        record_name_loaded = 'metrics.csv'
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config_data = json.load(f)
+            df = pd.read_csv(mc)
+            for col in df.columns:
+                if col != 'pattern_hash':
+                    data_dict[col] = df[col].tolist()
+
+            if 'pattern_hash' in df.columns:
+                pdir = record_path / 'patterns'
+                hashes = df['pattern_hash'].astype(str).tolist()
+                stride = max(1, len(hashes) // 40)   # 等距取樣 ~40 步，避免從 NAS 讀太多 .pt
+                pats, resps = [], []
+                for i in range(0, len(hashes), stride):
+                    pf = pdir / f"{hashes[i]}.pt"
+                    if not pf.exists():
+                        continue
+                    try:
+                        pattern, response, _ = torch.load(pf, weights_only=True)
+                        pats.append(pattern.tolist())
+                        resps.append(response.tolist())
+                    except Exception:
+                        pass
+                if pats:
+                    matrix_dict['pattern'] = pats
+                if resps:
+                    matrix_dict['response'] = resps
         except Exception as e:
-            print(f"Failed to load config.json: {e}")
+            error_msg = f"讀 metrics.csv 失敗: {e}"
+    else:
+        error_msg = ("找不到 metrics.csv —— 這個 run 不是新格式 (RunState)。"
+                     "舊實驗請改用 TensorBoard 或學長封存查看。")
+
+    # 2. summary.png (新格式放在 run 根目錄，非 pic/)
+    if (record_path / 'summary.png').exists():
+        images.append('summary.png')
+
+    # 3. config.yaml → dict
+    cy = record_path / 'config.yaml'
+    if cy.exists():
+        try:
+            config_data = yaml.safe_load(cy.read_text(encoding='utf-8')) or {}
+        except Exception as e:
+            print(f"讀 config.yaml 失敗: {e}")
 
     return jsonify(
-        record_id=record_id, 
-        record_name=record_name_loaded,
-        data=data_dict, 
-        matrix_data=matrix_dict,
-        history=history_list, 
-        images=images,
-        config=config_data,
-        error=error_msg
+        record_id=record_id, record_name=record_name_loaded,
+        data=data_dict, matrix_data=matrix_dict, history=history_list,
+        images=images, config=config_data, error=error_msg,
     )
 
 @app.route('/result/<path:filename>')
@@ -396,15 +348,21 @@ def serve_result(filename):
     return send_from_directory(RESULT_DIR, filename)
 
 if __name__ == '__main__':
-    # Ensure result directory exists for the app to not crash immediately
-    # This is more critical in production. In dev, dirs are created above.
     if not RESULT_DIR.exists():
-        print(f"Warning: Result directory '{RESULT_DIR}' does not exist.")
-        # In prod, we might not want to create it automatically, but for convenience:
         try:
             RESULT_DIR.mkdir(parents=True, exist_ok=True)
-            print(f"Created '{RESULT_DIR}'.")
         except Exception as e:
             print(f"Error creating result directory: {e}")
-            
+
+    # 自動起 TensorBoard 指向 result/ → 首頁「開啟 TensorBoard」按鈕 (另開 :6006)，
+    # 一個 TB 實例即可疊圖比較所有 run。失敗不影響 app 本身。
+    try:
+        subprocess.Popen(
+            [sys.executable, "-m", "tensorboard.main",
+             "--logdir", str(RESULT_DIR), "--port", "6006", "--bind_all"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print(f"TensorBoard 啟動中：logdir={RESULT_DIR} port=6006")
+    except Exception as e:
+        print(f"TensorBoard 啟動失敗 (可手動 tensorboard --logdir): {e}")
+
     app.run(debug=DEV_MODE, host='0.0.0.0', port=5000)

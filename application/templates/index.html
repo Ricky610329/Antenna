@@ -7,25 +7,17 @@
     <link rel="icon" href="{{ url_for('static', filename = 'picture/house.ico') }}" type="image/x-icon" >
     <link rel="icon" href="{{ url_for('static', filename = 'picture/house.png') }}" type="image/png" >
     <link rel="shortcut icon" href="{{ url_for('static', filename = 'picture/house.ico') }}" type="image/x-icon" >
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        .record-card {
-            transition: transform 0.2s;
-        }
-        .record-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .loading-spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-        }
+        .record-card { transition: transform 0.2s; }
+        .record-card:hover { transform: translateY(-5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .loading-spinner { display: flex; justify-content: center; align-items: center; height: 200px; }
+        #runs-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+        #runs-table th.sortable:hover { background: #eef3ff; }
+        #runs-table tbody tr { cursor: pointer; }
+        #runs-table tbody tr:hover { background: #f5f8ff; }
     </style>
 </head>
 <body class="bg-light">
@@ -33,98 +25,82 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
     <div class="container">
         <a class="navbar-brand d-flex align-items-center" href="/">
-            <i class="bi bi-broadcast-pin me-2"></i>
-            Antenna Visualizer
+            <i class="bi bi-broadcast-pin me-2"></i> Antenna Visualizer
         </a>
-        
-        <!-- Active IPs Display Placeholder -->
         <div id="active-ips-container" class="navbar-text ms-auto text-light"></div>
     </div>
 </nav>
 
 <div class="container">
-    
-    <!-- Header Tabs -->
     <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab" aria-controls="records" aria-selected="true">
-                <i class="bi bi-journal-text me-2"></i>Experimental Records
+            <button class="nav-link active" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab">
+                <i class="bi bi-journal-text me-2"></i>實驗記錄
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="datasets-tab" data-bs-toggle="tab" data-bs-target="#datasets" type="button" role="tab" aria-controls="datasets" aria-selected="false">
-                <i class="bi bi-database me-2"></i>Datasets
+            <button class="nav-link" id="datasets-tab" data-bs-toggle="tab" data-bs-target="#datasets" type="button" role="tab">
+                <i class="bi bi-database me-2"></i>資料集
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tools-tab" data-bs-toggle="tab" data-bs-target="#tools" type="button" role="tab" aria-controls="tools" aria-selected="false">
-                <i class="bi bi-tools me-2"></i>Tools
+            <button class="nav-link" id="tools-tab" data-bs-toggle="tab" data-bs-target="#tools" type="button" role="tab">
+                <i class="bi bi-tools me-2"></i>工具
             </button>
         </li>
     </ul>
 
     <div class="tab-content" id="myTabContent">
-        
-        <!-- Records Tab Pane -->
-        <div class="tab-pane fade show active" id="records" role="tabpanel" aria-labelledby="records-tab">
-            <div class="row mb-4">
-                <div class="col">
-                    <h1 class="display-5">Experimental Records</h1>
-                    <p class="text-muted">Select a record to view training logs and generated designs.</p>
+
+        <!-- Records: 可比較的 run 總表 -->
+        <div class="tab-pane fade show active" id="records" role="tabpanel">
+            <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+                <div>
+                    <h1 class="display-6 mb-0">實驗記錄</h1>
+                    <p class="text-muted mb-0">點欄位標題可排序；點列看細節。所有 run 的曲線比較請開 TensorBoard。</p>
                 </div>
+                <a id="tb-link" href="#" target="_blank" class="btn btn-success btn-lg mt-2">
+                    <i class="bi bi-graph-up-arrow me-2"></i>開啟 TensorBoard（所有實驗疊圖比較）
+                </a>
             </div>
 
-            <div id="records-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <div id="records-container">
                 <div class="loading-spinner">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                     <p class="ms-3 mb-0">Loading Records...</p>
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="ms-3 mb-0">載入實驗中…</p>
                 </div>
             </div>
         </div>
 
-        <!-- Datasets Tab Pane -->
-        <div class="tab-pane fade" id="datasets" role="tabpanel" aria-labelledby="datasets-tab">
-            <div class="row mb-4">
-                <div class="col">
-                    <h2 class="display-5">Datasets</h2>
-                    <p class="text-muted">Available datasets for training and validation.</p>
-                </div>
-            </div>
-
+        <!-- Datasets -->
+        <div class="tab-pane fade" id="datasets" role="tabpanel">
+            <div class="row mb-4"><div class="col">
+                <h2 class="display-6">資料集</h2>
+                <p class="text-muted">訓練 / 驗證用資料集（SampleStore 一筆一檔 與 舊 legacy 單檔）。</p>
+            </div></div>
             <div id="datasets-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                 <div class="loading-spinner">
-                    <div class="spinner-border text-info" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                     <p class="ms-3 mb-0">Loading Datasets...</p>
+                <div class="loading-spinner">
+                    <div class="spinner-border text-info" role="status"></div>
+                    <p class="ms-3 mb-0">載入資料集中…</p>
                 </div>
             </div>
         </div>
 
-        <!-- Tools Tab Pane -->
-        <div class="tab-pane fade" id="tools" role="tabpanel" aria-labelledby="tools-tab">
-            <div class="row mb-4">
-                <div class="col">
-                    <h2 class="display-5">Tools</h2>
-                    <p class="text-muted">Utilities for antenna design and analysis.</p>
-                </div>
-            </div>
+        <!-- Tools -->
+        <div class="tab-pane fade" id="tools" role="tabpanel">
+            <div class="row mb-4"><div class="col">
+                <h2 class="display-6">工具</h2>
+            </div></div>
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 <div class="col">
                     <a href="/generator" class="text-decoration-none text-dark">
                         <div class="card h-100 record-card border-warning">
                             <div class="card-body">
-                                <h5 class="card-title text-warning">
-                                    <i class="bi bi-grid-3x3 me-2"></i>Pattern Generator
-                                </h5>
-                                <p class="card-text">
-                                    Create custom antenna patterns interactively using a grid editor and export them as data files.
-                                </p>
+                                <h5 class="card-title text-warning"><i class="bi bi-grid-3x3 me-2"></i>Pattern Generator</h5>
+                                <p class="card-text">用網格編輯器互動繪製天線 pattern，匯出成資料檔。</p>
                             </div>
                             <div class="card-footer bg-transparent border-top-0">
-                                <span class="btn btn-outline-warning btn-sm w-100">Launch Tool</span>
+                                <span class="btn btn-outline-warning btn-sm w-100">啟動工具</span>
                             </div>
                         </div>
                     </a>
@@ -134,119 +110,118 @@
     </div>
 </div>
 
-<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const formatTimestamps = () => {
-        document.querySelectorAll('.card-text').forEach(el => {
-            for (let i = 0; i < el.childNodes.length; i++) {
-                const node = el.childNodes[i];
-                if (node.nodeType === Node.TEXT_NODE) {
-                    const text = node.textContent.trim();
-                    const timestamp = parseInt(text);
-                    if (!isNaN(timestamp) && timestamp > 0) {
-                        const date = new Date(timestamp * 1000);
-                        node.textContent = ' ' + date.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false });
-                        break; 
-                    }
-                }
-            }
-        });
+    // TensorBoard 連結：用瀏覽當下的主機名 + :6006（app.py 啟動時已自動跑一個 TB 指向 result/）
+    document.getElementById('tb-link').href = `${location.protocol}//${location.hostname}:6006`;
+
+    const STATE_BADGE = {
+        finished: 'success', running: 'primary', crashed: 'danger', failed: 'danger'
     };
+    let RUNS = [];
+    let sortKey = 'mtime', sortAsc = false;
 
-    document.addEventListener('DOMContentLoaded', function() {
+    const fmtTime = (ts) => ts ? new Date(ts * 1000).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }) : '—';
+    const num = (v) => (v === undefined || v === null) ? '—' : v;
+
+    function renderRuns() {
+        const c = document.getElementById('records-container');
+        if (!RUNS.length) {
+            c.innerHTML = `<div class="alert alert-warning">result/ 目錄下還沒有任何實驗。</div>`;
+            return;
+        }
+        const sorted = [...RUNS].sort((a, b) => {
+            let x = a[sortKey], y = b[sortKey];
+            if (x === undefined || x === null) return 1;
+            if (y === undefined || y === null) return -1;
+            if (typeof x === 'string') { x = x.toLowerCase(); y = (y||'').toLowerCase(); }
+            return (x < y ? -1 : x > y ? 1 : 0) * (sortAsc ? 1 : -1);
+        });
+        const arrow = (k) => sortKey === k ? (sortAsc ? ' ▲' : ' ▼') : '';
+        const th = (k, label, cls='') => `<th class="sortable ${cls}" data-k="${k}">${label}${arrow(k)}</th>`;
+        let rows = '';
+        for (const r of sorted) {
+            const badge = STATE_BADGE[r.state] || 'secondary';
+            const spin = r.state === 'running' ? '<span class="spinner-grow spinner-grow-sm me-1"></span>' : '';
+            rows += `
+                <tr onclick="location.href='/record/${encodeURIComponent(r.id)}'">
+                    <td><div class="fw-semibold text-primary">${r.name || r.id}</div>
+                        <small class="text-muted">${r.id}</small></td>
+                    <td>${r.port ? `<span class="badge bg-light text-dark border">${r.port}</span>` : '—'}</td>
+                    <td><span class="badge bg-${badge}">${spin}${r.state || '—'}</span></td>
+                    <td class="text-end">${num(r.epoch)}</td>
+                    <td class="text-end fw-semibold">${r.best_loss !== undefined ? r.best_loss.toFixed(4) : '—'}</td>
+                    <td class="text-end">${r.r_feed !== undefined ? (r.r_feed*100).toFixed(1)+'%' : '—'}</td>
+                    <td><small>${fmtTime(r.mtime)}</small></td>
+                    <td>${r.has_tb ? '<i class="bi bi-graph-up text-success" title="有 TensorBoard"></i>' : ''}</td>
+                </tr>`;
+        }
+        c.innerHTML = `
+            <div class="table-responsive">
+            <table id="runs-table" class="table table-hover align-middle bg-white shadow-sm rounded">
+                <thead class="table-light">
+                    <tr>
+                        ${th('name','實驗')}${th('port','埠')}${th('state','狀態')}
+                        ${th('epoch','epoch','text-end')}${th('best_loss','best_loss','text-end')}
+                        ${th('r_feed','r_feed','text-end')}${th('mtime','更新時間')}<th>TB</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table></div>
+            <p class="text-muted small">共 ${RUNS.length} 個實驗。曲線細節（loss / r_feed / lr / tau 疊圖）請開上方 TensorBoard。</p>`;
+        c.querySelectorAll('th.sortable').forEach(t => t.onclick = () => {
+            const k = t.dataset.k;
+            if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = (k === 'best_loss'); }
+            renderRuns();
+        });
+    }
+
+    function renderDatasets(datasets) {
+        const c = document.getElementById('datasets-container');
+        if (!datasets || !datasets.length) {
+            c.innerHTML = `<div class="col"><div class="alert alert-secondary">dataset/ 目錄下沒有資料集。</div></div>`;
+            return;
+        }
+        let html = '';
+        for (const ds of datasets) {
+            const isStore = ds.kind === 'SampleStore';
+            const meta = isStore
+                ? `<span class="badge bg-success">SampleStore（一筆一檔）</span>`
+                : `<span class="badge bg-secondary">legacy</span> <small class="text-muted">${(ds.size/1024/1024).toFixed(2)} MB</small>`;
+            html += `
+                <div class="col">
+                    <a href="/dataset/${encodeURIComponent(ds.id)}" class="text-decoration-none text-dark">
+                        <div class="card h-100 record-card border-info">
+                            <div class="card-body">
+                                <h5 class="card-title text-info"><i class="bi bi-database me-2"></i>${ds.name}</h5>
+                                <p class="card-text">${meta}</p>
+                            </div>
+                            <div class="card-footer bg-transparent border-top-0">
+                                <span class="btn btn-outline-info btn-sm w-100">瀏覽</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>`;
+        }
+        c.innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
         fetch('/api/main-page-data')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
+            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then(data => {
-                // Render Records
-                const recordsContainer = document.getElementById('records-container');
-                if (data.records && data.records.length > 0) {
-                    let recordsHtml = '';
-                    data.records.forEach(record => {
-                        const imageHtml = record.best_image 
-                            ? `<img src="/result/${record.id}/pic/${record.best_image}" class="card-img-top" alt="Result" style="height: 200px; object-fit: contain; background-color: #000;">`
-                            : `<div class="d-flex align-items-center justify-content-center bg-light text-muted" style="height: 200px;"><i class="bi bi-image" style="font-size: 2rem;"></i></div>`;
-                        
-                        recordsHtml += `
-                            <div class="col">
-                                <a href="/record/${record.id}" class="text-decoration-none text-dark">
-                                    <div class="card h-100 record-card">
-                                        ${imageHtml}
-                                        <div class="card-body">
-                                            <h5 class="card-title text-primary">${record.id}</h5>
-                                            <p class="card-text">
-                                                <small class="text-muted">Last Modified:</small><br>
-                                                ${Math.round(record.mtime)} (Timestamp)
-                                            </p>
-                                        </div>
-                                        <div class="card-footer bg-transparent border-top-0">
-                                            <span class="btn btn-outline-primary btn-sm w-100">View Details</span>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>`;
-                    });
-                    recordsContainer.innerHTML = recordsHtml;
-                } else {
-                    recordsContainer.innerHTML = `<div class="col"><div class="alert alert-warning" role="alert">No records found in the <code>result/</code> directory.</div></div>`;
+                RUNS = data.records || [];
+                renderRuns();
+                renderDatasets(data.datasets);
+                const ips = document.getElementById('active-ips-container');
+                if (data.active_ips && data.active_ips.length) {
+                    ips.innerHTML = `<small>在線：${data.active_ips.length}</small>
+                        <span class="badge bg-success rounded-pill ms-2" title="${data.active_ips.join(', ')}" style="cursor:help">IPs</span>`;
                 }
-
-                // Render Datasets
-                const datasetsContainer = document.getElementById('datasets-container');
-                if (data.datasets && data.datasets.length > 0) {
-                    let datasetsHtml = '';
-                    data.datasets.forEach(ds => {
-                        datasetsHtml += `
-                            <div class="col">
-                                <a href="/dataset/${ds.id}" class="text-decoration-none text-dark">
-                                    <div class="card h-100 record-card border-info">
-                                        <div class="card-body">
-                                            <h5 class="card-title text-info">
-                                                <i class="bi bi-database me-2"></i>${ds.name}
-                                            </h5>
-                                            <p class="card-text">
-                                                <small class="text-muted">Last Modified:</small><br>
-                                                ${Math.round(ds.mtime)} (Timestamp)<br>
-                                                <small class="text-muted">Size:</small> ${(ds.size / 1024 / 1024).toFixed(2)} MB
-                                            </p>
-                                        </div>
-                                        <div class="card-footer bg-transparent border-top-0">
-                                            <span class="btn btn-outline-info btn-sm w-100">View Data</span>
-                                        </div>
-                                                                </div>
-                                                            </a>                            </div>`;
-                    });
-                    datasetsContainer.innerHTML = datasetsHtml;
-                } else {
-                    datasetsContainer.innerHTML = `<div class="col"><div class="alert alert-secondary" role="alert">No datasets found in the <code>dataset/</code> directory.</div></div>`;
-                }
-
-                // Render Active IPs
-                const ipsContainer = document.getElementById('active-ips-container');
-                if (data.active_ips && data.active_ips.length > 0) {
-                    ipsContainer.innerHTML = `
-                        <small>Active Users: ${data.active_ips.length}</small>
-                        <div class="d-inline-block ms-2" style="position: relative; top: 2px;">
-                            <span class="badge bg-success rounded-pill" title="${data.active_ips.join(', ')}" style="cursor: help;">
-                                Show IPs
-                            </span>
-                        </div>`;
-                }
-
-                // Format all newly added timestamps
-                formatTimestamps();
             })
-            .catch(error => {
-                console.error('Error fetching main page data:', error);
-                const recordsContainer = document.getElementById('records-container');
-                recordsContainer.innerHTML = `<div class="col"><div class="alert alert-danger">Failed to load records. ${error.message}</div></div>`;
-                const datasetsContainer = document.getElementById('datasets-container');
-                datasetsContainer.innerHTML = `<div class="col"><div class="alert alert-danger">Failed to load datasets. ${error.message}</div></div>`;
+            .catch(err => {
+                document.getElementById('records-container').innerHTML =
+                    `<div class="alert alert-danger">載入失敗：${err.message}</div>`;
             });
     });
 </script>
