@@ -1,6 +1,7 @@
 天線 (Antenna)
 ===========
-裡面包含 微帶貼片天線(microstrip patch antenna) 與 可重構智慧表面(Reconfigurable Intelligent Surface, RIS)
+微帶貼片天線 (microstrip patch antenna) 的**反向設計**：用生成器＋可微分代理模型＋HFSS 模擬器做 online learning，
+由目標頻率響應反推 25×25 像素化天線圖樣。（早期的 RIS 變體已移除，見 git 歷史。）
 
 > **快速開始**：訓練入口是 `python train.py configs/<實驗>.yaml`（由外部 YAML config 驅動）。
 > 環境啟用 / 切 branch / 執行指令一頁速查見 [`docs/quickstart.md`](docs/quickstart.md)。
@@ -58,12 +59,14 @@ Antenna
 ├─ configs             # 一檔一實驗的 YAML 設定
 ├─ antenna             # 主套件
 |  ├─ training.py      # 單/雙埠共用訓練核心 (run_training)
+|  ├─ zoo.py           # 模型動物園：可用的 GEN/SM 架構都登記在這
+|  ├─ monitor.py       # TensorBoard 監控 + 結尾總覽圖
 |  ├─ models.py        # 生成器 G (SigmoidGEN)
 |  ├─ smodels.py       # 代理模型 SM (HFSSNet / OldSM)
 |  ├─ functions.py     # 損失 + ACP 排程器
 |  ├─ patch            # microstrip patch antenna
 |  |  └─ patch_simulator   # HFSS 模擬器 (single_port / dual_port)
-|  └─ utils            # config / Record / DataManager 等工具
+|  └─ utils            # config / RunState / SampleStore (+ legacy Record/DataManager)
 ├─ tests               # pytest (golden + 單元測試)
 ├─ docs                # 文件 (見 docs/README.md)
 ├─ script              # 輔助腳本

@@ -25,13 +25,18 @@ python -m pytest tests/ -q   # 在 repo 根目錄執行
 
 | 檔案 | 測什麼 | 防什麼 |
 | --- | --- | --- |
-| `tests/conftest.py` | session 共用：單埠全域註冊 + `golden` fixture | — |
+| `tests/conftest.py` | session 共用：安裝單埠響應規格 + `golden` fixture | — |
 | `tests/test_characterization.py` | 純函式行為（STE 二值化、正則化、loss hook、R_feed） | 改公式時的數值漂移 |
 | `tests/test_baseline_loop.py` | `run_training` 整圈（Mock 模擬器 + 固定種子，跑 6 epochs） | 訓練迴圈重構造成行為改變 |
-| `tests/test_config.py` | YAML 解析、port 結構解析、錯誤拒絕 | config 欄位破壞 |
-| `tests/test_model_loading.py` | registry 建模、`prepare_models` 載入分支（MagicMock） | 模型建構/載入邏輯破壞 |
+| `tests/test_config.py` | YAML 解析、port 解析、區段鍵白名單、seed、ACP 參數流 | config 欄位破壞 / 鍵名錯字 |
+| `tests/test_model_loading.py` | zoo 建模、`prepare_models` 載入分支（MagicMock） | 模型建構/載入邏輯破壞 |
+| `tests/test_models_shell.py` | `Models` 外殼行為合約（換檔/存讀/title 把關/NaN 防護） | 外殼重構造成行為改變 |
+| `tests/test_response_spec.py` | 響應規格實例（自包含/原子安裝/dual 順序雙軌） | 全域狀態回歸 |
+| `tests/test_sample_store.py` | SampleStore（一筆一檔/去重/持久化） | 資料層破壞 |
+| `tests/test_runstate.py` | RunState（csv 續跑/去重快取/best_epoch） | 訓練狀態破壞 |
+| `tests/test_monitor.py` | TB 監控（降級/記錄內容/summary.png） | 監控破壞訓練 |
 
-CI（GitHub Actions，`.github/workflows/tests.yml`）在 push / PR 時自動跑全部測試（windows runner，因 import 鏈含 pywin32）。結果看 repo 的 **Actions** 頁籤。
+CI（GitHub Actions，`.github/workflows/tests.yml`）在 push / PR 時自動跑：**pyflakes 守門**（擋 undefined name）→ 全部測試（windows runner，因 import 鏈含 pywin32）。結果看 repo 的 **Actions** 頁籤。
 
 ## 3. Golden 測試怎麼維護（最重要）
 
@@ -101,6 +106,11 @@ golden 數值**綁定 torch 版本與 CPU**：
 
 ### 新的 port 模式（罕見）
 在 `antenna/training.py` 的 `PORT_SPECS` 加一組（labels、register_order、feeds、make_r_feed），並準備對應模擬器。
+
+### 型別註解慣例
+**型別註解＝輕量文件**（不做靜態型別檢查）：簡單註解（`x: Tensor`、`-> dict`）歡迎；
+**TypeVar / Generic / ParamSpec / @overload 一律不用**（2026-06 已全數清除，types.py 258→47 行）。
+CI 只用 pyflakes 擋 undefined name。
 
 ## 4.5 資料層（新舊雙軌）
 

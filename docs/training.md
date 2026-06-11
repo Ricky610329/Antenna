@@ -80,7 +80,7 @@ targets:                      # 目標響應 (side=兩端, center=中央, width=
 
 ### 載入策略（`prepare_models()` 依序判斷）
 
-1. **斷點續跑**：結果夾已存在且 `temp` 有 epoch → 載回 GEN/SM，從上次續跑（其餘略過）。
+1. **斷點續跑**：結果夾已存在且 `metrics.csv` 有 epoch → 載回 GEN/SM，從上次續跑（其餘略過）。
 2. **GEN 預載入**：`generator.pretrained` 權重檔存在 → 載入 GEN（暖啟動；架構需相容）。
 3. **SM 載入**：`surrogate.pretrained` 存在 → 直接載入；否則用 `surrogate.offline_dataset` 從頭預訓練。
 4. **KuoHung 暖身**：`surrogate.warmup`（參考圖樣編號，如 `"1"`）→ 取 `KuoHung.load()` 對 SM 做單筆暖身微調。
@@ -112,8 +112,20 @@ targets:                      # 目標響應 (side=兩端, center=中央, width=
 ## 6. 前置需求（正式機）
 
 - Windows + ANSYS HFSS（COM）；連得到實驗室內網（自動掛 NAS `T:`）。
-- 結果寫到 `ROOTDIR\result\[Patch-<port>-...]<name>\`（含 log / config 快照 / checkpoint / online / pic）。
+- 結果夾（`ROOTDIR\result\[Patch-<port>-...]<name>\`）內容＝**自我說明的檔案制資料庫**：
+
+```
+config.yaml      # 設定快照 (原文)
+status.json      # 運行心跳：state(running/finished/crashed)/機器/epoch
+metrics.csv      # 純量時序 (一 epoch 一行；pd.read_csv 即可自訂畫圖)
+patterns/        # 每筆模擬過的 (pattern, response, loss)，hash 即檔名
+checkpoint/      # GEN 逐 epoch 權重 + sm.pth
+online/          # 好樣本庫 (SampleStore)
+tb/              # TensorBoard 事件檔 (監看方式見 quickstart 3.5)
+summary.png      # 訓練結束的總覽圖
+*.log            # 文字 log
+```
 
 ## 7. 斷點續跑
 
-用**相同 config**（→ 結果夾名相同）再跑，且 `temp` 有 epoch，會自動載回 GEN/SM 從上次續跑。想重頭跑就改 config 的 `name` 或清掉對應 result 資料夾。
+用**相同 config**（→ 結果夾名相同）再跑，且 `metrics.csv` 有 epoch，會自動載回 GEN/SM 從上次續跑。想重頭跑就改 config 的 `name` 或清掉對應 result 資料夾。

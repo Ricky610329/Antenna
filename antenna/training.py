@@ -1,7 +1,7 @@
 """
 antenna/training.py — 由「外部 YAML config」驅動的單/雙埠共用訓練核心。
 
-設計（與 docs/refactor-proposal.html 一致）：
+設計：
 - 一個 YAML = 一組實驗的完整設定 (一檔一實驗)。
 - YAML 只放「純量/資料」+ 一個 `port: single|dual` 選擇器；
   「結構性」元件 (模擬器 class、損失函式、饋電塊座標、FeedReachability) 由 port

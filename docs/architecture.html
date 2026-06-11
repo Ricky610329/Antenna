@@ -63,8 +63,9 @@
     <p>用神經網路「反推」出能達成目標電磁響應的金屬像素圖樣，搭配代理模型與 HFSS 模擬形成線上學習閉迴路。本檔術語已對齊學長論文（吳維文碩論）。</p>
     <div class="tagrow">
       <span class="tag">入口：train.py + YAML config</span>
+      <span class="tag">監控：TensorBoard</span>
+      <span class="tag">資料：檔案制（無 pickle）</span>
       <span class="tag">論文：docs/Paper.pdf</span>
-      <span class="tag">已精簡：Tier A + Tier B</span>
     </div>
   </header>
 
@@ -176,7 +177,7 @@
     <div class="step"><b>真實模擬</b>：跑 HFSS 得真實響應與 <code>real_loss</code>，並用這筆真實資料線上訓練代理。<span class="pill sim">SIM</span><span class="pill gen">代理</span></div>
     <div class="step"><b>更新歷史最佳</b>：維護 <code>min_loss</code> / <code>best_epoch</code>。</div>
     <div class="step"><b>更新 G</b>：pattern 經代理得預測響應，算 loss（= 響應誤差 + pattern 正則化）→ <code>backward()</code> → <code>step()</code>。<span class="pill g">G</span><span class="pill gen">代理</span></div>
-    <div class="step"><b>存檔 / 繪圖 / 記錄</b>：寫入 <code>TEMP</code>（Record），支援斷點續跑。</div>
+    <div class="step"><b>存檔 / 記錄</b>：寫入 <code>RunState</code>（metrics.csv 一行 + patterns/ 快取），支援斷點續跑；監控走 on_epoch hook → TensorBoard。</div>
   </div>
   <div class="note"><b>pattern 正則化（可製造性約束）</b>：論文主方法是 <b>SC Loss</b>（<code>SpectralConnectivityLoss</code>，圖譜連通度）；其餘 <code>total_variation_loss</code>、<code>island_suppression_loss</code>(≈論文 KNS Loss)、<code>GapClosingLoss</code> 多為對照基準。<code>FeedReachability</code>（R_feed）是<strong>評估指標、非訓練 loss</strong>。</div>
 
@@ -195,7 +196,7 @@
     <ul style="margin:6px 0 0">
       <li><b>ACP</b>（<code>AdaptiveCyclicalScheduler</code>）<b>只含</b>「主動式高原偵測 + 自適應重啟 + lr/tau 雙耦合退火」——<b>只動學習率 lr 與溫度 tau，不碰權重</b>。論文第 3.2 節通篇無「回滾」。</li>
       <li><b>rollback</b>（載回歷史最佳 epoch + 重訓代理）是<b>主迴圈層級</b>的獨立動作（<code>antenna/training.py</code> 的 <code>run_training</code> 迴圈）。ACP 只提供「停滯訊號」。</li>
-      <li>兩者用<b>各自獨立的 patience 計數器</b>：rollback 用主迴圈的 <code>TEMP.early_stop('real_loss', config['patience']=10)</code>；ACP 內部另有一套 patience（只重啟 lr/tau）。</li>
+      <li>兩者用<b>各自獨立的 patience 計數器</b>：rollback 用主迴圈的 <code>state.early_stop('real_loss', patience=10)</code>（YAML 的 <code>patience</code>）；ACP 內部另有一套 patience（只重啟 lr/tau，YAML 的 <code>scheduler.patience</code>）。</li>
     </ul>
   </div>
 
@@ -217,7 +218,7 @@
   <h3>antenna/ 核心套件</h3>
   <table>
     <tr><th>模組</th><th class="filetag">行</th><th>內容（精簡後）</th></tr>
-    <tr><td><code>antenna/__init__.py</code></td><td class="filetag">1044</td><td><b>資料抽象核心</b>：<code>AntennaPattern</code>（座標/merge/STE 二值化/simulate/正則化）、<code>AntennaResponse</code> 家族（響應與目標、criterion）。</td></tr>
+    <tr><td><code>antenna/__init__.py</code></td><td class="filetag">1003</td><td><b>資料抽象核心</b>：<code>AntennaPattern</code>（座標/merge/STE 二值化/simulate/正則化）、<code>AntennaResponse</code> 家族（響應與目標、criterion）。</td></tr>
     <tr><td><code>antenna/models.py</code></td><td class="filetag">273</td><td><b>生成器 G</b>：<code>Models</code>（模型外殼）、<code>BiScaleNorm</code>、<code>SigmoidGEN</code>（<code>hidden</code> 可由 config 指定）。</td></tr>
     <tr><td><code>antenna/smodels.py</code></td><td class="filetag">274</td><td><b>代理模型（論文 GEN）</b>：<code>SurrogateModel</code> 基類、<code>HFSSNet</code>（MLP，<code>hidden</code> 可由 config 指定）、<code>OldSM</code>（實際使用的工廠）。</td></tr>
     <tr><td><code>antenna/functions.py</code></td><td class="filetag">639</td><td><b>ACP 與損失</b>：<code>AdaptiveCyclicalScheduler</code>(=ACP)、<code>SpectralConnectivityLoss</code>(=SC Loss)、<code>GapClosingLoss</code>、<code>FeedReachability</code>(R_feed)、<code>total_variation_loss</code>。</td></tr>
@@ -225,14 +226,16 @@
     <tr><td><code>antenna/patch/__init__.py</code></td><td class="filetag">173</td><td><b>損失函數</b>：<code>custom_loss_minmax</code>（單埠）、<code>interval_loss</code>（雙埠）。</td></tr>
     <tr><td><code>antenna/patch/patch_simulator/</code></td><td class="filetag">—</td><td><b>SIM</b>：PatchSimulator 基類（HFSS COM 生命週期+容錯重生）、<code>single_port.py</code>、<code>dual_port.py</code>。</td></tr>
     <tr><td><code>antenna/utils/utils.py</code></td><td class="filetag">633</td><td><b>基礎底座</b>：<code>config</code>、<code>Path</code>（被 pickle 進舊檔，不可搬離）、例外處理、<code>Complete</code>。</td></tr>
-    <tr><td><code>antenna/utils/record.py</code></td><td class="filetag">362</td><td><code>Record</code>（=TEMP，斷點續跑/rollback 核心；存的是純 dict，格式與舊檔相容）。</td></tr>
+    <tr><td><code>antenna/utils/runstate.py</code></td><td class="filetag">~130</td><td><b>訓練狀態（新格式）</b>：<code>RunState</code>＝metrics.csv（純量時序）+ patterns/（模擬快取，hash 即去重）；斷點續跑/rollback 靠它。</td></tr>
+    <tr><td><code>antenna/monitor.py</code></td><td class="filetag">~150</td><td><b>監控</b>：<code>TrainingMonitor</code> 掛 on_epoch hook → TensorBoard（Scalars/Images/config）+ 結尾 summary.png；無 TB 時降級不擋訓練。</td></tr>
+    <tr><td><code>antenna/utils/record.py</code></td><td class="filetag">362</td><td><code>Record</code>（<b>legacy</b>）：舊 temp.record 的時序記錄器，已退出訓練路徑；保留給 app.py 讀歷史結果。</td></tr>
     <tr><td><code>antenna/utils/figure.py</code></td><td class="filetag">266</td><td><code>Figure</code>（matplotlib with-context 包裝，可存 GIF/MP4）。</td></tr>
     <tr><td><code>antenna/utils/store.py</code></td><td class="filetag">~80</td><td><b>新樣本庫</b> <code>SampleStore</code>（一筆一檔、hash 即檔名；online 已採用）。</td></tr>
     <tr><td><code>antenna/utils/data.py</code></td><td class="filetag">725</td><td>舊 <code>DataManager</code>（單一 pickle，保留給學長 code 與 NAS 舊資料集）、<code>size_converter</code>。</td></tr>
   </table>
   <table>
     <tr><th>第二消費者 / 輔助</th><th>用途</th></tr>
-    <tr><td><code>application/app.py</code></td><td><b>Flask 結果瀏覽器</b>（活躍第二消費者）：用 <code>Record</code>/<code>DataManager</code>/<code>Data</code> 讀回實驗結果。<b>其序列化格式不可破壞。</b></td></tr>
+    <tr><td><code>application/app.py</code></td><td><b>Flask 工具箱 + 歷史檔案館</b>（legacy）：手繪 pattern 編輯器、舊資料集瀏覽、舊實驗（temp.record + pic/）回溯。新實驗的監控走 TensorBoard，本程式不再服務新格式。<b>Record/DataManager/Data 的序列化格式因它不可破壞。</b></td></tr>
     <tr><td><code>script/</code></td><td><code>img2video.py</code>、<code>process_files.py</code>（複製腳本到結果夾，可重現）、<code>kill.py</code>（強砍 ansysedt.exe）等。</td></tr>
   </table>
 
@@ -248,8 +251,8 @@
       <small><code>TargetResponse</code>＝一組實驗的「響應規格」實例（labels/x 軸/目標曲線/loss hook，自包含），以 <code>AntennaResponse.use(spec)</code> 原子安裝；<code>MultiResponses</code> 包多條 S 參數；<code>criterion()</code> 依規格算「響應 vs 目標」，是 G→代理 反傳鏈的末端。</small>
     </div>
     <div class="card" style="border-top:3px solid var(--data)">
-      <h3 style="margin-top:0">Record（TEMP）</h3>
-      <small>逐 epoch 時序記錄器：<code>early_stop</code>（觸發回滾）、<code>find</code>（反查最佳 epoch）、<code>index</code>（pattern 去重）、<code>save/load</code>（斷點續跑）。<b>app.py 依賴其序列化格式。</b></small>
+      <h3 style="margin-top:0">RunState（結果夾即資料庫）</h3>
+      <small>訓練狀態：<code>early_stop</code>（觸發回滾）、<code>best_epoch</code>（反查最佳）、<code>lookup/add_pattern</code>（hash 去重快取）、metrics.csv append 一行/epoch（斷點續跑）。取代舊 <code>Record</code>(temp.record)，後者降為 legacy 供 app.py 讀歷史。</small>
     </div>
   </div>
 
@@ -261,15 +264,16 @@
     <tr><td>響應</td><td>S11 + Gain</td><td>S11 + S21 + S22（含互耦 S21）</td></tr>
     <tr><td>損失</td><td><code>custom_loss_minmax</code></td><td><code>interval_loss</code></td></tr>
     <tr><td>饋電塊</td><td>lower</td><td>upper + lower</td></tr>
-    <tr><td>回滾重訓代理</td><td>用整個 online_dataset</td><td>用 <code>filter(upper=平均loss)</code> 挑較好樣本（較接近論文 DLF）</td></tr>
+    <tr><td>回滾重訓代理</td><td colspan="2">兩者皆用整個 online 樣本庫（config 驅動版統一行為；舊 train_dual 的 <code>filter(upper=平均loss)</code>「未移植」——屬 DLF 落差議題，需要時另案補）</td></tr>
   </table>
 
   <!-- 7 精簡歷程 -->
-  <h2><span class="num">7</span>本輪精簡做了什麼</h2>
+  <h2><span class="num">7</span>重構/精簡歷程（摘要）</h2>
   <div class="trap" style="background:#f8fafc;border-color:#e2e8f0">
-    <p style="margin-top:0"><b>Tier A</b>：移除完全死碼（CVAE、GradientEstimator、_GumbelSigmoid、BinarizeSTE、EnhancedHFSSUNet/SelfAttention/DoubleConvWithDropout/UNetSM、custom_loss_interval）。</p>
-    <p><b>歸檔變體腳本</b>：train_selection_*、train_single_mirror、train_ris* 移到本機 <code>archive/</code>（gitignored）。</p>
-    <p style="margin-bottom:0"><b>Tier B</b>：移除變體專屬組件（OldGEN、GumbelSigmoidGEN、GumbelSigmoid、sign_f、SPGEN、MirrorCVAE、custom_loss_r/g、FlipMode、mirror、gumbel_sinkhorn_rectangular）及 <code>antenna/ris/</code>、<code>abandon/</code>。</p>
+    <p style="margin-top:0"><b>死碼清除</b>：Tier A/B 移除 CVAE、UNet 系、RIS 變體組件、MultiConfig、json 類等；變體腳本歸檔到本機 <code>archive/</code>。</p>
+    <p><b>config 驅動</b>：train_single/dual → <code>train.py</code> + YAML（一檔一實驗、區段鍵白名單、seed、ACP 超參數可調）。</p>
+    <p><b>解耦</b>：模型動物園 <code>zoo.py</code>（名字指定）、tau 歸 ACP（二值化進管線）、響應規格實例化（<code>use(spec)</code>）、hfss 參數顯式傳遞、星號 import 歸零、typing 泛型體操全清（types.py 258→47 行）。</p>
+    <p style="margin-bottom:0"><b>檔案制資料層</b>：SampleStore（資料集一筆一檔）、RunState（metrics.csv + patterns/，取代 temp.record）、TensorBoard 監控 + status.json 心跳；訓練路徑零 pickle。舊 <code>Record</code>/<code>DataManager</code> 保留為 legacy。</p>
   </div>
   <p class="muted small" style="margin-top:16px">本檔由架構梳理產生，位於 <code>docs/</code>。術語已對齊論文 <code>docs/Paper.pdf</code>。</p>
 
