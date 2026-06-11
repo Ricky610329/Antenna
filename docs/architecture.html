@@ -218,11 +218,11 @@
   <h3>antenna/ 核心套件</h3>
   <table>
     <tr><th>模組</th><th class="filetag">行</th><th>內容（精簡後）</th></tr>
-    <tr><td><code>antenna/__init__.py</code></td><td class="filetag">1003</td><td><b>資料抽象核心</b>：<code>AntennaPattern</code>（座標/merge/STE 二值化/simulate/正則化）、<code>AntennaResponse</code> 家族（響應與目標、criterion）。</td></tr>
-    <tr><td><code>antenna/models.py</code></td><td class="filetag">273</td><td><b>生成器 G</b>：<code>Models</code>（模型外殼）、<code>BiScaleNorm</code>、<code>SigmoidGEN</code>（<code>hidden</code> 可由 config 指定）。</td></tr>
-    <tr><td><code>antenna/smodels.py</code></td><td class="filetag">274</td><td><b>代理模型（論文 GEN）</b>：<code>SurrogateModel</code> 基類、<code>HFSSNet</code>（MLP，<code>hidden</code> 可由 config 指定）、<code>OldSM</code>（實際使用的工廠）。</td></tr>
-    <tr><td><code>antenna/functions.py</code></td><td class="filetag">639</td><td><b>ACP 與損失</b>：<code>AdaptiveCyclicalScheduler</code>(=ACP)、<code>SpectralConnectivityLoss</code>(=SC Loss)、<code>GapClosingLoss</code>、<code>FeedReachability</code>(R_feed)、<code>total_variation_loss</code>。</td></tr>
-    <tr><td><code>antenna/ranger.py</code></td><td class="filetag">300</td><td>Ranger 優化器（RAdam + Lookahead），代理訓練使用。</td></tr>
+    <tr><td><code>antenna/pattern.py</code></td><td class="filetag">504</td><td><b>圖樣抽象</b>：<code>AntennaPattern</code>（座標/merge/STE 二值化/simulate/正則化）。</td></tr>
+    <tr><td><code>antenna/response.py</code></td><td class="filetag">377</td><td><b>響應抽象</b>：<code>AntennaResponse</code> 家族（<code>TargetResponse</code>＝響應規格、criterion）。</td></tr>
+    <tr><td><code>antenna/models/</code></td><td class="filetag">528</td><td><b>模型層</b>：<code>shell.py</code>（Models 外殼）、<code>generators.py</code>（<code>SigmoidGEN</code>+<code>BiScaleNorm</code>）、<code>surrogates.py</code>（<code>SurrogateModel</code>/<code>HFSSNet</code>/<code>OldSM</code>＝論文 GEN）。</td></tr>
+    <tr><td><code>antenna/optim/</code></td><td class="filetag">567</td><td><b>優化層</b>：<code>scheduler.py</code>（<code>AdaptiveCyclicalScheduler</code>＝ACP）、<code>ranger.py</code>（Ranger，SM 訓練用）。</td></tr>
+    <tr><td><code>antenna/losses.py</code></td><td class="filetag">385</td><td><b>可製造性損失 + 指標</b>：<code>SpectralConnectivityLoss</code>(=SC Loss)、<code>GapClosingLoss</code>、<code>total_variation_loss</code>、<code>FeedReachability</code>(R_feed，評估指標)。</td></tr>
     <tr><td><code>antenna/patch/__init__.py</code></td><td class="filetag">173</td><td><b>損失函數</b>：<code>custom_loss_minmax</code>（單埠）、<code>interval_loss</code>（雙埠）。</td></tr>
     <tr><td><code>antenna/patch/patch_simulator/</code></td><td class="filetag">—</td><td><b>SIM</b>：PatchSimulator 基類（HFSS COM 生命週期+容錯重生）、<code>single_port.py</code>、<code>dual_port.py</code>。</td></tr>
     <tr><td><code>antenna/utils/utils.py</code></td><td class="filetag">633</td><td><b>基礎底座</b>：<code>config</code>、<code>Path</code>（被 pickle 進舊檔，不可搬離）、例外處理、<code>Complete</code>。</td></tr>

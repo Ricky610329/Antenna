@@ -25,8 +25,8 @@ from torch import Tensor, nn
 from tqdm import tqdm
 
 from antenna import AntennaPattern, AntennaResponse, MultiResponses
-from antenna.models import Models     #? Models 管理外殼 (存讀檔/換 label/step/凍結梯度)
-from antenna.ranger import Ranger     #? Ranger = RAdam + Lookahead，SM 訓練用的優化器
+from .shell import Models             #? Models 管理外殼 (存讀檔/換 label/step/凍結梯度)
+from antenna.optim import Ranger      #? Ranger = RAdam + Lookahead，SM 訓練用的優化器
 from antenna.utils import TQDM_BAR_SIMPLE, TQDM_CONFIG, config, logger, tensor
 from antenna.utils.data import size_converter
 

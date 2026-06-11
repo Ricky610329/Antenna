@@ -1,27 +1,19 @@
-###* 模型家族 (Model Family) ###
-#? 本檔集中定義整個反向設計閉迴路會用到的「模型」抽象：
-#?   1. Models      — 模型管理外殼 (把 model/optimizer/scheduler/criterion/Record 綁成一包，統一存讀/換檔/凍結)。
-#?   2. GEN 生成器  — SigmoidGEN：
-#?                    目標響應 (spec) → 25x25 二元 pattern。生成器需要「可微分的二值化」才能讓
-#?                    SM 反傳回來的梯度更新 MLP，故使用 STE 技巧 (見 BiScaleNorm 與 AntennaPattern.binarization)。
-#?   3. 工具元件    — BiScaleNorm / 各種 STE Function。
-#?
-#? 與 SM / SIM 的關係：GEN 不直接接觸不可微分的 HFSS(SIM)，而是透過可微分的代理模型 SM
-#? 取得梯度；GEN 生 pattern → SM 預測響應 → loss 經 SM 反傳到 GEN。STE 的角色就是讓
-#? 「forward 是離散硬值 (0/1)、backward 卻有可用梯度」，繞過二值化本身不可導的斷點。
+"""
+antenna/models/shell.py — Models 管理外殼。
 
+把 model/optimizer/scheduler/criterion 綁成一包：呼叫、存讀 checkpoint、
+依 label 換存檔 (rollback 用)、凍結梯度。GEN 與 SM 都包在各自的 Models 裡
+(SM 經 surrogates.SurrogateModel 繼承)。
+"""
 from types import FunctionType
 from typing import Optional, Union
 
+import torch
+from torch import nn
+
 from antenna.utils import Path, Record, config, logger
 
-import torch
-from torch import Tensor, nn
 
-
-###* Models — 模型管理外殼 (model/optimizer/scheduler/criterion + Record 打包) ###
-#? 設計動機：訓練端想用單一物件就完成「呼叫模型、存讀 checkpoint、依 label 換存檔、
-#? 凍結梯度、early-stop rollback」等操作，不必各自手動管理 state_dict。
 #? GEN 與 SM 都會被包進各自的 Models 實例 (SM 經 SurrogateModel 繼承)。
 class Models:
     def __init__(
@@ -207,50 +199,3 @@ class Models:
 #? GEN 的 MLP 最後一層常接這個，把輸出壓到 [-1, 1] 區間但「保留 0 這個中性點」。
 #? 為什麼不用一般 LayerNorm/標準化：二值化以 0 (或平均值) 為分界，因此希望正半邊與負半邊
 #? 各自獨立縮放——正值除以全域最大值、負值除以全域最小值的絕對值，使最大正值映到 +1、
-#? 最絕對負值映到 -1，而 0 仍保持 0。這讓後續 sigmoid/STE 的分界更穩定、梯度尺度更一致。
-class BiScaleNorm(nn.Module):
-    def __init__(self):
-        super(BiScaleNorm, self).__init__()
-
-    def forward(self, input_vector):
-        # 大於 0 的值的正規化
-        #? 正半邊：每個正值除以全域最大值 → 落在 (0, 1]；非正值位置填 0。
-        max_val = torch.max(input_vector)
-        positive_normalized = torch.where(input_vector > 0, input_vector / max_val, torch.tensor(0.0, device=input_vector.device))
-
-        # 小於 0 的值的正規化
-        #? 負半邊：每個負值除以最小值的絕對值 → 落在 [-1, 0)；非負值位置填 0。
-        min_val = torch.min(input_vector)
-        negative_normalized = torch.where(input_vector < 0, input_vector / torch.abs(min_val), torch.tensor(0.0, device=input_vector.device))
-
-        # 合併正規化結果
-        #? 兩半邊在彼此互斥的位置上各填 0，相加即還原成完整向量 (值域 [-1, 1])。
-        normalized_vector = positive_normalized + negative_normalized
-        return normalized_vector
-
-###* SigmoidGEN — 主用生成器 (MLP + BiScaleNorm + AntennaPattern.binarization) ###
-#? 本專案實際主用的生成器，入口 train_single.py / train_dual.py 即用它。
-#? 結構：response → MLP 1024-1024 → BiScaleNorm，最後接
-class SigmoidGEN(nn.Module):
-    """
-    生成器 G (純模型)：目標響應向量 → pattern logits。
-
-    刻意「不做」STE 二值化、不認識 tau —— 二值化是訓練管線的固定一步
-    (run_training 用 ACP 的 tau 統一套用)，模型只負責映射；新模型照此約定
-    寫好後在 antenna/zoo.py 登記一行即可。
-    """
-    def __init__(self, in_dim, out_dim, hidden=(1024, 1024)):
-        super(SigmoidGEN,self).__init__()
-        #? 維度由訓練端傳入 (不碰 AntennaResponse/AntennaPattern 的全域註冊狀態)。
-        #? hidden 可由 config 指定；每層 Linear→PReLU，末層 Linear→BiScaleNorm (不接 PReLU)。
-        layers, prev = [], in_dim
-        for h in hidden:
-            layers += [nn.Linear(prev, h), nn.PReLU()]
-            prev = h
-        layers += [nn.Linear(prev, out_dim), BiScaleNorm()]
-        self.fc_patch = nn.Sequential(*layers)
-        self.to(config.device)
-
-    def forward(self, input) -> Tensor:
-        return self.fc_patch(input)
-

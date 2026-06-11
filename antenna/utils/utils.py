@@ -331,7 +331,6 @@ class Path(type(_Path())): # type: ignore
     
     def load_torch(self, device = None):
         """以此路徑載入 torch checkpoint，預設搬到全域 config.device。"""
-        from antenna.models import config
         # PyTorch 2.6 起 torch.load 預設 weights_only=True，會擋下含自訂類別 (如本專案的
         # AntennaPattern / Path) 的 checkpoint；這裡偵測版本後顯式關掉，確保舊存檔能載回。
         if __version__ >= "2.6.0":

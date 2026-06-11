@@ -58,12 +58,14 @@ Antenna
 ├─ train.py            # 訓練入口：python train.py configs/xxx.yaml
 ├─ configs             # 一檔一實驗的 YAML 設定
 ├─ antenna             # 主套件
+|  ├─ pattern.py       # 圖樣抽象 (AntennaPattern：座標/merge/二值化/simulate)
+|  ├─ response.py      # 響應抽象 (AntennaResponse 家族、響應規格)
 |  ├─ training.py      # 單/雙埠共用訓練核心 (run_training)
 |  ├─ zoo.py           # 模型動物園：可用的 GEN/SM 架構都登記在這
 |  ├─ monitor.py       # TensorBoard 監控 + 結尾總覽圖
-|  ├─ models.py        # 生成器 G (SigmoidGEN)
-|  ├─ smodels.py       # 代理模型 SM (HFSSNet / OldSM)
-|  ├─ functions.py     # 損失 + ACP 排程器
+|  ├─ losses.py        # 可製造性損失 (TV/SC/GapClosing) + R_feed 指標
+|  ├─ models           # 模型層：shell (外殼) / generators (GEN) / surrogates (SM)
+|  ├─ optim            # 優化層：ranger (優化器) / scheduler (ACP)
 |  ├─ patch            # microstrip patch antenna
 |  |  └─ patch_simulator   # HFSS 模擬器 (single_port / dual_port)
 |  └─ utils            # config / RunState / SampleStore (+ legacy Record/DataManager)

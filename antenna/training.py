@@ -24,10 +24,8 @@ from antenna.utils import config, logger
 from antenna import AntennaPattern, AntennaResponse, TargetResponse
 from antenna import zoo
 from antenna.models import Models
-from antenna.functions import (
-    FeedReachability, AdaptiveCyclicalScheduler,
-    SpectralConnectivityLoss, GapClosingLoss,
-)
+from antenna.losses import FeedReachability, SpectralConnectivityLoss, GapClosingLoss
+from antenna.optim import AdaptiveCyclicalScheduler
 from antenna.patch import custom_loss_minmax, interval_loss
 from antenna.utils.store import SampleStore
 from antenna.utils.runstate import RunState
