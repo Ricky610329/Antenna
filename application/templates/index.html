@@ -115,9 +115,14 @@
     // TensorBoard 連結：用瀏覽當下的主機名 + :6006（app.py 啟動時已自動跑一個 TB 指向 result/）
     document.getElementById('tb-link').href = `${location.protocol}//${location.hostname}:6006`;
 
-    const STATE_BADGE = {
-        finished: 'success', running: 'primary', crashed: 'danger', failed: 'danger'
+    const HEALTH = {
+        alive:    { cls: 'success',           txt: 'running' },
+        stale:    { cls: 'warning text-dark', txt: '⚠ 疑似卡死' },
+        crashed:  { cls: 'danger',            txt: 'crashed' },
+        finished: { cls: 'secondary',         txt: 'finished' },
     };
+    // 心跳「多久前」：state=running 但心跳很久沒更新 → 該 run 其實可能已卡死
+    const ago = (s) => s == null ? '' : s < 90 ? `${s}s前` : s < 5400 ? `${Math.round(s/60)}分前` : `${(s/3600).toFixed(1)}時前`;
     let RUNS = [];
     let sortKey = 'mtime', sortAsc = false;
 
@@ -141,14 +146,16 @@
         const th = (k, label, cls='') => `<th class="sortable ${cls}" data-k="${k}">${label}${arrow(k)}</th>`;
         let rows = '';
         for (const r of sorted) {
-            const badge = STATE_BADGE[r.state] || 'secondary';
-            const spin = r.state === 'running' ? '<span class="spinner-grow spinner-grow-sm me-1"></span>' : '';
+            const h = HEALTH[r.health] || { cls: 'secondary', txt: r.health || '—' };
+            const spin = r.health === 'alive' ? '<span class="spinner-grow spinner-grow-sm me-1"></span>' : '';
+            const hb = (r.health === 'alive' || r.health === 'stale') && r.silent_sec != null
+                ? `<div class="small text-muted">心跳 ${ago(r.silent_sec)}</div>` : '';
             rows += `
                 <tr onclick="location.href='/record/${encodeURIComponent(r.id)}'">
                     <td><div class="fw-semibold text-primary">${r.name || r.id}</div>
                         <small class="text-muted">${r.id}</small></td>
                     <td>${r.port ? `<span class="badge bg-light text-dark border">${r.port}</span>` : '—'}</td>
-                    <td><span class="badge bg-${badge}">${spin}${r.state || '—'}</span></td>
+                    <td><span class="badge bg-${h.cls}">${spin}${h.txt}</span>${hb}</td>
                     <td class="text-end">${num(r.epoch)}</td>
                     <td class="text-end fw-semibold">${r.best_loss !== undefined ? r.best_loss.toFixed(4) : '—'}</td>
                     <td class="text-end">${r.r_feed !== undefined ? (r.r_feed*100).toFixed(1)+'%' : '—'}</td>
@@ -161,7 +168,7 @@
             <table id="runs-table" class="table table-hover align-middle bg-white shadow-sm rounded">
                 <thead class="table-light">
                     <tr>
-                        ${th('name','實驗')}${th('port','埠')}${th('state','狀態')}
+                        ${th('name','實驗')}${th('port','埠')}${th('health','狀態')}
                         ${th('epoch','epoch','text-end')}${th('best_loss','best_loss','text-end')}
                         ${th('r_feed','r_feed','text-end')}${th('mtime','更新時間')}<th>TB</th>
                     </tr>

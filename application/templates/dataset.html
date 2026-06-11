@@ -7,19 +7,13 @@
     <link rel="icon" href="{{ url_for('static', filename = 'picture/house.ico') }}" type="image/x-icon" >
     <link rel="icon" href="{{ url_for('static', filename = 'picture/house.png') }}" type="image/png" >
     <link rel="shortcut icon" href="{{ url_for('static', filename = 'picture/house.ico') }}" type="image/x-icon" >
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
     <style>
-        .sample-card {
-            height: 100%;
-        }
-        canvas {
-            image-rendering: pixelated;
-        }
+        .sample-card { height: 100%; }
+        canvas.heatmap { image-rendering: pixelated; }
+        .resp-chart-wrap { height: 110px; }
     </style>
 </head>
 <body class="bg-light">
@@ -27,176 +21,96 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
     <div class="container">
         <a class="navbar-brand d-flex align-items-center" href="/">
-            <i class="bi bi-broadcast-pin me-2"></i>
-            Antenna Visualizer
+            <i class="bi bi-broadcast-pin me-2"></i> Antenna Visualizer
         </a>
-        <span class="navbar-text text-white">
-            Dataset: {{ dataset_name }}
-        </span>
-        <a href="/" class="btn btn-outline-light btn-sm ms-auto">Back to List</a>
+        <span class="navbar-text text-white">Dataset: {{ dataset_name }}</span>
+        <a href="/" class="btn btn-outline-light btn-sm ms-auto">回列表</a>
     </div>
 </nav>
 
 <div class="container">
-    <div class="alert alert-info">
-        <strong>Total Items:</strong> {{ total_items }} (Showing first {{ samples|length }} samples)
+    <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <span><strong>共 {{ total_items }} 筆</strong>（顯示前 {{ samples|length }} 筆）</span>
+        <span class="small text-muted">響應：{{ resp_labels|join(' · ') }}　x 軸：{{ resp_x[0] }}–{{ resp_x[-1] }} GHz（n257）</span>
     </div>
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" id="samplesContainer">
-        <!-- Populated by JS -->
-    </div>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" id="samplesContainer"></div>
 </div>
 
 <script>
     const samples = {{ samples | tojson }};
+    const RESP_LABELS = {{ resp_labels | tojson }};   // 通道→名稱：[S11,Gain] 或 [S11,S21,S22]
+    const RESP_X = {{ resp_x | tojson }};              // 頻率軸 (GHz)
+    const COLORS = { S11: '#0d6efd', S21: '#6f42c1', S22: '#198754', Gain: '#fd7e14' };
 
     function renderSamples() {
         const container = document.getElementById('samplesContainer');
-        
         samples.forEach(sample => {
+            // 每個響應通道一張小圖（依名稱分開，不再擠成 Port1/Port2）
+            const respCharts = RESP_LABELS.map((lbl, i) => `
+                <div class="mb-2">
+                    <div class="small fw-bold" style="color:${COLORS[lbl] || '#333'}">${lbl}
+                        <span class="text-muted fw-normal">(${lbl === 'Gain' ? 'dBi' : 'dB'})</span></div>
+                    <div class="resp-chart-wrap"><canvas id="chart-${sample.id}-${i}"></canvas></div>
+                </div>`).join('');
+
             const col = document.createElement('div');
             col.className = 'col';
-            
-            // Create Card
             col.innerHTML = `
                 <div class="card sample-card shadow-sm">
-                    <div class="card-header bg-light">
-                        <strong>ID: ${sample.id}</strong>
-                    </div>
+                    <div class="card-header bg-light py-1"><strong>#${sample.id}</strong></div>
                     <div class="card-body">
-                        <div class="row">
-                            <!-- Input (Assume Heatmap) -->
-                            <div class="col-12 mb-3">
-                                <h6 class="card-subtitle mb-2 text-muted">Input</h6>
-                                <div style="display: flex; justify-content: center;">
-                                    <canvas id="canvas-in-${sample.id}" width="150" height="150" style="width: 150px; height: 150px; border: 1px solid #eee;"></canvas>
-                                </div>
-                            </div>
-                            <!-- Output (Assume Line Chart or Value) -->
-                            <div class="col-12">
-                                <h6 class="card-subtitle mb-2 text-muted">Output</h6>
-                                <div style="height: 150px;">
-                                    <canvas id="chart-out-${sample.id}"></canvas>
-                                </div>
-                            </div>
+                        <div class="small text-muted mb-1">Pattern (25×25)</div>
+                        <div class="d-flex justify-content-center mb-3">
+                            <canvas class="heatmap" id="canvas-in-${sample.id}" width="120" height="120"
+                                    style="width:120px;height:120px;border:1px solid #eee;"></canvas>
                         </div>
+                        <div class="small text-muted mb-1">Response（按類型分開）</div>
+                        ${respCharts}
                     </div>
-                </div>
-            `;
+                </div>`;
             container.appendChild(col);
 
-            // Render Input (Heatmap)
-            if (sample.input) {
-                renderHeatmap(`canvas-in-${sample.id}`, sample.input);
-            }
-
-            // Render Output (Chart)
+            if (sample.input) renderHeatmap(`canvas-in-${sample.id}`, sample.input);
             if (sample.output) {
-                renderLineChart(`chart-out-${sample.id}`, sample.output);
+                RESP_LABELS.forEach((lbl, i) => {
+                    if (sample.output[i]) renderRespChart(`chart-${sample.id}-${i}`, sample.output[i], lbl);
+                });
             }
         });
     }
 
     function renderHeatmap(canvasId, data) {
-        const canvas = document.getElementById(canvasId);
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width;
-        const h = canvas.height;
-
-        // Flatten if needed or handle dimensions
-        // Simple case: 2D array or 1D array (vector)
-        let rows = 1, cols = 1;
-        let flatData = [];
-
-        if (Array.isArray(data[0])) {
-            rows = data.length;
-            cols = data[0].length;
-            flatData = data.flat(); // works if simple 2D
-        } else {
-            // Assume 1D vector -> make it square-ish or just strip?
-            // Let's assume square for antenna pattern usually
-            const len = data.length;
-            const side = Math.sqrt(len);
-            if (Number.isInteger(side)) {
-                rows = side;
-                cols = side;
-            } else {
-                // Just a vector strip
-                cols = len;
-            }
-            flatData = data;
-        }
-
-        const cellW = w / cols;
-        const cellH = h / rows;
-
-        // Normalize
-        let min = Math.min(...flatData);
-        let max = Math.max(...flatData);
-        if (max === min) max = min + 1;
-
-        for (let i = 0; i < flatData.length; i++) {
-            const r = Math.floor(i / cols);
-            const c = i % cols;
-            const val = flatData[i];
-            const norm = (val - min) / (max - min);
-            
-            // Blue-ish
-            const intensity = Math.floor(norm * 255);
-            ctx.fillStyle = `rgb(0, ${intensity}, ${intensity+50})`;
+        const canvas = document.getElementById(canvasId), ctx = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+        const rows = data.length, cols = Array.isArray(data[0]) ? data[0].length : data.length;
+        const flat = Array.isArray(data[0]) ? data.flat() : data;
+        const cellW = w / cols, cellH = h / rows;
+        let min = Math.min(...flat), max = Math.max(...flat); if (max === min) max = min + 1;
+        for (let i = 0; i < flat.length; i++) {
+            const r = Math.floor(i / cols), c = i % cols;
+            const norm = (flat[i] - min) / (max - min), v = Math.floor(norm * 255);
+            ctx.fillStyle = `rgb(0, ${v}, ${v + 50})`;
             ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
         }
     }
 
-    function renderLineChart(canvasId, data) {
+    function renderRespChart(canvasId, data1d, label) {
         const ctx = document.getElementById(canvasId).getContext('2d');
-        
-        // Handle Multidimensional Output (e.g. Multi-port)
-        let datasets = [];
-        let labels = [];
-
-        if (Array.isArray(data[0])) {
-             const rows = data.length;
-             const cols = data[0].length;
-             labels = Array.from({length: cols}, (_, i) => i);
-             
-             for(let i=0; i<rows; i++) {
-                 datasets.push({
-                     label: `Port ${i+1}`,
-                     data: data[i],
-                     borderColor: `hsl(${(i*137)%360}, 70%, 50%)`,
-                     borderWidth: 1,
-                     pointRadius: 0,
-                     tension: 0.1
-                 });
-             }
-        } else {
-            labels = data.map((_, i) => i);
-            datasets.push({
-                label: 'Response',
-                data: data,
-                borderColor: 'rgb(75, 192, 192)',
-                borderWidth: 1,
-                pointRadius: 0,
-                tension: 0.1
-            });
-        }
-
+        const color = COLORS[label] || '#0d6efd';
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
-                datasets: datasets
+                labels: RESP_X.length === data1d.length ? RESP_X : data1d.map((_, i) => i),
+                datasets: [{ label, data: data1d, borderColor: color, backgroundColor: color + '22',
+                             borderWidth: 1.5, pointRadius: 0, tension: 0.2, fill: true }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: datasets.length > 1 }
-                },
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
-                    x: { display: false },
-                    y: { display: true }
+                    x: { ticks: { maxTicksLimit: 5, font: { size: 9 } }, title: { display: true, text: 'GHz', font: { size: 9 } } },
+                    y: { ticks: { font: { size: 9 } } }
                 }
             }
         });
@@ -204,7 +118,6 @@
 
     renderSamples();
 </script>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

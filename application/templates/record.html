@@ -101,6 +101,17 @@
                     </div>
                 </div>
 
+                <!-- Response vs Target Section -->
+                <div id="resp-target-section" class="card mb-4 shadow-sm" style="display:none;">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap">
+                        <h5 class="mb-0">響應 vs 目標</h5>
+                        <span class="small text-muted">紅虛線＝設計目標，實線＝模擬響應（拖上方 Step slider 看逼近過程）</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3" id="respTargetContainer"></div>
+                    </div>
+                </div>
+
                 <!-- Matrix Visualization Section -->
                 <div id="matrix-section" class="card mb-4 shadow-sm" style="display: none;">
                     <div class="card-header bg-white">
@@ -425,9 +436,59 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             };
 
+            // 響應 vs 目標：每個 label 一張，紅虛線目標 + 實線響應 (跟 global slider 捲動)
+            const renderRespVsTarget = (api) => {
+                const labels = api.resp_labels || [];
+                if (!labels.length || !api.responses) return;
+                document.getElementById('resp-target-section').style.display = 'block';
+                const container = document.getElementById('respTargetContainer');
+                const x = api.resp_x || [];
+                const C = { S11:'#0d6efd', S21:'#6f42c1', S22:'#198754', Gain:'#fd7e14' };
+                const charts = {};
+                const nFrames = (api.responses[labels[0]] || []).length;
+                const step0 = Math.max(0, nFrames - 1);   // 預設顯示最後一筆
+                labels.forEach(lbl => {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-xl-4';
+                    col.innerHTML = `
+                        <div class="card h-100">
+                            <div class="card-header py-1 small fw-bold" style="color:${C[lbl]||'#333'}">
+                                ${lbl} <span class="text-muted fw-normal">(${lbl==='Gain'?'dBi':'dB'})</span>
+                            </div>
+                            <div class="card-body p-2" style="height:200px"><canvas id="rt-${lbl}"></canvas></div>
+                        </div>`;
+                    container.appendChild(col);
+                    const tgt = api.targets[lbl] || [];
+                    const series = api.responses[lbl] || [];
+                    const xs = (x.length && x.length === tgt.length) ? x : (series[0]||tgt).map((_,i)=>i);
+                    charts[lbl] = new Chart(col.querySelector(`#rt-${lbl}`).getContext('2d'), {
+                        type:'line',
+                        data:{ labels: xs, datasets:[
+                            { label:'目標', data:tgt, borderColor:'#dc3545', borderDash:[6,4], borderWidth:2, pointRadius:0, fill:false },
+                            { label:'響應', data:series[step0]||[], borderColor:C[lbl]||'#0d6efd', borderWidth:2, pointRadius:0, fill:false }
+                        ]},
+                        options:{ responsive:true, maintainAspectRatio:false, animation:false,
+                            plugins:{ legend:{ labels:{ boxWidth:12, font:{size:10} } } },
+                            scales:{ x:{ ticks:{ maxTicksLimit:5, font:{size:9} }, title:{ display:true, text:'GHz', font:{size:9} } },
+                                     y:{ ticks:{ font:{size:9} } } } }
+                    });
+                });
+                if (window.globalSlider) {
+                    window.globalSlider.addEventListener('input', e => {
+                        const s = parseInt(e.target.value);
+                        labels.forEach(lbl => {
+                            const series = api.responses[lbl] || [];
+                            charts[lbl].data.datasets[1].data = series[Math.min(s, series.length-1)] || [];
+                            charts[lbl].update('none');
+                        });
+                    });
+                }
+            };
+
             // --- CALL RENDER FUNCTIONS ---
             renderTrainingMetrics(apiData.data, apiData.record_name);
             renderMatrixViz(apiData.matrix_data);
+            renderRespVsTarget(apiData);
             renderImages(apiData.images);
             renderConfig(apiData.config);
             renderHistory(apiData.history);

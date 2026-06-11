@@ -137,12 +137,29 @@ def _read_run_summary(d):
                     info['r_feed'] = round(float(df['r_feed'].iloc[-1]), 4)
                 if 'epoch' in df.columns:
                     info['epoch'] = int(df['epoch'].iloc[-1])
+                if 'time' in df.columns:
+                    info['epoch_time'] = round(float(df['time'].median()), 1)   # 中位 epoch 耗時 (秒)
                 info['rows'] = int(len(df))
         except Exception:
             pass
     if (d / 'summary.png').exists():
         info['summary'] = 'summary.png'
     info['has_tb'] = (d / 'tb').exists()
+
+    # 健康判斷：state 只記「上次寫了什麼」，硬死/卡死 (kill -9 / HFSS 卡 COM / 斷電) 會卡在 running。
+    # 可靠訊號是心跳新鮮度：state=running 但靜默 ≫ 一個 epoch 時間 → 疑似卡死。
+    silent = None
+    if info.get('updated_at'):
+        try:
+            silent = (datetime.now() - datetime.fromisoformat(info['updated_at'])).total_seconds()
+        except Exception:
+            pass
+    info['silent_sec'] = round(silent) if silent is not None else None
+    if info.get('state') == 'running':
+        thresh = max(900, 3 * (info.get('epoch_time') or 300))   # 15 分保底 或 3× 中位 epoch 時間
+        info['health'] = 'stale' if (silent is not None and silent > thresh) else 'alive'
+    else:
+        info['health'] = info.get('state') or 'unknown'
     return info
 
 
@@ -263,10 +280,24 @@ def view_dataset(dataset_name):
                 samples.append({'id': i, 'input': to_list(inp), 'output': to_list(outp)})
             total_items = total
 
-        return render_template('dataset.html', dataset_name=dataset_name,
-                               total_items=total_items, samples=samples)
+        # 響應「按類型分開畫」：依通道數推標籤、x 軸用 patch n257 頻段 (24–32 GHz)
+        resp_labels, resp_x = response_meta(samples)
+        return render_template('dataset.html', dataset_name=dataset_name, total_items=total_items,
+                               samples=samples, resp_labels=resp_labels, resp_x=resp_x)
     except Exception as e:
         return f"Error loading dataset: {str(e)}", 500
+
+
+def response_meta(samples):
+    """從樣本推響應的標籤與頻率 x 軸：2 通道→[S11,Gain]、3 通道→[S11,S21,S22]
+    （順序＝criterion 對齊的 labels 順序）；x＝n257 頻段 linspace(24,32,點數) GHz。"""
+    out0 = samples[0]['output'] if samples and samples[0].get('output') else None
+    if not out0 or not isinstance(out0[0], list):
+        return [], []
+    n_ch, n_pts = len(out0), len(out0[0])
+    labels = {2: ['S11', 'Gain'], 3: ['S11', 'S21', 'S22']}.get(n_ch, [f'ch{i}' for i in range(n_ch)])
+    x = [round(float(v), 2) for v in np.linspace(24, 32, n_pts)]
+    return labels, x
 
 @app.route('/record/<record_id>')
 def view_record(record_id):
@@ -279,18 +310,31 @@ def view_record(record_id):
 
     return render_template('record.html', record_id=record_id)
 
+def _target_curve(side, center, width):
+    """重建目標響應曲線：與 TargetResponse 的 5 段梯形 mask 同算法 (左台/左斜/中台/右斜/右台)。"""
+    w = width
+    return np.concatenate([
+        np.ones(w[0]) * side,
+        np.linspace(side, center, w[1]),
+        np.ones(w[2]) * center,
+        np.linspace(center, side, w[3]),
+        np.ones(w[4]) * side,
+    ]).round(4).tolist()
+
+
 @app.route('/api/record/<record_id>')
 def get_record_data(record_id):
-    """API：讀新格式 RunState — metrics.csv (純量曲線) + patterns/ (pattern/response 演化)
-    + config.yaml + summary.png。取代舊的 temp.record/Record。"""
+    """API：讀新格式 RunState — metrics.csv (純量曲線) + patterns/ (pattern 演化 + 各響應)
+    + config.yaml (含重建的目標曲線，供「響應 vs 目標」疊圖) + summary.png。"""
     record_path = RESULT_DIR / record_id
     if not record_path.exists():
         abort(404, description="Record not found")
 
-    data_dict, matrix_dict, history_list, config_data, images = {}, {}, [], {}, []
+    data_dict, matrix_dict, config_data, images = {}, {}, {}, []
+    resp_labels, resp_x, targets, responses = [], [], {}, {}
     error_msg = record_name_loaded = None
 
-    # 1. metrics.csv → 純量序列 (data) + pattern/response 隨 epoch 演化 (matrix)
+    # 1. metrics.csv → 純量序列 + pattern 演化 + 各響應 (S11/S21/...) 隨 epoch 的演化
     mc = record_path / 'metrics.csv'
     if mc.exists():
         record_name_loaded = 'metrics.csv'
@@ -304,7 +348,7 @@ def get_record_data(record_id):
                 pdir = record_path / 'patterns'
                 hashes = df['pattern_hash'].astype(str).tolist()
                 stride = max(1, len(hashes) // 40)   # 等距取樣 ~40 步，避免從 NAS 讀太多 .pt
-                pats, resps = [], []
+                pats, frames = [], []
                 for i in range(0, len(hashes), stride):
                     pf = pdir / f"{hashes[i]}.pt"
                     if not pf.exists():
@@ -312,35 +356,43 @@ def get_record_data(record_id):
                     try:
                         pattern, response, _ = torch.load(pf, weights_only=True)
                         pats.append(pattern.tolist())
-                        resps.append(response.tolist())
+                        frames.append(response.tolist())
                     except Exception:
                         pass
                 if pats:
                     matrix_dict['pattern'] = pats
-                if resps:
-                    matrix_dict['response'] = resps
+                if frames:
+                    n_ch, n_pts = len(frames[0]), len(frames[0][0])
+                    resp_labels = {2: ['S11', 'Gain'], 3: ['S11', 'S21', 'S22']}.get(
+                        n_ch, [f'ch{i}' for i in range(n_ch)])
+                    resp_x = [round(float(v), 2) for v in np.linspace(24, 32, n_pts)]
+                    for ci, lbl in enumerate(resp_labels):
+                        responses[lbl] = [frame[ci] for frame in frames]   # 該響應隨 epoch
         except Exception as e:
             error_msg = f"讀 metrics.csv 失敗: {e}"
     else:
-        error_msg = ("找不到 metrics.csv —— 這個 run 不是新格式 (RunState)。"
-                     "舊實驗請改用 TensorBoard 或學長封存查看。")
+        error_msg = ("找不到 metrics.csv —— 這個 run 不是新格式 (RunState)。舊實驗請改用 TensorBoard。")
 
-    # 2. summary.png (新格式放在 run 根目錄，非 pic/)
+    # 2. summary.png (新格式放在 run 根目錄)
     if (record_path / 'summary.png').exists():
         images.append('summary.png')
 
-    # 3. config.yaml → dict
+    # 3. config.yaml → dict + 重建各 label 的目標曲線 (供「響應 vs 目標」)
     cy = record_path / 'config.yaml'
     if cy.exists():
         try:
             config_data = yaml.safe_load(cy.read_text(encoding='utf-8')) or {}
+            for lbl, t in (config_data.get('targets') or {}).items():
+                if all(k in t for k in ('side', 'center', 'width')):
+                    targets[lbl] = _target_curve(t['side'], t['center'], t['width'])
         except Exception as e:
             print(f"讀 config.yaml 失敗: {e}")
 
     return jsonify(
         record_id=record_id, record_name=record_name_loaded,
-        data=data_dict, matrix_data=matrix_dict, history=history_list,
+        data=data_dict, matrix_data=matrix_dict, history=[],
         images=images, config=config_data, error=error_msg,
+        resp_labels=resp_labels, resp_x=resp_x, targets=targets, responses=responses,
     )
 
 @app.route('/result/<path:filename>')
