@@ -31,7 +31,7 @@ loss:                         # 正則化權重 (0 = 不啟用)
   spectral_connectivity: 0.0  # 論文主方法 (圖譜連通度)
   gap_closing: 0.0
 
-hfss:                         # 代理模型 (SM) 線上訓練
+sm_train:                     # 代理模型 (SM) 線上訓練
   lr: 0.001
   min_loss: 0.1
   max_epoch: 20000
@@ -71,8 +71,8 @@ targets:                      # 目標響應 (side=兩端, center=中央, width=
 
 | 區段 | 預設名字 | 對應實作 | 預設 `hidden` |
 | --- | --- | --- | --- |
-| `generator` | `sigmoid` | `SigmoidGEN` | `[1024, 1024]` |
-| `surrogate` | `mlp` | `HFSSNet`（`OldSM`） | `[2048, 1024, 512, 128, 64]` |
+| `generator` | `sigmoid` | `SigmoidGenerator` | `[1024, 1024]` |
+| `surrogate` | `mlp` | `HFSSNet`（`MLPSurrogate`） | `[2048, 1024, 512, 128, 64]` |
 
 - 兩區段都可省略 → 用預設（與舊 `train_single/dual` **完全相同**）。
 - `hidden` 為選填微調（一次性實驗用）；常用的變體請在 zoo 登記成新名字。

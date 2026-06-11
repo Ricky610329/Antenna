@@ -34,7 +34,7 @@ class _FakePainter:
 
 
 def _metrics(spec):
-    return dict(real_loss=1.0, min_loss=1.0, fake_loss=2.0, r_feed=0.5, tau=1.0,
+    return dict(sim_loss=1.0, best_loss=1.0, gen_loss=2.0, r_feed=0.5, tau=1.0,
                 lr=0.005, time=3.0, pattern=torch.zeros(25, 25),
                 response=torch.zeros(2, 17), spec=spec, r_feed_painter=_FakePainter())
 
@@ -61,7 +61,7 @@ def test_scalars_and_figures_logged():
     """純量分組 (loss/sched/index) 與三類圖 (target/pattern/response) 都有記。"""
     mon = _bare_monitor(_FakeWriter())
     mon.on_epoch(1, _metrics(_spec()))
-    for tag in ("loss/real_loss", "loss/fake_loss", "loss/min_loss",
+    for tag in ("loss/sim_loss", "loss/gen_loss", "loss/best_loss",
                 "sched/lr", "sched/tau", "index/r_feed", "index/time"):
         assert tag in mon.writer.scalars
     for tag in ("target/curves", "pattern/feed_reachability", "response/sim_vs_target"):
@@ -90,7 +90,7 @@ def test_image_every_throttles():
     m = _metrics(_spec())
     mon.on_epoch(1, m); mon.on_epoch(2, m)
     assert mon.writer.figures.count("response/sim_vs_target") == 1
-    assert mon.writer.scalars.count("loss/real_loss") == 2
+    assert mon.writer.scalars.count("loss/sim_loss") == 2
 
 
 def test_summary_png(tmp_path):
@@ -100,8 +100,8 @@ def test_summary_png(tmp_path):
     for e in range(1, 4):
         loss = 4.0 - e
         h = state.add_pattern(torch.rand(25, 25), torch.rand(2, 17), loss)
-        for k, v in dict(epoch=e, real_loss=loss, fake_loss=2.0, min_loss=loss,
-                         real_loss_average=loss, r_feed=0.5, time=3.0, pattern_hash=h).items():
+        for k, v in dict(epoch=e, sim_loss=loss, gen_loss=2.0, best_loss=loss,
+                         sim_loss_avg=loss, r_feed=0.5, time=3.0, pattern_hash=h).items():
             state.append(k, v)
         state.save_row()
     mon.summary(state, tmp_path)

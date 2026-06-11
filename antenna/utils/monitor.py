@@ -49,7 +49,7 @@ class TrainingMonitor:
         self._spec = m.get("spec", self._spec)
         if self.writer is None:
             return
-        for group, keys in (("loss", ("real_loss", "fake_loss", "min_loss")),
+        for group, keys in (("loss", ("sim_loss", "gen_loss", "best_loss")),
                             ("sched", ("lr", "tau")),
                             ("index", ("r_feed", "time"))):
             for k in keys:
@@ -77,8 +77,8 @@ class TrainingMonitor:
         """依 RunState 的完整歷史畫總覽圖 → <save_dir>/summary.png。
         排版：上排 = 最佳 pattern + 各響應 vs 目標 (依 label 數伸縮)；下排 = loss / r_feed·time / 摘要。"""
         spec = self._spec
-        losses = state.series("real_loss")
-        best_epoch = state.best_epoch("real_loss")
+        losses = state.series("sim_loss")
+        best_epoch = state.best_epoch("sim_loss")
         pattern, response = state.pattern_at(best_epoch)
         labels = list(spec.labels)
         cols = max(3, 1 + len(labels))
@@ -97,9 +97,9 @@ class TrainingMonitor:
             axes[0][n].axis("off")
 
         ax_loss = axes[1][0]
-        ax_loss.plot(losses, color="red", label="real_loss")
-        ax_loss.plot(state.series("fake_loss"), color="purple", label="fake_loss", alpha=0.8)
-        ax_loss.plot(state.series("min_loss"), label="min_loss")
+        ax_loss.plot(losses, color="red", label="sim_loss")
+        ax_loss.plot(state.series("gen_loss"), color="purple", label="gen_loss", alpha=0.8)
+        ax_loss.plot(state.series("best_loss"), label="best_loss")
         ax_loss.set_title("Loss Curve"); ax_loss.legend()
 
         ax_idx = axes[1][1]
@@ -109,7 +109,7 @@ class TrainingMonitor:
         ax_idx.set_title("R_feed / Time"); ax_idx.legend(loc="upper left"); ax_t.legend(loc="upper right")
 
         axes[1][2].axis("off")
-        axes[1][2].text(0.05, 0.6, f"best epoch: {best_epoch}\nmin real_loss: {min(losses):.4f}\n"
+        axes[1][2].text(0.05, 0.6, f"best epoch: {best_epoch}\nbest sim_loss: {min(losses):.4f}\n"
                                    f"epochs: {len(losses)}", fontsize=14, family="monospace")
         for n in range(3, cols):
             axes[1][n].axis("off")

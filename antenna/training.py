@@ -55,7 +55,7 @@ PORT_SPECS = {
 #! 歷史教訓：舊 dual 的 island_suppression 鍵名打錯，正則化默默沒開、實驗白跑。
 SECTION_KEYS = {
     "loss":      {"total_variation", "island_suppression", "spectral_connectivity", "gap_closing"},
-    "hfss":      {"lr", "min_loss", "max_epoch"},
+    "sm_train":  {"lr", "min_loss", "max_epoch"},
     "scheduler": {"on_plateau", "T_0", "T_mult", "lr_min", "temp_max", "temp_min",
                   "warmup_ratio", "patience", "factor"},
     "generator": {"name", "hidden", "pretrained"},
@@ -74,7 +74,7 @@ class TrainConfig:
     patience: int = 10
     seed: Optional[int] = None                      # 設了 → torch.manual_seed (可重現性)
     loss: dict = field(default_factory=dict)        # 見 SECTION_KEYS["loss"]
-    hfss: dict = field(default_factory=dict)        # lr / min_loss / max_epoch (代理模型線上訓練)
+    sm_train: dict = field(default_factory=dict)    # lr / min_loss / max_epoch (代理模型線上訓練)
     scheduler: dict = field(default_factory=dict)   # ACP 超參數 (見 SECTION_KEYS["scheduler"])
     generator: dict = field(default_factory=dict)   # GEN：zoo 名字 (字串) 或 {name, hidden, pretrained}
     surrogate: dict = field(default_factory=dict)   # SM：{name, hidden, pretrained, offline_dataset, warmup}
@@ -148,7 +148,7 @@ def _arch_params(section: dict, loading_keys=("name", "pretrained", "offline_dat
 def build_scheduler(cfg: TrainConfig, optimizer):
     """依 cfg.scheduler 建 ACP (AdaptiveCyclicalScheduler)。
     ACP 是論文核心機制，超參數可在 YAML 調整；預設值 = 原 train_single/dual 的設定。
-    lr_max 與 cfg.lr 綁定 (週期高點 = 訓練 lr)；mode 固定 min (監控 real_loss)。"""
+    lr_max 與 cfg.lr 綁定 (週期高點 = 訓練 lr)；mode 固定 min (監控 sim_loss)。"""
     s = cfg.scheduler
     return AdaptiveCyclicalScheduler(
         optimizer,
@@ -177,15 +177,15 @@ def build_generator(cfg: TrainConfig, spec: TargetResponse):
 def build_surrogate(cfg: TrainConfig, checkpoint, spec: TargetResponse):
     """依 cfg.surrogate (zoo 名字 + 架構參數) 建代理模型 SM。未指定 → mlp 預設。
 
-    YAML 的 hfss 區段 (lr / 單筆訓練門檻) 顯式傳入 SM；響應維度從 spec 讀。"""
+    YAML 的 sm_train 區段 (lr / 單筆訓練門檻) 顯式傳入 SM；響應維度從 spec 讀。"""
     name = cfg.surrogate.get("name", "mlp")
     if name not in zoo.SURROGATES:
         raise ValueError(f"未知的 surrogate {name!r}，可用: {sorted(zoo.SURROGATES)} (見 antenna/zoo.py)")
     return zoo.SURROGATES[name](
         checkpoint, AntennaPattern.size(flatten=True), spec.size(),
-        lr=cfg.hfss.get("lr", 0.001),
-        min_loss=cfg.hfss.get("min_loss", 0.1),
-        max_epoch=cfg.hfss.get("max_epoch", 20000),
+        lr=cfg.sm_train.get("lr", 0.001),
+        min_loss=cfg.sm_train.get("min_loss", 0.1),
+        max_epoch=cfg.sm_train.get("max_epoch", 20000),
         **_arch_params(cfg.surrogate),
     )
 
@@ -269,9 +269,9 @@ def run_training(
         generator.optimizer.zero_grad()
 
         # 早停 → 回滾 (測試用高 patience 不觸發)
-        if state.early_stop("real_loss", pat):
-            if verbose: logger.info(f"[{epoch}] real_loss 連續 {pat} 次未改善 → 回滾至最佳 epoch、重訓 SM (online {len(online)} 筆)")
-            generator.change(state.best_epoch("real_loss"), save=True, load=True)
+        if state.early_stop("sim_loss", pat):
+            if verbose: logger.info(f"[{epoch}] sim_loss 連續 {pat} 次未改善 → 回滾至最佳 epoch、重訓 SM (online {len(online)} 筆)")
+            generator.change(state.best_epoch("sim_loss"), save=True, load=True)
             smodel.train_by_datas(online, verbose=verbose)
 
         # 生成：模型只出 logits；STE 二值化是管線的固定一步，tau 由 ACP 單獨控制
@@ -287,26 +287,26 @@ def run_training(
         if cached is None:
             if verbose: logger.info(f"[{epoch}] HFSS 模擬中…")
             result = output_element.simulate()
-            real_loss = result.criterion()
+            sim_loss = result.criterion()
             stack = result.stack()
             #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
             smodel.train_one_data(output_element.series, stack, verbose=verbose)
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
-            state.append("real_loss", real_loss.item())
-            phash = state.add_pattern(~output_element, stack, real_loss.item())
-            if state.last("real_loss") < state.average("real_loss"):
+            state.append("sim_loss", sim_loss.item())
+            phash = state.add_pattern(~output_element, stack, sim_loss.item())
+            if state.last("sim_loss") < state.average("sim_loss"):
                 online.add(~output_element, stack)
         else:
             if verbose: logger.info(f"[{epoch}] pattern 重複 → 取快取結果 (跳過 HFSS)")
-            stack, real_loss, phash = cached
-            state.append("real_loss", real_loss)
+            stack, sim_loss, phash = cached
+            state.append("sim_loss", sim_loss)
 
-        state.append("real_loss_average", state.average("real_loss"))
+        state.append("sim_loss_avg", state.average("sim_loss"))
 
-        min_loss = state.last("min_loss", float("inf"))
-        if state.last("real_loss") <= min_loss:
-            min_loss = state.last("real_loss")
-        state.append("min_loss", min_loss)
+        best_loss = state.last("best_loss", float("inf"))
+        if state.last("sim_loss") <= best_loss:
+            best_loss = state.last("sim_loss")
+        state.append("best_loss", best_loss)
 
         state.append("pattern_hash", phash)
         state.append("r_feed", r_feed(~output_element))
@@ -321,9 +321,9 @@ def run_training(
             + gap_w * gc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
         )
         loss.backward()
-        generator.step(scheduler_param=real_loss)
+        generator.step(scheduler_param=sim_loss)
         generator.model.eval()
-        state.append("fake_loss", loss.item())
+        state.append("gen_loss", loss.item())
 
         generator.save()                       # 存 GEN (供 rollback 載回 / 斷點續跑)
 
@@ -337,9 +337,9 @@ def run_training(
         # on_epoch 收到「本 epoch 快照」：純量指標 + 繪圖素材 (監控端畫 pattern/響應用)
         if on_epoch is not None:
             on_epoch(epoch, dict(
-                real_loss=float(state.last("real_loss")),
-                min_loss=float(state.last("min_loss")),
-                fake_loss=float(state.last("fake_loss")),
+                sim_loss=float(state.last("sim_loss")),
+                best_loss=float(state.last("best_loss")),
+                gen_loss=float(state.last("gen_loss")),
                 r_feed=float(state.last("r_feed")),
                 tau=float(generator.scheduler.get_temp()),
                 lr=float(optimizer.param_groups[0]["lr"]),

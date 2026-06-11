@@ -47,7 +47,7 @@ tensorboard --logdir "T:\碩二_吳維文's\Patch Antenna\Experiment\result"
 # 瀏覽器開 http://localhost:6006 → 所有機器的實驗並排比較
 ```
 
-- **Scalars**：loss（real/fake/min）、lr/tau、r_feed、每 epoch 耗時。
+- **Scalars**：loss（sim/gen/best）、lr/tau、r_feed、每 epoch 耗時。
 - **Images**：pattern+饋電連通圖、各響應 vs 目標（有 epoch 滑桿可回放）。
 - 訓練結束結果夾另有 `summary.png` 總覽圖（不開 TB 也能看結果）。
 - 舊實驗仍用學長的 app.py 看（歷史 `pic/` 不受影響）。

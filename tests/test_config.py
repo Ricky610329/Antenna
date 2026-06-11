@@ -84,8 +84,8 @@ def test_unknown_section_key_rejected():
     with pytest.raises(ValueError, match="loss"):
         TrainConfig(name="x", port="single", targets=_ok_targets(),
                     loss={"total_variaton": 1.0})            # 少個 t
-    with pytest.raises(ValueError, match="hfss"):
-        TrainConfig(name="x", port="single", targets=_ok_targets(), hfss={"lrr": 1})
+    with pytest.raises(ValueError, match="sm_train"):
+        TrainConfig(name="x", port="single", targets=_ok_targets(), sm_train={"lrr": 1})
     with pytest.raises(ValueError, match="scheduler"):
         TrainConfig(name="x", port="single", targets=_ok_targets(), scheduler={"on_plato": "linear"})
     with pytest.raises(ValueError, match="generator"):

@@ -49,7 +49,7 @@ class _MockSim:
 def _run(yaml_name, labels, tmpdir):
     cfg = load_config(os.path.join(FIX, yaml_name))
     sim = _MockSim(labels)
-    series = {k: [] for k in ["real_loss", "min_loss", "fake_loss", "r_feed", "tau", "lr"]}
+    series = {k: [] for k in ["sim_loss", "best_loss", "gen_loss", "r_feed", "tau", "lr"]}
 
     def capture(epoch, m):
         for k in series:
@@ -61,7 +61,7 @@ def _run(yaml_name, labels, tmpdir):
 
 def _compare_golden(series, golden_file):
     path = os.path.join(os.path.dirname(__file__), golden_file)
-    assert len(series["real_loss"]) == EPOCHS
+    assert len(series["sim_loss"]) == EPOCHS
     for k, vals in series.items():
         assert all(v == v for v in vals), f"{k} 含 NaN"
     # r_feed 是離散指標 (可達金屬「比例」，由連通分量決定)：CI 跨硬體的浮點漂移

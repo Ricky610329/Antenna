@@ -111,9 +111,9 @@ def test_build_surrogate_custom_hidden(tmp_path, spec):
     assert [l.out_features for l in ls[:2]] == [128, 64]
 
 
-def test_hfss_params_flow_to_sm(tmp_path, spec):
-    """YAML hfss 區段 (lr / 單筆訓練門檻) 顯式流進 SM，不經全域 config。"""
-    cfg = _single_cfg(); cfg.hfss = {"lr": 0.005, "min_loss": 0.05, "max_epoch": 123}
+def test_sm_train_params_flow_to_sm(tmp_path, spec):
+    """YAML sm_train 區段 (lr / 單筆訓練門檻) 顯式流進 SM，不經全域 config。"""
+    cfg = _single_cfg(); cfg.sm_train = {"lr": 0.005, "min_loss": 0.05, "max_epoch": 123}
     sm = build_surrogate(cfg, tmp_path, spec)
     assert sm.min_loss == 0.05 and sm.max_epoch == 123
     assert sm.optimizer.param_groups[0]["lr"] == 0.005

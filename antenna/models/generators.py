@@ -32,10 +32,10 @@ class BiScaleNorm(nn.Module):
         normalized_vector = positive_normalized + negative_normalized
         return normalized_vector
 
-###* SigmoidGEN — 主用生成器 (MLP + BiScaleNorm + AntennaPattern.binarization) ###
+###* SigmoidGenerator — 主用生成器 (MLP + BiScaleNorm + AntennaPattern.binarization) ###
 #? 本專案實際主用的生成器，入口 train_single.py / train_dual.py 即用它。
 #? 結構：response → MLP 1024-1024 → BiScaleNorm，最後接
-class SigmoidGEN(nn.Module):
+class SigmoidGenerator(nn.Module):
     """
     生成器 G (純模型)：目標響應向量 → pattern logits。
 
@@ -44,7 +44,7 @@ class SigmoidGEN(nn.Module):
     寫好後在 antenna/zoo.py 登記一行即可。
     """
     def __init__(self, in_dim, out_dim, hidden=(1024, 1024)):
-        super(SigmoidGEN,self).__init__()
+        super(SigmoidGenerator,self).__init__()
         #? 維度由訓練端傳入 (不碰 AntennaResponse/AntennaPattern 的全域註冊狀態)。
         #? hidden 可由 config 指定；每層 Linear→PReLU，末層 Linear→BiScaleNorm (不接 PReLU)。
         layers, prev = [], in_dim

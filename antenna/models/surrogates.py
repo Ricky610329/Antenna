@@ -15,8 +15,8 @@
 #? 本檔內容：
 #?   SurrogateModel — SM 基類 (繼承 Models 管理外殼)，封裝 train_one_data(單筆線上微調)、
 #?                    train_by_datas(整批重訓)、__call__(回傳 MultiResponses)、early-stop 等。
-#?   HFSSNet        — 純 MLP 骨幹：625 像素 → (3,17) 響應 (學長版 OldSM 實際使用)。
-#?   OldSM — 工廠函式：把 model + criterion + optimizer + scheduler 組成一個 SurrogateModel。
+#?   HFSSNet        — 純 MLP 骨幹：625 像素 → (3,17) 響應 (學長版 MLPSurrogate 實際使用)。
+#?   MLPSurrogate — 工廠函式：把 model + criterion + optimizer + scheduler 組成一個 SurrogateModel。
 
 from typing import List, Optional
 
@@ -120,7 +120,7 @@ class SurrogateModel(Models):
 
                 self.optimizer.zero_grad()
                 outputs: Tensor = self.model(inputs)            #? SM 預測響應
-                loss: Tensor = self.criterion(outputs, labels)  #? 預測 vs. 真實 的回歸誤差 (OldSM 用 MSE)
+                loss: Tensor = self.criterion(outputs, labels)  #? 預測 vs. 真實 的回歸誤差 (MLPSurrogate 用 MSE)
 
                 loss.backward()
                 self.step(scheduler_param=loss)  #? optimizer.step() + scheduler.step(loss) (ReduceLROnPlateau 看 loss)
@@ -201,7 +201,7 @@ class SurrogateModel(Models):
         self.model.eval()
         return self.record['loss']  #? 回傳收斂後的最終 loss (訓練腳本記為該筆的 sm_loss)
 
-###* HFSSNet — 純 MLP 骨幹 (學長版 OldSM 實際採用的網路) ###
+###* HFSSNet — 純 MLP 骨幹 (學長版 MLPSurrogate 實際採用的網路) ###
 #? 角色：SM 的「身體」(SurrogateModel 是外殼，HFSSNet 是被包住的 model)。
 #? 結構最簡：把攤平的 625 個像素，經一連串全連接層 (逐步收斂的瓶頸 2048→1024→512→128→64)，
 #? 直接映射到 (3,17) 響應，不利用像素的 2D 空間鄰接資訊 (那是下方 U-Net 版才做的)。
@@ -232,11 +232,11 @@ class HFSSNet(nn.Module):
         x = x.reshape(self.num_response)  #? 把攤平輸出還原成 (3,17) 響應形狀
         return x
 
-###* OldSM — 工廠：學長版 SM (HFSSNet + Ranger + MSE + ReduceLROnPlateau) ###
-#? 訓練腳本 (train_single.py / train_dual.py) 實際使用的就是這個工廠 (見各腳本 from ... import OldSM)。
+###* MLPSurrogate — 工廠：學長版 SM (HFSSNet + Ranger + MSE + ReduceLROnPlateau) ###
+#? 訓練腳本 (train_single.py / train_dual.py) 實際使用的就是這個工廠 (見各腳本 from ... import MLPSurrogate)。
 #? 輕量穩定：純 MLP 骨幹 + MSE 回歸 + 「loss 卡住就降 lr」的 ReduceLROnPlateau，
 #? 適合 SM 這種需頻繁線上微調、且每筆資料都要快速收斂的場景。
-def OldSM(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 128, 64),
+def MLPSurrogate(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 128, 64),
           lr=0.001, min_loss=0.1, max_epoch=20000):
     """
     學長的做法。維度與超參數 (lr / 單筆訓練門檻) 全由訓練端顯式傳入，

@@ -24,8 +24,8 @@ from .utils import Path
 from .store import fingerprint
 
 #? csv 欄位順序 (固定)：epoch 在前、pattern_hash 殿後 (指向 patterns/ 的檔)
-SCALAR_KEYS = ("epoch", "real_loss", "fake_loss", "min_loss",
-               "real_loss_average", "r_feed", "time", "pattern_hash")
+SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss",
+               "sim_loss_avg", "r_feed", "time", "pattern_hash")
 
 
 class RunState:
@@ -66,7 +66,7 @@ class RunState:
         best_so_far = min(values[: len(values) - patience])
         return all(v >= best_so_far for v in values[len(values) - patience:])
 
-    def best_epoch(self, key: str = "real_loss") -> int:
+    def best_epoch(self, key: str = "sim_loss") -> int:
         """key 最小值「首次」出現那筆的 epoch (rollback 載回用)。"""
         s = self._series[key]
         return self._series["epoch"][s.index(min(s))]

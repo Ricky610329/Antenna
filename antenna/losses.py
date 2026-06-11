@@ -3,8 +3,8 @@
 ###* ----------------------------------------------------------------------------
 ###* 本檔集中「反向設計閉迴路」所需的可微分損失(loss)、對稱性工具與排程器。
 ###* 角色定位 (對應專案 pipeline)：
-###*   GEN(SigmoidGEN)：目標響應 → 25x25 二元 pattern（STE 可微分二值化）
-###*   SM (OldSM/HFSSNet)：pattern → 預測響應，是 HFSS 的可微分替身
+###*   GEN(SigmoidGenerator)：目標響應 → 25x25 二元 pattern（STE 可微分二值化）
+###*   SM (MLPSurrogate/HFSSNet)：pattern → 預測響應，是 HFSS 的可微分替身
 ###*   SIM(Single/DualPortSimulator)：以 COM 驅動 Ansys HFSS 取得真實響應
 ###* 閉迴路：GEN 生 pattern → HFSS 得真實 loss → 線上訓練 SM → loss 經 SM 反傳
 ###*         更新 GEN → 套用 pattern 正則化 → early-stop rollback。

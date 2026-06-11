@@ -102,13 +102,13 @@ def main(yaml_path):
 
     def on_epoch(epoch, m):
         logger.info(
-            f"[{epoch}/{cfg.epochs}] real={m['real_loss']:.4f} min={m['min_loss']:.4f} "
-            f"fake={m['fake_loss']:.4f} r_feed={m['r_feed']:.2%} tau={m['tau']:.3f} "
+            f"[{epoch}/{cfg.epochs}] sim={m['sim_loss']:.4f} best={m['best_loss']:.4f} "
+            f"gen={m['gen_loss']:.4f} r_feed={m['r_feed']:.2%} tau={m['tau']:.3f} "
             f"({m['time']:.0f}s)"
         )
         monitor.on_epoch(epoch, m)
         write_status(RESULT_PATH, state="running", epoch=epoch, total=cfg.epochs,
-                     real_loss=m["real_loss"], min_loss=m["min_loss"])
+                     sim_loss=m["sim_loss"], best_loss=m["best_loss"])
 
     write_status(RESULT_PATH, state="running", epoch=0, total=cfg.epochs)
     try:
@@ -126,12 +126,12 @@ def main(yaml_path):
 
     monitor.summary(state, RESULT_PATH)   # 結尾總覽圖 summary.png (不依賴 TB)
     monitor.close()
-    min_loss = min(state.series("real_loss"))
+    best_loss = min(state.series("sim_loss"))
     write_status(RESULT_PATH, state="finished", epoch=state.last_epoch,
-                 total=cfg.epochs, min_loss=min_loss)
+                 total=cfg.epochs, best_loss=best_loss)
 
     Complete(
-        f"Training Finished! ({cfg.name}, Min Loss: {min_loss})",
+        f"Training Finished! ({cfg.name}, Best Loss: {best_loss})",
         name=cfg.name, send_email=True,
     )
 
