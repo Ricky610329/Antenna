@@ -16,7 +16,7 @@ from loguru import logger
 
 from antenna.utils.types import Axes
 from antenna.utils import config
-from antenna.utils.data import size_converter
+from antenna.utils.torch_utils import size_converter
 from antenna.patch.patch_simulator import PatchSimulator
 from antenna.response import AntennaResponse
 

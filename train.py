@@ -25,7 +25,6 @@ import torch
 from antenna import AntennaPattern, get_result_path
 from antenna.utils.monitor import TrainingMonitor
 from antenna.training import load_config, build_simulator, run_training
-from antenna.utils.data import DataManager
 from antenna.utils.store import SampleStore
 
 torch.autograd.set_detect_anomaly(True)
@@ -37,6 +36,7 @@ def load_dataset(name):
     path = DATASET_PATH.joinpath(name)
     if path.is_dir():
         return SampleStore(path)
+    from antenna.legacy import DataManager   # lazy：僅當指到舊 .dataset 單檔時才需要 (核心不依賴 legacy)
     return DataManager(name, rootdir=DATASET_PATH)
 
 

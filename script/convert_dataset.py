@@ -19,7 +19,7 @@ sys.path.append(join(dirname(__file__), '..'))
 from argparse import ArgumentParser
 
 from antenna.utils import DATASET_PATH, logger
-from antenna.utils.data import DataManager
+from antenna.legacy import DataManager
 from antenna.utils.store import SampleStore
 
 

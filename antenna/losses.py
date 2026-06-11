@@ -49,7 +49,7 @@ def total_variation_loss(img, weight=0.01):
     #* TV 把 GEN 推向平滑連續的金屬塊，是「可製造性」最基本的正則化。
     #! 與 STE 的互動：在較大 tau(輸出偏灰階)時 TV 梯度最有意義；tau 太小、pattern
     #! 已硬二值化後，相鄰差只剩 0/1，TV 主要懲罰邊界周長(鼓勵更圓潤、更少邊界)。
-    from .utils.data import size_converter
+    from .utils.torch_utils import size_converter
     from . import AntennaPattern
     img = size_converter(AntennaPattern, img, output_shape="B, 1, H, W")  #* 統一成 (B,1,H,W) 才能做維度差分
     bs_img, c_img, h_img, w_img = img.size()

@@ -10,7 +10,8 @@ antenna — 微帶貼片天線「反向設計」核心套件。
     losses.py                  可製造性損失 + R_feed 指標
     monitor.py                 TensorBoard 監控
     patch/                     HFSS 模擬器 (COM)
-    utils/                     工具底座 (+ legacy Record/DataManager)
+    utils/                     工具底座 (Record / size_converter 等核心工具)
+    legacy/                    隔離的舊資料層 (Data / DataManager；非核心)
 
 Example::
 

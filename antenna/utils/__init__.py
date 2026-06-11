@@ -9,8 +9,7 @@ antenna.utils — 工具子套件匯出聚合層
 子模組分工：
   utils.py       — 通用基礎工具（Config、Figure、Record、Path 等）
   web.py         — 網路 / 網路磁碟機 / Email 功能
-  data.py        — 資料集工具（大小換算等）
-  torch_utils.py — PyTorch 張量輔助工具
+  torch_utils.py — PyTorch 張量輔助工具（含 size_converter 形狀轉換）
   types.py       — 天線系統共用型別別名（GEN/SM/SIM 接口型別）
 """
 
@@ -47,10 +46,9 @@ from .web import get_local_ip
 #? Email                 : 封裝 SMTP 寄信功能，訓練完成 / 異常時發通知信
 from .web import Email
 
-###* ── data.py ───────────────────────────────────────────────────────────────
-#? size_converter : 檔案/資料集大小單位換算（Bytes ↔ KB/MB/GB），
-#?                 常用於資料集統計報告輸出
-from .data import size_converter
+###* ── torch_utils.py：size_converter ────────────────────────────────────────
+#? size_converter : 通用張量形狀轉換器（(B,N)攤平 / (B,H,W)影像 / 批次維度間轉換）
+from .torch_utils import size_converter
 
 ###* ── torch (標準庫) + torch_utils.py ────────────────────────────────────
 #? nn     : torch.nn 模組 re-export，讓腳本免再 import torch
@@ -63,10 +61,12 @@ from .torch_utils import tensor
 from .torch_utils import cTensor
 
 ###* ── 實驗室 NAS 根路徑常數 ──────────────────────────────────────────────
-#! ROOTDIR      : 指向實驗室 NAS 的實驗資料根目錄（T:\ 對應網路磁碟機）；
+#! ROOTDIR      : 本實驗工作區根目錄（T:\ 對應網路磁碟機）；
 #!               所有模型 checkpoint、資料集、結果均存於此路徑下。
 #!               使用前請確認 connect_network_drive() 已成功掛載 T:\。
-ROOTDIR = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment")
+#!  ◆ 已自學長樹 (碩二_吳維文's) 遷出，改用自己的工作區。學長過往真實模擬樣本
+#!    已收割進 dataset/harvest_single|dual (見 script/harvest_legacy.py)。
+ROOTDIR = Path(r"T:\碩一_鄒穎麒's\antenna")
 
 #! DATASET_PATH : 天線資料集目錄，位於 ROOTDIR/dataset；
 #!               訓練腳本以此為基礎路徑載入 .csv / .json 天線參數資料。

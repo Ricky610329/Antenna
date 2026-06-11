@@ -28,10 +28,9 @@ from antenna import AntennaPattern, AntennaResponse, MultiResponses
 from .shell import Models             #? Models 管理外殼 (存讀檔/換 label/step/凍結梯度)
 from antenna.optim import Ranger      #? Ranger = RAdam + Lookahead，SM 訓練用的優化器
 from antenna.utils import TQDM_BAR_SIMPLE, TQDM_CONFIG, config, logger, tensor
-from antenna.utils.data import size_converter
+from antenna.utils.torch_utils import size_converter
 
-from torch.utils.data import DataLoader
-from antenna.utils.data import DataManager  #? 可持久化/可去重/可當 PyTorch Dataset 的資料集容器 (供 train_by_datas 使用)
+from torch.utils.data import DataLoader, Dataset  #? Dataset：SampleStore 與舊 DataManager 共同基類 (train_by_datas 收任一)
 
 ###* SurrogateModel — SM 基類 (繼承 Models 管理外殼) ###
 #? 把 model(骨幹網路) + criterion(損失) + optimizer + scheduler 綁成一包，
@@ -74,12 +73,12 @@ class SurrogateModel(Models):
         self.epoch += 1
         return MultiResponses(self.model(pattern))
 
-    def train_by_datas(self, dataset:DataManager, epochs: int = 100, batch_size: Optional[int] = None, *, verbose:bool = True) -> List[float]:
+    def train_by_datas(self, dataset:Dataset, epochs: int = 100, batch_size: Optional[int] = None, *, verbose:bool = True) -> List[float]:
         """
         Train the model using the provided dataset.
 
         Args:
-            dataset (DataManager): Data set used for training.
+            dataset (Dataset): 訓練資料集 (SampleStore / 舊 DataManager 皆可)。
             epochs (int): Total number of training cycles.
             batch_size (Optional[int]): Size of each batch.
             verbose (bool): Enable progress bar.

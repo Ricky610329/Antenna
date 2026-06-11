@@ -36,7 +36,7 @@ matplotlib.use('Agg')
 sys.path.append(os.getcwd())
 
 from antenna.utils import Record, config
-from antenna.utils.data import DataManager, Data
+from antenna.legacy import DataManager, Data
 import torch
 import numpy as np
 import shutil

@@ -33,7 +33,7 @@ from torch import Tensor
 
 from antenna import AntennaPattern, AntennaResponse, TargetResponse
 from antenna.utils import DATASET_PATH, Figure, config, connect_network_drive
-from antenna.utils.data import Data
+from antenna.legacy import Data
 
 config.device = "cpu"
 
