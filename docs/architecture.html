@@ -228,14 +228,15 @@
     <tr><td><code>antenna/utils/utils.py</code></td><td class="filetag">633</td><td><b>基礎底座</b>：<code>config</code>、<code>Path</code>（被 pickle 進舊檔，不可搬離）、例外處理、<code>Complete</code>。</td></tr>
     <tr><td><code>antenna/utils/runstate.py</code></td><td class="filetag">~130</td><td><b>訓練狀態（新格式）</b>：<code>RunState</code>＝metrics.csv（純量時序）+ patterns/（模擬快取，hash 即去重）；斷點續跑/rollback 靠它。</td></tr>
     <tr><td><code>antenna/monitor.py</code></td><td class="filetag">~150</td><td><b>監控</b>：<code>TrainingMonitor</code> 掛 on_epoch hook → TensorBoard（Scalars/Images/config）+ 結尾 summary.png；無 TB 時降級不擋訓練。</td></tr>
-    <tr><td><code>antenna/utils/record.py</code></td><td class="filetag">362</td><td><code>Record</code>（<b>legacy</b>）：舊 temp.record 的時序記錄器，已退出訓練路徑；保留給 app.py 讀歷史結果。</td></tr>
+    <tr><td><code>antenna/utils/record.py</code></td><td class="filetag">362</td><td><b>核心</b> <code>Record</code>：時序記錄器，仍被 ACP 排程器（記 lr/tau）與每個模型 checkpoint（存 <code>record.state_dict()</code>）使用——<b>非 legacy</b>。state_dict 為純 dict，搬類別不影響舊檔。</td></tr>
     <tr><td><code>antenna/utils/figure.py</code></td><td class="filetag">266</td><td><code>Figure</code>（matplotlib with-context 包裝，可存 GIF/MP4）。</td></tr>
-    <tr><td><code>antenna/utils/store.py</code></td><td class="filetag">~80</td><td><b>新樣本庫</b> <code>SampleStore</code>（一筆一檔、hash 即檔名；online 已採用）。</td></tr>
-    <tr><td><code>antenna/utils/data.py</code></td><td class="filetag">725</td><td>舊 <code>DataManager</code>（單一 pickle，保留給學長 code 與 NAS 舊資料集）、<code>size_converter</code>。</td></tr>
+    <tr><td><code>antenna/utils/store.py</code></td><td class="filetag">~80</td><td><b>新樣本庫</b> <code>SampleStore</code>（一筆一檔、hash 即檔名；資料集標準格式）。</td></tr>
+    <tr><td><code>antenna/utils/torch_utils.py</code></td><td class="filetag">~290</td><td>張量輔助 <code>tensor</code>/<code>cTensor</code> + <b><code>size_converter</code></b>（通用形狀轉換器，2026-06 自 data.py 抽出歸位核心；被 losses/response/pattern/training/surrogates 共用）。</td></tr>
+    <tr><td><code>antenna/legacy/data.py</code></td><td class="filetag">549</td><td><b>隔離的舊資料層</b>：<code>Data</code>/<code>DataManager</code>（單一 pickle 容器）/<code>make_hashable</code>/<code>dynamic_loss_filter</code>。只供 app.py、convert_dataset、KuoHung 讀舊 <code>.dataset</code>/<code>.data</code>；<b>antenna/ 核心零依賴</b>。</td></tr>
   </table>
   <table>
     <tr><th>第二消費者 / 輔助</th><th>用途</th></tr>
-    <tr><td><code>application/app.py</code></td><td><b>Flask 工具箱 + 歷史檔案館</b>（legacy）：手繪 pattern 編輯器、舊資料集瀏覽、舊實驗（temp.record + pic/）回溯。新實驗的監控走 TensorBoard，本程式不再服務新格式。<b>Record/DataManager/Data 的序列化格式因它不可破壞。</b></td></tr>
+    <tr><td><code>application/app.py</code></td><td><b>Flask 實驗駕駛艙</b>：首頁＝可排序 run 比較總表（讀 status.json + metrics.csv + config.yaml）、自動起 TensorBoard 指向 result/ + 比較按鈕；<code>/dataset</code> 走 SampleStore、<code>/record</code> 走 RunState（metrics 曲線 + patterns/ 的 pattern/response 演化）；保留手繪 pattern 編輯器。路徑跟隨 <code>ROOTDIR</code>（可 <code>ANTENNA_RESULT_DIR</code> 環境變數覆寫）。</td></tr>
     <tr><td><code>script/</code></td><td><code>img2video.py</code>、<code>process_files.py</code>（複製腳本到結果夾，可重現）、<code>kill.py</code>（強砍 ansysedt.exe）等。</td></tr>
   </table>
 
@@ -252,7 +253,7 @@
     </div>
     <div class="card" style="border-top:3px solid var(--data)">
       <h3 style="margin-top:0">RunState（結果夾即資料庫）</h3>
-      <small>訓練狀態：<code>early_stop</code>（觸發回滾）、<code>best_epoch</code>（反查最佳）、<code>lookup/add_pattern</code>（hash 去重快取）、metrics.csv append 一行/epoch（斷點續跑）。取代舊 <code>Record</code>(temp.record)，後者降為 legacy 供 app.py 讀歷史。</small>
+      <small>訓練狀態：<code>early_stop</code>（觸發回滾）、<code>best_epoch</code>（反查最佳）、<code>lookup/add_pattern</code>（hash 去重快取）、metrics.csv append 一行/epoch（斷點續跑）。在訓練路徑取代舊 <code>temp.record</code> 的 O(n²) 寫入；<code>Record</code> 類別仍是核心（ACP 與 checkpoint 用）。</small>
     </div>
   </div>
 
@@ -273,7 +274,8 @@
     <p style="margin-top:0"><b>死碼清除</b>：Tier A/B 移除 CVAE、UNet 系、RIS 變體組件、MultiConfig、json 類等；變體腳本歸檔到本機 <code>archive/</code>。</p>
     <p><b>config 驅動</b>：train_single/dual → <code>train.py</code> + YAML（一檔一實驗、區段鍵白名單、seed、ACP 超參數可調）。</p>
     <p><b>解耦</b>：模型動物園 <code>zoo.py</code>（名字指定）、tau 歸 ACP（二值化進管線）、響應規格實例化（<code>use(spec)</code>）、SM 訓練參數顯式傳遞、星號 import 歸零、typing 泛型體操全清（types.py 258→47 行）。</p>
-    <p style="margin-bottom:0"><b>檔案制資料層</b>：SampleStore（資料集一筆一檔）、RunState（metrics.csv + patterns/，取代 temp.record）、TensorBoard 監控 + status.json 心跳；訓練路徑零 pickle。舊 <code>Record</code>/<code>DataManager</code> 保留為 legacy。</p>
+    <p><b>檔案制資料層</b>：SampleStore（資料集一筆一檔）、RunState（metrics.csv + patterns/，取代 temp.record）、TensorBoard 監控 + status.json 心跳；訓練路徑零 pickle。</p>
+    <p style="margin-bottom:0"><b>資料自有化 + legacy 隔離</b>（2026-06）：學長 result/ 真實樣本收割進自有 NAS（harvest_single/dual）、<code>ROOTDIR</code> 遷出學長樹、舊 <code>Data</code>/<code>DataManager</code> 隔離到 <code>antenna/legacy/</code>（<code>Record</code>/<code>size_converter</code> 是核心，留在 utils/）；app.py 重做成跟隨工作區的實驗駕駛艙。</p>
   </div>
   <p class="muted small" style="margin-top:16px">本檔由架構梳理產生，位於 <code>docs/</code>。術語已對齊論文 <code>docs/Paper.pdf</code>。</p>
 

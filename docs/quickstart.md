@@ -43,14 +43,24 @@ python train.py configs/dual_sc.yaml           # 雙埠 + SC 連通性損失
 
 ```bash
 # 任一台機器（含自己電腦，需 pip install tensorboard）：
-tensorboard --logdir "T:\碩二_吳維文's\Patch Antenna\Experiment\result"
-# 瀏覽器開 http://localhost:6006 → 所有機器的實驗並排比較
+tensorboard --logdir "T:\碩一_鄒穎麒's\antenna\result"
+# 瀏覽器開 http://localhost:6006 → 所有實驗並排/疊圖比較
 ```
 
 - **Scalars**：loss（sim/gen/best）、lr/tau、r_feed、每 epoch 耗時。
 - **Images**：pattern+饋電連通圖、各響應 vs 目標（有 epoch 滑桿可回放）。
 - 訓練結束結果夾另有 `summary.png` 總覽圖（不開 TB 也能看結果）。
-- 舊實驗仍用學長的 app.py 看（歷史 `pic/` 不受影響）。
+
+### 實驗駕駛艙（app.py，選用）
+
+```bash
+python application/app.py     # → http://localhost:5000
+```
+
+- 首頁＝**可排序的 run 比較總表**（狀態 / epoch / best_loss / r_feed）；啟動時自動跑一個 TensorBoard 指向 `result/`，首頁有按鈕一鍵開 :6006 疊圖比較。
+- 點某列看單一實驗：訓練曲線 + 可拖 slider 回放 **pattern/response 演化** + config。
+- 資料集分頁瀏覽 `harvest_single/dual`（前 50 筆預覽）。
+- 還沒有自己的 run 想先看效果：`$env:ANTENNA_RESULT_DIR="<別的 result 路徑>"` 再啟動即可（唯讀）。
 
 ## 4. 前置需求（正式機）
 

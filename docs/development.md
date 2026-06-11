@@ -88,7 +88,7 @@ golden 數值**綁定 torch 版本與 CPU**：
 
 - `island_suppression_loss` 對全金屬 pattern **不是 0**（≈0.0937）：`avg_pool2d` 零填充所致，是既有行為。
 - dual 的 target 註冊順序**必須是 S11→S22→S21**（`PORT_SPECS.register_order`）：決定 GEN 輸入向量排列，動了 golden 就會漂。
-- `Record`/`DataManager`/`Data` 的**序列化格式不可破壞**：`application/app.py` 還在讀舊結果。
+- `DataManager`/`Data`/`Record` 的 pickle **payload 格式不可破壞**：舊 `.dataset`/`.record`/checkpoint 仍要能讀（這些類別都只 pickle 純資料、不含自身，故把 Data/DataManager 搬到 `antenna/legacy/` 不影響舊檔）。
 
 ## 4. 怎麼加新東西
 
@@ -114,17 +114,16 @@ CI 只用 pyflakes 擋 undefined name。
 
 ## 4.5 資料層（新舊雙軌）
 
-| | 新格式 `SampleStore`（未來標準） | 舊 `DataManager`（保留給學長 code） |
+| | 新格式 `SampleStore`（標準） | 舊 `DataManager`（→ `antenna/legacy/`，只讀舊 `.dataset`） |
 | --- | --- | --- |
 | 形式 | **一筆一檔**：`<資料夾>/<內容hash>.pt` | 整個資料集一個 pickle（`<name>.data`） |
 | append | 寫一個 ~3KB 小檔，O(1) | **全量重寫**整個 pkl（NAS 上很慢） |
 | 去重 | 檔名 = 內容 hash，存在即重複 | 自維護指紋集 |
 | 損壞 | 壞一檔損一筆 | 壞一檔全滅（有 backup 緩解） |
 
-- **online**（訓練中收集）已用新格式；**offline**（NAS 舊資料集）過渡期仍走 DataManager。
-- `train.py` 的 `load_dataset()` 自動偵測：資料夾→新格式、否則→舊 pkl。
-- 正式轉換：`python -m script.convert_dataset patch_single_mirror`（**先與維護者確認再跑**；
-  不刪舊檔，轉完自動切新格式）。app.py 的 dataset 瀏覽頁只認舊格式。
+- **online**（訓練收集）與 **offline**（SM 預訓練）都已用新格式：configs 的 `offline_dataset` 指向自有 NAS 收割的 `harvest_single`/`harvest_dual`（SampleStore）。
+- `train.py` 的 `load_dataset()` 自動偵測：資料夾→SampleStore；否則 lazy 從 `antenna.legacy` 載 DataManager 讀舊 pkl。
+- 舊 `Data`/`DataManager` 已隔離到 **`antenna/legacy/`**，`antenna/` 核心零 legacy 依賴。`script/harvest_legacy.py` 已把學長 result/ 的真實模擬樣本收割成 harvest_single/dual（故 `convert_dataset` 功成身退）。app.py 的 `/dataset` 瀏覽頁已改讀 SampleStore。
 
 ### 結果夾即資料庫（訓練狀態，新格式）
 
@@ -142,7 +141,7 @@ result/[實驗]/
 
 - **監控 vs 運行管理是兩件事**：TB 看曲線/圖（監控）；`status.json` 回答「誰還活著、跑到哪、在哪台機器」（管理）。
 - 斷點續跑改讀 `metrics.csv`：升級前還在半路的舊 run（只有 temp.record）續跑不相容——跑完再升級或重來。
-- `Record` 與舊 `temp.record` 完全保留（app.py 歷史檔案館用）。
+- `RunState` 在訓練路徑取代 `temp.record`；但 `Record` 類別本身是**核心**（ACP 排程器記 lr/tau、每個 checkpoint 存 `record.state_dict()`），留在 `antenna/utils/record.py`。
 
 ## 5. Branch / commit 慣例
 

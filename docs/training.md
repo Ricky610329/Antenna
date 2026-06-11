@@ -48,7 +48,7 @@ generator: sigmoid            # 生成器：antenna/zoo.py 的名字 (可省略 
 
 surrogate:                    # 代理 SM：載入策略 (name 可省略 → mlp)；見第 4 節
   pretrained: old_sm.pth
-  offline_dataset: patch_single_mirror
+  offline_dataset: harvest_single   # 自有 NAS 收割資料集（dual 用 harvest_dual）
   # warmup: "1"               # 選填：KuoHung 參考圖樣編號，對 SM 做單筆暖身
 
 targets:                      # 目標響應 (side=兩端, center=中央, width=梯形寬度)
