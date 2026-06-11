@@ -43,9 +43,10 @@ import numpy as np
 # Force CPU to avoid CUDA errors in the viewer
 config.device = 'cpu'
 
-# 結果夾 / 資料集目錄跟隨工作區 (antenna.utils.ROOTDIR)
-RESULT_DIR = ROOTDIR / 'result'
-DATASET_DIR = DATASET_PATH
+# 結果夾 / 資料集目錄預設跟隨工作區 (antenna.utils.ROOTDIR)；可用環境變數臨時覆寫，
+# 方便還沒有自己的 run 時，先指向別的 result/ (例如學長的) demo 看效果。
+RESULT_DIR = Path(os.environ.get('ANTENNA_RESULT_DIR', str(ROOTDIR / 'result')))
+DATASET_DIR = Path(os.environ.get('ANTENNA_DATASET_DIR', str(DATASET_PATH)))
 
 app = Flask(__name__)
 
