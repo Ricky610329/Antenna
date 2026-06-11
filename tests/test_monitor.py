@@ -9,7 +9,7 @@ import sys
 import torch
 
 from antenna import TargetResponse
-from antenna.monitor import TrainingMonitor
+from antenna.utils.monitor import TrainingMonitor
 from antenna.utils.runstate import RunState
 
 

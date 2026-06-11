@@ -12,7 +12,7 @@ from typing import Literal, Optional
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import _LRScheduler
 
-from antenna.types import Axes
+from antenna.utils.types import Axes
 
 
 class AdaptiveCyclicalScheduler(_LRScheduler):

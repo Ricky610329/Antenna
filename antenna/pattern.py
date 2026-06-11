@@ -14,7 +14,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from loguru import logger
 
-from antenna.types import Axes
+from antenna.utils.types import Axes
 from antenna.utils import config
 from antenna.utils.data import size_converter
 from antenna.patch.patch_simulator import PatchSimulator

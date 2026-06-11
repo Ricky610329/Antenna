@@ -17,7 +17,7 @@ import torch
 from torch import Tensor, concat, stack
 import matplotlib.pyplot as plt
 
-from antenna.types import Axes, Tensor_N, Tensor_W_H
+from antenna.utils.types import Axes, Tensor_N, Tensor_W_H
 from antenna.utils import config, tensor
 from antenna.utils.data import size_converter
 

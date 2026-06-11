@@ -12,7 +12,7 @@ import torch
 
 from antenna import AntennaPattern, AntennaResponse, MultiResponses
 from antenna.losses import SpectralConnectivityLoss, GapClosingLoss, FeedReachability
-from antenna.patch import custom_loss_minmax, interval_loss
+from antenna.losses import custom_loss_minmax, interval_loss
 
 
 def _fixed_binary_pattern(seed=0):

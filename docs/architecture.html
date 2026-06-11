@@ -213,7 +213,7 @@
     <tr><td><code>antenna/training.py</code></td><td>單/雙埠共用核心：<code>run_training</code>(迴圈，含管線層 STE 二值化) + <code>load_config</code>(YAML) + <code>prepare_models</code>(GEN/SM 載入) + <code>build_generator</code>/<code>build_surrogate</code>(名字查 zoo)。port 決定結構性元件。</td></tr>
     <tr><td><code>antenna/zoo.py</code></td><td><b>模型動物園</b>：所有可用 GEN/SM 架構的唯一註冊處，config 用名字指定（<code>generator: sigmoid</code>）。新增模型在此加一行。</td></tr>
     <tr><td><code>configs/*.yaml</code></td><td>一檔一實驗（single/dual + 超參數 + 目標響應 + 模型架構/載入）。</td></tr>
-    <tr><td><code>KuoHung.py</code></td><td>載入參考天線圖樣與響應，供代理暖身微調（由 config 的 <code>surrogate.warmup</code> 接上）。</td></tr>
+    <tr><td><code>script/kuohung.py</code></td><td>載入參考天線圖樣與響應，供代理暖身微調（由 config 的 <code>surrogate.warmup</code> 接上）。</td></tr>
   </table>
   <h3>antenna/ 核心套件</h3>
   <table>

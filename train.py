@@ -23,7 +23,7 @@ config.device = "cpu"
 
 import torch
 from antenna import AntennaPattern, get_result_path
-from antenna.monitor import TrainingMonitor
+from antenna.utils.monitor import TrainingMonitor
 from antenna.training import load_config, build_simulator, run_training
 from antenna.utils.data import DataManager
 from antenna.utils.store import SampleStore
@@ -56,7 +56,7 @@ def resolve_models(cfg):
     warmup = None
     warmup_name = cfg.surrogate.get("warmup")
     if warmup_name:
-        from KuoHung import KuoHung          # lazy：僅暖身時才需要 (讀 NAS 上的參考圖樣)
+        from script.kuohung import KuoHung   # lazy：僅暖身時才需要 (讀 NAS 上的參考圖樣)
         pattern, response = KuoHung.load(str(warmup_name))
         series = AntennaPattern(pattern).series
         #! 沿用舊 single 3/4 的暖身門檻 (比 hfss.min_loss 預設更緊，max_epoch=1e4)

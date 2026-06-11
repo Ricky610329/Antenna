@@ -16,7 +16,7 @@ from antenna.utils import config
 config.device = "cpu"  # 強制 CPU，確保確定性
 
 from antenna import AntennaPattern, AntennaResponse, TargetResponse
-from antenna.patch import custom_loss_minmax
+from antenna.losses import custom_loss_minmax
 
 
 @pytest.fixture(scope="session", autouse=True)
