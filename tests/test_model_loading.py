@@ -87,6 +87,19 @@ def test_build_generator_custom_hidden(spec):
     assert [l.out_features for l in ls[:3]] == [64, 32, 16]
 
 
+def test_latent_generator(spec):
+    """latent 生成器：有可學習 z (nn.Parameter)，forward 忽略傳入向量、只用自有 z。"""
+    cfg = _single_cfg(); cfg.generator = {"name": "latent"}
+    g = build_generator(cfg, spec)
+    assert hasattr(g, "z") and g.z.requires_grad          # z 是可學習參數
+    n = spec.size(flatten=True)
+    assert g.z.shape[0] == n                              # z 維度＝in_dim (build_generator 帶入)
+    out_a = g(torch.zeros(n))                             # 餵任意輸入
+    out_b = g(torch.randn(n))                             # 餵不同輸入
+    assert out_a.shape == out_b.shape
+    assert torch.allclose(out_a, out_b)                   # 輸入無關 → 同 z 同輸出 (證明忽略輸入)
+
+
 def test_unknown_model_name_rejected(spec):
     """zoo 沒有的名字 → 明確報錯 (列出可用名單)。"""
     cfg = _single_cfg(); cfg.generator = {"name": "transformer"}

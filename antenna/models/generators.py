@@ -58,3 +58,24 @@ class SigmoidGenerator(nn.Module):
     def forward(self, input) -> Tensor:
         return self.fc_patch(input)
 
+
+###* LatentGenerator — 可學習潛在向量版 (輸入是 nn.Parameter，不是目標響應) ###
+#? 動機：單一 target 的優化裡，target 整個 run 不變、當輸入沒有意義 —— G 每個 epoch
+#? 都吃同一個常數。改成優化一個可學習潛在向量 z：logits = MLP(z)。target 只進 loss、
+#? 不進輸入，順帶讓 G 與響應維度解耦。沿用 SigmoidGenerator 的 MLP+BiScaleNorm 身體，
+#? 只把「輸入」從傳入的目標向量換成自有的 nn.Parameter (隨 Adam 一起被優化)。
+class LatentGenerator(SigmoidGenerator):
+    """生成器 G：可學習潛在向量 z → pattern logits (forward 忽略傳入的目標)。
+
+    in_dim 即 z 的維度 (build_generator 預設帶入 spec.size()，但已與 spec 解耦)。
+    z 隨機初始化 → 天然支援「同一 target 跑多個 z restart」找更好的 pattern。
+    """
+    def __init__(self, in_dim, out_dim, hidden=(1024, 1024)):
+        super().__init__(in_dim, out_dim, hidden=hidden)
+        #? z：可學習潛在輸入，取代「目標當輸入」。是 nn.Parameter → 自動進 optimizer。
+        self.z = nn.Parameter(torch.randn(in_dim, device=config.device))
+
+    def forward(self, *args) -> Tensor:
+        #? 忽略傳入的目標向量 (run_training 仍會餵 spec.concat()，這裡丟掉)，改用自有 z。
+        return self.fc_patch(self.z)
+
