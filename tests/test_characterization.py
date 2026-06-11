@@ -11,7 +11,7 @@
 import torch
 
 from antenna import AntennaPattern, AntennaResponse, MultiResponses
-from antenna.functions import SpectralConnectivityLoss, GapClosingLoss, FeedReachability
+from antenna.losses import SpectralConnectivityLoss, GapClosingLoss, FeedReachability
 from antenna.patch import custom_loss_minmax, interval_loss
 
 
