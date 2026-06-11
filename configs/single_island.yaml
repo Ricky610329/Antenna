@@ -19,7 +19,7 @@ scheduler:
 
 surrogate:
   pretrained: old_sm.pth
-  offline_dataset: patch_single_mirror
+  offline_dataset: harvest_single
 
 targets:
   S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }

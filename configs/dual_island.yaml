@@ -19,7 +19,7 @@ scheduler:
 
 surrogate:
   pretrained: patch_dual.pth
-  offline_dataset: patch_dual
+  offline_dataset: harvest_dual
 
 targets:
   S11: { side: -1.25, center: -12, width: [4, 2, 5, 2, 4], interval: [-1, 1] }

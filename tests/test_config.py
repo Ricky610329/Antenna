@@ -41,7 +41,8 @@ def test_surrogate_section_parsed():
     """模型載入 (surrogate) 區段要能從 YAML 載入。"""
     s = load_config(os.path.join(CONFIGS, "single_base.yaml"))
     assert s.surrogate["pretrained"] == "old_sm.pth"
-    assert s.surrogate["offline_dataset"] == "patch_single_mirror"
+    # offline_dataset 已從學長的 patch_single_mirror 改指向自己工作區收割的資料集
+    assert s.surrogate["offline_dataset"] == "harvest_single"
     d = load_config(os.path.join(CONFIGS, "dual_base.yaml"))
     assert d.surrogate["pretrained"] == "patch_dual.pth"
     # 測試 fixture 無 surrogate 區段 → 預設空 dict (prepare_models 變 no-op)

@@ -19,7 +19,7 @@ scheduler:
 
 surrogate:
   pretrained: old_sm.pth
-  offline_dataset: patch_single_mirror
+  offline_dataset: harvest_single
   warmup: "1"                 # KuoHung-1 暖身 (舊 4 用 KuoHung-2，改成 "2" 即可)
 
 targets:

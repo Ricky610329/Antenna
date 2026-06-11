@@ -21,7 +21,7 @@ generator: sigmoid            # zoo 名字 (antenna/zoo.py)；可省略 → sigm
 
 surrogate:                    # SM 載入策略 (name 可省略 → mlp；hidden 選填微調)
   pretrained: patch_dual.pth
-  offline_dataset: patch_dual
+  offline_dataset: harvest_dual
 
 targets:
   S11: { side: -1.25, center: -12, width: [4, 2, 5, 2, 4], interval: [-1, 1] }

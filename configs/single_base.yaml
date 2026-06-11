@@ -22,7 +22,7 @@ generator: sigmoid            # zoo 名字 (antenna/zoo.py)；可省略 → sigm
 
 surrogate:                    # SM 載入策略 (name 可省略 → mlp；hidden 選填微調)
   pretrained: old_sm.pth
-  offline_dataset: patch_single_mirror
+  offline_dataset: harvest_single
   # warmup: "1"               # 選填：KuoHung 參考圖樣編號，對 SM 做單筆暖身
 
 targets:
