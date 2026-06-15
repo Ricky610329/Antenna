@@ -63,6 +63,8 @@ targets:                      # 目標響應 (side=兩端, center=中央, width=
 | `single` | SinglePortSimulator | custom_loss_minmax (`method: low/high`) | lower | S11, Gain |
 | `dual` | DualPortSimulator | interval_loss (`interval: [-1, 1]`) | lower + upper | S11, S21, S22 |
 
+> **方向圖（radiation pattern）WIP**：另有 `SinglePortRadSimulator`（單埠 + 方向圖萃取），目前**尚未**成為 config 選項、`train.py` 不會用到它；只完成「資料萃取」階段，驗證/路線見 [`development.md`](development.md) §4.6。
+
 ## 4. 模型架構 + 載入（`generator` / `surrogate` 區段）
 
 ### 架構：模型動物園（`antenna/zoo.py`）

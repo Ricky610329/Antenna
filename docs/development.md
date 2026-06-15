@@ -35,6 +35,7 @@ python -m pytest tests/ -q   # 在 repo 根目錄執行
 | `tests/test_sample_store.py` | SampleStore（一筆一檔/去重/持久化） | 資料層破壞 |
 | `tests/test_runstate.py` | RunState（csv 續跑/去重快取/best_epoch） | 訓練狀態破壞 |
 | `tests/test_monitor.py` | TB 監控（降級/記錄內容/summary.png） | 監控破壞訓練 |
+| `tests/test_radiation_simulator.py` | `SinglePortRadSimulator` 結構（子類/不開 COM/配方）— 無 HFSS | 方向圖萃取器誤改、誤碰既有單埠流程 |
 
 CI（GitHub Actions，`.github/workflows/tests.yml`）在 push / PR 時自動跑：**pyflakes 守門**（擋 undefined name）→ 全部測試（windows runner，因 import 鏈含 pywin32）。結果看 repo 的 **Actions** 頁籤。
 
@@ -142,6 +143,52 @@ result/[實驗]/
 - **監控 vs 運行管理是兩件事**：TB 看曲線/圖（監控）；`status.json` 回答「誰還活著、跑到哪、在哪台機器」（管理）。
 - 斷點續跑改讀 `metrics.csv`：升級前還在半路的舊 run（只有 temp.record）續跑不相容——跑完再升級或重來。
 - `RunState` 在訓練路徑取代 `temp.record`；但 `Record` 類別本身是**核心**（ACP 排程器記 lr/tau、每個 checkpoint 存 `record.state_dict()`），留在 `antenna/utils/record.py`。
+
+## 4.6 方向圖（radiation pattern）萃取（WIP）
+
+S11 / 正向 Gain 都是「vs **頻率**」；閉迴路要再納入**方向圖**＝gain vs **角度**（固定頻率）。
+目前**只完成「把資料抓出來」這一步**，刻意與訓練 / SM / loss 解耦，零侵入既有環境。
+
+### 現況：`SinglePortRadSimulator`（`antenna/patch/patch_simulator/single_port_rad.py`）
+
+繼承 `SinglePortSimulator`，沿用其全部建模 / 求解 / S11&Gain 流程；只在求解**後**多匯出方向圖。
+
+- **配方**（照使用者 HFSS 操作截圖）：`dB(GainTotal)` vs **Theta**、固定 **Freq=28GHz**、
+  **Phi∈{0°,90°}**（E-plane / H-plane 兩主平面切面）、解 `Setup1 : LastAdaptive`、
+  沿用父類別已建的 3D 無限球面（theta/phi step 2° → 181 點）。
+- **三道安全鎖**（對應「不准搞壞」）：
+  1. `__call__` 回傳值與父類別**完全相同**（只有 S11/Gain）——方向圖**不**塞進回傳 dict
+     （否則 criterion 依 `spec.labels` 用 `zip` 對齊會**靜默錯位**，見 `antenna/response.py`）。
+  2. 父類別程式碼**一行未改**，方向圖只在求解後「多做」報表。
+  3. 萃取整段包 `try/except`：報表失敗也只記 warning、**絕不**拖垮已取得的 S11/Gain。
+- 資料落點：`<record>/HFSS/result/NN_patch_RadGain_{num}_phi{0,90}.csv` ＋ 暫存 `self.last_radiation`。
+- **尚未接進 `build_simulator`**：正常 `train.py` 仍用舊單埠模擬器（不收方向圖）；目前只能靠下方腳本單獨跑。
+
+### 怎麼在正式機驗證「有這個資料」
+
+```bash
+python -m script.verify_radiation                                       # configs/single_base.yaml + 置中方塊圖樣
+python -m script.verify_radiation --config configs/single_peak.yaml --pattern xxx.pt
+```
+
+跑完看 `✅ 通過`，並到 `<out>/HFSS/result/` 看那兩個 CSV。本機（無 HFSS）只能跑結構測試
+`tests/test_radiation_simulator.py`（不開 COM）；**實際萃取只能正式機驗**。
+
+### 已知限制 / 待辦路線（之後接 loss 時的決定，先記下以免忘）
+
+- **學長規格 ≠ 我們規格**：學長當初的要求是「phi=0°/90° 在 theta∈±55° 內、gain 不得比 0°（boresight）低 >3dB」
+  （即主波束夠寬夠平）。這是**「他們的」要求，我們的 target 之後再議**，目前刻意不寫死。
+- **target 形式**：傾向沿用既有「角度梯形 mask」（`TargetResponse` + `custom_loss_minmax` / `interval_loss`）。
+  但「相對 G(0°)−3dB」是**相對**約束、梯形 mask 是**絕對**值 → 需一條小的可微「相對平坦度 loss」
+  （暫名 `beam_coverage_loss`），或把 mask 錨在 G(0°)。
+- **要可微才推得動 GEN**：GEN 梯度經 **SM** 反傳（HFSS 不可微）→ 要讓方向圖當真正的 loss，
+  **SM 得多學一個「pattern→方向圖」輸出頭**。架構決定：走「**統一 response 向量 + 每個 label 各自帶 x 軸**」
+  （向後相容：純頻率 config byte-identical → golden 零漂移），**不**開第二顆 SM。
+- **既有資料無法 pretrain 方向圖頭**：`harvest_single`/`harvest_dual` 只有 S11/Gain、**沒有方向圖**
+  → SM 的方向圖頭只能 online 從零學（需更多真實 HFSS epoch），除非另補一批帶方向圖的資料。
+- **theta 解析度**：目前 2°（沿用父類別 3D 球面）；要 1°（截圖那顆 `Elevation` 球）是小改動。
+- **`LastAdaptive` 取不到遠場時**：把 `RAD_SOLUTION` 改 `"Setup1 : Sweep"`（父類別 Gain 報表就是這樣取的）。
+- **dual 未做**：先把 single 跑順、驗證對了再複製到 `dual_port.py`。
 
 ## 5. Branch / commit 慣例
 

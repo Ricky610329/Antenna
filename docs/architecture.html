@@ -98,7 +98,7 @@
     <div class="role sim">
       <h3><span class="badge">SIM</span>模擬器</h3>
       <p style="margin:6px 0"><b>pattern → 真實響應</b></p>
-      <small><code>SinglePortSimulator</code>/<code>DualPortSimulator</code>。透過 COM 驅動 Ansys HFSS 做真正電磁模擬，慢但準確，是 ground truth。</small>
+      <small><code>SinglePortSimulator</code>/<code>DualPortSimulator</code>。透過 COM 驅動 Ansys HFSS 做真正電磁模擬，慢但準確，是 ground truth。<br><code>SinglePortRadSimulator</code>（WIP）＝單埠 + 方向圖萃取（gain vs 角度，僅匯出資料、未接 loss；見 development.md §4.6）。</small>
     </div>
   </div>
 
@@ -224,7 +224,7 @@
     <tr><td><code>antenna/optim/</code></td><td class="filetag">567</td><td><b>優化層</b>：<code>scheduler.py</code>（<code>AdaptiveCyclicalScheduler</code>＝ACP）、<code>ranger.py</code>（Ranger，SM 訓練用）。</td></tr>
     <tr><td><code>antenna/losses.py</code></td><td class="filetag">385</td><td><b>可製造性損失 + 指標</b>：<code>SpectralConnectivityLoss</code>(=SC Loss)、<code>GapClosingLoss</code>、<code>total_variation_loss</code>、<code>FeedReachability</code>(R_feed，評估指標)。</td></tr>
     <tr><td><code>antenna/patch/__init__.py</code></td><td class="filetag">173</td><td><b>損失函數</b>：<code>custom_loss_minmax</code>（單埠）、<code>interval_loss</code>（雙埠）。</td></tr>
-    <tr><td><code>antenna/patch/patch_simulator/</code></td><td class="filetag">—</td><td><b>SIM</b>：PatchSimulator 基類（HFSS COM 生命週期+容錯重生）、<code>single_port.py</code>、<code>dual_port.py</code>。</td></tr>
+    <tr><td><code>antenna/patch/patch_simulator/</code></td><td class="filetag">—</td><td><b>SIM</b>：PatchSimulator 基類（HFSS COM 生命週期+容錯重生）、<code>single_port.py</code>、<code>dual_port.py</code>、<code>single_port_rad.py</code>（單埠+方向圖萃取，WIP，見 development.md §4.6）。</td></tr>
     <tr><td><code>antenna/utils/utils.py</code></td><td class="filetag">633</td><td><b>基礎底座</b>：<code>config</code>、<code>Path</code>（被 pickle 進舊檔，不可搬離）、例外處理、<code>Complete</code>。</td></tr>
     <tr><td><code>antenna/utils/runstate.py</code></td><td class="filetag">~130</td><td><b>訓練狀態（新格式）</b>：<code>RunState</code>＝metrics.csv（純量時序）+ patterns/（模擬快取，hash 即去重）；斷點續跑/rollback 靠它。</td></tr>
     <tr><td><code>antenna/monitor.py</code></td><td class="filetag">~150</td><td><b>監控</b>：<code>TrainingMonitor</code> 掛 on_epoch hook → TensorBoard（Scalars/Images/config）+ 結尾 summary.png；無 TB 時降級不擋訓練。</td></tr>

@@ -49,6 +49,7 @@
 - 只服務實驗變體的死碼（無用的 GEN/SM 變體、`application/app.py` 的 `PathFixUnpickler` 等）可清。
 - HFSS 容錯 watchdog/run_forever（使用者標記「先不急」，穩定時再說）。
 - 論文版 DLF rollback filter（`filter(upper=平均loss)`）未移植，是已知架構落差，需要時另案補。
+- 方向圖（radiation pattern）→ loss 尚未接：只完成資料萃取（`SinglePortRadSimulator`），SM 多輸出頭/相對平坦度 loss 等決定見 `docs/development.md` §4.6（學長 ±55°/3dB 是「他們的」規格，非定案）。
 
 ## 更多
 
