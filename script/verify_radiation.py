@@ -61,7 +61,9 @@ def main():
     pattern = _build_pattern(args.pattern, args.pixel)
     print(f"[pattern] shape={tuple(pattern.shape)} 金屬像素數={int(pattern.sum())}")
 
-    out = Path(args.out)
+    #? 一定要絕對路徑：HFSS COM 的 SaveAs 用「HFSS 自己的工作目錄」解析相對路徑
+    #? (不是 Python cwd)，給相對路徑會 SaveAs 失敗。.resolve() 轉成絕對。
+    out = Path(args.out).resolve()
     sim = SinglePortRadSimulator(record_path=str(out))
     print(f"[sim] {sim}")
     print(f"[sim] CSV 將輸出到: {sim.path_result}")
