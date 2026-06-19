@@ -214,9 +214,9 @@ class Ranger(Optimizer):
                 state['step'] += 1
 
                 # compute variance mov avg
-                exp_avg_sq.mul_(beta2).addcmul_(1 - beta2, grad, grad)
+                exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
                 # compute mean moving avg
-                exp_avg.mul_(beta1).add_(1 - beta1, grad)
+                exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
                 #? 標準 Adam EMA 更新：
                 #?   exp_avg    = β1 × exp_avg    + (1-β1) × grad        （一階矩）
                 #?   exp_avg_sq = β2 × exp_avg_sq + (1-β2) × grad²       （二階矩）
@@ -256,20 +256,20 @@ class Ranger(Optimizer):
                     buffered[2] = step_size
 
                 if group['weight_decay'] != 0:
-                    p_data_fp32.add_(-group['weight_decay']
-                                     * group['lr'], p_data_fp32)
+                    p_data_fp32.add_(p_data_fp32,
+                                     alpha=-group['weight_decay'] * group['lr'])
 
                 # apply lr
                 if N_sma > self.N_sma_threshhold:
                     denom = exp_avg_sq.sqrt().add_(group['eps'])
-                    p_data_fp32.addcdiv_(-step_size *
-                                         group['lr'], exp_avg, denom)
+                    p_data_fp32.addcdiv_(exp_avg, denom,
+                                         value=-step_size * group['lr'])
                     #? 自適應模式（RAdam 完整版）：
                     #?   p ← p - lr × step_size × exp_avg / (√exp_avg_sq + eps)
                     #? step_size 已包含方差修正與一階矩偏差修正，
                     #? denom 提供逐元素自適應縮放（類 Adam）。
                 else:
-                    p_data_fp32.add_(-step_size * group['lr'], exp_avg)
+                    p_data_fp32.add_(exp_avg, alpha=-step_size * group['lr'])
                     #? 退化模式（SGD + 動量）：
                     #?   p ← p - lr × step_size × exp_avg
                     #? 不除以二階矩，避免初期方差估計不穩定造成步長暴增。
@@ -285,7 +285,7 @@ class Ranger(Optimizer):
                     # get access to slow param tensor
                     slow_p = state['slow_buffer']
                     # (fast weights - slow weights) * alpha
-                    slow_p.add_(self.alpha, p.data - slow_p)
+                    slow_p.add_(p.data - slow_p, alpha=self.alpha)
                     #? Lookahead 插值：slow ← slow + α × (fast − slow)
                     #? 等價於：slow ← (1-α) × slow + α × fast
                     #? 慢權重沿快權重方向移動 α 比例，α=0.5 即取中點。
