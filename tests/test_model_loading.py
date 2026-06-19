@@ -190,6 +190,18 @@ def test_prepare_sm_pretrained_rad_partial(tmp_path):
     sm.train_by_datas.assert_not_called()
 
 
+def test_resume_rejects_corrupted_sm(tmp_path):
+    """續跑守衛：SM 權重灌爆 (max|w|>1e3) → 明確報錯（別默默載爛檔在壞 pattern 上空轉）。"""
+    from antenna.models.surrogates import MLPSurrogate
+    from antenna.training import _assert_sm_checkpoint_sane
+    sm = MLPSurrogate(tmp_path / "ck", 625, (2, 17))
+    _assert_sm_checkpoint_sane(sm, 5)                       # 健康 SM → 不報錯
+    with torch.no_grad():
+        next(sm.model.parameters()).fill_(5000.0)          # 模擬發散灌爆
+    with pytest.raises(RuntimeError, match="損壞"):
+        _assert_sm_checkpoint_sane(sm, 5)
+
+
 def test_prepare_offline(tmp_path):
     """(3) 無 SM 預訓練檔但有離線資料集 → smodel.train_by_datas。"""
     gen, sm = MagicMock(), MagicMock()

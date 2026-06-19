@@ -419,6 +419,23 @@ def run_training(
     return state
 
 
+def _assert_sm_checkpoint_sane(smodel, epoch, *, max_abs: float = 1e3):
+    """續跑守衛：SM 權重若非有限或量級異常（灌爆但非 NaN）→ 明確報錯叫使用者重開。
+    踩過的雷：發散訓練把 sm.pth 灌爆（健康 max|w|≈0.3，壞掉 5680），續跑只 `smodel.load()`
+    載回這個爛檔、繞過 old_sm.pth 暖啟動，永遠卡在同一個壞 pattern（gen_loss 1e37、撞快取空轉）。
+    與 mock 相容：MagicMock 的 named_parameters() 迭代為空 → 守衛自動略過、不擋既有測試。"""
+    for name, p in smodel.model.named_parameters():
+        if p.numel() == 0:
+            continue
+        m = float(p.detach().abs().max())
+        if not torch.isfinite(p).all() or m > max_abs:
+            raise RuntimeError(
+                f"續跑的 SM checkpoint 已損壞（epoch {epoch}，參數 '{name}' max|w|={m:.3g} "
+                f"> {max_abs:g} 或非有限）。此結果夾的 sm.pth 被先前的發散訓練灌爆，續跑只會繼續壞下去。"
+                f"請把該結果夾改名/刪除後重新開始（全新 run 會從 old_sm.pth 暖啟動）。"
+            )
+
+
 def prepare_models(cfg, generator, smodel, state, *, continue_run=False,
                    gen_pretrained_path=None, sm_pretrained_path=None,
                    offline_dataset=None, warmup=None) -> int:
@@ -439,6 +456,7 @@ def prepare_models(cfg, generator, smodel, state, *, continue_run=False,
         logger.info(f"斷點續跑：載回 epoch {last} 的 GEN/SM，從 epoch {int(last) + 1} 繼續")
         generator.change(last, load=True)
         smodel.load()
+        _assert_sm_checkpoint_sane(smodel, last)   # 守衛：續跑載到灌爆的 SM → 明確報錯叫重開，別默默撞
         return int(last)
     # (2) GEN 預載入 (暖啟動)
     if gen_pretrained_path is not None and Path(gen_pretrained_path).exists():
