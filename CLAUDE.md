@@ -42,6 +42,7 @@
 - **測試**：`python -m pytest tests/ -q`（一定從 repo 根，否則 sys.path 不對）。
 - **分支**：開發都在 `GAN`，全綠後 `main` fast-forward。commit 才 push、且只在使用者要求時。
 - **NAS**：工作區 `ROOTDIR = T:\碩一_鄒穎麒's\antenna`（已遷出學長樹）。動學長 `碩二` 資料一律**唯讀、零刪除**。
+- **實驗記錄（每次都要做）**：新增/修改 `configs/*.yaml` 或訓練腳本時，**同步更新 `configs/README.md`** 的對照表 —— 一個 config＝一行（測什麼、與 base 差在哪、舊編號）。產生實驗 config 前先掃 `configs/README.md` 避免重複。這是硬規則，不是順手做。
 
 ## 持續優化的候選方向（非強制，看到順手就做）
 

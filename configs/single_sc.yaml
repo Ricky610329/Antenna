@@ -1,0 +1,31 @@
+# 單埠 + 論文主方法 SC（圖譜連通度）  (port=single)
+# 對標 single_base.yaml：唯一差異 = 開 spectral_connectivity（學長文獻主損失）。
+# 用途：驗證「論文主方法在單埠是否也讓性能更好」的乾淨 A/B。
+name: pixel_single_sc
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005   # 論文主方法（圖拉普拉斯 Fiedler 1/λ₂）；沿用 dual_sc 的權重起步，可調
+                                  # ⚠ 計算重：625×625 特徵分解 / epoch，比 base 慢
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+generator: sigmoid
+
+surrogate:
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
