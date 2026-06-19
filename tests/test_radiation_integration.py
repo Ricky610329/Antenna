@@ -110,3 +110,33 @@ def test_radiation_loop_runs_and_logs_rad_loss(tmp_path):
     rl = state.last("rad_loss", None)
     assert rl is not None, "rad_loss 沒被記錄 → 方向圖分支沒跑"
     assert rl == rl and rl >= 0.0, "rad_loss 應為非負且非 NaN"
+
+
+# ── 部分載入：舊 sm.pth (無 head_rad) → strict=False 暖啟動 rad 版 SM ──────────
+#    這修的是「HFSS 還沒開始收集資料就卡住」的根因：rad 版 SM 不能用 pretrained 時，
+#    會退回 offline_dataset 在數萬筆上從零預訓練 → 卡死。strict=False 讓它能秒載暖啟動。
+def test_pre_load_partial_warm_starts_rad_sm(tmp_path):
+    from antenna.models.surrogates import MLPSurrogate
+    plain = MLPSurrogate(tmp_path / "plain", 625, (2, 17))            # 舊 SM (無方向圖頭)
+    ckpt = plain.save_as(tmp_path / "old_sm.pth")
+    rad = MLPSurrogate(tmp_path / "rad", 625, (2, 17), rad_response=(2, 9))   # rad 版 (多 head_rad)
+
+    rad.pre_load_model(ckpt, strict=False)                           # 部分載入：不該報錯
+
+    # 共用 trunk/freq head (fc_patch) 權重應被灌成舊 SM 的值
+    for a, b in zip(plain.model.fc_patch.parameters(), rad.model.fc_patch.parameters()):
+        assert torch.equal(a.detach().cpu(), b.detach().cpu())
+    # head_rad 仍在、維持有限的隨機初始 (沒被汙染)
+    assert rad.model.head_rad is not None
+    for p in rad.model.head_rad.parameters():
+        assert torch.all(torch.isfinite(p))
+
+
+def test_pre_load_strict_still_rejects_subset(tmp_path):
+    """回歸保護：strict=True (預設) 載缺 head_rad 的檔 → 報錯，不默默吃 (其他實驗行為不變)。"""
+    from antenna.models.surrogates import MLPSurrogate
+    plain = MLPSurrogate(tmp_path / "plain2", 625, (2, 17))
+    ckpt = plain.save_as(tmp_path / "old_sm2.pth")
+    rad = MLPSurrogate(tmp_path / "rad2", 625, (2, 17), rad_response=(2, 9))
+    with pytest.raises(RuntimeError):
+        rad.pre_load_model(ckpt)                                     # 預設 strict=True → 缺鍵報錯

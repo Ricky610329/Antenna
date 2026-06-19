@@ -432,7 +432,12 @@ def prepare_models(cfg, generator, smodel, state, *, continue_run=False,
         generator.pre_load_model(gen_pretrained_path)
     # (3) SM 載入：預訓練檔 > 離線預訓練
     if sm_pretrained_path is not None and Path(sm_pretrained_path).exists():
-        smodel.pre_load_model(sm_pretrained_path)
+        if cfg.radiation.get("enable", False):
+            #? 方向圖版 SM 多了 head_rad、舊 sm.pth 沒有 → strict=False 部分載入共用 trunk/freq
+            #  head (缺的 head_rad 維持隨機)，避免退回 elif 在數萬筆上從零預訓練 (HFSS 前先卡死)。
+            smodel.pre_load_model(sm_pretrained_path, strict=False)
+        else:
+            smodel.pre_load_model(sm_pretrained_path)       # 共用路徑：簽名與行為與原樣相同
     elif offline_dataset is not None and len(offline_dataset) > 0:
         smodel.train_by_datas(offline_dataset)
     # (4) KuoHung 暖身：呼叫端綁好的 warmup(smodel)，對 SM 做單筆暖身訓練

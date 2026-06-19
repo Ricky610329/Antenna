@@ -143,17 +143,30 @@ class Models:
 
     #? pre_load_model：只載「權重 + 優化器」而不比對 title，用於把預訓練 (pretrain) 的
     #  SM/GEN 權重灌進當前模型作為閉迴路的起點，跳過 load() 的嚴格架構檢查。
-    def pre_load_model(self, path: Union[str, Path]):
+    #  strict=False：預訓練檔是本模型的「子集」(如方向圖版 SM 多了 head_rad，但 trunk/freq
+    #    head 與舊 sm.pth 同名同形) → 只灌入共用層、缺的頭維持隨機初始；optimizer 因參數
+    #    集合不同無法沿用，改用 __init__ 新建的乾淨版 (暖啟動本就不需舊動量)。
+    def pre_load_model(self, path: Union[str, Path], strict: bool = True):
         path = Path(path)
         checkpoint_loaded = path.load_torch()
-        self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
+        if strict:
+            self.model.load_state_dict(checkpoint_loaded['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint_loaded['optimizer_state_dict'])
+        else:
+            incompatible = self.model.load_state_dict(checkpoint_loaded['model_state_dict'], strict=False)
+            if incompatible.missing_keys:      # 本模型有、檔裡沒有 → 維持隨機初始 (如 head_rad.*)
+                logger.info(f"部分載入：{len(incompatible.missing_keys)} 個鍵維持隨機初始 "
+                            f"(如 {incompatible.missing_keys[:2]})")
+            if incompatible.unexpected_keys:   # 檔裡有、本模型沒有 → 忽略
+                logger.warning(f"部分載入：忽略檔中 {len(incompatible.unexpected_keys)} 個多餘鍵 "
+                               f"(如 {incompatible.unexpected_keys[:2]})")
+            # optimizer 不沿用 (參數集合不同)：保留 __init__ 建好的乾淨 optimizer。
         #! 載入後立即檢查所有參數有限性：預訓練檔若含 NaN/inf 會在閉迴路一開始就汙染梯度，
         #  在此早期擋下比讓訓練跑到一半才爆掉更易除錯。
         for name, param in self.model.state_dict().items():
             if not torch.all(torch.isfinite(param)):
                 raise RuntimeError(f"!!! 在參數 '{name}' 中發現無效值 (NaN 或 inf) !!!")
-        logger.success(f'Successfully loaded the pre-trained model. ({path})')
+        logger.success(f'Successfully loaded the pre-trained model. ({path}, strict={strict})')
 
     #? 一步推進：先走優化器再走排程器 (若有)。把兩者包成一個呼叫方便訓練腳本使用。
     def step(self, optimizer_param=None, scheduler_param=None):

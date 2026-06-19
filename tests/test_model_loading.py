@@ -179,6 +179,17 @@ def test_prepare_sm_pretrained(tmp_path):
     sm.load.assert_not_called()
 
 
+def test_prepare_sm_pretrained_rad_partial(tmp_path):
+    """(3) 方向圖實驗 + SM 預訓練檔 → strict=False 部分載入 (rad head 維持隨機，不退回離線預訓練)。"""
+    f = tmp_path / "sm.pth"; f.write_bytes(b"x")
+    cfg = _single_cfg(); cfg.radiation = {"enable": True, "n_theta": 9}
+    gen, sm = MagicMock(), MagicMock()
+    prepare_models(cfg, gen, sm, RunState(tmp_path, verbose=False),
+                   sm_pretrained_path=str(f), offline_dataset=_FakeDS(3))
+    sm.pre_load_model.assert_called_once_with(str(f), strict=False)
+    sm.train_by_datas.assert_not_called()
+
+
 def test_prepare_offline(tmp_path):
     """(3) 無 SM 預訓練檔但有離線資料集 → smodel.train_by_datas。"""
     gen, sm = MagicMock(), MagicMock()

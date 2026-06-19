@@ -22,9 +22,12 @@ scheduler:
 generator: sigmoid
 
 surrogate:
-  # ⚠ 刻意「不用」pretrained: old_sm.pth —— 方向圖版的 SM 多了 rad head，舊權重檔載不進來。
-  # 改用 offline_dataset 現場預訓練 trunk+freq head（rad head 維持隨機、靠線上學 + 之後可補 harvest_single_rad）。
-  offline_dataset: harvest_single
+  # 方向圖版 SM 多了 head_rad，但 trunk/freq head 與 old_sm.pth 同名同形 →
+  # prepare_models 會以 strict=False 部分載入（共用層暖啟動、head_rad 維持隨機），
+  # 與 single_base 一樣秒啟動。若改回拿掉 pretrained，會退回 offline_dataset 在
+  # 數萬筆上從零預訓練 → HFSS 還沒開始就卡死（踩過的雷）。
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single   # 後備：pretrained 存在時不會用到（與 single_base 同）
 
 targets:
   S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
