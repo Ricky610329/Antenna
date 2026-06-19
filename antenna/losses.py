@@ -528,3 +528,80 @@ def interval_loss(
     loss = loss_fn(prediction, target_clamped)
 
     return loss   # 帶內 → 0；帶外 → 與最近邊界的距離
+
+
+###* ============================================================================
+###* 方向圖損失 (radiation pattern)：beam_coverage_loss
+###* ----------------------------------------------------------------------------
+###* 角色：把「方向圖 gain vs 角度」(固定 28GHz、phi 0°/90°) 塑成相對 boresight 的
+###*       「平頂 + 中央峰」形狀。吃 SM rad head 的預測 rad_pred，可微，供 GEN 反傳。
+###* 與 S11/Gain 主路徑解耦：方向圖走另一條 x 軸(角度)、另一顆 rad head，預設 off。
+###*
+###* 分工(關鍵)：
+###*   - 「boresight 絕對增益要高」── 由既有 Gain target(method='high') 負責，本函式不碰。
+###*   - 「角度上要平、窗內不掉超過 floor_db、0° 最高」── 本函式負責(純塑形)。
+###* 故本函式刻意「相對」：一切錨在預測的 G0=rad_pred[θ≈0]，不寫絕對 dB target
+###* (方向圖因此不需要在 targets: 寫梯形曲線)。自我歸一化，不受天線絕對增益高低影響。
+###* ============================================================================
+
+def beam_coverage_loss(
+    rad_pred: Tensor,
+    theta: Tensor,
+    *,
+    window_deg: float = 55.0,
+    floor_db: float = 3.0,
+    boresight_weight: float = 1.0,
+    reduction: str = "mean",
+) -> Tensor:
+    """
+    方向圖覆蓋損失 (相對 boresight 的「平頂 + 中央峰」形狀)。
+
+    由兩個單邊(relu)項組成，全部相對預測的 boresight 增益 G0=rad_pred[θ≈0]：
+      ① floor 項   ：逼窗內(|θ|≤window_deg)每個角度 gain ≥ G0 − floor_db。
+                     低於才罰；高於不罰 ──「越高越好」(比照 custom_loss_minmax 的單邊精神)。
+      ② boresight 項：罰窗內任何角度 gain 超過 G0，逼 0° 成為窗內最高點。
+    總損失 = floor_loss + boresight_weight · boresight_loss。
+    (整體權重 w_rad 由訓練端在加進 GEN loss 時再乘，不在此函式內。)
+
+    :param rad_pred: SM rad head 的預測，dB gain。shape (n_phi, n_theta) 或 (n_theta,)。
+    :param theta:    角度取樣點 (度)，shape (n_theta,)。boresight 取 |θ| 最小的那點。
+    :param window_deg: 主波束覆蓋窗的半角 (度)。學長規格 55。
+    :param floor_db:   窗內允許比 boresight 低的量 (dB)。學長規格 3。
+    :param boresight_weight: ② 相對 ① 的權重。
+    :param reduction:  'mean' (對窗內元素平均) 或 'sum'。
+    :return: 純量 loss (可微；梯度會流過 rad_pred，含 G0)。
+    """
+    if reduction not in ("mean", "sum"):
+        raise ValueError(f"reduction 必須是 'mean' 或 'sum'，但得到 {reduction!r}")
+
+    if rad_pred.dim() == 1:
+        rad_pred = rad_pred.unsqueeze(0)            # (n_theta,) → (1, n_theta) 單一切面
+    if rad_pred.dim() != 2:
+        raise ValueError(f"rad_pred 需為 (n_phi, n_theta) 或 (n_theta,)，但得到 shape {tuple(rad_pred.shape)}")
+
+    n_theta = rad_pred.shape[1]
+    theta = theta.reshape(-1).to(device=rad_pred.device, dtype=rad_pred.dtype)
+    if theta.numel() != n_theta:
+        raise ValueError(f"theta 長度 {theta.numel()} 與 rad_pred 的 n_theta {n_theta} 不符")
+
+    #? 錨點：boresight = |θ| 最小的取樣點 (每個 phi 切面共用同一個 θ≈0 的欄)。
+    #! argmin/abs 作用在固定的 θ 網格上，不在梯度路徑；G0 是 rad_pred 的切片，可微。
+    bore_idx = int(theta.abs().argmin())
+    g0 = rad_pred[:, bore_idx:bore_idx + 1]         # (n_phi, 1)，保留維度供逐角度廣播
+
+    #? 窗：只在 |θ| ≤ window_deg 的角度上算 loss (主波束覆蓋區)。
+    in_window = theta.abs() <= window_deg           # (n_theta,) bool
+    if not bool(in_window.any()):
+        raise ValueError(
+            f"window_deg={window_deg} 內沒有任何 θ 取樣點 (θ 範圍 [{float(theta.min())}, {float(theta.max())}])"
+        )
+    pred_w = rad_pred[:, in_window]                 # (n_phi, n_window)
+
+    #? ① floor：低於 G0−floor_db 才罰 (單邊)；窗內等於/高於 floor → 0。
+    floor_deficit = torch.relu((g0 - floor_db) - pred_w)
+    #? ② boresight-max：超過 G0 才罰 (單邊)；逼 0° 最高。
+    boresight_excess = torch.relu(pred_w - g0)
+
+    if reduction == "mean":
+        return floor_deficit.mean() + boresight_weight * boresight_excess.mean()
+    return floor_deficit.sum() + boresight_weight * boresight_excess.sum()

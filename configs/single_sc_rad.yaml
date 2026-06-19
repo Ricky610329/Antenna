@@ -1,0 +1,40 @@
+# 單埠 + SC（論文主方法）+ 方向圖 loss  (port=single)
+# 對標 single_sc.yaml：唯一差異 = 多開 radiation 區段（方向圖 beam_coverage_loss）。
+# 用途：A/B —— 在 SC 之上再加方向圖約束，看主波束覆蓋/性能會不會更好。
+name: pixel_single_sc_rad
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005   # 與 single_sc 相同（論文主方法）
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+generator: sigmoid
+
+surrogate:
+  # ⚠ 刻意「不用」pretrained: old_sm.pth —— 方向圖版的 SM 多了 rad head，舊權重檔載不進來。
+  # 改用 offline_dataset 現場預訓練 trunk+freq head（rad head 維持隨機、靠線上學 + 之後可補 harvest_single_rad）。
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true            # ← 開啟方向圖：build_simulator 換 SinglePortRadSimulator、SM 多 rad head
+  weight: 1.0             # w_rad：整體方向圖 loss 權重
+  window_deg: 55          # ±窗（學長規格；非定案，可調）
+  floor_db: 3             # 窗內 gain 不得低於 G(0°)−floor_db
+  boresight_weight: 1.0   # 「0° 要最高」那項相對權重
+  warmup_epochs: 30       # 前 30 epoch 只訓 rad head、不讓它影響 GEN（防冷啟動雜訊帶歪 G）
+  n_theta: 181            # rad head 輸出角度點數（3D 球 θ −180~180 step 2° = 181；需與實際 CSV 一致）

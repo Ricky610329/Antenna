@@ -36,6 +36,8 @@ python -m pytest tests/ -q   # 在 repo 根目錄執行
 | `tests/test_runstate.py` | RunState（csv 續跑/去重快取/best_epoch） | 訓練狀態破壞 |
 | `tests/test_monitor.py` | TB 監控（降級/記錄內容/summary.png） | 監控破壞訓練 |
 | `tests/test_radiation_simulator.py` | `SinglePortRadSimulator` 結構（子類/不開 COM/配方）— 無 HFSS | 方向圖萃取器誤改、誤碰既有單埠流程 |
+| `tests/test_beam_coverage_loss.py` | `beam_coverage_loss`（相對 boresight 平頂+中央峰；floor/boresight/窗/單邊/可微）— 無 HFSS | 方向圖 loss 行為退化 |
+| `tests/test_radiation_integration.py` | 方向圖接閉迴路（rad head 形狀/freq 參數零擾動/config 白名單/mock 端到端）— 無 HFSS | 方向圖整合誤碰 S11/Gain 或 golden |
 
 CI（GitHub Actions，`.github/workflows/tests.yml`）在 push / PR 時自動跑：**pyflakes 守門**（擋 undefined name）→ 全部測試（windows runner，因 import 鏈含 pywin32）。結果看 repo 的 **Actions** 頁籤。
 
@@ -144,10 +146,14 @@ result/[實驗]/
 - 斷點續跑改讀 `metrics.csv`：升級前還在半路的舊 run（只有 temp.record）續跑不相容——跑完再升級或重來。
 - `RunState` 在訓練路徑取代 `temp.record`；但 `Record` 類別本身是**核心**（ACP 排程器記 lr/tau、每個 checkpoint 存 `record.state_dict()`），留在 `antenna/utils/record.py`。
 
-## 4.6 方向圖（radiation pattern）萃取（WIP）
+## 4.6 方向圖（radiation pattern）→ loss（Stage 0 萃取已驗證、Stage 1 loss 已實作）
 
 S11 / 正向 Gain 都是「vs **頻率**」；閉迴路要再納入**方向圖**＝gain vs **角度**（固定頻率）。
-目前**只完成「把資料抓出來」這一步**，刻意與訓練 / SM / loss 解耦，零侵入既有環境。
+分階段、刻意與既有 S11/Gain 路徑解耦、零侵入：
+**Stage 0** 把資料抓出來（已在正式機驗證 OK，2026-06-19）、
+**Stage 1** 寫 `beam_coverage_loss`（已實作 + 單元測試）、
+**Stage 2** SM 多 rad head 並掛進訓練（**已實作**，`radiation:` 區段 + `single_sc_rad.yaml`；golden 零漂移已驗）、
+**Stage 3** 補方向圖離線資料解冷啟動（待做）。
 
 ### 現況：`SinglePortRadSimulator`（`antenna/patch/patch_simulator/single_port_rad.py`）
 
@@ -174,21 +180,29 @@ python -m script.verify_radiation --config configs/single_peak.yaml --pattern xx
 跑完看 `✅ 通過`，並到 `<out>/HFSS/result/` 看那兩個 CSV。本機（無 HFSS）只能跑結構測試
 `tests/test_radiation_simulator.py`（不開 COM）；**實際萃取只能正式機驗**。
 
-### 已知限制 / 待辦路線（之後接 loss 時的決定，先記下以免忘）
+### 設計決定與路線（2026-06-19 定案；取代先前「統一 response 向量」舊構想）
 
-- **學長規格 ≠ 我們規格**：學長當初的要求是「phi=0°/90° 在 theta∈±55° 內、gain 不得比 0°（boresight）低 >3dB」
-  （即主波束夠寬夠平）。這是**「他們的」要求，我們的 target 之後再議**，目前刻意不寫死。
-- **target 形式**：傾向沿用既有「角度梯形 mask」（`TargetResponse` + `custom_loss_minmax` / `interval_loss`）。
-  但「相對 G(0°)−3dB」是**相對**約束、梯形 mask 是**絕對**值 → 需一條小的可微「相對平坦度 loss」
-  （暫名 `beam_coverage_loss`），或把 mask 錨在 G(0°)。
-- **要可微才推得動 GEN**：GEN 梯度經 **SM** 反傳（HFSS 不可微）→ 要讓方向圖當真正的 loss，
-  **SM 得多學一個「pattern→方向圖」輸出頭**。架構決定：走「**統一 response 向量 + 每個 label 各自帶 x 軸**」
-  （向後相容：純頻率 config byte-identical → golden 零漂移），**不**開第二顆 SM。
-- **既有資料無法 pretrain 方向圖頭**：`harvest_single`/`harvest_dual` 只有 S11/Gain、**沒有方向圖**
-  → SM 的方向圖頭只能 online 從零學（需更多真實 HFSS epoch），除非另補一批帶方向圖的資料。
-- **theta 解析度**：目前 2°（沿用父類別 3D 球面）；要 1°（截圖那顆 `Elevation` 球）是小改動。
-- **`LastAdaptive` 取不到遠場時**：把 `RAD_SOLUTION` 改 `"Setup1 : Sweep"`（父類別 Gain 報表就是這樣取的）。
+- **學長規格 ≠ 我們規格**：學長要求「phi=0°/90° 在 theta∈±55° 內、gain 不得比 0°（boresight）低 >3dB」。
+  這是**「他們的」要求**，我們當 v1 起步、之後可調，不寫死。
+- **loss（Stage 1 已實作）**：`beam_coverage_loss`（`antenna/losses.py`，測試 `tests/test_beam_coverage_loss.py`）。
+  **相對** boresight（錨在預測 `G0 = rad_pred[θ≈0]`），兩個單邊 relu 項：① 逼窗內 ≥ `G0−floor_db`、② 逼 0° 最高；
+  窗內超過 floor 後不再罰＝「越高越好」。**分工**：boresight 絕對增益由既有 `Gain` target（method='high'）負責，
+  本函式只塑形 → 故方向圖**不需**在 `targets:` 寫梯形曲線（相對、自我歸一化）。
+- **SM 走 multi-head（Stage 2，已實作）**：`HFSSNet` 的 `fc_patch`（freq）**原封不動**，rad head 從 `fc_patch[:-1]`（＝末層 Linear 之前的 64 維共用 backbone）分叉 → `forward_rad`。
+  - golden 安全的關鍵：`head_rad` 在 `fc_patch` 之後才建立，從零建構時 freq 參數的 RNG 抽取序列完全不變（測試 `test_rad_head_does_not_perturb_freq_params` 直接驗證 fc_patch 參數逐一相同）；`fc_patch` 名稱不動 → 舊 `sm.pth` 零 remap。
+  - 關鍵洞見：拆最後一層成多頭數值上是 **no-op**（`Linear(64,2N)` ≡ 兩個 `Linear(64,N)`）→ **S11/Gain 不拆**。
+  - **trunk 不凍（使用者選擇，先求簡單）**：`train_one_data_rad` 走 `forward_rad`、梯度會流回共用 backbone → 方向圖與 S11/Gain 會經 backbone 互相牽動。要隔離就改凍 trunk（目前**未做**，留作 S11/Gain 退化時的退路）。
+- **訓練接法（`run_training`，全程 `rad_on` 閘住）**：① `build_simulator` 開啟時換 `SinglePortRadSimulator`；② 每筆真實模擬後讀 `simulator.last_radiation`、`train_one_data_rad` 訓方向圖頭；③ 過 `warmup_epochs` 後把 `beam_coverage_loss` 加進 GEN loss。`rad_on=False` → 全部不執行（golden 零漂移）。
+- **冷啟動解法（Stage 3，待做）**：`harvest_single/dual` **只有 S11/Gain、沒有方向圖** → rad head 線上從零學。做法：按 loss 挑好 pattern
+  （per-run `online` SampleStore 已是）→ **只把這批**丟 `SinglePortRadSimulator` 補 phi0/phi90 標籤
+  → 存成 `DATASET_PATH/harvest_single_rad`（SampleStore）→ pretrain rad head。比重抽便宜，配 warmup 閘門。
+- **config（Stage 2，已實作）**：`radiation:{enable,weight,window_deg,floor_db,boresight_weight,warmup_epochs,n_theta}` 區段，預設 off → 既有 config/golden 零影響。範例見 `configs/single_sc_rad.yaml`。
+  - rad 版 SM 多了 head → 舊 `old_sm.pth` 載不進來；故 `single_sc_rad` 改用 `surrogate.offline_dataset`（現場預訓練 trunk+freq head、rad head 維持隨機）。
+- **theta 解析度**：目前 2°（父類別 3D 球面）；要 1°（`Elevation` 球）是小改動。
+- **`LastAdaptive`**：現行 `Setup1:LastAdaptive` 已驗證取得到遠場（Stage 0 OK）；若哪天取不到改 `"Setup1 : Sweep"`。
 - **dual 未做**：先把 single 跑順、驗證對了再複製到 `dual_port.py`。
+
+> 設計全圖見 [`pipeline_loss_acp.html`](pipeline_loss_acp.html)（pipeline + loss 結構 + ACP + 方向圖接法）。
 
 ## 5. Branch / commit 慣例
 

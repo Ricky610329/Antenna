@@ -41,12 +41,14 @@ from torch.utils.data import DataLoader, Dataset  #? Dataset：SampleStore 與�
 class SurrogateModel(Models):
     def __init__(self, model: nn.Module, criterion, optimizer, scheduler=None, *,
                  rootdir=None, min_loss: float = 0.1, max_epoch: int = 20000,
-                 response_shape: Optional[tuple] = None):
+                 response_shape: Optional[tuple] = None,
+                 rad_response: Optional[tuple] = None):
         """
         SM 外殼：包住骨幹網路 + 優化器 + 損失，提供線上/離線訓練與存讀檔。
 
         min_loss / max_epoch 是 train_one_data 單筆收斂的預設門檻 (呼叫時可逐次覆寫)；
         response_shape 是響應形狀 (label數, 點數)，供 train_one_data reshape 對齊。
+        rad_response (選用) 是方向圖頭輸出形狀 (n_phi, n_theta)，供 train_one_data_rad reshape 對齊。
         全部由建構端顯式傳入，不讀全域 config / AntennaResponse 類別狀態。
         """
         super().__init__(
@@ -61,6 +63,7 @@ class SurrogateModel(Models):
 
         self.device = config['device']
         self.response_shape = tuple(response_shape) if response_shape else None  #? 響應形狀 (label數, 點數)，建構端傳入
+        self.rad_response = tuple(rad_response) if rad_response else None        #? 方向圖頭形狀 (n_phi, n_theta)，選用
         self.size_converter = size_converter         #? 在 (B,N) 攤平 / (B,H,W) 影像 / 批次維度間轉換的工具
 
         self.min_loss = min_loss     #? train_one_data 預設收斂門檻 (建構時顯式傳入)
@@ -200,6 +203,53 @@ class SurrogateModel(Models):
         self.model.eval()
         return self.record['loss']  #? 回傳收斂後的最終 loss (訓練腳本記為該筆的 sm_loss)
 
+    #? 方向圖推論入口 (選用)：pattern → 方向圖預測 (可微，供 beam_coverage_loss / GEN 反傳)。
+    def rad_predict(self, pattern) -> Tensor:
+        """pattern → 方向圖預測 (n_phi, n_theta)，可微。需 SM 建有方向圖頭。"""
+        return self.model.forward_rad(pattern)
+
+    def train_one_data_rad(self, pattern: Tensor, rad_response: Tensor, min_loss=None, max_epoch=None, *, verbose: bool = True):
+        """
+        單筆線上訓練「方向圖頭」(對應 train_one_data，但走 forward_rad / 方向圖 label)。
+
+        與 train_one_data 對稱：每跑一次真實 HFSS 取得方向圖，就用該筆 (pattern, 真實方向圖)
+        把方向圖頭訓到收斂。trunk「不凍」(使用者選擇) → 此處梯度也會更新共用 backbone，
+        故方向圖與 S11/Gain 會經 backbone 互相牽動 (簡化優先；要隔離再改凍 trunk)。
+        """
+        if self.rad_response is None:
+            raise RuntimeError("此 SM 未建方向圖頭 (rad_response=None)，不能 train_one_data_rad。")
+        self.requires_grad(True, train=True)
+        self.record.reset()
+        self.record['loss'] = float('inf')
+        self.record['epoch'] = 0
+
+        input = tensor(pattern, requires_grad=True)
+        label = tensor(rad_response, requires_grad=True)
+
+        min_loss = min_loss or self.min_loss
+        max_epoch = max_epoch or self.max_epoch
+
+        epoch_bar = tqdm(
+            total=max_epoch, desc="Training one rad data",
+            bar_format=TQDM_BAR_SIMPLE, disable=not verbose, **TQDM_CONFIG
+        )
+        while self.record('loss', 0) > min_loss and self.record('epoch', float('inf')) < max_epoch:
+            self.optimizer.zero_grad()
+            outputs_result: Tensor = self.model.forward_rad(input)   #? 走方向圖頭 (共用 backbone 不凍)
+            loss: Tensor = self.criterion(
+                outputs_result.reshape(-1, *self.rad_response),
+                label.reshape(-1, *self.rad_response)
+            )
+            loss.backward()
+            self.step(scheduler_param=loss)
+            self.record['loss'] = loss.item()
+            self.record.add('epoch', 1)
+            epoch_bar.update()
+            epoch_bar.set_postfix({'loss': f"{self.record('loss'):.2f}/{min_loss}"})
+
+        self.model.eval()
+        return self.record['loss']
+
 ###* HFSSNet — 純 MLP 骨幹 (學長版 MLPSurrogate 實際採用的網路) ###
 #? 角色：SM 的「身體」(SurrogateModel 是外殼，HFSSNet 是被包住的 model)。
 #? 結構最簡：把攤平的 625 個像素，經一連串全連接層 (逐步收斂的瓶頸 2048→1024→512→128→64)，
@@ -208,10 +258,13 @@ class SurrogateModel(Models):
 class HFSSNet(nn.Module):
 
     #? num_pattern_pixel: 輸入像素數 (25x25=625)；num_response: 輸出響應形狀 (通道數 x 頻點數)
-    def __init__(self, num_pattern_pixel = 625, num_response:tuple = (3, 17), hidden=(2048, 1024, 512, 128, 64)):
+    #? rad_response: 選用的「方向圖頭」輸出形狀 (n_phi, n_theta)，None=不建方向圖頭 (與原架構相同)。
+    def __init__(self, num_pattern_pixel = 625, num_response:tuple = (3, 17), hidden=(2048, 1024, 512, 128, 64),
+                 rad_response:Optional[tuple] = None):
         super(HFSSNet, self).__init__()
         self.num_response = num_response
         self.num_pattern_pixel = num_pattern_pixel
+        self.rad_response = tuple(rad_response) if rad_response else None
 
         #? hidden 由 config 指定 (預設 (2048,1024,512,128,64) 與原架構完全相同)。每層 Linear→PReLU，
         #? 末層 Linear 無激活 (回歸輸出)，維度 = 響應總元素數 (如 3*17=51)。
@@ -221,6 +274,10 @@ class HFSSNet(nn.Module):
             prev = h
         layers += [nn.Linear(prev, num_response[0] * num_response[1])]
         self.fc_patch = nn.Sequential(*layers)
+        #? 方向圖頭 (選用)：共用 backbone = fc_patch「末層 Linear 之前」的 64 維特徵，再接一層 Linear。
+        #! 刻意在 fc_patch 之後才建 head_rad：從零建構時 freq 參數 (fc_patch) 的 RNG 抽取序列「完全不變」
+        #! → 純頻率模型 byte-identical、golden 零漂移；fc_patch 名稱/結構也不動 → 舊 sm.pth 零 remap。
+        self.head_rad = nn.Linear(prev, self.rad_response[0] * self.rad_response[1]) if self.rad_response else None
         self.to(config.device)
 
     def __repr__(self):
@@ -228,25 +285,38 @@ class HFSSNet(nn.Module):
 
     def forward(self, input):
         x = self.fc_patch(input)
-        x = x.reshape(self.num_response)  #? 把攤平輸出還原成 (3,17) 響應形狀
+        x = x.reshape(self.num_response)  #? 把攤平輸出還原成 (3,17) 響應形狀 (只回 freq，與原樣相同)
         return x
+
+    def forward_rad(self, input):
+        #? 方向圖預測：共用 backbone (fc_patch 除最後一層 Linear 外的所有層 → 64 維特徵) → head_rad。
+        #? trunk「不凍」：此路徑梯度會經 fc_patch[:-1] 流回 backbone (使用者選擇，非預設凍結)。
+        if self.head_rad is None:
+            raise RuntimeError("此 HFSSNet 未建方向圖頭 (rad_response=None)，不能呼叫 forward_rad。")
+        feat = input
+        for layer in self.fc_patch[:-1]:        #? 末層 Linear 之前 = 共用 backbone 的 64 維特徵
+            feat = layer(feat)
+        return self.head_rad(feat).reshape(self.rad_response)
 
 ###* MLPSurrogate — 工廠：學長版 SM (HFSSNet + Ranger + MSE + ReduceLROnPlateau) ###
 #? 訓練腳本 (train_single.py / train_dual.py) 實際使用的就是這個工廠 (見各腳本 from ... import MLPSurrogate)。
 #? 輕量穩定：純 MLP 骨幹 + MSE 回歸 + 「loss 卡住就降 lr」的 ReduceLROnPlateau，
 #? 適合 SM 這種需頻繁線上微調、且每筆資料都要快速收斂的場景。
 def MLPSurrogate(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 128, 64),
-          lr=0.001, min_loss=0.1, max_epoch=20000):
+          lr=0.001, min_loss=0.1, max_epoch=20000, rad_response=None):
     """
     學長的做法。維度與超參數 (lr / 單筆訓練門檻) 全由訓練端顯式傳入，
     不讀全域 config (對應 YAML 的 hfss 區段)。
+
+    rad_response (選用)：方向圖頭輸出形狀 (n_phi, n_theta)；給了就多建一個方向圖頭，
+    且其參數一併進 optimizer (trunk 不凍 → 方向圖梯度會更新共用 backbone)。None=與原樣相同。
     """
-    model_ge = HFSSNet( # Pattern -> Response
-        in_dim, response_shape, hidden=hidden
+    model_ge = HFSSNet( # Pattern -> Response (+ 選用方向圖頭)
+        in_dim, response_shape, hidden=hidden, rad_response=rad_response
     )
     criterion_ge = nn.MSELoss()  #? 均方誤差：SM 是響應回歸任務，懲罰大偏差
     optimizer_ge = Ranger(
-        params=model_ge.parameters(), lr=lr
+        params=model_ge.parameters(), lr=lr   #? 含 head_rad (若有)：故方向圖訓練會同時更新 backbone
     )
     #? 高原排程：當 loss 連續 patience 個 step 不再下降，就把 lr 砍半 (factor=0.5)，下限 min_lr，幫助收斂後期細修
     scheduler_ge = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -255,5 +325,6 @@ def MLPSurrogate(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 12
     return SurrogateModel(
         model_ge, criterion_ge, optimizer_ge, scheduler_ge, rootdir=checkpoint,
         min_loss=min_loss, max_epoch=max_epoch, response_shape=response_shape,
+        rad_response=rad_response,
     )
 

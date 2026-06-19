@@ -26,7 +26,7 @@ from antenna import zoo
 from antenna.models import Models
 from antenna.losses import FeedReachability, SpectralConnectivityLoss, GapClosingLoss
 from antenna.optim import AdaptiveCyclicalScheduler
-from antenna.losses import custom_loss_minmax, interval_loss
+from antenna.losses import custom_loss_minmax, interval_loss, beam_coverage_loss
 from antenna.utils.store import SampleStore
 from antenna.utils.runstate import RunState
 
@@ -60,6 +60,7 @@ SECTION_KEYS = {
                   "warmup_ratio", "patience", "factor"},
     "generator": {"name", "hidden", "pretrained"},
     "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
+    "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight", "warmup_epochs", "n_theta"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
 
@@ -79,6 +80,7 @@ class TrainConfig:
     generator: dict = field(default_factory=dict)   # GEN：zoo 名字 (字串) 或 {name, hidden, pretrained}
     surrogate: dict = field(default_factory=dict)   # SM：{name, hidden, pretrained, offline_dataset, warmup}
     targets: dict = field(default_factory=dict)     # {label: {side, center, width, method|interval}}
+    radiation: dict = field(default_factory=dict)   # 方向圖 (選用，預設 off)：見 SECTION_KEYS["radiation"]
 
     def __post_init__(self):
         if self.port not in PORT_SPECS:
@@ -181,11 +183,15 @@ def build_surrogate(cfg: TrainConfig, checkpoint, spec: TargetResponse):
     name = cfg.surrogate.get("name", "mlp")
     if name not in zoo.SURROGATES:
         raise ValueError(f"未知的 surrogate {name!r}，可用: {sorted(zoo.SURROGATES)} (見 antenna/zoo.py)")
+    #? 方向圖開啟 → 多建一個方向圖頭 (n_phi=2: phi0/phi90；n_theta 由 config，預設 181=3D 球 step2°)。
+    #  關閉時 rad_response=None → SM 與原樣完全相同 (golden 零漂移)。
+    rad_response = (2, cfg.radiation.get("n_theta", 181)) if cfg.radiation.get("enable", False) else None
     return zoo.SURROGATES[name](
         checkpoint, AntennaPattern.size(flatten=True), spec.size(),
         lr=cfg.sm_train.get("lr", 0.001),
         min_loss=cfg.sm_train.get("min_loss", 0.1),
         max_epoch=cfg.sm_train.get("max_epoch", 20000),
+        rad_response=rad_response,
         **_arch_params(cfg.surrogate),
     )
 
@@ -246,6 +252,16 @@ def run_training(
     sc_w = cfg.loss.get("spectral_connectivity", 0.0)
     gap_w = cfg.loss.get("gap_closing", 0.0)
 
+    # 方向圖 (選用，預設 off)：開啟時 SM 已建方向圖頭、simulator 為 SinglePortRadSimulator。
+    # 全程用 rad_on 閘住；rad_on=False → 下方所有方向圖分支不執行，行為與原樣完全相同 (golden 零漂移)。
+    rad_on = cfg.radiation.get("enable", False)
+    rad_w = cfg.radiation.get("weight", 1.0)
+    rad_window = cfg.radiation.get("window_deg", 55.0)
+    rad_floor = cfg.radiation.get("floor_db", 3.0)
+    rad_bore_w = cfg.radiation.get("boresight_weight", 1.0)
+    rad_warmup = cfg.radiation.get("warmup_epochs", 0)
+    rad_theta = None        # 從第一筆方向圖資料擷取 (角度網格固定，整個 run 不變)
+
     # 模型載入 (續跑 / GEN 預載入 / SM 預訓練 / KuoHung 暖身)；回傳續跑起始 epoch
     start_epoch = prepare_models(
         cfg, generator, smodel, state,
@@ -291,6 +307,13 @@ def run_training(
             stack = result.stack()
             #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
             smodel.train_one_data(output_element.series, stack, verbose=verbose)
+            # 方向圖 (選用)：讀 SinglePortRadSimulator.last_radiation，線上訓練方向圖頭 (trunk 不凍)。
+            if rad_on:
+                rad = getattr(simulator, "last_radiation", None)
+                if isinstance(rad, dict) and rad.get("theta") is not None:
+                    rad_theta = rad["theta"]
+                    rad_stack = torch.stack([rad["phi0"], rad["phi90"]])    # (2, n_theta)
+                    smodel.train_one_data_rad(output_element.series, rad_stack, verbose=verbose)
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
             state.append("sim_loss", sim_loss.item())
             phash = state.add_pattern(~output_element, stack, sim_loss.item())
@@ -320,6 +343,19 @@ def run_training(
             + sc_w * sc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
             + gap_w * gc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
         )
+        # 方向圖 loss (選用，且過了 warmup)：經方向圖頭可微 → 加進 GEN loss 一起反傳。
+        # warmup_epochs 內方向圖頭還在冷啟動，先不讓它影響 GEN (避免雜訊梯度把 G 帶歪)。
+        rad_loss_val = 0.0
+        if rad_on and rad_theta is not None and epoch > rad_warmup:
+            rad_pred = smodel.rad_predict(output_element.series)
+            rad_loss = beam_coverage_loss(
+                rad_pred, rad_theta,
+                window_deg=rad_window, floor_db=rad_floor, boresight_weight=rad_bore_w,
+            )
+            loss = loss + rad_w * rad_loss
+            rad_loss_val = float(rad_loss)
+        if rad_on:
+            state.append("rad_loss", rad_loss_val)      # 監控用 (只在 rad run 出現此欄)
         loss.backward()
         generator.step(scheduler_param=sim_loss)
         generator.model.eval()
@@ -389,7 +425,13 @@ def prepare_models(cfg, generator, smodel, state, *, continue_run=False,
 
 
 def build_simulator(cfg: "TrainConfig", record_path):
-    """依 port 建真實 HFSS 模擬器 (production 用；測試以 mock 注入)。"""
-    from antenna.patch import SinglePortSimulator, DualPortSimulator
+    """依 port 建真實 HFSS 模擬器 (production 用；測試以 mock 注入)。
+
+    單埠 + radiation.enable → 用 SinglePortRadSimulator (求解後多匯出方向圖到 last_radiation)，
+    回傳的 S11/Gain dict 與原樣相同；run_training 另從 simulator.last_radiation 取方向圖。
+    """
+    from antenna.patch import SinglePortSimulator, DualPortSimulator, SinglePortRadSimulator
+    if cfg.port == "single" and cfg.radiation.get("enable", False):
+        return SinglePortRadSimulator(record_path=record_path)
     cls = {"single": SinglePortSimulator, "dual": DualPortSimulator}[cfg.port]
     return cls(record_path=record_path)

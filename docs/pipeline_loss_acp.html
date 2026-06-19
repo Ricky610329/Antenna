@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antenna — Pipeline · Loss 結構 · ACP（含方向圖接法）</title>
+<style>
+  :root{
+    --g:#2563eb; --g-bg:#eff6ff;        /* 生成器 G */
+    --gen:#059669;--gen-bg:#ecfdf5;      /* 代理模型 SM = 論文 GEN */
+    --sim:#ea580c; --sim-bg:#fff7ed;     /* SIM 真實 HFSS */
+    --data:#7c3aed;--data-bg:#f5f3ff;    /* ACP / 排程 */
+    --loss:#6366f1;--loss-bg:#eef2ff;    /* GEN loss (可微) */
+    --real:#ef4444;--real-bg:#fef2f2;    /* sim_loss (真實/不回傳) */
+    --rad:#db2777; --rad-bg:#fdf2f8;     /* 方向圖通道 (規劃) */
+    --ink:#1e293b; --muted:#64748b; --line:#e2e8f0; --card:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#f1f5f9;color:var(--ink);line-height:1.7;
+    font-family:-apple-system,"Segoe UI","Microsoft JhengHei","PingFang TC",system-ui,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 80px}
+  header.hero{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;border-radius:18px;
+    padding:34px 36px;margin-bottom:24px;box-shadow:0 10px 30px rgba(2,6,23,.25)}
+  header.hero h1{margin:0 0 8px;font-size:27px}
+  header.hero p{margin:0;opacity:.9;font-size:15px}
+  .tagrow{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+  .tag{font-size:12px;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25)}
+  h2{font-size:21px;margin:38px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h2 .num{display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;border-radius:8px;background:#0f172a;color:#fff;font-size:14px;margin-right:10px}
+  h3{font-size:16px;margin:22px 0 8px}
+  code{background:#eef2f7;padding:1px 6px;border-radius:5px;font-size:13px;font-family:"SF Mono",Consolas,monospace}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;font-weight:600}
+  .trap{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px 18px;margin:14px 0}
+  .trap .h{font-weight:700;color:#b91c1c;margin-bottom:4px}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:13.5px;margin:12px 0}
+  .ok{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;font-size:13.5px;margin:12px 0}
+  .diagram{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;overflow-x:auto;margin:12px 0}
+  .muted{color:var(--muted)}.small{font-size:12.5px}
+  ul{margin:6px 0;padding-left:22px}li{margin:3px 0}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;margin:8px 2px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:26px;height:0;border-top:3px solid;display:inline-block}
+  .kbd{font-family:"SF Mono",Consolas,monospace;font-size:12.5px;background:#0f172a;color:#e2e8f0;padding:2px 7px;border-radius:6px}
+  .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;margin-left:4px}
+  .pill.grad{background:var(--loss-bg);color:var(--loss);border:1px solid #c7d2fe}
+  .pill.nograd{background:var(--real-bg);color:var(--real);border:1px solid #fecaca}
+  .pill.rad{background:var(--rad-bg);color:var(--rad);border:1px solid #fbcfe8}
+  .formula{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:16px 18px;font-family:"SF Mono",Consolas,monospace;font-size:13px;line-height:1.9;overflow-x:auto}
+  .formula .c{color:#94a3b8}.formula .k{color:#fbbf24}.formula .r{color:#f87171}.formula .b{color:#60a5fa}.formula .g{color:#34d399}.formula .p{color:#f472b6}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>Pipeline · Loss 結構 · ACP（含方向圖接法）</h1>
+    <p>這份圖回答三件事：① 目前閉迴路的梯度怎麼流、② GEN loss 由哪幾項組成、③ ACP 同時管 lr 與二值化溫度 tau 怎麼運作。最後一節是「方向圖（radiation）要怎麼掛進來」的規劃（multi-head SM + 相對 boresight 的 beam loss），尚未實作。</p>
+    <div class="tagrow">
+      <span class="tag">核心：antenna/training.py run_training()</span>
+      <span class="tag">loss：antenna/losses.py</span>
+      <span class="tag">ACP：antenna/optim AdaptiveCyclicalScheduler</span>
+      <span class="tag">方向圖：規劃中（預設 off）</span>
+    </div>
+  </header>
+
+  <div class="trap">
+    <div class="h">⚠ 一句話前提：梯度只走 SM，真值只走 SIM</div>
+    <p style="margin:6px 0 0">G（生成器）被訓練要靠梯度，但 HFSS 不可微 → 梯度走 <b>G → pattern → SM（可微替身）→ GEN loss → backward</b>。
+    真實 HFSS 的 <code>sim_loss</code> <b>不回傳到 G</b>，它只拿來：(a) 餵 ACP 當「卡住了沒」的訊號、(b) 觸發 rollback、(c) 線上監督 SM。把這兩條分清楚，整份圖就懂了。</p>
+  </div>
+
+  <!-- 1 -->
+  <h2><span class="num">1</span>閉迴路一張圖：兩條 loss、兩個去處</h2>
+  <div class="legend">
+    <span><span class="sw" style="border-color:#475569"></span>資料流</span>
+    <span><span class="sw" style="border-color:#6366f1"></span>梯度回傳（更新 G，可微）</span>
+    <span><span class="sw" style="border-color:#ef4444;border-top-style:dashed"></span>真值/訊號（不回傳 G）</span>
+    <span><span class="sw" style="border-color:#7c3aed;border-top-style:dashed"></span>ACP 控制（lr · tau）</span>
+  </div>
+  <div class="diagram">
+  <svg viewBox="0 0 1010 470" width="100%" role="img" aria-label="閉迴路與 loss 流向">
+    <defs>
+      <marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#475569"/></marker>
+      <marker id="ai" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#6366f1"/></marker>
+      <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#ef4444"/></marker>
+      <marker id="ap" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#7c3aed"/></marker>
+      <style>
+        .lbl{font:600 13px sans-serif;fill:#1e293b}.sub{font:10.5px sans-serif;fill:#64748b}
+        .el{font:11px sans-serif;fill:#475569}.eli{font:11px sans-serif;fill:#6366f1}
+        .elr{font:11px sans-serif;fill:#ef4444}.elp{font:11px sans-serif;fill:#7c3aed}
+      </style>
+    </defs>
+
+    <!-- 主鏈 spec → G → STE → pattern -->
+      <rect x="20" y="188" width="116" height="52" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="78" y="210" text-anchor="middle" class="lbl">目標 spec</text>
+      <text x="78" y="227" text-anchor="middle" class="sub">S11·Gain 梯形</text>
+
+      <rect x="176" y="188" width="116" height="52" rx="10" fill="#eff6ff" stroke="#2563eb"/>
+      <text x="234" y="210" text-anchor="middle" class="lbl">生成器 G</text>
+      <text x="234" y="227" text-anchor="middle" class="sub">spec → logits</text>
+
+      <rect x="332" y="188" width="116" height="52" rx="10" fill="#fff" stroke="#94a3b8"/>
+      <text x="390" y="210" text-anchor="middle" class="lbl">STE 二值化</text>
+      <text x="390" y="227" text-anchor="middle" class="sub">tau 控溫 → 0/1</text>
+
+      <rect x="488" y="188" width="116" height="52" rx="10" fill="#fff" stroke="#94a3b8"/>
+      <text x="546" y="210" text-anchor="middle" class="lbl">pattern</text>
+      <text x="546" y="227" text-anchor="middle" class="sub">25×25 + 饋電</text>
+
+      <line x1="136" y1="214" x2="174" y2="214" stroke="#475569" stroke-width="2" marker-end="url(#a)"/>
+      <line x1="292" y1="214" x2="330" y2="214" stroke="#475569" stroke-width="2" marker-end="url(#a)"/>
+      <line x1="448" y1="214" x2="486" y2="214" stroke="#475569" stroke-width="2" marker-end="url(#a)"/>
+
+      <!-- 分叉：上 SIM / 下 SM -->
+      <path d="M604,200 C660,200 660,92 700,92" class="el" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#a)"/>
+      <path d="M604,228 C660,228 660,338 700,338" class="el" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#a)"/>
+
+      <rect x="700" y="62" width="150" height="58" rx="10" fill="#fff7ed" stroke="#ea580c"/>
+      <text x="775" y="86" text-anchor="middle" class="lbl">SIM（HFSS）</text>
+      <text x="775" y="104" text-anchor="middle" class="sub">真實響應 · 慢·準·不可微</text>
+
+      <rect x="700" y="310" width="150" height="58" rx="10" fill="#ecfdf5" stroke="#059669"/>
+      <text x="775" y="334" text-anchor="middle" class="lbl">SM 代理（可微）</text>
+      <text x="775" y="352" text-anchor="middle" class="sub">pattern → 預測響應 · 毫秒</text>
+
+      <!-- SIM → sim_loss -->
+      <line x1="850" y1="91" x2="892" y2="91" stroke="#475569" stroke-width="2" marker-end="url(#a)"/>
+      <rect x="894" y="62" width="100" height="58" rx="10" fill="#fef2f2" stroke="#ef4444"/>
+      <text x="944" y="86" text-anchor="middle" class="lbl" style="fill:#b91c1c">sim_loss</text>
+      <text x="944" y="104" text-anchor="middle" class="sub">真實·不回傳G</text>
+
+      <!-- SM → GEN loss -->
+      <line x1="850" y1="339" x2="892" y2="339" stroke="#475569" stroke-width="2" marker-end="url(#a)"/>
+      <rect x="894" y="310" width="100" height="58" rx="10" fill="#eef2ff" stroke="#6366f1"/>
+      <text x="944" y="334" text-anchor="middle" class="lbl" style="fill:#4338ca">GEN loss</text>
+      <text x="944" y="352" text-anchor="middle" class="sub">可微·回傳G</text>
+
+      <!-- SIM 線上訓練 SM (train_one_data) -->
+      <path d="M775,120 C775,200 775,230 775,308" fill="none" stroke="#ea580c" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#a)"/>
+      <text x="785" y="216" class="el" style="fill:#ea580c">線上訓練 SM</text>
+      <text x="785" y="230" class="sub" style="fill:#ea580c">train_one_data</text>
+
+      <!-- 梯度回傳：GEN loss → G -->
+      <path d="M944,368 C944,440 360,452 234,242" fill="none" stroke="#6366f1" stroke-width="2.2" stroke-dasharray="1 0" marker-end="url(#ai)"/>
+      <text x="520" y="448" class="eli">loss.backward() → 只更新 G（response.criterion 經 SM 可微）</text>
+
+      <!-- sim_loss → ACP / rollback -->
+      <path d="M894,86 C700,18 250,18 120,372" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+      <text x="430" y="30" class="elr">sim_loss → ACP plateau 訊號 ＋ early-stop→rollback</text>
+
+      <!-- ACP 控制 box -->
+      <rect x="20" y="372" width="170" height="62" rx="10" fill="#f5f3ff" stroke="#7c3aed"/>
+      <text x="105" y="396" text-anchor="middle" class="lbl" style="fill:#6d28d9">ACP 排程器</text>
+      <text x="105" y="414" text-anchor="middle" class="sub">同步控 lr ＋ tau</text>
+      <text x="105" y="428" text-anchor="middle" class="sub">plateau→衰減 · rollback</text>
+
+      <!-- ACP → G(lr), ACP → STE(tau) -->
+      <path d="M150,372 C170,300 200,270 234,242" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#ap)"/>
+      <text x="150" y="300" class="elp">lr</text>
+      <path d="M180,372 C300,300 350,270 390,242" fill="none" stroke="#7c3aed" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#ap)"/>
+      <text x="330" y="300" class="elp">tau</text>
+    </svg>
+  </div>
+  <p class="small muted">對應碼：<code>training.py:278</code>（G→logits→STE）、<code>:289</code>（SIM 真實）、<code>:293</code>（線上訓練 SM）、<code>:315-323</code>（SM 預測→GEN loss→backward）、<code>:324</code>（<code>scheduler_param=sim_loss</code> 餵 ACP）、<code>:272-275</code>（rollback）。</p>
+
+  <!-- 2 -->
+  <h2><span class="num">2</span>Loss 結構：一個 GEN loss（回傳 G）＋ 一個 sim_loss（不回傳）</h2>
+
+  <h3>2.1 GEN loss — 唯一會 <code>backward()</code> 到 G 的東西 <span class="pill grad">可微</span></h3>
+  <div class="formula">
+<span class="c"># training.py:316-323 —— 全部可微，loss.backward() 只更新 G</span>
+loss = <span class="g">response.criterion()</span>                       <span class="c"># ① 主損失：SM 預測響應 vs 目標</span>
+     + output_element.<span class="b">total_variation_loss</span>(tv_w)     <span class="c"># ② 抑制破碎</span>
+     + output_element.<span class="b">island_suppression_loss</span>(is_w)  <span class="c"># ③ 抑制孤島</span>
+     + sc_w * <span class="b">sc.forward</span>(...)                     <span class="c"># ④ 全域連通（Fiedler 1/λ₂）</span>
+     + gap_w * <span class="b">gc.forward</span>(...)                    <span class="c"># ⑤ 補細縫（形態學閉運算）</span>
+  </div>
+  <table>
+    <tr><th>項</th><th>來源</th><th>角色</th><th>權重</th><th>梯度經誰到 G</th></tr>
+    <tr><td><b>① response.criterion()</b></td><td>SM 對當前 pattern 的<b>預測</b>響應 vs 目標梯形；每 label 各自的 loss hook：single 用 <code>custom_loss_minmax</code>（S11=low、Gain=high），dual 用 <code>interval_loss</code></td><td>把 G 推向「達標即可」的響應（單邊不等式：夠好不罰、過頭不罰）</td><td>1（固定）</td><td><b>SM</b>（pattern→響應，可微）</td></tr>
+    <tr><td>② total_variation</td><td>pattern 相鄰像素差</td><td>鼓勵大塊連續、可蝕刻</td><td><code>tv_w</code></td><td>pattern（直接）</td></tr>
+    <tr><td>③ island_suppression</td><td>pattern</td><td>抑制孤立金屬</td><td><code>is_w</code></td><td>pattern（直接）</td></tr>
+    <tr><td>④ spectral_connectivity</td><td>圖拉普拉斯 Fiedler 值 1/λ₂</td><td>全域連通（論文主方法）</td><td><code>sc_w</code></td><td>pattern（直接）</td></tr>
+    <tr><td>⑤ gap_closing</td><td>形態學閉運算差</td><td>補 1 像素級細縫</td><td><code>gap_w</code></td><td>pattern（直接）</td></tr>
+  </table>
+  <p class="small muted">②~⑤ 是「可製造性正則化」，直接對 pattern 取梯度；只有 ① 需要借道 SM。權重 ②~⑤ 由 YAML <code>loss:</code> 區段給，0＝不啟用。</p>
+
+  <h3>2.2 sim_loss — 真實 HFSS，<b>不</b>回傳 G <span class="pill nograd">不可微/不回傳</span></h3>
+  <div class="formula">
+<span class="c"># training.py:289-295</span>
+result   = output_element.<span class="r">simulate()</span>     <span class="c"># SIM：真實 HFSS 響應（no_grad）</span>
+sim_loss = result.<span class="r">criterion()</span>          <span class="c"># 真實響應 vs 目標（同一組 loss hook）</span>
+smodel.<span class="g">train_one_data</span>(series, stack)  <span class="c"># 用真值線上訓練 SM</span>
+  </div>
+  <p><code>sim_loss</code> 是「這張 pattern 真的好不好」的 ground truth。它有三個去處，<b>沒有一個是 backward 到 G</b>：</p>
+  <ul>
+    <li><b>餵 ACP</b>：<code>generator.step(scheduler_param=sim_loss)</code> — ACP 看它判斷「卡住了沒」。</li>
+    <li><b>觸發 rollback</b>：<code>state.early_stop("sim_loss", patience)</code> 連續沒進步 → 回滾 G 到最佳 epoch + 整批重訓 SM。</li>
+    <li><b>監督 SM ＋ 篩好樣本</b>：<code>train_one_data</code> 線上微調 SM；低於平均的存進 online 好樣本庫。</li>
+  </ul>
+  <div class="note"><b>為什麼要兩個 loss？</b> 因為 G 只能用「可微的近似」（SM）算梯度，但 SM 自己會飄；所以再用「真實但不可微」的 <code>sim_loss</code> 當北極星，去校正 SM、並在 SM 把 G 帶歪時把 G 拉回（rollback）。這就是 online learning 閉迴路的本質。</p></div>
+
+  <!-- 3 -->
+  <h2><span class="num">3</span>ACP 怎麼弄：一個排程器，同步管 lr 與 tau</h2>
+  <p>ACP＝<code>AdaptiveCyclicalScheduler</code>（論文核心機制）。它不是普通 lr scheduler — 它<b>同時</b>吐兩個東西回主迴圈：給 optimizer 的 <span class="kbd">lr</span> 和給 STE 二值化的 <span class="kbd">tau（溫度）</span>，兩者一起退火。</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 1010 250" width="100%" role="img" aria-label="ACP 控制 lr 與 tau">
+    <defs>
+      <marker id="b2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#7c3aed"/></marker>
+      <style>.t{font:600 12.5px sans-serif;fill:#1e293b}.s{font:10.5px sans-serif;fill:#64748b}</style>
+    </defs>
+    <rect x="20" y="96" width="180" height="64" rx="12" fill="#f5f3ff" stroke="#7c3aed"/>
+    <text x="110" y="122" text-anchor="middle" class="t" style="fill:#6d28d9">ACP 排程器</text>
+    <text x="110" y="140" text-anchor="middle" class="s">輸入：sim_loss（plateau 偵測）</text>
+
+    <!-- lr 輸出 -->
+    <path d="M200,120 C260,120 270,70 330,70" fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#b2)"/>
+    <rect x="330" y="44" width="250" height="52" rx="10" fill="#eff6ff" stroke="#2563eb"/>
+    <text x="455" y="66" text-anchor="middle" class="t">lr → optimizer（更新 G 的步長）</text>
+    <text x="455" y="83" text-anchor="middle" class="s">週期 warm-restart：高點=cfg.lr，低點=lr_min</text>
+
+    <!-- tau 輸出 -->
+    <path d="M200,140 C260,140 270,180 330,180" fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#b2)"/>
+    <rect x="330" y="156" width="250" height="52" rx="10" fill="#fff" stroke="#94a3b8"/>
+    <text x="455" y="178" text-anchor="middle" class="t">tau → STE 二值化（控 0/1 銳利度）</text>
+    <text x="455" y="195" text-anchor="middle" class="s">同步退火：temp_max → temp_min</text>
+
+    <!-- 右側：tau 大小的意義 -->
+    <rect x="620" y="44" width="370" height="52" rx="10" fill="#fffbeb" stroke="#fde68a"/>
+    <text x="636" y="66" class="s"><tspan font-weight="700" fill="#92400e">tau 大</tspan> → sigmoid 平緩、輸出灰階：梯度順、廣域探索</text>
+    <text x="636" y="83" class="s">（暖身期）</text>
+    <rect x="620" y="156" width="370" height="52" rx="10" fill="#f0fdf4" stroke="#bbf7d0"/>
+    <text x="636" y="178" class="s"><tspan font-weight="700" fill="#166534">tau 小</tspan> → sigmoid 陡、輸出乾淨 0/1：可製造</text>
+    <text x="636" y="195" class="s">但梯度稀疏（退火後期定形）</text>
+  </svg>
+  </div>
+
+  <table>
+    <tr><th>ACP 旋鈕（YAML <code>scheduler:</code>）</th><th>意思</th><th>預設</th></tr>
+    <tr><td><code>T_0 / T_mult</code></td><td>週期長度 / 每次重啟後週期倍率（warm restart）</td><td>100 / 1</td></tr>
+    <tr><td><code>lr_min · temp_max · temp_min</code></td><td>lr 下限、tau 上/下限（lr 高點＝<code>cfg.lr</code>）</td><td>1e-6 · 4.0 · 0.1</td></tr>
+    <tr><td><code>on_plateau</code></td><td><code>linear</code>｜<code>peak</code>：sim_loss 卡住時，週期高點怎麼衰減</td><td>linear</td></tr>
+    <tr><td><code>patience · factor</code></td><td>連續幾次沒進步算 plateau、衰減乘數</td><td>25 · 0.7</td></tr>
+    <tr><td><code>warmup_ratio</code></td><td>每週期前段暖身比例</td><td>0.2</td></tr>
+  </table>
+
+  <div class="ok"><b>ACP vs rollback 是兩件事（別混）：</b>
+  <ul style="margin:6px 0 0">
+    <li><b>ACP</b>＝<i>連續</i>調節：每個 epoch 依週期 + plateau 給新的 lr / tau（<code>generator.step</code> 內）。</li>
+    <li><b>rollback</b>＝<i>離散</i>急救：<code>sim_loss</code> 連續 <code>patience</code> 次沒進步 → 把 G 載回最佳 epoch、用 online 樣本整批重訓 SM。它讀 <code>sim_loss</code>，但機制獨立於 ACP（對齊論文：rollback 不歸 ACP 管）。</li>
+  </ul></div>
+
+  <!-- 4 -->
+  <h2><span class="num">4</span>方向圖怎麼接進來（規劃 · 預設 off）<span class="pill rad">WIP</span></h2>
+  <p>目標：把「方向圖 gain vs 角度（固定 28GHz、phi 0°/90°）」也納入 GEN loss。難點：方向圖是<b>另一條 x 軸（角度）</b>、label 是 {phi0, phi90}，塞不進現有「單一 x 軸（頻率 17 點）」的 response 容器。決定走法如下，三塊各自與 S11/Gain 主路徑隔離：</p>
+
+  <div class="diagram">
+  <svg viewBox="0 0 1010 300" width="100%" role="img" aria-label="方向圖 multi-head 接法">
+    <defs>
+      <marker id="c1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#475569"/></marker>
+      <marker id="c2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#db2777"/></marker>
+      <style>.t2{font:600 12.5px sans-serif;fill:#1e293b}.s2{font:10.5px sans-serif;fill:#64748b}</style>
+    </defs>
+    <rect x="20" y="118" width="120" height="60" rx="10" fill="#fff" stroke="#94a3b8"/>
+    <text x="80" y="143" text-anchor="middle" class="t2">pattern</text>
+    <text x="80" y="160" text-anchor="middle" class="s2">625 像素</text>
+
+    <!-- 共用骨幹 -->
+    <line x1="140" y1="148" x2="178" y2="148" stroke="#475569" stroke-width="2" marker-end="url(#c1)"/>
+    <rect x="180" y="112" width="190" height="72" rx="10" fill="#ecfdf5" stroke="#059669"/>
+    <text x="275" y="138" text-anchor="middle" class="t2">SM 共用骨幹（trunk）</text>
+    <text x="275" y="155" text-anchor="middle" class="s2">625→…→64</text>
+    <text x="275" y="171" text-anchor="middle" class="s2" style="fill:#059669">已被 24189 筆離線預訓練（熱）</text>
+
+    <!-- freq head -->
+    <path d="M370,134 C410,134 420,70 460,70" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#c1)"/>
+    <rect x="460" y="44" width="220" height="52" rx="10" fill="#ecfdf5" stroke="#059669"/>
+    <text x="570" y="66" text-anchor="middle" class="t2">freq head（原樣不動）</text>
+    <text x="570" y="83" text-anchor="middle" class="s2">→ S11 · Gain (2×17) · golden 零漂移</text>
+
+    <!-- rad head -->
+    <path d="M370,162 C410,162 420,224 460,224" fill="none" stroke="#db2777" stroke-width="2" marker-end="url(#c2)"/>
+    <rect x="460" y="198" width="220" height="52" rx="10" fill="#fdf2f8" stroke="#db2777"/>
+    <text x="570" y="220" text-anchor="middle" class="t2" style="fill:#be185d">rad head（新增）</text>
+    <text x="570" y="237" text-anchor="middle" class="s2">Linear(64, 2×n_theta) → phi0 · phi90</text>
+
+    <!-- losses -->
+    <line x1="680" y1="70" x2="718" y2="70" stroke="#475569" stroke-width="2" marker-end="url(#c1)"/>
+    <rect x="720" y="44" width="270" height="52" rx="10" fill="#eef2ff" stroke="#6366f1"/>
+    <text x="855" y="66" text-anchor="middle" class="t2" style="fill:#4338ca">既有 response.criterion()</text>
+    <text x="855" y="83" text-anchor="middle" class="s2">custom_loss_minmax（不變）</text>
+
+    <line x1="680" y1="224" x2="718" y2="224" stroke="#db2777" stroke-width="2" marker-end="url(#c2)"/>
+    <rect x="720" y="198" width="270" height="52" rx="10" fill="#fdf2f8" stroke="#db2777"/>
+    <text x="855" y="220" text-anchor="middle" class="t2" style="fill:#be185d">beam_coverage_loss（新增）</text>
+    <text x="855" y="237" text-anchor="middle" class="s2">相對 boresight · 預設 off · ×w_rad</text>
+  </svg>
+  </div>
+
+  <table>
+    <tr><th>塊</th><th>現況</th><th>做法（依你拍板）</th></tr>
+    <tr><td><b>SIM</b> 產 label</td><td>✅ <code>SinglePortRadSimulator.last_radiation</code> = {theta, phi0, phi90}</td><td>訓練迴圈在 <code>simulate()</code> 後讀此屬性（旁路，不改回傳 dict）</td></tr>
+    <tr><td><b>SM</b> pattern→方向圖</td><td>❌</td><td><b>共用骨幹 + 多一個 rad head</b>（你的決定）。骨幹已預訓練是熱的 → rad head 雖無離線 label，冷啟動被緩解。freq head 維持位元級不變、舊 checkpoint key 需 remap</td></tr>
+    <tr><td><b>Loss</b></td><td>❌</td><td><code>beam_coverage_loss</code> 加進 GEN loss，<code>radiation:{enable,weight,warmup_epochs}</code> 區段預設 off → 既有 config / golden 零影響</td></tr>
+  </table>
+
+  <h3>4.1 target loss（依你的規格：相對 + 最小高度 + boresight 最高）</h3>
+  <div class="formula">
+<span class="c"># 相對約束；G[0°]=boresight gain，θ∈窗（如 ±55°）</span>
+beam_coverage_loss =
+    w1 * mean( <span class="p">relu</span>( (G[0°] - 3dB) - G[θ∈窗] ) )   <span class="c"># 逼窗內 ≥ G(0°)-3dB「最小高度」</span>
+  + w2 * mean( <span class="p">relu</span>( G[θ] - G[0°] ) )            <span class="c"># 但 0° 要最高（罰任何 θ 超過 boresight）</span>
+  <span class="c"># 窗內超過最小高度後不再罰 → 「越高越好」（單邊，比照 custom_loss_minmax 精神）</span>
+  </div>
+
+  <div class="note"><b>三個還沒消的限制（誠實）：</b>
+  <ul style="margin:6px 0 0">
+    <li><b>萃取尚未驗證綠燈</b>：上次正式機跑到要 Ctrl+C，沒確認兩個 CSV 有合理 theta/gain。<b>這是 Stage 0，先過再接 loss。</b>還要定 <code>RAD_SOLUTION</code>（LastAdaptive 取不到遠場就改 <code>Setup1:Sweep</code>）與 theta 網格（2°/1°）。</li>
+    <li><b>rad head 仍無離線 label</b>：靠熱骨幹緩解、非消除冷啟動；建議配 <code>warmup_epochs</code> 閘門（rad head 看過 K 筆才開 w_rad），太慢再補離線方向圖資料集（Stage 3）。</li>
+    <li><b>multi-head 改動要顧 golden</b>：拆 trunk + 兩頭會改層名 → 舊 checkpoint key remap，且 freq 路徑數值要保證位元級相同。</li>
+  </ul></div>
+
+  <h3>4.2 分階段（最低風險，golden 到最後仍有 flag 擋）</h3>
+  <table>
+    <tr><th>Stage</th><th>內容</th><th>碰 golden？</th></tr>
+    <tr><td>0（前提）</td><td>✅ 正式機 <code>verify_radiation</code> 確認 CSV 合理（2026-06-19 已綠燈，<code>Setup1:LastAdaptive</code>＋3D 球 2°）</td><td>否</td></tr>
+    <tr><td>1</td><td>✅ <code>beam_coverage_loss</code> 已實作 + 單元測試（<code>antenna/losses.py</code> / <code>tests/test_beam_coverage_loss.py</code>，13 測全綠）</td><td>否</td></tr>
+    <tr><td>2</td><td>✅ SM 多 rad head（<code>fc_patch[:-1]</code> 共用 backbone、trunk 不凍）+ 讀 last_radiation + <code>radiation:</code> 區段 + <code>single_sc_rad.yaml</code>（104 測全綠、golden 零漂移）</td><td>off 時否；已驗 freq 路徑位元級不變</td></tr>
+    <tr><td>3（選配）</td><td>線上太慢 → 收離線方向圖資料集預訓練 rad head</td><td>否</td></tr>
+  </table>
+
+  <p class="small muted" style="margin-top:24px">本檔為設計圖；與程式碼/測試不一致時以 <code>antenna/</code> 與 <code>tests/</code> 為準。對應總架構見 <code>docs/architecture.html</code>，方向圖現況見 <code>docs/development.md</code> §4.6。</p>
+
+</div>
+</body>
+</html>
