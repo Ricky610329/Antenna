@@ -133,6 +133,9 @@ class SurrogateModel(Models):
                 #  消除 (2,17) vs (1,2,17) 的廣播警告 (純形狀對齊、值不變)。
                 loss: Tensor = self.criterion(outputs.reshape(labels.shape), labels)  #? 回歸誤差 (MSE)
 
+                if not torch.isfinite(loss):     #! NaN/inf 防護網：跳過壞 batch，不讓一筆壞資料炸掉整批訓練
+                    logger.warning(f"train_by_datas: loss 非有限 ({loss.item()})，跳過此 batch")
+                    continue
                 loss.backward()
                 self.step(scheduler_param=loss)  #? optimizer.step() + scheduler.step(loss) (ReduceLROnPlateau 看 loss)
 
@@ -198,6 +201,9 @@ class SurrogateModel(Models):
                 label.reshape(-1, *self.response_shape)
             )
 
+            if not torch.isfinite(loss):     #! NaN/inf 防護網：壞掉的一步不反傳，避免炸掉整個 HFSS run
+                logger.warning(f"train_one_data: loss 非有限 ({loss.item()})，跳過此筆 SM 更新")
+                break
             loss.backward()
             self.step(scheduler_param=loss)  #? 更新 SM 權重 (+ scheduler)
 
@@ -217,17 +223,27 @@ class SurrogateModel(Models):
         """pattern → 方向圖預測 (n_phi, n_theta)，可微。需 SM 建有方向圖頭。"""
         return self.model.forward_rad(pattern)
 
-    def train_one_data_rad(self, pattern: Tensor, rad_response: Tensor, min_loss=None, max_epoch=None, *, verbose: bool = True):
+    def train_one_data_rad(self, pattern: Tensor, rad_response: Tensor, min_loss=None, max_epoch=None,
+                           *, freeze_trunk: bool = True, verbose: bool = True):
         """
         單筆線上訓練「方向圖頭」(對應 train_one_data，但走 forward_rad / 方向圖 label)。
 
         與 train_one_data 對稱：每跑一次真實 HFSS 取得方向圖，就用該筆 (pattern, 真實方向圖)
-        把方向圖頭訓到收斂。trunk「不凍」(使用者選擇) → 此處梯度也會更新共用 backbone，
-        故方向圖與 S11/Gain 會經 backbone 互相牽動 (簡化優先；要隔離再改凍 trunk)。
+        把方向圖頭訓到收斂。
+
+        freeze_trunk (預設 True)：只更新 head_rad、凍住共用 backbone (fc_patch)。
+          → 方向圖頭再不穩也「碰不到」S11/Gain 的 backbone，避免隨機 rad 頭把 trunk 帶歪、
+            連累 S11/Gain 訓練爆 NaN (踩過的雷)。False 才放梯度回 backbone (兩者互相牽動)。
         """
         if self.rad_response is None:
             raise RuntimeError("此 SM 未建方向圖頭 (rad_response=None)，不能 train_one_data_rad。")
         self.requires_grad(True, train=True)
+        #? 凍 trunk：把 head_rad 以外 (fc_patch) 的參數設 requires_grad=False，
+        #  Ranger 對 grad=None 的參數會自動跳過 (見 optim/ranger.py) → 只更新 head_rad。
+        trunk = [p for n, p in self.model.named_parameters() if not n.startswith("head_rad")]
+        if freeze_trunk:
+            for p in trunk:
+                p.requires_grad_(False)
         self.record.reset()
         self.record['loss'] = float('inf')
         self.record['epoch'] = 0
@@ -242,19 +258,27 @@ class SurrogateModel(Models):
             total=max_epoch, desc="Training one rad data",
             bar_format=TQDM_BAR_SIMPLE, disable=not verbose, **TQDM_CONFIG
         )
-        while self.record('loss', 0) > min_loss and self.record('epoch', float('inf')) < max_epoch:
-            self.optimizer.zero_grad()
-            outputs_result: Tensor = self.model.forward_rad(input)   #? 走方向圖頭 (共用 backbone 不凍)
-            loss: Tensor = self.criterion(
-                outputs_result.reshape(-1, *self.rad_response),
-                label.reshape(-1, *self.rad_response)
-            )
-            loss.backward()
-            self.step(scheduler_param=loss)
-            self.record['loss'] = loss.item()
-            self.record.add('epoch', 1)
-            epoch_bar.update()
-            epoch_bar.set_postfix({'loss': f"{self.record('loss'):.2f}/{min_loss}"})
+        try:
+            while self.record('loss', 0) > min_loss and self.record('epoch', float('inf')) < max_epoch:
+                self.optimizer.zero_grad()
+                outputs_result: Tensor = self.model.forward_rad(input)   #? 走方向圖頭 (trunk 凍與否由 freeze_trunk)
+                loss: Tensor = self.criterion(
+                    outputs_result.reshape(-1, *self.rad_response),
+                    label.reshape(-1, *self.rad_response)
+                )
+                if not torch.isfinite(loss):     #! NaN/inf 防護網：壞掉的一步不反傳
+                    logger.warning(f"train_one_data_rad: loss 非有限 ({loss.item()})，跳過此筆方向圖更新")
+                    break
+                loss.backward()
+                self.step(scheduler_param=loss)
+                self.record['loss'] = loss.item()
+                self.record.add('epoch', 1)
+                epoch_bar.update()
+                epoch_bar.set_postfix({'loss': f"{self.record('loss'):.2f}/{min_loss}"})
+        finally:
+            if freeze_trunk:                     #? 還原 trunk 的 requires_grad，避免影響後續 S11/Gain 訓練
+                for p in trunk:
+                    p.requires_grad_(True)
 
         self.model.eval()
         return self.record['loss']

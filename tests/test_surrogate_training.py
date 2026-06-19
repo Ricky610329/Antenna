@@ -48,3 +48,21 @@ def test_train_one_data_no_broadcast_warning(tmp_path):
         warnings.simplefilter("always")
         sm.train_one_data(torch.rand(625), torch.rand(2, 17), max_epoch=2, verbose=False)
     assert not _broadcast_warnings(rec)
+
+
+def test_train_one_data_nan_guard(tmp_path):
+    """NaN 防護網：target 含 inf → loss 非有限 → 跳過該步、不 raise（不炸掉整個 HFSS run）。"""
+    sm = MLPSurrogate(tmp_path / "ck3", 625, (2, 17), max_epoch=5)
+    bad = torch.rand(2, 17)
+    bad[0, 0] = float("inf")
+    sm.train_one_data(torch.rand(625), bad, max_epoch=5, verbose=False)   # 不該丟例外
+
+
+def test_train_by_datas_nan_guard(tmp_path):
+    """NaN 防護網：某筆 response 含 inf → 跳過該 batch、不 raise。"""
+    s = SampleStore(tmp_path / "ds_nan", verbose=False)
+    s.add(torch.rand(25, 25).round(), torch.rand(2, 17))
+    bad = torch.rand(2, 17); bad[1, 3] = float("inf")
+    s.add(torch.ones(25, 25), bad)
+    sm = MLPSurrogate(tmp_path / "ck4", 625, (2, 17), max_epoch=1)
+    sm.train_by_datas(s, epochs=1, verbose=False)                         # 不該丟例外

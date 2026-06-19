@@ -51,6 +51,11 @@ PORT_SPECS = {
 }
 
 
+#! 方向圖 target 的 dB 合理界線：dB(GainTotal) 在深零點可能 -inf/極端負，clamp 防梯度爆炸。
+_RAD_DB_FLOOR = -60.0
+_RAD_DB_CEIL = 60.0
+
+
 #! 各區段允許的鍵 (白名單)。鍵打錯「必須報錯」而不是默默用預設值 ——
 #! 歷史教訓：舊 dual 的 island_suppression 鍵名打錯，正則化默默沒開、實驗白跑。
 SECTION_KEYS = {
@@ -60,7 +65,8 @@ SECTION_KEYS = {
                   "warmup_ratio", "patience", "factor"},
     "generator": {"name", "hidden", "pretrained"},
     "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
-    "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight", "warmup_epochs", "n_theta"},
+    "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight",
+                  "warmup_epochs", "n_theta", "freeze_trunk"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
 
@@ -260,6 +266,7 @@ def run_training(
     rad_floor = cfg.radiation.get("floor_db", 3.0)
     rad_bore_w = cfg.radiation.get("boresight_weight", 1.0)
     rad_warmup = cfg.radiation.get("warmup_epochs", 0)
+    rad_freeze = cfg.radiation.get("freeze_trunk", True)   # 預設凍 trunk：方向圖頭只更新自己，不污染 S11/Gain backbone
     rad_theta = None        # 從第一筆方向圖資料擷取 (角度網格固定，整個 run 不變)
 
     # 模型載入 (續跑 / GEN 預載入 / SM 預訓練 / KuoHung 暖身)；回傳續跑起始 epoch
@@ -308,14 +315,20 @@ def run_training(
             stack = result.stack()
             #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
             smodel.train_one_data(output_element.series, stack, verbose=verbose)
-            # 方向圖 (選用)：讀 SinglePortRadSimulator.last_radiation，線上訓練方向圖頭 (trunk 不凍)。
+            # 方向圖 (選用)：讀 SinglePortRadSimulator.last_radiation，線上訓練方向圖頭。
             if rad_on:
                 rad = getattr(simulator, "last_radiation", None)
                 if isinstance(rad, dict) and rad.get("theta") is not None:
                     rad_theta = rad["theta"]
                     rad_stack = torch.stack([rad["phi0"], rad["phi90"]])    # (2, n_theta)
+                    #! 清理方向圖 target：dB(GainTotal) 在深零點可能是 -inf/極端負值，直接進 MSE 會爆梯度。
+                    #  剔除非有限值並 clamp 到合理 dB 範圍 (深零點對 beam coverage 無所謂)。
+                    rad_stack = torch.nan_to_num(rad_stack, nan=_RAD_DB_FLOOR,
+                                                 posinf=_RAD_DB_CEIL, neginf=_RAD_DB_FLOOR
+                                                 ).clamp(_RAD_DB_FLOOR, _RAD_DB_CEIL)
                     rad_real_this_epoch = rad_stack.detach().cpu()          # 監控疊圖用 (真實 HFSS 方向圖)
-                    smodel.train_one_data_rad(output_element.series, rad_stack, verbose=verbose)
+                    smodel.train_one_data_rad(output_element.series, rad_stack,
+                                              freeze_trunk=rad_freeze, verbose=verbose)
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
             state.append("sim_loss", sim_loss.item())
             phash = state.add_pattern(~output_element, stack, sim_loss.item())

@@ -63,6 +63,50 @@ def test_config_rejects_unknown_radiation_key():
                     radiation={"enabel": True})        # 打錯鍵 → 報錯，不默默吃
 
 
+def test_config_accepts_freeze_trunk():
+    cfg = TrainConfig(name="x", port="single", targets=SINGLE_TARGETS,
+                      radiation={"enable": True, "n_theta": 9, "freeze_trunk": False})
+    assert cfg.radiation["freeze_trunk"] is False
+
+
+# ── 凍 trunk：方向圖訓練不污染 S11/Gain backbone（修 NaN 爆炸的核心）──────────
+def _split_params(model):
+    trunk = {n: p for n, p in model.named_parameters() if not n.startswith("head_rad")}
+    head = {n: p for n, p in model.named_parameters() if n.startswith("head_rad")}
+    return trunk, head
+
+
+def test_rad_freeze_trunk_protects_backbone(tmp_path):
+    """freeze_trunk=True：train_one_data_rad 只動 head_rad，fc_patch（共用 backbone）逐一不變。"""
+    from antenna.models.surrogates import MLPSurrogate
+    sm = MLPSurrogate(tmp_path / "ck", 625, (2, 17), rad_response=(2, 9), max_epoch=5)
+    trunk0, head0 = _split_params(sm.model)
+    trunk0 = {n: p.detach().clone() for n, p in trunk0.items()}
+    head0 = {n: p.detach().clone() for n, p in head0.items()}
+
+    target = torch.rand(2, 9) * 10 + 5      # 量級夠大 → loss>min_loss，確實會訓練
+    sm.train_one_data_rad(torch.rand(625), target, max_epoch=5, freeze_trunk=True, verbose=False)
+
+    trunk1, head1 = _split_params(sm.model)
+    for n, p in trunk1.items():
+        assert torch.equal(trunk0[n], p), f"凍 trunk 失敗：{n} 被改動"
+    assert any(not torch.equal(head0[n], p) for n, p in head1.items()), "head_rad 沒被訓練"
+
+
+def test_rad_unfrozen_updates_trunk(tmp_path):
+    """freeze_trunk=False：梯度會回流共用 backbone → fc_patch[:-1] 至少一個參數改變（證明旗標有效）。"""
+    from antenna.models.surrogates import MLPSurrogate
+    sm = MLPSurrogate(tmp_path / "ck", 625, (2, 17), rad_response=(2, 9), max_epoch=5)
+    trunk0, _ = _split_params(sm.model)
+    trunk0 = {n: p.detach().clone() for n, p in trunk0.items()}
+
+    target = torch.rand(2, 9) * 10 + 5
+    sm.train_one_data_rad(torch.rand(625), target, max_epoch=5, freeze_trunk=False, verbose=False)
+
+    trunk1, _ = _split_params(sm.model)
+    assert any(not torch.equal(trunk0[n], p) for n, p in trunk1.items()), "不凍時 backbone 應被更新"
+
+
 # ── 端到端 (mock 方向圖模擬器，無 HFSS) ─────────────────────────────────────
 class _MockRadSim:
     """假的方向圖模擬器：回傳 S11/Gain dict (同 baseline mock) + 設 last_radiation。"""
@@ -140,3 +184,26 @@ def test_pre_load_strict_still_rejects_subset(tmp_path):
     rad = MLPSurrogate(tmp_path / "rad2", 625, (2, 17), rad_response=(2, 9))
     with pytest.raises(RuntimeError):
         rad.pre_load_model(ckpt)                                     # 預設 strict=True → 缺鍵報錯
+
+
+# ── 端到端：極端方向圖 target（深零點 -inf/巨大負值）不該炸掉整個 run ──────────
+class _ExtremeRadSim(_MockRadSim):
+    """模擬 HFSS 深零點：phi0 注入 -inf / -1e9（dB 深 null），驗證清理 + 防護網扛得住。"""
+    def __call__(self, pattern, **kw):
+        out = super().__call__(pattern, **kw)
+        bad = self.last_radiation["phi0"].clone()
+        bad[0] = float("-inf"); bad[1] = -1e9
+        self.last_radiation["phi0"] = bad
+        return out
+
+
+def test_radiation_loop_survives_extreme_targets(tmp_path):
+    cfg = TrainConfig(
+        name="x", port="single", epochs=2, patience=50,
+        sm_train={"min_loss": 0.5, "max_epoch": 3}, targets=SINGLE_TARGETS,
+        radiation={"enable": True, "n_theta": 9, "warmup_epochs": 0},
+    )
+    sim = _ExtremeRadSim(("S11", "Gain"), n_theta=9)
+    state = run_training(cfg, simulator=sim, record_path=tmp_path, seed=0, verbose=False)
+    assert int(state.last("epoch")) == 2          # 沒被 -inf rad target 炸掉
+    assert torch.isfinite(torch.tensor(state.last("gen_loss")))

@@ -51,6 +51,7 @@ python train.py configs/single_base.yaml
 - ~~單埠沒有 `spectral_connectivity` config~~ → 已補 `single_sc.yaml`（2026-06-19）。
 - ~~方向圖 loss 尚未有 config~~ → 已補 `single_sc_rad.yaml`（2026-06-19，Stage 2 整合完成：`radiation:` 區段 + SM rad head + `beam_coverage_loss`）。**僅正式機可跑**（需 HFSS 取方向圖）。
 - **方向圖 rad head 冷啟動**：`harvest_single` 沒有方向圖標籤 → rad head 線上從零學。優化（Stage 3，未做）：收 `harvest_single_rad`（好 pattern 補方向圖標籤）預訓練 rad head，再用 `radiation.offline_dataset` 載入。
+- **方向圖訓練預設凍 trunk**（`radiation.freeze_trunk: true`）：隨機 rad 頭 + 不凍 trunk + 極端 dB target 曾把 S11/Gain backbone 帶歪、爆 NaN。現在 rad 頭只更新自己、rad target 會 clamp（±60dB）、SM 訓練有 NaN 防護網。要放梯度回 backbone 才設 `false`。
 
 ## 資料集標記（before rad / *_rad）
 

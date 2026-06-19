@@ -51,6 +51,7 @@
 - HFSS 容錯 watchdog/run_forever（使用者標記「先不急」，穩定時再說）。
 - 論文版 DLF rollback filter（`filter(upper=平均loss)`）未移植，是已知架構落差，需要時另案補。
 - 方向圖（radiation pattern）→ loss 尚未接：只完成資料萃取（`SinglePortRadSimulator`），SM 多輸出頭/相對平坦度 loss 等決定見 `docs/development.md` §4.6（學長 ±55°/3dB 是「他們的」規格，非定案）。
+- **SM 單筆擬合過於激進（待優化）**：`train_one_data`/`train_one_data_rad` 把「這一筆」訓到 `loss<min_loss(0.1)`、最多 `max_epoch(20000)` 步——就地過擬合單一資料點，易不穩（曾觸發梯度爆炸/NaN，已加防護網但沒治本）。可優化方向：梯度裁剪（clip_grad_norm）、調降 `max_epoch`、用相對收斂門檻、或加正則。改前先想清楚對線上學習收斂速度的影響、保 golden。
 
 ## 更多
 
