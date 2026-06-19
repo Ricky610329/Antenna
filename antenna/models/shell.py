@@ -144,8 +144,10 @@ class Models:
     #? pre_load_model：只載「權重 + 優化器」而不比對 title，用於把預訓練 (pretrain) 的
     #  SM/GEN 權重灌進當前模型作為閉迴路的起點，跳過 load() 的嚴格架構檢查。
     #  strict=False：預訓練檔是本模型的「子集」(如方向圖版 SM 多了 head_rad，但 trunk/freq
-    #    head 與舊 sm.pth 同名同形) → 只灌入共用層、缺的頭維持隨機初始；optimizer 因參數
-    #    集合不同無法沿用，改用 __init__ 新建的乾淨版 (暖啟動本就不需舊動量)。
+    #    head 與舊 sm.pth 同名同形) → 只灌入共用層、缺的頭維持隨機初始；optimizer 狀態
+    #    依「參數順序」對位部分載入 (新增的 head 在序末、自然保持新鮮)。
+    #    ⚠ 一定要暖啟動 optimizer：實測「冷 optimizer + 暖權重」第一步就過衝、train_one_data
+    #    3 步發散爆 NaN (warm: 2136→2079 緩降；cold: 2136→90→4.9e6→inf)。
     def pre_load_model(self, path: Union[str, Path], strict: bool = True):
         path = Path(path)
         checkpoint_loaded = path.load_torch()
@@ -160,13 +162,28 @@ class Models:
             if incompatible.unexpected_keys:   # 檔裡有、本模型沒有 → 忽略
                 logger.warning(f"部分載入：忽略檔中 {len(incompatible.unexpected_keys)} 個多餘鍵 "
                                f"(如 {incompatible.unexpected_keys[:2]})")
-            # optimizer 不沿用 (參數集合不同)：保留 __init__ 建好的乾淨 optimizer。
+            self._warm_start_optimizer(checkpoint_loaded.get('optimizer_state_dict'))
         #! 載入後立即檢查所有參數有限性：預訓練檔若含 NaN/inf 會在閉迴路一開始就汙染梯度，
         #  在此早期擋下比讓訓練跑到一半才爆掉更易除錯。
         for name, param in self.model.state_dict().items():
             if not torch.all(torch.isfinite(param)):
                 raise RuntimeError(f"!!! 在參數 '{name}' 中發現無效值 (NaN 或 inf) !!!")
         logger.success(f'Successfully loaded the pre-trained model. ({path}, strict={strict})')
+
+    def _warm_start_optimizer(self, opt_sd):
+        """部分載入 optimizer 狀態：把預訓練檔的 per-param 狀態依「參數順序」對位灌進現有
+        optimizer。前提：本模型新增的參數 (如 head_rad) 接在原參數序之後 (golden-safe 建構保證)，
+        故索引 0..N-1 正好對應預訓練檔的 trunk 參數；新增 head 在序末、沒有對應狀態 → 保持新鮮。
+        只搬 per-param 狀態 (動量/方差/step)，不動 param_groups 的超參 (lr/betas 用本模型設定)。"""
+        if not opt_sd or 'state' not in opt_sd:
+            return
+        params = [p for g in self.optimizer.param_groups for p in g['params']]
+        for idx, st in opt_sd['state'].items():
+            i = int(idx)
+            if i < len(params):
+                self.optimizer.state[params[i]] = {
+                    k: (v.to(self.device) if torch.is_tensor(v) else v) for k, v in st.items()
+                }
 
     #? 一步推進：先走優化器再走排程器 (若有)。把兩者包成一個呼叫方便訓練腳本使用。
     def step(self, optimizer_param=None, scheduler_param=None):

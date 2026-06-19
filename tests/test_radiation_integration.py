@@ -176,6 +176,22 @@ def test_pre_load_partial_warm_starts_rad_sm(tmp_path):
         assert torch.all(torch.isfinite(p))
 
 
+def test_pre_load_partial_warm_starts_optimizer(tmp_path):
+    """strict=False 也要暖啟動 optimizer 狀態：冷 optimizer + 暖權重會讓 train_one_data
+    第一步過衝、3 步發散爆 NaN（實測 2136→90→4.9e6→inf）。trunk 的 per-param 狀態要對位灌入。"""
+    from antenna.models.surrogates import MLPSurrogate
+    plain = MLPSurrogate(tmp_path / "p", 625, (2, 17))
+    plain.train_one_data(torch.rand(625), torch.rand(2, 17), max_epoch=3, verbose=False)  # 累積 optimizer 狀態
+    n_saved = len(plain.optimizer.state)
+    assert n_saved > 0
+    ckpt = plain.save_as(tmp_path / "p.pth")
+
+    rad = MLPSurrogate(tmp_path / "r", 625, (2, 17), rad_response=(2, 9))
+    assert len(rad.optimizer.state) == 0                 # 載入前 optimizer 全冷
+    rad.pre_load_model(ckpt, strict=False)
+    assert len(rad.optimizer.state) == n_saved           # trunk 狀態被對位暖啟動 (head_rad 保持新鮮)
+
+
 def test_pre_load_strict_still_rejects_subset(tmp_path):
     """回歸保護：strict=True (預設) 載缺 head_rad 的檔 → 報錯，不默默吃 (其他實驗行為不變)。"""
     from antenna.models.surrogates import MLPSurrogate
