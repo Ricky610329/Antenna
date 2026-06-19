@@ -109,9 +109,15 @@ class SurrogateModel(Models):
             generator=torch.Generator(device=config.device)  #? 指定 device 上的亂數產生器，避免 shuffle 的 device 不符
         )
 
+        #? batch_size=None → DataLoader 一次吐一筆，一個 epoch = len(dataset) 步。
+        #  外層只有 epoch 級 bar 時，大資料集 (如 harvest_single 2 萬餘筆) 會讓外層長時間卡在
+        #  同一格、看起來像當掉 → 多掛一條「逐筆」內層 bar (leave=False，跑完即收) 顯示實際進度。
+        n_steps = len(dataloader)
         epoch_bar = tqdm(range(epochs), desc='Training...', disable=not verbose, **TQDM_CONFIG)
         for epoch in epoch_bar:
-            for n, (patterns, real_responses) in enumerate(dataloader):
+            batch_bar = tqdm(dataloader, total=n_steps, desc=f"  epoch {epoch + 1}/{epochs}",
+                             leave=False, disable=not verbose, **TQDM_CONFIG)
+            for n, (patterns, real_responses) in enumerate(batch_bar):
 
                 #? 統一形狀：pattern 攤平成 (B, 625) 餵 MLP；響應保留 (B, C, L) 不攤平 (與骨幹輸出對齊)
                 patterns = self.size_converter(AntennaPattern, patterns, flatten=True, batch=True)
@@ -122,7 +128,10 @@ class SurrogateModel(Models):
 
                 self.optimizer.zero_grad()
                 outputs: Tensor = self.model(inputs)            #? SM 預測響應
-                loss: Tensor = self.criterion(outputs, labels)  #? 預測 vs. 真實 的回歸誤差 (MLPSurrogate 用 MSE)
+                #? forward 把 batch 維 reshape 進 num_response → outputs 可能少一個 batch 維 (如 (2,17))，
+                #  而 labels 經 size_converter(batch=True) 帶 batch 維 (如 (1,2,17))。對齊形狀再算 MSE，
+                #  消除 (2,17) vs (1,2,17) 的廣播警告 (純形狀對齊、值不變)。
+                loss: Tensor = self.criterion(outputs.reshape(labels.shape), labels)  #? 回歸誤差 (MSE)
 
                 loss.backward()
                 self.step(scheduler_param=loss)  #? optimizer.step() + scheduler.step(loss) (ReduceLROnPlateau 看 loss)

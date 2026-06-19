@@ -29,7 +29,7 @@ python train.py configs/single_base.yaml
 | --- | --- | --- | --- |
 | `single_base.yaml` | 基準 | — | 1 / 2 / 5 |
 | `single_sc.yaml` | **論文主方法：圖譜連通度（單埠版）** | `loss.spectral_connectivity: 0.0005` | （新增，對標 base 看 SC 是否有幫助） |
-| `single_sc_rad.yaml` | **SC + 方向圖 loss** | 多 `radiation:` 區段（`enable: true`，beam_coverage_loss）；SM 多 rad head、改用 `offline_dataset` 預訓練 | （新增，對標 `single_sc` 看方向圖是否有幫助；**需正式機 HFSS**） |
+| `single_sc_rad.yaml` | **SC + 方向圖 loss** | 多 `radiation:` 區段（`enable: true`，beam_coverage_loss）；SM 多 rad head，`pretrained: old_sm.pth` 以 strict=False 部分載入暖啟動（與 base 同速起步） | （新增，對標 `single_sc` 看方向圖是否有幫助；**需正式機 HFSS**） |
 | `single_tv.yaml` | TV 正則化 + KuoHung SM 暖身 | `loss.total_variation: 0.01`、`surrogate.warmup: "1"` | 3 / 4 |
 | `single_tv50.yaml` | 強 TV | `loss.total_variation: 50` | 7 |
 | `single_island.yaml` | 孤島抑制（強） | `loss.island_suppression: 100` | 8 / 9 |
@@ -51,6 +51,18 @@ python train.py configs/single_base.yaml
 - ~~單埠沒有 `spectral_connectivity` config~~ → 已補 `single_sc.yaml`（2026-06-19）。
 - ~~方向圖 loss 尚未有 config~~ → 已補 `single_sc_rad.yaml`（2026-06-19，Stage 2 整合完成：`radiation:` 區段 + SM rad head + `beam_coverage_loss`）。**僅正式機可跑**（需 HFSS 取方向圖）。
 - **方向圖 rad head 冷啟動**：`harvest_single` 沒有方向圖標籤 → rad head 線上從零學。優化（Stage 3，未做）：收 `harvest_single_rad`（好 pattern 補方向圖標籤）預訓練 rad head，再用 `radiation.offline_dataset` 載入。
+
+## 資料集標記（before rad / *_rad）
+
+NAS（`DATASET_PATH = T:\碩一_鄒穎麒's\antenna\dataset`）上的離線資料集分兩代，**勿混疊**：
+
+| 資料集 | 標籤 | 說明 |
+| --- | --- | --- |
+| `harvest_single`（24189）/ `harvest_dual`（10023） | **before rad** | response 只有 S11/Gain(/S21)，**無方向圖標籤**。各夾內有唯讀 `_BEFORE_RAD.md` 標記 |
+| `harvest_single_rad` 等 `*_rad`（未來，Stage 3） | with rad | 好 pattern 補方向圖標籤的子集，**獨立新名**，不疊進舊集 |
+
+- **約定**：rad 標籤資料一律走新名 `*_rad`，**永不**寫回 before-rad 舊集。
+- marker 用 `.md`（`SampleStore` 只認 `*.pt`，且 init 會清 `*.tmp` → marker 不能用這兩種副檔名）。
 
 ## 新增實驗 SOP
 

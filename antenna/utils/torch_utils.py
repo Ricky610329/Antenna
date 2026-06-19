@@ -81,6 +81,13 @@ def tensor(data: Any,dtype= None, device=None, requires_grad: bool = False):
     ###* device 預設值改為 config.device（全域裝置），省去每次手動指定
     ###* 呼叫端仍可覆寫 device；requires_grad 預設 False 與原生相同
     ###* 使用場景：不需要特殊 dtype 判斷、需要快速建立固定精度張量時
+    if isinstance(data, Tensor):
+        #? data 已是張量：torch.tensor(t) 會複製並印 copy-construct 警告 →
+        #  改用 detach().clone() 取得等價的乾淨葉節點 (值/dtype/device 不變，只是不再警告)。
+        out = data.detach().clone().to(device=device or config.device)
+        if dtype is not None:
+            out = out.to(dtype=dtype)
+        return out.requires_grad_(requires_grad)
     return _tensor(data, dtype=dtype, device=device or config.device, requires_grad=requires_grad)
 
 # ─────────────────────────────────────────────

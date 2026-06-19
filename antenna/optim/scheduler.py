@@ -107,9 +107,14 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
         if mode not in ['min', 'max']:
             raise ValueError('mode ' + mode + ' is unknown!')
 
+        #! 父類別 _LRScheduler.__init__ 會呼叫一次 _initial_step()→step() 來定初始 lr，
+        #  那一步本就「沒有 metric」(尚未訓練) → 不該警告。用旗標把建構期的初始 step 與
+        #  訓練期的 step 區分開：只有訓練期 metric 缺失才警告 (純門控，不動排程數值)。
+        self._adapt_ready = False
         super(AdaptiveCyclicalScheduler, self).__init__(optimizer, last_epoch)
         #! base_lrs 覆寫為 lr_max：本排程器自行算 lr(get_lr)，不依賴父類用 base_lr 縮放
         self.base_lrs = [lr_max] * len(self.optimizer.param_groups)
+        self._adapt_ready = True   #* 建構完成 → 之後的 step(metric=None) 才視為呼叫端漏傳
 
     def get_temp(self) -> float:
         """獲取當前計算出的溫度"""
@@ -147,7 +152,9 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
     def step(self, metric: float = None):
         #* 每個訓練步呼叫一次；務必傳入監控指標(通常是 HFSS 真實 loss)，否則自適應失效。
         if metric is None:
-            warnings.warn("AdaptiveCyclicalScheduler requires a metric to be passed to step() for adaptation.", UserWarning)
+            #* 建構期的初始 step (尚未訓練) 本就無 metric → 不警告；只有訓練期漏傳才提醒。
+            if getattr(self, "_adapt_ready", True):
+                warnings.warn("AdaptiveCyclicalScheduler requires a metric to be passed to step() for adaptation.", UserWarning)
         else:
             # --- 自適應邏輯 ---
             if self._is_metric_better(metric):
