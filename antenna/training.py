@@ -283,6 +283,7 @@ def run_training(
         simulator.start(epoch)
         generator.requires_grad(True, train=True)
         generator.optimizer.zero_grad()
+        rad_real_this_epoch = None      # 本 epoch 真實方向圖 (僅非快取分支會填；供監控疊圖)
 
         # 早停 → 回滾 (測試用高 patience 不觸發)
         if state.early_stop("sim_loss", pat):
@@ -313,6 +314,7 @@ def run_training(
                 if isinstance(rad, dict) and rad.get("theta") is not None:
                     rad_theta = rad["theta"]
                     rad_stack = torch.stack([rad["phi0"], rad["phi90"]])    # (2, n_theta)
+                    rad_real_this_epoch = rad_stack.detach().cpu()          # 監控疊圖用 (真實 HFSS 方向圖)
                     smodel.train_one_data_rad(output_element.series, rad_stack, verbose=verbose)
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
             state.append("sim_loss", sim_loss.item())
@@ -343,17 +345,27 @@ def run_training(
             + sc_w * sc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
             + gap_w * gc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
         )
-        # 方向圖 loss (選用，且過了 warmup)：經方向圖頭可微 → 加進 GEN loss 一起反傳。
-        # warmup_epochs 內方向圖頭還在冷啟動，先不讓它影響 GEN (避免雜訊梯度把 G 帶歪)。
+        # 方向圖 loss (選用)：經方向圖頭可微 → 加進 GEN loss 一起反傳。
+        # 有方向圖資料就先「預測一次」(供監控疊圖)；但 warmup_epochs 內先不讓它進 loss
+        # (方向圖頭還在冷啟動，避免雜訊梯度把 G 帶歪)。
         rad_loss_val = 0.0
-        if rad_on and rad_theta is not None and epoch > rad_warmup:
+        rad_snapshot = None
+        if rad_on and rad_theta is not None:
             rad_pred = smodel.rad_predict(output_element.series)
-            rad_loss = beam_coverage_loss(
-                rad_pred, rad_theta,
-                window_deg=rad_window, floor_db=rad_floor, boresight_weight=rad_bore_w,
+            if epoch > rad_warmup:
+                rad_loss = beam_coverage_loss(
+                    rad_pred, rad_theta,
+                    window_deg=rad_window, floor_db=rad_floor, boresight_weight=rad_bore_w,
+                )
+                loss = loss + rad_w * rad_loss
+                rad_loss_val = float(rad_loss)
+            rad_snapshot = dict(                        # 監控素材 (參考 pattern 的傳法，交給 monitor 畫)
+                theta=rad_theta.detach().cpu(),
+                pred=rad_pred.detach().cpu(),           # SM 方向圖頭預測 (2, n_theta)
+                real=rad_real_this_epoch,               # 本 epoch 真實 HFSS 方向圖 (快取 epoch 為 None)
+                window_deg=rad_window,
+                floor_db=rad_floor,
             )
-            loss = loss + rad_w * rad_loss
-            rad_loss_val = float(rad_loss)
         if rad_on:
             state.append("rad_loss", rad_loss_val)      # 監控用 (只在 rad run 出現此欄)
         loss.backward()
@@ -370,9 +382,9 @@ def run_training(
         state.append("time", round(time() - epoch_t0, 1))   # 本 epoch 耗時 (HFSS 為主)
         state.save_row()                       # metrics.csv append 一行 (斷點續跑檢查點)
 
-        # on_epoch 收到「本 epoch 快照」：純量指標 + 繪圖素材 (監控端畫 pattern/響應用)
+        # on_epoch 收到「本 epoch 快照」：純量指標 + 繪圖素材 (監控端畫 pattern/響應/方向圖用)
         if on_epoch is not None:
-            on_epoch(epoch, dict(
+            snap = dict(
                 sim_loss=float(state.last("sim_loss")),
                 best_loss=float(state.last("best_loss")),
                 gen_loss=float(state.last("gen_loss")),
@@ -384,7 +396,12 @@ def run_training(
                 response=stack.detach().cpu(),         # 本 epoch 的響應 (labels, 點數)
                 spec=spec,                             # 響應規格 (labels/x/目標曲線)
                 r_feed_painter=r_feed,                 # 饋電連通圖的繪圖器 (plot 最新一筆)
-            ))
+            )
+            if rad_on:                                 # 方向圖 (選用)：純量 + 疊圖素材 (monitor 端畫)
+                snap["rad_loss"] = rad_loss_val
+                if rad_snapshot is not None:
+                    snap["radiation"] = rad_snapshot
+            on_epoch(epoch, snap)
 
     return state
 

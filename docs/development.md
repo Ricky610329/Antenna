@@ -193,6 +193,7 @@ python -m script.verify_radiation --config configs/single_peak.yaml --pattern xx
   - 關鍵洞見：拆最後一層成多頭數值上是 **no-op**（`Linear(64,2N)` ≡ 兩個 `Linear(64,N)`）→ **S11/Gain 不拆**。
   - **trunk 不凍（使用者選擇，先求簡單）**：`train_one_data_rad` 走 `forward_rad`、梯度會流回共用 backbone → 方向圖與 S11/Gain 會經 backbone 互相牽動。要隔離就改凍 trunk（目前**未做**，留作 S11/Gain 退化時的退路）。
 - **訓練接法（`run_training`，全程 `rad_on` 閘住）**：① `build_simulator` 開啟時換 `SinglePortRadSimulator`；② 每筆真實模擬後讀 `simulator.last_radiation`、`train_one_data_rad` 訓方向圖頭；③ 過 `warmup_epochs` 後把 `beam_coverage_loss` 加進 GEN loss。`rad_on=False` → 全部不執行（golden 零漂移）。
+- **監控（TensorBoard，比照 pattern）**：on_epoch 多帶 `rad_loss` 純量 + `radiation` 快照（theta/pred/real/window/floor）。`monitor.py` 記 `loss/rad_loss`（Scalars）＋ `radiation/gain_vs_angle`（Images，有 epoch 滑桿：phi0/phi90 實線=HFSS 真實、虛線=SM 預測，疊 ±window 與 G(0°)−floor_db 線）；`summary.png` 也多一格方向圖。無方向圖實驗這些鍵不存在 → 監控行為不變。
 - **冷啟動解法（Stage 3，待做）**：`harvest_single/dual` **只有 S11/Gain、沒有方向圖** → rad head 線上從零學。做法：按 loss 挑好 pattern
   （per-run `online` SampleStore 已是）→ **只把這批**丟 `SinglePortRadSimulator` 補 phi0/phi90 標籤
   → 存成 `DATASET_PATH/harvest_single_rad`（SampleStore）→ pretrain rad head。比重抽便宜，配 warmup 閘門。

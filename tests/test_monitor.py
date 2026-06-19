@@ -106,3 +106,47 @@ def test_summary_png(tmp_path):
         state.save_row()
     mon.summary(state, tmp_path)
     assert (tmp_path / "summary.png").exists()
+
+
+# ── 方向圖監控 (選用) ───────────────────────────────────────────────────────
+def _rad_metrics(spec):
+    m = _metrics(spec)
+    m["rad_loss"] = 0.3
+    m["radiation"] = dict(theta=torch.linspace(-90, 90, 9),
+                          pred=torch.zeros(2, 9), real=torch.zeros(2, 9),
+                          window_deg=55, floor_db=3)
+    return m
+
+
+def test_radiation_scalar_and_figure_logged():
+    """方向圖實驗：rad_loss 純量 + radiation/gain_vs_angle 圖都有記。"""
+    mon = _bare_monitor(_FakeWriter())
+    mon.on_epoch(1, _rad_metrics(_spec()))
+    assert "loss/rad_loss" in mon.writer.scalars
+    assert "radiation/gain_vs_angle" in mon.writer.figures
+
+
+def test_no_radiation_keys_when_absent():
+    """非方向圖實驗：不該出現 rad_loss / radiation 圖 (回歸保護)。"""
+    mon = _bare_monitor(_FakeWriter())
+    mon.on_epoch(1, _metrics(_spec()))
+    assert "loss/rad_loss" not in mon.writer.scalars
+    assert "radiation/gain_vs_angle" not in mon.writer.figures
+
+
+def test_summary_png_with_radiation(tmp_path):
+    """summary 疊方向圖：_last_radiation 有值時也能產生 summary.png。"""
+    mon = _bare_monitor(None, spec=_spec())
+    mon._last_radiation = dict(theta=torch.linspace(-90, 90, 9),
+                               pred=torch.zeros(2, 9), real=torch.zeros(2, 9),
+                               window_deg=55, floor_db=3)
+    state = RunState(tmp_path, verbose=False)
+    for e in range(1, 4):
+        loss = 4.0 - e
+        h = state.add_pattern(torch.rand(25, 25), torch.rand(2, 17), loss)
+        for k, v in dict(epoch=e, sim_loss=loss, gen_loss=2.0, best_loss=loss,
+                         sim_loss_avg=loss, r_feed=0.5, time=3.0, pattern_hash=h).items():
+            state.append(k, v)
+        state.save_row()
+    mon.summary(state, tmp_path)
+    assert (tmp_path / "summary.png").exists()

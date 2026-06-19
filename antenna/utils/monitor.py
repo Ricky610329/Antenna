@@ -15,6 +15,7 @@ antenna/monitor.py — 訓練監控 (TensorBoard) + 結尾總覽圖。
 import matplotlib
 matplotlib.use("Agg")               # 訓練程序無頭繪圖 (不開視窗)
 import matplotlib.pyplot as plt
+import numpy as np
 from loguru import logger
 
 
@@ -29,6 +30,7 @@ class TrainingMonitor:
         """
         self.image_every = image_every
         self._spec = None               # 從第一次 on_epoch 的快照取得 (供結尾總覽圖用)
+        self._last_radiation = None     # 最近一次方向圖快照 (供結尾總覽圖疊方向圖；無方向圖實驗恆 None)
         self._targets_logged = False
         try:
             from torch.utils.tensorboard import SummaryWriter
@@ -47,9 +49,11 @@ class TrainingMonitor:
     # ── 每 epoch ────────────────────────────────────────────────────────────
     def on_epoch(self, epoch: int, m: dict):
         self._spec = m.get("spec", self._spec)
+        if m.get("radiation") is not None:
+            self._last_radiation = m["radiation"]   # 供結尾 summary 疊方向圖 (即使無 TB 也記)
         if self.writer is None:
             return
-        for group, keys in (("loss", ("sim_loss", "gen_loss", "best_loss")),
+        for group, keys in (("loss", ("sim_loss", "gen_loss", "best_loss", "rad_loss")),
                             ("sched", ("lr", "tau")),
                             ("index", ("r_feed", "time"))):
             for k in keys:
@@ -70,6 +74,11 @@ class TrainingMonitor:
                     "response/sim_vs_target",
                     self._response_figure(self._spec, m["response"]), epoch,
                 )
+            if m.get("radiation") is not None:          # 方向圖 (選用)：gain vs 角度，比照 pattern 存圖
+                self.writer.add_figure(
+                    "radiation/gain_vs_angle",
+                    self._radiation_figure(m["radiation"]), epoch,
+                )
         self.writer.flush()             # 每 epoch 都 flush：TB 端即時可見 (epoch 以分鐘計，開銷可忽略)
 
     # ── 結尾總覽圖 (存進結果夾，與 TB 無關、無 TB 也會產生) ───────────────────
@@ -77,11 +86,13 @@ class TrainingMonitor:
         """依 RunState 的完整歷史畫總覽圖 → <save_dir>/summary.png。
         排版：上排 = 最佳 pattern + 各響應 vs 目標 (依 label 數伸縮)；下排 = loss / r_feed·time / 摘要。"""
         spec = self._spec
+        rad = getattr(self, "_last_radiation", None)     # 有方向圖實驗才畫；否則佈局與原本相同
+        extra = 1 if rad is not None else 0
         losses = state.series("sim_loss")
         best_epoch = state.best_epoch("sim_loss")
         pattern, response = state.pattern_at(best_epoch)
         labels = list(spec.labels)
-        cols = max(3, 1 + len(labels))
+        cols = max(3, 1 + len(labels) + extra)
         fig, axes = plt.subplots(2, cols, figsize=(6 * cols, 9))
 
         axes[0][0].imshow(pattern)                       # ~pattern 是 merge 後的 2D 圖
@@ -93,7 +104,11 @@ class TrainingMonitor:
             ax.plot(x, sim, color="blue", label="Simulation")
             ax.plot(x, spec[label].response.detach().cpu(), "b--", label="Target")
             ax.set_title(label); ax.legend()
-        for n in range(1 + len(labels), cols):
+        off_start = 1 + len(labels)
+        if rad is not None:                              # 方向圖 (最近一筆，非 best epoch)
+            self._draw_radiation_summary(axes[0][off_start], rad)
+            off_start += 1
+        for n in range(off_start, cols):
             axes[0][n].axis("off")
 
         ax_loss = axes[1][0]
@@ -147,3 +162,45 @@ class TrainingMonitor:
             ax.set_title(label); ax.legend()
         fig.tight_layout()
         return fig
+
+    @staticmethod
+    def _radiation_figure(rad: dict):
+        """方向圖 gain vs 角度 (phi0/phi90 各一圖)：實線=HFSS 真實、虛線=SM 預測；
+        疊上 ±window 垂直線與 G(0°)−floor_db 水平線 (主波束覆蓋約束，一眼看達標沒)。"""
+        theta = np.asarray(rad["theta"])
+        pred, real = rad.get("pred"), rad.get("real")
+        window = float(rad.get("window_deg", 55.0))
+        floor = float(rad.get("floor_db", 3.0))
+        bore = int(np.argmin(np.abs(theta)))             # boresight = |θ| 最小的取樣點
+        names = ("phi 0°", "phi 90°")
+        fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+        for i, ax in enumerate(axes):
+            g0 = None
+            if real is not None:
+                r = np.asarray(real[i]); ax.plot(theta, r, color="blue", label="HFSS (real)"); g0 = r[bore]
+            if pred is not None:
+                p = np.asarray(pred[i]); ax.plot(theta, p, color="orange", ls="--", label="SM (pred)")
+                if g0 is None: g0 = p[bore]
+            ax.axvline(-window, color="gray", ls=":"); ax.axvline(window, color="gray", ls=":")
+            if g0 is not None:
+                ax.axhline(g0 - floor, color="red", ls="--", alpha=0.7, label=f"G0-{floor:g}dB")
+            ax.set_title(names[i]); ax.set_xlabel("theta (deg)"); ax.set_ylabel("gain (dB)")
+            ax.legend(fontsize=8)
+        fig.tight_layout()
+        return fig
+
+    @staticmethod
+    def _draw_radiation_summary(ax, rad: dict):
+        """summary.png 用的方向圖小格：phi0/phi90 (優先用真實，沒有才用預測) + window/floor 線。"""
+        theta = np.asarray(rad["theta"])
+        src = rad.get("real") if rad.get("real") is not None else rad.get("pred")
+        window = float(rad.get("window_deg", 55.0))
+        floor = float(rad.get("floor_db", 3.0))
+        bore = int(np.argmin(np.abs(theta)))
+        for i, name in enumerate(("phi0", "phi90")):
+            ax.plot(theta, np.asarray(src[i]), label=name)
+        g0 = float(np.asarray(src[0])[bore])
+        ax.axvline(-window, color="gray", ls=":"); ax.axvline(window, color="gray", ls=":")
+        ax.axhline(g0 - floor, color="red", ls="--", alpha=0.7)
+        ax.set_title("Radiation @28GHz"); ax.set_xlabel("theta (deg)"); ax.set_ylabel("gain (dB)")
+        ax.legend()
