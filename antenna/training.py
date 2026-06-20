@@ -262,9 +262,9 @@ def run_training(
     # SM 線上更新策略：single = 把「最新一筆」擬到收斂 (原樣)；replay = 對最新一筆跑少數步
     # ＋ 從「經驗回放緩衝」再訓一遍 (防 catastrophic forgetting、削掉擬到收斂的暴衝尾巴)。
     # 預設 single → 行為與原樣完全相同 (golden 零漂移)；replay 為 opt-in 改良。
-    sm_mode = cfg.sm_train.get("mode", "single")
-    sm_newest_steps = cfg.sm_train.get("newest_steps", 50)        # replay：對最新一筆跑幾步 (取代擬到死)
-    replay = ReplayBuffer(cfg.sm_train.get("replay_size", 256)) if sm_mode == "replay" else None
+    sm_mode = cfg.sm_train.get("mode", "single")                  # single | replay | dlf
+    sm_newest_steps = cfg.sm_train.get("newest_steps", 50)        # replay/dlf：對最新一筆跑幾步 (取代擬到死)
+    replay = ReplayBuffer(cfg.sm_train.get("replay_size", 256)) if sm_mode in ("replay", "dlf") else None
 
     # 方向圖 (選用，預設 off)：開啟時 SM 已建方向圖頭、simulator 為 SinglePortRadSimulator。
     # 全程用 rad_on 閘住；rad_on=False → 下方所有方向圖分支不執行，行為與原樣完全相同 (golden 零漂移)。
@@ -325,12 +325,22 @@ def run_training(
             result = output_element.simulate()
             sim_loss = result.criterion()
             stack = result.stack()
-            #? SM 線上更新：single = 最新一筆擬到收斂 (原樣)；replay = 最新少數步 ＋ 回放緩衝一遍。
-            if sm_mode == "replay":
-                replay.add(~output_element, stack)              # 收最近樣本 (好+壞都收 → SM 在 G 探索處都準)
+            #? SM 線上更新：single=最新一筆擬到收斂(原樣)；replay=最新少數步＋回放整個緩衝；
+            #  dlf=最新少數步＋只訓「菁英子集」(loss ≤ 累計門檻 λ_t)。緩衝一律「全收」(學長論文 §3.5)。
+            if sm_mode in ("replay", "dlf"):
+                replay.add(~output_element, stack, sim_loss.item())   # 全收 (含 loss；不在寫入端篩)
                 #? 對最新一筆跑少數步 (它＝G 此刻的位置，SM 最需要在那準)，max_epoch 上限避免擬到死
                 smodel.train_one_data(output_element.series, stack, max_epoch=sm_newest_steps, verbose=verbose)
-                smodel.train_by_datas(replay, epochs=1, verbose=verbose)   # 回放一遍 → 防遺忘、削暴衝尾巴
+                if sm_mode == "dlf":
+                    #? DLF：λ_t = 累計真實損失歷史平均 (含本筆)；只取 loss ≤ λ_t 的菁英子集訓 SM。
+                    #  門檻隨訓練自動收緊 → 前期多樣、後期精準 (論文消融 >50% 改善)。
+                    hist = state.series("sim_loss")
+                    lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
+                    elite = replay.elite(lam)
+                    if len(elite) > 0:
+                        smodel.train_by_datas(elite, epochs=1, verbose=verbose)
+                else:                                              # 純 replay：回放整個緩衝
+                    smodel.train_by_datas(replay, epochs=1, verbose=verbose)
             else:
                 #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
                 smodel.train_one_data(output_element.series, stack, verbose=verbose)

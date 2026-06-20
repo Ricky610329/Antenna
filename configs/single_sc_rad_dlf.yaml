@@ -1,0 +1,47 @@
+# 單埠 + SC + 方向圖 + 動態損失過濾 (DLF)  (port=single)
+# 對標 single_sc_rad.yaml：唯一差異 = sm_train.mode: dlf。
+# DLF = 學長論文 §3.5 驗證過的方法（消融比 baseline 改善 >50%）：
+#   緩衝「全收」(不在寫入端篩) + 每輪 SM 重訓時用「累計門檻 λ_t = 歷史真實損失平均」
+#   重新過濾出菁英子集 (loss ≤ λ_t) 來訓 → 門檻隨訓練自動收緊、前期多樣後期精準。
+# 對比：single_sc_rad(mode single=反模式)、single_sc_rad_replay(plain replay 無菁英過濾)。
+name: pixel_single_sc_rad_dlf
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf              # ← 唯一變因：SM 改用 DLF（全收 + 每輪菁英過濾）
+  newest_steps: 50       # 對「最新一筆」跑幾步（取代擬到收斂）
+  replay_size: 256       # 緩衝容量（FIFO，滿了丟最舊）
+
+scheduler:
+  on_plateau: linear
+
+generator: sigmoid
+
+surrogate:
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 55
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

@@ -42,7 +42,7 @@ def test_replay_buffer_fifo_cap():
     """定容 FIFO：滿了丟最舊，留最近 maxlen 筆。"""
     rb = ReplayBuffer(maxlen=3)
     for i in range(5):
-        rb.add(torch.full((2, 2), float(i)), torch.tensor([float(i)]))
+        rb.add(torch.full((2, 2), float(i)), torch.tensor([float(i)]), loss=float(i))
     assert len(rb) == 3
     firsts = [rb[i][0][0, 0].item() for i in range(3)]
     assert firsts == [2.0, 3.0, 4.0]                  # 最舊 0,1 被淘汰
@@ -51,8 +51,19 @@ def test_replay_buffer_fifo_cap():
 def test_replay_buffer_detaches():
     """落地時 detach → 不抓著計算圖。"""
     rb = ReplayBuffer(maxlen=2)
-    rb.add(torch.ones(2, requires_grad=True), torch.zeros(1))
+    rb.add(torch.ones(2, requires_grad=True), torch.zeros(1), loss=0.0)
     assert not rb[0][0].requires_grad
+
+
+def test_replay_buffer_elite_filters_by_loss():
+    """DLF：elite(threshold) 只回傳 loss ≤ threshold 的菁英子集。"""
+    rb = ReplayBuffer(maxlen=10)
+    for i, lo in enumerate([5.0, 1.0, 8.0, 2.0, 9.0]):    # loss 各異
+        rb.add(torch.full((2, 2), float(i)), torch.zeros(1), loss=lo)
+    elite = rb.elite(threshold=3.0)                       # 留 loss ≤ 3 → 第 1(1.0)、3(2.0) 筆
+    assert len(elite) == 2
+    kept = sorted(s[0][0, 0].item() for s in elite)       # pattern 值 = 原 index
+    assert kept == [1.0, 3.0]
 
 
 # ── replay 模式端到端 ───────────────────────────────────────────────────────
@@ -65,6 +76,16 @@ def test_run_training_replay_mode_runs(tmp_path):
     last = state.last("sim_loss")
     assert last == last                                # 非 NaN
     assert int(state.last("epoch")) >= 1
+
+
+def test_run_training_dlf_mode_runs(tmp_path):
+    """mode=dlf：閉迴路跑得起來、走 DLF 菁英過濾分支、無 NaN。"""
+    cfg = load_config(os.path.join(FIX, "single_test.yaml"))
+    cfg.sm_train.update(mode="dlf", newest_steps=5, replay_size=16)
+    state = run_training(cfg, simulator=_Mock(("S11", "Gain")),
+                         record_path=tmp_path, seed=0, verbose=False)
+    last = state.last("sim_loss")
+    assert last == last and int(state.last("epoch")) >= 1
 
 
 def test_config_accepts_replay_and_rad_cap_keys():
