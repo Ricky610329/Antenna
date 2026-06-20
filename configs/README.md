@@ -33,6 +33,7 @@ python train.py configs/single_base.yaml
 | `single_sc_rad_mirror.yaml` | **SC + 方向圖 + 鏡像對稱** | 在 `single_sc_rad` 上 `generator: mirror`（唯一變因） | （新增，對標 `single_sc_rad` 看對稱約束在 rad 前線上是否更快/更好；**需正式機 HFSS**） |
 | `single_sc_rad_replay.yaml` | **SC + 方向圖 + SM 經驗回放** | 在 `single_sc_rad` 上 `sm_train.mode: replay`（唯一變因；最新少數步＋回放整個緩衝取代「擬到收斂」反模式） | （新增，對標 `single_sc_rad` 看防遺忘/削暴衝是否更好；**需正式機 HFSS**） |
 | `single_sc_rad_dlf.yaml` | **SC + 方向圖 + 動態損失過濾 DLF** | 在 `single_sc_rad` 上 `sm_train.mode: dlf`（學長論文 §3.5 驗證法：全收＋每輪用累計門檻 λ_t 篩菁英子集訓） | （新增，對標 `single_sc_rad`／`_replay`；論文消融 >50% 改善；**需正式機 HFSS**） |
+| `single_sc_rad_boundary.yaml` | **DLF + Boundary loss（trust-region）** | 在 `single_sc_rad_dlf` 上 `loss.boundary`（拉 G 回 SM 已見分布；權重待 A/B 調） | （新增，對標 `single_sc_rad_dlf` 看「防 G 鑽 SM 盲區、少白燒 HFSS」是否更快/更好；**需正式機 HFSS**） |
 | `single_tv.yaml` | TV 正則化 + KuoHung SM 暖身 | `loss.total_variation: 0.01`、`surrogate.warmup: "1"` | 3 / 4 |
 | `single_tv50.yaml` | 強 TV | `loss.total_variation: 50` | 7 |
 | `single_island.yaml` | 孤島抑制（強） | `loss.island_suppression: 100` | 8 / 9 |
@@ -57,7 +58,7 @@ python train.py configs/single_base.yaml
 - ~~方向圖 loss 尚未有 config~~ → 已補 `single_sc_rad.yaml`（2026-06-19，Stage 2 整合完成：`radiation:` 區段 + SM rad head + `beam_coverage_loss`）。**僅正式機可跑**（需 HFSS 取方向圖）。
 - **方向圖 rad head 冷啟動**：`harvest_single` 沒有方向圖標籤 → rad head 線上從零學。優化（Stage 3，未做）：收 `harvest_single_rad`（好 pattern 補方向圖標籤）預訓練 rad head，再用 `radiation.offline_dataset` 載入。
 - **方向圖訓練預設凍 trunk**（`radiation.freeze_trunk: true`）：隨機 rad 頭 + 不凍 trunk + 極端 dB target 曾把 S11/Gain backbone 帶歪、爆 NaN。現在 rad 頭只更新自己、rad target 會 clamp（±60dB）、SM 訓練有 NaN 防護網。要放梯度回 backbone 才設 `false`。
-- **SM 線上更新重設計（profiling 找到瓶頸後）**：`train_one_data` 把「最新一筆擬到收斂（≤20000 步）」是 catastrophic-forgetting 反模式、也是速度大頭。`sm_train.mode`：`single`(原樣/反模式) → `replay`(全收＋回放整個緩衝) → `dlf`(全收＋每輪用累計門檻 λ_t 篩菁英子集訓，＝學長論文 §3.5 驗證法、消融 >50%)。opt-in，預設 single 保 golden。`radiation.sm_max_epoch`(rad 擬合上限,1000)。⚠ 舊 `online` store「<平均才收」＝論文點名的 baseline（寫入端篩→偽收斂），replay/dlf 改走「全收」緩衝。未來：prioritized 抽樣、boundary loss（防 G 鑽 SM 盲區）、rad head replay。
+- **SM 線上更新重設計（profiling 找到瓶頸後）**：`train_one_data` 把「最新一筆擬到收斂（≤20000 步）」是 catastrophic-forgetting 反模式、也是速度大頭。`sm_train.mode`：`single`(原樣/反模式) → `replay`(全收＋回放整個緩衝) → `dlf`(全收＋每輪用累計門檻 λ_t 篩菁英子集訓，＝學長論文 §3.5 驗證法、消融 >50%)。opt-in，預設 single 保 golden。`radiation.sm_max_epoch`(rad 擬合上限,1000)。⚠ 舊 `online` store「<平均才收」＝論文點名的 baseline（寫入端篩→偽收斂），replay/dlf 改走「全收」緩衝。`loss.boundary`（已做）＝trust-region 正則（拉 G 回 SM 已見分布、防鑽盲區、少白燒 HFSS；需 replay/dlf 緩衝；權重待 A/B 調）。未來：prioritized 抽樣、SM 不確定性導引探索/聰明重啟（取代 ACP 盲目加熱）、rad head replay。
 
 ## 資料集標記（before rad / *_rad）
 

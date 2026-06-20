@@ -13,6 +13,7 @@ antenna/utils/replay.py — 經驗回放緩衝 (Experience Replay Buffer) + 動�
 """
 from collections import deque
 
+import torch
 from torch.utils.data import Dataset, Subset
 
 
@@ -37,3 +38,9 @@ class ReplayBuffer(Dataset):
         """DLF：回傳 loss ≤ threshold 的菁英子集 (torch Subset)。每輪用當前 λ_t 重新過濾整個緩衝。"""
         idx = [i for i, (_, _, loss) in enumerate(self._buf) if loss <= threshold]
         return Subset(self, idx)
+
+    def patterns(self):
+        """回傳所有已見 pattern 攤平堆疊 (M, N)，供 boundary loss 算 trust-region 距離；空則回 None。"""
+        if not self._buf:
+            return None
+        return torch.stack([p.reshape(-1) for p, _, _ in self._buf])

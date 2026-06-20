@@ -26,7 +26,7 @@ from antenna import zoo
 from antenna.models import Models
 from antenna.losses import FeedReachability, SpectralConnectivityLoss, GapClosingLoss
 from antenna.optim import AdaptiveCyclicalScheduler
-from antenna.losses import custom_loss_minmax, interval_loss, beam_coverage_loss
+from antenna.losses import custom_loss_minmax, interval_loss, beam_coverage_loss, boundary_loss
 from antenna.utils.store import SampleStore
 from antenna.utils.replay import ReplayBuffer
 from antenna.utils.runstate import RunState
@@ -60,7 +60,7 @@ _RAD_DB_CEIL = 60.0
 #! 各區段允許的鍵 (白名單)。鍵打錯「必須報錯」而不是默默用預設值 ——
 #! 歷史教訓：舊 dual 的 island_suppression 鍵名打錯，正則化默默沒開、實驗白跑。
 SECTION_KEYS = {
-    "loss":      {"total_variation", "island_suppression", "spectral_connectivity", "gap_closing"},
+    "loss":      {"total_variation", "island_suppression", "spectral_connectivity", "gap_closing", "boundary"},
     "sm_train":  {"lr", "min_loss", "max_epoch", "mode", "newest_steps", "replay_size"},
     "scheduler": {"on_plateau", "T_0", "T_mult", "lr_min", "temp_max", "temp_min",
                   "warmup_ratio", "patience", "factor"},
@@ -258,6 +258,7 @@ def run_training(
     is_w = cfg.loss.get("island_suppression", 0.0)
     sc_w = cfg.loss.get("spectral_connectivity", 0.0)
     gap_w = cfg.loss.get("gap_closing", 0.0)
+    bnd_w = cfg.loss.get("boundary", 0.0)            # boundary/trust-region：拉 G 回 SM 已見分布 (需 replay/dlf 緩衝)
 
     # SM 線上更新策略：single = 把「最新一筆」擬到收斂 (原樣)；replay = 對最新一筆跑少數步
     # ＋ 從「經驗回放緩衝」再訓一遍 (防 catastrophic forgetting、削掉擬到收斂的暴衝尾巴)。
@@ -265,6 +266,8 @@ def run_training(
     sm_mode = cfg.sm_train.get("mode", "single")                  # single | replay | dlf
     sm_newest_steps = cfg.sm_train.get("newest_steps", 50)        # replay/dlf：對最新一筆跑幾步 (取代擬到死)
     replay = ReplayBuffer(cfg.sm_train.get("replay_size", 256)) if sm_mode in ("replay", "dlf") else None
+    if bnd_w > 0 and replay is None:
+        logger.warning("loss.boundary > 0 但 sm_train.mode 非 replay/dlf（無緩衝定義已見分布）→ boundary loss 停用")
 
     # 方向圖 (選用，預設 off)：開啟時 SM 已建方向圖頭、simulator 為 SinglePortRadSimulator。
     # 全程用 rad_on 閘住；rad_on=False → 下方所有方向圖分支不執行，行為與原樣完全相同 (golden 零漂移)。
@@ -388,6 +391,10 @@ def run_training(
             + sc_w * sc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
             + gap_w * gc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
         )
+        # boundary/trust-region (選用)：拉 G 回 SM 已見分布，防 G 鑽 SM 盲區、白燒 HFSS 評估。
+        # 需 replay/dlf 緩衝定義「已見分布」；bnd_w=0 或無緩衝 → 不加 (golden 零漂移)。
+        if bnd_w > 0 and replay is not None and len(replay) > 1:
+            loss = loss + bnd_w * boundary_loss(output_element.series, replay.patterns())
         # 方向圖 loss (選用)：經方向圖頭可微 → 加進 GEN loss 一起反傳。
         # 有方向圖資料就先「預測一次」(供監控疊圖)；但 warmup_epochs 內先不讓它進 loss
         # (方向圖頭還在冷啟動，避免雜訊梯度把 G 帶歪)。

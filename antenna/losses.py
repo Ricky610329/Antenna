@@ -605,3 +605,27 @@ def beam_coverage_loss(
     if reduction == "mean":
         return floor_deficit.mean() + boresight_weight * boresight_excess.mean()
     return floor_deficit.sum() + boresight_weight * boresight_excess.sum()
+
+
+def boundary_loss(pattern: Tensor, seen: Tensor) -> Tensor:
+    """
+    邊界損失 (trust region)：懲罰「生成 pattern 偏離 SM 已見訓練分布」的距離。
+
+    動機 (Neural Adjoint 文獻最大改進)：G 靠「下降凍住的 SM 預測 loss」優化 pattern；SM 只在
+    見過資料的地方準。沒有此項，G 會鑽到 SM 從沒見過的區域 (SM 外推、瞎掰好分數)，
+    產生「SM 說好、HFSS 說爛」的設計 → 每個這種設計都白燒一次昂貴 HFSS 評估。此項把 G 拉回
+    SM 真的懂的鄰域 → 少浪費評估 (＝加速)。NA 原版是連續參數的 box；我們是二元 pattern，
+    改用「與最近一個已見 pattern 的距離」當邊界訊號。
+
+    :param pattern: 當前生成的 pattern (攤平，帶梯度)，shape (N,)。
+    :param seen:    SM 已見的 pattern (攤平、detach)，shape (M, N)。通常＝replay 緩衝。
+    :return: 純量 loss＝與「最近一個『不同的』已見 pattern」的均方距離 (可微，梯度拉 pattern 回鄰域)。
+    """
+    if seen is None or seen.numel() == 0:
+        return pattern.new_zeros(())
+    seen = seen.to(device=pattern.device, dtype=pattern.dtype)
+    d = ((pattern.unsqueeze(0) - seen) ** 2).mean(dim=1)   # (M,) 與每個已見 pattern 的 MSE
+    d = d[d > 1e-9]                                         # 排除與自己相同的那筆 (距離 0；current 可能已在緩衝)
+    if d.numel() == 0:
+        return pattern.new_zeros(())
+    return d.min()                                         # 與最近一個已見的距離

@@ -1,0 +1,48 @@
+# 單埠 + SC + 方向圖 + DLF + Boundary loss  (port=single)
+# 對標 single_sc_rad_dlf.yaml：唯一差異 = loss.boundary（trust-region 正則）。
+# Boundary loss = 拉 G 回「SM 已見的訓練分布」(replay 緩衝)：防 G 鑽 SM 盲區、產生
+#   「SM 說好、HFSS 說爛」的設計 → 少白燒昂貴 HFSS 評估（＝加速）。Neural Adjoint 文獻最大改進。
+# ⚠ boundary 需要 replay/dlf 模式的緩衝來定義「已見分布」，故與 dlf 一起開。
+# loss.boundary 的權重需 A/B 調：太大會壓死探索（只敢生近緩衝的圖）、太小沒效果。0.1 是起手、待調。
+name: pixel_single_sc_rad_boundary
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1          # ← 唯一變因：trust-region 正則（拉 G 回 SM 已見分布；權重待 A/B 調）
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf             # boundary 需要緩衝 → 配 dlf（全收 + 菁英過濾）
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator: sigmoid
+
+surrogate:
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 55
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

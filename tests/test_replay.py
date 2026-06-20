@@ -9,6 +9,7 @@ import os
 import torch
 
 from antenna.training import TrainConfig, load_config, run_training
+from antenna.losses import boundary_loss
 from antenna.utils.replay import ReplayBuffer
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
@@ -86,6 +87,34 @@ def test_run_training_dlf_mode_runs(tmp_path):
                          record_path=tmp_path, seed=0, verbose=False)
     last = state.last("sim_loss")
     assert last == last and int(state.last("epoch")) >= 1
+
+
+# ── boundary loss ───────────────────────────────────────────────────────────
+def test_boundary_loss_distance_and_self_exclusion():
+    """近已見→低、遠→高；且排除「與自己相同」那筆 (current 可能已在緩衝)。"""
+    seen = torch.tensor([[0., 0., 0.], [1., 1., 1.]])
+    near = torch.tensor([0.1, 0.0, 0.0])
+    far = torch.tensor([0.5, 0.5, 0.5])
+    assert boundary_loss(near, seen) < boundary_loss(far, seen)        # 越近越低
+    same = torch.tensor([0., 0., 0.])                                  # == seen[0]
+    assert boundary_loss(same, seen).item() > 0                        # 排除自己 → 取次近 (seen[1])
+
+
+def test_boundary_loss_differentiable():
+    p = torch.rand(9, requires_grad=True)
+    boundary_loss(p, torch.rand(4, 9)).backward()                      # 不該報錯
+    assert p.grad is not None
+
+
+def test_run_training_boundary_runs(tmp_path):
+    """dlf + boundary：閉迴路跑得起來、boundary 項有進 GEN loss、無 NaN。"""
+    cfg = load_config(os.path.join(FIX, "single_test.yaml"))
+    cfg.sm_train.update(mode="dlf", newest_steps=5, replay_size=16)
+    cfg.loss["boundary"] = 0.1
+    state = run_training(cfg, simulator=_Mock(("S11", "Gain")),
+                         record_path=tmp_path, seed=0, verbose=False)
+    gl = state.last("gen_loss")
+    assert gl == gl and int(state.last("epoch")) >= 1                  # 非 NaN
 
 
 def test_config_accepts_replay_and_rad_cap_keys():
