@@ -42,3 +42,4 @@ radiation:
   warmup_epochs: 30       # 前 30 epoch 只訓 rad head、不讓它影響 GEN（防冷啟動雜訊帶歪 G）
   n_theta: 181            # rad head 輸出角度點數（3D 球 θ −180~180 step 2° = 181；需與實際 CSV 一致）
   freeze_trunk: true      # 凍 trunk：方向圖頭只更新自己，不污染 S11/Gain backbone（隨機 rad 頭曾把 trunk 帶歪→S11/Gain 爆 NaN）
+  sm_max_epoch: 1000      # rad head 擬合上限（凍 trunk 下單層 Linear 擬不到 0.1、會撞滿 20000 純浪費；profiling 量到佔 23.6%）
