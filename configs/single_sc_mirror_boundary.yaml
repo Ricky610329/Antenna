@@ -1,0 +1,37 @@
+# 單埠 + SC + 鏡像對稱 + DLF + Boundary loss（無方向圖）  (port=single)
+# mirror 的進階版：對標 single_sc_mirror，多加「DLF（菁英經驗回放）+ boundary（trust-region）」。
+#   - 沒有 radiation（不開方向圖；SM 無 rad head → old_sm.pth 照常 strict 載入）。
+#   - DLF（sm_train.mode: dlf）：全收 + 每輪用累計門檻篩菁英子集訓 SM（學長論文 §3.5、>50%）。
+#   - Boundary（loss.boundary）：拉 G 回 SM 已見分布、防鑽盲區、少白燒 HFSS（需 DLF 緩衝）。
+# 對標：single_sc_mirror（純 SC+mirror）→ 看「進階 SM 訓練」疊在對稱生成器上是否更快/更好。
+name: pixel_single_sc_mirror_boundary
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1          # trust-region：拉 G 回 SM 已見分布（權重待 A/B 調）
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf             # DLF：全收 + 每輪菁英過濾（boundary 也靠這個緩衝）
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator: mirror        # 左右鏡像對稱（MLP 出半邊 25×13→flip 成 25×25）
+
+surrogate:
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
