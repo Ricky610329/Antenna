@@ -100,6 +100,33 @@ def test_latent_generator(spec):
     assert torch.allclose(out_a, out_b)                   # 輸入無關 → 同 z 同輸出 (證明忽略輸入)
 
 
+def test_mirror_generator_symmetric(spec):
+    """MirrorGenerator：輸出 625、reshape 25x25 後左右鏡像對稱（= 等於自己的欄翻轉）。"""
+    from antenna.models import MirrorGenerator
+    g = MirrorGenerator(spec.size(flatten=True), 625)
+    out = g(torch.randn(spec.size(flatten=True)))
+    assert out.shape == (625,)
+    m = out.reshape(25, 25)
+    assert torch.allclose(m, m.flip(dims=[1]), atol=1e-6)        # 對中軸欄左右對稱
+
+
+def test_mirror_generator_half_width_and_diff(spec):
+    """MLP 末層只出半邊 (25×13=325 → 搜尋空間砍半)；且可微（grad 流回參數）。"""
+    from antenna.models import MirrorGenerator
+    g = MirrorGenerator(spec.size(flatten=True), 625)
+    last = _linears(g.fc_patch)[-1]
+    assert last.out_features == 25 * 13
+    g(torch.randn(spec.size(flatten=True))).sum().backward()      # 不該報錯
+    assert any(p.grad is not None for p in g.parameters())
+
+
+def test_build_generator_mirror(spec):
+    """config generator: mirror → build_generator 產生 MirrorGenerator（zoo 名字驅動）。"""
+    from antenna.models import MirrorGenerator
+    cfg = _single_cfg(); cfg.generator = {"name": "mirror"}
+    assert isinstance(build_generator(cfg, spec), MirrorGenerator)
+
+
 def test_unknown_model_name_rejected(spec):
     """zoo 沒有的名字 → 明確報錯 (列出可用名單)。"""
     cfg = _single_cfg(); cfg.generator = {"name": "transformer"}

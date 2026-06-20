@@ -1,0 +1,32 @@
+# 單埠 + 左右鏡像對稱生成器  (port=single)
+# 對標 single_base.yaml：唯一差異 = generator: mirror。
+# 用途：A/B —— G 只決定半邊、可微鏡像成完整圖 → 天生左右對稱 + 搜尋空間砍半，
+#       看「對稱約束做進生成器」是否比自由 G 更快/更好（學長舊法是資料增強，只偏向對稱、不保證）。
+# 物理前提：single feed 在底部中央 (x∈[10,15]、對稱於中軸欄 12) → 左右對稱自洽。
+name: pixel_single_mirror
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  total_variation: 0.0
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+generator: mirror             # ← 唯一變因：zoo 的 MirrorGenerator（MLP 出半邊 25×13→flip 成 25×25）
+
+surrogate:                    # SM 與 base 相同（無 rad head → 可照常 strict 載 old_sm.pth）
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }

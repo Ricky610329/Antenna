@@ -79,3 +79,32 @@ class LatentGenerator(SigmoidGenerator):
         #? 忽略傳入的目標向量 (run_training 仍會餵 spec.concat()，這裡丟掉)，改用自有 z。
         return self.fc_patch(self.z)
 
+
+###* MirrorGenerator — 左右鏡像對稱版 (對稱性做進「生成」而非資料增強) ###
+#? 動機：single port 在底部中央 → 結構對垂直中線左右對稱。與其讓 G 自由輸出 625、靠運氣逼近
+#? 對稱 (學長舊法是把鏡像做成資料增強，只「偏向」對稱、不保證)，不如直接讓 G「只決定半邊」，
+#? 再以可微的 flip+cat 鏡像成完整圖樣 —— 天生精確對稱 + 搜尋空間砍半 (325 vs 625)。
+#? 鏡像欄的梯度會從左右兩側自然累加回同一個半邊 logit (標準 autograd)。沿用 SigmoidGenerator
+#? 的 MLP+BiScaleNorm 身體，只把輸出維度改成「半邊」、forward 多一步鏡像。
+class MirrorGenerator(SigmoidGenerator):
+    """生成器 G：左右鏡像對稱。MLP 只出半邊 logits (含中軸欄)，forward 鏡像成完整 pattern。
+
+    對稱軸＝垂直中線；奇數寬 25 → 半邊 13 欄 (含中軸第 12 欄，鏡像時不重複)。
+    out_dim 須為完全平方 (方形 pattern)。run_training 不必改：仍拿到 out_dim 個對稱 logits。
+    """
+    def __init__(self, in_dim, out_dim, hidden=(1024, 1024)):
+        side = int(round(out_dim ** 0.5))
+        if side * side != out_dim:
+            raise ValueError(f"MirrorGenerator 目前只支援方形 pattern (out_dim 須為完全平方)，得到 {out_dim}")
+        self.side = side                       #? 一邊的像素數 (25)
+        self.half_cols = (side + 1) // 2        #? 半邊欄數，含中軸：奇數 25 → 13
+        super().__init__(in_dim, side * self.half_cols, hidden=hidden)   #? MLP 只出半邊 (25×13=325)
+
+    def forward(self, input) -> Tensor:
+        half = self.fc_patch(input)                                          #? (..., side*half_cols)
+        half = half.reshape(*half.shape[:-1], self.side, self.half_cols)     #? (..., side, half_cols)
+        #? 鏡像欄＝半邊「不含中軸」的部分左右翻轉 (中軸欄不重複)，接到右側 → 完整對稱圖
+        mirror = half[..., :self.side - self.half_cols].flip(dims=[-1])      #? (..., side, side-half_cols)
+        full = torch.cat([half, mirror], dim=-1)                            #? (..., side, side)
+        return full.reshape(*full.shape[:-2], -1)                           #? (..., side*side)
+
