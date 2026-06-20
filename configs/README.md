@@ -37,6 +37,7 @@ python train.py configs/single_base.yaml
 | `single_island1.yaml` | 孤島抑制（弱） | `loss.island_suppression: 1` | 10 |
 | `single_peak.yaml` | ACP plateau 策略 | `scheduler.on_plateau: peak` | 6 |
 | `single_mirror.yaml` | **左右鏡像對稱生成器** | `generator: mirror`（MLP 出半邊 25×13→flip 成 25×25；對稱+搜尋空間砍半） | （新增，對標 base 看對稱約束是否更快/更好；學長舊法是資料增強、不保證對稱） |
+| `single_sc_mirror.yaml` | **SC + 鏡像對稱** | 在 `single_sc` 上 `generator: mirror`（唯一變因） | （新增，對標 `single_sc` 看對稱約束在 SC 上是否更快/更好） |
 
 ## 雙埠 dual（對標 `dual_base.yaml`）
 

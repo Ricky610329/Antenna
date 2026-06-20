@@ -1,0 +1,32 @@
+# 單埠 + SC（論文主方法）+ 左右鏡像對稱生成器  (port=single)
+# 對標 single_sc.yaml：唯一差異 = generator: mirror。
+# 用途：A/B —— 在 SC 之上，把對稱約束做進生成器（半邊→flip），看天生對稱 + 搜尋空間砍半
+#       能否讓 SC 版收斂更快/更好。物理前提：single feed 在底部中央 → 左右對稱自洽。
+name: pixel_single_sc_mirror
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005   # 論文主方法（與 single_sc 相同）
+                                  # ⚠ 計算重：625×625 特徵分解 / epoch
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+generator: mirror             # ← 唯一變因：MLP 出半邊 25×13→flip 成 25×25（對稱+搜尋空間砍半）
+
+surrogate:
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
