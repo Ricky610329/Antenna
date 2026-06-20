@@ -1,0 +1,44 @@
+# 單埠 + SC + 方向圖，改用「自訓的 SM 初始化」 sm_harvest.pth  (port=single)
+# 對標 single_sc_rad.yaml：唯一差異 = surrogate.pretrained 從 old_sm.pth 換成 sm_harvest.pth。
+# 背景：量過 old_sm.pth 對 harvest 資料預測 ≈ 隨機 (中位 MSE 38、吐 +40/-88dB 亂值)，等於沒暖啟動。
+#   sm_harvest.pth = script/train_sm_offline.py 在 harvest_single 上自訓 (val MSE 13.2、準 ~3 倍)。
+# 用途：A/B —— 看「真正 fits 我們資料的初始化」能否讓早期收斂更快、少浪費早期 HFSS 評估。
+# 註：sm_harvest.pth 是 (2,17) 無 rad head → rad 版以 strict=False 部分載入 (與 old_sm.pth 同路徑)。
+name: pixel_single_sc_rad_smharvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+generator: sigmoid
+
+surrogate:
+  pretrained: sm_harvest.pth     # ← 唯一變因：自訓初始化 (對標 old_sm.pth)
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 55
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000
