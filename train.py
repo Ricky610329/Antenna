@@ -23,7 +23,8 @@ config.device = "cpu"
 
 import torch
 from antenna import AntennaPattern, get_result_path
-from antenna.utils.monitor import TrainingMonitor
+from antenna.utils.monitor import TrainingMonitor, launch_tensorboard
+from antenna.utils.web import get_local_ip
 from antenna.training import load_config, build_simulator, run_training
 from antenna.utils.store import SampleStore
 
@@ -99,6 +100,16 @@ def main(yaml_path):
     #*   tensorboard --logdir "T:\...\result" 即可並排監看全部)
     monitor = TrainingMonitor(RESULT_PATH / "tb")
     monitor.log_config(open(yaml_path, encoding="utf-8").read())   # config 原文進 TB Text 分頁
+
+    #* 開訓即自動起監控面板 (TensorBoard) + 印可點連結 → 不必另開 terminal 追蹤。
+    if launch_tensorboard(RESULT_PATH):
+        ip = get_local_ip()
+        logger.success("─" * 56)
+        logger.success("  監控面板已就緒，點連結看即時狀況 (免另開 terminal)：")
+        logger.success("    本機 / RDP 內 → http://localhost:6006")
+        logger.success(f"    從你的電腦看  → http://{ip}:6006")
+        logger.success(f"    本次 run：{RESULT_PATH.stem}")
+        logger.success("─" * 56)
 
     def on_epoch(epoch, m):
         logger.info(

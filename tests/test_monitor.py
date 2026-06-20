@@ -9,7 +9,8 @@ import sys
 import torch
 
 from antenna import TargetResponse
-from antenna.utils.monitor import TrainingMonitor
+import antenna.utils.monitor as monitor_mod
+from antenna.utils.monitor import TrainingMonitor, launch_tensorboard
 from antenna.utils.runstate import RunState
 
 
@@ -132,6 +133,33 @@ def test_no_radiation_keys_when_absent():
     mon.on_epoch(1, _metrics(_spec()))
     assert "loss/rad_loss" not in mon.writer.scalars
     assert "radiation/gain_vs_angle" not in mon.writer.figures
+
+
+# ── 自動起監控面板 (launch_tensorboard) ─────────────────────────────────────
+def test_launch_tensorboard_reuses_existing(monkeypatch):
+    """port 已被占用 (先前 TB 在跑) → 不重複啟動、直接回 True。"""
+    monkeypatch.setattr(monitor_mod, "_port_in_use", lambda port: True)
+    calls = []
+    monkeypatch.setattr(monitor_mod.subprocess, "Popen", lambda *a, **k: calls.append(1))
+    assert launch_tensorboard("/x", 6006) is True
+    assert not calls                                   # 沒重複起 TB
+
+
+def test_launch_tensorboard_starts_when_free(monkeypatch):
+    """port 空 + 有裝 tensorboard → Popen 起一個、回 True。"""
+    monkeypatch.setattr(monitor_mod, "_port_in_use", lambda port: False)
+    monkeypatch.setattr(monitor_mod.importlib.util, "find_spec", lambda name: object())
+    calls = []
+    monkeypatch.setattr(monitor_mod.subprocess, "Popen", lambda *a, **k: calls.append((a, k)))
+    assert launch_tensorboard("/x", 6006) is True
+    assert len(calls) == 1
+
+
+def test_launch_tensorboard_nonfatal_without_tb(monkeypatch):
+    """沒裝 tensorboard → 回 False、不報錯 (絕不擋訓練)。"""
+    monkeypatch.setattr(monitor_mod, "_port_in_use", lambda port: False)
+    monkeypatch.setattr(monitor_mod.importlib.util, "find_spec", lambda name: None)
+    assert launch_tensorboard("/x", 6006) is False
 
 
 def test_summary_png_with_radiation(tmp_path):

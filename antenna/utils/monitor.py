@@ -12,11 +12,47 @@ antenna/monitor.py — 訓練監控 (TensorBoard) + 結尾總覽圖。
 - 舊腳本逐 epoch 2x3 圖的內容對照：loss/lr/tau/r_feed/耗時 → Scalars；
   pattern+饋電連通、響應 vs 目標 → Images (有 epoch 滑桿)。
 """
+import importlib.util
+import socket
+import subprocess
+import sys
+
 import matplotlib
 matplotlib.use("Agg")               # 訓練程序無頭繪圖 (不開視窗)
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
+
+
+def _port_in_use(port: int) -> bool:
+    """該 port 是否已有人服務 (多半是先前已起的 TensorBoard)。"""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.3)
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
+def launch_tensorboard(logdir, port: int = 6006) -> bool:
+    """背景啟動 TensorBoard 指向 logdir；回傳「該 port 是否有監控面板可看」。
+
+    供 train.py 開訓時自動起面板 + 印連結 (使用者不必另開 terminal 跑 tensorboard)。
+    - port 已被占用 → 視為已有 TB 在跑，不重複啟動、直接回 True。
+    - 未安裝 tensorboard / 啟動失敗 → 記 warning 並回 False，「絕不」阻擋訓練。
+    """
+    if _port_in_use(port):
+        return True
+    if importlib.util.find_spec("tensorboard") is None:
+        logger.warning("未安裝 tensorboard → 無法自動起監控面板 (pip install tensorboard)")
+        return False
+    try:
+        subprocess.Popen(
+            [sys.executable, "-m", "tensorboard.main",
+             "--logdir", str(logdir), "--port", str(port), "--bind_all"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        return True
+    except Exception as e:
+        logger.warning(f"TensorBoard 自動啟動失敗 (可手動 tensorboard --logdir): {e}")
+        return False
 
 
 class TrainingMonitor:
