@@ -1,0 +1,45 @@
+# 單埠 + SC + 方向圖 loss + 左右鏡像對稱生成器  (port=single)
+# 對標 single_sc_rad.yaml：唯一差異 = generator: mirror。
+# 用途：A/B —— 在「SC + 方向圖」前線上，把對稱約束做進生成器（半邊→flip），
+#       看天生對稱 + 搜尋空間砍半，能否讓 rad 版收斂更快/主波束更好。
+# 物理前提：single feed 在底部中央（x∈[10,15] 對稱於中軸欄 12）→ 左右對稱自洽；
+#           對稱結構的方向圖（phi0/phi90）照樣由 SM rad head + beam_coverage_loss 處理。
+name: pixel_single_sc_rad_mirror
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005   # 與 single_sc_rad 相同（論文主方法）
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+generator: mirror             # ← 唯一變因：MLP 出半邊 25×13→flip 成 25×25（對稱+搜尋空間砍半）
+
+surrogate:
+  # 方向圖版 SM 多 head_rad，但 trunk/freq head 與 old_sm.pth 同名同形 →
+  # prepare_models 以 strict=False 部分載入 + 暖啟動 optimizer（與 single_sc_rad 同）。
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single   # 後備：pretrained 存在時不會用到
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true            # 開啟方向圖：SinglePortRadSimulator + SM rad head + beam_coverage_loss
+  weight: 1.0
+  window_deg: 55
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true      # 凍 trunk（rad 頭不污染 S11/Gain backbone）

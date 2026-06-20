@@ -156,6 +156,23 @@ def test_radiation_loop_runs_and_logs_rad_loss(tmp_path):
     assert rl == rl and rl >= 0.0, "rad_loss 應為非負且非 NaN"
 
 
+def test_radiation_loop_with_mirror_generator(tmp_path):
+    """mirror + rad 整合：對稱生成器在方向圖閉迴路裡跑得起來、rad_loss 有記、pattern 左右對稱。"""
+    cfg = TrainConfig(
+        name="x", port="single", epochs=2, patience=50,
+        sm_train={"min_loss": 0.5, "max_epoch": 3},
+        generator={"name": "mirror"},
+        targets=SINGLE_TARGETS,
+        radiation={"enable": True, "n_theta": 9, "warmup_epochs": 0},
+    )
+    sim = _MockRadSim(("S11", "Gain"), n_theta=9)
+    state = run_training(cfg, simulator=sim, record_path=tmp_path, seed=0, verbose=False)
+    assert int(state.last("epoch")) == 2
+    assert state.last("rad_loss", None) is not None                 # rad 分支有跑
+    patt, _ = state.pattern_at(state.best_epoch("sim_loss"))         # merged 25x25 (含對稱 feed)
+    assert torch.equal(patt, patt.flip(dims=[1]))                    # 整張左右對稱（撐過二值化+feed）
+
+
 # ── 部分載入：舊 sm.pth (無 head_rad) → strict=False 暖啟動 rad 版 SM ──────────
 #    這修的是「HFSS 還沒開始收集資料就卡住」的根因：rad 版 SM 不能用 pretrained 時，
 #    會退回 offline_dataset 在數萬筆上從零預訓練 → 卡死。strict=False 讓它能秒載暖啟動。
