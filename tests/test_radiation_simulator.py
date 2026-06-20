@@ -35,3 +35,19 @@ def test_rad_simulator_recipe_matches_screenshots():
     assert SinglePortRadSimulator.RAD_SPHERE == "3D"     # 沿用父類別 3D 無限球面
     # __call__ 確實被覆寫 (在子類別自己身上，而非繼承父類別的)
     assert "SinglePortRadSimulator" in SinglePortRadSimulator.__call__.__qualname__
+
+
+def test_parse_rad_csv_reads_theta_column_not_freq():
+    """回歸：HFSS CSV 欄位 = [Freq, Phi, Theta, dB(GainTotal)]，theta 在第 2 欄、不是第 0 欄。
+    (踩過的雷：寫死 iloc[:,0] 把 Freq(全 28) 當成 theta → 方向圖 x 軸塌成一點、整個畫錯。)"""
+    import pandas as pd
+    from antenna.patch.patch_simulator.single_port_rad import _parse_rad_csv
+    df = pd.DataFrame({
+        "Freq [GHz]": [28, 28, 28],
+        "Phi [deg]": [0, 0, 0],
+        "Theta [deg]": [-180, 0, 180],
+        "dB(GainTotal) []": [-12.0, 3.5, -11.0],
+    })
+    theta, gain = _parse_rad_csv(df)
+    assert list(theta) == [-180.0, 0.0, 180.0]           # 抓到 Theta 欄 (非 Freq 的全 28)
+    assert list(gain) == [-12.0, 3.5, -11.0]

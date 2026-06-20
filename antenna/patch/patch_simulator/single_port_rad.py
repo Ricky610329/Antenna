@@ -22,6 +22,16 @@ from torch import Tensor, tensor
 from .single_port import SinglePortSimulator
 
 
+def _parse_rad_csv(df):
+    """從 HFSS Far Fields 匯出的 CSV 取 (theta_deg, gain_db)，依「欄名」抓、不靠欄位順序。
+    HFSS 匯出欄位是 [Freq, Phi, Theta, dB(GainTotal)] —— theta 不在第 0 欄 (第 0 欄是 Freq、
+    全 28GHz)！寫死 iloc[:,0] 會把 Freq 當 theta、方向圖整個畫錯 (踩過的雷)。"""
+    theta_col = next(c for c in df.columns if "Theta" in c)
+    gain_col = next(c for c in df.columns if "GainTotal" in c)
+    return (np.asarray(df[theta_col].values, dtype=float),
+            np.asarray(df[gain_col].values, dtype=float))
+
+
 class SinglePortRadSimulator(SinglePortSimulator):
     """單埠 HFSS 模擬器 + 方向圖萃取 (繼承自 SinglePortSimulator)。
 
@@ -94,11 +104,8 @@ class SinglePortRadSimulator(SinglePortSimulator):
             )
             oModule.ExportToFile(report_name, csv_path, False)
 
-            #* 讀回：第 0 欄 = Theta(deg)，最後一欄 = dB(GainTotal)。
-            #? 取 iloc[:, -1] 而非寫死欄號：避免 HFSS 因 context 欄數不同造成的欄位偏移。
-            df = read_csv(csv_path)
-            theta_vals = np.asarray(df.iloc[:, 0].values, dtype=float)
-            gain_vals = np.asarray(df.iloc[:, -1].values, dtype=float)
+            #* 讀回：依欄名抓 Theta / dB(GainTotal) (見 _parse_rad_csv 的踩雷說明)。
+            theta_vals, gain_vals = _parse_rad_csv(read_csv(csv_path))
 
             if radiation["theta"] is None:
                 radiation["theta"] = tensor(theta_vals.tolist())

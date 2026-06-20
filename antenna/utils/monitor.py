@@ -201,25 +201,30 @@ class TrainingMonitor:
 
     @staticmethod
     def _radiation_figure(rad: dict):
-        """方向圖 gain vs 角度 (phi0/phi90 各一圖)：實線=HFSS 真實、虛線=SM 預測；
-        疊上 ±window 垂直線與 G(0°)−floor_db 水平線 (主波束覆蓋約束，一眼看達標沒)。"""
+        """方向圖 gain vs theta (phi0/phi90 各一圖)，仿「響應 vs 目標」風格：
+        SM 預測 = 藍實線 (Simulation)、HFSS 真實 = 藍虛線 (Target；即 rad head 要學的標籤)。
+        疊 ±window 與 G(0°)−floor_db 線 (主波束覆蓋約束，一眼看達標沒)。"""
         theta = np.asarray(rad["theta"])
+        order = np.argsort(theta)                        # 依 theta 排序再畫 (防 HFSS 匯出順序造成鋸齒)
+        theta = theta[order]
         pred, real = rad.get("pred"), rad.get("real")
         window = float(rad.get("window_deg", 55.0))
         floor = float(rad.get("floor_db", 3.0))
-        bore = int(np.argmin(np.abs(theta)))             # boresight = |θ| 最小的取樣點
-        names = ("phi 0°", "phi 90°")
+        bore = int(np.argmin(np.abs(theta)))             # boresight = |θ| 最小的取樣點 (≈0°)
+        names = ("phi 0° (E-plane)", "phi 90° (H-plane)")
         fig, axes = plt.subplots(1, 2, figsize=(12, 4))
         for i, ax in enumerate(axes):
             g0 = None
-            if real is not None:
-                r = np.asarray(real[i]); ax.plot(theta, r, color="blue", label="HFSS (real)"); g0 = r[bore]
             if pred is not None:
-                p = np.asarray(pred[i]); ax.plot(theta, p, color="orange", ls="--", label="SM (pred)")
-                if g0 is None: g0 = p[bore]
-            ax.axvline(-window, color="gray", ls=":"); ax.axvline(window, color="gray", ls=":")
+                p = np.asarray(pred[i])[order]
+                ax.plot(theta, p, color="blue", label="SM (pred)"); g0 = p[bore]
+            if real is not None:
+                r = np.asarray(real[i])[order]
+                ax.plot(theta, r, "b--", label="HFSS (real/target)"); g0 = r[bore]
+            ax.axvline(-window, color="gray", ls=":", alpha=0.6)
+            ax.axvline(window, color="gray", ls=":", alpha=0.6)
             if g0 is not None:
-                ax.axhline(g0 - floor, color="red", ls="--", alpha=0.7, label=f"G0-{floor:g}dB")
+                ax.axhline(g0 - floor, color="red", ls="--", alpha=0.5, label=f"G0-{floor:g}dB")
             ax.set_title(names[i]); ax.set_xlabel("theta (deg)"); ax.set_ylabel("gain (dB)")
             ax.legend(fontsize=8)
         fig.tight_layout()
@@ -229,13 +234,14 @@ class TrainingMonitor:
     def _draw_radiation_summary(ax, rad: dict):
         """summary.png 用的方向圖小格：phi0/phi90 (優先用真實，沒有才用預測) + window/floor 線。"""
         theta = np.asarray(rad["theta"])
+        order = np.argsort(theta); theta = theta[order]   # 依 theta 排序再畫
         src = rad.get("real") if rad.get("real") is not None else rad.get("pred")
         window = float(rad.get("window_deg", 55.0))
         floor = float(rad.get("floor_db", 3.0))
         bore = int(np.argmin(np.abs(theta)))
         for i, name in enumerate(("phi0", "phi90")):
-            ax.plot(theta, np.asarray(src[i]), label=name)
-        g0 = float(np.asarray(src[0])[bore])
+            ax.plot(theta, np.asarray(src[i])[order], label=name)
+        g0 = float(np.asarray(src[0])[order][bore])
         ax.axvline(-window, color="gray", ls=":"); ax.axvline(window, color="gray", ls=":")
         ax.axhline(g0 - floor, color="red", ls="--", alpha=0.7)
         ax.set_title("Radiation @28GHz"); ax.set_xlabel("theta (deg)"); ax.set_ylabel("gain (dB)")
