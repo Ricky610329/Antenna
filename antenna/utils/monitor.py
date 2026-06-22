@@ -13,6 +13,8 @@ antenna/monitor.py — 訓練監控 (TensorBoard) + 結尾總覽圖。
   pattern+饋電連通、響應 vs 目標 → Images (有 epoch 滑桿)。
 """
 import importlib.util
+import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -58,6 +60,25 @@ def launch_tensorboard(logdir, port: int = 6006, max_scan: int = 20):
             return None
     logger.warning(f"port {port}~{port + max_scan - 1} 都被占用 → 沒起新的 TB 面板 (可手動指定 port)")
     return None
+
+
+def seed_local_tb(local_dir, source_dir):
+    """開訓時把 source_dir(NAS 既有事件檔) 同步到 local_dir(本機，給 TB tail)。
+
+    為何需要：續跑/重開機後本機暫存可能沒有之前的事件檔 → TB(tail 本機) 會看不到舊進度
+    (現行 run 看不到之前跑的結果)。NAS 是歷史源頭：**清空 local 再從 NAS 整包複製** →
+    TB 看得到續跑前的全部進度；『清空再複製』也避免本機殘留舊檔與 NAS mirror 重複計步。
+    fault-tolerant：失敗只 warning、不影響訓練 (頂多 TB 看不到舊進度)。
+    """
+    try:
+        if os.path.isdir(local_dir):
+            shutil.rmtree(local_dir)
+        os.makedirs(local_dir, exist_ok=True)
+        if os.path.isdir(str(source_dir)):
+            shutil.copytree(str(source_dir), local_dir, dirs_exist_ok=True)
+    except Exception as e:
+        logger.warning(f"本機 tb 同步 NAS 既有進度失敗（不影響訓練，TB 可能看不到舊進度）：{e}")
+        os.makedirs(local_dir, exist_ok=True)
 
 
 class _FanoutWriter:

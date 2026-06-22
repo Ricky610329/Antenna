@@ -25,7 +25,7 @@ config.device = "cpu"
 
 import torch
 from antenna import AntennaPattern, get_result_path
-from antenna.utils.monitor import TrainingMonitor, launch_tensorboard
+from antenna.utils.monitor import TrainingMonitor, launch_tensorboard, seed_local_tb
 from antenna.utils.web import get_local_ip
 from antenna.training import load_config, build_simulator, run_training
 from antenna.utils.store import SampleStore
@@ -114,6 +114,7 @@ def main(yaml_path):
     #*   為何：TB 在 SMB 上 tail 正在寫入的事件檔會卡住 (撞半截 flush 後停讀)。讓 TB tail 本機
     #*   ＝不卡；NAS 那份同步雙寫、沒人 tail → 不卡、且隨時可從 NAS 看實驗過程 (討論/備份)。
     LOCAL_TB = _local_tb_dir(RESULT_PATH.stem)
+    seed_local_tb(LOCAL_TB, RESULT_PATH / "tb")   # 續跑/重開機：把 NAS 既有進度同步到本機 → TB 看得到之前跑的結果
     monitor = TrainingMonitor(LOCAL_TB, mirror_dir=RESULT_PATH / "tb")
     monitor.log_config(open(yaml_path, encoding="utf-8").read())   # config 原文進 TB Text 分頁
 

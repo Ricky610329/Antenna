@@ -202,6 +202,27 @@ def test_fanout_writer_drops_failing_writer():
     assert len(fan._writers) == 1                        # 爆的被停用
 
 
+def test_seed_local_tb_copies_nas_history_and_clears_stale(tmp_path):
+    """開訓同步：清空本機 tb、把 NAS 既有事件檔複製過來 (TB tail 本機才看得到舊進度；不殘留舊檔重複計步)。"""
+    from antenna.utils.monitor import seed_local_tb
+    nas = tmp_path / "nas_tb"; nas.mkdir()
+    (nas / "events.out.tfevents.111").write_text("nas-history")
+    local = tmp_path / "local_tb"; local.mkdir()
+    (local / "stale.old").write_text("stale")           # 本機殘留舊檔 → 應被清掉
+    seed_local_tb(str(local), nas)
+    names = {p.name for p in local.iterdir()}
+    assert "events.out.tfevents.111" in names           # NAS 歷史同步過來
+    assert "stale.old" not in names                     # 殘留舊檔被清掉 (避免與 NAS mirror 重複)
+
+
+def test_seed_local_tb_fresh_run_no_nas(tmp_path):
+    """全新 run (NAS 還沒 tb) → 同步不報錯，本機 tb 目錄建好、空的即可。"""
+    from antenna.utils.monitor import seed_local_tb
+    local = tmp_path / "local_tb"
+    seed_local_tb(str(local), tmp_path / "nonexistent_tb")
+    assert local.is_dir() and not any(local.iterdir())
+
+
 def test_summary_png_with_radiation(tmp_path):
     """summary 疊方向圖：_last_radiation 有值時也能產生 summary.png。"""
     mon = _bare_monitor(None, spec=_spec())
