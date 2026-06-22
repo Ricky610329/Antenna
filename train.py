@@ -13,9 +13,11 @@ train.py — 由「外部 YAML config」驅動的訓練入口 (取代 train_sing
 - 核心訓練迴圈在 antenna.training.run_training (有 golden 測試把關)。
 """
 import json
+import os
 import shutil
 import socket
 import sys
+import tempfile
 from datetime import datetime
 
 from antenna.utils import Complete, DATASET_PATH, ROOTDIR, config, connect_network_drive, logger
@@ -81,6 +83,18 @@ def write_status(result_path, **fields):
         json.dumps(fields, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _local_tb_dir(run_stem):
+    """本機暫存的 tb 事件檔目錄 (本地碟)，給 TB tail。
+
+    為何要本機一份：TB 在 SMB(網路碟) 上 tail「正在被寫入」的事件檔，撞到半截 flush 就會
+    停讀、畫面卡在某個 epoch 不再前進 (實測 .37 卡 22)。讓 TB tail「本機」檔＝穩定不卡。
+    NAS 那份由 monitor 的 mirror_dir 同步雙寫 (即時備份、沒人 tail → 不會卡)。
+    以 run 名為 key、各機器各自獨立。"""
+    d = os.path.join(tempfile.gettempdir(), "antenna_tb", run_stem)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 def main(yaml_path):
     cfg = load_config(yaml_path)
     logger.info(f"Loaded config: {cfg.name} (port={cfg.port})")
@@ -96,13 +110,15 @@ def main(yaml_path):
     simulator = build_simulator(cfg, RESULT_PATH)
     model_kwargs = resolve_models(cfg)
 
-    #* 監控：寫 TB 事件檔到 <結果夾>/tb (多機實驗在任一台跑
-    #*   tensorboard --logdir "T:\...\result" 即可並排監看全部)
-    monitor = TrainingMonitor(RESULT_PATH / "tb")
+    #* 監控：tb 事件檔「雙寫」——本機一份 (給 TB tail、穩定不卡) + NAS 一份 (即時備份)。
+    #*   為何：TB 在 SMB 上 tail 正在寫入的事件檔會卡住 (撞半截 flush 後停讀)。讓 TB tail 本機
+    #*   ＝不卡；NAS 那份同步雙寫、沒人 tail → 不卡、且隨時可從 NAS 看實驗過程 (討論/備份)。
+    LOCAL_TB = _local_tb_dir(RESULT_PATH.stem)
+    monitor = TrainingMonitor(LOCAL_TB, mirror_dir=RESULT_PATH / "tb")
     monitor.log_config(open(yaml_path, encoding="utf-8").read())   # config 原文進 TB Text 分頁
 
-    #* 開訓即自動起監控面板 (TensorBoard) + 印可點連結 → 不必另開 terminal 追蹤。
-    tb_port = launch_tensorboard(RESULT_PATH)
+    #* 開訓即自動起監控面板 (TensorBoard 指向本機 tb) + 印可點連結 → 不必另開 terminal 追蹤。
+    tb_port = launch_tensorboard(LOCAL_TB)
     if tb_port:
         ip = get_local_ip()
         logger.success("─" * 56)
@@ -134,10 +150,11 @@ def main(yaml_path):
         )
     except BaseException:
         write_status(RESULT_PATH, state="crashed")
+        monitor.close()                       # flush 兩份 writer (本機 + NAS 即時備份)
         raise
 
     monitor.summary(state, RESULT_PATH)   # 結尾總覽圖 summary.png (不依賴 TB)
-    monitor.close()
+    monitor.close()                       # flush/close 兩份 writer；NAS 那份已是即時備份、不需回拷
     best_loss = min(state.series("sim_loss"))
     write_status(RESULT_PATH, state="finished", epoch=state.last_epoch,
                  total=cfg.epochs, best_loss=best_loss)

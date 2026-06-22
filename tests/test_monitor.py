@@ -24,7 +24,7 @@ def _spec():
 class _FakeWriter:
     def __init__(self): self.scalars = []; self.figures = []; self.texts = []
     def add_scalar(self, tag, v, step): self.scalars.append(tag)
-    def add_figure(self, tag, fig, step=None): self.figures.append(tag)
+    def add_figure(self, tag, fig, step=None, close=True): self.figures.append(tag)
     def add_text(self, tag, text): self.texts.append((tag, text))
     def flush(self): pass
     def close(self): pass
@@ -171,6 +171,35 @@ def test_launch_tensorboard_nonfatal_without_tb(monkeypatch):
     monkeypatch.setattr(monitor_mod, "_port_in_use", lambda port: False)
     monkeypatch.setattr(monitor_mod.importlib.util, "find_spec", lambda name: None)
     assert launch_tensorboard("/x", 6006) is None
+
+
+def test_fanout_writer_mirrors_to_all():
+    """_FanoutWriter 把 add_scalar/add_text/add_figure/flush 同步分送給每份 writer (本機+NAS 雙寫)。"""
+    import matplotlib.pyplot as plt
+    w1, w2 = _FakeWriter(), _FakeWriter()
+    fan = monitor_mod._FanoutWriter([w1, w2])
+    fan.add_scalar("loss/sim", 1.0, 1)
+    fan.add_text("config", "yaml")
+    fig, _ = plt.subplots()
+    fan.add_figure("pattern/x", fig, 1)                 # close=False 分送 + 自行 plt.close
+    fan.flush()
+    assert w1.scalars == w2.scalars == ["loss/sim"]
+    assert w1.texts == w2.texts == [("config", "yaml")]
+    assert w1.figures == w2.figures == ["pattern/x"]
+
+
+def test_fanout_writer_drops_failing_writer():
+    """某份 writer 寫入爆掉 (NAS 備份斷線) → 只停用它、好的照常、絕不拋例外拖垮訓練。"""
+    class _Boom:
+        def add_scalar(self, *a, **k): raise IOError("nas gone")
+        def flush(self): pass
+        def close(self): pass
+    good = _FakeWriter()
+    fan = monitor_mod._FanoutWriter([_Boom(), good])
+    fan.add_scalar("loss/sim", 1.0, 1)                  # 不該拋
+    fan.add_scalar("loss/sim", 2.0, 2)
+    assert good.scalars == ["loss/sim", "loss/sim"]     # 好的那份照常收
+    assert len(fan._writers) == 1                        # 爆的被停用
 
 
 def test_summary_png_with_radiation(tmp_path):

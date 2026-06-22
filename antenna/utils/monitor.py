@@ -60,14 +60,54 @@ def launch_tensorboard(logdir, port: int = 6006, max_scan: int = 20):
     return None
 
 
+class _FanoutWriter:
+    """把 add_*/flush/close 同步分送給多個 SummaryWriter。
+
+    用途：tb 事件檔「雙寫」—— 本機一份 (給 TB tail、穩定不卡) + NAS 一份 (即時備份、可隨時
+    從 NAS 看/討論)。NAS 那份沒人 tail → 不會有 SMB tailing 卡住問題。
+    - **容錯**：某份 writer 寫入爆掉 (多半 NAS 備份斷線) → 只停用那份、其他照常，絕不拋例外
+      拖垮訓練 (監控是外掛、不該污染核心)。
+    - add_figure 統一 close=False 後自行 plt.close → 同一張圖能寫進多份 writer、又不漏記憶體。
+    """
+
+    def __init__(self, writers):
+        self._writers = [w for w in writers if w is not None]
+
+    def _each(self, fn):
+        for w in list(self._writers):
+            try:
+                fn(w)
+            except Exception as e:
+                logger.warning(f"TB writer 寫入失敗、停用該份 (多半 NAS 備份斷線，不影響訓練)：{e}")
+                self._writers.remove(w)
+
+    def add_scalar(self, tag, value, global_step=None):
+        self._each(lambda w: w.add_scalar(tag, value, global_step))
+
+    def add_text(self, tag, text):
+        self._each(lambda w: w.add_text(tag, text))
+
+    def add_figure(self, tag, figure, global_step=None):
+        self._each(lambda w: w.add_figure(tag, figure, global_step, close=False))
+        plt.close(figure)
+
+    def flush(self):
+        self._each(lambda w: w.flush())
+
+    def close(self):
+        self._each(lambda w: w.close())
+
+
 class TrainingMonitor:
     """接 on_epoch(epoch, m) 的 TB 監視器。m = run_training 給的「epoch 快照」。"""
 
-    def __init__(self, logdir, image_every: int = 1):
+    def __init__(self, logdir, image_every: int = 1, mirror_dir=None):
         """
         Args:
-            logdir: TB 事件檔目錄 (慣例: <結果夾>/tb)。
+            logdir: TB 事件檔目錄 (本機；給 TB tail)。
             image_every: 每幾個 epoch 記一次圖 (純量每 epoch 都記)。
+            mirror_dir: 若給定 → 事件檔「同時」再寫一份到這 (慣例: NAS 的 <結果夾>/tb)，
+                當即時備份。本機那份給 TB tail；NAS 這份沒人 tail → 不會 SMB 卡住。
         """
         self.image_every = image_every
         self._spec = None               # 從第一次 on_epoch 的快照取得 (供結尾總覽圖用)
@@ -75,7 +115,13 @@ class TrainingMonitor:
         self._targets_logged = False
         try:
             from torch.utils.tensorboard import SummaryWriter
-            self.writer = SummaryWriter(str(logdir))
+            writers = [SummaryWriter(str(logdir))]
+            if mirror_dir is not None:
+                try:
+                    writers.append(SummaryWriter(str(mirror_dir)))   # NAS 即時備份份
+                except Exception as e:
+                    logger.warning(f"NAS 即時備份 writer 建立失敗（只寫本機，不影響訓練）：{e}")
+            self.writer = _FanoutWriter(writers)
         except ImportError:
             logger.warning("tensorboard 未安裝 → TB 監控停用 (pip install tensorboard)；訓練照常進行")
             self.writer = None
