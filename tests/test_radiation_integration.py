@@ -50,6 +50,34 @@ def test_rad_head_does_not_perturb_freq_params():
     assert plain.head_rad is None and withrad.head_rad is not None
 
 
+def test_rad_head_basis_is_band_limited():
+    """平滑基底頭：n_basis=1 → 只有 DC (k=0) 項 → 每個 phi 切面沿所有 theta 必為常數。
+    這是 band-limited 的極端證明 —— 裸 Linear(64→n_theta) 不可能恆為常數，故能擋住誤改回鋸齒頭。"""
+    net = HFSSNet(625, (2, 17), rad_response=(2, 181), rad_n_basis=1)
+    assert net.rad_n_basis == 1
+    out = net.forward_rad(torch.randn(625))                 # (2, 181)
+    assert tuple(out.shape) == (2, 181)
+    for row in out:                                         # 每個切面沿 theta 應為常數
+        assert torch.allclose(row, row[0].expand_as(row), atol=1e-5)
+
+
+def test_set_rad_theta_rebuilds_basis_and_aligns():
+    """set_rad_theta 用實際 θ 網格重建基底：輸出點數跟著實際 θ 走、θ 未排序也不報錯
+    (基底逐欄獨立算)，且 n_basis 被 clamp 到 ≤ 角度點數。"""
+    net = HFSSNet(625, (2, 17), rad_response=(2, 181), rad_n_basis=8)
+    theta = torch.tensor([0.0, -90.0, 90.0, -45.0, 45.0])   # 較短且未排序
+    net.set_rad_theta(theta)
+    out = net.forward_rad(torch.randn(625))
+    assert tuple(out.shape) == (2, theta.numel())           # 輸出對齊實際 θ 點數
+    assert torch.all(torch.isfinite(out))
+
+
+def test_rad_n_basis_clamped_to_n_theta():
+    """n_basis 不得超過角度點數 (否則非 band-limited、失去平滑保證)：建構時 clamp。"""
+    net = HFSSNet(625, (2, 17), rad_response=(2, 9), rad_n_basis=16)
+    assert net.rad_n_basis == 9                             # min(16, 9)
+
+
 # ── TrainConfig radiation 白名單 ────────────────────────────────────────────
 def test_config_accepts_radiation_section():
     cfg = TrainConfig(name="x", port="single", targets=SINGLE_TARGETS,
@@ -67,6 +95,12 @@ def test_config_accepts_freeze_trunk():
     cfg = TrainConfig(name="x", port="single", targets=SINGLE_TARGETS,
                       radiation={"enable": True, "n_theta": 9, "freeze_trunk": False})
     assert cfg.radiation["freeze_trunk"] is False
+
+
+def test_config_accepts_n_basis():
+    cfg = TrainConfig(name="x", port="single", targets=SINGLE_TARGETS,
+                      radiation={"enable": True, "n_theta": 181, "n_basis": 8})
+    assert cfg.radiation["n_basis"] == 8
 
 
 # ── 凍 trunk：方向圖訓練不污染 S11/Gain backbone（修 NaN 爆炸的核心）──────────

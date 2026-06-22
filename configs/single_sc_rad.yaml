@@ -41,5 +41,6 @@ radiation:
   boresight_weight: 1.0   # 「0° 要最高」那項相對權重
   warmup_epochs: 30       # 前 30 epoch 只訓 rad head、不讓它影響 GEN（防冷啟動雜訊帶歪 G）
   n_theta: 181            # rad head 輸出角度點數（3D 球 θ −180~180 step 2° = 181；需與實際 CSV 一致）
+  n_basis: 16             # rad head 平滑基底數 K：吐 K 個 cosine 係數展開成 n_theta 點 → 預測 band-limited、結構上必平滑（解鋸齒）；K 越小越平滑
   freeze_trunk: true      # 凍 trunk：方向圖頭只更新自己，不污染 S11/Gain backbone（隨機 rad 頭曾把 trunk 帶歪→S11/Gain 爆 NaN）
-  sm_max_epoch: 1000      # rad head 擬合上限（凍 trunk 下單層 Linear 擬不到 0.1、會撞滿 20000 純浪費；profiling 量到佔 23.6%）
+  sm_max_epoch: 1000      # rad head 擬合上限（基底頭只擬 K 個係數→收斂快；保留上限當保險，避免極端情況撞滿 20000）

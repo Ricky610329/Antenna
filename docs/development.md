@@ -190,15 +190,15 @@ python -m script.verify_radiation --config configs/single_peak.yaml --pattern xx
   本函式只塑形 → 故方向圖**不需**在 `targets:` 寫梯形曲線（相對、自我歸一化）。
 - **SM 走 multi-head（Stage 2，已實作）**：`HFSSNet` 的 `fc_patch`（freq）**原封不動**，rad head 從 `fc_patch[:-1]`（＝末層 Linear 之前的 64 維共用 backbone）分叉 → `forward_rad`。
   - golden 安全的關鍵：`head_rad` 在 `fc_patch` 之後才建立，從零建構時 freq 參數的 RNG 抽取序列完全不變（測試 `test_rad_head_does_not_perturb_freq_params` 直接驗證 fc_patch 參數逐一相同）；`fc_patch` 名稱不動 → 舊 `sm.pth` 零 remap。
-  - 關鍵洞見：拆最後一層成多頭數值上是 **no-op**（`Linear(64,2N)` ≡ 兩個 `Linear(64,N)`）→ **S11/Gain 不拆**。
-  - **trunk 不凍（使用者選擇，先求簡單）**：`train_one_data_rad` 走 `forward_rad`、梯度會流回共用 backbone → 方向圖與 S11/Gain 會經 backbone 互相牽動。要隔離就改凍 trunk（目前**未做**，留作 S11/Gain 退化時的退路）。
+  - **rad head ＝ 平滑 cosine 基底頭（解鋸齒）**：`head_rad` 不直接吐 `n_theta` 個獨立值（裸 `Linear` 無平滑先驗 + 凍 trunk 下擬不到收斂 → 預測鋸齒），改吐 K=`n_basis`（預設 16）個 cosine 係數，乘固定基底 `B(K,n_theta)` 展開：`pred = coeffs @ B`。輸出 **band-limited → 結構上必平滑**，且只擬 K 個數收斂快。`B` 是不可訓 buffer、用 `torch.cos/arange` 建（不吃 RNG → golden 零漂移）；`set_rad_theta` 依實際 HFSS θ 網格（整 run 固定）逐欄重建 → 對位正確、HFSS 匯出序未排序也 OK。測試 `test_rad_head_basis_is_band_limited`（K=1→沿 θ 恆為常數）。⚠ head 形狀變了 → 舊 rad-run 的 `sm.pth` 不能續跑（freq-only checkpoint 不受影響）。
+  - **trunk 預設凍（`freeze_trunk: true`，已實作）**：`train_one_data_rad` 凍住 `head_rad` 以外的參數 → 方向圖頭只更新自己、不污染 S11/Gain backbone（隨機 rad 頭曾把 trunk 帶歪→爆 NaN）。設 `false` 才放梯度回 backbone（兩者互相牽動）。測試 `test_rad_freeze_trunk_protects_backbone` / `test_rad_unfrozen_updates_trunk`。
 - **訓練接法（`run_training`，全程 `rad_on` 閘住）**：① `build_simulator` 開啟時換 `SinglePortRadSimulator`；② 每筆真實模擬後讀 `simulator.last_radiation`、`train_one_data_rad` 訓方向圖頭；③ 過 `warmup_epochs` 後把 `beam_coverage_loss` 加進 GEN loss。`rad_on=False` → 全部不執行（golden 零漂移）。
 - **監控（TensorBoard，比照 pattern）**：on_epoch 多帶 `rad_loss` 純量 + `radiation` 快照（theta/pred/real/window/floor）。`monitor.py` 記 `loss/rad_loss`（Scalars）＋ `radiation/gain_vs_angle`（Images，有 epoch 滑桿：phi0/phi90 實線=HFSS 真實、虛線=SM 預測，疊 ±window 與 G(0°)−floor_db 線）；`summary.png` 也多一格方向圖。無方向圖實驗這些鍵不存在 → 監控行為不變。
 - **冷啟動解法（Stage 3，待做）**：`harvest_single/dual` **只有 S11/Gain、沒有方向圖** → rad head 線上從零學。做法：按 loss 挑好 pattern
   （per-run `online` SampleStore 已是）→ **只把這批**丟 `SinglePortRadSimulator` 補 phi0/phi90 標籤
   → 存成 `DATASET_PATH/harvest_single_rad`（SampleStore）→ pretrain rad head。比重抽便宜，配 warmup 閘門。
-- **config（Stage 2，已實作）**：`radiation:{enable,weight,window_deg,floor_db,boresight_weight,warmup_epochs,n_theta}` 區段，預設 off → 既有 config/golden 零影響。範例見 `configs/single_sc_rad.yaml`。
-  - rad 版 SM 多了 head → 舊 `old_sm.pth` 載不進來；故 `single_sc_rad` 改用 `surrogate.offline_dataset`（現場預訓練 trunk+freq head、rad head 維持隨機）。
+- **config（Stage 2，已實作）**：`radiation:{enable,weight,window_deg,floor_db,boresight_weight,warmup_epochs,n_theta,n_basis,freeze_trunk,sm_max_epoch,sm_min_loss}` 區段，預設 off → 既有 config/golden 零影響。範例見 `configs/single_sc_rad.yaml`。
+  - rad 版 SM 多了 head → 舊 `old_sm.pth` 以 `pre_load_model(strict=False)` 部分載入暖啟動（fc_patch+optimizer 對位灌入、head_rad 維持隨機；測試 `test_pre_load_partial_warm_starts_rad_sm`）。
 - **theta 解析度**：目前 2°（父類別 3D 球面）；要 1°（`Elevation` 球）是小改動。
 - **`LastAdaptive`**：現行 `Setup1:LastAdaptive` 已驗證取得到遠場（Stage 0 OK）；若哪天取不到改 `"Setup1 : Sweep"`。
 - **dual 未做**：先把 single 跑順、驗證對了再複製到 `dual_port.py`。

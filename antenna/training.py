@@ -67,7 +67,7 @@ SECTION_KEYS = {
     "generator": {"name", "hidden", "pretrained"},
     "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
     "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight",
-                  "warmup_epochs", "n_theta", "freeze_trunk", "sm_max_epoch", "sm_min_loss"},
+                  "warmup_epochs", "n_theta", "n_basis", "freeze_trunk", "sm_max_epoch", "sm_min_loss"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
 
@@ -199,6 +199,7 @@ def build_surrogate(cfg: TrainConfig, checkpoint, spec: TargetResponse):
         min_loss=cfg.sm_train.get("min_loss", 0.1),
         max_epoch=cfg.sm_train.get("max_epoch", 20000),
         rad_response=rad_response,
+        rad_n_basis=cfg.radiation.get("n_basis", 16),   # 方向圖頭平滑基底數 (rad 關閉時無頭、此值不生效)
         **_arch_params(cfg.surrogate),
     )
 
@@ -351,6 +352,10 @@ def run_training(
             if rad_on:
                 rad = getattr(simulator, "last_radiation", None)
                 if isinstance(rad, dict) and rad.get("theta") is not None:
+                    #? 整個 run 第一次拿到真實 θ 網格 → 用它重建方向圖頭的平滑基底，使預測逐點對齊 θ_i
+                    #  (θ 網格整 run 固定；basis 逐欄獨立算 → HFSS 匯出序未排序也對位正確)。
+                    if rad_theta is None and hasattr(smodel.model, "set_rad_theta"):
+                        smodel.model.set_rad_theta(rad["theta"])
                     rad_theta = rad["theta"]
                     rad_stack = torch.stack([rad["phi0"], rad["phi90"]])    # (2, n_theta)
                     #! 清理方向圖 target：dB(GainTotal) 在深零點可能是 -inf/極端負值，直接進 MSE 會爆梯度。

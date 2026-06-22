@@ -18,6 +18,7 @@
 #?   HFSSNet        — 純 MLP 骨幹：625 像素 → (3,17) 響應 (學長版 MLPSurrogate 實際使用)。
 #?   MLPSurrogate — 工廠函式：把 model + criterion + optimizer + scheduler 組成一個 SurrogateModel。
 
+import math
 from typing import List, Optional
 
 import torch
@@ -292,8 +293,9 @@ class HFSSNet(nn.Module):
 
     #? num_pattern_pixel: 輸入像素數 (25x25=625)；num_response: 輸出響應形狀 (通道數 x 頻點數)
     #? rad_response: 選用的「方向圖頭」輸出形狀 (n_phi, n_theta)，None=不建方向圖頭 (與原架構相同)。
+    #? rad_n_basis: 方向圖頭的平滑基底數 K (僅 rad_response 有給時生效)；K 個 cosine 係數展開成 n_theta 點。
     def __init__(self, num_pattern_pixel = 625, num_response:tuple = (3, 17), hidden=(2048, 1024, 512, 128, 64),
-                 rad_response:Optional[tuple] = None):
+                 rad_response:Optional[tuple] = None, rad_n_basis:int = 16):
         super(HFSSNet, self).__init__()
         self.num_response = num_response
         self.num_pattern_pixel = num_pattern_pixel
@@ -310,8 +312,44 @@ class HFSSNet(nn.Module):
         #? 方向圖頭 (選用)：共用 backbone = fc_patch「末層 Linear 之前」的 64 維特徵，再接一層 Linear。
         #! 刻意在 fc_patch 之後才建 head_rad：從零建構時 freq 參數 (fc_patch) 的 RNG 抽取序列「完全不變」
         #! → 純頻率模型 byte-identical、golden 零漂移；fc_patch 名稱/結構也不動 → 舊 sm.pth 零 remap。
-        self.head_rad = nn.Linear(prev, self.rad_response[0] * self.rad_response[1]) if self.rad_response else None
+        #? 【平滑基底頭】head_rad 不直接吐 n_theta 個獨立值 (裸 Linear 無平滑先驗 + 凍 trunk 下擬不到收斂 → 鋸齒)，
+        #? 改吐 K=rad_n_basis 個「cosine 基底係數」，再乘固定基底 B 展開成 n_theta 點：
+        #?   pred = coeffs(n_phi,K) @ B(K,n_theta) → band-limited、結構上必平滑，且只擬 K 個數 → 收斂快。
+        #? B 是不可訓的 buffer，且用 torch.cos/arange 建構不吃 RNG → fc_patch RNG 序列不變、golden 零漂移。
+        if self.rad_response:
+            n_phi, n_theta = self.rad_response
+            self.rad_n_basis = max(1, min(rad_n_basis, n_theta))   # 基底數 ≤ 角度點數 (band-limit 才平滑)
+            self.head_rad = nn.Linear(prev, n_phi * self.rad_n_basis)
+            #? 預設基底建在 [-180,180] 等分網格 (整 run 第一次拿到真 θ 後由 set_rad_theta 重建對齊)。
+            self.register_buffer(
+                "rad_basis",
+                self._build_cos_basis(torch.linspace(-180.0, 180.0, n_theta), self.rad_n_basis),
+            )
+        else:
+            self.rad_n_basis = None
+            self.head_rad = None
         self.to(config.device)
+
+    @staticmethod
+    def _build_cos_basis(theta: Tensor, n_basis: int) -> Tensor:
+        """固定 cosine 基底 B (n_basis, n_theta)：B[k,i]=cos(k·φ_i)，φ_i 由 θ_i 線性映射到 [0,π]。
+        任一係數組合 coeffs@B 在 θ 上都平滑 (band-limited)；k=0 為常數項 (承載整體增益準位)。
+        逐欄由各自 θ_i 計算 → θ 即使是 HFSS 匯出序 (未排序) 也對位正確 (排序後必平滑)。"""
+        theta = theta.reshape(-1).float()
+        tmin, tmax = float(theta.min()), float(theta.max())
+        span = (tmax - tmin) or 1.0                         # 防全等/單點 → 除零
+        phi = math.pi * (theta - tmin) / span               # → [0, π]
+        k = torch.arange(n_basis, dtype=theta.dtype).reshape(-1, 1)  # (K,1)
+        return torch.cos(k * phi.reshape(1, -1))            # (n_basis, n_theta)
+
+    def set_rad_theta(self, theta: Tensor):
+        """用實際 HFSS θ 網格 (整個 run 固定) 重建平滑基底，使 forward_rad 的第 i 點對齊 θ_i。
+        θ 可為 HFSS 匯出序 (未排序)：基底逐欄獨立算 → 對位正確、與順序無關。無方向圖頭則略過。"""
+        if self.head_rad is None:
+            return
+        self.rad_basis = self._build_cos_basis(
+            theta.detach().to("cpu"), self.rad_n_basis
+        ).to(self.rad_basis.device, self.rad_basis.dtype)
 
     def __repr__(self):
         return f"{self.__class__.__name__}(num_pattern_pixel={self.num_pattern_pixel}, num_response={self.num_response}"
@@ -322,30 +360,33 @@ class HFSSNet(nn.Module):
         return x
 
     def forward_rad(self, input):
-        #? 方向圖預測：共用 backbone (fc_patch 除最後一層 Linear 外的所有層 → 64 維特徵) → head_rad。
-        #? trunk「不凍」：此路徑梯度會經 fc_patch[:-1] 流回 backbone (使用者選擇，非預設凍結)。
+        #? 方向圖預測：共用 backbone (fc_patch 除最後一層 Linear 外的所有層 → 64 維特徵) → head_rad
+        #? 出 K 個 cosine 係數 → 乘固定基底 B 展開成 (n_phi, n_theta)。輸出 band-limited → 平滑 (不再鋸齒)。
+        #? 梯度可經 B (固定、不可訓) 流回 head_rad / backbone；trunk 凍與否由 train_one_data_rad 控制。
         if self.head_rad is None:
             raise RuntimeError("此 HFSSNet 未建方向圖頭 (rad_response=None)，不能呼叫 forward_rad。")
         feat = input
         for layer in self.fc_patch[:-1]:        #? 末層 Linear 之前 = 共用 backbone 的 64 維特徵
             feat = layer(feat)
-        return self.head_rad(feat).reshape(self.rad_response)
+        coeffs = self.head_rad(feat).reshape(self.rad_response[0], self.rad_n_basis)  # (n_phi, K)
+        return coeffs @ self.rad_basis      # (n_phi, n_theta)：matmul 即定形，n_theta 跟著實際基底走
 
 ###* MLPSurrogate — 工廠：學長版 SM (HFSSNet + Ranger + MSE + ReduceLROnPlateau) ###
 #? 訓練腳本 (train_single.py / train_dual.py) 實際使用的就是這個工廠 (見各腳本 from ... import MLPSurrogate)。
 #? 輕量穩定：純 MLP 骨幹 + MSE 回歸 + 「loss 卡住就降 lr」的 ReduceLROnPlateau，
 #? 適合 SM 這種需頻繁線上微調、且每筆資料都要快速收斂的場景。
 def MLPSurrogate(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 128, 64),
-          lr=0.001, min_loss=0.1, max_epoch=20000, rad_response=None):
+          lr=0.001, min_loss=0.1, max_epoch=20000, rad_response=None, rad_n_basis=16):
     """
     學長的做法。維度與超參數 (lr / 單筆訓練門檻) 全由訓練端顯式傳入，
     不讀全域 config (對應 YAML 的 hfss 區段)。
 
     rad_response (選用)：方向圖頭輸出形狀 (n_phi, n_theta)；給了就多建一個方向圖頭，
     且其參數一併進 optimizer (trunk 不凍 → 方向圖梯度會更新共用 backbone)。None=與原樣相同。
+    rad_n_basis：方向圖頭的平滑 cosine 基底數 K (對應 YAML radiation.n_basis，預設 16)。
     """
     model_ge = HFSSNet( # Pattern -> Response (+ 選用方向圖頭)
-        in_dim, response_shape, hidden=hidden, rad_response=rad_response
+        in_dim, response_shape, hidden=hidden, rad_response=rad_response, rad_n_basis=rad_n_basis
     )
     criterion_ge = nn.MSELoss()  #? 均方誤差：SM 是響應回歸任務，懲罰大偏差
     optimizer_ge = Ranger(
