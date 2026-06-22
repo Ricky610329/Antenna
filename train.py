@@ -102,12 +102,13 @@ def main(yaml_path):
     monitor.log_config(open(yaml_path, encoding="utf-8").read())   # config 原文進 TB Text 分頁
 
     #* 開訓即自動起監控面板 (TensorBoard) + 印可點連結 → 不必另開 terminal 追蹤。
-    if launch_tensorboard(RESULT_PATH):
+    tb_port = launch_tensorboard(RESULT_PATH)
+    if tb_port:
         ip = get_local_ip()
         logger.success("─" * 56)
         logger.success("  監控面板已就緒，點連結看即時狀況 (免另開 terminal)：")
-        logger.success("    本機 / RDP 內 → http://localhost:6006")
-        logger.success(f"    從你的電腦看  → http://{ip}:6006")
+        logger.success(f"    本機 / RDP 內 → http://localhost:{tb_port}")
+        logger.success(f"    從你的電腦看  → http://{ip}:{tb_port}")
         logger.success(f"    本次 run：{RESULT_PATH.stem}")
         logger.success("─" * 56)
 

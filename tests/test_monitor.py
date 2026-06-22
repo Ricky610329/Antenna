@@ -136,30 +136,41 @@ def test_no_radiation_keys_when_absent():
 
 
 # ── 自動起監控面板 (launch_tensorboard) ─────────────────────────────────────
-def test_launch_tensorboard_reuses_existing(monkeypatch):
-    """port 已被占用 (先前 TB 在跑) → 不重複啟動、直接回 True。"""
-    monkeypatch.setattr(monitor_mod, "_port_in_use", lambda port: True)
-    calls = []
-    monkeypatch.setattr(monitor_mod.subprocess, "Popen", lambda *a, **k: calls.append(1))
-    assert launch_tensorboard("/x", 6006) is True
-    assert not calls                                   # 沒重複起 TB
+def test_launch_tensorboard_scans_to_free_port(monkeypatch):
+    """6006 被別的 run 佔 → 不重用，往後找第一個空 port 起自己的 TB、回那個 port。"""
+    monkeypatch.setattr(monitor_mod, "_port_in_use", lambda p: p == 6006)   # 只有 6006 被占
+    monkeypatch.setattr(monitor_mod.importlib.util, "find_spec", lambda name: object())
+    launched = []
+    monkeypatch.setattr(monitor_mod.subprocess, "Popen", lambda cmd, **k: launched.append(cmd))
+    assert launch_tensorboard("/x", 6006) == 6007       # 跳過 6006 → 起在 6007
+    assert "--port" in launched[0] and "6007" in launched[0]
 
 
 def test_launch_tensorboard_starts_when_free(monkeypatch):
-    """port 空 + 有裝 tensorboard → Popen 起一個、回 True。"""
+    """port 空 + 有裝 tensorboard → Popen 起一個、回實際 port (6006)。"""
     monkeypatch.setattr(monitor_mod, "_port_in_use", lambda port: False)
     monkeypatch.setattr(monitor_mod.importlib.util, "find_spec", lambda name: object())
     calls = []
     monkeypatch.setattr(monitor_mod.subprocess, "Popen", lambda *a, **k: calls.append((a, k)))
-    assert launch_tensorboard("/x", 6006) is True
+    assert launch_tensorboard("/x", 6006) == 6006
     assert len(calls) == 1
 
 
+def test_launch_tensorboard_all_ports_busy(monkeypatch):
+    """掃描範圍內全被占 → 不起 TB、回 None (絕不擋訓練)。"""
+    monkeypatch.setattr(monitor_mod, "_port_in_use", lambda p: True)
+    monkeypatch.setattr(monitor_mod.importlib.util, "find_spec", lambda name: object())
+    calls = []
+    monkeypatch.setattr(monitor_mod.subprocess, "Popen", lambda *a, **k: calls.append(1))
+    assert launch_tensorboard("/x", 6006) is None
+    assert not calls
+
+
 def test_launch_tensorboard_nonfatal_without_tb(monkeypatch):
-    """沒裝 tensorboard → 回 False、不報錯 (絕不擋訓練)。"""
+    """沒裝 tensorboard → 回 None、不報錯 (絕不擋訓練)。"""
     monkeypatch.setattr(monitor_mod, "_port_in_use", lambda port: False)
     monkeypatch.setattr(monitor_mod.importlib.util, "find_spec", lambda name: None)
-    assert launch_tensorboard("/x", 6006) is False
+    assert launch_tensorboard("/x", 6006) is None
 
 
 def test_summary_png_with_radiation(tmp_path):

@@ -31,28 +31,33 @@ def _port_in_use(port: int) -> bool:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
-def launch_tensorboard(logdir, port: int = 6006) -> bool:
-    """背景啟動 TensorBoard 指向 logdir；回傳「該 port 是否有監控面板可看」。
+def launch_tensorboard(logdir, port: int = 6006, max_scan: int = 20):
+    """背景啟動 TensorBoard 指向 logdir；回傳「實際使用的 port」(int)，失敗回 None。
 
     供 train.py 開訓時自動起面板 + 印連結 (使用者不必另開 terminal 跑 tensorboard)。
-    - port 已被占用 → 視為已有 TB 在跑，不重複啟動、直接回 True。
-    - 未安裝 tensorboard / 啟動失敗 → 記 warning 並回 False，「絕不」阻擋訓練。
+    - **不重用別人佔住的 port**：6006 被占用多半是「同機前一個 run 的 TB、指向別的 logdir」，
+      直接重用會讓連結顯示到舊 run、看起來像卡住。改為從 port 往後找第一個空 port，起
+      「這個 run 自己的」TB → 印出的連結保證對到本次 run。回傳那個 port 供 train.py 組連結。
+    - 未安裝 tensorboard / 掃描範圍全被占 / 啟動失敗 → 記 warning 回 None，「絕不」阻擋訓練。
     """
-    if _port_in_use(port):
-        return True
     if importlib.util.find_spec("tensorboard") is None:
         logger.warning("未安裝 tensorboard → 無法自動起監控面板 (pip install tensorboard)")
-        return False
-    try:
-        subprocess.Popen(
-            [sys.executable, "-m", "tensorboard.main",
-             "--logdir", str(logdir), "--port", str(port), "--bind_all"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
-        return True
-    except Exception as e:
-        logger.warning(f"TensorBoard 自動啟動失敗 (可手動 tensorboard --logdir): {e}")
-        return False
+        return None
+    for p in range(port, port + max_scan):
+        if _port_in_use(p):
+            continue                                   # 這個 port 已有人 (多半別的 run 的 TB) → 換下一個
+        try:
+            subprocess.Popen(
+                [sys.executable, "-m", "tensorboard.main",
+                 "--logdir", str(logdir), "--port", str(p), "--bind_all"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            return p
+        except Exception as e:
+            logger.warning(f"TensorBoard 自動啟動失敗 (可手動 tensorboard --logdir): {e}")
+            return None
+    logger.warning(f"port {port}~{port + max_scan - 1} 都被占用 → 沒起新的 TB 面板 (可手動指定 port)")
+    return None
 
 
 class TrainingMonitor:
