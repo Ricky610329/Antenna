@@ -203,5 +203,7 @@ cython_debug/
 archive/
 # 草稿/暫存 (設計 HTML 已移到 docs/；paper_text.txt 可從 PDF 再生)
 tmp/
+# 本機暫存下載 (工具產生的暫存檔，非結果)
+temp_downloads/
 # 學長論文 (約 5MB binary)，留本機，不進 git 歷史
 docs/Paper.pdf
