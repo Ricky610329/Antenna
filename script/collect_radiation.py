@@ -22,7 +22,12 @@ import argparse
 import os
 from pathlib import Path
 
+import numpy as np
 import torch
+import matplotlib
+matplotlib.use("Agg")                    # 無頭繪圖 (存 PNG，不開視窗)
+import matplotlib.pyplot as plt
+plt.rcParams["axes.unicode_minus"] = False
 
 from antenna.utils import config, ROOTDIR, DATASET_PATH, logger
 config.device = "cpu"
@@ -37,6 +42,31 @@ from antenna.response import MultiResponses
 def _bin(p) -> torch.Tensor:
     """任意輸入 → (25,25) 純 0/1 (模擬器要求二值；fingerprint/存檔都用這個正規形)。"""
     return (torch.as_tensor(p).float().reshape(25, 25) > 0.5).float()
+
+
+def _plot_radiation(stack, tag, figdir, idx):
+    """存一張 radiation 圖 (**全英文**，避免中文字體在某些機器渲染不出)。
+
+    stack=(3,n_theta)=[theta, phi0, phi90]。畫 gain(dB) vs theta，兩切面 + ±55° 窗 + G0−3dB 底線。
+    """
+    th, p0, p90 = stack[0].numpy(), stack[1].numpy(), stack[2].numpy()
+    o = th.argsort()                                  # HFSS 匯出序可能未排序 → 先排好再畫
+    th, p0, p90 = th[o], p0[o], p90[o]
+    bi = int(np.abs(th).argmin())
+    g0 = float(max(p0[bi], p90[bi]))                  # boresight 增益
+    fig, ax = plt.subplots(figsize=(7, 4))
+    ax.axvspan(-55, 55, color="gold", alpha=0.12, label="+/-55 deg window")
+    ax.axhline(g0 - 3, color="r", ls=":", lw=1, label="G0 - 3 dB")
+    ax.plot(th, p0, "b-", lw=1.4, label="phi=0 (E-plane)")
+    ax.plot(th, p90, "g--", lw=1.4, label="phi=90 (H-plane)")
+    ax.axvline(0, color="k", lw=0.6)
+    ax.set_xlabel("theta (deg)"); ax.set_ylabel("gain (dB)")
+    ax.set_title(f"Radiation pattern: {tag}"); ax.grid(alpha=0.3); ax.legend(fontsize=7)
+    fig.tight_layout()
+    safe = "".join(c if c.isalnum() else "_" for c in tag)[:50]
+    path = os.path.join(figdir, f"rad_{idx:02d}_{safe}.png")
+    fig.savefig(path, dpi=110); plt.close(fig)
+    return path
 
 
 def _patterns_from_runs(suffixes, top_k):
@@ -84,6 +114,7 @@ def main():
     ap.add_argument("--out", default="harvest_single_rad", help="累積到 DATASET_PATH 下的 rad 集名")
     ap.add_argument("--config", default="configs/single_base.yaml", help="single config (建 spec / 排序用)")
     ap.add_argument("--record", default="_radiation_collect", help="HFSS 模擬暫存輸出根目錄")
+    ap.add_argument("--figdir", default="tmp/report/radiation", help="每張 pattern 的 radiation 圖輸出夾 (英文標籤)")
     args = ap.parse_args()
 
     AntennaPattern.setDefaultCoordinate((0, 25, 0, 25))
@@ -111,7 +142,8 @@ def main():
     if not todo:
         print("沒有新 pattern 要收。"); return
 
-    # 3) 跑 HFSS 方向圖、累積 (HFSS 開一次 → 迴圈 → 關)
+    # 3) 跑 HFSS 方向圖、累積 + 出圖 (HFSS 開一次 → 迴圈 → 關)
+    os.makedirs(args.figdir, exist_ok=True)
     sim = SinglePortRadSimulator(record_path=str(Path(args.record).resolve()))
     sim.open()
     added = 0
@@ -128,11 +160,14 @@ def main():
                 logger.warning(f"  方向圖萃取失敗，跳過：{err}")
                 continue
             stack = torch.stack([rad["theta"].float(), rad["phi0"].float(), rad["phi90"].float()])  # (3, n_theta)
+            figpath = _plot_radiation(stack, tag, args.figdir, num)         # 出 radiation 圖 (英文)
+            print(f"    radiation 圖 → {figpath}")
             if out_store.add(patt, stack):
                 added += 1
     finally:
         sim.quit()
     print(f"\n✅ 完成：新增 {added} 筆 → {DATASET_PATH.joinpath(args.out)}  (共 {len(out_store)} 筆)")
+    print(f"   radiation 圖在 {args.figdir}/ (每張 pattern 一張，英文標籤)")
 
 
 if __name__ == "__main__":
