@@ -71,7 +71,7 @@ NAS（`DATASET_PATH = T:\碩一_鄒穎麒's\antenna\dataset`）上的離線資�
 | 資料集 | 標籤 | 說明 |
 | --- | --- | --- |
 | `harvest_single`（24189）/ `harvest_dual`（10023） | **before rad** | response 只有 S11/Gain(/S21)，**無方向圖標籤**。各夾內有唯讀 `_BEFORE_RAD.md` 標記 |
-| `harvest_single_rad` 等 `*_rad`（未來，Stage 3） | with rad | 好 pattern 補方向圖標籤的子集，**獨立新名**，不疊進舊集 |
+| `harvest_single_rad` 等 `*_rad`（**Stage 3，由 `script/collect_radiation.py` 累積**） | with rad | 每筆 (pattern, rad)；rad=(3,n_theta)=[theta, phi0, phi90 gain(dB)]。任何 pattern 丟 `SinglePortRadSimulator` 即可取得（**不管有沒有 rad loss**）。**獨立新名**、不疊進舊集 |
 
 - **約定**：rad 標籤資料一律走新名 `*_rad`，**永不**寫回 before-rad 舊集。
 - marker 用 `.md`（`SampleStore` 只認 `*.pt`，且 init 會清 `*.tmp` → marker 不能用這兩種副檔名）。
@@ -90,6 +90,7 @@ NAS（`DATASET_PATH = T:\碩一_鄒穎麒's\antenna\dataset`）上的離線資�
 | --- | --- | --- |
 | `../train.py` | ✅ 主入口 | config 驅動的單/雙埠訓練閉迴路 |
 | `script/verify_radiation.py` | ❌ 驗證 | 正式機驗證 `SinglePortRadSimulator` 能否把方向圖資料抓出來（不訓練、不碰核心） |
+| `script/collect_radiation.py` | ⚙ 資料 | **累積方向圖資料 → `DATASET_PATH/harvest_single_rad`**（Stage 3）。任何 pattern 丟 `SinglePortRadSimulator` 跑一發 HFSS（**不管有沒有 rad loss**）；hash 去重、可重複跑只補新的。來源：`--runs`（result 夾各取最佳 K）/ `--dataset`（harvest 取最佳 N）/ `--pattern`。**需正式機 HFSS** |
 | `script/kuohung.py` | ⚙ 資料 | KuoHung 參考圖樣載入（SM 單筆暖身用，對應 `surrogate.warmup`） |
 | `script/harvest_legacy.py` | ⚙ 資料 | 從學長舊資料收割成自有 NAS 資料集（`harvest_single` / `harvest_dual`） |
 | `script/train_sm_offline.py` | ⚙ 初始化 | 在 harvest 資料上 minibatch 訓一顆 SM 當「好的初始化」→ `DATASET_PATH/sm_harvest.pth`（old_sm.pth 對我們資料 ≈隨機；自訓 val MSE 13 vs 38）。開發機可跑、不需 HFSS |
