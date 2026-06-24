@@ -1,0 +1,54 @@
+# 單埠 + SC + 方向圖 + DLF + Boundary + 同批多候選生成器 (Z)  (port=single)
+# 對標 single_sc_rad_boundary.yaml：唯一差異 = generator: batch_latent (+ 多候選旋鈕)。
+# 用途：把「同一輪生成 K 個候選、在 SM 上評分選最佳送 HFSS、mean-over-K 反傳」疊到現役最強
+#       recipe (SC+rad+boundary+dlf) 上，A/B 看 best-of-K 探索能否比單張 sigmoid 更快/更好。
+# 為什麼配 boundary+dlf：dlf 緩衝定義「SM 已見分布」，selection 的排序分數 (sm_target + λ·boundary)
+#       才有信任依據——把候選拉回 SM 可信鄰域，避免挑到「SM 說好、HFSS 說爛」的候選白燒 HFSS。
+# 多候選旋鈕在 generator 區段；selection 區段省略 → boundary_weight 沿用 loss.boundary(0.1)、
+#       feasibility_max 不設 (不開 SC 閘門，等正式機看 SC 真實尺度再決定門檻)。
+name: pixel_single_sc_rad_zbatch
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1          # trust-region 正則（同時當 selection 排序的 λ，除非 selection 另設）
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf             # boundary 需要緩衝 → 配 dlf（全收 + 菁英過濾）
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:               # ← 唯一變因：同批多候選 (高斯雲繞可學中心 z*，reparam + σ 退火)
+  name: batch_latent
+  num_candidates: 8      # 同批候選數 K：best-of-K 送 HFSS、mean-over-K 反傳 (HFSS 預算同單張、搜更廣)
+  sigma: 0.5             # 高斯雲探索半徑起點 (z_k = z* + σ·ε_k)
+  sigma_min: 0.05        # σ 退火終點 (隨 epoch 進度線性退火：前期探索、後期收斂)
+
+surrogate:
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000
