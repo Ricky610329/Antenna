@@ -93,11 +93,13 @@ def test_forward_3d_raises(tmp_path):
         sm.model.forward_rad(torch.rand(2, 3, 625))
 
 
-@pytest.mark.xfail(reason="BiScaleNorm 退化列 (max=0 或 min=0) 的 torch.where 除零 → 反向 grad NaN；"
-                          "待 Z 多候選上線前加 eps 保護 (golden-neutral)。1-D 現況不觸發 (MLP 浮點精確=0 機率≈0)。",
-                   strict=True)
 def test_biscalenorm_degenerate_row_grad_finite():
-    """退化列 (無正值且含 0 → max=0) 的反向梯度應有限。現況為 NaN (已知缺口，xfail 記錄；加 eps 後翻綠)。"""
-    x = torch.tensor([[0.0, -2.0, -1.0]], requires_grad=True)   # max=0
-    BiScaleNorm()(x).sum().backward()
-    assert torch.isfinite(x.grad).all()
+    """退化列 (該半邊極值=0) 的反向梯度應有限：clamp_min(eps) 防 torch.where 除零的 0/0 NaN。
+    只把原本 NaN 的梯度修成有限；forward 值不變 (golden-neutral，由 golden 套件守住)。"""
+    for x in (torch.tensor([[0.0, -2.0, -1.0]], requires_grad=True),   # max=0 (正半邊退化)
+              torch.tensor([[0.0, 2.0, 1.0]], requires_grad=True),     # min=0 (負半邊退化)
+              torch.tensor([[0.0, 0.0, 0.0]], requires_grad=True)):    # 全 0 (兩邊退化)
+        BiScaleNorm()(x).sum().backward()
+        assert torch.isfinite(x.grad).all()
+    # 真·全 0 列 → forward 必為全 0 (兩半邊都無可正規化的值)
+    assert torch.allclose(BiScaleNorm()(torch.zeros(1, 3)), torch.zeros(1, 3))

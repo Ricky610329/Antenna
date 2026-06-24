@@ -15,12 +15,15 @@ config 用名字指定：
   回傳 SurrogateModel；lr 與單筆訓練門檻來自 YAML 的 hfss 區段，由訓練端顯式傳入。
 - 維度由訓練端推好傳入，模型不碰全域註冊狀態、不讀全域 config。
 """
-from antenna.models import MLPSurrogate, SigmoidGenerator, LatentGenerator, MirrorGenerator
+from antenna.models import (
+    MLPSurrogate, SigmoidGenerator, LatentGenerator, MirrorGenerator, BatchLatentGenerator,
+)
 
 GENERATORS = {
     "sigmoid": SigmoidGenerator,      # MLP + BiScaleNorm (預設 hidden=(1024, 1024))；輸入＝目標響應
     "latent":  LatentGenerator,       # 同上 MLP，但輸入改成可學習潛在向量 z (target 只進 loss)
     "mirror":  MirrorGenerator,       # 左右鏡像對稱：MLP 只出半邊→flip 成完整圖 (對稱+搜尋空間砍半)
+    "batch_latent": BatchLatentGenerator,  # 同批 K 候選：高斯雲繞可學中心 z* (reparam+σ退火)；多候選分支見 training.py
 }
 
 SURROGATES = {

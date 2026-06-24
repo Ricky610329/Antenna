@@ -10,6 +10,10 @@ from torch import Tensor, nn
 
 from antenna.utils import config
 
+#? BiScaleNorm 除數下限：遠小於任何正常 logit 尺度 (O(0.1~10)) → 正常列不受影響 (golden-neutral)，
+#  只在退化列 (該半邊極值=0) 防 0/0 反向 NaN。
+_EPS = 1e-12
+
 
 #? 最絕對負值映到 -1，而 0 仍保持 0。這讓後續 sigmoid/STE 的分界更穩定、梯度尺度更一致。
 class BiScaleNorm(nn.Module):
@@ -20,13 +24,16 @@ class BiScaleNorm(nn.Module):
         # 大於 0 的值的正規化
         #? 正半邊：每個正值除以「該列」最大值 → 落在 (0, 1]；非正值位置填 0。
         #? per-row (dim=-1)：1-D 時等同全域 max (golden 不動)；(K, N) batch 時每個候選各自正規化、不互相耦合。
-        max_val = torch.max(input_vector, dim=-1, keepdim=True).values
+        #! clamp_min(_EPS)：退化列 (無正值 → max=0) 時除數會是 0，torch.where 未選分支的 0/0=NaN
+        #  雖被 forward 遮罩 (值仍 0)，卻會沿反向污染整列梯度。夾一個極小下限 → 退化列梯度有限、
+        #  正常列 max≫_EPS 不受影響 (golden-neutral)。多候選 batch 任一壞候選才不會拖垮整批。
+        max_val = torch.max(input_vector, dim=-1, keepdim=True).values.clamp_min(_EPS)
         positive_normalized = torch.where(input_vector > 0, input_vector / max_val, torch.tensor(0.0, device=input_vector.device))
 
         # 小於 0 的值的正規化
         #? 負半邊：每個負值除以「該列」最小值的絕對值 → 落在 [-1, 0)；非負值位置填 0。
-        min_val = torch.min(input_vector, dim=-1, keepdim=True).values
-        negative_normalized = torch.where(input_vector < 0, input_vector / torch.abs(min_val), torch.tensor(0.0, device=input_vector.device))
+        min_val = torch.abs(torch.min(input_vector, dim=-1, keepdim=True).values).clamp_min(_EPS)
+        negative_normalized = torch.where(input_vector < 0, input_vector / min_val, torch.tensor(0.0, device=input_vector.device))
 
         # 合併正規化結果
         #? 兩半邊在彼此互斥的位置上各填 0，相加即還原成完整向量 (值域 [-1, 1])。
@@ -108,4 +115,40 @@ class MirrorGenerator(SigmoidGenerator):
         mirror = half[..., :self.side - self.half_cols].flip(dims=[-1])      #? (..., side, side-half_cols)
         full = torch.cat([half, mirror], dim=-1)                            #? (..., side, side)
         return full.reshape(*full.shape[:-2], -1)                           #? (..., side*side)
+
+
+###* BatchLatentGenerator — 同批多候選 (高斯雲繞可學中心 z*，reparam) ###
+#? 動機：單 target 反向設計裡，與其順序跑多個 z restart，不如同一輪同時生成 K 個候選、在 SM 上
+#? 平行評分、挑最好的一張送昂貴 HFSS —— 同樣 HFSS 預算下搜更廣、每次評估都花在 best-of-K。
+#? latent 設計 (γ)：q(z)=N(z*, σ²I)，reparam 抽 K 個 z_k = z* + σ·ε_k (ε_k~N(0,I))。中心 z* 隨
+#? Adam 一起被優化、σ 隨訓練退火 (前期探索大、後期收斂)。沿用 SigmoidGenerator 的 MLP+BiScaleNorm，
+#? 只把輸入換成「一批 K 個潛在向量」→ forward 回 (K, out_dim)。需 BiScaleNorm per-row (每候選各自
+#? 正規化) 與 SM forward 支援 batch (見 surrogates ndim 分支)。多候選的生成/選擇/聚合在 run_training。
+class BatchLatentGenerator(SigmoidGenerator):
+    """生成器 G：高斯雲繞可學中心 z* (reparam) → 同批 K 個候選 pattern logits (K, out_dim)。
+
+    in_dim 即 z 的維度 (build_generator 預設帶 spec.size()，但已與 spec 解耦)。
+    forward 忽略傳入目標 (沿用 LatentGenerator 約定)，改抽自有的 K 個潛在向量。
+    """
+    def __init__(self, in_dim, out_dim, hidden=(1024, 1024), num_candidates=8,
+                 sigma=0.5, sigma_min=0.05):
+        super().__init__(in_dim, out_dim, hidden=hidden)
+        self.K = int(num_candidates)            #? 同批候選數
+        self.sigma_start = float(sigma)         #? σ 退火起點 (探索半徑)
+        self.sigma_min = float(sigma_min)       #? σ 退火終點
+        self.sigma = float(sigma)               #? 當前 σ (由 anneal_sigma 更新)
+        #? z*：可學中心，隨 Adam 一起優化 (取代「目標當輸入」)。
+        self.z_center = nn.Parameter(torch.randn(in_dim, device=config.device))
+
+    def anneal_sigma(self, frac: float):
+        """frac = epoch/epochs ∈ [0,1]：σ 從 sigma_start 線性退火到 sigma_min (探索→收斂)。"""
+        frac = min(1.0, max(0.0, frac))
+        self.sigma = self.sigma_start + (self.sigma_min - self.sigma_start) * frac
+
+    def forward(self, *args) -> Tensor:
+        #? reparam：z_k = z* + σ·ε_k，ε_k~N(0,I)。ε 不可訓 (detach 天然，randn 無梯度)，
+        #  梯度經 z 流回 z_center 與 σ (σ 目前非 Parameter，僅退火常數)。
+        eps = torch.randn(self.K, self.z_center.numel(), device=config.device)
+        z = self.z_center.unsqueeze(0) + self.sigma * eps     #? (K, in_dim)
+        return self.fc_patch(z)                               #? (K, out_dim)
 

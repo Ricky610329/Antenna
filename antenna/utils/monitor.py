@@ -162,8 +162,11 @@ class TrainingMonitor:
         if self.writer is None:
             return
         for group, keys in (("loss", ("sim_loss", "gen_loss", "best_loss", "rad_loss")),
-                            ("sched", ("lr", "tau")),
-                            ("index", ("r_feed", "time"))):
+                            ("sched", ("lr", "tau", "sigma")),
+                            ("index", ("r_feed", "time")),
+                            # 多候選 (batch_latent) 才有：候選池健康度 → 診斷 Z 探索是否有賺頭
+                            # (score_spread→0 = 候選塌縮、Z 失效；fresh_frac 低 = 探索停滯)。
+                            ("select", ("score_best", "score_mean", "score_spread", "fresh_frac"))):
             for k in keys:
                 if k in m:
                     self.writer.add_scalar(f"{group}/{k}", m[k], epoch)

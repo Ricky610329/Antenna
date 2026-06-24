@@ -23,7 +23,7 @@ import torch
 from antenna.utils import config, logger
 from antenna import AntennaPattern, AntennaResponse, TargetResponse
 from antenna import zoo
-from antenna.models import Models
+from antenna.models import Models, BatchLatentGenerator
 from antenna.losses import FeedReachability, SpectralConnectivityLoss, GapClosingLoss
 from antenna.optim import AdaptiveCyclicalScheduler
 from antenna.losses import custom_loss_minmax, interval_loss, beam_coverage_loss, boundary_loss
@@ -64,10 +64,12 @@ SECTION_KEYS = {
     "sm_train":  {"lr", "min_loss", "max_epoch", "mode", "newest_steps", "replay_size"},
     "scheduler": {"on_plateau", "T_0", "T_mult", "lr_min", "temp_max", "temp_min",
                   "warmup_ratio", "patience", "factor"},
-    "generator": {"name", "hidden", "pretrained"},
+    "generator": {"name", "hidden", "pretrained", "num_candidates", "sigma", "sigma_min"},
     "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
     "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight", "flatness_weight",
                   "warmup_epochs", "n_theta", "n_basis", "freeze_trunk", "sm_max_epoch", "sm_min_loss"},
+    # 多候選 (batch_latent) 選擇分數：閘門 + 排序。僅 generator: batch_latent 時生效。
+    "selection": {"boundary_weight", "feasibility_max"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
 
@@ -88,6 +90,7 @@ class TrainConfig:
     surrogate: dict = field(default_factory=dict)   # SM：{name, hidden, pretrained, offline_dataset, warmup}
     targets: dict = field(default_factory=dict)     # {label: {side, center, width, method|interval}}
     radiation: dict = field(default_factory=dict)   # 方向圖 (選用，預設 off)：見 SECTION_KEYS["radiation"]
+    selection: dict = field(default_factory=dict)   # 多候選選擇 (選用，僅 batch_latent)：見 SECTION_KEYS["selection"]
 
     def __post_init__(self):
         if self.port not in PORT_SPECS:
@@ -270,6 +273,13 @@ def run_training(
     if bnd_w > 0 and replay is None:
         logger.warning("loss.boundary > 0 但 sm_train.mode 非 replay/dlf（無緩衝定義已見分布）→ boundary loss 停用")
 
+    # 多候選 (batch_latent)：同批生成 K 個候選 → 在 SM 上評分選最佳 → 只把選中的那張送昂貴路徑 (HFSS)，
+    # 其餘候選僅進「聚合 loss」(mean over K) 一起反傳。multi=False (其他 generator) → 全程走單張原路，
+    # 下方多候選分支一概不執行 → 與原樣完全相同 (golden 零漂移)。
+    multi = isinstance(generator.model, BatchLatentGenerator)
+    sel_bnd_w = cfg.selection.get("boundary_weight", bnd_w)    # 選擇排序的 boundary 權重 λ (省略=沿用訓練 bnd_w)
+    sel_feas_max = cfg.selection.get("feasibility_max", None)  # SC 可行性閘門門檻 (None=不開閘門，等真實尺度再設)
+
     # 方向圖 (選用，預設 off)：開啟時 SM 已建方向圖頭、simulator 為 SinglePortRadSimulator。
     # 全程用 rad_on 閘住；rad_on=False → 下方所有方向圖分支不執行，行為與原樣完全相同 (golden 零漂移)。
     rad_on = cfg.radiation.get("enable", False)
@@ -299,6 +309,56 @@ def run_training(
     epochs = max_epochs if max_epochs is not None else cfg.epochs
     pat = patience if patience is not None else cfg.patience
 
+    # ── 多候選 (batch_latent) 用的小工具 (閉包讀 smodel/sc/權重/replay/rad_*/state) ──
+    #    僅 multi 時呼叫；rad_theta 為 run 中才填的閉包變數，呼叫時讀當前值 (只讀不寫)。
+    def _build_candidate(logits_row, tau):
+        oe = AntennaPattern(AntennaPattern.binarization(logits_row, tau))
+        for f in feeds:
+            oe = oe + f
+        return oe
+
+    def _candidate_loss(oe, ep):
+        #? 現役四 loss：sm_target + SC + boundary + rad (TV/island/gap 為 legacy，多候選分支不接)。
+        L = smodel(oe.series).criterion()
+        if sc_w:
+            L = L + sc_w * sc.forward(oe.size_converter(output_shape="B, 1, H, W"))
+        if bnd_w > 0 and replay is not None and len(replay) > 1:
+            L = L + bnd_w * boundary_loss(oe.series, replay.patterns())
+        if rad_on and rad_theta is not None and ep > rad_warmup:
+            rp = smodel.rad_predict(oe.series)
+            L = L + rad_w * beam_coverage_loss(
+                rp, rad_theta, window_deg=rad_window, floor_db=rad_floor,
+                boresight_weight=rad_bore_w, flatness_weight=rad_flat_w,
+            )
+        return L
+
+    def _select_best(cands):
+        #? 選擇分數 (no_grad)：閘門 (SC ≤ feas_max) + 排序 (sm_target + λ·boundary)；優先沒模擬過的候選。
+        #  回傳 (k_star, stats)：stats 是監控用的「候選池健康度」(交給 TB 診斷 Z 有沒有賺頭)。
+        scores, feas, seen = [], [], []
+        with torch.no_grad():
+            for c in cands:
+                s = float(smodel(c.series).criterion())
+                if sel_bnd_w > 0 and replay is not None and len(replay) > 1:
+                    s = s + sel_bnd_w * float(boundary_loss(c.series, replay.patterns()))
+                scores.append(s)
+                feas.append(float(sc.forward(c.size_converter(output_shape="B, 1, H, W"))))
+                seen.append(state.lookup(~c) is not None)
+        idx = list(range(len(cands)))
+        gated = [i for i in idx if sel_feas_max is None or feas[i] <= sel_feas_max] or idx  # 全濾掉→退回全體
+        fresh = [i for i in gated if not seen[i]]
+        pool = fresh or gated                          # 優先沒見過的；全見過→從 gated 挑
+        k_star = min(pool, key=lambda i: scores[i])
+        n = len(scores)
+        smin, smean = min(scores), sum(scores) / n
+        stats = {
+            "score_best": smin,                        # 選中候選的分數
+            "score_mean": smean,                       # 全候選平均
+            "score_spread": smean - smin,              # 分散度：越大=best-of-K 越有賺頭；→0=候選塌縮 (Z 失效)
+            "fresh_frac": sum(1 for x in seen if not x) / n,  # 沒模擬過的候選比例 (探索廣度)
+        }
+        return k_star, stats
+
     epoch = start_epoch
     while epoch < epochs:
         epoch += 1
@@ -316,12 +376,22 @@ def run_training(
             smodel.train_by_datas(online, verbose=verbose)
 
         # 生成：模型只出 logits；STE 二值化是管線的固定一步，tau 由 ACP 單獨控制
-        logits = generator(spec.concat())
-        output_element = AntennaPattern(
-            AntennaPattern.binarization(logits, generator.scheduler.get_temp())
-        )
-        for f in feeds:
-            output_element = output_element + f
+        sel_stats = None
+        if multi:
+            # 多候選：同批生成 K 個 → SM 評分選最佳 → output_element = 選中的那張 (走下方昂貴路徑)
+            generator.model.anneal_sigma(epoch / epochs)            # σ 隨進度退火 (探索→收斂)
+            tau = generator.scheduler.get_temp()
+            logits_K = generator(spec.concat())                    # (K, out_dim)
+            cands = [_build_candidate(logits_K[k], tau) for k in range(generator.model.K)]
+            k_star, sel_stats = _select_best(cands)
+            output_element = cands[k_star]
+        else:
+            logits = generator(spec.concat())
+            output_element = AntennaPattern(
+                AntennaPattern.binarization(logits, generator.scheduler.get_temp())
+            )
+            for f in feeds:
+                output_element = output_element + f
 
         # 去重：patterns/ 的 hash 檔名即「模擬過」快取，沒見過才跑 (mock/HFSS)
         cached = state.lookup(~output_element)
@@ -389,40 +459,58 @@ def run_training(
         state.append("r_feed", r_feed(~output_element))
 
         # 更新 GEN (借道可微分 SM)
-        response = smodel(output_element.series)
-        loss = (
-            response.criterion()
-            + output_element.total_variation_loss(tv_w)
-            + output_element.island_suppression_loss(is_w)
-            + sc_w * sc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
-            + gap_w * gc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
-        )
-        # boundary/trust-region (選用)：拉 G 回 SM 已見分布，防 G 鑽 SM 盲區、白燒 HFSS 評估。
-        # 需 replay/dlf 緩衝定義「已見分布」；bnd_w=0 或無緩衝 → 不加 (golden 零漂移)。
-        if bnd_w > 0 and replay is not None and len(replay) > 1:
-            loss = loss + bnd_w * boundary_loss(output_element.series, replay.patterns())
-        # 方向圖 loss (選用)：經方向圖頭可微 → 加進 GEN loss 一起反傳。
-        # 有方向圖資料就先「預測一次」(供監控疊圖)；但 warmup_epochs 內先不讓它進 loss
-        # (方向圖頭還在冷啟動，避免雜訊梯度把 G 帶歪)。
-        rad_loss_val = 0.0
-        rad_snapshot = None
-        if rad_on and rad_theta is not None:
-            rad_pred = smodel.rad_predict(output_element.series)
-            if epoch > rad_warmup:
-                rad_loss = beam_coverage_loss(
-                    rad_pred, rad_theta,
-                    window_deg=rad_window, floor_db=rad_floor, boresight_weight=rad_bore_w,
-                    flatness_weight=rad_flat_w,
+        if multi:
+            # 聚合：mean over K 候選的「現役四 loss」(reparam → 最小化雲的 E[loss]，把中心 z* 拉向好區)。
+            loss = sum(_candidate_loss(c, epoch) for c in cands) / len(cands)
+            # 方向圖監控快照 (用選中的那張；rad loss 已含在聚合 loss 內，這裡只為監控、不重複加)。
+            rad_loss_val = 0.0
+            rad_snapshot = None
+            if rad_on and rad_theta is not None:
+                rad_pred = smodel.rad_predict(output_element.series)
+                if epoch > rad_warmup:
+                    rad_loss_val = float(beam_coverage_loss(
+                        rad_pred, rad_theta, window_deg=rad_window, floor_db=rad_floor,
+                        boresight_weight=rad_bore_w, flatness_weight=rad_flat_w,
+                    ))
+                rad_snapshot = dict(
+                    theta=rad_theta.detach().cpu(), pred=rad_pred.detach().cpu(),
+                    real=rad_real_this_epoch, window_deg=rad_window, floor_db=rad_floor,
                 )
-                loss = loss + rad_w * rad_loss
-                rad_loss_val = float(rad_loss)
-            rad_snapshot = dict(                        # 監控素材 (參考 pattern 的傳法，交給 monitor 畫)
-                theta=rad_theta.detach().cpu(),
-                pred=rad_pred.detach().cpu(),           # SM 方向圖頭預測 (2, n_theta)
-                real=rad_real_this_epoch,               # 本 epoch 真實 HFSS 方向圖 (快取 epoch 為 None)
-                window_deg=rad_window,
-                floor_db=rad_floor,
+        else:
+            response = smodel(output_element.series)
+            loss = (
+                response.criterion()
+                + output_element.total_variation_loss(tv_w)
+                + output_element.island_suppression_loss(is_w)
+                + sc_w * sc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
+                + gap_w * gc.forward(output_element.size_converter(output_shape="B, 1, H, W"))
             )
+            # boundary/trust-region (選用)：拉 G 回 SM 已見分布，防 G 鑽 SM 盲區、白燒 HFSS 評估。
+            # 需 replay/dlf 緩衝定義「已見分布」；bnd_w=0 或無緩衝 → 不加 (golden 零漂移)。
+            if bnd_w > 0 and replay is not None and len(replay) > 1:
+                loss = loss + bnd_w * boundary_loss(output_element.series, replay.patterns())
+            # 方向圖 loss (選用)：經方向圖頭可微 → 加進 GEN loss 一起反傳。
+            # 有方向圖資料就先「預測一次」(供監控疊圖)；但 warmup_epochs 內先不讓它進 loss
+            # (方向圖頭還在冷啟動，避免雜訊梯度把 G 帶歪)。
+            rad_loss_val = 0.0
+            rad_snapshot = None
+            if rad_on and rad_theta is not None:
+                rad_pred = smodel.rad_predict(output_element.series)
+                if epoch > rad_warmup:
+                    rad_loss = beam_coverage_loss(
+                        rad_pred, rad_theta,
+                        window_deg=rad_window, floor_db=rad_floor, boresight_weight=rad_bore_w,
+                        flatness_weight=rad_flat_w,
+                    )
+                    loss = loss + rad_w * rad_loss
+                    rad_loss_val = float(rad_loss)
+                rad_snapshot = dict(                        # 監控素材 (參考 pattern 的傳法，交給 monitor 畫)
+                    theta=rad_theta.detach().cpu(),
+                    pred=rad_pred.detach().cpu(),           # SM 方向圖頭預測 (2, n_theta)
+                    real=rad_real_this_epoch,               # 本 epoch 真實 HFSS 方向圖 (快取 epoch 為 None)
+                    window_deg=rad_window,
+                    floor_db=rad_floor,
+                )
         if rad_on:
             state.append("rad_loss", rad_loss_val)      # 監控用 (只在 rad run 出現此欄)
         loss.backward()
@@ -458,6 +546,10 @@ def run_training(
                 snap["rad_loss"] = rad_loss_val
                 if rad_snapshot is not None:
                     snap["radiation"] = rad_snapshot
+            if multi:                                  # 多候選 (選用)：σ 退火 + 候選池健康度 (診斷 Z 賺頭)
+                snap["sigma"] = float(generator.model.sigma)
+                if sel_stats is not None:
+                    snap.update(sel_stats)             # score_best / score_mean / score_spread / fresh_frac
             on_epoch(epoch, snap)
 
     return state
