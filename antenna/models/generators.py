@@ -18,13 +18,14 @@ class BiScaleNorm(nn.Module):
 
     def forward(self, input_vector):
         # 大於 0 的值的正規化
-        #? 正半邊：每個正值除以全域最大值 → 落在 (0, 1]；非正值位置填 0。
-        max_val = torch.max(input_vector)
+        #? 正半邊：每個正值除以「該列」最大值 → 落在 (0, 1]；非正值位置填 0。
+        #? per-row (dim=-1)：1-D 時等同全域 max (golden 不動)；(K, N) batch 時每個候選各自正規化、不互相耦合。
+        max_val = torch.max(input_vector, dim=-1, keepdim=True).values
         positive_normalized = torch.where(input_vector > 0, input_vector / max_val, torch.tensor(0.0, device=input_vector.device))
 
         # 小於 0 的值的正規化
-        #? 負半邊：每個負值除以最小值的絕對值 → 落在 [-1, 0)；非負值位置填 0。
-        min_val = torch.min(input_vector)
+        #? 負半邊：每個負值除以「該列」最小值的絕對值 → 落在 [-1, 0)；非負值位置填 0。
+        min_val = torch.min(input_vector, dim=-1, keepdim=True).values
         negative_normalized = torch.where(input_vector < 0, input_vector / torch.abs(min_val), torch.tensor(0.0, device=input_vector.device))
 
         # 合併正規化結果

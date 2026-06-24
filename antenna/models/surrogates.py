@@ -356,8 +356,11 @@ class HFSSNet(nn.Module):
 
     def forward(self, input):
         x = self.fc_patch(input)
-        x = x.reshape(self.num_response)  #? 把攤平輸出還原成 (3,17) 響應形狀 (只回 freq，與原樣相同)
-        return x
+        #? 1-D 輸入 (單張 pattern)：還原成 num_response (3,17)，與原樣 byte-identical (golden 不動)。
+        #? 2-D 輸入 (K, N) batch：保留批次維 → (K, *num_response)，供同批多候選平行推論。
+        if input.dim() == 1:
+            return x.reshape(self.num_response)
+        return x.reshape(input.shape[0], *self.num_response)
 
     def forward_rad(self, input):
         #? 方向圖預測：共用 backbone (fc_patch 除最後一層 Linear 外的所有層 → 64 維特徵) → head_rad
@@ -368,8 +371,14 @@ class HFSSNet(nn.Module):
         feat = input
         for layer in self.fc_patch[:-1]:        #? 末層 Linear 之前 = 共用 backbone 的 64 維特徵
             feat = layer(feat)
-        coeffs = self.head_rad(feat).reshape(self.rad_response[0], self.rad_n_basis)  # (n_phi, K)
-        return coeffs @ self.rad_basis      # (n_phi, n_theta)：matmul 即定形，n_theta 跟著實際基底走
+        n_phi = self.rad_response[0]
+        #? 1-D 輸入：(n_phi, K) → @B → (n_phi, n_theta)，與原樣 byte-identical (golden 不動)。
+        #? 2-D 輸入 (B, N)：保留批次維 (B, n_phi, K) → @B → (B, n_phi, n_theta)，供同批多候選。
+        if input.dim() == 1:
+            coeffs = self.head_rad(feat).reshape(n_phi, self.rad_n_basis)            # (n_phi, K)
+        else:
+            coeffs = self.head_rad(feat).reshape(input.shape[0], n_phi, self.rad_n_basis)  # (B, n_phi, K)
+        return coeffs @ self.rad_basis      # (..., n_theta)：matmul 即定形，n_theta 跟著實際基底走
 
 ###* MLPSurrogate — 工廠：學長版 SM (HFSSNet + Ranger + MSE + ReduceLROnPlateau) ###
 #? 訓練腳本 (train_single.py / train_dual.py) 實際使用的就是這個工廠 (見各腳本 from ... import MLPSurrogate)。
