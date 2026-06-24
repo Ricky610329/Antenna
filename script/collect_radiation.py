@@ -47,34 +47,39 @@ def _bin(p) -> torch.Tensor:
 def _plot_radiation(stack, tag, figdir, idx):
     """存一張 radiation 圖 (**極座標、全英文**)。stack=(3,n_theta)=[theta, phi0, phi90]。
 
-    主波束朝上 (theta=0 在頂)、半徑=gain(dB)；標 +/-45° 覆蓋窗 + G0-3dB 圈 (學長放寬到 +/-45)。
-    半徑底 rmin 由實際資料推得，避免深零點把圖拉爆。
+    主波束朝上 (theta=0 在頂)、半徑=gain(dB)、**dB 標籤對在正上方中軸**。
+    dB 軸**自動取到 5 的倍數、包住整個 pattern**(峰值不超出畫面，仍每環 5 dB；下界限深 30 dB)。
+    標 +/-45° 覆蓋窗 + 邊界線 + G0-3dB 圈 (學長放寬到 +/-45)。
     """
     th, p0, p90 = stack[0].numpy(), stack[1].numpy(), stack[2].numpy()
     o = th.argsort()                                  # HFSS 匯出序可能未排序 → 先排好
     th, p0, p90 = th[o], p0[o], p90[o]
     bi = int(np.abs(th).argmin())
     g0 = float(max(p0[bi], p90[bi]))                  # boresight 增益
-    gmin = float(min(p0.min(), p90.min()))
-    rmin = max(round(gmin) - 1, round(g0) - 25)       # 半徑底 (中心)，深零點不拉爆
-    rmax = round(g0) + 2
-    fig = plt.figure(figsize=(6.5, 6.5))
+    gmax = float(max(p0.max(), p90.max())); gmin = float(min(p0.min(), p90.min()))
+    rmax = int(np.ceil((gmax + 0.5) / 5.0) * 5)       # 上界取到 5 倍數、含峰值 (不超出畫面)
+    rmin = int(max(np.floor(gmin / 5.0) * 5, rmax - 30))   # 下界取 5 倍數、限深 30 dB (深零點不拉爆)
+    fig = plt.figure(figsize=(6.6, 6.9))
     ax = fig.add_subplot(111, projection="polar")
     ax.set_theta_zero_location("N"); ax.set_theta_direction(-1)   # 0 度朝上、+角度在右
-    ax.fill_between(np.deg2rad(np.linspace(-45, 45, 60)), 0, rmax - rmin,
-                    color="gold", alpha=0.13, label="+/-45 deg window")
-    ax.plot(np.deg2rad(np.linspace(-180, 180, 361)), np.full(361, (g0 - 3) - rmin),
-            "r--", lw=1.3, label="G0 - 3 dB")
+    ax.set_rlim(0, rmax - rmin); ax.set_rlabel_position(0)        # dB 標籤對在上方中軸
+    # +/-45° 覆蓋窗 + 兩條邊界線 + 標字
+    ax.fill_between(np.deg2rad(np.linspace(-45, 45, 60)), 0, rmax - rmin, color="gold", alpha=0.12)
+    for a in (-45, 45):
+        ax.plot([np.deg2rad(a)] * 2, [0, rmax - rmin], color="darkorange", ls="--", lw=1.5)
+    ax.text(np.deg2rad(45), (rmax - rmin) * 1.04, "+45", color="darkorange", fontsize=9, ha="left")
+    ax.text(np.deg2rad(-45), (rmax - rmin) * 1.04, "-45", color="darkorange", fontsize=9, ha="right")
+    # G0-3dB 圈 + 兩切面 (低端 clip 到 rmin，深零點不溢出中心)
+    ax.plot(np.deg2rad(np.linspace(-180, 180, 361)), np.full(361, (g0 - 3) - rmin), "r--", lw=1.2, label="G0-3dB")
     ax.plot(np.deg2rad(th), np.clip(p0, rmin, None) - rmin, "b-", lw=2, label="phi=0 (E)")
     ax.plot(np.deg2rad(th), np.clip(p90, rmin, None) - rmin, "g-", lw=2, label="phi=90 (H)")
-    ax.set_rlim(0, rmax - rmin)
-    rt = [t for t in (-20, -15, -10, -5, 0, 5, 10) if rmin < t <= rmax]
-    ax.set_rticks([t - rmin for t in rt]); ax.set_yticklabels([str(t) for t in rt], fontsize=7)
+    rt = list(range(rmin, rmax + 1, 5))               # 每環 5 dB
+    ax.set_rticks([t - rmin for t in rt]); ax.set_yticklabels([str(t) for t in rt], fontsize=7.5)
     ax.set_thetagrids(range(0, 360, 30),
                       ["0", "30", "60", "90", "120", "150", "180", "-150", "-120", "-90", "-60", "-30"],
                       fontsize=8)
-    ax.set_title(f"Radiation: {tag}", fontsize=10, pad=14)
-    ax.legend(loc="lower center", bbox_to_anchor=(0.5, -0.13), ncol=2, fontsize=7)
+    ax.set_title(f"Radiation: {tag}  (G0={g0:.1f} dB)", fontsize=10, pad=16)
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=7.5)
     fig.tight_layout()
     safe = "".join(c if c.isalnum() else "_" for c in tag)[:50]
     path = os.path.join(figdir, f"rad_{idx:02d}_{safe}.png")
