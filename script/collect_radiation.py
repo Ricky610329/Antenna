@@ -45,27 +45,40 @@ def _bin(p) -> torch.Tensor:
 
 
 def _plot_radiation(stack, tag, figdir, idx):
-    """存一張 radiation 圖 (**全英文**，避免中文字體在某些機器渲染不出)。
+    """存一張 radiation 圖 (**極座標、全英文**)。stack=(3,n_theta)=[theta, phi0, phi90]。
 
-    stack=(3,n_theta)=[theta, phi0, phi90]。畫 gain(dB) vs theta，兩切面 + ±55° 窗 + G0−3dB 底線。
+    主波束朝上 (theta=0 在頂)、半徑=gain(dB)；標 +/-45° 覆蓋窗 + G0-3dB 圈 (學長放寬到 +/-45)。
+    半徑底 rmin 由實際資料推得，避免深零點把圖拉爆。
     """
     th, p0, p90 = stack[0].numpy(), stack[1].numpy(), stack[2].numpy()
-    o = th.argsort()                                  # HFSS 匯出序可能未排序 → 先排好再畫
+    o = th.argsort()                                  # HFSS 匯出序可能未排序 → 先排好
     th, p0, p90 = th[o], p0[o], p90[o]
     bi = int(np.abs(th).argmin())
     g0 = float(max(p0[bi], p90[bi]))                  # boresight 增益
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.axvspan(-55, 55, color="gold", alpha=0.12, label="+/-55 deg window")
-    ax.axhline(g0 - 3, color="r", ls=":", lw=1, label="G0 - 3 dB")
-    ax.plot(th, p0, "b-", lw=1.4, label="phi=0 (E-plane)")
-    ax.plot(th, p90, "g--", lw=1.4, label="phi=90 (H-plane)")
-    ax.axvline(0, color="k", lw=0.6)
-    ax.set_xlabel("theta (deg)"); ax.set_ylabel("gain (dB)")
-    ax.set_title(f"Radiation pattern: {tag}"); ax.grid(alpha=0.3); ax.legend(fontsize=7)
+    gmin = float(min(p0.min(), p90.min()))
+    rmin = max(round(gmin) - 1, round(g0) - 25)       # 半徑底 (中心)，深零點不拉爆
+    rmax = round(g0) + 2
+    fig = plt.figure(figsize=(6.5, 6.5))
+    ax = fig.add_subplot(111, projection="polar")
+    ax.set_theta_zero_location("N"); ax.set_theta_direction(-1)   # 0 度朝上、+角度在右
+    ax.fill_between(np.deg2rad(np.linspace(-45, 45, 60)), 0, rmax - rmin,
+                    color="gold", alpha=0.13, label="+/-45 deg window")
+    ax.plot(np.deg2rad(np.linspace(-180, 180, 361)), np.full(361, (g0 - 3) - rmin),
+            "r--", lw=1.3, label="G0 - 3 dB")
+    ax.plot(np.deg2rad(th), np.clip(p0, rmin, None) - rmin, "b-", lw=2, label="phi=0 (E)")
+    ax.plot(np.deg2rad(th), np.clip(p90, rmin, None) - rmin, "g-", lw=2, label="phi=90 (H)")
+    ax.set_rlim(0, rmax - rmin)
+    rt = [t for t in (-20, -15, -10, -5, 0, 5, 10) if rmin < t <= rmax]
+    ax.set_rticks([t - rmin for t in rt]); ax.set_yticklabels([str(t) for t in rt], fontsize=7)
+    ax.set_thetagrids(range(0, 360, 30),
+                      ["0", "30", "60", "90", "120", "150", "180", "-150", "-120", "-90", "-60", "-30"],
+                      fontsize=8)
+    ax.set_title(f"Radiation: {tag}", fontsize=10, pad=14)
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, -0.13), ncol=2, fontsize=7)
     fig.tight_layout()
     safe = "".join(c if c.isalnum() else "_" for c in tag)[:50]
     path = os.path.join(figdir, f"rad_{idx:02d}_{safe}.png")
-    fig.savefig(path, dpi=110); plt.close(fig)
+    fig.savefig(path, dpi=120); plt.close(fig)
     return path
 
 
