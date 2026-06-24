@@ -147,40 +147,42 @@ def main():
     if not items:
         raise SystemExit("沒指定來源：用 --runs / --dataset / --pattern 至少一個")
 
-    # 2) 已收過的 pattern 跳過 (依 pattern fingerprint，省 HFSS)
+    # 2) 比對 store：已收過 → 從 store 讀 rad 直接出圖 (免 HFSS)；沒收過 → 跑 HFSS。**每張都會出圖**。
     out_store = SampleStore(DATASET_PATH.joinpath(args.out), verbose=True)
-    seen = {fingerprint(out_store[i][0]) for i in range(len(out_store))}
-    todo = [(p, tag) for p, tag in items if fingerprint(_bin(p)) not in seen]
-    print(f"來源共 {len(items)} 張、已收過 {len(items) - len(todo)} 張 → 這次跑 {len(todo)} 張 HFSS")
-    if not todo:
-        print("沒有新 pattern 要收。"); return
-
-    # 3) 跑 HFSS 方向圖、累積 + 出圖 (HFSS 開一次 → 迴圈 → 關)
+    stored = {fingerprint(out_store[i][0]): out_store[i][1] for i in range(len(out_store))}
     os.makedirs(args.figdir, exist_ok=True)
-    sim = SinglePortRadSimulator(record_path=str(Path(args.record).resolve()))
-    sim.open()
+    have = [(p, tag) for p, tag in items if fingerprint(_bin(p)) in stored]
+    todo = [(p, tag) for p, tag in items if fingerprint(_bin(p)) not in stored]
+    print(f"來源共 {len(items)} 張：已收過 {len(have)} 張(直接出圖)、需跑 HFSS {len(todo)} 張")
+
+    n = 0
+    # 已收過的：從 store 讀 rad、直接畫 (不碰 HFSS)
+    for p, tag in have:
+        fig = _plot_radiation(stored[fingerprint(_bin(p))], tag, args.figdir, n)
+        print(f"    [已收] {tag} → {fig}"); n += 1
+
+    # 沒收過的：開 HFSS 跑、累積、畫
     added = 0
-    try:
-        for num, (p, tag) in enumerate(todo):
-            patt = _bin(p)
-            print(f"[{num + 1}/{len(todo)}] {tag}  金屬={int(patt.sum())} … HFSS 求解中", flush=True)
-            sim.start(num)
-            sim(patt)
-            sim.end()
-            rad = sim.last_radiation
-            if not (isinstance(rad, dict) and rad.get("theta") is not None):
-                err = rad.get("error") if isinstance(rad, dict) else rad
-                logger.warning(f"  方向圖萃取失敗，跳過：{err}")
-                continue
-            stack = torch.stack([rad["theta"].float(), rad["phi0"].float(), rad["phi90"].float()])  # (3, n_theta)
-            figpath = _plot_radiation(stack, tag, args.figdir, num)         # 出 radiation 圖 (英文)
-            print(f"    radiation 圖 → {figpath}")
-            if out_store.add(patt, stack):
-                added += 1
-    finally:
-        sim.quit()
-    print(f"\n✅ 完成：新增 {added} 筆 → {DATASET_PATH.joinpath(args.out)}  (共 {len(out_store)} 筆)")
-    print(f"   radiation 圖在 {args.figdir}/ (每張 pattern 一張，英文標籤)")
+    if todo:
+        sim = SinglePortRadSimulator(record_path=str(Path(args.record).resolve()))
+        sim.open()
+        try:
+            for j, (p, tag) in enumerate(todo):
+                patt = _bin(p)
+                print(f"    [HFSS {j + 1}/{len(todo)}] {tag}  金屬={int(patt.sum())} … 求解中", flush=True)
+                sim.start(n); sim(patt); sim.end()
+                rad = sim.last_radiation
+                if not (isinstance(rad, dict) and rad.get("theta") is not None):
+                    err = rad.get("error") if isinstance(rad, dict) else rad
+                    logger.warning(f"  方向圖萃取失敗，跳過：{err}"); continue
+                stack = torch.stack([rad["theta"].float(), rad["phi0"].float(), rad["phi90"].float()])
+                print(f"    radiation 圖 → {_plot_radiation(stack, tag, args.figdir, n)}")
+                if out_store.add(patt, stack):
+                    added += 1
+                n += 1
+        finally:
+            sim.quit()
+    print(f"\n✅ 完成：出圖 {n} 張 → {args.figdir}/ ；新增 {added} 筆到 {DATASET_PATH.joinpath(args.out)} (共 {len(out_store)} 筆)")
 
 
 if __name__ == "__main__":
