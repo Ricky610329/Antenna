@@ -111,6 +111,56 @@ def test_flatness_zero_for_perfect_flat_top():
     assert beam_coverage_loss(rad, THETA, flatness_weight=10.0, **KW).item() == pytest.approx(0.0)
 
 
+def test_flatness_weight_zero_inf_not_nan():
+    """Bug 1 回歸：flatness_weight=0 + 窗內含 inf → 短路不算 (pred-g0)^2，不會 0*inf=NaN；
+    值＝只跑 ①② 的行為＝inf (改動前此例會回 NaN)。"""
+    rad = torch.tensor([5.0, 5, float("inf"), 5, 5, 5, 5])   # θ=-30 (窗內) = inf
+    loss = beam_coverage_loss(rad, THETA, flatness_weight=0.0, **KW)
+    assert not torch.isnan(loss)
+    assert torch.isinf(loss)
+
+
+def test_flatness_anchors_per_phi_cut():
+    """flatness 每個 phi 切面各自錨自己的 G0 (非全域)；隔離 ③ (boresight_weight=0)。"""
+    #  cut0 G0=10，偏差平方 [0,4,0,4,0]；cut1 全 2 → 全 0。mean over 2×5=10 = 8/10 = 0.8。
+    rad = torch.tensor([[10.0, 12, 10, 8, 10],
+                        [2.0, 2, 2, 2, 2]])
+    theta = torch.tensor([-55.0, -30, 0, 30, 55])
+    loss = beam_coverage_loss(rad, theta, window_deg=55, floor_db=3,
+                              boresight_weight=0.0, flatness_weight=1.0)
+    assert loss.item() == pytest.approx(0.8)
+
+
+def test_flatness_theta_unsorted():
+    """θ 為 HFSS 匯出序 (未排序)：g0 仍取 |θ| 最小欄、flatness 逐欄對位正確。"""
+    #  g0=θ0(idx0)=5；窗內 idx0-4=[5,4,4,3,3]，偏差平方 [0,1,1,4,4]=10，mean/5=2.0 (①② 此例皆 0)。
+    theta = torch.tensor([0.0, 30, -30, 55, -55, 60, -60])
+    rad = torch.tensor([5.0, 4, 4, 3, 3, 9, 9])
+    loss = beam_coverage_loss(rad, theta, window_deg=55, floor_db=3,
+                              boresight_weight=1.0, flatness_weight=1.0)
+    assert loss.item() == pytest.approx(2.0)
+
+
+def test_flatness_reduction_sum():
+    """reduction='sum' 也乘了 flatness_weight、不漏項。"""
+    #  G0=5，窗內 [5,4,5,4,5]，偏差平方 [0,1,0,1,0] sum=2 (①②=0) → loss=2.0。
+    rad = torch.tensor([5.0, 5, 4, 5, 4, 5, 5])
+    loss = beam_coverage_loss(rad, THETA, reduction="sum", flatness_weight=1.0, **KW)
+    assert loss.item() == pytest.approx(2.0)
+
+
+def test_flatness_pulls_g0_toward_window_mean():
+    """設計取捨明文化：flatness 對 g0 也微分 → 把 g0 往窗內均值拉 (與 ② 的『0°最高』對抗)。
+    隔離 ③ (boresight_weight=0)：峰 (g0) 梯度為正 (被往下拉)、窗內低點梯度為負 (被往上拉)。"""
+    theta = torch.tensor([-40.0, -20, 0, 20, 40])
+    rad = torch.tensor([3.0, 3, 5, 3, 3], requires_grad=True)   # g0=idx2=5 為峰
+    loss = beam_coverage_loss(rad, theta, window_deg=55, floor_db=3,
+                              boresight_weight=0.0, flatness_weight=1.0)
+    loss.backward()
+    assert rad.grad[2].item() > 0       # 峰 (g0) 被往下拉
+    assert rad.grad[1].item() < 0       # 低點被往上拉 → 趨平
+
+
 def test_window_excludes_all_raises():
     """窗內沒有任何取樣點 → 明確報錯，不靜默回 0。"""
     theta = torch.tensor([100.0, 200.0])

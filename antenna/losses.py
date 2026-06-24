@@ -606,16 +606,21 @@ def beam_coverage_loss(
     floor_deficit = torch.relu((g0 - floor_db) - pred_w)
     #? ② boresight-max：超過 G0 才罰 (單邊)；逼 0° 最高。
     boresight_excess = torch.relu(pred_w - g0)
-    #? ③ flatness (選用)：對 G0 的偏差平方 (雙邊、處處有梯度)；flatness_weight=0 → 乘 0 不影響。
-    flatness_sq = (pred_w - g0) ** 2
 
+    #? ③ flatness (選用)：對 G0 的偏差平方 (雙邊、處處有梯度)，主動把窗內壓平到 boresight 準位。
+    #! flatness_weight=0 時整項短路、根本不算 (pred_w-g0)^2：
+    #    - 對有限輸入逐位元同原樣 (loss + 0 == loss)，golden 安全；
+    #    - 且避免 rad_pred 含 inf 時 0*inf=NaN 把 loss 從 inf 污染成更難 debug 的 NaN (防 NaN 退化)。
+    #  注意 ③ 是平方項，量級與 ①② (線性 relu) 不同 → flatness_weight 的語意非線性、隨 ripple 振幅放大。
     if reduction == "mean":
-        return (floor_deficit.mean()
-                + boresight_weight * boresight_excess.mean()
-                + flatness_weight * flatness_sq.mean())
-    return (floor_deficit.sum()
-            + boresight_weight * boresight_excess.sum()
-            + flatness_weight * flatness_sq.sum())
+        loss = floor_deficit.mean() + boresight_weight * boresight_excess.mean()
+        if flatness_weight:
+            loss = loss + flatness_weight * ((pred_w - g0) ** 2).mean()
+        return loss
+    loss = floor_deficit.sum() + boresight_weight * boresight_excess.sum()
+    if flatness_weight:
+        loss = loss + flatness_weight * ((pred_w - g0) ** 2).sum()
+    return loss
 
 
 def boundary_loss(pattern: Tensor, seen: Tensor) -> Tensor:
