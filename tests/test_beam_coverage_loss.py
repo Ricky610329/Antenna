@@ -88,6 +88,29 @@ def test_differentiable_and_pushes_sidelobe_down():
     assert rad.grad[2].item() > 0          # θ=-30 的旁瓣 (值 8 > G0) 應被往下推
 
 
+def test_flatness_weight_zero_is_noop():
+    """flatness_weight 預設 0 → ③ 項完全不影響 (golden 安全)；帶內小起伏的 loss 仍是 0。"""
+    #  G0=5，窗內 [4,4,5,4,4]：① ② 都 0（介於 floor 與 G0 之間）→ 不加 ③ 時 loss=0。
+    rad = torch.tensor([9.0, 4, 4, 5, 4, 4, 9])
+    assert beam_coverage_loss(rad, THETA, **KW).item() == pytest.approx(0.0)
+    assert beam_coverage_loss(rad, THETA, flatness_weight=0.0, **KW).item() == pytest.approx(0.0)
+
+
+def test_flatness_penalizes_deviation_from_boresight():
+    """flatness_weight>0：對「① ② 都不罰」的帶內起伏，③ 仍依對 G0 的偏差平方給罰，值＝手算。"""
+    #  G0=5，窗內 [4,4,5,4,4]，偏差平方 [1,1,0,1,1]，mean=4/5=0.8 → loss = 0+0+1.0·0.8。
+    rad = torch.tensor([9.0, 4, 4, 5, 4, 4, 9])
+    assert beam_coverage_loss(rad, THETA, flatness_weight=1.0, **KW).item() == pytest.approx(0.8)
+    # 線性縮放
+    assert beam_coverage_loss(rad, THETA, flatness_weight=0.5, **KW).item() == pytest.approx(0.4)
+
+
+def test_flatness_zero_for_perfect_flat_top():
+    """完全平頂 (窗內全 = G0)：③ 偏差平方全 0 → 不論 flatness_weight 多大，loss 都 0。"""
+    rad = torch.tensor([5.0, 5, 5, 5, 5, 5, 5])
+    assert beam_coverage_loss(rad, THETA, flatness_weight=10.0, **KW).item() == pytest.approx(0.0)
+
+
 def test_window_excludes_all_raises():
     """窗內沒有任何取樣點 → 明確報錯，不靜默回 0。"""
     theta = torch.tensor([100.0, 200.0])

@@ -551,16 +551,21 @@ def beam_coverage_loss(
     window_deg: float = 55.0,
     floor_db: float = 3.0,
     boresight_weight: float = 1.0,
+    flatness_weight: float = 0.0,
     reduction: str = "mean",
 ) -> Tensor:
     """
     方向圖覆蓋損失 (相對 boresight 的「平頂 + 中央峰」形狀)。
 
-    由兩個單邊(relu)項組成，全部相對預測的 boresight 增益 G0=rad_pred[θ≈0]：
+    由兩個單邊(relu)項 + 一個選用平坦項組成，全部相對預測的 boresight 增益 G0=rad_pred[θ≈0]：
       ① floor 項   ：逼窗內(|θ|≤window_deg)每個角度 gain ≥ G0 − floor_db。
                      低於才罰；高於不罰 ──「越高越好」(比照 custom_loss_minmax 的單邊精神)。
       ② boresight 項：罰窗內任何角度 gain 超過 G0，逼 0° 成為窗內最高點。
-    總損失 = floor_loss + boresight_weight · boresight_loss。
+      ③ flatness 項 (選用，flatness_weight>0 才作用)：罰窗內每個角度「對 G0 的偏差平方」，
+                     對任何偏離都給梯度 → 主動把波形壓平到 boresight 準位 (順帶拉高窗內)。
+                     與 ① 的差別：① 是 hinge(只罰掉超過 floor 的、帶內 0 梯度＝容忍 ripple)；
+                     ③ 連帶內小起伏也壓。flatness_weight=0 → 此項完全不影響 (golden 安全)。
+    總損失 = floor_loss + boresight_weight · boresight_loss + flatness_weight · flatness_loss。
     (整體權重 w_rad 由訓練端在加進 GEN loss 時再乘，不在此函式內。)
 
     :param rad_pred: SM rad head 的預測，dB gain。shape (n_phi, n_theta) 或 (n_theta,)。
@@ -601,10 +606,16 @@ def beam_coverage_loss(
     floor_deficit = torch.relu((g0 - floor_db) - pred_w)
     #? ② boresight-max：超過 G0 才罰 (單邊)；逼 0° 最高。
     boresight_excess = torch.relu(pred_w - g0)
+    #? ③ flatness (選用)：對 G0 的偏差平方 (雙邊、處處有梯度)；flatness_weight=0 → 乘 0 不影響。
+    flatness_sq = (pred_w - g0) ** 2
 
     if reduction == "mean":
-        return floor_deficit.mean() + boresight_weight * boresight_excess.mean()
-    return floor_deficit.sum() + boresight_weight * boresight_excess.sum()
+        return (floor_deficit.mean()
+                + boresight_weight * boresight_excess.mean()
+                + flatness_weight * flatness_sq.mean())
+    return (floor_deficit.sum()
+            + boresight_weight * boresight_excess.sum()
+            + flatness_weight * flatness_sq.sum())
 
 
 def boundary_loss(pattern: Tensor, seen: Tensor) -> Tensor:

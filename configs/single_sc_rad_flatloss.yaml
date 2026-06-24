@@ -1,0 +1,46 @@
+# 單埠 + SC + 方向圖 loss，主動壓平 (port=single)
+# 對標 single_sc_rad.yaml：唯一差異 = 加 radiation.flatness_weight 0.5（floor_db 維持 3）。
+#   flatness 項 = mean((G[θ∈窗] − G0)^2)，對任何偏離 G0 都給梯度 → 主動把波形壓平到 boresight 準位，
+#   不像 floor 項只「容忍」帶內 ripple。這是「主動壓平 loss」這條路線。
+# 用途：A/B —— 主動壓平(本檔) vs 收緊容忍(flat15/flat10) vs baseline，比哪種把 ±45 弄得又高又平。
+# ⚠ flatness_weight=0.5 是起步值（平方項量級較大），看結果再 A/B 調。
+name: pixel_single_sc_rad_flatloss
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005   # 與 single_sc 相同（論文主方法）
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+generator: sigmoid
+
+surrogate:
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 45
+  floor_db: 3             # 維持 3（與 baseline 同；平整改靠 ③ flatness 項）
+  boresight_weight: 1.0
+  flatness_weight: 0.5    # ← 唯一變因：主動壓平 loss（mean((G−G0)^2)）；0=不啟用
+  warmup_epochs: 30
+  n_theta: 181
+  n_basis: 16
+  freeze_trunk: true
+  sm_max_epoch: 1000

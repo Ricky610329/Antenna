@@ -35,6 +35,9 @@ python train.py configs/single_base.yaml
 | `single_sc_rad_dlf.yaml` | **SC + 方向圖 + 動態損失過濾 DLF** | 在 `single_sc_rad` 上 `sm_train.mode: dlf`（學長論文 §3.5 驗證法：全收＋每輪用累計門檻 λ_t 篩菁英子集訓） | （新增，對標 `single_sc_rad`／`_replay`；論文消融 >50% 改善；**需正式機 HFSS**） |
 | `single_sc_rad_boundary.yaml` | **DLF + Boundary loss（trust-region）** | 在 `single_sc_rad_dlf` 上 `loss.boundary`（拉 G 回 SM 已見分布；權重待 A/B 調） | （新增，對標 `single_sc_rad_dlf` 看「防 G 鑽 SM 盲區、少白燒 HFSS」是否更快/更好；**需正式機 HFSS**） |
 | `single_sc_rad_smharvest.yaml` | **改用自訓 SM 初始化** | 在 `single_sc_rad` 上 `surrogate.pretrained: sm_harvest.pth`（唯一變因；old_sm.pth 對我們資料 ≈隨機，自訓的準 ~3 倍） | （新增，對標 `single_sc_rad` 看好的初始化是否讓早期收斂更快；**需正式機 HFSS**） |
+| `single_sc_rad_flat15.yaml` | **±45 平整：收緊容忍** | 在 `single_sc_rad` 上 `radiation.floor_db` 3 → 1.5（唯一變因；窗內容許 ripple 收到 1.5dB，更平更高） | （新增，「±45 高且平整」對照組之一；對標 `single_sc_rad`；**需正式機 HFSS**） |
+| `single_sc_rad_flat10.yaml` | **±45 平整：容忍 1dB** | 在 `single_sc_rad` 上 `radiation.floor_db` 3 → 1.0（唯一變因；比 flat15 更緊，掃 floor_db 一個點） | （新增，「±45 高且平整」對照組；看容忍收太緊會不會逼降峰值/難收斂；**需正式機 HFSS**） |
+| `single_sc_rad_flatloss.yaml` | **±45 平整：主動壓平 loss** | 在 `single_sc_rad` 上 `radiation.flatness_weight: 0.5`（唯一變因；beam_coverage_loss 加 ③ `mean((G−G0)^2)` 主動壓平，floor_db 維持 3） | （新增，「±45 高且平整」對照組；主動壓平 vs 收緊容忍 A/B；flatness_weight 起步值待調；**需正式機 HFSS**） |
 | `single_tv.yaml` | TV 正則化 + KuoHung SM 暖身 | `loss.total_variation: 0.01`、`surrogate.warmup: "1"` | 3 / 4 |
 | `single_tv50.yaml` | 強 TV | `loss.total_variation: 50` | 7 |
 | `single_island.yaml` | 孤島抑制（強） | `loss.island_suppression: 100` | 8 / 9 |

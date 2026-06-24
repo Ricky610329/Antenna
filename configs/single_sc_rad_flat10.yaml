@@ -1,0 +1,42 @@
+# 單埠 + SC + 方向圖 loss，平整容忍收到 1dB (port=single)
+# 對標 single_sc_rad.yaml：唯一差異 = radiation.floor_db 3 → 1.0（比 flat15 更緊）。
+# 用途：A/B —— 看「容忍收到 1dB」會不會太硬（逼降峰值 / 收斂變差），給 floor_db 掃一個點。
+name: pixel_single_sc_rad_flat10
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005   # 與 single_sc 相同（論文主方法）
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+generator: sigmoid
+
+surrogate:
+  pretrained: old_sm.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 45
+  floor_db: 1.0           # ← 唯一變因：3 → 1.0（最緊容忍）
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  n_basis: 16
+  freeze_trunk: true
+  sm_max_epoch: 1000

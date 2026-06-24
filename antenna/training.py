@@ -66,7 +66,7 @@ SECTION_KEYS = {
                   "warmup_ratio", "patience", "factor"},
     "generator": {"name", "hidden", "pretrained"},
     "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
-    "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight",
+    "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight", "flatness_weight",
                   "warmup_epochs", "n_theta", "n_basis", "freeze_trunk", "sm_max_epoch", "sm_min_loss"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
@@ -277,6 +277,7 @@ def run_training(
     rad_window = cfg.radiation.get("window_deg", 55.0)
     rad_floor = cfg.radiation.get("floor_db", 3.0)
     rad_bore_w = cfg.radiation.get("boresight_weight", 1.0)
+    rad_flat_w = cfg.radiation.get("flatness_weight", 0.0)   # 選用：主動壓平窗內波形 (0=不啟用，與原樣相同)
     rad_warmup = cfg.radiation.get("warmup_epochs", 0)
     rad_freeze = cfg.radiation.get("freeze_trunk", True)   # 預設凍 trunk：方向圖頭只更新自己，不污染 S11/Gain backbone
     # 方向圖擬合上限 (rad head 凍 trunk 下單層 Linear 擬不到 sm_train.min_loss → 會撞滿 max_epoch、
@@ -411,6 +412,7 @@ def run_training(
                 rad_loss = beam_coverage_loss(
                     rad_pred, rad_theta,
                     window_deg=rad_window, floor_db=rad_floor, boresight_weight=rad_bore_w,
+                    flatness_weight=rad_flat_w,
                 )
                 loss = loss + rad_w * rad_loss
                 rad_loss_val = float(rad_loss)
