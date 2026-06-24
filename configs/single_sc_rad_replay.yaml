@@ -38,7 +38,7 @@ targets:
 radiation:
   enable: true
   weight: 1.0
-  window_deg: 55
+  window_deg: 45
   floor_db: 3
   boresight_weight: 1.0
   warmup_epochs: 30

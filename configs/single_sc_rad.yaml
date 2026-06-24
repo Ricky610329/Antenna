@@ -36,7 +36,7 @@ targets:
 radiation:
   enable: true            # ← 開啟方向圖：build_simulator 換 SinglePortRadSimulator、SM 多 rad head
   weight: 1.0             # w_rad：整體方向圖 loss 權重
-  window_deg: 55          # ±窗（學長規格；非定案，可調）
+  window_deg: 45          # ±窗（學長後續討論定 ±45；原 ±55，可調）
   floor_db: 3             # 窗內 gain 不得低於 G(0°)−floor_db
   boresight_weight: 1.0   # 「0° 要最高」那項相對權重
   warmup_epochs: 30       # 前 30 epoch 只訓 rad head、不讓它影響 GEN（防冷啟動雜訊帶歪 G）

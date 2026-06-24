@@ -182,8 +182,8 @@ python -m script.verify_radiation --config configs/single_peak.yaml --pattern xx
 
 ### 設計決定與路線（2026-06-19 定案；取代先前「統一 response 向量」舊構想）
 
-- **學長規格 ≠ 我們規格**：學長要求「phi=0°/90° 在 theta∈±55° 內、gain 不得比 0°（boresight）低 >3dB」。
-  這是**「他們的」要求**，我們當 v1 起步、之後可調，不寫死。
+- **規格（學長後續討論定 ±45）**：phi=0°/90° 在 theta∈**±45°** 內、gain 不得比 0°（boresight）低 >3dB（原討論為 ±55，後改 ±45）。
+  仍當「可調 v1」、不寫死（`radiation.window_deg` / `floor_db`）。
 - **loss（Stage 1 已實作）**：`beam_coverage_loss`（`antenna/losses.py`，測試 `tests/test_beam_coverage_loss.py`）。
   **相對** boresight（錨在預測 `G0 = rad_pred[θ≈0]`），兩個單邊 relu 項：① 逼窗內 ≥ `G0−floor_db`、② 逼 0° 最高；
   窗內超過 floor 後不再罰＝「越高越好」。**分工**：boresight 絕對增益由既有 `Gain` target（method='high'）負責，

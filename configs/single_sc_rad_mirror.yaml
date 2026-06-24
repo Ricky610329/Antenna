@@ -37,7 +37,7 @@ targets:
 radiation:
   enable: true            # 開啟方向圖：SinglePortRadSimulator + SM rad head + beam_coverage_loss
   weight: 1.0
-  window_deg: 55
+  window_deg: 45
   floor_db: 3
   boresight_weight: 1.0
   warmup_epochs: 30
