@@ -10,6 +10,7 @@
 | **寫/改實驗 config**（YAML 欄位、port、模型載入、結果夾結構、變體對照） | [`training.md`](training.md) |
 | **理解系統怎麼運作**（三角色閉迴路、論文機制、模組地圖） | [`architecture.html`](architecture.html) |
 | **改程式碼**（跑測試、golden 維護、加新架構/實驗、資料層、branch 慣例） | [`development.md`](development.md) |
+| **找二值化/梯度的優化方向**（BiScaleNorm 同類方法、STE/tau/Heaviside 投影文獻表） | [`binarization_literature.md`](binarization_literature.md) |
 | 授權 | [`Licence IP.md`](Licence%20IP.md) |
 
 ## 建議閱讀順序
