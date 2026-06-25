@@ -24,12 +24,20 @@ from .utils import Path
 from .store import fingerprint
 
 #? csv 欄位順序 (固定)：epoch 在前、pattern_hash 殿後 (指向 patterns/ 的檔)。
-#  rad_loss / sigma / select 系列為「選用」欄：只在 rad / batch_latent run 有值，
-#  其餘 run 該欄留空 (save_row 以 "" 補、_load_metrics 以 v!="" 略過) → 對舊 csv 也向後相容。
-#! 加欄會改變表頭欄數：請對「全新結果夾」生效；別拿新碼去 append 舊表頭的 csv (欄數對不上)。
+#  rad_loss / sigma / select / 診斷系列為「選用」欄：只在對應 run 有值 (rad / batch_latent /
+#  replay / bgate)，其餘 run 該欄留空 (save_row 以 "" 補、_load_metrics 以 v!="" 略過) → 向後相容。
+#  診斷欄 (sm_target..restart_suppressed)：debug 用參考訊號，落 csv 以利離線歸因 (對照 TB)：
+#    sm_target = SM 對目標的預測損失 (對照 sim_loss → 看 SM 準不準、是不是 plateau 瓶頸)
+#    sc_loss / bnd_loss = 連通性 / 離已見分布 (bnd_loss = boundary 控制訊號本身；replay 才有)
+#    rad_fit = rad head 線上擬合 loss；skipped = 該 epoch HFSS 是否失敗跳過 (0/1)
+#    boundary_threshold / restart_suppressed = bgate τ_b 與是否抑制 restart (閘門有沒有作用)
+#! 加欄會改變表頭欄數：save_row 會「按欄名」自動遷移舊表頭 (見 _migrate_if_stale_header)。
 SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss", "sim_loss_avg", "r_feed",
                "rad_loss", "sigma", "score_best", "score_mean", "score_spread", "fresh_frac",
-               "cand_similarity", "time", "pattern_hash")
+               "cand_similarity",
+               "sm_target", "sc_loss", "bnd_loss", "rad_fit", "skipped",
+               "boundary_threshold", "restart_suppressed",
+               "time", "pattern_hash")
 
 
 class RunState:

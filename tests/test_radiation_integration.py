@@ -188,6 +188,8 @@ def test_radiation_loop_runs_and_logs_rad_loss(tmp_path):
     rl = state.last("rad_loss", None)
     assert rl is not None, "rad_loss 沒被記錄 → 方向圖分支沒跑"
     assert rl == rl and rl >= 0.0, "rad_loss 應為非負且非 NaN"
+    rf = state.last("rad_fit", None)                    # rad head 線上擬合 loss (diagnostic)
+    assert rf is not None and rf == rf and rf >= 0.0, "rad_fit 應被記錄、非負且非 NaN"
 
 
 def test_radiation_store_persists_pattern_and_radiation(tmp_path):
@@ -233,7 +235,8 @@ def test_metrics_csv_has_rad_and_select_columns(tmp_path):
     with open(tmp_path / "metrics.csv", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     assert rows
-    for col in ("rad_loss", "sigma", "score_best", "score_spread", "fresh_frac", "cand_similarity"):
+    for col in ("rad_loss", "rad_fit", "sigma", "score_best", "score_spread", "fresh_frac",
+                "cand_similarity", "sm_target", "sc_loss"):
         assert col in rows[0], f"metrics.csv 缺欄 {col}"
         assert rows[-1][col] != "", f"{col} 應有值 (multi+rad run)"
 

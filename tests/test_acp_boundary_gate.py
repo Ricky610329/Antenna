@@ -106,3 +106,9 @@ def test_boundary_gate_loop_runs_and_emits_diagnostics(tmp_path):
     assert len(snaps) == 6
     assert all(s["gen_loss"] == s["gen_loss"] for s in snaps)        # 無 NaN
     assert any("boundary" in s and "boundary_threshold" in s for s in snaps)  # replay>2 後有診斷
+    # 閘門診斷落 csv：bgate run 每 epoch 都有 boundary_threshold/restart_suppressed；replay → bnd_loss
+    import csv
+    with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert all(r["boundary_threshold"] != "" and r["restart_suppressed"] != "" for r in rows)
+    assert any(r["bnd_loss"] != "" for r in rows)                    # replay 累積後 bnd_loss 有值

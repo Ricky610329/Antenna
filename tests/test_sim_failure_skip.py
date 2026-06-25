@@ -73,6 +73,12 @@ def test_single_failure_skipped_run_continues(tmp_path):
     # end 每 epoch 各收一次（skip 的 epoch 在 except 內已收尾、迴圈尾不重複呼叫）
     assert sim.calls["start"] == 6
     assert sim.calls["end"] == 6
+    # skip 旗標落 csv：epoch 3 = 1（失敗跳過）、其餘 = 0（debug 時一眼看出哪些 epoch 沒真跑 HFSS）
+    import csv
+    with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
+        crows = {int(r["epoch"]): r for r in csv.DictReader(f)}
+    assert crows[3]["skipped"] == "1.0"
+    assert crows[2]["skipped"] == "0.0" and crows[4]["skipped"] == "0.0"
 
 
 def test_consecutive_failures_reopen_then_abort(tmp_path):

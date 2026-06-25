@@ -64,5 +64,14 @@
 
 ## 驗證方法論（每個改動都照做）
 - 比較**只看 target-only `best_loss`**（HFSS criterion）＋**對齊 epoch（≈HFSS 次數）**，不比牆鐘、不比合成 `gen_loss`（各 config 權重不同、不可比）。
-- 每改動 **opt-in、預設關 → golden 零漂移**；TB 看對應診斷（`acp/*`、`select/*`、`sched/sigma`）確認「真的在做我們以為的事」。
+- 每改動 **opt-in、預設關 → golden 零漂移**；TB 看對應診斷（`acp/*`、`select/*`、`sched/sigma`、`components/*`）確認「真的在做我們以為的事」。
 - 增量、單變因、用 TB 診斷歸因；別一次堆太多分不清誰有效、誰把搜尋帶歪。
+
+## debug 參考訊號（落 metrics.csv + TB，離線可歸因）
+為了不必每次翻 TB/log 才看得出狀況，下列診斷量同時落 `metrics.csv`（對應 `SCALAR_KEYS`）與 TB：
+- **`sm_target`**（`components/`）：SM 對目標的預測損失。**對照真實 `sim_loss` = SM 準不準**（兩者差距大 = SM 是 plateau 瓶頸，呼應「SM 品質」根因）。
+- **`sc_loss` / `bnd_loss`**（`components/`）：連通性懲罰 / 離已見分布距離。`bnd_loss` 即 boundary 控制訊號本身（`acp/boundary` 同值；replay 才有）。
+- **`rad_fit`**（`components/`）：rad head 線上擬合 loss（看方向圖頭收斂沒）。
+- **`skipped`**（`index/`）：該 epoch HFSS 是否失敗跳過（0/1）→ 一眼看出哪些 epoch 沒真跑、HFSS 穩不穩。
+- **`boundary_threshold` / `restart_suppressed`**（`acp/`）：bgate 的 τ_b 與「是否抑制了 restart」→ **閘門到底有沒有作用**（首輪實測發現 bgate 幾乎沒觸發，就是靠這兩個量看出來的）。
+- 配套優化：GEN 反傳時 SM 以 `requires_grad(False)` 凍住（純可微中介）→ 省無謂反傳 + 杜絕 SM.grad 被 GEN 帶歪；GEN 梯度/loss 不變、golden 零漂移。

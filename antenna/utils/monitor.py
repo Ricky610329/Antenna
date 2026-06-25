@@ -163,7 +163,10 @@ class TrainingMonitor:
             return
         for group, keys in (("loss", ("sim_loss", "gen_loss", "best_loss", "rad_loss")),
                             ("sched", ("lr", "tau", "sigma")),
-                            ("index", ("r_feed", "time")),
+                            ("index", ("r_feed", "time", "skipped")),
+                            # loss 分量拆解 → 歸因 plateau 誰主導 (sm_target 對照 sim_loss = SM 準度)；
+                            # rad_fit = 方向圖頭線上擬合 loss (看 rad head 收斂沒)。
+                            ("components", ("sm_target", "sc_loss", "bnd_loss", "rad_fit")),
                             # 多候選 (batch_latent) 才有：候選池健康度 → 診斷 Z 探索是否有賺頭
                             # (score_spread→0 = 候選塌縮、Z 失效；fresh_frac 低 = 探索停滯)。
                             ("select", ("score_best", "score_mean", "score_spread", "fresh_frac", "cand_similarity")),

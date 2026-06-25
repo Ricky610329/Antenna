@@ -200,6 +200,11 @@ def test_metrics_csv_multi_without_rad_partial_columns(tmp_path):
     assert rows[-1]["score_spread"] != ""                # multi → select 有值
     assert rows[-1]["cand_similarity"] != ""             # multi → 候選相似度有值 (即使非 rad)
     assert rows[-1]["rad_loss"] == ""                    # 非 rad → rad_loss 留空 (不錯位)
+    # 診斷欄：sm_target/sc_loss/skipped 每 run 都有 (always-present)；bnd_loss 需 replay (single 模式留空)
+    assert rows[-1]["sm_target"] != "" and rows[-1]["sc_loss"] != ""
+    assert rows[-1]["skipped"] == "0.0"                  # 無 HFSS 失敗 → skip 旗標 0
+    assert rows[-1]["bnd_loss"] == ""                    # 預設 single 模式無已見分布 → 留空
+    assert rows[-1]["boundary_threshold"] == ""          # 未開 bgate → 留空
 
 
 def test_cand_similarity_snap_matches_csv(tmp_path):

@@ -66,3 +66,26 @@ def test_train_by_datas_nan_guard(tmp_path):
     s.add(torch.ones(25, 25), bad)
     sm = MLPSurrogate(tmp_path / "ck4", 625, (2, 17), max_epoch=1)
     sm.train_by_datas(s, epochs=1, verbose=False)                         # 不該丟例外
+
+
+def test_train_one_data_returns_finite_loss_list(tmp_path):
+    """回傳逐步 loss 清單去掉 index0 的 inf 初值 → 全有限、末位=收斂後 loss (training 拿來當 rad_fit)。"""
+    import math
+    sm = MLPSurrogate(tmp_path / "ck5", 625, (2, 17), max_epoch=3)
+    hist = sm.train_one_data(torch.rand(625), torch.rand(2, 17), max_epoch=3, verbose=False)
+    assert isinstance(hist, list) and len(hist) >= 1
+    assert all(math.isfinite(x) for x in hist)        # 不再含 inf 初值 (防 float(ret) 之類踩雷)
+    assert hist[-1] == hist[-1]                        # 末位有限 (非 NaN) → 可當 rad_fit
+
+
+def test_sm_requires_grad_false_freezes_params_but_keeps_input_grad(tmp_path):
+    """審查後優化的不變式：smodel.requires_grad(False) 後，SM 反傳『不在 SM 參數上累積梯度』
+    (GEN 不會誤更新 SM)，但梯度仍穿過 SM 流回輸入 (GEN 仍學得動)。eval 模式不被動到。"""
+    sm = MLPSurrogate(tmp_path / "ck6", 625, (2, 17), max_epoch=1)
+    sm.requires_grad(False)
+    assert all(not p.requires_grad for p in sm.model.parameters())
+    x = torch.rand(625, requires_grad=True)
+    out = sm(x)                                                      # smodel(x) → response 物件
+    out.criterion().backward()
+    assert x.grad is not None and torch.isfinite(x.grad).all()       # 梯度穿過凍住的 SM 回到輸入
+    assert all(p.grad is None for p in sm.model.parameters())        # SM 參數零梯度 (沒被 GEN 帶歪)

@@ -217,7 +217,7 @@ class SurrogateModel(Models):
             )
 
         self.model.eval()
-        return self.record['loss']  #? 回傳收斂後的最終 loss (訓練腳本記為該筆的 sm_loss)
+        return self.record['loss'][1:]  #? 回傳逐步 loss 清單 (去掉 index0 的 inf 初值；末位=收斂後 loss)
 
     #? 方向圖推論入口 (選用)：pattern → 方向圖預測 (可微，供 beam_coverage_loss / GEN 反傳)。
     def rad_predict(self, pattern) -> Tensor:
@@ -282,7 +282,7 @@ class SurrogateModel(Models):
                     p.requires_grad_(True)
 
         self.model.eval()
-        return self.record['loss']
+        return self.record['loss'][1:]  #? 同 train_one_data：去掉 index0 的 inf 初值 (末位=方向圖頭擬合 loss)
 
 ###* HFSSNet — 純 MLP 骨幹 (學長版 MLPSurrogate 實際採用的網路) ###
 #? 角色：SM 的「身體」(SurrogateModel 是外殼，HFSSNet 是被包住的 model)。

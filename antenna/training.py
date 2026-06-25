@@ -402,6 +402,7 @@ def run_training(
         generator.requires_grad(True, train=True)
         generator.optimizer.zero_grad()
         rad_real_this_epoch = None      # 本 epoch 真實方向圖 (僅非快取分支會填；供監控疊圖)
+        rad_fit_val = 0.0               # rad head 線上擬合最終 loss (僅 fresh-rad epoch 更新；其餘 0)
 
         # 早停 → 回滾 (測試用高 patience 不觸發)
         if state.early_stop("sim_loss", pat):
@@ -514,9 +515,10 @@ def run_training(
                         theta_row = torch.as_tensor(rad["theta"], dtype=rad_stack.dtype).reshape(1, -1)
                         rad_store.add(~output_element,
                                       torch.cat([theta_row, rad_stack.detach().cpu()], dim=0))
-                    smodel.train_one_data_rad(output_element.series, rad_stack,
+                    rad_hist = smodel.train_one_data_rad(output_element.series, rad_stack,
                                               min_loss=rad_min_loss, max_epoch=rad_max_epoch,
                                               freeze_trunk=rad_freeze, verbose=verbose)
+                    rad_fit_val = float(rad_hist[-1]) if rad_hist else 0.0   # rad head 收斂後擬合 loss (監控)
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
             state.append("sim_loss", sim_loss.item())
             phash = state.add_pattern(~output_element, stack, sim_loss.item())
@@ -540,6 +542,9 @@ def run_training(
         state.append("pattern_hash", phash)
         state.append("r_feed", r_feed(~output_element))
 
+        # 審查後優化：GEN 反傳時把 SM 當「凍住的可微中介」——關 SM 梯度，省其無謂反傳 + 防禦
+        # (杜絕日後誤讀/誤用 GEN backward 殘留在 SM 上的梯度)。GEN 梯度與 loss 值不變 → golden 零漂移。
+        smodel.requires_grad(False)
         # 更新 GEN (借道可微分 SM)
         if multi:
             # 聚合：mean over K 候選的「現役四 loss」(reparam → 最小化雲的 E[loss]，把中心 z* 拉向好區)。
@@ -595,8 +600,22 @@ def run_training(
                     window_deg=rad_window,
                     floor_db=rad_floor,
                 )
+        # loss 分量診斷 (no_grad、不影響訓練 loss)：對「本 epoch 選中的 pattern」拆出各分量落 csv/TB。
+        #   sm_target = SM 對目標的預測損失 (對照真實 sim_loss → 看 SM 準不準、是不是 plateau 瓶頸)
+        #   sc_loss = 連通性懲罰；bnd_loss = 離已見分布距離 (= boundary 控制訊號本身；replay 才有已見分布)
+        with torch.no_grad():
+            sm_target_val = float(smodel(output_element.series).criterion())
+            sc_loss_val = float(sc.forward(output_element.size_converter(output_shape="B, 1, H, W")))
+            bnd_loss_val = (float(boundary_loss(output_element.series, replay.patterns()))
+                            if (replay is not None and len(replay) > 1) else None)
+        state.append("sm_target", sm_target_val)
+        state.append("sc_loss", sc_loss_val)
+        if bnd_loss_val is not None:                     # replay/dlf 才有已見分布 (single 模式留空)
+            state.append("bnd_loss", bnd_loss_val)
+        state.append("skipped", 1.0 if skipped else 0.0)
         if rad_on:
             state.append("rad_loss", rad_loss_val)      # 監控用 (只在 rad run 出現此欄)
+            state.append("rad_fit", rad_fit_val)        # rad head 線上擬合 loss (看方向圖頭收斂沒)
         if multi:                                       # 多候選：σ 退火 + 候選池健康度 → 也落 metrics.csv (離線可分析)
             state.append("sigma", float(generator.model.sigma))
             if sel_stats is not None:
@@ -612,8 +631,12 @@ def run_training(
             generator.step(scheduler_param=sim_loss, boundary=b_now, boundary_threshold=b_thr)
         else:
             generator.step(scheduler_param=sim_loss)
+        smodel.requires_grad(True)                       # 還原 SM 梯度狀態 (上方 GEN 反傳前暫關)
         generator.model.eval()
         state.append("gen_loss", loss.item())
+        if b_gate:                                       # 閘門診斷落 csv (b_gate run 每 epoch 一筆；τ_b 未定補 0)
+            state.append("boundary_threshold", b_thr if b_thr is not None else 0.0)
+            state.append("restart_suppressed", 1.0 if generator.scheduler._last_restart_suppressed else 0.0)
 
         generator.save()                       # 存 GEN (供 rollback 載回 / 斷點續跑)
 
@@ -640,8 +663,14 @@ def run_training(
                 spec=spec,                             # 響應規格 (labels/x/目標曲線)
                 r_feed_painter=r_feed,                 # 饋電連通圖的繪圖器 (plot 最新一筆)
             )
+            snap["sm_target"] = sm_target_val          # loss 分量診斷 (對照 sim_loss 看 SM 準不準)
+            snap["sc_loss"] = sc_loss_val
+            snap["skipped"] = 1.0 if skipped else 0.0
+            if bnd_loss_val is not None:
+                snap["bnd_loss"] = bnd_loss_val
             if rad_on:                                 # 方向圖 (選用)：純量 + 疊圖素材 (monitor 端畫)
                 snap["rad_loss"] = rad_loss_val
+                snap["rad_fit"] = rad_fit_val
                 if rad_snapshot is not None:
                     snap["radiation"] = rad_snapshot
             if multi:                                  # 多候選 (選用)：σ 退火 + 候選池健康度 (診斷 Z 賺頭)
