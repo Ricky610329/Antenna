@@ -23,9 +23,13 @@ from loguru import logger
 from .utils import Path
 from .store import fingerprint
 
-#? csv 欄位順序 (固定)：epoch 在前、pattern_hash 殿後 (指向 patterns/ 的檔)
-SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss",
-               "sim_loss_avg", "r_feed", "time", "pattern_hash")
+#? csv 欄位順序 (固定)：epoch 在前、pattern_hash 殿後 (指向 patterns/ 的檔)。
+#  rad_loss / sigma / select 系列為「選用」欄：只在 rad / batch_latent run 有值，
+#  其餘 run 該欄留空 (save_row 以 "" 補、_load_metrics 以 v!="" 略過) → 對舊 csv 也向後相容。
+#! 加欄會改變表頭欄數：請對「全新結果夾」生效；別拿新碼去 append 舊表頭的 csv (欄數對不上)。
+SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss", "sim_loss_avg", "r_feed",
+               "rad_loss", "sigma", "score_best", "score_mean", "score_spread", "fresh_frac",
+               "time", "pattern_hash")
 
 
 class RunState:

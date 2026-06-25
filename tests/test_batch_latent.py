@@ -9,7 +9,7 @@ import os
 import pytest
 import torch
 
-from antenna.models.generators import BatchLatentGenerator
+from antenna.models.generators import BatchLatentGenerator, MultiScaleGenerator, SigmoidGenerator
 from antenna.training import load_config, run_training
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
@@ -49,6 +49,33 @@ def test_z_center_learnable_and_gets_grad():
     assert any(p is g.z_center for p in g.parameters())          # z_center 進 optimizer
     g().sum().backward()
     assert g.z_center.grad is not None and torch.isfinite(g.z_center.grad).all()
+
+
+# ── MultiScaleGenerator 單元 ──────────────────────────────────────────────
+def test_multiscale_forward_shape_and_fewer_params():
+    g = MultiScaleGenerator(34, 625, scales=(1, 5, 13))
+    out = g(torch.randn(34))
+    assert out.shape == (625,) and torch.isfinite(out).all()
+    n_ms = sum(p.numel() for p in g.parameters())
+    n_sig = sum(p.numel() for p in SigmoidGenerator(34, 625).parameters())
+    assert n_ms < n_sig                                  # 淺層多尺度 → 參數遠少於主 MLP
+
+
+def test_multiscale_batch_equals_stacked():
+    """(B,in) 批次 ≡ 逐筆 forward 疊起來 (per-row BiScaleNorm + 各筆獨立上採樣)。"""
+    g = MultiScaleGenerator(8, 625, scales=(1, 5, 13))
+    x = torch.randn(4, 8)
+    batch = g(x)
+    stacked = torch.stack([g(row) for row in x])
+    assert batch.shape == (4, 625)
+    assert torch.allclose(batch, stacked, atol=1e-5)
+
+
+def test_multiscale_single_scale_is_uniform():
+    """scales=(1,)：1×1 上採樣成均勻場 → BiScaleNorm 後整張同值 (多尺度機制的極端證明)。"""
+    g = MultiScaleGenerator(8, 625, scales=(1,))
+    out = g(torch.randn(8))
+    assert torch.allclose(out, out[0].expand_as(out), atol=1e-5)
 
 
 # ── 多候選訓練 loop 整合 ───────────────────────────────────────────────────

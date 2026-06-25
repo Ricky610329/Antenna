@@ -6,6 +6,7 @@ antenna/models/generators.py — 生成器 GEN (目標響應 → pattern logits)
 新生成器照此約定寫好後，到 antenna/zoo.py 登記一行即可。
 """
 import torch
+import torch.nn.functional as F
 from torch import Tensor, nn
 
 from antenna.utils import config
@@ -151,4 +152,42 @@ class BatchLatentGenerator(SigmoidGenerator):
         eps = torch.randn(self.K, self.z_center.numel(), device=config.device)
         z = self.z_center.unsqueeze(0) + self.sigma * eps     #? (K, in_dim)
         return self.fc_patch(z)                               #? (K, out_dim)
+
+
+###* MultiScaleGenerator — 多尺度淺層加性生成器 (coarse-to-fine 先驗) ###
+#? 動機 (cold-start 視角)：不靠歷史資料時，generator 不是在學映射，而是把 pattern 用網路「重參數化」、
+#? 對單一 target 做梯度下降 (≈ deep image prior / neural reparam topology-opt)。此時架構＝先驗。
+#? 多尺度加性：各尺度 (1×1 / 5×5 / 13×13) 各一個淺線性頭 → 上採樣到 side×side → 相加 (Laplacian-pyramid 式)。
+#?   - 最細只到 13×13 → 輸出 band-limited、結構上偏「連通平滑」(減少對 SC/island 依賴)；
+#?   - 參數少、層淺 → 每個 task 從零更快收斂 (cold-start 友善)；
+#?   - 「先粗後細」天生是一種按尺度退火 (粗=全域、細=局部)，比盲目 tau 加熱有結構。
+#? ⚠ 表達力下限：太細的單像素特徵可能擬不出 (capacity 換先驗)；不夠就把更大尺度加進 scales。
+class MultiScaleGenerator(nn.Module):
+    """生成器 G：spec → 各尺度淺頭 → 上採樣相加 → side×side logits (BiScaleNorm)。
+
+    建構簽名照 zoo 約定 (in_dim, out_dim, **架構參數)；scales 可由 config 指定 (預設 (1,5,13))。
+    forward 不做 STE 二值化、不認識 tau (那是訓練管線的固定一步)。
+    """
+    def __init__(self, in_dim, out_dim, scales=(1, 5, 13)):
+        super().__init__()
+        side = int(round(out_dim ** 0.5))
+        if side * side != out_dim:
+            raise ValueError(f"MultiScaleGenerator 只支援方形 pattern (out_dim 須完全平方)，得到 {out_dim}")
+        self.side = side
+        self.scales = tuple(int(s) for s in scales)
+        #? 每尺度一個「淺」線性頭：in_dim → s*s (無隱藏層)；參數 = in_dim·Σ s² ≪ 主 MLP 的 ~1M。
+        self.heads = nn.ModuleList([nn.Linear(in_dim, s * s) for s in self.scales])
+        self.norm = BiScaleNorm()
+        self.to(config.device)
+
+    def forward(self, input) -> Tensor:
+        lead = input.shape[:-1]                              #? () 單筆 / (B,) 批次
+        acc = None
+        for s, head in zip(self.scales, self.heads):
+            grid = head(input).reshape(-1, 1, s, s)          #? (N,1,s,s)
+            up = F.interpolate(grid, size=(self.side, self.side),
+                               mode="bilinear", align_corners=False)   #? 平滑上採樣 → 連通先驗
+            up = up.reshape(*lead, self.side, self.side)
+            acc = up if acc is None else acc + up            #? 各尺度相加 (coarse + fine)
+        return self.norm(acc.reshape(*lead, -1))             #? (..., side²) → BiScaleNorm (per-row)
 

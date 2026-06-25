@@ -16,7 +16,8 @@ config 用名字指定：
 - 維度由訓練端推好傳入，模型不碰全域註冊狀態、不讀全域 config。
 """
 from antenna.models import (
-    MLPSurrogate, SigmoidGenerator, LatentGenerator, MirrorGenerator, BatchLatentGenerator,
+    MLPSurrogate, SigmoidGenerator, LatentGenerator, MirrorGenerator,
+    BatchLatentGenerator, MultiScaleGenerator,
 )
 
 GENERATORS = {
@@ -24,6 +25,7 @@ GENERATORS = {
     "latent":  LatentGenerator,       # 同上 MLP，但輸入改成可學習潛在向量 z (target 只進 loss)
     "mirror":  MirrorGenerator,       # 左右鏡像對稱：MLP 只出半邊→flip 成完整圖 (對稱+搜尋空間砍半)
     "batch_latent": BatchLatentGenerator,  # 同批 K 候選：高斯雲繞可學中心 z* (reparam+σ退火)；多候選分支見 training.py
+    "multiscale": MultiScaleGenerator,     # 多尺度淺層加性 (1×1/5×5/13×13 上採樣相加)；cold-start 連通先驗
 }
 
 SURROGATES = {

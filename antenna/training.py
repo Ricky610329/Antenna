@@ -64,7 +64,7 @@ SECTION_KEYS = {
     "sm_train":  {"lr", "min_loss", "max_epoch", "mode", "newest_steps", "replay_size"},
     "scheduler": {"on_plateau", "T_0", "T_mult", "lr_min", "temp_max", "temp_min",
                   "warmup_ratio", "patience", "factor"},
-    "generator": {"name", "hidden", "pretrained", "num_candidates", "sigma", "sigma_min"},
+    "generator": {"name", "hidden", "pretrained", "num_candidates", "sigma", "sigma_min", "scales"},
     "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
     "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight", "flatness_weight",
                   "warmup_epochs", "n_theta", "n_basis", "freeze_trunk", "sm_max_epoch", "sm_min_loss"},
@@ -295,6 +295,9 @@ def run_training(
     rad_max_epoch = cfg.radiation.get("sm_max_epoch", cfg.sm_train.get("max_epoch", 20000))
     rad_min_loss = cfg.radiation.get("sm_min_loss", cfg.sm_train.get("min_loss", 0.1))
     rad_theta = None        # 從第一筆方向圖資料擷取 (角度網格固定，整個 run 不變)
+    #? 順手收集方向圖資料 (零額外 HFSS)：每筆真跑過的 pattern 連同真實方向圖存進 <結果夾>/radiation，
+    #  供日後離線重訓 rad head / backbone (Stage 3)。一筆一檔、hash 去重，與 patterns/ 同調。
+    rad_store = SampleStore(record_path / "radiation", verbose=False) if rad_on else None
 
     # 模型載入 (續跑 / GEN 預載入 / SM 預訓練 / KuoHung 暖身)；回傳續跑起始 epoch
     start_epoch = prepare_models(
@@ -435,6 +438,12 @@ def run_training(
                                                  posinf=_RAD_DB_CEIL, neginf=_RAD_DB_FLOOR
                                                  ).clamp(_RAD_DB_FLOOR, _RAD_DB_CEIL)
                     rad_real_this_epoch = rad_stack.detach().cpu()          # 監控疊圖用 (真實 HFSS 方向圖)
+                    if rad_store is not None:
+                        #? 存 (pattern, [theta, phi0, phi90]) (3, n_theta)：θ 一起存 → 自我說明、可離線重訓。
+                        #  存 clamp 後的 finite 版 (rad_stack 已 nan_to_num+clamp)，直接可訓、不含 -inf。
+                        theta_row = torch.as_tensor(rad["theta"], dtype=rad_stack.dtype).reshape(1, -1)
+                        rad_store.add(~output_element,
+                                      torch.cat([theta_row, rad_stack.detach().cpu()], dim=0))
                     smodel.train_one_data_rad(output_element.series, rad_stack,
                                               min_loss=rad_min_loss, max_epoch=rad_max_epoch,
                                               freeze_trunk=rad_freeze, verbose=verbose)
@@ -513,6 +522,11 @@ def run_training(
                 )
         if rad_on:
             state.append("rad_loss", rad_loss_val)      # 監控用 (只在 rad run 出現此欄)
+        if multi:                                       # 多候選：σ 退火 + 候選池健康度 → 也落 metrics.csv (離線可分析)
+            state.append("sigma", float(generator.model.sigma))
+            if sel_stats is not None:
+                for _k in ("score_best", "score_mean", "score_spread", "fresh_frac"):
+                    state.append(_k, sel_stats[_k])
         loss.backward()
         generator.step(scheduler_param=sim_loss)
         generator.model.eval()

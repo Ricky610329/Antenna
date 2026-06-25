@@ -190,6 +190,69 @@ def test_radiation_loop_runs_and_logs_rad_loss(tmp_path):
     assert rl == rl and rl >= 0.0, "rad_loss 應為非負且非 NaN"
 
 
+def test_radiation_store_persists_pattern_and_radiation(tmp_path):
+    """訓練時順手把 (pattern, [theta,phi0,phi90]) 存進 <結果夾>/radiation (零額外 HFSS)，供日後離線重訓。"""
+    from antenna.utils.store import SampleStore
+    cfg = TrainConfig(
+        name="x", port="single", epochs=3, patience=50,
+        sm_train={"min_loss": 0.5, "max_epoch": 3}, targets=SINGLE_TARGETS,
+        radiation={"enable": True, "n_theta": 9, "warmup_epochs": 0},
+    )
+    sim = _MockRadSim(("S11", "Gain"), n_theta=9)
+    run_training(cfg, simulator=sim, record_path=tmp_path, seed=0, verbose=False)
+    store = SampleStore(tmp_path / "radiation", verbose=False)
+    assert len(store) >= 1                              # 有存到方向圖資料
+    _patt, rad = store[0]
+    assert tuple(rad.shape) == (3, 9)                   # (3, n_theta) = [theta, phi0, phi90]
+    assert torch.allclose(rad[0], sim.theta)            # 第一列＝θ 網格 (自我說明)
+    assert torch.isfinite(rad).all()                    # clamp 後皆有限、可直接訓
+
+
+def test_radiation_store_not_created_without_radiation(tmp_path):
+    """非 rad run：不建 radiation/ 夾 (rad_store gated on rad_on)。"""
+    import os
+    cfg = TrainConfig(name="x", port="single", epochs=2, patience=50,
+                      sm_train={"min_loss": 0.5, "max_epoch": 3}, targets=SINGLE_TARGETS)
+    sim = _MockRadSim(("S11", "Gain"), n_theta=9)       # mock 有 last_radiation，但 cfg 未開 rad
+    run_training(cfg, simulator=sim, record_path=tmp_path, seed=0, verbose=False)
+    assert not os.path.isdir(tmp_path / "radiation")
+
+
+def test_metrics_csv_has_rad_and_select_columns(tmp_path):
+    """rad + batch_latent run：metrics.csv 應含 rad_loss 與 sigma/select 欄且有值 (離線可分析)。"""
+    import csv
+    cfg = TrainConfig(
+        name="x", port="single", epochs=2, patience=50,
+        sm_train={"min_loss": 0.5, "max_epoch": 3},
+        generator={"name": "batch_latent", "num_candidates": 3},
+        targets=SINGLE_TARGETS,
+        radiation={"enable": True, "n_theta": 9, "warmup_epochs": 0},
+    )
+    sim = _MockRadSim(("S11", "Gain"), n_theta=9)
+    run_training(cfg, simulator=sim, record_path=tmp_path, seed=0, verbose=False)
+    with open(tmp_path / "metrics.csv", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert rows
+    for col in ("rad_loss", "sigma", "score_best", "score_spread", "fresh_frac"):
+        assert col in rows[0], f"metrics.csv 缺欄 {col}"
+        assert rows[-1][col] != "", f"{col} 應有值 (multi+rad run)"
+
+
+def test_radiation_loop_with_multiscale_generator(tmp_path):
+    """multiscale + rad 整合：多尺度淺生成器在方向圖閉迴路裡跑得起來、rad_loss 有記。"""
+    cfg = TrainConfig(
+        name="x", port="single", epochs=2, patience=50,
+        sm_train={"min_loss": 0.5, "max_epoch": 3},
+        generator={"name": "multiscale", "scales": [1, 5, 13]},
+        targets=SINGLE_TARGETS,
+        radiation={"enable": True, "n_theta": 9, "warmup_epochs": 0},
+    )
+    sim = _MockRadSim(("S11", "Gain"), n_theta=9)
+    state = run_training(cfg, simulator=sim, record_path=tmp_path, seed=0, verbose=False)
+    assert int(state.last("epoch")) == 2
+    assert state.last("rad_loss", None) is not None
+
+
 def test_radiation_loop_with_mirror_generator(tmp_path):
     """mirror + rad 整合：對稱生成器在方向圖閉迴路裡跑得起來、rad_loss 有記、pattern 左右對稱。"""
     cfg = TrainConfig(
