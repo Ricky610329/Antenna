@@ -76,6 +76,8 @@ python train.py configs/single_base.yaml
 - **訓練時順手收集方向圖資料（已做）**：rad run 每筆真跑過的 pattern 連同真實方向圖存進 `<結果夾>/radiation/`（`SampleStore`，`(3,n_theta)=[theta,phi0,phi90]`，hash 去重，**零額外 HFSS**）→ 供日後離線重訓 rad head／backbone（Stage 3）。⚠ backbone 重訓要**離線、freq+rad 一起**（線上放梯度回共用 trunk 會把 S11/Gain 帶歪→NaN）。
 - **metrics.csv 補欄（已做）**：`rad_loss / sigma / score_best / score_mean / score_spread / fresh_frac`（rad/batch_latent run 才有值，其餘留空、向後相容）→ 離線可直接分析，不必解 TB 事件檔。⚠ 加欄改表頭：對**全新結果夾**生效，別拿新碼 append 舊表頭 csv。
 - **SM 初始化換 sm_harvest（下一輪，另開 harvest 命名）**：下一輪 generator-prior 三代 A/B 用**全新的 `*_boundary*_harvest.yaml`**（`boundary_harvest` / `boundary_mirror_harvest` / `boundary_multiscale_harvest`），`surrogate.pretrained: sm_harvest.pth`（old_sm≈隨機）。**為何另開新 name 而非改舊檔**：同名 config 在既有結果夾會「續跑」載回舊 old_sm checkpoint、吃不到 sm_harvest；name 含 harvest → 強制全新結果夾。舊 `boundary`/`_mirror`/`zbatch`（old_sm）保留為「已跑過的 old_sm 實驗」記錄。⚠ metrics.csv 加欄也只對全新夾生效，正好一起。
+- **multiscale 加更細尺度 25×25（待辦，視 A/B 結果再投）**：`single_sc_rad_boundary_multiscale_harvest.yaml` 目前 `generator.scales: [1, 5, 13]`，最細只到 13×13、band-limited 偏連通 → **單像素細節可能擬不出**。若 A/B 觀察到 multiscale 在需要細結構的 task 上 loss 卡住/擬不動，把 25×25 加進去（`scales: [1, 5, 13, 25]`，25＝side 上限、最細頭直接吐全解析）。⚠ 代價：最細頭參數 = `in_dim·25²`（其餘尺度的數倍），淺層加性「連通平滑先驗」會被沖淡；先確認是表達力不足、不是 SM/loss 問題再加。
+- **rad head cosine 基底數試 8（`radiation.n_basis`，待辦 A/B）**：目前預設 16（見上「rad head ＝ 平滑 cosine 基底頭」）。可試 `n_basis: 8` —— K 越小→預測越平滑、擬合的係數越少→凍 trunk 下收斂越快，代價是高頻 lobe 細節表達力下降。適合方向圖本來就平滑（窗 ±45°/floor 3dB、boresight 為主）的場景。⚠ 改 `n_basis` 動到 head 形狀 → 舊 rad-run 的 `sm.pth` 不能續跑（freq-only checkpoint 與 golden 不受影響）；要與 16 公平比就各開全新結果夾。
 
 ## 資料集標記（before rad / *_rad）
 
