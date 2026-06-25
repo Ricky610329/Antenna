@@ -1,10 +1,12 @@
 """
 YAML config 載入與 port 解析的測試。
 """
+import glob
 import os
 
 import pytest
 
+from antenna import zoo
 from antenna.training import load_config, TrainConfig, PORT_SPECS, build_feeds
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
@@ -35,6 +37,25 @@ def test_production_configs_parse():
         assert cfg.port in PORT_SPECS
         # targets 須涵蓋該 port 的所有標籤 (否則 __post_init__ 已擋下)
         assert set(PORT_SPECS[cfg.port]["labels"]).issubset(cfg.targets)
+
+
+def test_all_configs_load_and_valid():
+    """catalog smoke test：configs/ 下每一支 *.yaml 都要能 load_config（白名單/打字錯就 raise）、
+    targets 涵蓋 port 標籤、generator/surrogate 是 zoo 已註冊、且 name 不撞（撞名→結果夾撞→誤續跑）。
+    守住新增/改 config（含 harvest 三支與未來實驗）時的低級錯誤。"""
+    paths = sorted(glob.glob(os.path.join(CONFIGS, "*.yaml")))
+    assert paths, "configs/ 下找不到 yaml"
+    seen = {}
+    for p in paths:
+        base = os.path.basename(p)
+        cfg = load_config(p)                                    # 白名單/拼錯/缺 target → 這裡 raise
+        assert set(PORT_SPECS[cfg.port]["labels"]).issubset(cfg.targets), f"{base}: targets 缺標籤"
+        gen = cfg.generator.get("name", "sigmoid") if cfg.generator else "sigmoid"
+        assert gen in zoo.GENERATORS, f"{base}: generator {gen!r} 未在 zoo 註冊"
+        sur = cfg.surrogate.get("name", "mlp") if cfg.surrogate else "mlp"
+        assert sur in zoo.SURROGATES, f"{base}: surrogate {sur!r} 未在 zoo 註冊"
+        assert cfg.name not in seen, f"{base} 與 {seen.get(cfg.name)} 的 name 撞了: {cfg.name!r}"
+        seen[cfg.name] = base
 
 
 def test_surrogate_section_parsed():

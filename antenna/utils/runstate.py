@@ -80,13 +80,39 @@ class RunState:
         return int(self.last("epoch", 0))
 
     def save_row(self):
-        """把本 epoch 各欄的最後一筆寫成 csv 一行 (append；首次自動寫表頭)。"""
-        new_file = not self.metrics_path.exists()
-        with open(self.metrics_path, "a", newline="", encoding="utf-8") as f:
-            w = csv.writer(f)
-            if new_file:
+        """把本 epoch 各欄的最後一筆寫成 csv 一行 (append；首次自動寫表頭)。
+
+        若既有 csv 是「舊表頭」(欄數/欄序與現行 SCALAR_KEYS 不同，例如升級新增欄後續跑舊夾) →
+        先一次性「按欄名」遷移成現行表頭 (缺欄補空)，再 append。否則新碼會把多/少欄的 row
+        append 進舊表頭 → DictReader 欄位錯位、pattern_hash 遺失 (靜默資料損毀)。
+        """
+        row = [self.last(k, "") for k in SCALAR_KEYS]
+        if not self.metrics_path.exists():
+            with open(self.metrics_path, "w", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
                 w.writerow(SCALAR_KEYS)
-            w.writerow([self.last(k, "") for k in SCALAR_KEYS])
+                w.writerow(row)
+            self._header_ok = True
+            return
+        if not getattr(self, "_header_ok", False):     # 每個 RunState 實例只檢查/遷移一次 (避免 O(n²))
+            self._migrate_if_stale_header()
+            self._header_ok = True
+        with open(self.metrics_path, "a", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(row)
+
+    def _migrate_if_stale_header(self):
+        """既有 csv 表頭與現行 SCALAR_KEYS 不符 → 整檔按欄名重寫 (舊欄對位、缺欄補空)。
+        一次性 (升級後第一次 save_row)；保住舊資料、不錯位。表頭已相符或空檔 → 不動。"""
+        with open(self.metrics_path, newline="", encoding="utf-8") as f:
+            rows = list(csv.reader(f))
+        if not rows or rows[0] == list(SCALAR_KEYS):
+            return
+        header, old = rows[0], rows[1:]
+        remapped = [[dict(zip(header, r)).get(k, "") for k in SCALAR_KEYS] for r in old]
+        with open(self.metrics_path, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(SCALAR_KEYS)
+            w.writerows(remapped)
 
     def _load_metrics(self):
         with open(self.metrics_path, newline="", encoding="utf-8") as f:

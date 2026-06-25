@@ -78,6 +78,39 @@ def test_multiscale_single_scale_is_uniform():
     assert torch.allclose(out, out[0].expand_as(out), atol=1e-5)
 
 
+def test_multiscale_invalid_outdim_and_scales_raise():
+    """建構時早 fail：out_dim 非完全平方、scale≤0、scale>side 都應 raise ValueError (防呆)。"""
+    with pytest.raises(ValueError):
+        MultiScaleGenerator(8, 624)                       # 非完全平方
+    with pytest.raises(ValueError):
+        MultiScaleGenerator(8, 625, scales=(0, 5))        # s≤0
+    with pytest.raises(ValueError):
+        MultiScaleGenerator(8, 625, scales=(30,))         # s>side(25)
+
+
+def test_multiscale_3d_lead_equals_stacked():
+    """3-D lead (B1,B2,in) ≡ 攤平逐筆 (lead 對位無錯，通用 reshape 守門)。"""
+    g = MultiScaleGenerator(8, 625, scales=(1, 5, 13))
+    x = torch.randn(2, 3, 8)
+    out = g(x)
+    assert out.shape == (2, 3, 625)
+    assert torch.allclose(out.reshape(-1, 625), g(x.reshape(-1, 8)), atol=1e-5)
+
+
+def test_multiscale_zero_params_degenerate_grad_finite():
+    """退化路徑穿過 multiscale：所有頭參數歸零 → acc 全 0 → forward 全 0、backward 梯度有限
+    (BiScaleNorm 的 clamp_min(eps) 在 multiscale 上也防住 0/0 反向 NaN)。"""
+    g = MultiScaleGenerator(8, 625, scales=(1, 5, 13))
+    for p in g.parameters():
+        torch.nn.init.zeros_(p)
+    x = torch.randn(8, requires_grad=True)
+    out = g(x)
+    assert torch.allclose(out, torch.zeros_like(out))
+    out.sum().backward()
+    assert torch.isfinite(x.grad).all()
+    assert all(torch.isfinite(p.grad).all() for p in g.parameters())
+
+
 # ── 多候選訓練 loop 整合 ───────────────────────────────────────────────────
 class _CountSim:
     """確定性假模擬器 + 計數 HFSS 評估次數 (__call__) 與 COM 生命週期。"""
@@ -115,3 +148,17 @@ def test_multi_candidate_loop_runs_one_hfss_per_epoch(tmp_path):
     assert all(l == l for l in losses)                  # 無 NaN
     assert sim.eval_count <= 4                          # 每 epoch ≤ 1 次 HFSS (K=4 卻不到 16)
     assert sim.calls["start"] == 4
+
+
+def test_metrics_csv_multi_without_rad_partial_columns(tmp_path):
+    """batch_latent 但不開 rad：metrics.csv 的 sigma/score_* 有值、rad_loss 留空，讀回不錯位。"""
+    import csv
+    cfg = load_config(os.path.join(FIX, "single_test.yaml"))      # 無 radiation 區段 → rad_on=False
+    cfg.generator = {"name": "batch_latent", "num_candidates": 3}
+    sim = _CountSim(("S11", "Gain"))
+    run_training(cfg, simulator=sim, record_path=tmp_path, seed=0, max_epochs=2, verbose=False)
+    with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert rows[-1]["sigma"] != ""                       # multi → sigma 有值
+    assert rows[-1]["score_spread"] != ""                # multi → select 有值
+    assert rows[-1]["rad_loss"] == ""                    # 非 rad → rad_loss 留空 (不錯位)

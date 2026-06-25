@@ -175,6 +175,10 @@ class MultiScaleGenerator(nn.Module):
             raise ValueError(f"MultiScaleGenerator 只支援方形 pattern (out_dim 須完全平方)，得到 {out_dim}")
         self.side = side
         self.scales = tuple(int(s) for s in scales)
+        #! 建構時就擋掉非法 scale (照 MirrorGenerator 的早 fail 慣例)：s≤0 會 reshape 炸晦澀錯誤、
+        #  s>side 會讓 F.interpolate 變 downsample (違反「上採樣 coarse-to-fine」語意)。
+        if any(s <= 0 or s > side for s in self.scales):
+            raise ValueError(f"MultiScaleGenerator 的 scales 須在 1..{side} 之間 (各尺度上採樣到 {side}×{side})，得到 {self.scales}")
         #? 每尺度一個「淺」線性頭：in_dim → s*s (無隱藏層)；參數 = in_dim·Σ s² ≪ 主 MLP 的 ~1M。
         self.heads = nn.ModuleList([nn.Linear(in_dim, s * s) for s in self.scales])
         self.norm = BiScaleNorm()

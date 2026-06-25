@@ -4,9 +4,11 @@ RunState (結果夾即資料庫) 的單元測試。
 驗證：純量 append/讀取語義 (對齊 Record，golden 保真)、early_stop、
 metrics.csv 持久化與斷點續跑載回、patterns/ 去重快取、epoch→pattern 反查。
 """
+import csv
+
 import torch
 
-from antenna.utils.runstate import RunState
+from antenna.utils.runstate import RunState, SCALAR_KEYS
 
 
 def _fill_epoch(state, epoch, loss, pattern=None):
@@ -22,6 +24,41 @@ def _fill_epoch(state, epoch, loss, pattern=None):
     state.append("time", 1.0)
     state.save_row()
     return pattern
+
+
+def test_save_row_migrates_stale_header(tmp_path):
+    """舊表頭 csv (升級前的較少欄) 用新碼續寫 → 一次性按欄名遷移成現行 SCALAR_KEYS：
+    不錯位、不丟舊資料。回歸保護「14 值 append 進 8 欄表頭 → DictReader 錯位/pattern_hash 遺失」的 bug。"""
+    old_header = ["epoch", "sim_loss", "gen_loss", "best_loss", "sim_loss_avg", "r_feed", "time", "pattern_hash"]
+    mpath = tmp_path / "metrics.csv"
+    with open(mpath, "w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f); w.writerow(old_header)
+        w.writerow([1, 3.0, 6.0, 3.0, 3.0, 0.5, 1.0, "abc"])      # 舊 8 欄資料列
+
+    st = RunState(tmp_path, verbose=False)                         # 載回舊檔 (續跑)
+    for k, v in (("epoch", 2), ("sim_loss", 2.0), ("gen_loss", 4.0), ("best_loss", 2.0),
+                 ("sim_loss_avg", 2.5), ("r_feed", 0.5), ("rad_loss", 1.23),
+                 ("time", 1.1), ("pattern_hash", "def")):
+        st.append(k, v)
+    st.save_row()
+
+    with open(mpath, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert list(rows[0].keys()) == list(SCALAR_KEYS)              # 已遷移成新表頭
+    assert rows[0]["pattern_hash"] == "abc" and rows[0]["rad_loss"] == ""   # 舊資料保住、新欄補空
+    assert rows[1]["pattern_hash"] == "def"                      # 修前會變空 (被擠進 restkey)
+    assert rows[1]["time"] == "1.1"                              # 修前會被 rad_loss 值頂掉 (錯位)
+    assert rows[1]["rad_loss"] == "1.23"
+
+
+def test_save_row_fresh_dir_has_full_header(tmp_path):
+    """全新結果夾：第一行就是現行 14 欄表頭 (不需遷移)。"""
+    st = RunState(tmp_path, verbose=False)
+    st.append("epoch", 1); st.append("sim_loss", 1.0); st.append("pattern_hash", "h")
+    st.save_row()
+    with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
+        header = next(csv.reader(f))
+    assert header == list(SCALAR_KEYS)
 
 
 def test_scalar_semantics(tmp_path):
