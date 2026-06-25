@@ -35,7 +35,7 @@ generator:               # ← 唯一變因：同批多候選 (高斯雲繞可�
   sigma_min: 0.05        # σ 退火終點 (隨 epoch 進度線性退火：前期探索、後期收斂)
 
 surrogate:
-  pretrained: old_sm.pth
+  pretrained: sm_harvest.pth        # 自訓 SM 初始化 (old_sm.pth 對我們資料 ≈隨機；val MSE 13 vs 38)
   offline_dataset: harvest_single
 
 targets:

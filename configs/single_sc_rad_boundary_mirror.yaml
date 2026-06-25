@@ -27,7 +27,7 @@ scheduler:
 generator: mirror        # ← 唯一變因：MLP 出半邊 25×13→flip 成 25×25（對稱+搜尋空間砍半）
 
 surrogate:
-  pretrained: old_sm.pth
+  pretrained: sm_harvest.pth        # 自訓 SM 初始化 (old_sm.pth 對我們資料 ≈隨機；val MSE 13 vs 38)
   offline_dataset: harvest_single
 
 targets:
