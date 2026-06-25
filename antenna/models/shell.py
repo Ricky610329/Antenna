@@ -186,9 +186,10 @@ class Models:
                 }
 
     #? 一步推進：先走優化器再走排程器 (若有)。把兩者包成一個呼叫方便訓練腳本使用。
-    def step(self, optimizer_param=None, scheduler_param=None):
+    #? scheduler_kwargs：透傳給 scheduler.step (如 ACP 的 boundary/boundary_threshold)；不傳則與原樣相同。
+    def step(self, optimizer_param=None, scheduler_param=None, **scheduler_kwargs):
         self.optimizer.step(optimizer_param)
-        if self.scheduler: self.scheduler.step(scheduler_param)
+        if self.scheduler: self.scheduler.step(scheduler_param, **scheduler_kwargs)
 
     #? 組裝/載入 checkpoint 字典。load=True 直接從檔讀；load=False 則即時蒐集當前狀態用於存檔。
     def checkpoint(self, load: bool = False) -> dict:

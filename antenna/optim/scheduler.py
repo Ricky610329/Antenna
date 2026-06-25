@@ -47,6 +47,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
         patience: int = 5,
         on_plateau:Literal['peak', 'reset','linear'] = 'peak',
         threshold: float = 0.0,
+        boundary_suppress_cap: int = 3,
         last_epoch: int = -1
     ):
         """
@@ -110,6 +111,10 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
         #! 父類別 _LRScheduler.__init__ 會呼叫一次 _initial_step()→step() 來定初始 lr，
         #  那一步本就「沒有 metric」(尚未訓練) → 不該警告。用旗標把建構期的初始 step 與
         #  訓練期的 step 區分開：只有訓練期 metric 缺失才警告 (純門控，不動排程數值)。
+        # boundary-gated warm restart (opt-in，見 step())：boundary=None 時完全不影響行為 (golden 安全)。
+        self.boundary_suppress_cap = boundary_suppress_cap   #* 連續抑制上限 → 強制放行一次 (防餓死)；<=0 不設限
+        self._suppress_streak = 0                            #* 目前連續抑制次數
+        self._last_restart_suppressed = False                #* 上一步是否抑制了 warm restart (供 TB 診斷)
         self._adapt_ready = False
         super(AdaptiveCyclicalScheduler, self).__init__(optimizer, last_epoch)
         #! base_lrs 覆寫為 lr_max：本排程器自行算 lr(get_lr)，不依賴父類用 base_lr 縮放
@@ -149,8 +154,11 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
         else:
             return metric > self.best_metric + self.threshold   #* accuracy 類：越大越好
 
-    def step(self, metric: float = None):
+    def step(self, metric: float = None, boundary: float = None, boundary_threshold: float = None):
         #* 每個訓練步呼叫一次；務必傳入監控指標(通常是 HFSS 真實 loss)，否則自適應失效。
+        #* boundary/boundary_threshold (opt-in)：boundary≥τ_b 代表 G 衝出 SM 可信區 → 抑制 plateau
+        #* warm restart (不加熱、繼續冷卻就地固化)；None → 與現行逐位元相同 (golden 安全)。
+        self._last_restart_suppressed = False
         if metric is None:
             #* 建構期的初始 step (尚未訓練) 本就無 metric → 不警告；只有訓練期漏傳才提醒。
             if getattr(self, "_adapt_ready", True):
@@ -165,56 +173,23 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
 
             if self.patience_counter >= self.patience:
                 # print(f"\nMetric has not improved for {self.patience} steps. Forcing a warm restart!")
-                #* 停滯太久：強制重啟。縮短週期(乘 factor)讓後續探索更密集，但不低於
-                #* T_0//2 以免週期過短、暖身/退火失去意義。
                 self.patience_counter = 0
-                self.T_i = max(int(self.T_i * self.factor), self.T_0 // 2) # 保持最小週期長度限制
+                #? boundary 閘門 (opt-in)：boundary≥τ_b → G 已衝出 SM 可信區 → 抑制 warm restart (不加熱)，
+                #  讓餘弦退火冷卻、就地固化 (下一筆 HFSS 在邊界、SM 在此被訓)；boundary<τ_b (區內卡住) 才
+                #  放行往外探。防餓死：連續抑制達 boundary_suppress_cap → 強制放行一次。boundary=None → 必放行。
+                out_of_region = (boundary is not None and boundary_threshold is not None
+                                 and boundary >= boundary_threshold)
+                if out_of_region and (self.boundary_suppress_cap <= 0
+                                      or self._suppress_streak < self.boundary_suppress_cap):
+                    self._suppress_streak += 1
+                    self._last_restart_suppressed = True   # 抑制：不縮週期、不重定位 → 續退火冷卻
+                else:
+                    self._suppress_streak = 0
+                    self._force_warm_restart()
 
-                # 2. 決定重啟位置 (Apply on_plateau strategy)
-                #? 三種策略差在「停滯後 lr/tau 跳到哪個高度」，激進程度 peak > linear > reset：
-                #?   peak  —— 最激進：直接拉到最高溫/最高 lr 全力跳出局部解(可能震盪)。
-                #?   reset —— 最溫和：完全重來、重新暖身，較穩但較慢回到探索強度。
-                #?   linear—— 折衷：從目前高度沿暖身線往上爬，保留部分已收斂的進度。
-                match self.on_plateau :
-                    case 'reset':   # 回到起點 (最小值)，重新開始暖身
-                        # 設定為 -1，因為 step() 尾端的 self.T_cur += 1 會將其變為 0
-                        self.T_cur = -1
-
-                    case 'peak':    # 直接跳到峰值 (最大值)，跳過暖身
-                        # 計算新週期中，暖身結束的那一點 (即 LR/Tau 最大的點)
-                        warmup_steps = int(self.T_i * self.warmup_ratio)
-
-                        # 設定為 warmup_steps - 1，因為 step() 尾端的 self.T_cur += 1 會將其變為 warmup_steps
-                        # 根據 get_lr() 的邏輯，當 T_cur == warmup_steps 時，剛好是最大值
-                        self.T_cur = warmup_steps - 1
-
-                    case 'linear':  # 從當前數值，線性爬升回最大值
-
-                        # A. 取得當前 LR (假設所有 group LR 一致，取第一個)
-                        current_lr = self.optimizer.param_groups[0]['lr']
-
-                        # B. 計算新週期中，暖身階段的總長度
-                        warmup_steps = int(self.T_i * self.warmup_ratio)
-
-                        if warmup_steps > 0:
-                            # C. 反推：當前的 LR 在暖身線上對應的比例 (0.0 ~ 1.0)
-                            # 公式: ratio = (目前 - 最小) / (最大 - 最小)
-                            #! +1e-10 防 lr_max==lr_min 時除零；ratio 即「目前 lr 在暖身線上的相對高度」。
-                            ratio = (current_lr - self.lr_min) / (self.lr_max - self.lr_min + 1e-10)
-                            ratio = max(0.0, min(1.0, ratio)) # 限制範圍以防萬一
-
-                            # D. 設定時間點：反推對應的步數
-                            # 這樣下一次 get_lr() 就會從這個高度繼續往上走
-                            self.T_cur = int(round(ratio * warmup_steps))
-                        else:
-                            # 如果沒有暖身區間，就直接設為 -1 (避免除以零)
-                            self.T_cur = -1
-                    case _:
-                        pass   #* 理論上 __init__ 已驗證，不會走到這裡
-
-        # --- 週期性邏輯 ---
+        # --- 週期性邏輯 (每步都跑) ---
         #* 自然走完一個週期(T_cur 追上 T_i)：歸零並依 T_mult 拉長下個週期(warm restart)；
-        #* 否則單純前進一步。注意上面的強制重啟已透過改寫 T_cur 改變這裡的落點。
+        #* 否則單純前進一步。注意強制重啟已透過改寫 T_cur 改變這裡的落點。
         if self.T_cur >= self.T_i:
             self.T_cur = 0
             self.T_i = self.T_i * self.T_mult   #* T_mult>1 → 週期越來越長(後期更穩定)
@@ -233,6 +208,33 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
         self.record['lr'] = self.get_lr()[0]   #* 記錄供 plot() 畫雙軸曲線
         self.record['tau'] = self.get_temp()
 
+    def _force_warm_restart(self):
+        #* 停滯太久：強制重啟 (boundary 閘門放行時呼叫)。縮短週期(乘 factor)讓後續探索更密集，
+        #* 但不低於 T_0//2 以免週期過短、暖身/退火失去意義。
+        self.T_i = max(int(self.T_i * self.factor), self.T_0 // 2)
+        # 決定重啟位置 (on_plateau 策略)：激進程度 peak > linear > reset。
+        #   peak  —— 最激進：直接拉到最高溫/最高 lr 全力跳出局部解(可能震盪)。
+        #   reset —— 最溫和：完全重來、重新暖身，較穩但較慢回到探索強度。
+        #   linear—— 折衷：從目前高度沿暖身線往上爬，保留部分已收斂的進度。
+        match self.on_plateau:
+            case 'reset':   # 回到起點 (最小值)，重新開始暖身 (step() 尾端 +1 → 變 0)
+                self.T_cur = -1
+            case 'peak':    # 直接跳到峰值 (最大值)，跳過暖身 (step() 尾端 +1 → 變 warmup_steps)
+                warmup_steps = int(self.T_i * self.warmup_ratio)
+                self.T_cur = warmup_steps - 1
+            case 'linear':  # 從當前數值，線性爬升回最大值
+                current_lr = self.optimizer.param_groups[0]['lr']
+                warmup_steps = int(self.T_i * self.warmup_ratio)
+                if warmup_steps > 0:
+                    #! +1e-10 防 lr_max==lr_min 時除零；ratio 即「目前 lr 在暖身線上的相對高度」。
+                    ratio = (current_lr - self.lr_min) / (self.lr_max - self.lr_min + 1e-10)
+                    ratio = max(0.0, min(1.0, ratio))
+                    self.T_cur = int(round(ratio * warmup_steps))
+                else:
+                    self.T_cur = -1
+            case _:
+                pass   #* 理論上 __init__ 已驗證，不會走到這裡
+
     def state_dict(self):
         """返回排程器的狀態字典。"""
         state = super().state_dict()
@@ -242,6 +244,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
             'current_temp': self.current_temp,
             'patience_counter': self.patience_counter,
             'best_metric': self.best_metric,
+            '_suppress_streak': self._suppress_streak,
             # 可以選擇性儲存初始參數，但通常在 __init__ 中處理
         })
         return state
@@ -254,6 +257,7 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
         self.current_temp = state_dict['current_temp']
         self.patience_counter = state_dict['patience_counter']
         self.best_metric = state_dict['best_metric']
+        self._suppress_streak = state_dict.get('_suppress_streak', 0)   # 舊 checkpoint 無此鍵 → 預設 0
     
     def plot(self, axes:Optional[Axes] = None, show:bool = False, title:str = "LR & Tau"):
         ax:Axes = plt.axes(axes) # type: ignore

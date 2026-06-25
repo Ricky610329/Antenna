@@ -63,7 +63,9 @@ SECTION_KEYS = {
     "loss":      {"total_variation", "island_suppression", "spectral_connectivity", "gap_closing", "boundary"},
     "sm_train":  {"lr", "min_loss", "max_epoch", "mode", "newest_steps", "replay_size"},
     "scheduler": {"on_plateau", "T_0", "T_mult", "lr_min", "temp_max", "temp_min",
-                  "warmup_ratio", "patience", "factor"},
+                  "warmup_ratio", "patience", "factor",
+                  # boundary-gated warm restart (opt-in)：boundary 當 ACP 探索/固化的依據
+                  "boundary_gate", "boundary_kappa", "boundary_recompute_every", "boundary_suppress_cap"},
     "generator": {"name", "hidden", "pretrained", "num_candidates", "sigma", "sigma_min", "scales"},
     "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
     "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight", "flatness_weight",
@@ -170,6 +172,7 @@ def build_scheduler(cfg: TrainConfig, optimizer):
         warmup_ratio=s.get("warmup_ratio", 0.2),
         patience=s.get("patience", 25), factor=s.get("factor", 0.7),
         mode="min", on_plateau=s.get("on_plateau", "linear"),
+        boundary_suppress_cap=s.get("boundary_suppress_cap", 3),   # 連續抑制上限 (僅 boundary_gate 開時生效)
     )
 
 
@@ -280,6 +283,14 @@ def run_training(
     sel_bnd_w = cfg.selection.get("boundary_weight", bnd_w)    # 選擇排序的 boundary 權重 λ (省略=沿用訓練 bnd_w)
     sel_feas_max = cfg.selection.get("feasibility_max", None)  # SC 可行性閘門門檻 (None=不開閘門，等真實尺度再設)
 
+    # boundary-gated ACP (opt-in)：boundary 當「探索/固化」的依據——衝出 SM 可信區 (boundary≥τ_b) 就
+    # 抑制 ACP 的 plateau warm restart (不加熱、冷卻固化)。需 replay/dlf 緩衝定義已見分布；無緩衝/未開 →
+    # 不傳 boundary 給 scheduler → 與現行 ACP 逐位元相同 (golden 安全)。τ_b = κ·replay 典型 NN 間距。
+    b_gate = cfg.scheduler.get("boundary_gate", False)
+    b_kappa = cfg.scheduler.get("boundary_kappa", 1.5)
+    b_recompute = cfg.scheduler.get("boundary_recompute_every", 20)
+    _b_tau = {"val": None, "epoch": -10**9}    # τ_b 快取 (每 b_recompute epoch 重算一次，避免每步 O(M²))
+
     # 方向圖 (選用，預設 off)：開啟時 SM 已建方向圖頭、simulator 為 SinglePortRadSimulator。
     # 全程用 rad_on 閘住；rad_on=False → 下方所有方向圖分支不執行，行為與原樣完全相同 (golden 零漂移)。
     rad_on = cfg.radiation.get("enable", False)
@@ -361,6 +372,24 @@ def run_training(
             "fresh_frac": sum(1 for x in seen if not x) / n,  # 沒模擬過的候選比例 (探索廣度)
         }
         return k_star, stats
+
+    def _boundary_signal():
+        #? boundary-gated ACP 用：回傳 (boundary_now, τ_b)。boundary_now = 當前 pattern 到最近已見的
+        #  MSE 距離；τ_b = κ·replay 典型 NN 間距 (每 b_recompute epoch 重算一次，避免每步 O(M²))。
+        #  未開閘門 / 無緩衝 → (None, None) → scheduler 收到 None → 現行 ACP 行為。
+        if not (b_gate and replay is not None and len(replay) > 2):
+            return None, None
+        if _b_tau["val"] is None or (epoch - _b_tau["epoch"]) >= b_recompute:
+            P = replay.patterns()                          # (M, N) 已見 pattern (攤平)
+            with torch.no_grad():
+                D = torch.cdist(P, P)                       # (M, M) L2
+                mse = (D * D) / P.shape[1]                  # → per-element MSE (對齊 boundary_loss 單位)
+                mse.fill_diagonal_(float("inf"))
+                _b_tau["val"] = b_kappa * float(mse.min(dim=1).values.median())
+            _b_tau["epoch"] = epoch
+        with torch.no_grad():
+            b_now = float(boundary_loss(output_element.series, replay.patterns()))
+        return b_now, _b_tau["val"]
 
     epoch = start_epoch
     while epoch < epochs:
@@ -528,7 +557,13 @@ def run_training(
                 for _k in ("score_best", "score_mean", "score_spread", "fresh_frac"):
                     state.append(_k, sel_stats[_k])
         loss.backward()
-        generator.step(scheduler_param=sim_loss)
+        #? boundary-gated ACP (opt-in)：把 boundary 訊號 + τ_b 餵給 scheduler，讓它決定 plateau 時
+        #  要不要 warm restart (衝出可信區就抑制加熱)。未開閘門 → b_thr=None → 不傳 → 現行 ACP。
+        b_now, b_thr = _boundary_signal()
+        if b_thr is not None:
+            generator.step(scheduler_param=sim_loss, boundary=b_now, boundary_threshold=b_thr)
+        else:
+            generator.step(scheduler_param=sim_loss)
         generator.model.eval()
         state.append("gen_loss", loss.item())
 
@@ -564,6 +599,11 @@ def run_training(
                 snap["sigma"] = float(generator.model.sigma)
                 if sel_stats is not None:
                     snap.update(sel_stats)             # score_best / score_mean / score_spread / fresh_frac
+            if b_thr is not None:                      # boundary-gated ACP (選用)：診斷閘門有沒有在作用
+                snap["boundary"] = b_now
+                snap["boundary_threshold"] = b_thr
+                snap["in_trusted"] = 1.0 if b_now < b_thr else 0.0
+                snap["restart_suppressed"] = 1.0 if generator.scheduler._last_restart_suppressed else 0.0
             on_epoch(epoch, snap)
 
     return state
