@@ -6,6 +6,7 @@ boundary 當「探索/固化」依據：boundary≥τ_b (衝出 SM 可信區) �
 """
 import os
 
+import pytest
 import torch
 
 from antenna.training import load_config, run_training
@@ -63,6 +64,18 @@ def test_suppress_cap_forces_restart_through():
         s.step(5.0, boundary=10.0, boundary_threshold=1.0)   # 每步 plateau + 出界
         flags.append(s._last_restart_suppressed)
     assert flags == [True, True, False, True, True]          # 抑制,抑制,放行,抑制,抑制
+
+
+# ── τ_b (boundary_threshold) 單元 ───────────────────────────────────────────
+def test_boundary_threshold_dedup_and_degenerate():
+    """τ_b = κ·中位 NN 間距：排除重複 (零距離不污染)、全相同→inf (閘門退回現行 ACP)、M<2→inf。"""
+    from antenna.losses import boundary_threshold
+    P = torch.tensor([[0., 0., 0.], [1., 0., 0.], [0., 1., 0.]])   # 3 個不同 pattern
+    assert 0.0 < boundary_threshold(P, 1.0) < float("inf")
+    Pd = torch.tensor([[0., 0., 0.], [0., 0., 0.], [3., 0., 0.]])  # row0==row1 重複
+    assert boundary_threshold(Pd, 1.0) == pytest.approx(3.0)       # 重複的 0 距離被排除 → 取 3 (非 0)
+    assert boundary_threshold(torch.zeros(4, 5), 1.0) == float("inf")  # 全相同 → inf
+    assert boundary_threshold(torch.zeros(1, 5)) == float("inf")       # M<2 → inf
 
 
 # ── loop 整合 ─────────────────────────────────────────────────────────────

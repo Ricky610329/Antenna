@@ -29,7 +29,7 @@ from .store import fingerprint
 #! 加欄會改變表頭欄數：請對「全新結果夾」生效；別拿新碼去 append 舊表頭的 csv (欄數對不上)。
 SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss", "sim_loss_avg", "r_feed",
                "rad_loss", "sigma", "score_best", "score_mean", "score_spread", "fresh_frac",
-               "time", "pattern_hash")
+               "cand_similarity", "time", "pattern_hash")
 
 
 class RunState:

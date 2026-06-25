@@ -26,8 +26,9 @@ from antenna import zoo
 from antenna.models import Models, BatchLatentGenerator
 from antenna.losses import FeedReachability, SpectralConnectivityLoss, GapClosingLoss
 from antenna.optim import AdaptiveCyclicalScheduler
-from antenna.losses import custom_loss_minmax, interval_loss, beam_coverage_loss, boundary_loss
-from antenna.utils.store import SampleStore
+from antenna.losses import (custom_loss_minmax, interval_loss, beam_coverage_loss, boundary_loss,
+                            candidate_repulsion, boundary_threshold)
+from antenna.utils.store import SampleStore, fingerprint
 from antenna.utils.replay import ReplayBuffer
 from antenna.utils.runstate import RunState
 
@@ -70,8 +71,8 @@ SECTION_KEYS = {
     "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
     "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight", "flatness_weight",
                   "warmup_epochs", "n_theta", "n_basis", "freeze_trunk", "sm_max_epoch", "sm_min_loss"},
-    # 多候選 (batch_latent) 選擇分數：閘門 + 排序。僅 generator: batch_latent 時生效。
-    "selection": {"boundary_weight", "feasibility_max"},
+    # 多候選 (batch_latent) 選擇分數：閘門 + 排序 + 候選排斥。僅 generator: batch_latent 時生效。
+    "selection": {"boundary_weight", "feasibility_max", "diversity_weight"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
 
@@ -225,6 +226,7 @@ def run_training(
     offline_dataset=None,                       # 離線資料集 (無預訓練檔時用來預訓練 SM)
     warmup=None,                                # KuoHung 暖身：(pattern, response) 對 SM 做單筆訓練
     verbose: bool = True,                       # SM 訓練進度條 + 慢步驟 log (測試關閉)
+    max_consecutive_skips: int = 5,             # 連續幾筆 HFSS 失敗 → reopen 重生；reopen 後再連敗 → 中斷+寄信
 ) -> RunState:
     """單/雙埠共用訓練迴圈。回傳 RunState (metrics.csv + patterns/ 的訓練狀態)。"""
     record_path = Path(record_path)
@@ -282,6 +284,7 @@ def run_training(
     multi = isinstance(generator.model, BatchLatentGenerator)
     sel_bnd_w = cfg.selection.get("boundary_weight", bnd_w)    # 選擇排序的 boundary 權重 λ (省略=沿用訓練 bnd_w)
     sel_feas_max = cfg.selection.get("feasibility_max", None)  # SC 可行性閘門門檻 (None=不開閘門，等真實尺度再設)
+    div_w = cfg.selection.get("diversity_weight", 0.0)         # 候選排斥權重 λ_div (0=關，治 batch_latent 崩塌)
 
     # boundary-gated ACP (opt-in)：boundary 當「探索/固化」的依據——衝出 SM 可信區 (boundary≥τ_b) 就
     # 抑制 ACP 的 plateau warm restart (不加熱、冷卻固化)。需 replay/dlf 緩衝定義已見分布；無緩衝/未開 →
@@ -380,18 +383,17 @@ def run_training(
         if not (b_gate and replay is not None and len(replay) > 2):
             return None, None
         if _b_tau["val"] is None or (epoch - _b_tau["epoch"]) >= b_recompute:
-            P = replay.patterns()                          # (M, N) 已見 pattern (攤平)
             with torch.no_grad():
-                D = torch.cdist(P, P)                       # (M, M) L2
-                mse = (D * D) / P.shape[1]                  # → per-element MSE (對齊 boundary_loss 單位)
-                mse.fill_diagonal_(float("inf"))
-                _b_tau["val"] = b_kappa * float(mse.min(dim=1).values.median())
+                _b_tau["val"] = boundary_threshold(replay.patterns(), b_kappa)   # κ·replay 典型 NN 間距
             _b_tau["epoch"] = epoch
         with torch.no_grad():
             b_now = float(boundary_loss(output_element.series, replay.patterns()))
         return b_now, _b_tau["val"]
 
     epoch = start_epoch
+    consecutive_skips = 0          # 連續 HFSS 失敗計數 (成功/快取命中即歸零)
+    reopened_once = False          # 本波連敗是否已 reopen 過 (再連敗 → 判系統性故障中斷)
+    last_stack = None              # 最近一筆成功響應 (skip 的 epoch 拿來佔位給監控)
     while epoch < epochs:
         epoch += 1
         epoch_t0 = time()
@@ -427,11 +429,50 @@ def run_training(
 
         # 去重：patterns/ 的 hash 檔名即「模擬過」快取，沒見過才跑 (mock/HFSS)
         cached = state.lookup(~output_element)
+        skipped = False
         if cached is None:
             if verbose: logger.info(f"[{epoch}] HFSS 模擬中…")
-            result = output_element.simulate()
+            try:
+                result = output_element.simulate()
+            except Exception as e:
+                #! 單筆 HFSS 失敗 (常見：病態幾何讓 oEditor.Unite 丟 COM 例外) 不該帶走整個 run。
+                #  skip 這筆：計數 → 未到門檻只收半成品專案；連敗到頂先 reopen 重生、再連敗才判系統性故障中斷。
+                skipped = True
+                consecutive_skips += 1
+                logger.warning(
+                    f"[{epoch}] HFSS 模擬失敗 (連續第 {consecutive_skips}/{max_consecutive_skips} 次，"
+                    f"pattern {fingerprint(~output_element)[:12]})，skip 這一筆：{type(e).__name__}: {e}"
+                )
+                if consecutive_skips >= max_consecutive_skips:
+                    if not reopened_once:
+                        #! 連敗到頂：可能是 COM session 退化 → reopen 重生 (kill+重連) 後再給一輪。
+                        logger.error(f"連續 {consecutive_skips} 次 HFSS 失敗 → reopen() 重生 HFSS 連線後再試")
+                        simulator.reopen()
+                        reopened_once = True
+                        consecutive_skips = 0
+                    else:
+                        #! 重生後又連敗 → 判定系統性故障 (license/磁碟/碼 bug)，中斷交給 excepthook 寄信。
+                        raise RuntimeError(
+                            f"HFSS reopen 後仍連續 {max_consecutive_skips} 次失敗 (epoch {epoch})；"
+                            f"判定系統性故障、中斷 run。最後錯誤 {type(e).__name__}: {e}"
+                        )
+                else:
+                    try:
+                        simulator.end(save_project=False)   # 未到重生門檻：只收這回合半成品 (end 內建逐級容錯)
+                    except Exception as ee:
+                        logger.warning(f"[{epoch}] 失敗回合收尾也異常，略過: {ee}")
+                #? 讓 G 仍對 SM 走一步 (G 梯度來自 SM、與 HFSS 無關)：sim_loss 用 carry-forward 佔位、
+                #  只餵 ACP 排程器與 metrics；不寫 pattern 快取、不更新 SM (無真實響應可學)。
+                sim_loss = float(state.last("sim_loss", 1.0))
+                stack = last_stack
+                phash = ""
+                state.append("sim_loss", sim_loss)
+        if cached is None and not skipped:
+            consecutive_skips = 0           # 成功 → 連敗歸零
+            reopened_once = False
             sim_loss = result.criterion()
             stack = result.stack()
+            last_stack = stack
             #? SM 線上更新：single=最新一筆擬到收斂(原樣)；replay=最新少數步＋回放整個緩衝；
             #  dlf=最新少數步＋只訓「菁英子集」(loss ≤ 累計門檻 λ_t)。緩衝一律「全收」(學長論文 §3.5)。
             if sm_mode in ("replay", "dlf"):
@@ -481,9 +522,12 @@ def run_training(
             phash = state.add_pattern(~output_element, stack, sim_loss.item())
             if state.last("sim_loss") < state.average("sim_loss"):
                 online.add(~output_element, stack)
-        else:
+        elif cached is not None:
             if verbose: logger.info(f"[{epoch}] pattern 重複 → 取快取結果 (跳過 HFSS)")
+            consecutive_skips = 0           # 快取命中 = 非失敗 → 連敗歸零
+            reopened_once = False
             stack, sim_loss, phash = cached
+            last_stack = stack
             state.append("sim_loss", sim_loss)
 
         state.append("sim_loss_avg", state.average("sim_loss"))
@@ -500,6 +544,8 @@ def run_training(
         if multi:
             # 聚合：mean over K 候選的「現役四 loss」(reparam → 最小化雲的 E[loss]，把中心 z* 拉向好區)。
             loss = sum(_candidate_loss(c, epoch) for c in cands) / len(cands)
+            if div_w:                                       # 候選排斥 (opt-in)：防候選塌縮 → best-of-K 持續有賺頭
+                loss = loss + div_w * candidate_repulsion(logits_K)
             # 方向圖監控快照 (用選中的那張；rad loss 已含在聚合 loss 內，這裡只為監控、不重複加)。
             rad_loss_val = 0.0
             rad_snapshot = None
@@ -556,6 +602,8 @@ def run_training(
             if sel_stats is not None:
                 for _k in ("score_best", "score_mean", "score_spread", "fresh_frac"):
                     state.append(_k, sel_stats[_k])
+            with torch.no_grad():                       # 候選相似度 (高=塌縮；排斥項要壓低它)
+                state.append("cand_similarity", float(candidate_repulsion(logits_K)))
         loss.backward()
         #? boundary-gated ACP (opt-in)：把 boundary 訊號 + τ_b 餵給 scheduler，讓它決定 plateau 時
         #  要不要 warm restart (衝出可信區就抑制加熱)。未開閘門 → b_thr=None → 不傳 → 現行 ACP。
@@ -569,15 +617,16 @@ def run_training(
 
         generator.save()                       # 存 GEN (供 rollback 載回 / 斷點續跑)
 
-        simulator.end()
-        simulator.clean()
+        if not skipped:                        # skip 的回合在失敗當下已收尾 (或已 reopen)，這裡不重複 end (避免對 num=None 斷言)
+            simulator.end()
+            simulator.clean()
 
         state.append("epoch", epoch)
         state.append("time", round(time() - epoch_t0, 1))   # 本 epoch 耗時 (HFSS 為主)
         state.save_row()                       # metrics.csv append 一行 (斷點續跑檢查點)
 
         # on_epoch 收到「本 epoch 快照」：純量指標 + 繪圖素材 (監控端畫 pattern/響應/方向圖用)
-        if on_epoch is not None:
+        if on_epoch is not None and stack is not None:   # 首個 epoch 就 skip 時無可沿用響應 → 該 epoch 不發監控快照
             snap = dict(
                 sim_loss=float(state.last("sim_loss")),
                 best_loss=float(state.last("best_loss")),
@@ -599,6 +648,7 @@ def run_training(
                 snap["sigma"] = float(generator.model.sigma)
                 if sel_stats is not None:
                     snap.update(sel_stats)             # score_best / score_mean / score_spread / fresh_frac
+                snap["cand_similarity"] = float(state.last("cand_similarity"))   # 候選相似度 (高=塌縮)；已於上方算入 csv
             if b_thr is not None:                      # boundary-gated ACP (選用)：診斷閘門有沒有在作用
                 snap["boundary"] = b_now
                 snap["boundary_threshold"] = b_thr

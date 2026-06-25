@@ -233,7 +233,7 @@ def test_metrics_csv_has_rad_and_select_columns(tmp_path):
     with open(tmp_path / "metrics.csv", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     assert rows
-    for col in ("rad_loss", "sigma", "score_best", "score_spread", "fresh_frac"):
+    for col in ("rad_loss", "sigma", "score_best", "score_spread", "fresh_frac", "cand_similarity"):
         assert col in rows[0], f"metrics.csv 缺欄 {col}"
         assert rows[-1][col] != "", f"{col} 應有值 (multi+rad run)"
 

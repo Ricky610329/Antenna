@@ -9,6 +9,7 @@ import os
 import pytest
 import torch
 
+from antenna.losses import candidate_repulsion
 from antenna.models.generators import BatchLatentGenerator, MultiScaleGenerator, SigmoidGenerator
 from antenna.training import load_config, run_training
 
@@ -111,6 +112,42 @@ def test_multiscale_zero_params_degenerate_grad_finite():
     assert all(torch.isfinite(p.grad).all() for p in g.parameters())
 
 
+# ── candidate_repulsion (item 3 排斥項) 單元 ─────────────────────────────────
+def test_candidate_repulsion_identical_high_spread_low():
+    """完全相同候選 → 相似度=1 (最大塌縮)；拉很開 → 相似度明顯低。"""
+    assert candidate_repulsion(torch.zeros(4, 10)).item() == pytest.approx(1.0)
+    torch.manual_seed(0)
+    assert candidate_repulsion(torch.randn(4, 10) * 10).item() < 0.7
+
+
+def test_candidate_repulsion_k_lt_2_is_zero():
+    assert candidate_repulsion(torch.randn(1, 10)).item() == 0.0
+
+
+def test_candidate_repulsion_differentiable_pushes_apart():
+    """可微、梯度非零 (會把候選推開)；最小化此項 → 候選分散。"""
+    x = torch.randn(3, 8, requires_grad=True)
+    candidate_repulsion(x).backward()
+    assert torch.isfinite(x.grad).all() and x.grad.abs().sum() > 0
+
+
+def test_candidate_repulsion_k2_value():
+    """K=2 median 退化：非重合 → 恆 exp(-1)；完全重合 → 1.0（鎖死 corner，防未來改 median 邏輯破壞）。"""
+    import math
+    assert candidate_repulsion(torch.tensor([[0.0, 0.0], [1.0, 0.0]])).item() == pytest.approx(math.exp(-1), abs=1e-5)
+    assert candidate_repulsion(torch.zeros(2, 4)).item() == pytest.approx(1.0)
+
+
+def test_candidate_repulsion_grad_direction_pushes_pair_apart():
+    """梯度方向正確：對相近 pair 做一步 GD (最小化排斥) → 距離增大 (不只是 grad≠0)。"""
+    x = torch.tensor([[0.0, 0.0], [0.2, 0.0]], requires_grad=True)
+    d0 = (x[0] - x[1]).norm().item()
+    candidate_repulsion(x).backward()
+    with torch.no_grad():
+        x2 = x - 1.0 * x.grad
+    assert (x2[0] - x2[1]).norm().item() > d0
+
+
 # ── 多候選訓練 loop 整合 ───────────────────────────────────────────────────
 class _CountSim:
     """確定性假模擬器 + 計數 HFSS 評估次數 (__call__) 與 COM 生命週期。"""
@@ -161,4 +198,20 @@ def test_metrics_csv_multi_without_rad_partial_columns(tmp_path):
         rows = list(csv.DictReader(f))
     assert rows[-1]["sigma"] != ""                       # multi → sigma 有值
     assert rows[-1]["score_spread"] != ""                # multi → select 有值
+    assert rows[-1]["cand_similarity"] != ""             # multi → 候選相似度有值 (即使非 rad)
     assert rows[-1]["rad_loss"] == ""                    # 非 rad → rad_loss 留空 (不錯位)
+
+
+def test_cand_similarity_snap_matches_csv(tmp_path):
+    """snap 的 cand_similarity 讀 state (非重算) → 與 metrics.csv 寫入值逐位元一致。"""
+    import csv
+    cfg = load_config(os.path.join(FIX, "single_test.yaml"))
+    cfg.generator = {"name": "batch_latent", "num_candidates": 3}
+    snaps = []
+    run_training(cfg, simulator=_CountSim(("S11", "Gain")), record_path=tmp_path, seed=0,
+                 max_epochs=2, on_epoch=lambda e, m: snaps.append(m), verbose=False)
+    with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert len(snaps) == len(rows) == 2
+    for snap, row in zip(snaps, rows):
+        assert snap["cand_similarity"] == pytest.approx(float(row["cand_similarity"]), abs=1e-9)

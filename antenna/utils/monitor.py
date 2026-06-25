@@ -166,7 +166,7 @@ class TrainingMonitor:
                             ("index", ("r_feed", "time")),
                             # 多候選 (batch_latent) 才有：候選池健康度 → 診斷 Z 探索是否有賺頭
                             # (score_spread→0 = 候選塌縮、Z 失效；fresh_frac 低 = 探索停滯)。
-                            ("select", ("score_best", "score_mean", "score_spread", "fresh_frac")),
+                            ("select", ("score_best", "score_mean", "score_spread", "fresh_frac", "cand_similarity")),
                             # boundary-gated ACP 才有：boundary vs τ_b、是否在可信區、是否抑制了 restart
                             # (restart_suppressed 在 boundary 高時觸發 = 閘門有作用)。
                             ("acp", ("boundary", "boundary_threshold", "in_trusted", "restart_suppressed"))):

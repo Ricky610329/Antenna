@@ -645,3 +645,45 @@ def boundary_loss(pattern: Tensor, seen: Tensor) -> Tensor:
     if d.numel() == 0:
         return pattern.new_zeros(())
     return d.min()                                         # 與最近一個已見的距離
+
+
+def candidate_repulsion(logits: Tensor) -> Tensor:
+    """候選排斥 (有界 RBF)：罰一批 (K, D) logits 兩兩太像 → 逼生成器用 latent、防 batch_latent 候選崩塌。
+
+    動機：batch_latent 同批 K 候選會塌縮 (MLP 學會忽略 z → score_spread→0、best-of-K 失效)。
+    在聚合 loss 加此項，逼「不同 z 解出不同 pattern」。
+
+    :param logits: 一批候選的連續 logits (二值化前)，shape (K, D)，帶梯度。
+    :return: 平均 off-diagonal RBF 相似度 ∈ (0,1] (高=塌縮)；最小化它 → 候選分散。
+             有界 (不像「最大化距離」會炸 logits)；h=兩兩平方距離中位數 (detach、SVGD median heuristic)，
+             作用在連續 logits → 梯度平滑。K<2 → 0。
+    ⚠ 已知療效取捨 (非 bug)：median 帶寬下，「少數候選散開、少數塌在一起」時，散開候選把 median 拉高 →
+      塌縮 pair 落在 RBF 飽和區、推力被削弱 (梯度∝exp(-d2/h)/h)；值有 exp(-1)≈0.37 的軟下限。
+      若 TB 看到 cand_similarity 壓不下去 / score_spread 仍塌，根因多半在此 → 升級路徑：min/per-point
+      帶寬 或 改 hinge(margin) 排斥。先用此版量測，good SM 下塌縮未必嚴重，再決定要不要升級。
+    """
+    K = logits.shape[0]
+    if K < 2:
+        return logits.new_zeros(())
+    d2 = torch.cdist(logits, logits) ** 2                  # (K, K) 平方 L2
+    off = ~torch.eye(K, dtype=torch.bool, device=logits.device)
+    h = d2.detach()[off].median().clamp_min(1e-12)
+    return torch.exp(-d2 / h)[off].mean()
+
+
+def boundary_threshold(seen: Tensor, kappa: float = 1.5) -> float:
+    """boundary-gated ACP 的「出界」門檻 τ_b = κ · replay 典型 NN 間距。
+
+    典型間距 = 各 pattern 到「最近的另一個」pattern 的 per-element MSE 的中位數
+    (排除自身 + 重複/近重複，閾值 1e-9，與 boundary_loss 的 d>1e-9 一致)。boundary≥τ_b 視為「衝出
+    SM 可信區」。全相同/M<2 → inf (無從定義間距 → 閘門永不判出界 → 退回現行 ACP)。
+
+    :param seen:  (M, N) 已見 pattern (攤平、通常＝replay 緩衝)。
+    :param kappa: 門檻係數 (越大越寬鬆、越不易判出界)。
+    """
+    if seen.shape[0] < 2:
+        return float("inf")
+    D = torch.cdist(seen, seen)
+    mse = (D * D) / seen.shape[1]                          # per-element MSE (對齊 boundary_loss 單位)
+    mse[mse <= 1e-9] = float("inf")                        # 排除自身 + 重複/近重複
+    return kappa * float(mse.min(dim=1).values.median())
