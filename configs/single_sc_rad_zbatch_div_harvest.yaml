@@ -1,0 +1,56 @@
+# Z 多候選 + 候選排斥 (治崩塌) + sm_harvest  (port=single)
+# = single_sc_rad_zbatch (batch_latent) 加 selection.diversity_weight，並換 sm_harvest。
+#   首輪觀測 batch_latent 候選塌縮 (score_spread 3.34→0.13、MLP 忽略 z) → 加「有界 RBF 排斥項」
+#   罰候選 logits 兩兩太像，逼解碼器用 z、讓 best-of-K 持續有賺頭。
+# A/B：對標 zbatch (無排斥、會塌) 看排斥項能否維持 score_spread>0、best-of-K 優勢持續。
+# boundary 這支維持「當 loss」(loss.boundary)，以隔離「排斥項」單一變因。詳見 docs/exploration_roadmap.md item 3。
+# ⚠ diversity_weight=1.0 為起步值 (排斥項∈[0,1]、候選 loss ~O(10)) → 看 TB select/cand_similarity 再調。
+name: pixel_single_sc_rad_zbatch_div_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1          # 維持 boundary 當 loss (隔離排斥項變因)
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: batch_latent
+  num_candidates: 8
+  sigma: 0.5
+  sigma_min: 0.05
+
+selection:
+  diversity_weight: 1.0   # ← 唯一變因 (對 zbatch)：候選排斥 (有界 RBF)，防塌
+
+surrogate:
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

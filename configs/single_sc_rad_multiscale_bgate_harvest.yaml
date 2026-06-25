@@ -1,0 +1,55 @@
+# 骨幹 (B)：multiscale 生成器 + boundary-gated ACP + sm_harvest  (port=single)
+# cold-start 主線：結構化生成器(多尺度連通先驗) + 狀態驅動探索(boundary 當控制、非 loss)。
+# = single_sc_rad_boundary_harvest 的「換 multiscale 生成器 + boundary 改當控制」版。
+#   - generator: multiscale —— 探索的隨機性穿過結構先驗 (不依賴 z 不崩塌)。
+#   - 不設 loss.boundary + 開 scheduler.boundary_gate —— boundary 專任控制 (出界抑制加熱、冷卻固化)。
+# A/B：對標 _boundary_multiscale_harvest (multiscale + 盲目 ACP) 看「狀態驅動探索」是否破 plateau。
+# 詳見 docs/exploration_roadmap.md item 1。
+name: pixel_single_sc_rad_multiscale_bgate_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  # 刻意不設 loss.boundary（boundary 改當 scheduler 控制依據）。
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+  boundary_gate: true
+  boundary_kappa: 1.5
+  boundary_recompute_every: 20
+  boundary_suppress_cap: 3
+
+generator:
+  name: multiscale
+  scales: [1, 5, 13]
+
+surrogate:
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

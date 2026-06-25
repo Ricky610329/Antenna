@@ -1,0 +1,60 @@
+# Z 多候選「全載」：候選排斥 + boundary-gated ACP + sm_harvest  (port=single)
+# 把探索三層一次疊滿在 batch_latent 上：
+#   - generator: batch_latent (γ 高斯雲，注入隨機性)
+#   - selection.diversity_weight (排斥項，防候選塌縮 → 結構/多樣)
+#   - boundary 當控制 (不設 loss.boundary + scheduler.boundary_gate) → 狀態驅動探索/固化
+# A/B：對標 _zbatch_div_harvest (排斥但 boundary 當 loss) 看「boundary 改當控制」是否再加分。
+# 詳見 docs/exploration_roadmap.md item 3 + item 2。⚠ 複合 config (探索期疊注)，贏了再 ablation 拆功勞。
+name: pixel_single_sc_rad_zbatch_div_bgate_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  # 不設 loss.boundary（boundary 改當 scheduler 控制依據）。
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+  boundary_gate: true
+  boundary_kappa: 1.5
+  boundary_recompute_every: 20
+  boundary_suppress_cap: 3
+
+generator:
+  name: batch_latent
+  num_candidates: 8
+  sigma: 0.5
+  sigma_min: 0.05
+
+selection:
+  diversity_weight: 1.0   # 候選排斥 (有界 RBF)，防塌
+
+surrogate:
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000
