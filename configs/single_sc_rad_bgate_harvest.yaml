@@ -1,0 +1,54 @@
+# 單埠 + SC + 方向圖 + DLF + boundary-gated ACP + sm_harvest  (port=single)
+# 對標 single_sc_rad_boundary_harvest.yaml：把 boundary 從「loss 懲罰」改成「ACP 控制依據」。
+#   - 刻意「不設」loss.boundary —— boundary 不再當梯度懲罰拉 G 回可信區。
+#   - 改開 scheduler.boundary_gate —— plateau 時若 boundary≥τ_b (衝出 SM 可信區) 就抑制 warm
+#     restart (不加熱、冷卻就地固化、SM 在此被訓)；boundary<τ_b (區內卡住) 才放行往外探。
+# 為何兩者擇一：boundary-as-loss 會把 G 拉回、壓掉 gate 需要的「出界」訊號 → 衝突，故開 gate 關 loss。
+# A/B：對標 single_sc_rad_boundary_harvest (boundary 當 loss) 看「boundary 當控制」是否少燒 plateau
+#      後的無效遊蕩、同 HFSS budget 下更好/更快。⚠ 配 sm_harvest 這種像樣 SM 才發揮 (近≠SM 準)。
+name: pixel_single_sc_rad_bgate_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  # 注意：刻意不設 loss.boundary（boundary 改當 scheduler 的控制依據，不當梯度懲罰）。
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf              # boundary 閘門需要緩衝定義「已見分布」→ 配 dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+  boundary_gate: true             # ← boundary 專任控制：出界抑制加熱、冷卻固化；區內卡住才探
+  boundary_kappa: 1.5             # τ_b = κ · replay 典型 NN 間距
+  boundary_recompute_every: 20    # τ_b 每幾 epoch 重算
+  boundary_suppress_cap: 3        # 連續抑制上限 → 強制放行一次 (防餓死)
+
+generator: sigmoid
+
+surrogate:
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000
