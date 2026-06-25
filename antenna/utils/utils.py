@@ -165,7 +165,7 @@ def global_exception_handler(mode:Union[bool, Literal["only_hfss"]] = True) -> C
             # 延後匯入 (避免在 import utils 時就拉進網路/SMTP 相依)；get_local_ip 讓信件
             # 標題帶上是哪台機器出錯 (實驗室常有多台機跑模擬)。
             from antenna.utils.web import Email, get_local_ip
-            with Email("weiwen@alum.ccu.edu.tw") as email:
+            with Email("ricky010101010@gmail.com") as email:
                 msg = email.getText(
                     f'Antanna Error ({get_local_ip()})',
                     f"{text}\n\nTraceback:\n{tb_text}"
@@ -207,7 +207,7 @@ def Complete(message="Process completed.", send_email:bool=False, **results):
     if send_email:
         # 與例外處理器相同：延後匯入 Email，標題帶上本機 IP 以區分機器。
         from antenna.utils.web import Email, get_local_ip
-        with Email("weiwen@alum.ccu.edu.tw") as email:
+        with Email("ricky010101010@gmail.com") as email:
             msg = email.getText(
                 f'Antanna Success ({get_local_ip()})',
                 full_message

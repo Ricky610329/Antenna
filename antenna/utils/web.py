@@ -44,7 +44,7 @@ class Email(SMTP):
 
         Example:
             ```
-            with Email("weiwen@alum.ccu.edu.tw") as email:
+            with Email("recipient@example.com") as email:
 
                 msg = email.getText(
                     'AILAB Antenna Notice',
