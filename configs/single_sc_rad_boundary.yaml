@@ -29,7 +29,7 @@ scheduler:
 generator: sigmoid
 
 surrogate:
-  pretrained: sm_harvest.pth        # 自訓 SM 初始化 (old_sm.pth 對我們資料 ≈隨機；val MSE 13 vs 38)
+  pretrained: old_sm.pth
   offline_dataset: harvest_single
 
 targets:

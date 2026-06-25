@@ -1,0 +1,46 @@
+# 單埠 + SC + 方向圖 + DLF + Boundary + sm_harvest 初始化  (port=single)
+# = single_sc_rad_boundary.yaml 的「換 sm_harvest SM 初始化」全新版 (name 含 harvest → 全新結果夾)。
+# 用途：generator-prior 三代 A/B 的 sigmoid 基準 / oracle 標竿——「有好 SM 時能到多好」。
+# 為何另開新檔/新 name：同名會續跑舊 old_sm 結果夾、吃不到 sm_harvest；改名強制全新夾。
+name: pixel_single_sc_rad_boundary_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator: sigmoid
+
+surrogate:
+  pretrained: sm_harvest.pth        # ← 唯一變因 (對 single_sc_rad_boundary)：自訓 SM (val MSE 13 vs 38)
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

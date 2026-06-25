@@ -1,0 +1,50 @@
+# 單埠 + SC + 方向圖 + DLF + Boundary + 多尺度淺層生成器 + sm_harvest 初始化  (port=single)
+# 對標 single_sc_rad_boundary_harvest.yaml：唯一變因 = generator: multiscale。
+# 用途：generator-prior 三代 A/B 之一 (多尺度先驗)。cold-start 視角「generator=重參數化/先驗」：
+#       1×1/5×5/13×13 上採樣相加、淺層少參數 → 連通平滑先驗 + 按尺度退火傾向。
+# ⚠ 表達力：最細只到 13×13，單像素細節可能擬不出；不夠把更大尺度加進 generator.scales (如 [1,5,13,25])。
+# name 含 harvest → 全新結果夾 (multiscale 本來就沒跑過，天生全新，仍統一 harvest 命名以對齊 A/B)。
+name: pixel_single_sc_rad_boundary_multiscale_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:               # ← 唯一變因：多尺度淺層加性生成器 (cold-start 連通先驗)
+  name: multiscale
+  scales: [1, 5, 13]     # 各尺度小頭 → 上採樣到 25×25 相加；最細 13×13 → band-limited 偏連通
+
+surrogate:
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 1.0
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000
