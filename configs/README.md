@@ -129,5 +129,7 @@ NAS（`DATASET_PATH = T:\碩一_鄒穎麒's\antenna\dataset`）上的離線資�
 | `script/kuohung.py` | ⚙ 資料 | KuoHung 參考圖樣載入（SM 單筆暖身用，對應 `surrogate.warmup`） |
 | `script/harvest_legacy.py` | ⚙ 資料 | 從學長舊資料收割成自有 NAS 資料集（`harvest_single` / `harvest_dual`） |
 | `script/train_sm_offline.py` | ⚙ 初始化 | 在 harvest 資料上 minibatch 訓一顆 SM 當「好的初始化」→ `DATASET_PATH/sm_harvest.pth`（old_sm.pth 對我們資料 ≈隨機；自訓 val MSE 13 vs 38）。開發機可跑、不需 HFSS |
+| `script/check_harvest_consistency.py` | ❌ 驗證 | **抽驗 harvest 與「現在的 HFSS」對不對得上**(暖啟動前提):抽 N 筆 harvest pattern 用現在 HFSS 重跑、比對 MSE。中位 ≈ val MSE(~13)→ 可信;≈隨機(~35-38)→ sm_harvest 須重收。**需正式機 HFSS** |
+| `script/benchmark_vs_random.py` | ❌ 分析 | **worst-margin(dB) vs HFSS-call 客觀 benchmark**(離線):從 run 的 metrics.csv+patterns/ 畫 best-margin-so-far 曲線、多 run 疊圖、對比 random best-of-N。一天驗一版(~250ep)用「曲線誰升得快」判斷,非「有沒有達標」。worst-margin 定義 = in-band(中央平台)對 spec 最差餘裕(與 custom_loss_minmax 一致)。開發機可跑 |
 | `script/convert_dataset.py` | ⚙ 資料 | 舊 `.dataset` 格式轉換 |
 | `script/img2video.py`、`check_gpu.py`、`get_local_ip.py`、`kill.py`、`process_files.py` | ❌ 雜項 | 視覺化／環境／程序管理工具，與訓練無關 |
