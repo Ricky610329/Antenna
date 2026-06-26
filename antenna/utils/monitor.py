@@ -162,11 +162,15 @@ class TrainingMonitor:
         if self.writer is None:
             return
         for group, keys in (("loss", ("sim_loss", "gen_loss", "best_loss", "rad_loss")),
-                            ("sched", ("lr", "tau", "sigma")),
-                            ("index", ("r_feed", "time", "skipped")),
+                            ("sched", ("lr", "tau", "tau_eff", "sigma", "grad_norm")),
+                            # index：r_feed/耗時/skip + worst_margin(in-band S11/Gain dB 餘裕,真目標) + metal_frac(崩塌)。
+                            ("index", ("r_feed", "time", "skipped", "worst_margin", "metal_frac")),
                             # loss 分量拆解 → 歸因 plateau 誰主導 (sm_target 對照 sim_loss = SM 準度)；
                             # rad_fit = 方向圖頭線上擬合 loss (看 rad head 收斂沒)。
                             ("components", ("sm_target", "sc_loss", "bnd_loss", "rad_fit")),
+                            # SM 品質/訓練/信任診斷：sm_gap(訓前對新點誤差=generalization)、sm_unc(ensemble 分歧)、
+                            # sm_fit_loss/epochs(每輪重訓到 fit 沒)、trust_t/gap_ema(閉迴路控制器)。
+                            ("sm", ("sm_gap", "sm_unc", "sm_fit_loss", "sm_fit_epochs", "trust_t", "gap_ema")),
                             # 多候選 (batch_latent) 才有：候選池健康度 → 診斷 Z 探索是否有賺頭
                             # (score_spread→0 = 候選塌縮、Z 失效；fresh_frac 低 = 探索停滯)。
                             ("select", ("score_best", "score_mean", "score_spread", "fresh_frac", "cand_similarity")),

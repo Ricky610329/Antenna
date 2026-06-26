@@ -201,7 +201,7 @@ cython_debug/
 # === Antenna 專案自訂 ===
 # 本機歸檔的舊變體腳本備份 (train_selection_*/mirror/ris)，不進 repo
 archive/
-# 草稿/暫存 (設計 HTML 已移到 docs/；paper_text.txt 可從 PDF 再生)
+# 草稿/暫存 (設計 HTML 已移到 docs/；paper_text.txt 可從 PDF 再生)；含本機 TB 事件 tmp/tb_local/ (給 TB tail、找得到好清)
 tmp/
 # 本機暫存下載 (工具產生的暫存檔，非結果)
 temp_downloads/

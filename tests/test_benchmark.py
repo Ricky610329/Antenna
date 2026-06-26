@@ -8,7 +8,9 @@ import pytest
 import torch
 
 from antenna.training import TrainConfig
-from script.benchmark_vs_random import worst_margin
+from antenna.losses import worst_margin       # 共用定義 (script 與 training.py 都用這份)
+
+LABELS = ["S11", "Gain"]                       # 單埠 response 列序
 
 
 def _cfg():
@@ -27,7 +29,7 @@ def test_worst_margin_satisfied():
     r = torch.zeros(2, 17)
     r[0, 5:12] = -15.0          # S11 in-band (中央平台 = 索引 5..11)
     r[1, 5:12] = 6.0            # Gain in-band
-    w, m = worst_margin(r, cfg)
+    w, m = worst_margin(r, LABELS, cfg.targets)
     assert m["S11"] == pytest.approx(5.0)
     assert m["Gain"] == pytest.approx(2.0)
     assert w == pytest.approx(2.0)
@@ -40,7 +42,7 @@ def test_worst_margin_violated_is_negative():
     r[0, 5:12] = -15.0
     r[1, 5:12] = 6.0
     r[0, 8] = -8.0              # 帶內一點違反 (最高點)
-    w, m = worst_margin(r, cfg)
+    w, m = worst_margin(r, LABELS, cfg.targets)
     assert m["S11"] == pytest.approx(-2.0)
     assert w == pytest.approx(-2.0)
 
@@ -54,7 +56,7 @@ def test_worst_margin_ignores_outband():
     r[0, 0] = 100.0            # 帶外 S11 超爛
     r[0, 16] = 100.0
     r[1, 0] = -100.0          # 帶外 Gain 超爛
-    w, _ = worst_margin(r, cfg)
+    w, _ = worst_margin(r, LABELS, cfg.targets)
     assert w == pytest.approx(2.0)   # 不受帶外影響
 
 
@@ -64,5 +66,5 @@ def test_worst_margin_accepts_flat_response():
     r = torch.zeros(2, 17)
     r[0, 5:12] = -15.0
     r[1, 5:12] = 6.0
-    w, _ = worst_margin(r.reshape(-1), cfg)
+    w, _ = worst_margin(r.reshape(-1), LABELS, cfg.targets)
     assert w == pytest.approx(2.0)

@@ -37,6 +37,11 @@ SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss", "sim_loss_avg", "r_
                "cand_similarity",
                "sm_target", "sc_loss", "bnd_loss", "rad_fit", "skipped",
                "sm_unc", "trust_t", "gap_ema",
+               # debug 訊號 (2026-06-27 補)：sm_gap=訓前 SM 對新點誤差(generalization);
+               #   sm_fit_loss/epochs=每輪 SM 重訓的收斂 loss/epoch 數(看訓到 fit 沒);
+               #   worst_margin=in-band S11/Gain dB 餘裕(真目標,正=達標);metal_frac=金屬比例(抓崩塌);
+               #   grad_norm=guidance 梯度範數(抓消失/爆炸)。
+               "sm_gap", "sm_fit_loss", "sm_fit_epochs", "worst_margin", "metal_frac", "grad_norm",
                "boundary_threshold", "restart_suppressed",
                "time", "pattern_hash")
 

@@ -28,7 +28,7 @@ from antenna.models import Models, BatchLatentGenerator
 from antenna.losses import FeedReachability, SpectralConnectivityLoss, GapClosingLoss
 from antenna.optim import AdaptiveCyclicalScheduler
 from antenna.losses import (custom_loss_minmax, interval_loss, beam_coverage_loss, boundary_loss,
-                            candidate_repulsion, boundary_threshold)
+                            candidate_repulsion, boundary_threshold, worst_margin)
 from antenna.utils.store import SampleStore, fingerprint
 from antenna.utils.replay import ReplayBuffer
 from antenna.utils.runstate import RunState
@@ -509,6 +509,8 @@ def run_training(
         generator.optimizer.zero_grad()
         rad_real_this_epoch = None      # 本 epoch 真實方向圖 (僅非快取分支會填；供監控疊圖)
         rad_fit_val = 0.0               # rad head 線上擬合最終 loss (僅 fresh-rad epoch 更新；其餘 0)
+        sm_gap_val = None               # SM「訓前」對新點誤差 = generalization (僅 fresh-HFSS epoch 算)
+        sm_fit_hist = []                # 本 epoch SM 重訓的逐 epoch/step loss (看訓到 fit 沒；僅 fresh)
 
         # 早停 → 回滾 (測試用高 patience 不觸發)
         if state.early_stop("sim_loss", pat):
@@ -584,12 +586,14 @@ def run_training(
             sim_loss = result.criterion()
             stack = result.stack()
             last_stack = stack
-            #? 閉迴路信任控制：先記 SM「線上訓練前」對這張新 pattern 的預測 loss → 與真實 sim_loss 的落差
-            #  gap 反映「SM 在它沒見過的點準不準」。必須在 train_one_data 之前量 (訓練後 SM 已擬合本筆、
-            #  gap 會被抹平成假 0)。enable=False → no-op (不算、無額外 forward)。
+            #? sm_gap = SM「線上訓練前」對這張新 pattern 的預測誤差 = generalization 訊號 (dlf/dlf_fit/refit
+            #  在比的本體)。**一律算、落 csv**(不再只綁 trust);必須訓練前量 (train_one_data 後 SM 已擬合本筆、
+            #  gap 被抹平成假 0)。對照 sm_target(訓後,近 0=memorize):兩者落差大 = 在背、沒 generalize。
+            with torch.no_grad():
+                _sm_pred_pre = float(smodel(output_element.series).criterion())
+            sm_gap_val = abs(_sm_pred_pre - sim_loss.item())
             if trust.enable:
-                with torch.no_grad():
-                    trust.update(float(smodel(output_element.series).criterion()), sim_loss.item())
+                trust.update(_sm_pred_pre, sim_loss.item())   # 閉迴路:同一個訓前 gap 餵控制器
             #? SM 線上更新：single=最新一筆擬到收斂(原樣)；replay=最新少數步＋回放整個緩衝；
             #  dlf=最新少數步＋elite 子集訓 1 epoch；dlf_fit=elite 訓到收斂、不做單筆(＝學長原版 DLF)。
             #  緩衝一律「全收」(學長論文 §3.5)。
@@ -602,8 +606,8 @@ def run_training(
                 lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
                 elite = replay.elite(lam)
                 if len(elite) > 0:
-                    smodel.train_by_datas(elite, epochs=sm_elite_epochs,
-                                          min_loss=smodel.min_loss, verbose=verbose)
+                    sm_fit_hist = smodel.train_by_datas(elite, epochs=sm_elite_epochs,
+                                                        min_loss=smodel.min_loss, verbose=verbose)
             elif sm_mode == "refit":
                 #? refit (你的「不一定要 elite」版):全收 → 把「整個 buffer」訓到 fit (不挑 elite)。
                 #  原則:guidance surrogate 也要學「爛 pattern 長怎樣」才預測得出爛、避得開洞 (對抗洞疫苗)。
@@ -612,8 +616,8 @@ def run_training(
                 #    但實際計算量 > dlf_fit (訓整個 buffer 非子集),配 surrogate: ensemble 會再 ×K,留意成本。
                 replay.add(~output_element, stack, sim_loss.item())   # 全收
                 if len(replay) > 0:
-                    smodel.train_by_datas(replay, epochs=sm_elite_epochs,
-                                          min_loss=smodel.min_loss, verbose=verbose)
+                    sm_fit_hist = smodel.train_by_datas(replay, epochs=sm_elite_epochs,
+                                                        min_loss=smodel.min_loss, verbose=verbose)
             elif sm_mode in ("replay", "dlf"):
                 replay.add(~output_element, stack, sim_loss.item())   # 全收 (含 loss；不在寫入端篩)
                 #? 對最新一筆跑少數步 (它＝G 此刻的位置，SM 最需要在那準)，max_epoch 上限避免擬到死
@@ -625,12 +629,12 @@ def run_training(
                     lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
                     elite = replay.elite(lam)
                     if len(elite) > 0:
-                        smodel.train_by_datas(elite, epochs=1, verbose=verbose)
+                        sm_fit_hist = smodel.train_by_datas(elite, epochs=1, verbose=verbose)
                 else:                                              # 純 replay：回放整個緩衝
-                    smodel.train_by_datas(replay, epochs=1, verbose=verbose)
+                    sm_fit_hist = smodel.train_by_datas(replay, epochs=1, verbose=verbose)
             else:
                 #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
-                smodel.train_one_data(output_element.series, stack, verbose=verbose)
+                sm_fit_hist = smodel.train_one_data(output_element.series, stack, verbose=verbose)
             # 方向圖 (選用)：讀 SinglePortRadSimulator.last_radiation，線上訓練方向圖頭。
             if rad_on:
                 rad = getattr(simulator, "last_radiation", None)
@@ -752,6 +756,11 @@ def run_training(
                             if (replay is not None and len(replay) > 1) else None)
             #? SM 不確定性 (ensemble 成員分歧)：信任懲罰/acquisition 的訊號本身，落 csv 供診斷。
             sm_unc_val = float(smodel.uncertainty(output_element.series)) if has_unc else None
+            #? worst-margin (in-band S11/Gain dB 餘裕,正=達標)：用「真實 HFSS 響應」stack 算 (非 SM 預測)。
+            #  僅 single port (method 型 target);dual 用 interval、餘裕定義不同 → 留空。metal_frac=金屬比例 (崩塌)。
+            worst_margin_val = (worst_margin(stack, PORT_SPECS[cfg.port]["labels"], cfg.targets)[0]
+                                if (stack is not None and cfg.port == "single") else None)
+            metal_frac_val = float((~output_element).float().mean())
         state.append("sm_target", sm_target_val)
         state.append("sc_loss", sc_loss_val)
         if bnd_loss_val is not None:                     # replay/dlf 才有已見分布 (single 模式留空)
@@ -762,6 +771,16 @@ def run_training(
             state.append("trust_t", float(trust.t))
             #? gap_ema = 驅動 t 的訊號本身 → 落 csv 供正式機調 g0 時稽核控制器有沒有在反應 (None=尚無 fresh HFSS)。
             state.append("gap_ema", float(trust.gap_ema) if trust.gap_ema is not None else 0.0)
+        #? debug 訊號 (2026-06-27)：sm_gap/sm_fit_* 僅 fresh-HFSS epoch 有 (留空於 cached/skip)；
+        #  worst_margin/metal_frac 每 epoch 都有 (worst_margin 在首個就 skip、stack=None 時留空)。
+        if sm_gap_val is not None:
+            state.append("sm_gap", sm_gap_val)           # SM 訓前對新點誤差 = generalization (dlf/dlf_fit/refit 在比的)
+        if sm_fit_hist:
+            state.append("sm_fit_loss", float(sm_fit_hist[-1]))    # SM 重訓收斂後 loss (看訓到 fit 沒)
+            state.append("sm_fit_epochs", float(len(sm_fit_hist))) # SM 重訓實跑 epoch/step 數 (dlf=1 vs dlf_fit=N)
+        if worst_margin_val is not None:
+            state.append("worst_margin", worst_margin_val)
+        state.append("metal_frac", metal_frac_val)
         state.append("skipped", 1.0 if skipped else 0.0)
         if rad_on:
             state.append("rad_loss", rad_loss_val)      # 監控用 (只在 rad run 出現此欄)
@@ -775,6 +794,10 @@ def run_training(
             with torch.no_grad():                       # 候選相似度 (高=塌縮；排斥項要壓低它)
                 state.append("cand_similarity", float(candidate_repulsion(logits_K)))
         loss.backward()
+        #? grad_norm = guidance 梯度的總範數 (反傳後、step 前量) → 抓梯度消失/爆炸。max_norm=inf →
+        #  只回傳範數、不裁剪 (不改梯度、golden 安全)。
+        grad_norm_val = float(torch.nn.utils.clip_grad_norm_(generator.model.parameters(), float("inf")))
+        state.append("grad_norm", grad_norm_val)
         #? boundary-gated ACP (opt-in)：把 boundary 訊號 + τ_b 餵給 scheduler，讓它決定 plateau 時
         #  要不要 warm restart (衝出可信區就抑制加熱)。未開閘門 → b_thr=None → 不傳 → 現行 ACP。
         b_now, b_thr = _boundary_signal()
@@ -817,6 +840,15 @@ def run_training(
             snap["sm_target"] = sm_target_val          # loss 分量診斷 (對照 sim_loss 看 SM 準不準)
             snap["sc_loss"] = sc_loss_val
             snap["skipped"] = 1.0 if skipped else 0.0
+            snap["grad_norm"] = grad_norm_val           # guidance 梯度範數 (消失/爆炸)
+            snap["metal_frac"] = metal_frac_val         # 金屬比例 (崩塌偵測)
+            if worst_margin_val is not None:
+                snap["worst_margin"] = worst_margin_val # in-band S11/Gain dB 餘裕 (真目標,正=達標)
+            if sm_gap_val is not None:                  # SM 訓前對新點誤差 = generalization (僅 fresh)
+                snap["sm_gap"] = sm_gap_val
+            if sm_fit_hist:                             # SM 重訓收斂 loss / epoch 數 (看訓到 fit 沒;僅 fresh)
+                snap["sm_fit_loss"] = float(sm_fit_hist[-1])
+                snap["sm_fit_epochs"] = float(len(sm_fit_hist))
             if bnd_loss_val is not None:
                 snap["bnd_loss"] = bnd_loss_val
             if sm_unc_val is not None:                  # ensemble SM 的不確定性 (成員分歧)

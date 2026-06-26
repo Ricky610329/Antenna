@@ -29,26 +29,12 @@ from antenna.utils import config, ROOTDIR, DATASET_PATH, logger
 config.device = "cpu"
 
 from antenna.training import load_config, PORT_SPECS
+from antenna.losses import worst_margin   # 共用定義 (與 training.py 每 epoch 落 csv 的 worst_margin 同一份)
 
 
-def worst_margin(response, cfg) -> tuple:
-    """response (n_labels, n_points)，列序 = PORT_SPECS[port] 的 labels。回傳 (worst, {label: margin})。
-    worst-margin 定義見檔頭：in-band(中央平台)對 spec 的最差餘裕,正 = 達標、越高越好。"""
-    labels = PORT_SPECS[cfg.port]["labels"]
-    response = torch.as_tensor(response).float().reshape(len(labels), -1)
-    margins = {}
-    for i, label in enumerate(labels):
-        t = cfg.targets[label]
-        w = t["width"]
-        lo = w[0] + w[1]                       # 中央平台起點 (跳過左平台 + 左斜邊)
-        hi = lo + w[2]                         # 中央平台終點
-        band = response[i][lo:hi]              # in-band 頻點 (= 嚴格 spec 區)
-        c = float(t["center"])
-        if t["method"] == "low":
-            margins[label] = c - float(band.max())     # S11：帶內最高點要 ≤ center
-        else:                                          # high
-            margins[label] = float(band.min()) - c     # Gain：帶內最低點要 ≥ center
-    return min(margins.values()), margins
+def _margin(response, cfg):
+    """便利包裝：用 config 的 port labels + targets 算 worst_margin (回 worst 純量)。"""
+    return worst_margin(response, PORT_SPECS[cfg.port]["labels"], cfg.targets)[0]
 
 
 def _resolve_run(name_or_path):
@@ -81,7 +67,7 @@ def run_curve(run_dir):
         if not f.exists():
             continue
         _patt, resp, _loss = torch.load(str(f), weights_only=True)
-        m, _ = worst_margin(resp, cfg)
+        m = _margin(resp, cfg)
         epochs.append(int(row["epoch"])); wm.append(m)
     if not wm:
         raise SystemExit(f"{run_dir} 沒有可評估的 epoch")
@@ -100,7 +86,7 @@ def random_curve(store_name, cfg, n_max):
     best, cur = [], -1e9
     for i in range(min(len(store), n_max)):
         _x, y = store[i]
-        m, _ = worst_margin(y, cfg)
+        m = _margin(y, cfg)
         cur = max(cur, m); best.append(cur)
     return list(range(1, len(best) + 1)), best
 

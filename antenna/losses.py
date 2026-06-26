@@ -687,3 +687,32 @@ def boundary_threshold(seen: Tensor, kappa: float = 1.5) -> float:
     mse = (D * D) / seen.shape[1]                          # per-element MSE (對齊 boundary_loss 單位)
     mse[mse <= 1e-9] = float("inf")                        # 排除自身 + 重複/近重複
     return kappa * float(mse.min(dim=1).values.median())
+
+
+def worst_margin(response, labels, targets) -> tuple:
+    """in-band(中央平台)對 spec 的「最差餘裕」(dB)：正＝達標、越高越好。客觀判讀指標(非 loss)。
+
+    定義與 custom_loss_minmax 的嚴格點一致(亦＝論文 in-band spec)：對每個 label 取「中央平台」＝
+    width[0]+width[1] : +width[2] 的頻點(n257 width [5,0,7,0,5] → 索引 5:12 ≈ 26.5-29.5GHz)，
+      method=low  (S11) ：margin = center − max(band)   (帶內都低於 center → 達標)
+      method=high (Gain)：margin = min(band) − center   (帶內都高於 center → 達標)
+    worst-margin = min over labels。response 與 benchmark 共用同一定義(`script/benchmark_vs_random.py`)。
+
+    :param response: (n_labels, n_points) 或攤平,列序＝labels。
+    :param labels:   label 順序 (例 ['S11','Gain'])。
+    :param targets:  {label: {center, width, method, ...}} (＝ TrainConfig.targets)。
+    :return: (worst_margin, {label: margin})。
+    """
+    labels = list(labels)
+    response = torch.as_tensor(response).float().reshape(len(labels), -1)
+    margins = {}
+    for i, label in enumerate(labels):
+        t = targets[label]
+        if "method" not in t:   # 只支援 single-port 的 method(low/high) target;dual 的 interval 餘裕定義不同、未實作
+            raise ValueError(f"worst_margin 目前只支援 single-port (method) target;{label} 無 'method' "
+                             f"(dual interval 未實作)。")
+        w = t["width"]
+        band = response[i][w[0] + w[1] : w[0] + w[1] + w[2]]   # 中央平台 = in-band = 嚴格 spec 區
+        c = float(t["center"])
+        margins[label] = (c - float(band.max())) if t["method"] == "low" else (float(band.min()) - c)
+    return min(margins.values()), margins

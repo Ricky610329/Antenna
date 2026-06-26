@@ -63,6 +63,19 @@ def test_guided_config_loads_and_runs(name, tmp_path):
     assert rows[-1]["score_spread"] != "" and rows[-1]["cand_similarity"] != ""
 
 
+def test_debug_signals_logged(tmp_path):
+    """新追蹤訊號落 csv:worst_margin/metal_frac/grad_norm 每 epoch 有;sm_gap/sm_fit_* fresh epoch 有。"""
+    cfg = load_config(os.path.join(CONFIGS, "single_guided_harvest.yaml"))
+    run_training(cfg, simulator=_CountSim(("S11", "Gain")), record_path=tmp_path, seed=0,
+                 max_epochs=3, verbose=False)
+    with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    last = rows[-1]
+    assert last["worst_margin"] != "" and last["metal_frac"] != "" and last["grad_norm"] != ""
+    assert any(r["sm_gap"] != "" for r in rows)            # generalization 訊號 (fresh epoch)
+    assert any(r["sm_fit_loss"] != "" and r["sm_fit_epochs"] != "" for r in rows)   # SM 重訓 (dlf elite)
+
+
 def test_guided_radiation_weight_lowered():
     """確認 3 個新 config 的 radiation.weight 已調低 (≤0.1，重點是 S11/Gain)。"""
     for name in GUIDED:

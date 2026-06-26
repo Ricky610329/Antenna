@@ -17,7 +17,6 @@ import os
 import shutil
 import socket
 import sys
-import tempfile
 from datetime import datetime
 
 from antenna.utils import Complete, DATASET_PATH, ROOTDIR, config, connect_network_drive, logger
@@ -84,13 +83,14 @@ def write_status(result_path, **fields):
 
 
 def _local_tb_dir(run_stem):
-    """本機暫存的 tb 事件檔目錄 (本地碟)，給 TB tail。
+    """本機 tb 事件檔目錄 (放專案內 tmp/tb_local/、git 忽略)，給 TB tail。
 
-    為何要本機一份：TB 在 SMB(網路碟) 上 tail「正在被寫入」的事件檔，撞到半截 flush 就會
-    停讀、畫面卡在某個 epoch 不再前進 (實測 .37 卡 22)。讓 TB tail「本機」檔＝穩定不卡。
-    NAS 那份由 monitor 的 mirror_dir 同步雙寫 (即時備份、沒人 tail → 不會卡)。
+    為何要本機一份：TB 在 SMB(NAS) 上 tail「正在被寫入」的事件檔，撞到半截 flush 會停讀、畫面卡住
+    (實測 .37 卡 22)。讓 TB tail「本地碟」檔＝穩定不卡；NAS 那份由 monitor 的 mirror_dir 雙寫做即時備份。
+    放「專案內 tmp/tb_local/」(而非系統 %TEMP%) → 使用者找得到、好清理；tmp/ 已在 .gitignore。
+    ⚠ 前提：repo 在本地碟 (一般 git clone 都是) → tmp/tb_local 才算本地碟；repo 若放 NAS 會重現卡頓。
     以 run 名為 key、各機器各自獨立。"""
-    d = os.path.join(tempfile.gettempdir(), "antenna_tb", run_stem)
+    d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tmp", "tb_local", run_stem)
     os.makedirs(d, exist_ok=True)
     return d
 
