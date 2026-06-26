@@ -1,0 +1,54 @@
+# Exp1 — generator-free SM-guided 搜尋 (新主線階梯第 1 級)
+# 把優化變數從「G 的權重」換成「K 個獨立 pattern logits 本身」(generator: direct，無 MLP)；
+# 其餘全沿用 sigmoid 基準 (single_sc_rad_boundary_harvest)：SC + boundary + DLF + sm_harvest 暖啟動 SM。
+# 隔離變因 = 「有沒有 G」：對照 single_sc_rad_boundary_harvest (sigmoid G)，看拿掉 G、直接優化 pattern
+# 會不會更好/不壞。多候選 (K=8) = pattern 空間的多樣 (取代 batch_latent 的 latent 雲，後者會塌縮)。
+# 對標：worst-margin(dB) vs HFSS-call，對比 random best-of-N (鐵門檻)。
+# 為何另開新 name：harvest 慣例 (含 harvest → 全新結果夾，不續跑舊 old_sm)。
+name: pixel_single_guided_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1                      # trust-region：拉 pattern 回 SM 已見分布 (dlf 緩衝)
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: direct                      # generator-free：pattern logits 本身即可學參數 (無 G/MLP)
+  num_candidates: 8                 # K 個獨立候選 (pattern 空間多樣)
+
+selection:
+  diversity_weight: 0.1             # 候選互斥 (candidate_repulsion)：防候選塌縮、保持多樣
+
+surrogate:
+  pretrained: sm_harvest.pth        # 暖啟動 SM (val MSE 13 vs 38)；非真冷啟動
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1                       # ← 調低 (重點是 S11/Gain；rad 只當塑形副項，不跟主目標搶梯度)
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

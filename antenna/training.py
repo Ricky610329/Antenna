@@ -13,6 +13,7 @@ antenna/training.py — 由「外部 YAML config」驅動的單/雙埠共用訓�
     port=single → SinglePortSimulator + custom_loss_minmax + [lower]        + single_feed + S11/Gain
     port=dual   → DualPortSimulator   + interval_loss      + [lower, upper] + dual_feed   + S11/S21/S22
 """
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import time
@@ -61,20 +62,83 @@ _RAD_DB_CEIL = 60.0
 #! 各區段允許的鍵 (白名單)。鍵打錯「必須報錯」而不是默默用預設值 ——
 #! 歷史教訓：舊 dual 的 island_suppression 鍵名打錯，正則化默默沒開、實驗白跑。
 SECTION_KEYS = {
-    "loss":      {"total_variation", "island_suppression", "spectral_connectivity", "gap_closing", "boundary"},
+    "loss":      {"total_variation", "island_suppression", "spectral_connectivity", "gap_closing", "boundary",
+                  # 信任懲罰 λ_trust：罰「SM 沒把握 (ensemble 分歧大)」的 pattern → 把候選推離 SM 盲區。需 ensemble SM。
+                  "uncertainty"},
     "sm_train":  {"lr", "min_loss", "max_epoch", "mode", "newest_steps", "replay_size"},
     "scheduler": {"on_plateau", "T_0", "T_mult", "lr_min", "temp_max", "temp_min",
                   "warmup_ratio", "patience", "factor",
                   # boundary-gated warm restart (opt-in)：boundary 當 ACP 探索/固化的依據
                   "boundary_gate", "boundary_kappa", "boundary_recompute_every", "boundary_suppress_cap"},
-    "generator": {"name", "hidden", "pretrained", "num_candidates", "sigma", "sigma_min", "scales"},
-    "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup"},
+    "generator": {"name", "hidden", "pretrained", "num_candidates", "sigma", "sigma_min", "scales", "init_scale"},
+    "surrogate": {"name", "hidden", "pretrained", "offline_dataset", "warmup",
+                  # ensemble SM (surrogate: ensemble)：成員數 + 暖啟動後各成員權重擾動尺度 (製造多樣性)。
+                  "ensemble_size", "init_perturb"},
     "radiation": {"enable", "weight", "window_deg", "floor_db", "boresight_weight", "flatness_weight",
                   "warmup_epochs", "n_theta", "n_basis", "freeze_trunk", "sm_max_epoch", "sm_min_loss"},
-    # 多候選 (batch_latent) 選擇分數：閘門 + 排序 + 候選排斥。僅 generator: batch_latent 時生效。
-    "selection": {"boundary_weight", "feasibility_max", "diversity_weight"},
+    # 多候選 (batch_latent/direct) 選擇分數：閘門 + 排序 + 候選排斥 + acquisition 不確定性權重。
+    # uncertainty_weight (β)：acquisition 偏好「SM 沒把握」的候選 (主動學習，去修 SM)。需 ensemble SM。
+    "selection": {"boundary_weight", "feasibility_max", "diversity_weight", "uncertainty_weight"},
+    # 閉迴路信任控制 (TrustController)：gap (SM vs HFSS) → t → 調 tau/λ_trust/κ。enable=False → 靜態。
+    "trust": {"enable", "g0", "ema", "t_min", "t_max", "tau_inflate"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
+
+
+class TrustController:
+    """閉迴路信任控制：用「SM 預測 vs 真實 HFSS 的落差 gap」推出單一信任標量 t∈[0,1]，再以 t
+    同軸調節「探索力度」的三個致動器——tau 乘子 / 信任懲罰 λ_trust / acquisition κ。
+
+    語意 (見 docs/guided_search_design.md)：t→1 (SM 可信) = 利用 (tau 不放軟、長牽繩、純收割)；
+    t→0 (SM 失準) = 探索 (tau 放軟保持可塑、短牽繩拉回可信區、去獵不確定點修 SM)。
+
+    enable=False (Exp1/Exp2) → t 恆 1：tau_mult≡1 (純 ACP)、λ_trust/κ 退化成「靜態 base 值」
+      (Exp2 用靜態 λ_trust/κ，不隨 gap 變)。enable=True (Exp3) → 閉迴路、三者隨 t 動。
+    enable=False 且 base=0 → 三者皆 0、tau_mult≡1 → 與原樣逐位元相同 (golden 零漂移)。"""
+
+    def __init__(self, *, enable: bool, lambda_trust_base: float, kappa_base: float,
+                 g0: float = 1.0, ema: float = 0.3, t_min: float = 0.05, t_max: float = 0.95,
+                 tau_inflate: float = 3.0):
+        self.enable = bool(enable)
+        self.lambda_trust_base = float(lambda_trust_base)   # λ_trust 上限 (= loss.uncertainty)
+        self.kappa_base = float(kappa_base)                 # acquisition κ 上限 (= selection.uncertainty_weight)
+        self.g0 = float(g0)                                 # 落差參考尺度：gap=g0 → t≈0.37 (失去大半信任)
+        self.ema = float(ema)                               # gap 的 EMA 係數 (信任是逐步累積的信念)
+        self.t_min, self.t_max = float(t_min), float(t_max)
+        self.tau_inflate = float(tau_inflate)               # t→0 時 tau 最多放軟幾倍
+        self.gap_ema = None
+        self.t = 1.0                                        # 初始全信任 (還沒看到落差)
+        #! 誤設護欄：g0≤0 會讓 exp(−gap/g0) 失義；tau_inflate<1 會在 t→0 時「銳化」tau (方向倒轉)。
+        if self.g0 <= 0:
+            raise ValueError(f"TrustController g0 須 >0 (落差參考尺度)，得到 {g0}")
+        if self.tau_inflate < 1.0:
+            raise ValueError(f"TrustController tau_inflate 須 ≥1 (t→0 放軟 tau；<1 會反向銳化)，得到 {tau_inflate}")
+
+    def update(self, sm_pred_loss: float, real_loss: float):
+        """用本筆真實 HFSS 的 (SM 預測 loss, 真實 loss) 更新 gap_ema → t。enable=False 不更新。"""
+        if not self.enable:
+            return
+        gap = abs(float(sm_pred_loss) - float(real_loss))
+        if not math.isfinite(gap):
+            #! SM 預測/真實出現 NaN/inf → SM 嚴重失準 → 直接最大探索 (t_min)，且「不」把 NaN 折進
+            #  gap_ema (否則 EMA 永遠 NaN、clamp(NaN) 在 CPython 反而回 t_max=高信任，方向完全相反)。
+            self.t = self.t_min
+            return
+        self.gap_ema = gap if self.gap_ema is None else (self.ema * gap + (1.0 - self.ema) * self.gap_ema)
+        t = math.exp(-self.gap_ema / self.g0)               # g0>0 由建構子保證
+        self.t = max(self.t_min, min(self.t_max, t))
+
+    def tau_mult(self) -> float:
+        """tau 乘子：t→1 → 1 (純 ACP 退火)；t→0 → tau_inflate (放軟、保持 pattern 可塑、不亂鎖定)。"""
+        return 1.0 + (self.tau_inflate - 1.0) * (1.0 - self.t) if self.enable else 1.0
+
+    def lambda_trust(self) -> float:
+        """信任懲罰權重：enable → base·(1−t) (SM 失準才收緊牽繩)；否則靜態 base。"""
+        return self.lambda_trust_base * (1.0 - self.t) if self.enable else self.lambda_trust_base
+
+    def kappa(self) -> float:
+        """acquisition 不確定性權重：enable → base·(1−t) (SM 失準才去獵不確定點)；否則靜態 base。"""
+        return self.kappa_base * (1.0 - self.t) if self.enable else self.kappa_base
 
 
 @dataclass
@@ -94,6 +158,7 @@ class TrainConfig:
     targets: dict = field(default_factory=dict)     # {label: {side, center, width, method|interval}}
     radiation: dict = field(default_factory=dict)   # 方向圖 (選用，預設 off)：見 SECTION_KEYS["radiation"]
     selection: dict = field(default_factory=dict)   # 多候選選擇 (選用，僅 batch_latent)：見 SECTION_KEYS["selection"]
+    trust: dict = field(default_factory=dict)        # 閉迴路信任控制 (選用，預設 off)：見 SECTION_KEYS["trust"]
 
     def __post_init__(self):
         if self.port not in PORT_SPECS:
@@ -268,6 +333,7 @@ def run_training(
     sc_w = cfg.loss.get("spectral_connectivity", 0.0)
     gap_w = cfg.loss.get("gap_closing", 0.0)
     bnd_w = cfg.loss.get("boundary", 0.0)            # boundary/trust-region：拉 G 回 SM 已見分布 (需 replay/dlf 緩衝)
+    unc_w = cfg.loss.get("uncertainty", 0.0)         # 信任懲罰 λ_trust：罰 ensemble 分歧大的 pattern (需 ensemble SM)
 
     # SM 線上更新策略：single = 把「最新一筆」擬到收斂 (原樣)；replay = 對最新一筆跑少數步
     # ＋ 從「經驗回放緩衝」再訓一遍 (防 catastrophic forgetting、削掉擬到收斂的暴衝尾巴)。
@@ -278,13 +344,32 @@ def run_training(
     if bnd_w > 0 and replay is None:
         logger.warning("loss.boundary > 0 但 sm_train.mode 非 replay/dlf（無緩衝定義已見分布）→ boundary loss 停用")
 
-    # 多候選 (batch_latent)：同批生成 K 個候選 → 在 SM 上評分選最佳 → 只把選中的那張送昂貴路徑 (HFSS)，
-    # 其餘候選僅進「聚合 loss」(mean over K) 一起反傳。multi=False (其他 generator) → 全程走單張原路，
-    # 下方多候選分支一概不執行 → 與原樣完全相同 (golden 零漂移)。
-    multi = isinstance(generator.model, BatchLatentGenerator)
+    # 多候選 (batch_latent / direct)：同批生成 K 個候選 → 在 SM 上評分選最佳 → 只把選中的那張送昂貴
+    # 路徑 (HFSS)，其餘候選僅進「聚合 loss」(mean over K) 一起反傳。multi=False (sigmoid 等單張 G) →
+    # 全程走單張原路，下方多候選分支一概不執行 → 與原樣完全相同 (golden 零漂移)。
+    #? 偵測用 isinstance(BatchLatent) ∪ is_multi_candidate 旗標 (generator-free 的 direct 走此旗標)：
+    #  BatchLatent 仍由 isinstance 命中 → 行為逐位元不變；新多候選 G 用旗標 opt-in、彼此解耦。
+    multi = isinstance(generator.model, BatchLatentGenerator) or getattr(generator.model, "is_multi_candidate", False)
     sel_bnd_w = cfg.selection.get("boundary_weight", bnd_w)    # 選擇排序的 boundary 權重 λ (省略=沿用訓練 bnd_w)
     sel_feas_max = cfg.selection.get("feasibility_max", None)  # SC 可行性閘門門檻 (None=不開閘門，等真實尺度再設)
     div_w = cfg.selection.get("diversity_weight", 0.0)         # 候選排斥權重 λ_div (0=關，治 batch_latent 崩塌)
+    sel_unc_w = cfg.selection.get("uncertainty_weight", 0.0)   # acquisition κ：偏好 SM 沒把握的候選 (主動學習)
+
+    #? 信任控制器 (Exp2 靜態 / Exp3 閉迴路)：base 權重 = loss.uncertainty (λ_trust) / selection.uncertainty_weight (κ)。
+    #  trust.enable=False 且兩 base=0 → tau_mult≡1、λ_trust/κ≡0 → 與原樣逐位元相同 (golden 零漂移)。
+    #! 信任懲罰 / acquisition 不確定性需 ensemble SM (有 uncertainty())；單一 SM 用了會在下方 hasattr 處停用。
+    has_unc = hasattr(smodel, "uncertainty")
+    if (unc_w > 0 or sel_unc_w > 0 or cfg.trust.get("enable", False)) and not has_unc:
+        logger.warning("loss.uncertainty / selection.uncertainty_weight / trust.enable 需 surrogate: ensemble "
+                       "(單一 SM 無 uncertainty())；信任懲罰與 acquisition 不確定性項停用。")
+    trust = TrustController(
+        enable=cfg.trust.get("enable", False) and has_unc,
+        lambda_trust_base=unc_w if has_unc else 0.0,
+        kappa_base=sel_unc_w if has_unc else 0.0,
+        g0=cfg.trust.get("g0", 1.0), ema=cfg.trust.get("ema", 0.3),
+        t_min=cfg.trust.get("t_min", 0.05), t_max=cfg.trust.get("t_max", 0.95),
+        tau_inflate=cfg.trust.get("tau_inflate", 3.0),
+    )
 
     # boundary-gated ACP (opt-in)：boundary 當「探索/固化」的依據——衝出 SM 可信區 (boundary≥τ_b) 就
     # 抑制 ACP 的 plateau warm restart (不加熱、冷卻固化)。需 replay/dlf 緩衝定義已見分布；無緩衝/未開 →
@@ -335,12 +420,16 @@ def run_training(
         return oe
 
     def _candidate_loss(oe, ep):
-        #? 現役四 loss：sm_target + SC + boundary + rad (TV/island/gap 為 legacy，多候選分支不接)。
+        #? 現役 loss：sm_target + SC + boundary + 信任懲罰 + rad (TV/island/gap 為 legacy，多候選分支不接)。
         L = smodel(oe.series).criterion()
         if sc_w:
             L = L + sc_w * sc.forward(oe.size_converter(output_shape="B, 1, H, W"))
         if bnd_w > 0 and replay is not None and len(replay) > 1:
             L = L + bnd_w * boundary_loss(oe.series, replay.patterns())
+        #? 信任懲罰 λ_trust·u(x)：把候選推離「SM 自己沒把握 (ensemble 分歧大)」的洞。λ_trust 由 trust
+        #  控制器給 (Exp2 靜態 / Exp3 隨 gap 動)；需 ensemble SM。lambda_trust()=0 → 不加 (golden 安全)。
+        if trust.lambda_trust() > 0 and has_unc:
+            L = L + trust.lambda_trust() * smodel.uncertainty(oe.series)
         if rad_on and rad_theta is not None and ep > rad_warmup:
             rp = smodel.rad_predict(oe.series)
             L = L + rad_w * beam_coverage_loss(
@@ -358,6 +447,10 @@ def run_training(
                 s = float(smodel(c.series).criterion())
                 if sel_bnd_w > 0 and replay is not None and len(replay) > 1:
                     s = s + sel_bnd_w * float(boundary_loss(c.series, replay.patterns()))
+                #? acquisition：減去 κ·u(x) → 偏好「SM 沒把握」的候選 (主動學習：花 HFSS 去修 SM 最不確定處)。
+                #  κ 由 trust 控制器給 (Exp2 靜態 / Exp3 SM 失準時才探)；需 ensemble SM。κ()=0 → 純收割 SM 最佳。
+                if trust.kappa() > 0 and has_unc:
+                    s = s - trust.kappa() * float(smodel.uncertainty(c.series))
                 scores.append(s)
                 feas.append(float(sc.forward(c.size_converter(output_shape="B, 1, H, W"))))
                 seen.append(state.lookup(~c) is not None)
@@ -410,12 +503,16 @@ def run_training(
             generator.change(state.best_epoch("sim_loss"), save=True, load=True)
             smodel.train_by_datas(online, verbose=verbose)
 
-        # 生成：模型只出 logits；STE 二值化是管線的固定一步，tau 由 ACP 單獨控制
+        # 生成：模型只出 logits；STE 二值化是管線的固定一步，tau 由 ACP 控制 (× 信任乘子)。
+        #? tau_eff = ACP 的 tau × trust.tau_mult()：閉迴路下 SM 失準 (t↓) → tau 放軟、保持 pattern 可塑、
+        #  不在 SM 盲區亂鎖定二值；SM 可信 (t→1) → tau_mult=1 → 純 ACP 退火銳化。enable=False → ×1.0 (golden 安全)。
+        tau_eff = generator.scheduler.get_temp() * trust.tau_mult()
         sel_stats = None
         if multi:
             # 多候選：同批生成 K 個 → SM 評分選最佳 → output_element = 選中的那張 (走下方昂貴路徑)
-            generator.model.anneal_sigma(epoch / epochs)            # σ 隨進度退火 (探索→收斂)
-            tau = generator.scheduler.get_temp()
+            if hasattr(generator.model, "anneal_sigma"):           # σ 退火僅 batch_latent 有；direct 無 σ → 跳過
+                generator.model.anneal_sigma(epoch / epochs)        # σ 隨進度退火 (探索→收斂)
+            tau = tau_eff
             logits_K = generator(spec.concat())                    # (K, out_dim)
             cands = [_build_candidate(logits_K[k], tau) for k in range(generator.model.K)]
             k_star, sel_stats = _select_best(cands)
@@ -423,7 +520,7 @@ def run_training(
         else:
             logits = generator(spec.concat())
             output_element = AntennaPattern(
-                AntennaPattern.binarization(logits, generator.scheduler.get_temp())
+                AntennaPattern.binarization(logits, tau_eff)
             )
             for f in feeds:
                 output_element = output_element + f
@@ -474,6 +571,12 @@ def run_training(
             sim_loss = result.criterion()
             stack = result.stack()
             last_stack = stack
+            #? 閉迴路信任控制：先記 SM「線上訓練前」對這張新 pattern 的預測 loss → 與真實 sim_loss 的落差
+            #  gap 反映「SM 在它沒見過的點準不準」。必須在 train_one_data 之前量 (訓練後 SM 已擬合本筆、
+            #  gap 會被抹平成假 0)。enable=False → no-op (不算、無額外 forward)。
+            if trust.enable:
+                with torch.no_grad():
+                    trust.update(float(smodel(output_element.series).criterion()), sim_loss.item())
             #? SM 線上更新：single=最新一筆擬到收斂(原樣)；replay=最新少數步＋回放整個緩衝；
             #  dlf=最新少數步＋只訓「菁英子集」(loss ≤ 累計門檻 λ_t)。緩衝一律「全收」(學長論文 §3.5)。
             if sm_mode in ("replay", "dlf"):
@@ -499,8 +602,8 @@ def run_training(
                 if isinstance(rad, dict) and rad.get("theta") is not None:
                     #? 整個 run 第一次拿到真實 θ 網格 → 用它重建方向圖頭的平滑基底，使預測逐點對齊 θ_i
                     #  (θ 網格整 run 固定；basis 逐欄獨立算 → HFSS 匯出序未排序也對位正確)。
-                    if rad_theta is None and hasattr(smodel.model, "set_rad_theta"):
-                        smodel.model.set_rad_theta(rad["theta"])
+                    if rad_theta is None:
+                        smodel.set_rad_theta(rad["theta"])   # 委派給 SM 介面 (集成則 fan-out 所有成員)
                     rad_theta = rad["theta"]
                     rad_stack = torch.stack([rad["phi0"], rad["phi90"]])    # (2, n_theta)
                     #! 清理方向圖 target：dB(GainTotal) 在深零點可能是 -inf/極端負值，直接進 MSE 會爆梯度。
@@ -578,6 +681,10 @@ def run_training(
             # 需 replay/dlf 緩衝定義「已見分布」；bnd_w=0 或無緩衝 → 不加 (golden 零漂移)。
             if bnd_w > 0 and replay is not None and len(replay) > 1:
                 loss = loss + bnd_w * boundary_loss(output_element.series, replay.patterns())
+            # 信任懲罰 λ_trust·u(x) (選用，與多候選分支對稱)：罰 ensemble 分歧大的 pattern。
+            # 需 ensemble SM；lambda_trust()=0 → 不加 (golden 零漂移)。
+            if trust.lambda_trust() > 0 and has_unc:
+                loss = loss + trust.lambda_trust() * smodel.uncertainty(output_element.series)
             # 方向圖 loss (選用)：經方向圖頭可微 → 加進 GEN loss 一起反傳。
             # 有方向圖資料就先「預測一次」(供監控疊圖)；但 warmup_epochs 內先不讓它進 loss
             # (方向圖頭還在冷啟動，避免雜訊梯度把 G 帶歪)。
@@ -608,16 +715,25 @@ def run_training(
             sc_loss_val = float(sc.forward(output_element.size_converter(output_shape="B, 1, H, W")))
             bnd_loss_val = (float(boundary_loss(output_element.series, replay.patterns()))
                             if (replay is not None and len(replay) > 1) else None)
+            #? SM 不確定性 (ensemble 成員分歧)：信任懲罰/acquisition 的訊號本身，落 csv 供診斷。
+            sm_unc_val = float(smodel.uncertainty(output_element.series)) if has_unc else None
         state.append("sm_target", sm_target_val)
         state.append("sc_loss", sc_loss_val)
         if bnd_loss_val is not None:                     # replay/dlf 才有已見分布 (single 模式留空)
             state.append("bnd_loss", bnd_loss_val)
+        if sm_unc_val is not None:                       # ensemble SM 才有不確定性 (單一 SM 留空)
+            state.append("sm_unc", sm_unc_val)
+        if trust.enable:                                 # 閉迴路才落信任標量 t + 驅動它的 gap_ema (開迴路 run 留空)
+            state.append("trust_t", float(trust.t))
+            #? gap_ema = 驅動 t 的訊號本身 → 落 csv 供正式機調 g0 時稽核控制器有沒有在反應 (None=尚無 fresh HFSS)。
+            state.append("gap_ema", float(trust.gap_ema) if trust.gap_ema is not None else 0.0)
         state.append("skipped", 1.0 if skipped else 0.0)
         if rad_on:
             state.append("rad_loss", rad_loss_val)      # 監控用 (只在 rad run 出現此欄)
             state.append("rad_fit", rad_fit_val)        # rad head 線上擬合 loss (看方向圖頭收斂沒)
         if multi:                                       # 多候選：σ 退火 + 候選池健康度 → 也落 metrics.csv (離線可分析)
-            state.append("sigma", float(generator.model.sigma))
+            if hasattr(generator.model, "sigma"):       # σ 僅 batch_latent 有 (direct 無 σ → 不落此欄)
+                state.append("sigma", float(generator.model.sigma))
             if sel_stats is not None:
                 for _k in ("score_best", "score_mean", "score_spread", "fresh_frac"):
                     state.append(_k, sel_stats[_k])
@@ -655,7 +771,7 @@ def run_training(
                 best_loss=float(state.last("best_loss")),
                 gen_loss=float(state.last("gen_loss")),
                 r_feed=float(state.last("r_feed")),
-                tau=float(generator.scheduler.get_temp()),
+                tau=float(generator.scheduler.get_temp()),   # ACP 排程 tau (post-step；監控 ACP 退火曲線)
                 lr=float(optimizer.param_groups[0]["lr"]),
                 time=float(state.last("time")),
                 pattern=~output_element,               # 本 epoch 的 pattern (已 detach)
@@ -668,13 +784,20 @@ def run_training(
             snap["skipped"] = 1.0 if skipped else 0.0
             if bnd_loss_val is not None:
                 snap["bnd_loss"] = bnd_loss_val
+            if sm_unc_val is not None:                  # ensemble SM 的不確定性 (成員分歧)
+                snap["sm_unc"] = sm_unc_val
+            if trust.enable:                            # 閉迴路信任標量 t + gap_ema + 實際二值化 tau
+                snap["trust_t"] = float(trust.t)
+                snap["gap_ema"] = float(trust.gap_ema) if trust.gap_ema is not None else 0.0
+                snap["tau_eff"] = float(tau_eff)        # 監控：信任乘子作用後、真正用於二值化的 tau
             if rad_on:                                 # 方向圖 (選用)：純量 + 疊圖素材 (monitor 端畫)
                 snap["rad_loss"] = rad_loss_val
                 snap["rad_fit"] = rad_fit_val
                 if rad_snapshot is not None:
                     snap["radiation"] = rad_snapshot
             if multi:                                  # 多候選 (選用)：σ 退火 + 候選池健康度 (診斷 Z 賺頭)
-                snap["sigma"] = float(generator.model.sigma)
+                if hasattr(generator.model, "sigma"):  # σ 僅 batch_latent 有 (direct 無 σ)
+                    snap["sigma"] = float(generator.model.sigma)
                 if sel_stats is not None:
                     snap.update(sel_stats)             # score_best / score_mean / score_spread / fresh_frac
                 snap["cand_similarity"] = float(state.last("cand_similarity"))   # 候選相似度 (高=塌縮)；已於上方算入 csv
@@ -692,8 +815,15 @@ def _assert_sm_checkpoint_sane(smodel, epoch, *, max_abs: float = 1e3):
     """續跑守衛：SM 權重若非有限或量級異常（灌爆但非 NaN）→ 明確報錯叫使用者重開。
     踩過的雷：發散訓練把 sm.pth 灌爆（健康 max|w|≈0.3，壞掉 5680），續跑只 `smodel.load()`
     載回這個爛檔、繞過 old_sm.pth 暖啟動，永遠卡在同一個壞 pattern（gen_loss 1e37、撞快取空轉）。
-    與 mock 相容：MagicMock 的 named_parameters() 迭代為空 → 守衛自動略過、不擋既有測試。"""
-    for name, p in smodel.model.named_parameters():
+    與 mock 相容：MagicMock 的 members / named_parameters() 迭代皆預設為空 → 兩條分支都自動略過、
+    不擋既有測試 (續跑測試以 mock smodel 走 members 分支、迭代空 → 不誤報)。"""
+    #? 集成 SM (有 members) → 逐成員檢查；單一 SM → 檢查 smodel.model (原樣)。
+    members = getattr(smodel, "members", None)
+    if members is not None:
+        named = ((f"m{i}.{n}", p) for i, m in enumerate(members) for n, p in m.model.named_parameters())
+    else:
+        named = smodel.model.named_parameters()
+    for name, p in named:
         if p.numel() == 0:
             continue
         m = float(p.detach().abs().max())

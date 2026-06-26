@@ -5,6 +5,8 @@ antenna/models — 模型層：外殼 (shell) / 生成器 (generators) / 代理�
 from .shell import Models
 from .generators import (
     BiScaleNorm, SigmoidGenerator, LatentGenerator, MirrorGenerator,
-    BatchLatentGenerator, MultiScaleGenerator,
+    BatchLatentGenerator, MultiScaleGenerator, DirectPatternGenerator,
 )
-from .surrogates import SurrogateModel, HFSSNet, MLPSurrogate
+from .surrogates import (
+    SurrogateModel, HFSSNet, MLPSurrogate, EnsembleSurrogate, EnsembleMLPSurrogate,
+)

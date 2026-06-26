@@ -1,0 +1,69 @@
+# Exp3 — generator-free + ensemble + 閉迴路信任控制 (新主線階梯第 3 級)
+# 在 Exp2 (single_guided_ens_harvest) 上開「閉迴路信任控制器」(trust.enable)：用 SM-vs-HFSS 的落差
+# gap 推出單一信任標量 t∈[0,1]，再以 t 同軸調節三個致動器 (語意見 docs/guided_search_design.md)：
+#   tau 乘子：t→0 (SM 失準) 放軟、保持 pattern 可塑、不在 SM 盲區亂鎖定；t→1 純 ACP 退火銳化。
+#   λ_trust = base·(1−t)：SM 失準才收緊牽繩 (拉回可信區)。
+#   κ       = base·(1−t)：SM 失準才去獵不確定點修 SM；可信時純收割預測最佳。
+# 隔離變因 = 「閉迴路 gap 控制 vs 開迴路固定排程 (Exp2)」。= 把學長 ACP 的開迴路退火升級成
+# 用真訊號 (gap) 驅動的閉迴路；收斂是湧現的 (SM 被修準 → gap↓ → t↑ → tau 自動銳化)。
+# 對照 Exp2。loss.uncertainty / selection.uncertainty_weight 在此當「base 上限」(被 (1−t) 調節)。
+name: pixel_single_guided_ens_adapt_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+  uncertainty: 0.05                 # λ_trust 上限 (閉迴路下 ×(1−t))
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: direct
+  num_candidates: 8
+
+selection:
+  diversity_weight: 0.1
+  uncertainty_weight: 0.02          # κ 上限 (閉迴路下 ×(1−t))
+
+surrogate:
+  name: ensemble
+  ensemble_size: 5
+  init_perturb: 0.02
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+trust:
+  enable: true                      # 開閉迴路信任控制 (gap → t → tau/λ_trust/κ)
+  g0: 1.0                           # 落差參考尺度：gap=g0 → t≈0.37 (失去大半信任)
+  ema: 0.3                          # gap 的 EMA 係數 (信任是逐步累積的信念，不被單筆抖動牽走)
+  t_min: 0.05
+  t_max: 0.95
+  tau_inflate: 3.0                  # t→0 時 tau 最多放軟幾倍
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1                       # ← 調低 (重點是 S11/Gain)
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

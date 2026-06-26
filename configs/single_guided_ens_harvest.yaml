@@ -1,0 +1,59 @@
+# Exp2 — generator-free + ensemble SM 不確定性 (新主線階梯第 2 級)
+# 在 Exp1 (single_guided_harvest) 上：單一 SM → K 個獨立成員的集成 (surrogate: ensemble)，多兩件事：
+#   ① 信任懲罰 λ_trust·u(x) (loss.uncertainty)：guidance 把候選推離「SM 自己沒把握 (成員分歧大)」的洞；
+#   ② acquisition κ·u(x) (selection.uncertainty_weight)：挑送 HFSS 的候選偏好不確定點 (主動學習修 SM)。
+# 隔離變因 = 「ensemble 不確定性 + 信任懲罰 + UCB acquisition」是否有用 (tau 仍開迴圈、λ_trust/κ 為靜態)。
+# 對照 Exp1。為何要 ensemble：SM-guided 的命門是「SM 在它說好的地方準不準」，成員分歧是花 HFSS 前
+# 就能算的便宜可信度 proxy (資料缺乏不是障礙：成員共享全部資料，多樣性來自不同 init + 暖啟動擾動)。
+name: pixel_single_guided_ens_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+  uncertainty: 0.05                 # λ_trust (靜態)：信任懲罰權重 (罰 ensemble 分歧大的 pattern)
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: direct
+  num_candidates: 8
+
+selection:
+  diversity_weight: 0.1
+  uncertainty_weight: 0.02          # κ (靜態)：acquisition 偏好「SM 沒把握」的候選 (主動學習)
+
+surrogate:
+  name: ensemble                    # K 個獨立 MLP 成員；提供 uncertainty()(成員分歧)
+  ensemble_size: 5
+  init_perturb: 0.02                # 暖啟動後成員 1+ 的權重擾動尺度 (製造多樣性)
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1                       # ← 調低 (重點是 S11/Gain)
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

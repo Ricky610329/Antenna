@@ -16,8 +16,8 @@ config 用名字指定：
 - 維度由訓練端推好傳入，模型不碰全域註冊狀態、不讀全域 config。
 """
 from antenna.models import (
-    MLPSurrogate, SigmoidGenerator, LatentGenerator, MirrorGenerator,
-    BatchLatentGenerator, MultiScaleGenerator,
+    MLPSurrogate, EnsembleMLPSurrogate, SigmoidGenerator, LatentGenerator, MirrorGenerator,
+    BatchLatentGenerator, MultiScaleGenerator, DirectPatternGenerator,
 )
 
 GENERATORS = {
@@ -26,8 +26,10 @@ GENERATORS = {
     "mirror":  MirrorGenerator,       # 左右鏡像對稱：MLP 只出半邊→flip 成完整圖 (對稱+搜尋空間砍半)
     "batch_latent": BatchLatentGenerator,  # 同批 K 候選：高斯雲繞可學中心 z* (reparam+σ退火)；多候選分支見 training.py
     "multiscale": MultiScaleGenerator,     # 多尺度淺層加性 (1×1/5×5/13×13 上採樣相加)；cold-start 連通先驗
+    "direct": DirectPatternGenerator,      # generator-free：K 個獨立 pattern logits 直接當可學參數 (無 MLP)；SM-guided 搜尋
 }
 
 SURROGATES = {
     "mlp": MLPSurrogate,               # HFSSNet 純 MLP + Ranger + MSE (預設 hidden=(2048,1024,512,128,64))
+    "ensemble": EnsembleMLPSurrogate,  # K 個獨立 MLP 成員的集成；提供 uncertainty()(成員分歧)，攻 SM 品質
 }

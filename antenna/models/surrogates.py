@@ -224,6 +224,12 @@ class SurrogateModel(Models):
         """pattern → 方向圖預測 (n_phi, n_theta)，可微。需 SM 建有方向圖頭。"""
         return self.model.forward_rad(pattern)
 
+    #? 對齊方向圖頭的角度基底 (整個 run 第一次拿到真 θ 網格時呼叫)；委派給骨幹 (無方向圖頭則 no-op)。
+    #  放在 SM 介面層 → 集成 (EnsembleSurrogate) 能以同一介面對所有成員 fan-out (見 set_rad_theta)。
+    def set_rad_theta(self, theta):
+        if hasattr(self.model, "set_rad_theta"):
+            self.model.set_rad_theta(theta)
+
     def train_one_data_rad(self, pattern: Tensor, rad_response: Tensor, min_loss=None, max_epoch=None,
                            *, freeze_trunk: bool = True, verbose: bool = True):
         """
@@ -410,4 +416,114 @@ def MLPSurrogate(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 12
         min_loss=min_loss, max_epoch=max_epoch, response_shape=response_shape,
         rad_response=rad_response,
     )
+
+
+###* EnsembleSurrogate — K 個獨立 SM 成員的集成 (不確定性 = 成員分歧) ###
+#? 動機 (攻 SM 品質)：SM-guided 搜尋的命門是「SM 在它說好的地方準不準」。單一 SM 給不出
+#? 「我對這張 pattern 有多沒把握」；deep ensembles 用 K 個獨立成員的「預測分歧」當便宜的
+#? epistemic 不確定性 proxy —— 資料密處成員收斂趨同 (分歧小)、資料稀疏/外插處彼此發散 (分歧大)。
+#? 這個分歧 (花 HFSS 前就能算) 用來：① guidance loss 的信任懲罰 λ_trust·u(x)(把候選推離自己沒
+#? 把握的洞)；② acquisition (挑送 HFSS 的候選)。資料缺乏不是障礙：成員「共享全部資料」(不切分)，
+#? 多樣性來自不同 init + 暖啟動擾動 + 不同洗牌序 (文獻：random init 已足夠，小資料別 bootstrap)。
+#?
+#? 設計 (低風險)：每個成員＝完整 MLPSurrogate (自有 optimizer/scheduler/checkpoint)，訓練/暖啟動/
+#? 存讀「全部委派給既有、已測過」的單模型路徑 → 集成只做 fan-out (對每個成員) + 聚合 (mean/std)，
+#? 不重寫訓練迴圈。推論回傳成員平均 (guidance 用、可微)；uncertainty 回傳成員間標準差 (可微)。
+class EnsembleSurrogate:
+    """K 個獨立 SurrogateModel 成員的集成。介面與 SurrogateModel 對齊
+    (__call__ / train_one_data / train_by_datas / rad_* / save / load / pre_load_model /
+    requires_grad / set_rad_theta) + 多一個 uncertainty()；所有訓練/暖啟動委派給各成員。"""
+
+    def __init__(self, members: List[SurrogateModel], init_perturb: float = 0.02):
+        if len(members) < 2:
+            raise ValueError(f"EnsembleSurrogate 需 ≥2 個成員 (得到 {len(members)})")
+        self.members = members
+        self._init_perturb = float(init_perturb)
+        #? 成員存到不同檔名 (sm0.pth .. smK-1.pth)，避免共用 'sm.pth' 互相覆蓋。
+        for i, m in enumerate(self.members):
+            m.name = f"sm{i}"
+        #? 對齊單模型介面屬性 (呼叫端會讀)：響應形狀 / 方向圖頭形狀 / 單筆收斂門檻 (取成員 0)。
+        self.response_shape = members[0].response_shape
+        self.rad_response = members[0].rad_response
+        self.min_loss = members[0].min_loss
+        self.max_epoch = members[0].max_epoch
+
+    #? 推論 (guidance/inference)：成員預測「平均」→ MultiResponses。可微 (梯度經各成員流回 pattern)。
+    def __call__(self, pattern) -> MultiResponses:
+        preds = torch.stack([m.model(pattern) for m in self.members])   # (K, *resp)
+        return MultiResponses(preds.mean(0))
+
+    #? 不確定性 (epistemic proxy)：成員預測的標準差，對響應元素取平均 → 純量。可微 (供信任懲罰反傳)。
+    def uncertainty(self, pattern) -> Tensor:
+        preds = torch.stack([m.model(pattern) for m in self.members])   # (K, *resp)
+        return preds.std(dim=0).mean()
+
+    def requires_grad(self, mode: bool = True, train: Optional[bool] = None):
+        for m in self.members:
+            m.requires_grad(mode, train)
+        return mode
+
+    def train_one_data(self, pattern, real_response, min_loss=None, max_epoch=None, *, verbose: bool = True):
+        #? fan-out：每個成員各自把這一筆擬到收斂 (各自 loss / optimizer) → 共同學會這個已見點。
+        out = []
+        for m in self.members:
+            out = m.train_one_data(pattern, real_response, min_loss=min_loss, max_epoch=max_epoch, verbose=verbose)
+        return out   # 回傳最後一成員的逐步 loss (僅監控；呼叫端多半忽略)
+
+    def train_by_datas(self, dataset, epochs: int = 100, batch_size=None, *, verbose: bool = True):
+        #? fan-out：每個成員各自重訓整批。多樣性主要來自「不同 init + 暖啟動擾動」(文獻結論)；
+        #  洗牌序差異是次要 (各成員 new 一個 Generator、序可能相同)，不靠它撐分歧。
+        out = []
+        for m in self.members:
+            out = m.train_by_datas(dataset, epochs=epochs, batch_size=batch_size, verbose=verbose)
+        return out
+
+    def rad_predict(self, pattern) -> Tensor:
+        return torch.stack([m.rad_predict(pattern) for m in self.members]).mean(0)
+
+    def train_one_data_rad(self, pattern, rad_response, min_loss=None, max_epoch=None,
+                           *, freeze_trunk: bool = True, verbose: bool = True):
+        out = []
+        for m in self.members:
+            out = m.train_one_data_rad(pattern, rad_response, min_loss=min_loss, max_epoch=max_epoch,
+                                       freeze_trunk=freeze_trunk, verbose=verbose)
+        return out
+
+    def set_rad_theta(self, theta):
+        for m in self.members:
+            m.set_rad_theta(theta)
+
+    def save(self):
+        for m in self.members:
+            m.save()
+
+    def load(self, force: bool = False):
+        for m in self.members:
+            m.load(force=force)
+
+    def pre_load_model(self, path, strict: bool = True):
+        #? 暖啟動：所有成員從同一個預訓練檔載入 (含 optimizer 暖啟動，沿用單模型已測邏輯)，再對
+        #  「成員 1..K-1」加微小權重擾動 → 成員從同一最優點附近「岔開」，使後續分歧反映 epistemic
+        #  不確定性 (成員 0 保持精確預訓練作錨)。擾動 = 各參數張量 std × init_perturb 的高斯噪聲。
+        for i, m in enumerate(self.members):
+            m.pre_load_model(path, strict=strict)
+            if i > 0 and self._init_perturb > 0:
+                with torch.no_grad():
+                    for p in m.model.parameters():
+                        if p.numel() > 1:        # numel==1 (如 PReLU 單一斜率) → std() dof<=0；跳過、不影響多樣性
+                            p.add_(torch.randn_like(p) * (p.detach().std() * self._init_perturb))
+
+
+###* EnsembleMLPSurrogate — 工廠：建 K 個 MLPSurrogate 成員、包成 EnsembleSurrogate ###
+#? zoo 名字 "ensemble"。簽名與 MLPSurrogate 對齊 (build_surrogate 共用呼叫)，多 ensemble_size /
+#? init_perturb 兩個架構參數 (對應 YAML surrogate.ensemble_size / surrogate.init_perturb)。
+def EnsembleMLPSurrogate(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 128, 64),
+                         lr=0.001, min_loss=0.1, max_epoch=20000, rad_response=None, rad_n_basis=16,
+                         ensemble_size=5, init_perturb=0.02):
+    members = [
+        MLPSurrogate(checkpoint, in_dim, response_shape, hidden=hidden, lr=lr,
+                     min_loss=min_loss, max_epoch=max_epoch, rad_response=rad_response, rad_n_basis=rad_n_basis)
+        for _ in range(int(ensemble_size))
+    ]
+    return EnsembleSurrogate(members, init_perturb=init_perturb)
 

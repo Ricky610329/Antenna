@@ -36,6 +36,7 @@ SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss", "sim_loss_avg", "r_
                "rad_loss", "sigma", "score_best", "score_mean", "score_spread", "fresh_frac",
                "cand_similarity",
                "sm_target", "sc_loss", "bnd_loss", "rad_fit", "skipped",
+               "sm_unc", "trust_t", "gap_ema",
                "boundary_threshold", "restart_suppressed",
                "time", "pattern_hash")
 

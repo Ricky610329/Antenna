@@ -195,3 +195,37 @@ class MultiScaleGenerator(nn.Module):
             acc = up if acc is None else acc + up            #? 各尺度相加 (coarse + fine)
         return self.norm(acc.reshape(*lead, -1))             #? (..., side²) → BiScaleNorm (per-row)
 
+
+###* DirectPatternGenerator — generator-free：pattern logits 本身即可學參數 (無 G / 無 MLP) ###
+#? 動機 (SM-only guided search)：固定 spec 下，G(spec)→pattern 只是「一張 pattern 的過參數化
+#? (超特徵)」——不是真的生成模型。與其優化 G 的權重，不如把 pattern 的 logits 直接當可學參數、
+#? 對「凍住的 SM」做 guided 梯度下降 (loss = guidance，形同 diffusion 的 classifier-guidance：
+#? pattern=x、∇_x SM→loss=引導場、ACP 的 tau 退火=排程、SC/boundary=compositional 控制項)。
+#? 「更多 pattern」的正確做法＝同批 K 個「獨立」logits 列 (pattern 空間的多樣，非 batch_latent 的
+#? latent 雲——latent 會塌縮)；逐列各自被 SM 梯度引導、彼此用 candidate_repulsion 互斥。
+#? 沿用既有管線：forward 出 (K, out_dim) logits (經 BiScaleNorm → 與其他 G 同尺度，ACP 的 tau
+#? 語意一致)，二值化 / SM / loss / HFSS 全套不變。K=1 → 退化成單張、走 run_training 單張路徑。
+class DirectPatternGenerator(nn.Module):
+    """generator-free：K 個獨立 pattern logits 直接當可學參數 (無 MLP)。forward 忽略 spec。
+
+    建構簽名照 zoo 約定 (in_dim, out_dim, **架構參數)；in_dim/spec 被忽略 (pattern 不依賴 spec 輸入，
+    與 LatentGenerator 同精神，但連 MLP 都省了——優化變數就是 pattern 本身)。
+    num_candidates=K：同批獨立候選數 (K>1 → is_multi_candidate=True，走 run_training 多候選路徑，
+    與 BatchLatentGenerator 並列)。init_scale：logits 初始亂數尺度 (BiScaleNorm 後僅影響相對形狀)；
+    ⚠ 須 >0 —— init_scale=0 → logits 全 0 → BiScaleNorm 後梯度恆 0 (零梯度死起點、學不動)。
+    """
+    def __init__(self, in_dim, out_dim, num_candidates=8, init_scale=1.0):
+        super().__init__()
+        self.K = int(num_candidates)
+        #? run_training 用此旗標 (而非 isinstance) 決定走多候選路徑 → 與 BatchLatent 並列、彼此解耦。
+        self.is_multi_candidate = self.K > 1
+        #? logits 本身＝可學參數 (K, out_dim)；randn 各列不同 → 天生 pattern 空間多樣 (init 即分散)。
+        self.logits = nn.Parameter(torch.randn(self.K, out_dim) * float(init_scale))
+        self.norm = BiScaleNorm()                #? 與其他 G 末層同尺度 → 二值化 tau 語意一致 (per-row 正規化)
+        self.to(config.device)
+
+    def forward(self, *args) -> Tensor:
+        #? 忽略傳入 spec (run_training 仍餵 spec.concat()，這裡丟掉)；回傳正規化後的 logits。
+        out = self.norm(self.logits)             #? (K, out_dim)，BiScaleNorm per-row → 各候選各自正規化
+        return out if self.K > 1 else out[0]     #? K=1 → (out_dim,) 走單張路徑 (與 SigmoidGenerator 同形)
+
