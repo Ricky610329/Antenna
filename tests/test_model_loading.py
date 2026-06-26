@@ -239,12 +239,21 @@ def test_prepare_offline(tmp_path):
 
 
 def test_prepare_sm_pretrained_missing_falls_to_offline(tmp_path):
-    """SM 預訓練路徑不存在 → 跳過，改走離線預訓練。"""
+    """SM 預訓練路徑不存在但有 offline 後援 → 示警後降級走離線預訓練 (不靜默)。"""
     gen, sm = MagicMock(), MagicMock()
     prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False),
                    sm_pretrained_path=str(tmp_path / "nope.pth"), offline_dataset=_FakeDS(2))
     sm.pre_load_model.assert_not_called()
     sm.train_by_datas.assert_called_once()
+
+
+def test_prepare_sm_pretrained_missing_no_offline_raises(tmp_path):
+    """SM 預訓練路徑指定但不存在、且無 offline 後援 → fail-fast (不靜默空跑全隨機 SM)。
+    這是踩過的雷:_harvest 系列若 sm_harvest.pth 缺檔,實驗會悄悄變 baseline。"""
+    gen, sm = MagicMock(), MagicMock()
+    with pytest.raises(FileNotFoundError, match="offline_dataset"):
+        prepare_models(_single_cfg(), gen, sm, RunState(tmp_path, verbose=False),
+                       sm_pretrained_path=str(tmp_path / "nope.pth"), offline_dataset=None)
 
 
 def test_prepare_warmup_called(tmp_path):

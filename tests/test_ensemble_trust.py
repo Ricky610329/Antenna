@@ -173,6 +173,33 @@ def test_ensemble_pre_load_anchors_member0_perturbs_rest(tmp_path):
     assert not torch.allclose(ens.members[1].model.fc_patch[0].weight, ref)        # 成員1 擾動
 
 
+def test_ensemble_preload_syncs_lookahead_anchor(tmp_path):
+    """A6:擾動成員權重時同步 Ranger slow_buffer (Lookahead 錨),否則每 k 步把權重拉回未擾動的
+    共同錨、吃掉 init_perturb 的多樣性 → uncertainty 邊跑邊塌。"""
+    single = MLPSurrogate(str(tmp_path), 625, (2, 17), hidden=(16, 16))
+    out = single.model(torch.rand(625))               # 跑一步 → Ranger lazy-init slow_buffer
+    (out ** 2).mean().backward()
+    single.optimizer.step()
+    pre = tmp_path / "pre.pth"
+    single.save_as(pre)
+    ens = EnsembleMLPSurrogate(str(tmp_path), 625, (2, 17), hidden=(16, 16), ensemble_size=3, init_perturb=0.05)
+    ens.pre_load_model(str(pre))
+    m = ens.members[1]
+    p = m.model.fc_patch[0].weight                     # 有 optimizer state 的 trunk 參數 (numel>1)
+    st = m.optimizer.state.get(p)
+    assert st is not None and "slow_buffer" in st
+    assert torch.allclose(st["slow_buffer"], p.detach())   # 錨已同步成擾動後權重 (不會被拉回共同錨)
+
+
+def test_reset_online_lr_restores_construction_lr(tmp_path):
+    """offline 預訓練 / 暖身會把 lr 砍到地板;reset_online_lr 把 lr 拉回建構值 (保留動量)。"""
+    sm = MLPSurrogate(str(tmp_path), 625, (2, 17), hidden=(16, 16), lr=0.001)
+    for g in sm.optimizer.param_groups:               # 模擬 ReduceLROnPlateau 把 lr 砍到 floor
+        g["lr"] = 1e-6
+    sm.reset_online_lr()
+    assert sm.optimizer.param_groups[0]["lr"] == pytest.approx(0.001)
+
+
 # ── 整合 (Exp2/Exp3)：direct + ensemble + trust ──────────────────────────────
 def test_guided_ensemble_trust_loop_runs(tmp_path):
     """Exp3：direct + ensemble + 信任懲罰 + acquisition + 閉迴路控制 → 跑得完、metrics 有 sm_unc/trust_t。"""

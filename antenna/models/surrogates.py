@@ -230,6 +230,18 @@ class SurrogateModel(Models):
         if hasattr(self.model, "set_rad_theta"):
             self.model.set_rad_theta(theta)
 
+    #? 把線上更新的 lr 拉回「建構值」，並重置 plateau 排程器的內部狀態。
+    #  用途：offline 預訓練 / 暖身 / strict 暖啟動會把 ReduceLROnPlateau 的 lr 砍到 min_lr，或從 checkpoint
+    #  繼承塌掉的 lr → 線上 train_one_data 幾乎不更新 (每筆撞滿 max_epoch 還收斂不了)。只重置「步長 (lr)」
+    #  與排程器狀態，不動動量/二階矩 (那是 warm optimizer 防過衝的本錢)。prepare_models 在載入策略尾端呼叫。
+    def reset_online_lr(self):
+        base_lr = self.optimizer.defaults.get("lr") if self.optimizer is not None else None
+        if base_lr is not None:
+            for g in self.optimizer.param_groups:
+                g["lr"] = base_lr
+        if self.scheduler is not None and hasattr(self.scheduler, "_reset"):
+            self.scheduler._reset()       # ReduceLROnPlateau：清掉 best / num_bad_epochs / cooldown
+
     def train_one_data_rad(self, pattern: Tensor, rad_response: Tensor, min_loss=None, max_epoch=None,
                            *, freeze_trunk: bool = True, verbose: bool = True):
         """
@@ -439,6 +451,11 @@ class EnsembleSurrogate:
             raise ValueError(f"EnsembleSurrogate 需 ≥2 個成員 (得到 {len(members)})")
         self.members = members
         self._init_perturb = float(init_perturb)
+        #! init_perturb<=0 + 暖啟動 → 所有成員載同一檔、權重逐位元相同 → uncertainty 恆 0 (信任懲罰/
+        #  acquisition 全失效，且不會被 has_unc 偵測到)。明確示警，避免「以為開了 ensemble 其實退化成單一 SM」。
+        if self._init_perturb <= 0:
+            logger.warning("EnsembleSurrogate init_perturb<=0 → 暖啟動後成員權重相同、uncertainty 恆 0 "
+                           "(信任懲罰/acquisition 失效)。要 ensemble 不確定性請設 init_perturb>0。")
         #? 成員存到不同檔名 (sm0.pth .. smK-1.pth)，避免共用 'sm.pth' 互相覆蓋。
         for i, m in enumerate(self.members):
             m.name = f"sm{i}"
@@ -493,6 +510,10 @@ class EnsembleSurrogate:
         for m in self.members:
             m.set_rad_theta(theta)
 
+    def reset_online_lr(self):
+        for m in self.members:
+            m.reset_online_lr()
+
     def save(self):
         for m in self.members:
             m.save()
@@ -512,6 +533,14 @@ class EnsembleSurrogate:
                     for p in m.model.parameters():
                         if p.numel() > 1:        # numel==1 (如 PReLU 單一斜率) → std() dof<=0；跳過、不影響多樣性
                             p.add_(torch.randn_like(p) * (p.detach().std() * self._init_perturb))
+                            #! 同步 Lookahead 慢權重錨：暖啟動載回的 Ranger slow_buffer 是「未擾動的共同錨」，
+                            #  Ranger 每 k 步 (slow←slow+α(p−slow); p←slow) 會把權重拉回它 → 吃掉 init_perturb
+                            #  的多樣性 → uncertainty 邊跑邊塌。把 slow_buffer 一併設成擾動後的權重，讓各成員
+                            #  從自己的擾動點出發、不被拉回共同錨。(無 state 的參數如 head_rad 由 Ranger 首步
+                            #  lazy-init slow_buffer=擾動後 p，本就正確 → 只需處理已暖啟動 optimizer state 的 trunk。)
+                            st = m.optimizer.state.get(p)
+                            if st is not None and "slow_buffer" in st:
+                                st["slow_buffer"].copy_(p.detach())
 
 
 ###* EnsembleMLPSurrogate — 工廠：建 K 個 MLPSurrogate 成員、包成 EnsembleSurrogate ###

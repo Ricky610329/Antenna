@@ -858,21 +858,47 @@ def prepare_models(cfg, generator, smodel, state, *, continue_run=False,
         _assert_sm_checkpoint_sane(smodel, last)   # 守衛：續跑載到灌爆的 SM → 明確報錯叫重開，別默默撞
         return int(last)
     # (2) GEN 預載入 (暖啟動)
-    if gen_pretrained_path is not None and Path(gen_pretrained_path).exists():
-        generator.pre_load_model(gen_pretrained_path)
+    if gen_pretrained_path is not None:
+        if Path(gen_pretrained_path).exists():
+            generator.pre_load_model(gen_pretrained_path)
+        else:
+            #! 缺檔靜默降級是踩過的雷：明確示警 (否則 GEN 默默從隨機起步、暖啟動沒生效卻沒人知)。
+            logger.warning(f"generator.pretrained 指定了 {gen_pretrained_path} 但檔案不存在 → "
+                           f"GEN 從隨機權重起步 (暖啟動未生效)")
     # (3) SM 載入：預訓練檔 > 離線預訓練
-    if sm_pretrained_path is not None and Path(sm_pretrained_path).exists():
+    sm_has_pretrained = sm_pretrained_path is not None and Path(sm_pretrained_path).exists()
+    offline_ok = offline_dataset is not None and len(offline_dataset) > 0
+    if sm_pretrained_path is not None and not sm_has_pretrained:
+        #! 缺檔靜默降級是踩過的雷 (old_sm≈隨機、以為暖啟動其實沒有)：
+        #  - 連 offline 後援都沒有 → SM 全隨機、整個 _harvest 受控變因作廢 → fail-fast 直接報錯，不空跑。
+        #  - 有 offline 後援 → 大聲示警後降級 (至少不是靜默)。
+        if not offline_ok:
+            raise FileNotFoundError(
+                f"surrogate.pretrained 指定了 {sm_pretrained_path} 但檔案不存在，且無 offline_dataset 後援 → "
+                f"SM 會全隨機、實驗無意義。請確認路徑 (常見：sm_harvest.pth 未在此機 DATASET_PATH 下)。"
+            )
+        logger.warning(f"surrogate.pretrained 指定了 {sm_pretrained_path} 但檔案不存在 → 靜默降級為 offline 重訓 "
+                       f"(非預期的暖啟動；要量「好 SM」請先確認檔案存在)")
+    if sm_has_pretrained:
         if cfg.radiation.get("enable", False):
             #? 方向圖版 SM 多了 head_rad、舊 sm.pth 沒有 → strict=False 部分載入共用 trunk/freq
             #  head (缺的 head_rad 維持隨機)，避免退回 elif 在數萬筆上從零預訓練 (HFSS 前先卡死)。
             smodel.pre_load_model(sm_pretrained_path, strict=False)
         else:
             smodel.pre_load_model(sm_pretrained_path)       # 共用路徑：簽名與行為與原樣相同
-    elif offline_dataset is not None and len(offline_dataset) > 0:
-        smodel.train_by_datas(offline_dataset)
+    elif offline_dataset is not None:
+        if offline_ok:
+            smodel.train_by_datas(offline_dataset)
+        else:
+            logger.warning("surrogate.offline_dataset 指定了但筆數為 0 → 離線預訓練跳過、SM 從隨機起步 "
+                           "(資料夾名是否打錯/掛載失敗?)")
     # (4) KuoHung 暖身：呼叫端綁好的 warmup(smodel)，對 SM 做單筆暖身訓練
     if warmup is not None:
         warmup(smodel)
+    #? 重置 SM 線上 lr：offline 預訓練 / 暖身 / strict 暖啟動都可能把 ReduceLROnPlateau 的 lr 砍到地板，
+    #  或繼承 checkpoint 塌掉的 lr → 線上 train_one_data 幾乎不更新。把 lr 拉回建構值 (只重置步長與
+    #  排程器狀態、保留動量/二階矩 → 不會冷 optimizer 過衝爆 NaN)。continue_run 已於上方 return、不受影響。
+    smodel.reset_online_lr()
     return 0
 
 

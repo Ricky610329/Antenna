@@ -73,7 +73,7 @@ python train.py configs/single_base.yaml
 
 - ~~單埠沒有 `spectral_connectivity` config~~ → 已補 `single_sc.yaml`（2026-06-19）。
 - ~~方向圖 loss 尚未有 config~~ → 已補 `single_sc_rad.yaml`（2026-06-19，Stage 2 整合完成：`radiation:` 區段 + SM rad head + `beam_coverage_loss`）。**僅正式機可跑**（需 HFSS 取方向圖）。
-- **方向圖 rad head 冷啟動**：`harvest_single` 沒有方向圖標籤 → rad head 線上從零學。優化（Stage 3，未做）：收 `harvest_single_rad`（好 pattern 補方向圖標籤）預訓練 rad head，再用 `radiation.offline_dataset` 載入。
+- **方向圖 rad head 冷啟動**：`harvest_single` 沒有方向圖標籤 → rad head 線上從零學。優化（Stage 3，未做）：收 `harvest_single_rad`（好 pattern 補方向圖標籤）預訓練 rad head。⚠ **`radiation.offline_dataset` 這個鍵尚未實作**（不在 `training.py` 的 `radiation` 白名單內 → 現在寫進 config 會被驗證器擋下、run 起不來）；要做 Stage 3 時需先把該鍵加進白名單並接上載入邏輯。
 - **方向圖物理近似（FFT / array-factor）取代/輔助 NN rad head（待辦，規格待寫）**：cold-start 視角——遠場 ≈ 電流分布的傅立葉轉換，最粗近似「方向圖 ≈ |FFT(pattern)|²」。可微（`torch.fft`）、**零訓練資料** → 直接 guide GEN 梯度，且能取代現在「凍 trunk + 冷啟動擬不動」的 NN rad head。用 #1 收集的 `<結果夾>/radiation/` 資料**校準少數自由參數**（低維擬合、非訓大網路）並**量「對 HFSS 的誤差與偏差」**。⚠ **偏差 > 準確率**：粗但不偏才有用，系統性偏掉會把搜尋帶歪、白燒 HFSS。可選 hybrid：物理當骨幹 + NN 學殘差（physics-informed、省資料）。先拿現有 HFSS 資料量實際 % 再決定投入；S11/Gain 的解析近似更難（任意 pixel 無良定義等效長度），「70%」別預設、先量。
 - **方向圖訓練預設凍 trunk**（`radiation.freeze_trunk: true`）：隨機 rad 頭 + 不凍 trunk + 極端 dB target 曾把 S11/Gain backbone 帶歪、爆 NaN。現在 rad 頭只更新自己、rad target 會 clamp（±60dB）、SM 訓練有 NaN 防護網。要放梯度回 backbone 才設 `false`。
 - **rad head ＝ 平滑 cosine 基底頭**（`radiation.n_basis`，預設 16）：head 不直接吐 `n_theta` 個獨立值（裸 `Linear` 無平滑先驗 + 凍 trunk 下擬不到收斂 → 預測鋸齒），改吐 K=`n_basis` 個 cosine 係數，乘固定基底展開成 `n_theta` 點 → 預測 band-limited、**結構上必平滑**，且只擬 K 個數收斂快。基底是不可訓 buffer、用 `set_rad_theta` 依實際 HFSS θ 網格（整 run 固定）逐欄重建 → 對位正確、HFSS 匯出序未排序也 OK。K 越小越平滑（K=1＝常數）。⚠ 改了 head 形狀 → 舊 rad-run 的 `sm.pth` 不能續跑（freq-only checkpoint 不受影響、golden 零漂移）。
@@ -92,6 +92,12 @@ python train.py configs/single_base.yaml
   - **Exp3 + 閉迴路控制**（`trust.enable`，`training.py:TrustController`）：gap=|SM 預測−真實 HFSS|（訓練前量）→ 信任標量 t∈[0,1] → 同軸調 **tau 乘子 / λ_trust / κ**（t→0 放軟+收緊+探索；t→1 純 ACP 銳化+收割）。= 把學長 ACP 的開迴路退火升級成 gap 驅動的閉迴路；收斂湧現（SM 被修準→gap↓→t↑→tau 自動銳化）。語意設計：**docs/guided_search_design.md**。
   - 對偶觀點仍成立：「架構先驗（multiscale/mirror，隱式）」⇄「顯式 loss（SC/boundary/uncertainty）」；direct＝最無先驗端，靠顯式 SC/boundary/trust 補回（拿掉 G 的 DIP 平滑先驗，由 SC 連通性顯式涵蓋）。⚠ 純 direct 無先驗 → 易破碎/鑽 SM 盲區，正是信任懲罰/控制要治的。全部 golden 零漂移（旗標/權重 gate；enable=False 且 base=0 → 逐位元同原樣）。對標：worst-margin(dB) vs HFSS-call、對比 random best-of-N。
 - **軟對稱取代硬 mirror（待辦；先量 mirror vs sigmoid 再決定）**：`mirror`（`generators.py:98`）是**硬對稱**——G 只出半邊、`flip+cat` 強制精確左右對稱、搜尋空間砍半。隱憂：問題有對稱性時，**對稱解常是優化駐點（鞍點/退化），最優可能在對稱破缺處**；硬對稱把解鎖在對稱子空間 = 鎖在鞍點 →「容易塌」。同「架構先驗 ⇄ 顯式 loss」對偶，對稱也有硬→軟光譜：硬 `mirror`（weight-tying）→ 半硬「對稱骨幹＋小殘差 `p=mirror+ε·free`」→ 軟「對稱正則 loss `λ·‖p−flip(p)‖²`（自由出 625、允許自發破缺、λ 連續可調、與任何 generator 解耦）」→ 最軟「資料增強（學長舊法）」。軟化的好處＝允許先破缺逃鞍點、不對稱沒幫助時自己收回。⚠ 對稱群是**物理決定**的——單埠饋電底部中央 → 只有左右鏡像成立，上下/旋轉對稱不該硬加；equivariant 網路太重、排除。**先量再決定**：拿 `single_mirror` vs `single_base`（或 `single_sc_mirror` vs `single_sc`）比最終 sim_loss + 看 pattern 是否卡在某對稱形狀不動；mirror 砍半空間在 cold-start 早期可能反而更快收斂、塌可能只是後期/階段性 → 確認真的塌再做。要做就軟對稱 loss 優先（加 loss 前先討論）。
+
+- **可解釋性:SM 屬性分析 → SM 診斷 + 好解局部先驗（待辦，多為「跑出好 pattern 後」）**：對一張 pattern 用 SM 問「每像素對 S11/Gain 的貢獻」。二值最忠實＝**遮擋法**（翻第 i 格、看 SM 預測變多少；625 次 SM forward ≈ 亞秒）；梯度版近乎免費（guidance 本來就在算 ∂response/∂pixel）。用途（依價值）：
+  1. **SM 品質診斷（現在就相關、近乎免費）**：好 pattern 的貢獻熱圖該像 EM 物理（饋入/輻射邊緣/共振長度重要、角落 don't-care）；**物理上講不通＝SM 壞掉的紅旗**。把 guidance 梯度當熱圖落 TB 即可，與 trust/ensemble 同目標（知道 SM 可不可信）。
+  2. **好 pattern → 局部先驗（主實驗，需先有 HFSS 驗證過的好解）**：屬性把像素分「關鍵 vs don't-care」→ 鎖關鍵格、只搜 don't-care 格 → 在已知好解附近做**有根據的降維局部搜尋**找鄰近變體（比盲目多候選有方向）。
+  3. **跨多好解抽設計 motif → 顯性先驗/loss（AlphaFold 式，最投機）**：需先有一堆好解；把學到的規則回注成 init/loss/縮小參數化（接「把先驗轉成 loss」那條線）。
+  ⚠ 陷阱（同專案病根）：屬性＝**SM 的信念**，只在 SM 準的地方可信 → 只對 **HFSS 驗證過**的好 pattern 做、關鍵格用 **HFSS 遮擋抽驗**接地、配 **ensemble** 得「屬性不確定性」（成員屬性不一致＝連重要性都沒把握）。定位：2/3 需先有好 pattern（現階段搜尋還贏不過 random，非當務之急）；但 (1) 現在就能順手加。
 
 ## 資料集標記（before rad / *_rad）
 
