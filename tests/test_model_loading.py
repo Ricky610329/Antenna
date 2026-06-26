@@ -134,6 +134,13 @@ def test_unknown_model_name_rejected(spec):
         build_generator(cfg, spec)
 
 
+def test_unknown_sm_mode_rejected():
+    """sm_train.mode 打錯『值』(如 dlffit) → TrainConfig 建構即報錯 (不靜默退 single 害 A/B 白跑)。"""
+    with pytest.raises(ValueError, match="mode"):
+        TrainConfig(name="t", port="single", sm_train={"mode": "dlffit"},
+                    targets=_single_cfg().targets)
+
+
 def test_build_surrogate_default_arch(tmp_path, spec):
     """未指定 surrogate.hidden → 預設 (2048,1024,512,128,64) → 5 隱藏 + 1 輸出。
     (不需要任何全域 config 設定 —— hfss 參數由 build_surrogate 顯式傳入。)"""

@@ -77,13 +77,15 @@ class SurrogateModel(Models):
         self.epoch += 1
         return MultiResponses(self.model(pattern))
 
-    def train_by_datas(self, dataset:Dataset, epochs: int = 100, batch_size: Optional[int] = None, *, verbose:bool = True) -> List[float]:
+    def train_by_datas(self, dataset:Dataset, epochs: int = 100, batch_size: Optional[int] = None, *, min_loss: Optional[float] = None, verbose:bool = True) -> List[float]:
         """
         Train the model using the provided dataset.
 
         Args:
             dataset (Dataset): 訓練資料集 (SampleStore / 舊 DataManager 皆可)。
             epochs (int): Total number of training cycles.
+            min_loss (Optional[float]): 設了 → 某 epoch 平均 loss ≤ 此值即提前結束 (「訓到 fit」用,
+                                        對應學長 DLF 的「訓到收斂」;None=不啟用、行為與原樣相同)。
             batch_size (Optional[int]): Size of each batch.
             verbose (bool): Enable progress bar.
 
@@ -142,11 +144,18 @@ class SurrogateModel(Models):
 
                 self.record['loss'] = loss.item()  #? 記錄每個 batch 的 loss，供下方求 epoch 平均
 
+            if 'loss' not in self.record:                  #! 整個 epoch 的 batch 全非有限被 NaN guard 跳過 → 沒有任何
+                continue                                   #  有效 loss → 跳過此 epoch (避免 average('loss') 撞 KeyError)
             avg_epoch_loss = self.record.average('loss')  #? 本 epoch 所有 batch 的平均 loss
             self.record.reset('loss', delete=True)        #? 清掉 batch 級暫存，下個 epoch 重新累積
             self.record['epoch_loss'] = avg_epoch_loss    #? 推進到 epoch 級曲線 (即最終回傳值)
 
             epoch_bar.set_postfix({"Loss": f"{avg_epoch_loss:.4e}"})
+
+            #? 「訓到 fit」提前結束：平均 loss 已達門檻 → 停 (DLF 訓到收斂用；min_loss=None 不啟用、原樣)。
+            if min_loss is not None and avg_epoch_loss <= min_loss:
+                if verbose: logger.success(f'Fit reached (loss {avg_epoch_loss:.4e} ≤ {min_loss}) at epoch {epoch + 1}.')
+                break
 
             #? 早停：若最近 epochs/2 個 epoch 的 epoch_loss 都沒比之前更好，就提前結束 (省時，避免過擬合)
             if self.record.early_stop('epoch_loss', int(epochs / 2)):
@@ -154,7 +163,9 @@ class SurrogateModel(Models):
                 break
 
         self.model.eval()  #? 訓練結束切回 eval，後續 GEN 推論時 BatchNorm/Dropout 維持確定性
-        return self.record['epoch_loss']  #? 回傳每 epoch 平均 loss 清單 (訓練腳本拿去畫收斂曲線)
+        #? 回傳每 epoch 平均 loss 清單；若每個 epoch 都全 NaN 被跳過 (epoch_loss 從未寫入) → 回空清單,
+        #  不讓 record['epoch_loss'] 撞 KeyError (呼叫端都容忍空回傳)。
+        return self.record['epoch_loss'] if 'epoch_loss' in self.record else []
     
     def train_one_data(self, pattern:Tensor, real_response:Tensor, min_loss=None, max_epoch=None, *, verbose:bool = True):
         """
@@ -487,12 +498,12 @@ class EnsembleSurrogate:
             out = m.train_one_data(pattern, real_response, min_loss=min_loss, max_epoch=max_epoch, verbose=verbose)
         return out   # 回傳最後一成員的逐步 loss (僅監控；呼叫端多半忽略)
 
-    def train_by_datas(self, dataset, epochs: int = 100, batch_size=None, *, verbose: bool = True):
+    def train_by_datas(self, dataset, epochs: int = 100, batch_size=None, *, min_loss=None, verbose: bool = True):
         #? fan-out：每個成員各自重訓整批。多樣性主要來自「不同 init + 暖啟動擾動」(文獻結論)；
         #  洗牌序差異是次要 (各成員 new 一個 Generator、序可能相同)，不靠它撐分歧。
         out = []
         for m in self.members:
-            out = m.train_by_datas(dataset, epochs=epochs, batch_size=batch_size, verbose=verbose)
+            out = m.train_by_datas(dataset, epochs=epochs, batch_size=batch_size, min_loss=min_loss, verbose=verbose)
         return out
 
     def rad_predict(self, pattern) -> Tensor:

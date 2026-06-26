@@ -16,7 +16,8 @@ from antenna.training import load_config, run_training, setup_responses
 CONFIGS = os.path.join(os.path.dirname(os.path.dirname(__file__)), "configs")
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
 GUIDED = ["single_guided_harvest.yaml", "single_guided_ens_harvest.yaml",
-          "single_guided_ens_adapt_harvest.yaml"]
+          "single_guided_ens_adapt_harvest.yaml", "single_guided_dlffit_harvest.yaml",
+          "single_guided_refit_harvest.yaml"]
 
 
 class _CountSim:

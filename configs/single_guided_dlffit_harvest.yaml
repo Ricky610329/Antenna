@@ -1,0 +1,53 @@
+# Exp1b — generator-free + 「訓到 fit 的 DLF」(A/B 對照 single_guided_harvest)
+# 唯一變因 vs single_guided_harvest:sm_train.mode 從 dlf(elite 只訓 1 epoch + 50 步單筆)
+#   → dlf_fit(全收 → 重過濾 elite → 把 elite「訓到收斂」、不做單筆 step ＝ 學長原版 DLF)。
+# 為什麼:B1 spot-check 確認 sm_harvest 與現在 HFSS 對得上(中位 MSE 1.56)→ SM 來源沒問題;
+#   而我們現行 dlf 經查只訓 1 epoch = under-trained DLF。本檔測「把 SM 訓飽,guidance 會不會變準、
+#   250 epoch 內 worst-margin 升得更快」。對標:single_guided_harvest(dlf 1-epoch 版)。
+name: pixel_single_guided_dlffit_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf_fit                     # ← 唯一變因:elite 訓到 fit(min_loss 早停)、不做單筆 step
+  elite_epochs: 50                  # elite 重訓的 epoch 上限(配 min_loss=0.1 訓到收斂)
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: direct
+  num_candidates: 8
+
+selection:
+  diversity_weight: 0.1
+
+surrogate:
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

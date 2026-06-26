@@ -78,6 +78,29 @@ def test_train_one_data_returns_finite_loss_list(tmp_path):
     assert hist[-1] == hist[-1]                        # 末位有限 (非 NaN) → 可當 rad_fit
 
 
+def test_train_by_datas_all_nan_epoch_no_crash(tmp_path):
+    """整個 epoch 所有 batch 都非有限 → avg=None,不該崩 (None 防護);帶 min_loss(dlf_fit 路徑)也安全。"""
+    s = SampleStore(tmp_path / "ds_allnan", verbose=False)
+    bad = torch.rand(2, 17); bad[0, 0] = float("inf")
+    s.add(torch.ones(25, 25), bad)                         # 唯一一筆就是壞的 → 該 epoch 全被跳過 → avg=None
+    sm = MLPSurrogate(tmp_path / "ckallnan", 625, (2, 17), max_epoch=1)
+    out = sm.train_by_datas(s, epochs=2, min_loss=0.1, verbose=False)   # 不該丟例外 (含 f"{None:.4e}"/None≤min_loss)
+    assert isinstance(out, list)                           # 正常回傳 (整 epoch 無效 → 可能為空)
+
+
+def test_train_by_datas_min_loss_early_exit(tmp_path):
+    """dlf_fit 的「訓到 fit」鉤子:設了 min_loss → 平均 loss ≤ 門檻當 epoch 即停。
+    min_loss 給超大值 → 第一個 epoch 必達標 → 只跑 1 個 epoch (回傳長度 1);
+    對照不設 min_loss → 跑滿/早停才停 (>1 epoch)。"""
+    sm = MLPSurrogate(tmp_path / "ckfit", 625, (2, 17), max_epoch=1)
+    hist = sm.train_by_datas(_store(tmp_path), epochs=20, min_loss=1e9, verbose=False)
+    assert len(hist) == 1                                   # min_loss 早停 → 第 1 個 epoch 就停
+
+    sm2 = MLPSurrogate(tmp_path / "ckfit2", 625, (2, 17), max_epoch=1)
+    hist2 = sm2.train_by_datas(_store(tmp_path), epochs=4, min_loss=None, verbose=False)
+    assert len(hist2) > 1                                   # 不設 min_loss → 不會第 1 epoch 就停
+
+
 def test_sm_requires_grad_false_freezes_params_but_keeps_input_grad(tmp_path):
     """審查後優化的不變式：smodel.requires_grad(False) 後，SM 反傳『不在 SM 參數上累積梯度』
     (GEN 不會誤更新 SM)，但梯度仍穿過 SM 流回輸入 (GEN 仍學得動)。eval 模式不被動到。"""

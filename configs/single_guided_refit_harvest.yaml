@@ -1,0 +1,54 @@
+# Exp1c — generator-free + 「整個 buffer 訓到 fit(不挑 elite)」(A/B 對照 dlf / dlf_fit)
+# 唯一變因 vs single_guided_dlffit_harvest:sm_train.mode 從 dlf_fit(只訓 elite 子集)
+#   → refit(訓「整個 buffer」,含非 elite 的爛 pattern)。
+# 為什麼:guidance surrogate 也要學「爛 pattern 長怎樣」→ 才預測得出爛、避得開對抗洞(我們輸 random
+#   的病根)。dlf_fit(elite) vs refit(all) 即「要不要挑菁英」的 A/B。
+# 三方對照:single_guided_harvest(dlf 1-epoch)/ _dlffit(elite 訓飽)/ _refit(全部訓飽)。
+# 訓練量旋鈕同 dlf_fit(elite_epochs + min_loss 訓到 fit);判準看 gap_ema(對新點的準度),非 training loss。
+name: pixel_single_guided_refit_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: refit                       # ← 唯一變因:訓整個 buffer(不挑 elite)到 fit
+  elite_epochs: 50                  # 每輪重訓 epoch 上限(配 min_loss=0.1 訓到收斂)
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: direct
+  num_candidates: 8
+
+selection:
+  diversity_weight: 0.1
+
+surrogate:
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  freeze_trunk: true
+  sm_max_epoch: 1000

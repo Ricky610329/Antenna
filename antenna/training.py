@@ -65,7 +65,7 @@ SECTION_KEYS = {
     "loss":      {"total_variation", "island_suppression", "spectral_connectivity", "gap_closing", "boundary",
                   # 信任懲罰 λ_trust：罰「SM 沒把握 (ensemble 分歧大)」的 pattern → 把候選推離 SM 盲區。需 ensemble SM。
                   "uncertainty"},
-    "sm_train":  {"lr", "min_loss", "max_epoch", "mode", "newest_steps", "replay_size"},
+    "sm_train":  {"lr", "min_loss", "max_epoch", "mode", "newest_steps", "replay_size", "elite_epochs"},
     "scheduler": {"on_plateau", "T_0", "T_mult", "lr_min", "temp_max", "temp_min",
                   "warmup_ratio", "patience", "factor",
                   # boundary-gated warm restart (opt-in)：boundary 當 ACP 探索/固化的依據
@@ -83,6 +83,9 @@ SECTION_KEYS = {
     "trust": {"enable", "g0", "ema", "t_min", "t_max", "tau_inflate"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
+#! sm_train.mode 的允許「值」(白名單只驗鍵不驗值；mode 打錯字會靜默退回 single、害 A/B 白跑 →
+#  必須額外驗值，比照 island_suppression 鍵打錯的歷史教訓)。
+SM_MODES = ("single", "replay", "dlf", "dlf_fit", "refit")
 
 
 class TrustController:
@@ -178,6 +181,10 @@ class TrainConfig:
             unknown = set(t) - TARGET_KEYS
             if unknown:
                 raise ValueError(f"targets.{label} 含未知鍵: {sorted(unknown)} (允許: {sorted(TARGET_KEYS)})")
+        #! 驗 sm_train.mode 的「值」(不只鍵)：打錯字 (如 dlffit/Refit) 會靜默退回 single → A/B 白跑。
+        mode = self.sm_train.get("mode", "single")
+        if mode not in SM_MODES:
+            raise ValueError(f"sm_train.mode 未知值: {mode!r} (允許: {list(SM_MODES)})")
 
 
 def load_config(path) -> TrainConfig:
@@ -335,14 +342,20 @@ def run_training(
     bnd_w = cfg.loss.get("boundary", 0.0)            # boundary/trust-region：拉 G 回 SM 已見分布 (需 replay/dlf 緩衝)
     unc_w = cfg.loss.get("uncertainty", 0.0)         # 信任懲罰 λ_trust：罰 ensemble 分歧大的 pattern (需 ensemble SM)
 
-    # SM 線上更新策略：single = 把「最新一筆」擬到收斂 (原樣)；replay = 對最新一筆跑少數步
-    # ＋ 從「經驗回放緩衝」再訓一遍 (防 catastrophic forgetting、削掉擬到收斂的暴衝尾巴)。
-    # 預設 single → 行為與原樣完全相同 (golden 零漂移)；replay 為 opt-in 改良。
-    sm_mode = cfg.sm_train.get("mode", "single")                  # single | replay | dlf
+    # SM 線上更新策略：
+    #   single   = 把「最新一筆」擬到收斂 (學長原始單筆過擬合;反模式,但 golden 基準)。
+    #   replay   = 最新一筆少數步 ＋ 回放整個緩衝 (防遺忘)。
+    #   dlf      = 最新一筆少數步 ＋ elite 子集訓「1 epoch」(現行;經查 = under-trained 的 DLF)。
+    #   dlf_fit  = 全收 ＋ 重過濾 elite ＋ 把 elite「訓到收斂(fit)」,不做單筆 step ＝ 學長原版 DLF。
+    #   refit    = 全收 ＋ 把「整個 buffer(不挑 elite)」訓到 fit ＝ 你的「不一定要 elite」版;對抗洞:SM 也學
+    #              「爛 pattern 是爛的」→ guidance 會避開、不被騙進洞。dlf_fit(elite) vs refit(all) 即 A/B。
+    # 預設 single → 行為與原樣完全相同 (golden 零漂移);其餘為 opt-in。
+    sm_mode = cfg.sm_train.get("mode", "single")                  # single | replay | dlf | dlf_fit | refit
     sm_newest_steps = cfg.sm_train.get("newest_steps", 50)        # replay/dlf：對最新一筆跑幾步 (取代擬到死)
-    replay = ReplayBuffer(cfg.sm_train.get("replay_size", 256)) if sm_mode in ("replay", "dlf") else None
+    sm_elite_epochs = cfg.sm_train.get("elite_epochs", 50)        # dlf_fit/refit：每輪重訓 epoch 上限 (配 min_loss 訓到 fit)
+    replay = ReplayBuffer(cfg.sm_train.get("replay_size", 256)) if sm_mode in ("replay", "dlf", "dlf_fit", "refit") else None
     if bnd_w > 0 and replay is None:
-        logger.warning("loss.boundary > 0 但 sm_train.mode 非 replay/dlf（無緩衝定義已見分布）→ boundary loss 停用")
+        logger.warning("loss.boundary > 0 但 sm_train.mode 非 replay/dlf/dlf_fit/refit（無緩衝定義已見分布）→ boundary loss 停用")
 
     # 多候選 (batch_latent / direct)：同批生成 K 個候選 → 在 SM 上評分選最佳 → 只把選中的那張送昂貴
     # 路徑 (HFSS)，其餘候選僅進「聚合 loss」(mean over K) 一起反傳。multi=False (sigmoid 等單張 G) →
@@ -578,8 +591,30 @@ def run_training(
                 with torch.no_grad():
                     trust.update(float(smodel(output_element.series).criterion()), sim_loss.item())
             #? SM 線上更新：single=最新一筆擬到收斂(原樣)；replay=最新少數步＋回放整個緩衝；
-            #  dlf=最新少數步＋只訓「菁英子集」(loss ≤ 累計門檻 λ_t)。緩衝一律「全收」(學長論文 §3.5)。
-            if sm_mode in ("replay", "dlf"):
+            #  dlf=最新少數步＋elite 子集訓 1 epoch；dlf_fit=elite 訓到收斂、不做單筆(＝學長原版 DLF)。
+            #  緩衝一律「全收」(學長論文 §3.5)。
+            if sm_mode == "dlf_fit":
+                #? dlf_fit (學長原版 DLF)：全收 → 用累計門檻 λ_t 重過濾 elite → 把 elite「訓到 fit」(min_loss
+                #  早停、epoch 上限 sm_elite_epochs)。不做單筆 step (那是反模式殘骸)。經查現行 dlf 只訓 1 epoch =
+                #  under-trained DLF；本模式把訓練強度補回學長水準 (B1 已確認 SM 來源可信 → 訓練強度是瓶頸)。
+                replay.add(~output_element, stack, sim_loss.item())   # 全收
+                hist = state.series("sim_loss")
+                lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
+                elite = replay.elite(lam)
+                if len(elite) > 0:
+                    smodel.train_by_datas(elite, epochs=sm_elite_epochs,
+                                          min_loss=smodel.min_loss, verbose=verbose)
+            elif sm_mode == "refit":
+                #? refit (你的「不一定要 elite」版):全收 → 把「整個 buffer」訓到 fit (不挑 elite)。
+                #  原則:guidance surrogate 也要學「爛 pattern 長怎樣」才預測得出爛、避得開洞 (對抗洞疫苗)。
+                #  ⚠「整個 buffer」受 replay_size 上限 (FIFO);跑 >replay_size 時最舊的會被擠掉
+                #    (要真「全部過往」得靠之後的「週期 harvest 重錨」)。旋鈕同 dlf_fit (elite_epochs+min_loss);
+                #    但實際計算量 > dlf_fit (訓整個 buffer 非子集),配 surrogate: ensemble 會再 ×K,留意成本。
+                replay.add(~output_element, stack, sim_loss.item())   # 全收
+                if len(replay) > 0:
+                    smodel.train_by_datas(replay, epochs=sm_elite_epochs,
+                                          min_loss=smodel.min_loss, verbose=verbose)
+            elif sm_mode in ("replay", "dlf"):
                 replay.add(~output_element, stack, sim_loss.item())   # 全收 (含 loss；不在寫入端篩)
                 #? 對最新一筆跑少數步 (它＝G 此刻的位置，SM 最需要在那準)，max_epoch 上限避免擬到死
                 smodel.train_one_data(output_element.series, stack, max_epoch=sm_newest_steps, verbose=verbose)
