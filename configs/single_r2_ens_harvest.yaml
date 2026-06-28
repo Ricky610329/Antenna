@@ -1,0 +1,60 @@
+# Round 2 ① — generator-free + ensemble (dlf 底)｜治本測試:不確定性門控有沒有用
+# Round 1 結論:SM 訓練量不是 bottleneck(dlf≈refit>dlf_fit、三者皆差 spec ~4dB、沒贏 random)。
+# Round 2 改測文獻治本 = ensemble 不確定性 +(下個 config 再加)trust 門控。
+# 此檔 = dlf 底 + ensemble,對照 Round-1 的 A(single_guided_harvest, dlf 單 SM)看「加 ensemble 有沒有用」:
+#   ① 信任懲罰 λ_trust·u(x)(loss.uncertainty):把候選推離「成員分歧大=SM 沒把握」的洞。
+#   ② acquisition κ·u(x)(selection.uncertainty_weight):送 HFSS 偏好不確定點(主動學習修 SM)。
+# rad 依老師指示 n_basis 16→8(方向圖夠平滑、8 mode 足夠、少擬角度雜訊)。新名=新夾、不續舊跑道。
+name: pixel_single_r2_ens_harvest
+port: single
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+  uncertainty: 0.05                 # λ_trust (靜態):信任懲罰權重 (罰 ensemble 分歧大的 pattern)
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: direct
+  num_candidates: 8
+
+selection:
+  diversity_weight: 0.1
+  uncertainty_weight: 0.02          # κ (靜態):acquisition 偏好「SM 沒把握」的候選
+
+surrogate:
+  name: ensemble                    # K 個獨立 MLP 成員;提供 uncertainty()(成員分歧)
+  ensemble_size: 5
+  init_perturb: 0.02                # 暖啟動後成員 1+ 的權重擾動尺度 (製造多樣性)
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1                       # 重點是 S11/Gain;rad 只當塑形副項
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  n_basis: 8                        # ← 老師:8 個 cosine mode 就夠 (16→8,少擬角度雜訊)
+  freeze_trunk: true
+  sm_max_epoch: 1000

@@ -17,7 +17,10 @@ CONFIGS = os.path.join(os.path.dirname(os.path.dirname(__file__)), "configs")
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
 GUIDED = ["single_guided_harvest.yaml", "single_guided_ens_harvest.yaml",
           "single_guided_ens_adapt_harvest.yaml", "single_guided_dlffit_harvest.yaml",
-          "single_guided_refit_harvest.yaml"]
+          "single_guided_refit_harvest.yaml",
+          # Round 2 (ensemble+trust 治本,n_basis=8)
+          "single_r2_ens_harvest.yaml", "single_r2_enstrust_harvest.yaml",
+          "single_r2_refit_enstrust_harvest.yaml"]
 
 
 class _CountSim:

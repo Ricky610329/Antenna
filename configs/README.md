@@ -1,6 +1,8 @@
 # configs/ — 實驗對照表
 
-> **一個 `*.yaml` = 一組實驗的完整設定。** 這份檔案是所有訓練實驗的索引：每個 config 在「對標哪個 baseline、改了什麼、想看什麼」一目了然。
+> **一個 `*.yaml` = 一組實驗的完整設定。** 這份檔案是所有訓練實驗的索引（全目錄、accumulating）：每個 config 在「對標哪個 baseline、改了什麼、想看什麼」一目了然。
+>
+> 📍 **正在跑 / 待跑 / 收尾中的實驗看 [ONGOING.md](ONGOING.md)**（精簡的 live 狀態板，跑完搬去歸檔；這份 README 維持全目錄不動）。
 >
 > ⚠ **硬規則（CLAUDE.md 慣例）**：新增/修改任何 `configs/*.yaml` 或訓練腳本，**必須同步更新這份表**。產生新實驗前先掃這份表，避免重複造輪子。
 
@@ -48,6 +50,9 @@ python train.py configs/single_base.yaml
 | `single_guided_ens_adapt_harvest.yaml` | **【新主線 3】+ 閉迴路信任控制** | 在 `_guided_ens_harvest` 上 `trust.enable`（gap=SM-vs-HFSS 落差 → 信任標量 t → 調 tau 乘子/λ_trust/κ）| （隔離「閉迴路 vs 開迴路排程」＝把 ACP 升級成 gap 驅動；收斂湧現：SM 被修準→gap↓→t↑→tau 自動銳化；起步 g0/ema/tau_inflate 待 A/B；**需正式機 HFSS**） |
 | `single_guided_dlffit_harvest.yaml` | **【SM 訓練量 A/B】把 DLF「訓到 fit」** | 對標 `single_guided_harvest`，唯一變因 `sm_train.mode: dlf → dlf_fit`（elite 訓到收斂 + 丟掉 50 步單筆 step）| （經查現行 `dlf` 只訓 elite 1 epoch ＝ under-trained DLF；學長原版是訓到 fit。B1 已確認 sm_harvest 對得上現在 HFSS(中位 MSE 1.56)→ 訓練強度是頭號嫌疑。判準看 `gap_ema` 非 training loss；**需正式機 HFSS**） |
 | `single_guided_refit_harvest.yaml` | **【SM 訓練量 A/B】訓整個 buffer（不挑 elite）** | 對標 `_dlffit`，唯一變因 `sm_train.mode: dlf_fit → refit`（訓「整個 buffer」含非 elite，不只菁英）| （測「要不要挑菁英」：guidance surrogate 也學「爛 pattern 是爛的」→ 避得開對抗洞。⚠「整個」受 `replay_size` FIFO 上限；真「全部過往」靠之後的週期 harvest 重錨。**需正式機 HFSS**） |
+| `single_r2_ens_harvest.yaml` | **【Round 2 ①】治本:ensemble（dlf 底）** | 在 `single_guided_harvest`(dlf) 上 `surrogate: ensemble`(K=5)+`loss.uncertainty`(信任懲罰)+`selection.uncertainty_weight`(acquisition)；rad `n_basis` 16→8（老師）。用 Round-1 A 當 baseline | （Round 1 結論：SM 訓練量非 bottleneck（dlf≈refit>dlf_fit、皆差 spec ~4dB）→ 改測文獻治本＝不確定性門控；對照 Round-1 A 看 ensemble 有沒有用；**需正式機 HFSS**） |
+| `single_r2_enstrust_harvest.yaml` | **【Round 2 ②】+ trust 閉迴路（dlf 底）** | 在 Round2① 上 `trust.enable`（gap→t→調 tau 乘子/λ_trust/κ）| （隔離「閉迴路 gap 控制 vs 靜態 ensemble」；對照 Round2① 與 Round-1 A；**需正式機 HFSS**） |
+| `single_r2_refit_enstrust_harvest.yaml` | **【Round 2 ③】全治本 × refit 底** | = Round2② 但 `sm_train.mode: dlf → refit`（廣覆蓋訓法、Round-1 sim_loss 最佳）| （測「完整治本＋最強 SM 底」上限；對照 Round-1 C；⚠ refit×K 成員每輪 SM 訓練量最大；**需正式機 HFSS**） |
 | `single_sc_rad_smharvest.yaml` | **改用自訓 SM 初始化** | 在 `single_sc_rad` 上 `surrogate.pretrained: sm_harvest.pth`（唯一變因；old_sm.pth 對我們資料 ≈隨機，自訓的準 ~3 倍） | （新增，對標 `single_sc_rad` 看好的初始化是否讓早期收斂更快；**需正式機 HFSS**） |
 | `single_sc_rad_flat15.yaml` | **±45 平整：收緊容忍** | 在 `single_sc_rad` 上 `radiation.floor_db` 3 → 1.5（唯一變因；窗內容許 ripple 收到 1.5dB，更平更高） | （新增，「±45 高且平整」對照組之一；對標 `single_sc_rad`；**需正式機 HFSS**） |
 | `single_sc_rad_flat10.yaml` | **±45 平整：容忍 1dB** | 在 `single_sc_rad` 上 `radiation.floor_db` 3 → 1.0（唯一變因；比 flat15 更緊，掃 floor_db 一個點） | （新增，「±45 高且平整」對照組；看容忍收太緊會不會逼降峰值/難收斂；**需正式機 HFSS**） |
