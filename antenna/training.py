@@ -324,11 +324,8 @@ def run_training(
                        criterion=custom_loss_minmax)
     smodel = build_surrogate(cfg, config.checkpoint_save_path, spec)
 
-    #? online 樣本庫用新格式 (一筆一檔，見 antenna/utils/store.py)：append O(1)、去重免維護。
-    #! 舊 run 的 online.data (單一 pickle) 不會帶進來 —— 續跑時 rollback 從新樣本重新累積
-    #! (SM checkpoint 不受影響；train_by_datas 對空資料集是 no-op)。
-    online = SampleStore(record_path / "online", verbose=False)
     #? 訓練狀態走「結果夾即資料庫」：metrics.csv (純量) + patterns/ (模擬快取)。
+    #  (online 好樣本庫已隨回滾移除 2026-06-28——它只被回滾的重訓讀，回滾拔掉後即死碼。)
     #? 取代舊 temp.record —— 那是每 epoch 全量重寫的單一 pickle (最後的 O(n²) NAS 寫入者)。
     state = RunState(record_path, verbose=verbose)
     r_feed = PORT_SPECS[cfg.port]["make_r_feed"]()
@@ -422,7 +419,7 @@ def run_training(
     )
 
     epochs = max_epochs if max_epochs is not None else cfg.epochs
-    pat = patience if patience is not None else cfg.patience
+    #? cfg.patience / patience 參數保留 (config & 測試相容) 但回滾移除後不再生效。
 
     # ── 多候選 (batch_latent) 用的小工具 (閉包讀 smodel/sc/權重/replay/rad_*/state) ──
     #    僅 multi 時呼叫；rad_theta 為 run 中才填的閉包變數，呼叫時讀當前值 (只讀不寫)。
@@ -511,12 +508,11 @@ def run_training(
         rad_fit_val = 0.0               # rad head 線上擬合最終 loss (僅 fresh-rad epoch 更新；其餘 0)
         sm_gap_val = None               # SM「訓前」對新點誤差 = generalization (僅 fresh-HFSS epoch 算)
         sm_fit_hist = []                # 本 epoch SM 重訓的逐 epoch/step loss (看訓到 fit 沒；僅 fresh)
-
-        # 早停 → 回滾 (測試用高 patience 不觸發)
-        if state.early_stop("sim_loss", pat):
-            if verbose: logger.info(f"[{epoch}] sim_loss 連續 {pat} 次未改善 → 回滾至最佳 epoch、重訓 SM (online {len(online)} 筆)")
-            generator.change(state.best_epoch("sim_loss"), save=True, load=True)
-            smodel.train_by_datas(online, verbose=verbose)
+        #? 回滾 (early_stop → 載回最佳 epoch + 重訓 SM) 已於 2026-06-28 移除：
+        #  對「generator-free + K 候選 + 線上更新 SM」不合身——(1)貪婪規則:沒贏過最佳就退回 →
+        #  探索性 pattern 拿不到「成為新據點」的權利、卡在第一個山頭;(2)退回舊 generator 卻配當下
+        #  變動的 SM、本質矛盾;(3)原實作有 off-by-one(存 step 後狀態) + 覆蓋最佳檔兩個 bug、實際 ≈ no-op。
+        #  探索改交給 K 個獨立候選 + SM 引導 (+ trust)；最佳 pattern 仍安全存在 patterns/ (不可變)。
 
         # 生成：模型只出 logits；STE 二值化是管線的固定一步，tau 由 ACP 控制 (× 信任乘子)。
         #? tau_eff = ACP 的 tau × trust.tau_mult()：閉迴路下 SM 失準 (t↓) → tau 放軟、保持 pattern 可塑、
@@ -664,8 +660,6 @@ def run_training(
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
             state.append("sim_loss", sim_loss.item())
             phash = state.add_pattern(~output_element, stack, sim_loss.item())
-            if state.last("sim_loss") < state.average("sim_loss"):
-                online.add(~output_element, stack)
         elif cached is not None:
             if verbose: logger.info(f"[{epoch}] pattern 重複 → 取快取結果 (跳過 HFSS)")
             consecutive_skips = 0           # 快取命中 = 非失敗 → 連敗歸零

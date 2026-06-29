@@ -8,7 +8,7 @@
 name: pixel_single_r2_ens_harvest
 port: single
 
-epochs: 1000
+epochs: 500                         # 一次驗證跑到 500 epoch (2026-06-28 使用者定;約 3 天)
 lr: 0.005
 patience: 10
 
