@@ -1,8 +1,9 @@
 # 進行中實驗追蹤（ONGOING）
 
-> 這裡只記「**現在在跑 / 待跑 / 收尾中**」的實驗，保持精簡。
-> 完整 config 對照表在 [README.md](README.md)（全目錄、不刪、accumulating）。
-> **流程**：新實驗 → 加進「🔵 進行中」；跑完有結論 → 搬到「✅ 已歸檔」寫一行結論（config 仍留在 README，不動）。
+> 這裡是 **live 操作板**：只記「**現在在跑 / 待跑**」，保持精簡、會搬走。完整「為什麼/學到什麼」在研究日誌。
+> - 研究主線時間軸（append-only 歷史）→ [../docs/log/README.md](../docs/log/README.md)
+> - config 全集（不刪）→ [README.md](README.md)
+> **流程**：新實驗 → `docs/log/` 開 round 檔 + 這裡加「🔵 進行中」一行指向它；跑完結論寫進 round 檔，這裡只留「✅ 已歸檔」一行指標。
 
 最後更新：2026-06-28
 
@@ -10,21 +11,9 @@
 
 ---
 
-## 🔵 進行中 / 收尾中
+## 🔵 進行中 / 待跑
 
-### Round 1 — SM 訓練量 A/B（收尾中，待 benchmark）
-**問題**：SM 每輪該訓多用力？輕（dlf）/ 訓菁英到飽（dlf_fit）/ 訓全部到飽（refit）。
-
-| 臂 | config | 機器 | 狀態（2026-06-28） | 最佳 worst_margin |
-|---|---|---|---|---|
-| A `dlf` | `single_guided_harvest` | 216 | ~304ep，跑動中 | **−4.18 dB** |
-| B `dlf_fit` | `single_guided_dlffit_harvest` | 37 | ~248ep，**simulator crash** | −5.58 dB |
-| C `refit` | `single_guided_refit_harvest` | 218 | ~303ep，停/crash | **−4.21 dB** |
-
-- **早期結論**：`dlf_fit`（B）過擬合、ep157 後 plateau ＝ 最差；`dlf`（A）≈`refit`（C）較好、還在慢慢進步。三者**皆差 spec ~4dB、未達標、搜尋未收斂**（最佳是運氣單點）。→ **SM 訓練量不是 bottleneck。**
-- **待辦**：跑 `benchmark_vs_random`（vs random best-of-N @250）＝ Round 1 句點 → 跑完把結論搬「✅ 已歸檔」。
-
-### Round 2 — ensemble + trust 治本（已產 config，待跑）
+### Round 2 — ensemble + trust 治本（已產 config，待跑）→ 詳見 [docs/log/round-02](../docs/log/round-02-ensemble-trust.md)
 **問題**：sigmoid 與 direct 都輸 random → 病灶是「SM-guided 搜尋本身」。測文獻治本＝不確定性/信任門控（[[project_litreview_direction]]）。baseline 用 Round-1 的 A/C，不重跑控制組。rad `n_basis`＝8（老師）。
 
 | 臂 | config | SM 底 | 治本內容 |
@@ -50,6 +39,6 @@
 
 ---
 
-## ✅ 已歸檔（結論）
+## ✅ 已歸檔（一行指標，完整結論在 round 檔）
 
-> 還沒有。Round 1 的 benchmark 出來後，第一個搬進來（含「贏不贏 random」的結論 + 最佳 pattern 圖位置）。
+- **Round 01 — SM 訓練量 A/B** → [docs/log/round-01](../docs/log/round-01-sm-training-ab.md)：**訓練量非 bottleneck**(dlf −4.18≈refit −4.21 > dlf_fit −5.58、皆差 spec ~4dB)。圖 `docs/log/assets/round-01/`。(機器 216/37/218 待釋放給 Round 2。)

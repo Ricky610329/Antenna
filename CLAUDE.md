@@ -2,12 +2,12 @@
 
 > 用**繁體中文**對話與寫文件。
 
-## 北極星：持續輕量化 + 解耦
+## 北極星：核心精簡 + 解耦
 
 這個 repo 本質很單純——**一個類 GAN（生成器 G ⇄ 代理 SM）＋ 一個真實 HFSS 模擬器做 online learning**。
 學長（吳維文）原始碼把太多小工具、變體、監控、容錯全綁在一起，核心反而被埋住。
 
-**每次經手都讓它更輕、更解耦一點**，把「錦上添花」從核心剝離：
+**核心 code 保持精簡、解耦**，把「錦上添花」從核心剝離（⚠ 輕量化針對**核心程式碼**；研究流程/文件——如 `docs/log/` 研究日誌——為了可追溯**刻意帶結構**、屬另一軸、不受此約束，但仍守「指向不複製」）：
 
 - 核心要能單獨讀懂、單獨跑：`G(spec) → pattern → SM/SIM → loss → 反傳`。
 - 監控、容錯、視覺化、舊格式相容 = **外接模組**，不該污染核心。
@@ -43,6 +43,7 @@
 - **分支**：開發都在 `GAN`，全綠後 `main` fast-forward。commit 才 push、且只在使用者要求時。
 - **NAS**：工作區 `ROOTDIR = T:\碩一_鄒穎麒's\antenna`（已遷出學長樹）。動學長 `碩二` 資料一律**唯讀、零刪除**。
 - **實驗記錄（每次都要做）**：新增/修改 `configs/*.yaml` 或訓練腳本時，**同步更新 `configs/README.md`** 的對照表 —— 一個 config＝一行（測什麼、與 base 差在哪、舊編號）。產生實驗 config 前先掃 `configs/README.md` 避免重複。這是硬規則，不是順手做。
+- **研究日誌（每個 round 都要做）**：一個「假設→實驗→結論」＝一個 round。開新 round → `docs/log/` 開 `round-NN-<slug>.md`（用 `_TEMPLATE.md`，狀態 proposed）+ `configs/ONGOING.md` 加一行 🔵 指向它。跑完 → `python -m script.round_report --round NN --runs … --labels …` 產圖（落 `docs/log/assets/round-NN/`）+ markdown 數字貼進 round 檔 §4、補 §5 結論/§7 歸檔、`docs/log/README.md` 索引 +1 行、ONGOING 把該 round 移出 🔵（✅ 區留一行指標）。**四層別搞混**：`docs/` 設計文件＝為什麼（固定）/ `docs/log/`＝時間軸歷史（append-only）/ `configs/ONGOING.md`＝live 操作板 / `configs/README.md`＝config 全集；round 檔只連結、不複製。詳見 [[project_research_log]]。
 
 ## 持續優化的候選方向（非強制，看到順手就做）
 
