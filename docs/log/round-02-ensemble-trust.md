@@ -1,7 +1,7 @@
 # Round 02 — ensemble + trust（文獻治本）
 
-- **狀態**: proposed  <!-- 待跑;benchmark(Round 1 vs random)看完 + 使用者說跑再 launch -->
-- **提出 / 開跑 / 結論**: 2026-06-28 / — / —
+- **狀態**: running  <!-- 2026-06-30 發,跑到 500 epoch -->
+- **提出 / 開跑 / 結論**: 2026-06-28 / 2026-06-30 / —
 - **一句話問題**: SM-guided 搜尋本身輸 random(sigmoid 與 direct 都輸)→ 文獻治本(不確定性 + 信任域門控 + active learning)能不能把它推過 random / 推到達標?
 - **一句話結論 (TL;DR)**: 待分析
 - **指向**: configs/README「Round 2」三列 · 結果夾 §3 · memory [[project_litreview_direction]] [[project_generator_hyperfeature_pivot]] · 設計文件 docs/guided_search_design.md
@@ -25,10 +25,10 @@
 ## 3. 執行紀錄 (Run)
 | 臂 | 機器 | 狀態 / 進度 | 結果夾 (NAS) |
 |---|---|---|---|
-| ① | — | 待跑 | — |
-| ② | — | 待跑 | — |
-| ③ | — | 待跑 | — |
-- **事件 / 全域變更**: 跑前先停 Round-1 釋放機器。
+| ① `single_r2_ens_harvest` | 216 | 2026-06-30 發 | `…[Patch-single-216-…] pixel_single_r2_ens_harvest\`(跑起後填) |
+| ② `single_r2_enstrust_harvest` | 37 | 2026-06-30 發 | `…pixel_single_r2_enstrust_harvest\` |
+| ③ `single_r2_refit_enstrust_harvest` | 218 | 2026-06-30 發 | `…pixel_single_r2_refit_enstrust_harvest\` |
+- **事件 / 全域變更**: 跑前先停 Round-1 釋放 216/37/218;各跑到 500 epoch。機器分配可調。
 
 ## 4. 分析 (Analyze)
 <!-- 跑完: python -m script.round_report --round 02 --runs single_r2_ens_harvest single_r2_enstrust_harvest single_r2_refit_enstrust_harvest --labels ens ens_trust refit_ens_trust --at 500 -->
