@@ -31,7 +31,7 @@
 - **[使用者] DIP / generator 帶回來（Round 3）✔ 已確認：Round 2 跑完就做這個**：帶回 generator（sigmoid/CNN）＝架構連通先驗，對照 generator-free。理由：generator-free 丟掉連通先驗（r_feed 0.2 vs sigmoid 0.62）→ 可能是 S11 不共振主因。做法：測「DIP+治本 vs free+治本」（sigmoid 單獨已輸過 random → 必須配 Round-2 的治本一起測）。
 - **[使用者] val-早停**：用「下一個 HFSS 點」當 validation、挑 SM 最佳「訓練 epoch」、防過擬合。`sm_gap` 是訊號(眼睛、已在記)，這是手(還沒做)。治本配套。
 - **[使用者] 可解釋性 / SM 歸因（AlphaFold-like）**：用 SM 做屬性分析，找「哪些像素對好 pattern 貢獻最大」→ 當設計先驗/引導。先記錄、之後測。
-- **[使用者] mirror 對稱 loss**：鼓勵左右鏡像結構（歷史上 mirror 表現不差）。動 loss 前討論。
+- **[使用者] 把「對稱」做對（下一次想試）**：現行硬 mirror（`MirrorGenerator`，**12-1-12** = 對中央 1 欄做完整左右鏡射）表現普通、可能太死。試**部分對稱**：例如 **10-5-10**（外側 10 欄左右對稱 + **中央 5 欄自由**，給饋電/中央共振區自由度），或改成**軟對稱 loss**（鼓勵而非硬鎖）。做之前先定哪種（generator 結構切法 vs loss）+ 中央自由帶寬度。動 loss 前依規矩討論。
 - **[使用者] 週期 harvest 重錨（更極致 refit）**：把過往好樣本（含 harvest）週期性整批重訓 SM，讓資料越跑越多、暖啟動越來越好（現在 run 的資料不回灌中央池，這條補那塊）。
 - **[我/發現] 連通 sc↑**：顯式連通 loss（DIP 的替代/互補），便宜先試。
 - **[我/發現] loss 對齊 worst_margin**：sim_loss 最低 ≠ 天線最好（Round 1 發現）；潛力大但動 loss 前討論。
