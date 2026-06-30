@@ -13,12 +13,8 @@
 
 ## 🔵 進行中 / 待跑
 
-### Round 2 — ensemble + trust 治本（🔵 running，2026-06-30 發，跑到 500）→ 詳見 [docs/log/round-02](../docs/log/round-02-ensemble-trust.md)
-| 臂 | config | 機器 |
-|---|---|---|
-| ① ens | `single_r2_ens_harvest` | 216 |
-| ② ens+trust | `single_r2_enstrust_harvest` | 37 |
-| ③ refit+ens+trust | `single_r2_refit_enstrust_harvest` | 218 |
+### Round 2 — ensemble + trust 治本（config ready、**待發**;Round 1 還在跑、機器未釋放,下次發,跑到 500）→ 詳見 [docs/log/round-02](../docs/log/round-02-ensemble-trust.md)
+發法:停 Round-1 釋放機器 → 三台各一(計畫 ①ens@216 ②ens+trust@37 ③refit+ens+trust@218);`git pull` 後 `python train.py configs/single_r2_<…>.yaml`。
 盯 TB:`sm/sm_unc`(成員分歧)、`sm/trust_t`+`sm/gap_ema`(②③ 信任控制有動沒)、`index/worst_margin`(對照 Round-1 A −4.18 / C −4.21)。
 **問題**：sigmoid 與 direct 都輸 random → 病灶是「SM-guided 搜尋本身」。測文獻治本＝不確定性/信任門控（[[project_litreview_direction]]）。baseline 用 Round-1 的 A/C，不重跑控制組。rad `n_basis`＝8（老師）。
 
