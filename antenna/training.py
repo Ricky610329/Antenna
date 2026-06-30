@@ -556,7 +556,15 @@ def run_training(
                     if not reopened_once:
                         #! 連敗到頂：可能是 COM session 退化 → reopen 重生 (kill+重連) 後再給一輪。
                         logger.error(f"連續 {consecutive_skips} 次 HFSS 失敗 → reopen() 重生 HFSS 連線後再試")
-                        simulator.reopen()
+                        try:
+                            simulator.reopen()
+                        except Exception as re:
+                            #! reopen 自己也救不回來 (連 GetAppDesktop 都連不上) → 判系統性故障、優雅中斷,
+                            #  不讓 raw com_error 半路逃到 excepthook。(open() 已內建重試;到這代表真的起不來。)
+                            raise RuntimeError(
+                                f"HFSS reopen() 重生失敗 (epoch {epoch})，判定系統性故障、中斷 run："
+                                f"{type(re).__name__}: {re}"
+                            ) from re
                         reopened_once = True
                         consecutive_skips = 0
                     else:

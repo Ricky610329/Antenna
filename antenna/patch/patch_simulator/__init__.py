@@ -72,13 +72,28 @@ class PatchSimulator(ABC):
         self.name_design = "patch_design_{num}"
 
 
-    def open(self):
-        #* 建立／取得與 HFSS 的 COM 連線。整個訓練從頭到尾原則上只呼叫一次（連線成本高）；
-        #* 唯有在 reopen()（卡死重生）時會再次呼叫，重新抓一條乾淨的連線。
-        oAnsoftApp = _dispatch('AnsoftHFSS.HfssScriptInterface')   #? DispatchEx：每次啟動獨立的 ansysedt.exe 行程，避免與既有 instance 互相干擾
-        self.oDesktop = oAnsoftApp.GetAppDesktop() # HFSS 軟體主程式的總管
-        self.oDesktop.RestoreWindow()   # 如果 HFSS 被最小化，讓視窗恢復顯示
-        # self.oProject = self.oDesktop.NewProject("Design_Patch_Antenna") # 建立一個新專案（回傳 oProject 物件）
+    def open(self, attempts: int = 6, wait: float = 8.0):
+        #* 建立／取得與 HFSS 的 COM 連線。整個訓練原則上只在開訓呼叫一次（連線成本高），
+        #* 之後僅 reopen()（卡死重生）會再呼叫，重新抓一條乾淨的連線。
+        #! 對「RPC server 未就緒/不可用」有韌性 (根因)：剛 kill 掉舊 ansysedt 後，新 ansysedt 的
+        #! COM/RPC server 要數秒才起得來，單發 GetAppDesktop 會撞 com_error(-2147023174『RPC 伺服器
+        #! 無法使用』) → 過去這會逃到 excepthook 帶走整個 run。故失敗就 kill 殘行程 → 等 wait 秒 →
+        #! 重試，最多 attempts 次；真的連不上(~attempts×wait 秒都起不來)才往外拋、交給上層容錯。
+        last = None
+        for i in range(attempts):
+            try:
+                oAnsoftApp = _dispatch('AnsoftHFSS.HfssScriptInterface')   #? DispatchEx：每次啟動獨立的 ansysedt.exe 行程
+                self.oDesktop = oAnsoftApp.GetAppDesktop()                 # HFSS 軟體主程式的總管
+                self.oDesktop.RestoreWindow()                             # 視窗若被最小化則恢復
+                return
+            except Exception as e:
+                last = e
+                logger.warning(f"open() 連 HFSS 第 {i + 1}/{attempts} 次失敗（多半新 ansysedt 的 RPC "
+                               f"server 還沒起來）：{type(e).__name__}: {e}；kill 殘行程 + 等 {wait}s 重試")
+                self.kill()
+                sleep(wait)
+        logger.error(f"open() 連 HFSS {attempts} 次都失敗，放棄（交給上層容錯/excepthook）")
+        raise last
 
     def quit(self):
         """不會等待"""
