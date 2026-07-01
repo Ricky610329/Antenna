@@ -14,7 +14,7 @@
 | Round | 主題 | 狀態 | 結論(一句) | 檔 |
 |---|---|---|---|---|
 | 01 | SM 訓練量 A/B(dlf/dlf_fit/refit) | ✅ archived | **訓練量非 bottleneck**;dlf≈refit>dlf_fit、皆差 spec ~4dB、未收斂 | [round-01](round-01-sm-training-ab.md) |
-| 02 | ensemble + trust(文獻治本) | 🔵 config ready(待發,下次) | — | [round-02](round-02-ensemble-trust.md) |
+| 02 | ensemble + trust(文獻治本) | 🔵 running(2026-06-28 發,~2.7天,②417ep) | 治本目前微幅、未決定性 | [round-02](round-02-ensemble-trust.md) |
 | 03 | DIP / generator 帶回來 | 🔜 已排(R2 後) | — | (待建) |
 
 ## 研究脈絡（一句話串起來）

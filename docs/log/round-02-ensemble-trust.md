@@ -1,7 +1,7 @@
 # Round 02 — ensemble + trust（文獻治本）
 
-- **狀態**: proposed  <!-- config ready、待發;Round 1 還在跑、機器未釋放,下次發 -->
-- **提出 / 開跑 / 結論**: 2026-06-28 / — / —
+- **狀態**: running  <!-- 2026-06-28 發,跑到 500;② @37 快(6分/ep)、①③ @216/218 慢(~33分/ep) -->
+- **提出 / 開跑 / 結論**: 2026-06-28 / 2026-06-28 / —
 - **一句話問題**: SM-guided 搜尋本身輸 random(sigmoid 與 direct 都輸)→ 文獻治本(不確定性 + 信任域門控 + active learning)能不能把它推過 random / 推到達標?
 - **一句話結論 (TL;DR)**: 待分析
 - **指向**: configs/README「Round 2」三列 · 結果夾 §3 · memory [[project_litreview_direction]] [[project_generator_hyperfeature_pivot]] · 設計文件 docs/guided_search_design.md
@@ -25,10 +25,10 @@
 ## 3. 執行紀錄 (Run)
 | 臂 | 機器 | 狀態 / 進度 | 結果夾 (NAS) |
 |---|---|---|---|
-| ① `single_r2_ens_harvest` | 216(計畫) | 待發 | — |
-| ② `single_r2_enstrust_harvest` | 37(計畫) | 待發 | — |
-| ③ `single_r2_refit_enstrust_harvest` | 218(計畫) | 待發 | — |
-- **待發**:Round 1 還在跑、機器未釋放 → 下次停 Round-1(216/37/218)後發,各跑到 500 epoch。機器分配可調。
+| ① `single_r2_ens_harvest` | 216 | 🔵 ~203ep（慢機 ~33分/ep） | `[Patch-single-216-2c121f] …ens_harvest` |
+| ② `single_r2_enstrust_harvest` | 37 | 🔵 ~417ep（快機 ~6分/ep，最快到 500） | `[Patch-single-37-e6a…] …enstrust_harvest` |
+| ③ `single_r2_refit_enstrust_harvest` | 218 | 🔵 ~216ep（慢機 ~32分/ep，skip 7） | `[Patch-single-218-82…] …refit_enstrust_harvest` |
+- **實測（07-01，跑了 ~2.7 天）**：②(37)快、①③(216/218)慢 ~6× = **純機器差、非 ensemble**（HFSS solve 主導、SM 秒級；② 410/416 真 HFSS 證明沒跳過）。② 最快到 500（~8h）、①③ 到 500 要 ~一週。⚠ 37 上有個空 `refit_enstrust` 夾殘留待清。
 
 ## 4. 分析 (Analyze)
 <!-- 跑完: python -m script.round_report --round 02 --runs single_r2_ens_harvest single_r2_enstrust_harvest single_r2_refit_enstrust_harvest --labels ens ens_trust refit_ens_trust --at 500 -->

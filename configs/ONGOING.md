@@ -13,9 +13,13 @@
 
 ## 🔵 進行中 / 待跑
 
-### Round 2 — ensemble + trust 治本（config ready、**待發**;Round 1 還在跑、機器未釋放,下次發,跑到 500）→ 詳見 [docs/log/round-02](../docs/log/round-02-ensemble-trust.md)
-發法:停 Round-1 釋放機器 → 三台各一(計畫 ①ens@216 ②ens+trust@37 ③refit+ens+trust@218);`git pull` 後 `python train.py configs/single_r2_<…>.yaml`。
-盯 TB:`sm/sm_unc`(成員分歧)、`sm/trust_t`+`sm/gap_ema`(②③ 信任控制有動沒)、`index/worst_margin`(對照 Round-1 A −4.18 / C −4.21)。
+### Round 2 — ensemble + trust 治本（🔵 **running**，2026-06-28 發，~2.7 天）→ 詳見 [docs/log/round-02](../docs/log/round-02-ensemble-trust.md)
+| 臂 | config | 機器 | 進度 | 最佳 wm |
+|---|---|---|---|---|
+| ① ens | `single_r2_ens_harvest` | 216(慢) | ~203ep | −5.54 |
+| ② ens+trust | `single_r2_enstrust_harvest` | 37(快) | **~417ep**（最快到 500） | −3.87 |
+| ③ refit+ens+trust | `single_r2_refit_enstrust_harvest` | 218(慢,skip7) | ~216ep | **−3.66** |
+- **現況(07-01)**：②③(有 trust)微幅贏 Round-1 A/C(−4.18/−4.21 ~0.3-0.5dB)、①(ens-only)輸;但後20均還爛(−6.6~−9.3)=**沒收斂、治本未決定性**。trust_t 卡低 ~0.08(SM 始終不被信任、gap 沒降)。時間差是機器(216/218 慢 6×)非 ensemble。以 **② 到 500 當主判讀**。
 **問題**：sigmoid 與 direct 都輸 random → 病灶是「SM-guided 搜尋本身」。測文獻治本＝不確定性/信任門控（[[project_litreview_direction]]）。baseline 用 Round-1 的 A/C，不重跑控制組。rad `n_basis`＝8（老師）。
 
 | 臂 | config | SM 底 | 治本內容 |
