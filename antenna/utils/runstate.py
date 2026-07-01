@@ -56,6 +56,11 @@ class RunState:
         self.patterns_dir = self.rootdir.joinpath("patterns")
         self.patterns_dir.mkdir(exist_ok=True)
         self._series: dict = defaultdict(list)
+        #? 本 epoch 已 append 過的欄名（save_row 消費後清空）：只有「這個 epoch 真的寫過新值」的欄
+        #  才落值，其餘寫 ""。修正舊 bug：稀疏診斷欄 (sm_gap/sm_fit_*) 在 cached/skip epoch 沒 append，
+        #  舊碼 self.last(k) 會回傳前一個 fresh epoch 的 stale 值、違反註解「留空於 cached/skip」的意圖。
+        #  (dense 欄每 epoch 都 append → 一律在 touched 內 → 行為與原樣相同。)
+        self._touched: set = set()
         if self.metrics_path.exists():
             self._load_metrics()
             if verbose:
@@ -64,6 +69,7 @@ class RunState:
     # ── 純量時序 (語義對齊 Record，golden 保真) ────────────────────────────────
     def append(self, key: str, value):
         self._series[key].append(value)
+        self._touched.add(key)      # 標記「本 epoch 有新值」→ save_row 才落此欄 (否則留空、不帶前值)
 
     def series(self, key: str) -> list:
         return self._series[key]
@@ -100,7 +106,10 @@ class RunState:
         先一次性「按欄名」遷移成現行表頭 (缺欄補空)，再 append。否則新碼會把多/少欄的 row
         append 進舊表頭 → DictReader 欄位錯位、pattern_hash 遺失 (靜默資料損毀)。
         """
-        row = [self.last(k, "") for k in SCALAR_KEYS]
+        #? 只落「本 epoch 真的 append 過」的欄；沒動過的欄寫 "" (含 cached/skip 的稀疏診斷欄
+        #  sm_gap/sm_fit_* → 留空、不帶 stale 前值)。build 完即清 touched，下個 epoch 重新累積。
+        row = [(self.last(k, "") if k in self._touched else "") for k in SCALAR_KEYS]
+        self._touched = set()
         if not self.metrics_path.exists():
             with open(self.metrics_path, "w", newline="", encoding="utf-8") as f:
                 w = csv.writer(f)

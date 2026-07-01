@@ -61,6 +61,28 @@ def test_save_row_fresh_dir_has_full_header(tmp_path):
     assert header == list(SCALAR_KEYS)
 
 
+def test_sparse_column_blank_when_not_appended(tmp_path):
+    """稀疏診斷欄 (sm_gap/sm_fit_*) 只在有 append 的 epoch 落值；沒 append 的 epoch (cached/skip)
+    留空、不帶前一個 fresh epoch 的 stale 值。回歸：save_row 曾用 self.last(k) → 帶入 stale 前值，
+    違反 training.py 註解『留空於 cached/skip』的意圖。"""
+    s = RunState(tmp_path, verbose=False)
+    # epoch 1：fresh → sm_gap 有值
+    s.append("epoch", 1); s.append("sim_loss", 1.0); s.append("sm_gap", 0.5); s.append("pattern_hash", "a")
+    s.save_row()
+    # epoch 2：cached/skip → 未 append sm_gap (但 dense 欄照常)
+    s.append("epoch", 2); s.append("sim_loss", 0.9); s.append("pattern_hash", "b")
+    s.save_row()
+    with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert rows[0]["sm_gap"] == "0.5"
+    assert rows[1]["sm_gap"] == ""          # 修前 = "0.5" (stale carry-forward)
+    assert rows[1]["sim_loss"] == "0.9"     # dense 欄不受影響
+    # 載回：稀疏欄只保留有值的那筆 (與 live 記憶體序列一致)
+    s2 = RunState(tmp_path, verbose=False)
+    assert s2.series("sm_gap") == [0.5]
+    assert s2.series("sim_loss") == [1.0, 0.9]
+
+
 def test_scalar_semantics(tmp_path):
     """append/last/series/average 語義與 Record 對齊 (average 含當前筆)。"""
     s = RunState(tmp_path, verbose=False)
