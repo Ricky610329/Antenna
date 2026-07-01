@@ -1,7 +1,7 @@
 # Round 03 — 探索 × DIP（factorial：E / D / E+D）
 
-- **狀態**: proposed  <!-- config ready；待 Round 2（② 到 500）結果後發 -->
-- **提出 / 開跑 / 結論**: 2026-07-01 / — / —
+- **狀態**: running  <!-- 2026-07-01 發(不等 Round 2 到 500;② ~417ep 當 reference);各 500 epoch -->
+- **提出 / 開跑 / 結論**: 2026-07-01 / 2026-07-01 / —
 - **一句話問題**: (E) 搜尋凍住(每 epoch 才翻 ~6 像素)→ 加大步長探索能解凍+變好嗎？(D) 把 generator 帶回來(sigmoid 連通先驗)能救 S11 不共振嗎？(E+D) 兩者加乘？
 - **一句話結論 (TL;DR)**: 待分析
 - **指向**: configs/README「Round 3」三列 · reference = Round-2 ②（[round-02](round-02-ensemble-trust.md)）· memory [[project_generator_hyperfeature_pivot]] [[project_litreview_direction]] · 設計文件 docs/guided_search_design.md
@@ -27,10 +27,12 @@
 - **HFSS 預算**: 各 500 epoch。
 
 ## 3. 執行紀錄 (Run)
-| 臂 | 機器 | 狀態 | 結果夾 |
+| 臂 | 機器（計畫） | 狀態 | 結果夾 |
 |---|---|---|---|
-| E / D / E+D | 待定（停 Round 2 釋放 216/37/218） | 待發 | — |
-- **待發**: 待 Round 2（② 到 500）判讀完，停 Round 2 後三台各一發。
+| E `single_r3_explore` | 216 | 2026-07-01 發 | 跑起後填 |
+| D `single_r3_dip` | 37（快） | 2026-07-01 發 | 跑起後填 |
+| E+D `single_r3_dip_explore` | 218 | 2026-07-01 發 | 跑起後填 |
+- **2026-07-01 發**（不等 Round 2 到 500）：停 Round 2 釋放 216/37/218。⚠ **機器速度不均**：37 ~6分/ep（~2 天到 500）、216/218 ~18-33分/ep（~6-11 天到 500）→ 慢機的 E/E+D 短期到不了 500，先用到得了的 epoch 對比；建議把最想快看的臂放 37（此處 D=DIP headline）。機器分配可調。
 
 ## 4. 分析 (Analyze)
 待跑。（`python -m script.round_report --round 03 --runs single_r3_explore single_r3_dip single_r3_dip_explore --labels E D E+D --at 500`）

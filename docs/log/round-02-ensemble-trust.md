@@ -1,9 +1,9 @@
 # Round 02 — ensemble + trust（文獻治本）
 
-- **狀態**: running  <!-- 2026-06-28 發,跑到 500;② @37 快(6分/ep)、①③ @216/218 慢(~33分/ep) -->
-- **提出 / 開跑 / 結論**: 2026-06-28 / 2026-06-28 / —
+- **狀態**: archived  <!-- 2026-07-01 停(未到 500,提早停以釋放機器給 Round 3);② ~417ep -->
+- **提出 / 開跑 / 結論**: 2026-06-28 / 2026-06-28 / 2026-07-01
 - **一句話問題**: SM-guided 搜尋本身輸 random(sigmoid 與 direct 都輸)→ 文獻治本(不確定性 + 信任域門控 + active learning)能不能把它推過 random / 推到達標?
-- **一句話結論 (TL;DR)**: 待分析
+- **一句話結論 (TL;DR)**: **治本微幅、未決定性**——②③(trust)最佳 worst_margin −3.87/−3.66 微幅贏 Round-1 A/C(−4.18/−4.21 ~0.3-0.5dB)、①(ens-only)輸;但後20均還爛(−6.6~−9.3)= 沒收斂、最佳仍運氣單點。trust_t 卡低(SM 始終不被信任、gap 沒降 → 「收斂湧現」沒發生)。另實測:trust 不影響 pattern 波動(①=② 6 翻轉)、ensemble 使搜尋凍住、refit 才亂跳 → 催生 Round 3 探索臂。② 當 Round 3 reference。
 - **指向**: configs/README「Round 2」三列 · 結果夾 §3 · memory [[project_litreview_direction]] [[project_generator_hyperfeature_pivot]] · 設計文件 docs/guided_search_design.md
 
 ## 1. 假設 (Propose)

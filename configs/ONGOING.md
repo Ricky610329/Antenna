@@ -13,22 +13,13 @@
 
 ## 🔵 進行中 / 待跑
 
-### Round 2 — ensemble + trust 治本（🔵 **running**，2026-06-28 發，~2.7 天）→ 詳見 [docs/log/round-02](../docs/log/round-02-ensemble-trust.md)
-| 臂 | config | 機器 | 進度 | 最佳 wm |
-|---|---|---|---|---|
-| ① ens | `single_r2_ens_harvest` | 216(慢) | ~203ep | −5.54 |
-| ② ens+trust | `single_r2_enstrust_harvest` | 37(快) | **~417ep**（最快到 500） | −3.87 |
-| ③ refit+ens+trust | `single_r2_refit_enstrust_harvest` | 218(慢,skip7) | ~216ep | **−3.66** |
-- **現況(07-01)**：②③(有 trust)微幅贏 Round-1 A/C(−4.18/−4.21 ~0.3-0.5dB)、①(ens-only)輸;但後20均還爛(−6.6~−9.3)=**沒收斂、治本未決定性**。trust_t 卡低 ~0.08(SM 始終不被信任、gap 沒降)。時間差是機器(216/218 慢 6×)非 ensemble。以 **② 到 500 當主判讀**。
-- **pattern-volatility 實測**：① 6 / ② 6 / ③ 277 像素翻轉/epoch → **trust 不影響波動(①=②)**、**ensemble 使 ①② 凍住(步太小)**、**refit(③)才亂跳**。→ 催生 Round 3 的「探索」臂。
-
-### Round 3 — 探索 × DIP（factorial，**config ready、待發**）→ 詳見 [docs/log/round-03](../docs/log/round-03-explore-dip.md)
+### Round 3 — 探索 × DIP（factorial，🔵 **running**，2026-07-01 發）→ 詳見 [docs/log/round-03](../docs/log/round-03-explore-dip.md)
 | 臂 | config | = ② 改什麼 | 隔離 |
 |---|---|---|---|
 | E 探索 | `single_r3_explore` | lr 0.005→0.015 | 解凍/探索量 |
 | D DIP | `single_r3_dip` | direct→sigmoid | 連通先驗 |
 | E+D | `single_r3_dip_explore` | sigmoid + lr 0.015 | 加乘 |
-- reference = 現有 ②（不重跑）。lr 是唯一對 direct&sigmoid 都通的探索旋鈕（保 factorial 乾淨）。**待 Round 2 判讀完、停 Round 2 釋放 216/37/218 後發**，各 500 epoch。判準：同時看像素翻轉數(探索量)+ worst_margin。
+- reference = 現有 ②（不重跑）。lr 是唯一對 direct&sigmoid 都通的探索旋鈕（保 factorial 乾淨）。**2026-07-01 發**（停 Round 2 釋放機器;計畫 E@216 D@37 E+D@218），各 500 epoch。⚠ 37 快、216/218 慢 ~3-6× → 慢機短期到不了 500,先用到得了的 epoch 比。判準：同時看像素翻轉數(探索量)+ worst_margin。
 **問題**：sigmoid 與 direct 都輸 random → 病灶是「SM-guided 搜尋本身」。測文獻治本＝不確定性/信任門控（[[project_litreview_direction]]）。baseline 用 Round-1 的 A/C，不重跑控制組。rad `n_basis`＝8（老師）。
 
 | 臂 | config | SM 底 | 治本內容 |
@@ -57,4 +48,5 @@
 
 ## ✅ 已歸檔（一行指標，完整結論在 round 檔）
 
-- **Round 01 — SM 訓練量 A/B** → [docs/log/round-01](../docs/log/round-01-sm-training-ab.md)：**訓練量非 bottleneck**(dlf −4.18≈refit −4.21 > dlf_fit −5.58、皆差 spec ~4dB)。圖 `docs/log/assets/round-01/`。(機器 216/37/218 待釋放給 Round 2。)
+- **Round 01 — SM 訓練量 A/B** → [docs/log/round-01](../docs/log/round-01-sm-training-ab.md)：**訓練量非 bottleneck**(dlf −4.18≈refit −4.21 > dlf_fit −5.58、皆差 spec ~4dB)。圖 `docs/log/assets/round-01/`。
+- **Round 02 — ensemble + trust 治本** → [docs/log/round-02](../docs/log/round-02-ensemble-trust.md)：**治本微幅、未決定性**(②③ trust 微贏 Round-1 ~0.3-0.5dB、① ens-only 輸、皆未收斂;trust_t 卡低)。2026-07-01 提早停(未到 500)釋放機器給 Round 3;② ~417ep 當 Round-3 reference。
