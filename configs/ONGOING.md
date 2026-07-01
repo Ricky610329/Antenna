@@ -20,6 +20,15 @@
 | ② ens+trust | `single_r2_enstrust_harvest` | 37(快) | **~417ep**（最快到 500） | −3.87 |
 | ③ refit+ens+trust | `single_r2_refit_enstrust_harvest` | 218(慢,skip7) | ~216ep | **−3.66** |
 - **現況(07-01)**：②③(有 trust)微幅贏 Round-1 A/C(−4.18/−4.21 ~0.3-0.5dB)、①(ens-only)輸;但後20均還爛(−6.6~−9.3)=**沒收斂、治本未決定性**。trust_t 卡低 ~0.08(SM 始終不被信任、gap 沒降)。時間差是機器(216/218 慢 6×)非 ensemble。以 **② 到 500 當主判讀**。
+- **pattern-volatility 實測**：① 6 / ② 6 / ③ 277 像素翻轉/epoch → **trust 不影響波動(①=②)**、**ensemble 使 ①② 凍住(步太小)**、**refit(③)才亂跳**。→ 催生 Round 3 的「探索」臂。
+
+### Round 3 — 探索 × DIP（factorial，**config ready、待發**）→ 詳見 [docs/log/round-03](../docs/log/round-03-explore-dip.md)
+| 臂 | config | = ② 改什麼 | 隔離 |
+|---|---|---|---|
+| E 探索 | `single_r3_explore` | lr 0.005→0.015 | 解凍/探索量 |
+| D DIP | `single_r3_dip` | direct→sigmoid | 連通先驗 |
+| E+D | `single_r3_dip_explore` | sigmoid + lr 0.015 | 加乘 |
+- reference = 現有 ②（不重跑）。lr 是唯一對 direct&sigmoid 都通的探索旋鈕（保 factorial 乾淨）。**待 Round 2 判讀完、停 Round 2 釋放 216/37/218 後發**，各 500 epoch。判準：同時看像素翻轉數(探索量)+ worst_margin。
 **問題**：sigmoid 與 direct 都輸 random → 病灶是「SM-guided 搜尋本身」。測文獻治本＝不確定性/信任門控（[[project_litreview_direction]]）。baseline 用 Round-1 的 A/C，不重跑控制組。rad `n_basis`＝8（老師）。
 
 | 臂 | config | SM 底 | 治本內容 |
@@ -34,7 +43,8 @@
 ---
 
 ## 🔜 候選 / 待排（**[使用者] = 你提的**；看 benchmark + Round 2 結果再決定優先序）
-- **[使用者] DIP / generator 帶回來（Round 3）✔ 已確認：Round 2 跑完就做這個**：帶回 generator（sigmoid/CNN）＝架構連通先驗，對照 generator-free。理由：generator-free 丟掉連通先驗（r_feed 0.2 vs sigmoid 0.62）→ 可能是 S11 不共振主因。做法：測「DIP+治本 vs free+治本」（sigmoid 單獨已輸過 random → 必須配 Round-2 的治本一起測）。
+- **[使用者] DIP + 探索 → 已成 Round 3（config ready）**：E(lr↑)/D(sigmoid DIP)/E+D factorial,見上方 Round 3 區塊與 [docs/log/round-03](../docs/log/round-03-explore-dip.md)。待 Round 2 判讀完後發。
+  - direct-only 探索子臂（UCB `selection.uncertainty_weight`↑ / diversity↑）留待 Round 3 之後（候選式旋鈕、sigmoid 用不了,不進本輪 factorial）。
 - **[使用者] val-早停**：用「下一個 HFSS 點」當 validation、挑 SM 最佳「訓練 epoch」、防過擬合。`sm_gap` 是訊號(眼睛、已在記)，這是手(還沒做)。治本配套。
 - **[使用者] 可解釋性 / SM 歸因（AlphaFold-like）**：用 SM 做屬性分析，找「哪些像素對好 pattern 貢獻最大」→ 當設計先驗/引導。先記錄、之後測。
 - **[使用者] 把「對稱」做對（下一次想試）**：現行硬 mirror（`MirrorGenerator`，**12-1-12** = 對中央 1 欄做完整左右鏡射）表現普通、可能太死。試**部分對稱**：例如 **10-5-10**（外側 10 欄左右對稱 + **中央 5 欄自由**，給饋電/中央共振區自由度），或改成**軟對稱 loss**（鼓勵而非硬鎖）。做之前先定哪種（generator 結構切法 vs loss）+ 中央自由帶寬度。動 loss 前依規矩討論。

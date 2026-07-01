@@ -20,7 +20,9 @@ GUIDED = ["single_guided_harvest.yaml", "single_guided_ens_harvest.yaml",
           "single_guided_refit_harvest.yaml",
           # Round 2 (ensemble+trust 治本,n_basis=8)
           "single_r2_ens_harvest.yaml", "single_r2_enstrust_harvest.yaml",
-          "single_r2_refit_enstrust_harvest.yaml"]
+          "single_r2_refit_enstrust_harvest.yaml",
+          # Round 3 (探索/DIP factorial;E=lr↑, D=sigmoid, E+D=兩者)
+          "single_r3_explore.yaml", "single_r3_dip.yaml", "single_r3_dip_explore.yaml"]
 
 
 class _CountSim:
@@ -62,8 +64,11 @@ def test_guided_config_loads_and_runs(name, tmp_path):
     with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     assert len(rows) == 3
-    # direct 多候選 → score_spread / cand_similarity 有值
-    assert rows[-1]["score_spread"] != "" and rows[-1]["cand_similarity"] != ""
+    # direct 多候選 → score_spread/cand_similarity 有值;sigmoid 單候選 → 空(走單張路徑)
+    if cfg.generator.get("name", "sigmoid") == "direct":
+        assert rows[-1]["score_spread"] != "" and rows[-1]["cand_similarity"] != ""
+    else:
+        assert rows[-1]["score_spread"] == ""
 
 
 def test_debug_signals_logged(tmp_path):

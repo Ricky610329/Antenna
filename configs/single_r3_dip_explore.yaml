@@ -1,0 +1,60 @@
+# Round 3 E+D — DIP + 探索：sigmoid + 大 lr（測加乘）
+# = single_r3_dip（sigmoid+ensemble+trust）+ lr 0.005→0.015。
+# 判讀：E+D vs D = 探索在 sigmoid 上的效果；E+D vs E = DIP 在探索下的效果。
+#   只有 E(single_r3_explore)、D(single_r3_dip) 都單獨跑，這個加乘臂才解讀得了（factorial）。
+name: pixel_single_r3_dip_explore
+port: single
+
+epochs: 500
+lr: 0.015                           # ← 探索（vs D 的 0.005）
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+  uncertainty: 0.05
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: sigmoid                     # DIP（vs E 的 direct）
+
+surrogate:
+  name: ensemble
+  ensemble_size: 5
+  init_perturb: 0.02
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+trust:
+  enable: true
+  g0: 1.0
+  ema: 0.3
+  t_min: 0.05
+  t_max: 0.95
+  tau_inflate: 3.0
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  n_basis: 8
+  freeze_trunk: true
+  sm_max_epoch: 1000

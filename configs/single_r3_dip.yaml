@@ -1,0 +1,61 @@
+# Round 3 D — DIP 臂：治本(②) + 把 generator 帶回來（sigmoid 架構連通先驗）
+# = single_r2_enstrust_harvest 唯一變因：generator direct→sigmoid（單候選；去掉 num_candidates/selection，
+#   sigmoid 是 MLP+BiScaleNorm、單一 pattern，無 K 候選/候選選擇）。
+# 假設：generator-free 丟掉架構連通先驗（實測 r_feed 0.2 vs sigmoid 0.62）→ 很可能是 S11 不共振主因；
+#   帶回 sigmoid(DIP) + 保留治本(ensemble+trust)，看連通與結果會不會好。對照 ②（direct）。
+name: pixel_single_r3_dip
+port: single
+
+epochs: 500
+lr: 0.005
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+  uncertainty: 0.05                 # λ_trust（sigmoid 單 pattern 也適用：罰 ensemble 分歧）
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: dlf
+  newest_steps: 50
+  replay_size: 256
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: sigmoid                     # ← 唯一變因 vs ②：direct → sigmoid（DIP 架構連通先驗；單候選）
+
+surrogate:
+  name: ensemble
+  ensemble_size: 5
+  init_perturb: 0.02
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+trust:
+  enable: true
+  g0: 1.0
+  ema: 0.3
+  t_min: 0.05
+  t_max: 0.95
+  tau_inflate: 3.0
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  n_basis: 8
+  freeze_trunk: true
+  sm_max_epoch: 1000
