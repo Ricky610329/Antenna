@@ -297,6 +297,88 @@ def build_surrogate(cfg: TrainConfig, checkpoint, spec: TargetResponse):
     )
 
 
+def _update_surrogate(sm_mode, smodel, replay, output_element, stack, sim_loss, state,
+                      *, newest_steps, elite_epochs, verbose):
+    """SM 線上更新的模式分派 (single/replay/dlf/dlf_fit/refit)——由 run_training 主迴圈原樣抽出、
+    行為逐位元不變。回傳本輪 SM 重訓的逐步/逐 epoch loss 清單 sm_fit_hist (監控用；single 為單筆逐步；
+    菁英/緩衝為空時回 [])。
+
+      single   = 把「最新一筆」擬到收斂 (學長原始單筆過擬合;反模式,但 golden 基準)。
+      replay   = 最新一筆少數步 ＋ 回放整個緩衝 (防遺忘)。
+      dlf      = 最新一筆少數步 ＋ elite 子集訓「1 epoch」(現行;經查 = under-trained 的 DLF)。
+      dlf_fit  = 全收 ＋ 重過濾 elite ＋ 把 elite「訓到收斂(fit)」,不做單筆 step ＝ 學長原版 DLF。
+      refit    = 全收 ＋ 把「整個 buffer(不挑 elite)」訓到 fit ＝「不一定要 elite」版 (對抗洞疫苗)。
+    緩衝一律「全收」(學長論文 §3.5)；DLF/dlf_fit 的 λ_t = 累計真實 sim_loss 歷史平均 (含本筆)。
+    ⚠ refit 的「整個 buffer」受 replay_size 上限 (FIFO)；計算量 > dlf_fit，配 ensemble 會再 ×K。
+    """
+    sm_fit_hist = []
+    if sm_mode == "dlf_fit":
+        replay.add(~output_element, stack, sim_loss.item())   # 全收
+        hist = state.series("sim_loss")
+        lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
+        elite = replay.elite(lam)
+        if len(elite) > 0:
+            sm_fit_hist = smodel.train_by_datas(elite, epochs=elite_epochs,
+                                                min_loss=smodel.min_loss, verbose=verbose)
+    elif sm_mode == "refit":
+        replay.add(~output_element, stack, sim_loss.item())   # 全收
+        if len(replay) > 0:
+            sm_fit_hist = smodel.train_by_datas(replay, epochs=elite_epochs,
+                                                min_loss=smodel.min_loss, verbose=verbose)
+    elif sm_mode in ("replay", "dlf"):
+        replay.add(~output_element, stack, sim_loss.item())   # 全收 (含 loss；不在寫入端篩)
+        #? 對最新一筆跑少數步 (它＝G 此刻的位置，SM 最需要在那準)，max_epoch 上限避免擬到死
+        smodel.train_one_data(output_element.series, stack, max_epoch=newest_steps, verbose=verbose)
+        if sm_mode == "dlf":
+            #? DLF：λ_t = 累計真實損失歷史平均 (含本筆)；只取 loss ≤ λ_t 的菁英子集訓 SM。
+            hist = state.series("sim_loss")
+            lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
+            elite = replay.elite(lam)
+            if len(elite) > 0:
+                sm_fit_hist = smodel.train_by_datas(elite, epochs=1, verbose=verbose)
+        else:                                              # 純 replay：回放整個緩衝
+            sm_fit_hist = smodel.train_by_datas(replay, epochs=1, verbose=verbose)
+    else:
+        #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
+        sm_fit_hist = smodel.train_one_data(output_element.series, stack, verbose=verbose)
+    return sm_fit_hist
+
+
+def _radiation_online_step(smodel, simulator, rad_store, output_element, rad_theta,
+                           *, min_loss, max_epoch, freeze_trunk, verbose):
+    """方向圖頭的線上更新 (rad_on 且 fresh-HFSS epoch 才呼叫)——由 run_training 主迴圈原樣抽出、
+    行為逐位元不變。讀 SinglePortRadSimulator.last_radiation、清理 dB target (nan_to_num+clamp 防
+    深零點 -inf 爆梯度)、順手存 rad_store (零額外 HFSS)、把方向圖頭訓到收斂。
+
+    回傳 (rad_theta, rad_real_this_epoch, rad_fit_val)：rad_theta 首次拿到真 θ 網格後即固定 (整 run
+    不變)；無 last_radiation → 回傳原 rad_theta 與 (None, 0.0)，等同原樣不進方向圖分支。
+    """
+    rad = getattr(simulator, "last_radiation", None)
+    if not (isinstance(rad, dict) and rad.get("theta") is not None):
+        return rad_theta, None, 0.0
+    #? 整個 run 第一次拿到真實 θ 網格 → 用它重建方向圖頭的平滑基底，使預測逐點對齊 θ_i
+    #  (θ 網格整 run 固定；basis 逐欄獨立算 → HFSS 匯出序未排序也對位正確)。
+    if rad_theta is None:
+        smodel.set_rad_theta(rad["theta"])   # 委派給 SM 介面 (集成則 fan-out 所有成員)
+    rad_theta = rad["theta"]
+    rad_stack = torch.stack([rad["phi0"], rad["phi90"]])    # (2, n_theta)
+    #! 清理方向圖 target：dB(GainTotal) 在深零點可能是 -inf/極端負值，直接進 MSE 會爆梯度。
+    rad_stack = torch.nan_to_num(rad_stack, nan=_RAD_DB_FLOOR,
+                                 posinf=_RAD_DB_CEIL, neginf=_RAD_DB_FLOOR
+                                 ).clamp(_RAD_DB_FLOOR, _RAD_DB_CEIL)
+    rad_real_this_epoch = rad_stack.detach().cpu()          # 監控疊圖用 (真實 HFSS 方向圖)
+    if rad_store is not None:
+        #? 存 (pattern, [theta, phi0, phi90]) (3, n_theta)：θ 一起存 → 自我說明、可離線重訓。
+        theta_row = torch.as_tensor(rad["theta"], dtype=rad_stack.dtype).reshape(1, -1)
+        rad_store.add(~output_element,
+                      torch.cat([theta_row, rad_stack.detach().cpu()], dim=0))
+    rad_hist = smodel.train_one_data_rad(output_element.series, rad_stack,
+                                         min_loss=min_loss, max_epoch=max_epoch,
+                                         freeze_trunk=freeze_trunk, verbose=verbose)
+    rad_fit_val = float(rad_hist[-1]) if rad_hist else 0.0   # rad head 收斂後擬合 loss (監控)
+    return rad_theta, rad_real_this_epoch, rad_fit_val
+
+
 def run_training(
     cfg: TrainConfig,
     *,
@@ -612,73 +694,20 @@ def run_training(
             sm_gap_val = abs(_sm_pred_pre - sim_loss.item())
             if trust.enable:
                 trust.update(_sm_pred_pre, sim_loss.item())   # 閉迴路:同一個訓前 gap 餵控制器
-            #? SM 線上更新：single=最新一筆擬到收斂(原樣)；replay=最新少數步＋回放整個緩衝；
-            #  dlf=最新少數步＋elite 子集訓 1 epoch；dlf_fit=elite 訓到收斂、不做單筆(＝學長原版 DLF)。
-            #  緩衝一律「全收」(學長論文 §3.5)。
-            if sm_mode == "dlf_fit":
-                #? dlf_fit (學長原版 DLF)：全收 → 用累計門檻 λ_t 重過濾 elite → 把 elite「訓到 fit」(min_loss
-                #  早停、epoch 上限 sm_elite_epochs)。不做單筆 step (那是反模式殘骸)。經查現行 dlf 只訓 1 epoch =
-                #  under-trained DLF；本模式把訓練強度補回學長水準 (B1 已確認 SM 來源可信 → 訓練強度是瓶頸)。
-                replay.add(~output_element, stack, sim_loss.item())   # 全收
-                hist = state.series("sim_loss")
-                lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
-                elite = replay.elite(lam)
-                if len(elite) > 0:
-                    sm_fit_hist = smodel.train_by_datas(elite, epochs=sm_elite_epochs,
-                                                        min_loss=smodel.min_loss, verbose=verbose)
-            elif sm_mode == "refit":
-                #? refit (你的「不一定要 elite」版):全收 → 把「整個 buffer」訓到 fit (不挑 elite)。
-                #  原則:guidance surrogate 也要學「爛 pattern 長怎樣」才預測得出爛、避得開洞 (對抗洞疫苗)。
-                #  ⚠「整個 buffer」受 replay_size 上限 (FIFO);跑 >replay_size 時最舊的會被擠掉
-                #    (要真「全部過往」得靠之後的「週期 harvest 重錨」)。旋鈕同 dlf_fit (elite_epochs+min_loss);
-                #    但實際計算量 > dlf_fit (訓整個 buffer 非子集),配 surrogate: ensemble 會再 ×K,留意成本。
-                replay.add(~output_element, stack, sim_loss.item())   # 全收
-                if len(replay) > 0:
-                    sm_fit_hist = smodel.train_by_datas(replay, epochs=sm_elite_epochs,
-                                                        min_loss=smodel.min_loss, verbose=verbose)
-            elif sm_mode in ("replay", "dlf"):
-                replay.add(~output_element, stack, sim_loss.item())   # 全收 (含 loss；不在寫入端篩)
-                #? 對最新一筆跑少數步 (它＝G 此刻的位置，SM 最需要在那準)，max_epoch 上限避免擬到死
-                smodel.train_one_data(output_element.series, stack, max_epoch=sm_newest_steps, verbose=verbose)
-                if sm_mode == "dlf":
-                    #? DLF：λ_t = 累計真實損失歷史平均 (含本筆)；只取 loss ≤ λ_t 的菁英子集訓 SM。
-                    #  門檻隨訓練自動收緊 → 前期多樣、後期精準 (論文消融 >50% 改善)。
-                    hist = state.series("sim_loss")
-                    lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
-                    elite = replay.elite(lam)
-                    if len(elite) > 0:
-                        sm_fit_hist = smodel.train_by_datas(elite, epochs=1, verbose=verbose)
-                else:                                              # 純 replay：回放整個緩衝
-                    sm_fit_hist = smodel.train_by_datas(replay, epochs=1, verbose=verbose)
-            else:
-                #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
-                sm_fit_hist = smodel.train_one_data(output_element.series, stack, verbose=verbose)
-            # 方向圖 (選用)：讀 SinglePortRadSimulator.last_radiation，線上訓練方向圖頭。
+            #? SM 線上更新：模式分派抽成 _update_surrogate (single/replay/dlf/dlf_fit/refit)。
+            #  緩衝一律「全收」(學長論文 §3.5)；細節與各模式語意見該函式 docstring。
+            sm_fit_hist = _update_surrogate(
+                sm_mode, smodel, replay, output_element, stack, sim_loss, state,
+                newest_steps=sm_newest_steps, elite_epochs=sm_elite_epochs, verbose=verbose,
+            )
+            # 方向圖 (選用)：讀 last_radiation、清理 dB target、順手存 rad_store、線上訓練方向圖頭。
+            #  細節抽成 _radiation_online_step (行為逐位元不變)；rad_theta 首次拿到真 θ 後即固定。
             if rad_on:
-                rad = getattr(simulator, "last_radiation", None)
-                if isinstance(rad, dict) and rad.get("theta") is not None:
-                    #? 整個 run 第一次拿到真實 θ 網格 → 用它重建方向圖頭的平滑基底，使預測逐點對齊 θ_i
-                    #  (θ 網格整 run 固定；basis 逐欄獨立算 → HFSS 匯出序未排序也對位正確)。
-                    if rad_theta is None:
-                        smodel.set_rad_theta(rad["theta"])   # 委派給 SM 介面 (集成則 fan-out 所有成員)
-                    rad_theta = rad["theta"]
-                    rad_stack = torch.stack([rad["phi0"], rad["phi90"]])    # (2, n_theta)
-                    #! 清理方向圖 target：dB(GainTotal) 在深零點可能是 -inf/極端負值，直接進 MSE 會爆梯度。
-                    #  剔除非有限值並 clamp 到合理 dB 範圍 (深零點對 beam coverage 無所謂)。
-                    rad_stack = torch.nan_to_num(rad_stack, nan=_RAD_DB_FLOOR,
-                                                 posinf=_RAD_DB_CEIL, neginf=_RAD_DB_FLOOR
-                                                 ).clamp(_RAD_DB_FLOOR, _RAD_DB_CEIL)
-                    rad_real_this_epoch = rad_stack.detach().cpu()          # 監控疊圖用 (真實 HFSS 方向圖)
-                    if rad_store is not None:
-                        #? 存 (pattern, [theta, phi0, phi90]) (3, n_theta)：θ 一起存 → 自我說明、可離線重訓。
-                        #  存 clamp 後的 finite 版 (rad_stack 已 nan_to_num+clamp)，直接可訓、不含 -inf。
-                        theta_row = torch.as_tensor(rad["theta"], dtype=rad_stack.dtype).reshape(1, -1)
-                        rad_store.add(~output_element,
-                                      torch.cat([theta_row, rad_stack.detach().cpu()], dim=0))
-                    rad_hist = smodel.train_one_data_rad(output_element.series, rad_stack,
-                                              min_loss=rad_min_loss, max_epoch=rad_max_epoch,
-                                              freeze_trunk=rad_freeze, verbose=verbose)
-                    rad_fit_val = float(rad_hist[-1]) if rad_hist else 0.0   # rad head 收斂後擬合 loss (監控)
+                rad_theta, rad_real_this_epoch, rad_fit_val = _radiation_online_step(
+                    smodel, simulator, rad_store, output_element, rad_theta,
+                    min_loss=rad_min_loss, max_epoch=rad_max_epoch,
+                    freeze_trunk=rad_freeze, verbose=verbose,
+                )
             smodel.save()                       # 存 SM (斷點續跑 / rollback 重訓基礎)
             state.append("sim_loss", sim_loss.item())
             phash = state.add_pattern(~output_element, stack, sim_loss.item())
