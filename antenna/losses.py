@@ -33,7 +33,7 @@
 import torch
 from torch import Tensor, nn
 import torch.nn.functional as F
-from typing import Literal, Union, overload
+from typing import Literal, Union
 from antenna.utils.types import Axes, FeedReachabilityDictType
 from antenna.utils.figure import Figure
 import matplotlib.pyplot as plt
@@ -439,44 +439,13 @@ def custom_loss_minmax(prediciton:Tensor, target:Tensor, method:Literal['low', '
             # 防呆：method 僅允許 'low' / 'high'。
             raise ValueError('The method must be `low` or `high`.')
 
-# interval_loss 提供兩種呼叫介面 (以下兩個 @overload 僅供型別檢查/IDE 提示，無執行體)：
+# interval_loss 兩種呼叫模式 (由 lower/upper 的型別在函式內以 isinstance 分派)：
 #   (1) 相對模式：lower/upper 為 float 偏移，邊界 = target + 偏移 (需傳 target)。
 #   (2) 絕對模式：lower/upper 為 Tensor，直接當成上下界 (不需 target)。
 # 設計意圖：天線規格常以「目標 ± 容差」表達 (如 [target-1, target+1])，比 minmax 更柔性 ──
 #   允許預測在容差帶內自由浮動而不受罰，只懲罰「超出帶外」的部分。
-@overload
-def interval_loss(
-    prediction: Tensor, lower_response: float,   upper_response: float,
-    target: Tensor = None, *,  loss_type: str = 'SmoothL1Loss',   reduction: str = 'mean',
-) -> torch.Tensor:
-    """
-    Interval Loss: 視為相對於 Target 的誤差容許值[target + lower, target + upper], 限制 prediction 必須在此動態邊界內。
-
-    :param prediction: 預測值。
-    :param lower_response: 相對於 Target 的下限偏移 (如 -0.5)
-    :param upper_response: 相對於 Target 的上限偏移 (如 0.5)
-    :param target: 真實標籤
-    :param loss_type: 'SmoothL1Loss' 或 'MSELoss'。
-    :param reduction: 'mean' 或 'sum'。
-    """
-    ...
-@overload
-def interval_loss(
-    prediction: Tensor, lower_response: Tensor,   upper_response: Tensor, *,
-    loss_type: str = 'SmoothL1Loss',   reduction: str = 'mean',
-) -> torch.Tensor:
-    """
-    Interval Loss: 限制 prediction 必須在 [lower, upper] 之間。
-    
-    :param prediction: 預測值
-    :param lower_response: 絕對下限值
-    :param upper_response: 絕對上限值
-    :param loss_type: 'SmoothL1Loss' 或 'MSELoss'。
-    :param reduction: 'mean' 或 'sum'。
-    """    
-    ...
-
-
+#! 原兩個 @overload 型別 stub 已移除：核心慣例不用 @overload/TypeVar (見 CLAUDE.md 型別紀律)；
+#  兩模式改在下方單一函式 docstring 說清楚 (執行語意不變、byte-identical、golden 安全)。
 def interval_loss(
     prediction: Tensor,  lower_response: Union[float, Tensor],  upper_response: Union[float, Tensor], 
     target: Tensor = None,* , loss_type: str = 'SmoothL1Loss', reduction: str = 'mean'
