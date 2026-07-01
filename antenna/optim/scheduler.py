@@ -78,6 +78,10 @@ class AdaptiveCyclicalScheduler(_LRScheduler):
             raise ValueError("Expected integer T_mult >= 1, but got {}".format(T_mult))
         if on_plateau not in ['peak', 'reset','linear']:
              raise ValueError("on_plateau must be 'peak' or 'reset' or 'linear'")
+        #! warmup_ratio 必須 ∈ [0,1)：==1.0 會讓 warmup_steps==T_i，退火分母 (T_i-warmup_steps)==0
+        #  → get_lr 除零 (ZeroDivisionError)；<0 亦無意義。防退化 config 靜默炸在訓練途中。
+        if not (0.0 <= warmup_ratio < 1.0):
+            raise ValueError(f"warmup_ratio 須 ∈ [0,1)，但得到 {warmup_ratio}")
         self.T_0 = T_0
         self.T_mult = T_mult
         self.T_i = T_0  # 當前週期的長度

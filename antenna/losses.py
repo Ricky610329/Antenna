@@ -712,7 +712,14 @@ def worst_margin(response, labels, targets) -> tuple:
             raise ValueError(f"worst_margin 目前只支援 single-port (method) target;{label} 無 'method' "
                              f"(dual interval 未實作)。")
         w = t["width"]
-        band = response[i][w[0] + w[1] : w[0] + w[1] + w[2]]   # 中央平台 = in-band = 嚴格 spec 區
+        band_start, band_end = w[0] + w[1], w[0] + w[1] + w[2]   # 中央平台 = in-band = 嚴格 spec 區
+        n_points = response[i].shape[0]
+        #! 界線檢查：width 總和超過響應點數 → band 空/截斷，band.max()/min() 會丟難懂錯。
+        #  現行 n257 width [5,0,7,0,5] (band 5:12, 17 點) 合法、不觸發；防的是 width 配錯或換 x 網格沒改 width。
+        if band_end > n_points or w[2] <= 0:
+            raise ValueError(f"worst_margin: {label} 的中央平台切片 [{band_start}:{band_end}] "
+                             f"越界或為空 (響應僅 {n_points} 點，width={list(w)})。請檢查 targets 的 width。")
+        band = response[i][band_start:band_end]
         c = float(t["center"])
         margins[label] = (c - float(band.max())) if t["method"] == "low" else (float(band.min()) - c)
     return min(margins.values()), margins

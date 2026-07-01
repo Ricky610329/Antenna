@@ -83,6 +83,14 @@ SECTION_KEYS = {
     "trust": {"enable", "g0", "ema", "t_min", "t_max", "tau_inflate"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
+#! 各 port 目標的「必填」子鍵：缺就在 load_config/建構時報錯，不拖到 setup_responses
+#  (在 simulator.open() 啟動 HFSS COM 之後) 才 KeyError、白啟動一次 HFSS。對齊 setup_responses
+#  實際「無預設」的解參——single 需 method (custom_loss_minmax)；dual 的 interval 有預設 [-1,1]
+#  → 非必填、不強制 (與現行行為一致，避免破壞省略 interval 的舊 config)。
+TARGET_REQUIRED = {
+    "single": {"side", "center", "width", "method"},
+    "dual":   {"side", "center", "width"},
+}
 #! sm_train.mode 的允許「值」(白名單只驗鍵不驗值；mode 打錯字會靜默退回 single、害 A/B 白跑 →
 #  必須額外驗值，比照 island_suppression 鍵打錯的歷史教訓)。
 SM_MODES = ("single", "replay", "dlf", "dlf_fit", "refit")
@@ -177,10 +185,16 @@ class TrainConfig:
             unknown = set(getattr(self, section)) - allowed
             if unknown:
                 raise ValueError(f"{section} 區段含未知鍵: {sorted(unknown)} (允許: {sorted(allowed)})")
+        required = TARGET_REQUIRED[self.port]
         for label, t in self.targets.items():
             unknown = set(t) - TARGET_KEYS
             if unknown:
                 raise ValueError(f"targets.{label} 含未知鍵: {sorted(unknown)} (允許: {sorted(TARGET_KEYS)})")
+            #! 必填子鍵缺失 → fail-fast (見 TARGET_REQUIRED)：否則拖到 setup_responses 才 KeyError。
+            missing_keys = required - set(t)
+            if missing_keys:
+                raise ValueError(f"targets.{label} 缺少必填鍵: {sorted(missing_keys)} "
+                                 f"(port={self.port} 需 {sorted(required)})")
         #! 驗 sm_train.mode 的「值」(不只鍵)：打錯字 (如 dlffit/Refit) 會靜默退回 single → A/B 白跑。
         mode = self.sm_train.get("mode", "single")
         if mode not in SM_MODES:

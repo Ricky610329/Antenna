@@ -68,3 +68,12 @@ def test_worst_margin_accepts_flat_response():
     r[1, 5:12] = 6.0
     w, _ = worst_margin(r.reshape(-1), LABELS, cfg.targets)
     assert w == pytest.approx(2.0)
+
+
+def test_worst_margin_width_overflow_raises():
+    """width 總和超過響應點數 → 明確 ValueError (而非 band.max() 空張量難懂錯)。"""
+    cfg = _cfg()
+    cfg.targets["S11"]["width"] = [10, 0, 12, 0, 10]   # 中央平台 10:22 > 17 點 → 越界
+    r = torch.zeros(2, 17)
+    with pytest.raises(ValueError, match=r"越界|width"):
+        worst_margin(r, LABELS, cfg.targets)

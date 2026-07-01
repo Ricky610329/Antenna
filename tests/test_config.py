@@ -153,3 +153,42 @@ def test_bad_port_rejected():
 def test_missing_target_rejected():
     with pytest.raises(ValueError):
         TrainConfig(name="x", port="single", targets={"S11": {}})  # 缺 Gain
+
+
+def test_missing_target_subkey_rejected():
+    """單埠目標缺必填子鍵 (method/width/side/center) → 建構時即 raise，不拖到 setup_responses
+    (HFSS 已啟動) 才 KeyError。"""
+    t = _ok_targets(); del t["S11"]["method"]
+    with pytest.raises(ValueError, match=r"缺少必填鍵"):
+        TrainConfig(name="x", port="single", targets=t)
+    t2 = _ok_targets(); del t2["Gain"]["width"]
+    with pytest.raises(ValueError, match=r"缺少必填鍵"):
+        TrainConfig(name="x", port="single", targets=t2)
+
+
+def test_dual_target_interval_optional():
+    """dual 的 interval 有預設 [-1,1] → 省略不報錯 (與現行相容)；但缺 width 仍 fail-fast。"""
+    ok = {
+        "S11": {"side": -1.25, "center": -12, "width": [4, 2, 5, 2, 4]},
+        "S21": {"side": -20, "center": -3, "width": [3, 0, 11, 0, 3]},
+        "S22": {"side": -1.25, "center": -12, "width": [4, 2, 5, 2, 4]},
+    }
+    TrainConfig(name="x", port="dual", targets=ok)          # interval 省略 → 不 raise
+    bad = {k: dict(v) for k, v in ok.items()}; del bad["S21"]["width"]
+    with pytest.raises(ValueError, match=r"缺少必填鍵"):
+        TrainConfig(name="x", port="dual", targets=bad)
+
+
+def test_warmup_ratio_range_rejected():
+    """warmup_ratio 須 ∈ [0,1)：==1.0 會讓退火分母 (T_i-warmup_steps)==0 → get_lr 除零。"""
+    import torch
+    from antenna.optim import AdaptiveCyclicalScheduler
+    from antenna.training import build_scheduler
+    opt = torch.optim.Adam([torch.nn.Parameter(torch.zeros(1))], lr=0.005)
+    with pytest.raises(ValueError, match="warmup_ratio"):
+        AdaptiveCyclicalScheduler(opt, warmup_ratio=1.0)
+    with pytest.raises(ValueError, match="warmup_ratio"):
+        AdaptiveCyclicalScheduler(opt, warmup_ratio=-0.1)
+    cfg = TrainConfig(name="x", port="single", targets=_ok_targets(), scheduler={"warmup_ratio": 1.0})
+    with pytest.raises(ValueError, match="warmup_ratio"):
+        build_scheduler(cfg, opt)
