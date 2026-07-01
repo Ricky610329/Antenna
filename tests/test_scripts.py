@@ -5,7 +5,7 @@ tests/test_scripts.py — status.py / analyze.py 的純函式測試（不碰 NAS
 """
 import numpy as np
 
-from script.status import _machine, _num
+from script.status import _machine, _num, _liveness
 from script.analyze import _cos_basis, _mad
 
 
@@ -18,6 +18,36 @@ def test_machine_parse():
 def test_num_filters_empty_and_nan():
     rows = [{"a": "1.5"}, {"a": ""}, {"a": "nan"}, {"a": "2"}, {"b": "9"}]
     assert _num(rows, "a") == [1.5, 2.0]      # 空/nan/缺欄都略過
+
+
+def _lv(**kw):
+    base = dict(state="running", advanced=False, elapsed_enough=False, age_min=1.0, tpe_min=5.0)
+    base.update(kw)
+    return _liveness(**base)
+
+
+def test_liveness_terminal_states_authoritative():
+    """status.json 的 crashed/finished 是權威終態，不會被誤標成『卡住/在跑』。"""
+    assert _lv(state="crashed", age_min=1) == ("當機", False)     # 剛當機也是當機（不看新鮮度）
+    assert _lv(state="finished") == ("已完成", False)
+
+
+def test_liveness_advance_is_proof_of_alive():
+    """epoch 比上次掃描前進 = 鐵證在跑（即使心跳看似舊）。"""
+    assert _lv(advanced=True, age_min=999) == ("在跑", True)
+
+
+def test_liveness_running_fresh_vs_stuck():
+    """宣稱 running：心跳新且未到判定點 → 在跑?；心跳久沒更新 / 隔>1.5ep 沒前進 → 疑卡住（抓硬砍/凍住）。"""
+    assert _lv(state="running", age_min=3, tpe_min=5) == ("在跑?", True)
+    assert _lv(state="running", age_min=999, tpe_min=5)[0] == "疑卡住"        # 心跳久沒更新
+    assert _lv(state="running", elapsed_enough=True, age_min=1)[0] == "疑卡住"  # 該前進卻沒前進
+
+
+def test_liveness_legacy_run_without_status_json():
+    """無 status.json 的舊 run → 純時間啟發式：新→在跑?、舊→停止。"""
+    assert _lv(state=None, age_min=1, tpe_min=5) == ("在跑?", True)
+    assert _lv(state=None, age_min=999, tpe_min=5) == ("停止", False)
 
 
 def test_cos_basis_shape_and_k0_constant():
