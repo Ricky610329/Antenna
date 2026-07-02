@@ -29,13 +29,14 @@ factorial 續 R3（探索×DIP），唯一新變因＝三臂全把 `sm_train.mod
 - **HFSS 預算**: 各 500 epoch（沿 R3；⚠ 每輪 SM 重訓量會比 dlf 大，正式機量 SM 佔 HFSS 比例）。
 
 ## 3. 執行紀錄 (Run)
-| 臂 | 機器（計畫，沿 R3 配置排除機器差異） | 狀態 / 進度 | 結果夾 |
+| 臂 | 機器（沿 R3 配置排除機器差異） | 狀態 / 進度 | 結果夾 |
 | — | — | — | — |
-| E | 216 | proposed（待派） | — |
-| D | 37（快） | proposed（待派） | — |
-| E+D | 218 | proposed（待派） | — |
+| E | 216 | 2026-07-02 發 | `[Patch-single-216-…] pixel_single_r4_explore` |
+| D | 37（快） | 2026-07-02 發 | `[Patch-single-37-…] pixel_single_r4_dip` |
+| E+D | 218 | 2026-07-02 發 | `[Patch-single-218-…] pixel_single_r4_dip_explore` |
 - 事件 / 全域變更: 進 R4 前一批工程（Round4 準備）：新增追蹤訊號（flips/stall/sm_bias/wm_per-label/sm_train_epochs/probe_*/elite_n）；實作 opt-in 自適應-SM（golden 零漂移）。發前先跑 `python -m script.status` 掃機器真相。
 - 2026-07-02 發車前健檢：修控制器「低訓練量死鎖」（float target + 本輪觀測投票，模擬實證；沒修的話 R4 很可能默默退化回 dlf、整輪白跑）＋ `seed_target()` 斷點續跑續 target ＋ `elite_n` 成本訊號。詳見 `docs/discuss/decisions.md` 補記。
+- ⚠ 2026-07-02 **三臂實際起跑早於修復 push**（前 ~9–15 ep 跑在修復前代碼）：E 臂 csv 已見死鎖前兆（`sm_train_epochs` 8→3 下滑、多輪 `probe_min≈probe_max`＝探測被雜訊主導）→ 各臂停跑 → 正式機 `git pull` → 原 config 重啟（RunState 斷點續跑、`seed_target` 接手續 target；修復後 target 可從低點爬回）。判讀曲線時注意 ep≤重啟點為舊碼段。
 
 ## 4. 分析 (Analyze)
 （待跑完 `python -m script.round_report --round 04 --runs … --labels E D E+D`）
