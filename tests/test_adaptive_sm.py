@@ -32,7 +32,8 @@ def test_schedule_log_spaced_in_range():
     c = _ctrl()
     s = c.schedule()
     assert 2 <= len(s) <= 5                     # 去重後可能 <5
-    assert s == sorted(s) and s[0] >= 1 and s[-1] <= c.target
+    #? target 內部存 float (死鎖修復)：頂點快照要對齊「實際會訓的整數 epoch 數」= target_epochs()。
+    assert s == sorted(s) and s[0] >= 1 and s[-1] <= c.target_epochs()
     assert all(isinstance(x, int) for x in s)
 
 
@@ -58,6 +59,46 @@ def test_observe_inside_moves_toward_argmin():
     errs = {ep: abs(ep - mid) + 1.0 for ep in sched}   # argmin=mid
     c.observe(errs)
     assert abs(c.target_epochs() - mid) <= 1
+
+
+def test_observe_recovers_from_low_target_deadlock():
+    """回歸 (2026-07-02)：早期雜訊把 target 壓低後，「多訓比較好」的真相要能把 target 拉回來。
+    舊實作兩個成因鎖死在 2：(1) 整數 target 上做 EMA、1.3× 加碼被 round() 吃掉 (target≤5 吸收態)；
+    (2) argmin 在歷史所有桶選、範圍外的過期低值永遠投票。修法：target 存 float + 只有本輪觀測的桶投票。"""
+    c = _ctrl(epoch_min=1, epoch_max=32)
+    for _ in range(5):                                   # 5 輪誤導：越少訓誤差越低 → target 被壓到底
+        c.observe({ep: 1.0 + 0.1 * ep for ep in c.schedule()})
+    assert c.target_epochs() <= 3                        # 確認真的掉下去了 (前置條件)
+    for _ in range(40):                                  # 之後 40 輪真相：越多訓誤差越低
+        c.observe({ep: 10.0 - 0.1 * ep for ep in c.schedule()})
+    assert c.target_epochs() >= 8                        # 舊實作卡死在 2；修後要爬得回來
+
+
+def test_observe_pure_noise_stays_conservative():
+    """探測完全沒資訊 (誤差與訓練量無關) → target 保守往低走、不暴走 (=退回 dlf 現狀的安全失效模式)。"""
+    import itertools
+    c = _ctrl(epoch_min=1, epoch_max=32)
+    noise = itertools.cycle([1.3, 0.9, 1.1, 1.0, 1.2, 0.8, 1.05])
+    for _ in range(40):
+        c.observe({ep: next(noise) for ep in c.schedule()})
+        assert c.epoch_min <= c.target_epochs() <= c.epoch_max   # 全程不出界
+    assert c.target_epochs() <= 8                        # 不因雜訊暴衝到上界白燒訓練
+
+
+def test_seed_target():
+    """斷點續跑：seed_target 續上次 target (夾進 [epoch_min, epoch_max])；None/非有限/disable → 不動。"""
+    c = _ctrl(epoch_min=1, epoch_max=32)
+    c.seed_target(17.0)
+    assert c.target_epochs() == 17
+    c.seed_target(999)                                   # 出界 (如 config 改小了範圍) → 夾回
+    assert c.target_epochs() == 32
+    c.seed_target(None)
+    assert c.target_epochs() == 32                       # 不動
+    c.seed_target(float("nan"))
+    assert c.target_epochs() == 32                       # 不動
+    off = AdaptiveSMTrainController(enable=False, fallback_epochs=1)
+    off.seed_target(17.0)
+    assert off.target_epochs() == 1                      # disable → 惰性
 
 
 def test_observe_ignores_empty_and_nonfinite():
@@ -100,6 +141,7 @@ def test_adaptive_run_completes_and_logs(tmp_path):
         rows = list(csv.DictReader(f))
     assert all(r["sm_train_epochs"] != "" for r in rows)          # 每 epoch 都記自適應訓練量
     assert any(r["probe_argmin"] != "" for r in rows)             # held-out 探測有跑到 (第 ≥2 個 fresh epoch)
+    assert any(r["elite_n"] != "" for r in rows)                  # elite 集大小有落欄 (成本解讀用)
 
 
 def test_config_adaptive_section_requires_mode():

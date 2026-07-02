@@ -178,16 +178,18 @@ class AdaptiveSMTrainController:
         #! 誤設護欄：ema 是 EMA 係數，須 ∈ (0,1]。
         if not (0.0 < self.ema <= 1.0):
             raise ValueError(f"adaptive.ema 須 ∈ (0,1]，得到 {ema}")
-        self.target = self._geomid()                    # 初值取範圍幾何中點
+        #! target 內部存 float、只在對外 (target_epochs/schedule) 取整：整數上做 EMA 會被 round() 吃掉
+        #  小增量 (target≤5 時邊界 1.3× 加碼全被 round 回原值 → 低訓練量吸收態；2026-07-02 模擬實證)。
+        self.target = self._geomid()                    # 初值取範圍幾何中點 (float)
 
-    def _geomid(self) -> int:
-        return int(round(math.exp((math.log(self.epoch_min) + math.log(self.epoch_max)) / 2)))
+    def _geomid(self) -> float:
+        return math.exp((math.log(self.epoch_min) + math.log(self.epoch_max)) / 2)
 
     def schedule(self) -> list:
         """本輪要快照 member0 的 epoch 點：[epoch_min, target] 內 log 間距的 n 個 (去重遞增)。enable=False → []。"""
         if not self.enable:
             return []
-        hi = math.log(max(self.epoch_min + 1, self.target))
+        hi = math.log(max(self.epoch_min + 1, int(round(self.target))))
         lo = math.log(self.epoch_min)
         pts = {max(1, int(round(math.exp(lo + (hi - lo) * i / (self.n - 1))))) for i in range(self.n)}
         return sorted(pts)
@@ -201,16 +203,28 @@ class AdaptiveSMTrainController:
             return
         for e, v in finite.items():
             self.bucket[e] = v if e not in self.bucket else self.ema * v + (1.0 - self.ema) * self.bucket[e]
-        best = min(self.bucket, key=self.bucket.get)     # 泛化最佳的訓練量 (跨輪 EMA 後)
+        #! argmin 只在「本輪有觀測到的桶」裡選 (值仍用跨輪 EMA 平滑)：target 縮小後範圍外的舊桶再也不會
+        #  被重新觀測、卻永遠參與 argmin → 一個過期低值就把 target 釘死 (死鎖成因之二，同上模擬實證)。
+        best = min(finite, key=lambda e: self.bucket[e])
         top = max(finite)                                # 本輪最大訓練量快照點 (邊界)
-        # 邊界(最多訓的贏) → 加碼探更多；否則 target 移向 argmin。再對 target 做 EMA、慢走不震盪。
-        cand = min(self.epoch_max, int(round(self.target * 1.3))) if best >= top else best
-        self.target = max(self.epoch_min, min(self.epoch_max,
-                          int(round(self.ema * cand + (1.0 - self.ema) * self.target))))
+        # 邊界(最多訓的贏) → 加碼探更多；否則 target 移向 argmin。再對 target 做 EMA、慢走不震盪 (全程 float)。
+        cand = min(float(self.epoch_max), self.target * 1.3) if best >= top else float(best)
+        self.target = max(float(self.epoch_min), min(float(self.epoch_max),
+                          self.ema * cand + (1.0 - self.ema) * self.target))
 
     def target_epochs(self) -> int:
         """本輪 SM 重訓的 epoch 數 (enable=False → fallback)。"""
-        return int(self.target) if self.enable else self.fallback
+        return int(round(self.target)) if self.enable else self.fallback
+
+    def seed_target(self, value):
+        """斷點續跑：用 metrics.csv 最後一筆 sm_train_epochs 續 target。控制器狀態只在記憶體，
+        沒這個的話每次重啟 (HFSS 當機很常見) target 都歸零回中點重學。bucket 重學即可、不續。
+        value=None/非有限/enable=False → 不動。"""
+        if not self.enable or value is None:
+            return
+        v = float(value)
+        if math.isfinite(v):
+            self.target = max(float(self.epoch_min), min(float(self.epoch_max), v))
 
     def probe_stats(self, errors: dict) -> dict:
         """監控用：本輪 held-out 探測曲線的 argmin/最小/最大誤差 (落 csv)。無有限值 → 空 dict。"""
@@ -421,6 +435,7 @@ def _update_surrogate(sm_mode, smodel, replay, output_element, stack, sim_loss, 
         hist = state.series("sim_loss")
         lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
         elite = replay.elite(lam)
+        state.append("elite_n", float(len(elite)))         # 本輪 elite 集大小 (成本=epochs×elite_n 步,解讀 wall-clock 用)
         smodel._probe_snapshots = {}                       # 先清：elite 空/沒訓 → 下一輪無 stale 快照可評
         if len(elite) > 0:
             sm_fit_hist = smodel.train_by_datas(
@@ -541,6 +556,7 @@ def run_training(
         snapshots=cfg.adaptive.get("snapshots", 5), epoch_min=cfg.adaptive.get("epoch_min", 1),
         epoch_max=cfg.adaptive.get("epoch_max", 64), ema=cfg.adaptive.get("ema", 0.3),
     )
+    sm_ctrl.seed_target(state.last("sm_train_epochs", None))   # 斷點續跑：續上次的 target (見 seed_target)
     prev_snapshots = {}     # 上一輪 member0 權重快照 {epoch: state_dict}，供本輪 held-out 探測 (記憶體、每輪覆蓋)
     if bnd_w > 0 and replay is None:
         logger.warning("loss.boundary > 0 但 sm_train.mode 非 replay/dlf/dlf_fit/refit（無緩衝定義已見分布）→ boundary loss 停用")

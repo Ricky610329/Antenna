@@ -172,7 +172,8 @@ class TrainingMonitor:
                             # SM 品質/訓練/信任診斷：sm_gap(訓前對新點誤差=generalization)、sm_unc(ensemble 分歧)、
                             # sm_fit_loss/epochs(每輪重訓到 fit 沒)、trust_t/gap_ema(閉迴路控制器)。
                             ("sm", ("sm_gap", "sm_unc", "sm_fit_loss", "sm_fit_epochs", "trust_t", "gap_ema",
-                                    "sm_bias", "sm_train_epochs", "probe_argmin", "probe_min_err", "probe_max_err")),
+                                    "sm_bias", "sm_train_epochs", "probe_argmin", "probe_min_err", "probe_max_err",
+                                    "elite_n")),
                             # 多候選 (batch_latent) 才有：候選池健康度 → 診斷 Z 探索是否有賺頭
                             # (score_spread→0 = 候選塌縮、Z 失效；fresh_frac 低 = 探索停滯)。
                             ("select", ("score_best", "score_mean", "score_spread", "fresh_frac", "cand_similarity")),
