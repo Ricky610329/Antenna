@@ -22,7 +22,7 @@
 - **由來**：R3 健檢定位共同瓶頸＝SM 欠訓（dlf 每輪 1 epoch → trust 鎖 0.05 不利用 → plateau）。R4 三臂全上**自適應訓練量**（held-out fresh 點量泛化、自調每輪 elite 重訓 epoch 數，沿途快照 member0、下一輪新點評 argmin；opt-in `mode:adaptive`、golden 零漂移）→ 移除 confound、修瓶頸。adaptive 旋鈕：`snapshots 5/epoch_min 1/epoch_max 32/ema 0.3`，ensemble 保持 5。
 - **判準**：worst_margin（真目標）+ trust_t 升離 0.05 + sm_bias 降；cross-round 比 R3 同臂。**發前先跑 `python -m script.status`**、各 500 epoch。⚠ 每輪 SM 重訓量比 dlf 大，正式機量 SM 佔 HFSS 比例。
 - **狀態**：**2026-07-02 三臂已發**（E@216、D@37、E+D@218，沿 R3 機器配置；R3 三 run 與 37 上的 r2_refit 均已停）。
-- ⚠ **待重啟到修復版**：三臂起跑早於死鎖修復的 push（前 ~9–15 ep 跑舊控制器；E 臂已見 `sm_train_epochs` 8→3 下滑前兆）→ 各正式機：停 run → `git pull`（要到 `cd4d10b` 之後）→ 原 config 重啟（斷點續跑 + `seed_target` 自動接手）。指令：`python train.py configs/single_r4_<E/D/E+D>.yaml`。
+- **更正（同日）**：三臂**從起跑即為修復版**（使用者手動同步改動、早於 push；csv 自首 epoch 有 `elite_n` 為證）→ **不需重啟**。E 臂 target 走低＝修復版在探測沒資訊時的預期保守行為，非死鎖；觀察 `probe_min≈probe_max` 是否長期持續。
 
 ---
 

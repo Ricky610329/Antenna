@@ -36,7 +36,7 @@ factorial 續 R3（探索×DIP），唯一新變因＝三臂全把 `sm_train.mod
 | E+D | 218 | 2026-07-02 發 | `[Patch-single-218-…] pixel_single_r4_dip_explore` |
 - 事件 / 全域變更: 進 R4 前一批工程（Round4 準備）：新增追蹤訊號（flips/stall/sm_bias/wm_per-label/sm_train_epochs/probe_*/elite_n）；實作 opt-in 自適應-SM（golden 零漂移）。發前先跑 `python -m script.status` 掃機器真相。
 - 2026-07-02 發車前健檢：修控制器「低訓練量死鎖」（float target + 本輪觀測投票，模擬實證；沒修的話 R4 很可能默默退化回 dlf、整輪白跑）＋ `seed_target()` 斷點續跑續 target ＋ `elite_n` 成本訊號。詳見 `docs/discuss/decisions.md` 補記。
-- ⚠ 2026-07-02 **三臂實際起跑早於修復 push**（前 ~9–15 ep 跑在修復前代碼）：E 臂 csv 已見死鎖前兆（`sm_train_epochs` 8→3 下滑、多輪 `probe_min≈probe_max`＝探測被雜訊主導）→ 各臂停跑 → 正式機 `git pull` → 原 config 重啟（RunState 斷點續跑、`seed_target` 接手續 target；修復後 target 可從低點爬回）。判讀曲線時注意 ep≤重啟點為舊碼段。
+- 2026-07-02 **更正**：三臂**從起跑即為修復版**（使用者發車時注意到修復尚未 push、手動把改動帶上正式機；證據＝csv 自首個 epoch 就有 `elite_n`，該欄與死鎖修復同 commit）。先前「舊碼起跑、E 臂死鎖前兆」為誤判——E 的 `sm_train_epochs` 8→3 下滑是修復版在「探測沒資訊」（`probe_min≈probe_max`、雜訊主導）時的**預期保守行為**（退向低訓練量≈dlf、可爬回），非死鎖。**觀察點**：若某臂長期釘在 epoch_min 且探測曲線持續平 → K=1 探測被雜訊淹沒＝真訊號，屆時再議加探測點/調 ema。
 
 ## 4. 分析 (Analyze)
 （待跑完 `python -m script.round_report --round 04 --runs … --labels E D E+D`）
