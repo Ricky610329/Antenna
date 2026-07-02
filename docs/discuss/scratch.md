@@ -10,6 +10,8 @@
 ## 2026-07-02
 
 ### 💡 想法：跨輪自適應 SM 訓練強度（用下一輪 HFSS 校準上一輪「該訓多少」）
+> **狀態：✅ 已升級**（2026-07-02）→ decisions「自適應 SM 訓練量」→ 實作 `mode:adaptive` → **Round 4 跑步中**。本條保留當思路軌跡。
+
 **痛點（兩個極端都不對）**
 - 現行 `mode:dlf` 每輪 elite 只訓 **1 epoch** → SM 欠訓、系統性低估 HFSS ~3–4.5（R3 三臂共同 plateau 根因）。
 - 但**硬逼到 `min_loss=0.1`**（dlf_fit/train_one_data 那套）**實測效果也沒比較好**（Ricky 經驗）→ 過度擬合
@@ -63,5 +65,15 @@
 - 機制假說：adaptive 拿掉 train_one_data（單點短期記憶）+ elite 過濾（λ=歷史均值，壞群 9-17 被排除）
   → SM 永遠學不到「壞群是壞的」（證據：壞群 epoch 的 sm_bias +5~7）→ gap 高 → trust 鎖 0.05 → κ 高
   → acquisition 一直回頭採 SM 樂觀的壞群 → 自我強化迴圈。R3 dlf 踩過一次就（暫時）記住、避開。
-- 不中途改（單變因紀律）。若 ping-pong 持續到 ~150ep → R4 重要結論之一；R5 候選：讓 SM 也學壞點
-  （refit-style 全 buffer / 非 elite 低權重進訓練），對齊「refit 對抗洞」的既有論點。
+- 不中途改（單變因紀律）。若 ping-pong 持續到 ~150ep → R4 重要結論之一；~~R5 候選：讓 SM 也學壞點
+  （refit-style 全 buffer / 非 elite 低權重進訓練）~~ → **被下面的討論演化取代**。
+- **↳ 討論演化（Ricky 的 CartPole 論點，2026-07-02）：「只學好的」是特性不是 bug**——RL 裡只餵好資料，
+  查詢鎖在好 domain、效率高；餵爛資料反而探索域炸開找不到解。→ 折衷：**區分 SM 的兩個角色**：
+  - 給 G 導航的「地形」（policy 側）：elite-only **正確、保留**（餵爛資料會攪渾地形）。
+  - best-of-K 的「評分者」（critic 側）：argmax 會利用盲區（maximization bias）——沒學過≠中性，這是 ping-pong 根源。
+  - **修正後偏好：動選擇端、不動 SM 訓練資料**——acquisition 對「採過且證實爛」的鄰域加懲罰
+    （replay 本來全收、壞點資料都在，只是不進訓練）。R1 佐證使用者的謹慎：refit（全收）沒贏 dlf（elite）。
+  - **更省的可能：R4 自己會治好**——κ=κ_base·(1−trust_t)；若 adaptive 主線成功（gap↓→trust_t↑）→ κ 自動縮 →
+    選擇器不再追不確定的壞群。**先觀察 trust_t、不動手**；R4 結束仍在 → 走 ONGOING 候選（已掛,帶觸發條件）。
+- **R4.5 應變（半熟）**：若整輪 K=1 探測被雜訊淹沒（probe_min≈probe_max 持續 + target 貼底）→ 微調
+  `snapshots 5→7`、`ema 0.3→0.15`（更平滑）；config 草稿等 Day-2 中檢結果再寫。
