@@ -44,6 +44,7 @@
 - **NAS**：工作區 `ROOTDIR = T:\碩一_鄒穎麒's\antenna`（已遷出學長樹）。動學長 `碩二` 資料一律**唯讀、零刪除**。
 - **實驗記錄（每次都要做）**：新增/修改 `configs/*.yaml` 或訓練腳本時，**同步更新 `configs/README.md`** 的對照表 —— 一個 config＝一行（測什麼、與 base 差在哪、舊編號）。產生實驗 config 前先掃 `configs/README.md` 避免重複。這是硬規則，不是順手做。
 - **研究日誌（每個 round 都要做）**：一個「假設→實驗→結論」＝一個 round。開新 round → `docs/log/` 開 `round-NN-<slug>.md`（用 `_TEMPLATE.md`，狀態 proposed）+ `configs/ONGOING.md` 加一行 🔵 指向它。跑完 → `python -m script.round_report --round NN --runs … --labels …` 產圖（落 `docs/log/assets/round-NN/`）+ markdown 數字貼進 round 檔 §4、補 §5 結論/§7 歸檔、`docs/log/README.md` 索引 +1 行、ONGOING 把該 round 移出 🔵（✅ 區留一行指標）。**四層別搞混**：`docs/` 設計文件＝為什麼（固定）/ `docs/log/`＝時間軸歷史（append-only）/ `configs/ONGOING.md`＝live 操作板 / `configs/README.md`＝config 全集；round 檔只連結、不複製。**更新 ONGOING 的 run 狀態前先跑 `python -m script.status`（掃 NAS 真相、別手動猜；`--md` 出可貼的表）**；重現診斷用 `script/analyze.py`。詳見 [[project_research_log]]。
+- **討論記憶（兩層）**：`docs/discuss/scratch.md`（隨意層：半熟點子/觀察，Claude **隨手記、不主動報**）＋ `docs/discuss/decisions.md`（確定層：定案結論/方向，Claude **新增會主動說**）。用途＝讓「對話討論本身」有記憶、可跨 session 接續。與 `docs/log/` 分開：research round 的假設→實驗→結論走 `docs/log/`（正式、結構化）；這兩層是低門檻的討論便條，只指向不複製 docs/log。想法在 scratch 熟了再升級到 decisions。
 
 ## 持續優化的候選方向（非強制，看到順手就做）
 
