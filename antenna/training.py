@@ -373,7 +373,7 @@ def build_surrogate(cfg: TrainConfig, checkpoint, spec: TargetResponse):
 
 
 def _update_surrogate(sm_mode, smodel, replay, output_element, stack, sim_loss, state,
-                      *, newest_steps, elite_epochs, verbose):
+                      *, newest_steps, elite_epochs, verbose, sm_ctrl=None):
     """SM 線上更新的模式分派 (single/replay/dlf/dlf_fit/refit)——由 run_training 主迴圈原樣抽出、
     行為逐位元不變。回傳本輪 SM 重訓的逐步/逐 epoch loss 清單 sm_fit_hist (監控用；single 為單筆逐步；
     菁英/緩衝為空時回 [])。
@@ -413,6 +413,19 @@ def _update_surrogate(sm_mode, smodel, replay, output_element, stack, sim_loss, 
                 sm_fit_hist = smodel.train_by_datas(elite, epochs=1, verbose=verbose)
         else:                                              # 純 replay：回放整個緩衝
             sm_fit_hist = smodel.train_by_datas(replay, epochs=1, verbose=verbose)
+    elif sm_mode == "adaptive":
+        #? 自適應訓練量 (見 AdaptiveSMTrainController)：全收 → dlf 的 elite(λ_t) 篩選 → 把 elite 訓到
+        #  sm_ctrl.target_epochs()（自調、非固定 1），沿途在 sm_ctrl.schedule() 的 epoch 點快照 member0
+        #  供下一輪 held-out 探測。early_stop/min_loss 關掉以訓滿、拿齊快照。elite 空 → 這輪不訓、無快照。
+        replay.add(~output_element, stack, sim_loss.item())
+        hist = state.series("sim_loss")
+        lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
+        elite = replay.elite(lam)
+        smodel._probe_snapshots = {}                       # 先清：elite 空/沒訓 → 下一輪無 stale 快照可評
+        if len(elite) > 0:
+            sm_fit_hist = smodel.train_by_datas(
+                elite, epochs=sm_ctrl.target_epochs(), min_loss=None,
+                snapshot_epochs=sm_ctrl.schedule(), early_stop=False, verbose=verbose)
     else:
         #? verbose=True 時顯示 SM 單筆訓練的 tqdm 進度條 (與舊腳本行為一致)
         sm_fit_hist = smodel.train_one_data(output_element.series, stack, verbose=verbose)
@@ -521,7 +534,14 @@ def run_training(
     sm_mode = cfg.sm_train.get("mode", "single")                  # single | replay | dlf | dlf_fit | refit
     sm_newest_steps = cfg.sm_train.get("newest_steps", 50)        # replay/dlf：對最新一筆跑幾步 (取代擬到死)
     sm_elite_epochs = cfg.sm_train.get("elite_epochs", 50)        # dlf_fit/refit：每輪重訓 epoch 上限 (配 min_loss 訓到 fit)
-    replay = ReplayBuffer(cfg.sm_train.get("replay_size", 256)) if sm_mode in ("replay", "dlf", "dlf_fit", "refit") else None
+    replay = ReplayBuffer(cfg.sm_train.get("replay_size", 256)) if sm_mode in ("replay", "dlf", "dlf_fit", "refit", "adaptive") else None
+    #? 自適應 SM 訓練量控制器 (mode:adaptive 才啟用；否則惰性 → target_epochs 回 fallback、不快照 → 與原樣相同)。
+    sm_ctrl = AdaptiveSMTrainController(
+        enable=(sm_mode == "adaptive"),
+        snapshots=cfg.adaptive.get("snapshots", 5), epoch_min=cfg.adaptive.get("epoch_min", 1),
+        epoch_max=cfg.adaptive.get("epoch_max", 64), ema=cfg.adaptive.get("ema", 0.3),
+    )
+    prev_snapshots = {}     # 上一輪 member0 權重快照 {epoch: state_dict}，供本輪 held-out 探測 (記憶體、每輪覆蓋)
     if bnd_w > 0 and replay is None:
         logger.warning("loss.boundary > 0 但 sm_train.mode 非 replay/dlf/dlf_fit/refit（無緩衝定義已見分布）→ boundary loss 停用")
 
@@ -682,6 +702,7 @@ def run_training(
         rad_fit_val = 0.0               # rad head 線上擬合最終 loss (僅 fresh-rad epoch 更新；其餘 0)
         sm_gap_val = None               # SM「訓前」對新點誤差 = generalization (僅 fresh-HFSS epoch 算)
         sm_fit_hist = []                # 本 epoch SM 重訓的逐 epoch/step loss (看訓到 fit 沒；僅 fresh)
+        probe_stats = {}                # 本 epoch 自適應探測曲線 (argmin/min/max err；僅 adaptive+有 prev 快照)
         #? 回滾 (early_stop → 載回最佳 epoch + 重訓 SM) 已於 2026-06-28 移除：
         #  對「generator-free + K 候選 + 線上更新 SM」不合身——(1)貪婪規則:沒贏過最佳就退回 →
         #  探索性 pattern 拿不到「成為新據點」的權利、卡在第一個山頭;(2)退回舊 generator 卻配當下
@@ -772,12 +793,21 @@ def run_training(
             sm_gap_val = abs(_sm_pred_pre - sim_loss.item())
             if trust.enable:
                 trust.update(_sm_pred_pre, sim_loss.item())   # 閉迴路:同一個訓前 gap 餵控制器
+            #? 自適應訓練量：這一輪的新點是 held-out (產生它的那版 SM 沒訓過它) → 拿它評「上一輪的快照」→ observe。
+            #  held-out 鐵律：評的是「產生這個點的那段先前訓練」的快照，不是接下來要對它訓練的那段 (否則洩題)。
+            if sm_mode == "adaptive" and prev_snapshots:
+                probe_errs = {ep: smodel.eval_snapshot(sd, output_element.series, stack)
+                              for ep, sd in prev_snapshots.items()}
+                sm_ctrl.observe(probe_errs)
+                probe_stats = sm_ctrl.probe_stats(probe_errs)
             #? SM 線上更新：模式分派抽成 _update_surrogate (single/replay/dlf/dlf_fit/refit)。
             #  緩衝一律「全收」(學長論文 §3.5)；細節與各模式語意見該函式 docstring。
             sm_fit_hist = _update_surrogate(
                 sm_mode, smodel, replay, output_element, stack, sim_loss, state,
-                newest_steps=sm_newest_steps, elite_epochs=sm_elite_epochs, verbose=verbose,
+                newest_steps=sm_newest_steps, elite_epochs=sm_elite_epochs, sm_ctrl=sm_ctrl, verbose=verbose,
             )
+            if sm_mode == "adaptive":              # 這一輪的新快照 → 下一輪的 held-out 探測對象 (記憶體、覆蓋上一輪)
+                prev_snapshots = dict(getattr(smodel, "_probe_snapshots", {}))
             # 方向圖 (選用)：讀 last_radiation、清理 dB target、順手存 rad_store、線上訓練方向圖頭。
             #  細節抽成 _radiation_online_step (行為逐位元不變)；rad_theta 首次拿到真 θ 後即固定。
             if rad_on:
@@ -926,6 +956,11 @@ def run_training(
             if _lbl in wm_by_label:
                 state.append(f"wm_{_lbl}", float(wm_by_label[_lbl]))
         prev_pattern = cur_pattern              # 供下一 epoch 算 flips
+        if sm_mode == "adaptive":               # 本輪訓練量 (每 epoch) + held-out 探測曲線 (僅有 prev 快照時)
+            state.append("sm_train_epochs", float(sm_ctrl.target_epochs()))
+            for _k in ("probe_argmin", "probe_min_err", "probe_max_err"):
+                if _k in probe_stats:
+                    state.append(_k, probe_stats[_k])
         if rad_on:
             state.append("rad_loss", rad_loss_val)      # 監控用 (只在 rad run 出現此欄)
             state.append("rad_fit", rad_fit_val)        # rad head 線上擬合 loss (看方向圖頭收斂沒)
@@ -994,6 +1029,9 @@ def run_training(
             for _lbl in ("S11", "Gain"):
                 if _lbl in wm_by_label:
                     snap[f"wm_{_lbl}"] = float(wm_by_label[_lbl])
+            if sm_mode == "adaptive":                   # 自適應訓練量 + 探測曲線 (監控 TB)
+                snap["sm_train_epochs"] = float(sm_ctrl.target_epochs())
+                snap.update(probe_stats)
             if worst_margin_val is not None:
                 snap["worst_margin"] = worst_margin_val # in-band S11/Gain dB 餘裕 (真目標,正=達標)
             if sm_gap_val is not None:                  # SM 訓前對新點誤差 = generalization (僅 fresh)

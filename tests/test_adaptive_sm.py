@@ -83,6 +83,25 @@ def test_bad_ema_rejected():
         AdaptiveSMTrainController(enable=True, ema=1.5)
 
 
+def test_adaptive_run_completes_and_logs(tmp_path):
+    """mock 整合：adaptive run 跑得完、每 epoch 記 sm_train_epochs、held-out 探測有作用 (probe_argmin 出現)、無 NaN。"""
+    import csv
+    import math
+    from antenna.training import run_training
+    from test_baseline_loop import _MockSim
+    cfg = TrainConfig(name="t_adaptive", port="single", targets=_targets(),
+                      lr=0.005, sm_train={"mode": "adaptive", "lr": 0.001},
+                      adaptive={"snapshots": 3, "epoch_min": 1, "epoch_max": 4, "ema": 0.5})
+    gl = []
+    run_training(cfg, simulator=_MockSim(("S11", "Gain")), record_path=tmp_path, seed=0,
+                 max_epochs=5, on_epoch=lambda e, m: gl.append(m["gen_loss"]), verbose=False)
+    assert len(gl) == 5 and all(math.isfinite(x) for x in gl)     # 跑完、gen_loss 有限 (無 NaN/爆炸)
+    with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert all(r["sm_train_epochs"] != "" for r in rows)          # 每 epoch 都記自適應訓練量
+    assert any(r["probe_argmin"] != "" for r in rows)             # held-out 探測有跑到 (第 ≥2 個 fresh epoch)
+
+
 def test_config_adaptive_section_requires_mode():
     """設了 adaptive 區段但 mode 非 adaptive → fail-fast（比照 island_suppression 靜默沒開的教訓）。"""
     with pytest.raises(ValueError, match="adaptive"):

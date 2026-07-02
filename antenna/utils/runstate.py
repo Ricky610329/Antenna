@@ -45,6 +45,8 @@ SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss", "sim_loss_avg", "r_
                # 追蹤訊號 (2026-07-02 補，好管理)：flips=相鄰 epoch 像素翻轉數(探索量)；stall=best_loss 連續幾
                #   epoch 沒刷新；sm_bias=sim_loss−sm_target(SM 樂觀偏差,fresh)；wm_S11/wm_Gain=per-label worst_margin(single)。
                "flips", "stall", "sm_bias", "wm_S11", "wm_Gain",
+               # 自適應 SM 訓練量 (mode:adaptive)：本輪實際訓練 epoch 數 + held-out 探測曲線 argmin/最小/最大誤差。
+               "sm_train_epochs", "probe_argmin", "probe_min_err", "probe_max_err",
                "boundary_threshold", "restart_suppressed",
                "time", "pattern_hash")
 
