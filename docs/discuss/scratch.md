@@ -55,3 +55,13 @@
 ### 其他碎念
 - R3 三臂 factorial 目前被「SM 欠訓」這個共同上游瓶頸汙染，還不能乾淨判 E/D/E+D（見健檢；正式結論待 docs/log/）。
 - D/E+D 的 sigmoid 連通先驗確實把 r_feed 拉到 0.9+（假設成立），但沒轉成更好 loss → 瓶頸不在連通。
+
+## R4 E 臂「兩群 ping-pong」觀察（2026-07-02，~44ep）
+- 現象：flips 雙峰（~300↔1-3）、metal_frac 兩群（0.47-0.50 vs 0.53-0.55）同步 sim_loss（中位 7.29 vs 9.58）；
+  ~40% HFSS 花在壞群。候選池健康（cand_similarity ~0.37 穩、fresh 0.875-1.0）→ 是「選擇器在兩群間跳」非塌縮。
+- 對照 R3 E：跨 0.51 切換 0.04/ep vs R4 0.47/ep（~12×）→ 快速 ping-pong 是 R4 新行為。
+- 機制假說：adaptive 拿掉 train_one_data（單點短期記憶）+ elite 過濾（λ=歷史均值，壞群 9-17 被排除）
+  → SM 永遠學不到「壞群是壞的」（證據：壞群 epoch 的 sm_bias +5~7）→ gap 高 → trust 鎖 0.05 → κ 高
+  → acquisition 一直回頭採 SM 樂觀的壞群 → 自我強化迴圈。R3 dlf 踩過一次就（暫時）記住、避開。
+- 不中途改（單變因紀律）。若 ping-pong 持續到 ~150ep → R4 重要結論之一；R5 候選：讓 SM 也學壞點
+  （refit-style 全 buffer / 非 elite 低權重進訓練），對齊「refit 對抗洞」的既有論點。
