@@ -42,6 +42,9 @@ SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss", "sim_loss_avg", "r_
                #   worst_margin=in-band S11/Gain dB 餘裕(真目標,正=達標);metal_frac=金屬比例(抓崩塌);
                #   grad_norm=guidance 梯度範數(抓消失/爆炸)。
                "sm_gap", "sm_fit_loss", "sm_fit_epochs", "worst_margin", "metal_frac", "grad_norm",
+               # 追蹤訊號 (2026-07-02 補，好管理)：flips=相鄰 epoch 像素翻轉數(探索量)；stall=best_loss 連續幾
+               #   epoch 沒刷新；sm_bias=sim_loss−sm_target(SM 樂觀偏差,fresh)；wm_S11/wm_Gain=per-label worst_margin(single)。
+               "flips", "stall", "sm_bias", "wm_S11", "wm_Gain",
                "boundary_threshold", "restart_suppressed",
                "time", "pattern_hash")
 

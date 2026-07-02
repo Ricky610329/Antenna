@@ -593,6 +593,9 @@ def run_training(
     consecutive_skips = 0          # 連續 HFSS 失敗計數 (成功/快取命中即歸零)
     reopened_once = False          # 本波連敗是否已 reopen 過 (再連敗 → 判系統性故障中斷)
     last_stack = None              # 最近一筆成功響應 (skip 的 epoch 拿來佔位給監控)
+    prev_pattern = None            # 上一 epoch 的 pattern (算 flips 探索量；首 epoch 無)
+    prev_best = state.last("best_loss", float("inf"))  # 追 stall：best_loss 上次刷新的值 (續跑沿用載回的最佳)
+    stall = 0                      # best_loss 連續幾個 epoch 沒刷新 (停滯偵測)
     while epoch < epochs:
         epoch += 1
         epoch_t0 = time()
@@ -725,6 +728,10 @@ def run_training(
         if state.last("sim_loss") <= best_loss:
             best_loss = state.last("sim_loss")
         state.append("best_loss", best_loss)
+        if best_loss < prev_best:          # best_loss 有刷新 → 歸零並記新最佳；否則累加 (停滯偵測)
+            stall, prev_best = 0, best_loss
+        else:
+            stall += 1
 
         state.append("pattern_hash", phash)
         state.append("r_feed", r_feed(~output_element))
@@ -803,9 +810,15 @@ def run_training(
             sm_unc_val = float(smodel.uncertainty(output_element.series)) if has_unc else None
             #? worst-margin (in-band S11/Gain dB 餘裕,正=達標)：用「真實 HFSS 響應」stack 算 (非 SM 預測)。
             #  僅 single port (method 型 target);dual 用 interval、餘裕定義不同 → 留空。metal_frac=金屬比例 (崩塌)。
-            worst_margin_val = (worst_margin(stack, PORT_SPECS[cfg.port]["labels"], cfg.targets)[0]
-                                if (stack is not None and cfg.port == "single") else None)
-            metal_frac_val = float((~output_element).float().mean())
+            if stack is not None and cfg.port == "single":
+                worst_margin_val, wm_by_label = worst_margin(stack, PORT_SPECS[cfg.port]["labels"], cfg.targets)
+            else:
+                worst_margin_val, wm_by_label = None, {}    # dual/首個 skip：per-label 餘裕留空
+            cur_pattern = (~output_element)                 # 本 epoch pattern (含固定 feed)；算金屬比例與探索量
+            metal_frac_val = float(cur_pattern.float().mean())
+            flips_val = int((cur_pattern != prev_pattern).sum()) if prev_pattern is not None else None
+            #? sm_bias = 真實 sim_loss − SM 對目標預測 (SM 樂觀偏差；僅 fresh，對照 sm_gap 一起看)
+            sm_bias_val = (float(state.last("sim_loss")) - sm_target_val) if sm_gap_val is not None else None
         state.append("sm_target", sm_target_val)
         state.append("sc_loss", sc_loss_val)
         if bnd_loss_val is not None:                     # replay/dlf 才有已見分布 (single 模式留空)
@@ -827,6 +840,17 @@ def run_training(
             state.append("worst_margin", worst_margin_val)
         state.append("metal_frac", metal_frac_val)
         state.append("skipped", 1.0 if skipped else 0.0)
+        #? 追蹤訊號：flips(探索量,首 epoch 空)/stall(每 epoch)/sm_bias(fresh)/wm_per-label(single)。
+        #  sparse 欄靠 runstate touched-set 在沒 append 的 epoch 真·留空。
+        if flips_val is not None:
+            state.append("flips", float(flips_val))
+        state.append("stall", float(stall))
+        if sm_bias_val is not None:
+            state.append("sm_bias", sm_bias_val)
+        for _lbl in ("S11", "Gain"):
+            if _lbl in wm_by_label:
+                state.append(f"wm_{_lbl}", float(wm_by_label[_lbl]))
+        prev_pattern = cur_pattern              # 供下一 epoch 算 flips
         if rad_on:
             state.append("rad_loss", rad_loss_val)      # 監控用 (只在 rad run 出現此欄)
             state.append("rad_fit", rad_fit_val)        # rad head 線上擬合 loss (看方向圖頭收斂沒)
@@ -887,6 +911,14 @@ def run_training(
             snap["skipped"] = 1.0 if skipped else 0.0
             snap["grad_norm"] = grad_norm_val           # guidance 梯度範數 (消失/爆炸)
             snap["metal_frac"] = metal_frac_val         # 金屬比例 (崩塌偵測)
+            snap["stall"] = float(stall)                # best_loss 停滯 epoch 數
+            if flips_val is not None:
+                snap["flips"] = float(flips_val)        # 探索量 (相鄰 epoch 像素翻轉)
+            if sm_bias_val is not None:
+                snap["sm_bias"] = sm_bias_val           # SM 樂觀偏差 (fresh)
+            for _lbl in ("S11", "Gain"):
+                if _lbl in wm_by_label:
+                    snap[f"wm_{_lbl}"] = float(wm_by_label[_lbl])
             if worst_margin_val is not None:
                 snap["worst_margin"] = worst_margin_val # in-band S11/Gain dB 餘裕 (真目標,正=達標)
             if sm_gap_val is not None:                  # SM 訓前對新點誤差 = generalization (僅 fresh)

@@ -82,6 +82,10 @@ def test_debug_signals_logged(tmp_path):
     assert last["worst_margin"] != "" and last["metal_frac"] != "" and last["grad_norm"] != ""
     assert any(r["sm_gap"] != "" for r in rows)            # generalization 訊號 (fresh epoch)
     assert any(r["sm_fit_loss"] != "" and r["sm_fit_epochs"] != "" for r in rows)   # SM 重訓 (dlf elite)
+    # 2026-07-02 新追蹤訊號：stall/wm_per-label 每 epoch 有；flips 首 epoch 空、之後有；sm_bias fresh 有。
+    assert last["stall"] != "" and last["wm_S11"] != "" and last["wm_Gain"] != ""
+    assert any(r["flips"] != "" for r in rows)             # 相鄰 epoch 像素翻轉 (探索量)
+    assert any(r["sm_bias"] != "" for r in rows)           # SM 樂觀偏差 (fresh)
 
 
 def test_guided_radiation_weight_lowered():
