@@ -15,7 +15,7 @@
 |---|---|---|---|---|
 | 01 | SM 訓練量 A/B(dlf/dlf_fit/refit) | ✅ archived | **訓練量非 bottleneck**;dlf≈refit>dlf_fit、皆差 spec ~4dB、未收斂 | [round-01](round-01-sm-training-ab.md) |
 | 02 | ensemble + trust(文獻治本) | ✅ archived(2026-07-01 停,②~417ep) | **治本微幅、未決定性**(②③微贏~0.3-0.5dB、①輸、皆未收斂;trust_t 卡低) | [round-02](round-02-ensemble-trust.md) |
-| 03 | 探索 × DIP（factorial E/D/E+D） | 🔵 running（2026-07-01 發） | 健檢：三臂被「SM 欠訓」共同瓶頸汙染、explore 臂勝出（→ Round 4） | [round-03](round-03-explore-dip.md) |
+| 03 | 探索 × DIP（factorial E/D/E+D） | ✅ archived（2026-07-02 停,E@189/D@101/E+D@132） | **E(lr↑)最佳 -3.63@89（¼ epoch 追平②）**;DIP 連通成功但停滯;三臂被 SM 欠訓汙染 → R4 修瓶頸重跑 | [round-03](round-03-explore-dip.md) |
 | 04 | 自適應 SM 訓練量（修 R3 SM 欠訓瓶頸） | 🔵 proposed（2026-07-02） | — | [round-04](round-04-adaptive-sm.md) |
 
 ## 研究脈絡（一句話串起來）

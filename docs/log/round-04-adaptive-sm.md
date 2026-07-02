@@ -29,11 +29,11 @@ factorial 續 R3（探索×DIP），唯一新變因＝三臂全把 `sm_train.mod
 - **HFSS 預算**: 各 500 epoch（沿 R3；⚠ 每輪 SM 重訓量會比 dlf 大，正式機量 SM 佔 HFSS 比例）。
 
 ## 3. 執行紀錄 (Run)
-| 臂 | 機器 | 狀態 / 進度 | 結果夾 |
+| 臂 | 機器（計畫，沿 R3 配置排除機器差異） | 狀態 / 進度 | 結果夾 |
 | — | — | — | — |
-| E | （待派） | proposed | — |
-| D | （待派） | proposed | — |
-| E+D | （待派） | proposed | — |
+| E | 216 | proposed（待派） | — |
+| D | 37（快） | proposed（待派） | — |
+| E+D | 218 | proposed（待派） | — |
 - 事件 / 全域變更: 進 R4 前一批工程（Round4 準備）：新增追蹤訊號（flips/stall/sm_bias/wm_per-label/sm_train_epochs/probe_*/elite_n）；實作 opt-in 自適應-SM（golden 零漂移）。發前先跑 `python -m script.status` 掃機器真相。
 - 2026-07-02 發車前健檢：修控制器「低訓練量死鎖」（float target + 本輪觀測投票，模擬實證；沒修的話 R4 很可能默默退化回 dlf、整輪白跑）＋ `seed_target()` 斷點續跑續 target ＋ `elite_n` 成本訊號。詳見 `docs/discuss/decisions.md` 補記。
 

@@ -21,25 +21,8 @@
 | E+D | `single_r4_dip_explore` | `mode: dlf→adaptive` | 同上（sigmoid+lr↑） |
 - **由來**：R3 健檢定位共同瓶頸＝SM 欠訓（dlf 每輪 1 epoch → trust 鎖 0.05 不利用 → plateau）。R4 三臂全上**自適應訓練量**（held-out fresh 點量泛化、自調每輪 elite 重訓 epoch 數，沿途快照 member0、下一輪新點評 argmin；opt-in `mode:adaptive`、golden 零漂移）→ 移除 confound、修瓶頸。adaptive 旋鈕：`snapshots 5/epoch_min 1/epoch_max 32/ema 0.3`，ensemble 保持 5。
 - **判準**：worst_margin（真目標）+ trust_t 升離 0.05 + sm_bias 降；cross-round 比 R3 同臂。**發前先跑 `python -m script.status`**、各 500 epoch。⚠ 每輪 SM 重訓量比 dlf 大，正式機量 SM 佔 HFSS 比例。
-- **狀態**：config ready、工程完成（追蹤訊號 + 自適應-SM 已進 GAN）；**待使用者派工**。指令：`python train.py configs/single_r4_<E/D/E+D>.yaml`。
-
-### Round 3 — 探索 × DIP（factorial，🔵 **running**，2026-07-01 發）→ 詳見 [docs/log/round-03](../docs/log/round-03-explore-dip.md)
-| 臂 | config | = ② 改什麼 | 隔離 |
-|---|---|---|---|
-| E 探索 | `single_r3_explore` | lr 0.005→0.015 | 解凍/探索量 |
-| D DIP | `single_r3_dip` | direct→sigmoid | 連通先驗 |
-| E+D | `single_r3_dip_explore` | sigmoid + lr 0.015 | 加乘 |
-- reference = 現有 ②（不重跑）。lr 是唯一對 direct&sigmoid 都通的探索旋鈕（保 factorial 乾淨）。**2026-07-01 發**（停 Round 2 釋放機器;計畫 E@216 D@37 E+D@218），各 500 epoch。⚠ 37 快、216/218 慢 ~3-6× → 慢機短期到不了 500,先用到得了的 epoch 比。判準：同時看像素翻轉數(探索量)+ worst_margin。
-**問題**：sigmoid 與 direct 都輸 random → 病灶是「SM-guided 搜尋本身」。測文獻治本＝不確定性/信任門控（[[project_litreview_direction]]）。baseline 用 Round-1 的 A/C，不重跑控制組。rad `n_basis`＝8（老師）。
-
-| 臂 | config | SM 底 | 治本內容 |
-|---|---|---|---|
-| ① | `single_r2_ens_harvest` | dlf | ensemble（不確定性懲罰 + acquisition） |
-| ② | `single_r2_enstrust_harvest` | dlf | ensemble + trust（閉迴路 gap 門控） |
-| ③ | `single_r2_refit_enstrust_harvest` | refit | ensemble + trust（最強 SM 底） |
-
-- **待**：benchmark 看完 + 使用者說跑再 launch。指令（三台各一）：`python train.py configs/single_r2_<…>.yaml`
-- **判準**：對照 Round-1 A（dlf 單 SM）、C（refit 單 SM），看 ensemble / trust 有沒有把 worst_margin 推過 random、或推到達標。
+- **狀態**：config ready、工程完成（追蹤訊號 + 自適應-SM + **發車前健檢：修控制器低訓練量死鎖、斷點續跑續 target、`elite_n` 成本訊號**，均已進 GAN、280 測試全綠）；**待使用者派工**。指令：`python train.py configs/single_r4_<E/D/E+D>.yaml`。
+- **機器（計畫，沿 R3 配置、排除機器差異）**：E@216、D@37、E+D@218。**派工前**：① 停 R3 三個 run（2026-07-02 掃描時仍在跑）；② ⚠ **37 上另有 `single_r2_refit_enstrust_harvest` 在跑**（74ep、~20分/ep、心跳 10 分前——非計畫內？需確認來源、決定停否）。
 
 ---
 
@@ -61,5 +44,6 @@
 
 ## ✅ 已歸檔（一行指標，完整結論在 round 檔）
 
+- **Round 03 — 探索 × DIP factorial** → [docs/log/round-03](../docs/log/round-03-explore-dip.md)：**E(lr↑)最佳 -3.63@89（¼ epoch 追平②）**;DIP 連通成功(r_feed~0.95)但停滯(best@8);三臂被 SM 欠訓汙染、factorial 不乾淨 → R4 修瓶頸重跑。2026-07-02 停(E@189/D@101/E+D@132)。圖 `docs/log/assets/round-03/`。
 - **Round 01 — SM 訓練量 A/B** → [docs/log/round-01](../docs/log/round-01-sm-training-ab.md)：**訓練量非 bottleneck**(dlf −4.18≈refit −4.21 > dlf_fit −5.58、皆差 spec ~4dB)。圖 `docs/log/assets/round-01/`。
 - **Round 02 — ensemble + trust 治本** → [docs/log/round-02](../docs/log/round-02-ensemble-trust.md)：**治本微幅、未決定性**(②③ trust 微贏 Round-1 ~0.3-0.5dB、① ens-only 輸、皆未收斂;trust_t 卡低)。2026-07-01 提早停(未到 500)釋放機器給 Round 3;② ~417ep 當 Round-3 reference。
