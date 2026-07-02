@@ -77,3 +77,13 @@
     選擇器不再追不確定的壞群。**先觀察 trust_t、不動手**；R4 結束仍在 → 走 ONGOING 候選（已掛,帶觸發條件）。
 - **R4.5 應變（半熟）**：若整輪 K=1 探測被雜訊淹沒（probe_min≈probe_max 持續 + target 貼底）→ 微調
   `snapshots 5→7`、`ema 0.3→0.15`（更平滑）；config 草稿等 Day-2 中檢結果再寫。
+
+## R4 中檢 70ep（2026-07-02 晚）＋ scout 快照點子
+- E 🟢：trust_t 首次升離 0.05（後20均 0.072、max 0.304）、同預算贏 R3 +0.77dB、ping-pong 消退中（60%→43%）。
+- D 🟡：trust 鎖死、sm_bias ~10（SM 對 sigmoid blob 失準）、輸 R3 -0.92dB；grad_norm 尖峰 469（沒 NaN）。
+- E+D 🔴：stall 56（ep9 後 best 沒動）、bias 惡化到 13、輸 R3 -1.92dB。
+- **自適應觀察**：probe 平坦率 97/67/81%、target 全停 3-4 → 疑「低 target 自鎖」（快照擠 1-4 → 差異<雜訊 →
+  平 → 沒有往上探的證據）。但 E 的 trust 在升 → 也可能 3-4 真的夠（呼應 R1「訓練量非瓶頸」）。
+- **💡 scout 快照（半熟，R4.5 候選正主）**：每 N 輪用 `_scratch` 複本把 member0 多訓到 epoch_max、只為探測
+  「上方訓練量」的泛化——不動線上 SM、不改當輪行為；讓控制器有「往上看」的證據，解低 target 自鎖。
+  比 snapshots↑/ema↓ 對症（那兩個治雜訊，不治「採樣範圍全擠在低處」）。
