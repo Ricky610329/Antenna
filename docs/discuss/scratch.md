@@ -46,8 +46,8 @@
   - 本質＝「以未來的 HFSS 資料流當 validation set 的『事後早停』」；比草案 3 乾淨（不用切 buffer、驗的是真·未來點）。
 - **關聯**：跟 `TrustController` 同一哲學（都拿 gap 當回饋控制），只是致動器不同——那個控探索/tau/κ，
   這個控「SM 訓練量」。也許可共用同一條 gap EMA。
-- **旋鈕已定（2026-07-02，見 decisions）**：ensemble 5→3、探測只用 member0、判準＝配對+每桶EMA+argmin(+斜率護欄)、
-  快照 ~5 份/輪 log-ish、滾動清理（round t 快照由 t+1 點驗完即刪）。
+- **旋鈕已定（2026-07-02，見 decisions）**：ensemble 保持 5（探測脫鉤、不必縮）、探測只用 member0、
+  判準＝配對+每桶EMA+argmin(+斜率護欄)、快照 ~5 份/輪 log-ish、滾動清理（round t 快照由 t+1 點驗完即刪）。
 - **已解掉的疑慮**：「gap 高＝訓太少 vs 學不動」→ 多快照曲線的**形狀**（單調↓ / U 型 / 全高）直接分辨，不再是問題。
 - **仍待實作時再想**：回饋慢一拍的初期抖動（靠 EMA + 保守初值）；要不要跟 `TrustController` 共用同一條 gap EMA。
 - 跟 rollback 無關（rollback 已判定用處不大，見 decisions）。

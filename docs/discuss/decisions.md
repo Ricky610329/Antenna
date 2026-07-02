@@ -17,8 +17,8 @@
 - **K=1 + EMA**：每輪一個 held-out 點就夠（配對比較抵消點難度），噪聲用 EMA 吸收、致動器慢走。
 
 **旋鈕定案**：
-- **ensemble 5→3**；**訓練量探測只用 member0**（各成員同架構同資料、只差 init 擾動 → member0 的曲線代表全體）
-  → 快照只存 member0、~5 份/輪，與 ensemble 大小脫鉤；ensemble(3) 只負責 uncertainty。
+- **ensemble 保持 5**（探測已與 ensemble 脫鉤，不必為省空間縮）；**訓練量探測只用 member0**（各成員同架構
+  同資料、只差 init 擾動 → member0 的曲線代表全體）→ 快照只存 member0、~5 份/輪，與 ensemble 大小無關；ensemble(5) 負責 uncertainty。
 - **判準＝配對 + 每桶 EMA + argmin**：同一 held-out 點上比各快照相對誤差（配對、抵消點難度）；各快照誤差
   按訓練量分桶、跨輪 EMA → 取平滑曲線 argmin 當目標訓練量（EMA 目標、慢走）。**護欄**：argmin 落快照範圍最外側
   → 用斜率方向把探測範圍外移/擴，別被固定範圍卡住。
