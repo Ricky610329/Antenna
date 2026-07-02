@@ -1,0 +1,66 @@
+# Round 4 E+D — DIP + 探索 + 自適應 SM 訓練量
+# = single_r3_dip_explore（sigmoid、lr 0.015、dlf+ensemble+trust）唯一變因：sm_train.mode dlf→adaptive。
+# 判讀：R4 E+D vs D = 探索在 sigmoid 上的效果；vs E = DIP 在探索下的效果（factorial 需三臂都跑）。
+#   R3 三臂被 SM 欠訓 confound、factorial 讀不乾淨；R4 全上自適應-SM 移除該 confound。
+name: pixel_single_r4_dip_explore
+port: single
+
+epochs: 500
+lr: 0.015
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+  uncertainty: 0.05
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: adaptive                    # ← 唯一變因 vs R3 E+D（dlf → 自適應訓練量）
+  newest_steps: 50
+  replay_size: 256
+
+adaptive:
+  snapshots: 5
+  epoch_min: 1
+  epoch_max: 32
+  ema: 0.3
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: sigmoid                     # DIP（vs E 的 direct）
+
+surrogate:
+  name: ensemble
+  ensemble_size: 5
+  init_perturb: 0.02
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+trust:
+  enable: true
+  g0: 1.0
+  ema: 0.3
+  t_min: 0.05
+  t_max: 0.95
+  tau_inflate: 3.0
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  n_basis: 8
+  freeze_trunk: true
+  sm_max_epoch: 1000

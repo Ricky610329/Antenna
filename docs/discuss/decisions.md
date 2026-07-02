@@ -22,8 +22,12 @@
 - **判準＝配對 + 每桶 EMA + argmin**：同一 held-out 點上比各快照相對誤差（配對、抵消點難度）；各快照誤差
   按訓練量分桶、跨輪 EMA → 取平滑曲線 argmin 當目標訓練量（EMA 目標、慢走）。**護欄**：argmin 落快照範圍最外側
   → 用斜率方向把探測範圍外移/擴，別被固定範圍卡住。
-- **快照 = ~5 份/輪、偏早密（log-ish 間距，knee 通常在早期）**；**清理 = 滾動視窗**：round t 的快照由 round t+1
-  的點驗證完即刪，任何時刻最多留 ~2 輪。存 `checkpoint/probe_snapshots/`（SM 權重＝checkpoint，屬核心允許）。
+- **快照 = ~5 份/輪、偏早密（log-ish 間距，knee 通常在早期）**。**存哪（實作定案，比原磁碟版更簡）：留記憶體**
+  （`prev_snapshots` dict，每輪覆蓋上一輪）→ 零磁碟、零清理、resume 最多少一次 observation。member0 state_dict
+  ~16MB×5≈80MB steady，可接受。（2026-07-02 實作時微調，取代原「存 `checkpoint/probe_snapshots/` + 滾動清理」。）
+- **實作落點**：`sm_train.mode: adaptive`（新 mode）；`adaptive` 區段旋鈕 {snapshots, epoch_min, epoch_max, ema}；
+  `AdaptiveSMTrainController` 在 `training.py`；快照/評估在 `surrogates.py`（`train_by_datas(snapshot_epochs=)` +
+  `eval_snapshot`）；只探 member0。新追蹤訊號：`sm_train_epochs`/`probe_argmin`/`probe_min_err`/`probe_max_err`。
 
 ## SM 線上訓練強度（2026-07-02）
 - **每輪只訓 1 epoch（現行 `mode:dlf`）偏少** ✔ — SM 欠訓、系統性低估 HFSS ~3–4.5，是 R3 三臂 plateau

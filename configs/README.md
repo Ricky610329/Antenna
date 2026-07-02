@@ -56,6 +56,9 @@ python train.py configs/single_base.yaml
 | `single_r3_explore.yaml` | **【Round 3 E】探索臂** | 對標 ②（`single_r2_enstrust_harvest`），唯一變因 `lr 0.005→0.015`（3× 步長解凍） | （Round 2 實測搜尋凍住=每 epoch 才翻 ~6 像素；測加大步長探索能否解凍+變好。判準：像素翻轉數+worst_margin；**需正式機 HFSS**） |
 | `single_r3_dip.yaml` | **【Round 3 D】DIP 臂** | 對標 ②，唯一變因 `generator: direct→sigmoid`（架構連通先驗、單候選，去 num_candidates/selection） | （generator-free 丟連通先驗 r_feed 0.2 vs sigmoid 0.62 → 帶回 sigmoid+治本救連通/S11；對照 ②；**需正式機 HFSS**） |
 | `single_r3_dip_explore.yaml` | **【Round 3 E+D】DIP+探索加乘** | = `single_r3_dip`（sigmoid）+ `lr 0.015` | （測 DIP×探索加乘；E+D vs D=sigmoid 上探索效果、vs E=探索下 DIP 效果；factorial 需 E/D 都跑；**需正式機 HFSS**） |
+| `single_r4_explore.yaml` | **【Round 4 E】探索臂 + 自適應 SM** | = `single_r3_explore` 唯一變因 `sm_train.mode: dlf→adaptive`（+ `adaptive` 區段） | （R3 三臂共同瓶頸=SM 欠訓→trust 鎖 0.05 不利用；自適應訓練量用 held-out fresh 點量泛化、自調每輪 elite 重訓 epoch 數；對照 R3 E；判準 worst_margin+trust_t 升+sm_bias 降；**需正式機 HFSS**） |
+| `single_r4_dip.yaml` | **【Round 4 D】DIP 臂 + 自適應 SM** | = `single_r3_dip` 唯一變因 `sm_train.mode: dlf→adaptive` | （同 R4 E 的自適應修法，套在 sigmoid/DIP 臂；對照 R3 D（r_feed 0.95 但 best@ep8 停滯）；**需正式機 HFSS**） |
+| `single_r4_dip_explore.yaml` | **【Round 4 E+D】DIP+探索 + 自適應 SM** | = `single_r3_dip_explore` 唯一變因 `sm_train.mode: dlf→adaptive` | （R4 全上自適應-SM 移除 R3 的 SM 欠訓 confound → factorial 終於乾淨；E+D vs D/E；**需正式機 HFSS**） |
 | `single_sc_rad_smharvest.yaml` | **改用自訓 SM 初始化** | 在 `single_sc_rad` 上 `surrogate.pretrained: sm_harvest.pth`（唯一變因；old_sm.pth 對我們資料 ≈隨機，自訓的準 ~3 倍） | （新增，對標 `single_sc_rad` 看好的初始化是否讓早期收斂更快；**需正式機 HFSS**） |
 | `single_sc_rad_flat15.yaml` | **±45 平整：收緊容忍** | 在 `single_sc_rad` 上 `radiation.floor_db` 3 → 1.5（唯一變因；窗內容許 ripple 收到 1.5dB，更平更高） | （新增，「±45 高且平整」對照組之一；對標 `single_sc_rad`；**需正式機 HFSS**） |
 | `single_sc_rad_flat10.yaml` | **±45 平整：容忍 1dB** | 在 `single_sc_rad` 上 `radiation.floor_db` 3 → 1.0（唯一變因；比 flat15 更緊，掃 floor_db 一個點） | （新增，「±45 高且平整」對照組；看容忍收太緊會不會逼降峰值/難收斂；**需正式機 HFSS**） |
