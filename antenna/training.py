@@ -81,6 +81,9 @@ SECTION_KEYS = {
     "selection": {"boundary_weight", "feasibility_max", "diversity_weight", "uncertainty_weight"},
     # 閉迴路信任控制 (TrustController)：gap (SM vs HFSS) → t → 調 tau/λ_trust/κ。enable=False → 靜態。
     "trust": {"enable", "g0", "ema", "t_min", "t_max", "tau_inflate"},
+    # 自適應 SM 訓練量 (AdaptiveSMTrainController)：以 held-out fresh HFSS 點量 member0 泛化、自調每輪重訓
+    # epoch 數 (沿途快照 member0、下一輪新點評快照取 argmin)。由 sm_train.mode: adaptive 開啟；此區放旋鈕。
+    "adaptive": {"snapshots", "epoch_min", "epoch_max", "ema"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
 #! 各 port 目標的「必填」子鍵：缺就在 load_config/建構時報錯，不拖到 setup_responses
@@ -93,7 +96,7 @@ TARGET_REQUIRED = {
 }
 #! sm_train.mode 的允許「值」(白名單只驗鍵不驗值；mode 打錯字會靜默退回 single、害 A/B 白跑 →
 #  必須額外驗值，比照 island_suppression 鍵打錯的歷史教訓)。
-SM_MODES = ("single", "replay", "dlf", "dlf_fit", "refit")
+SM_MODES = ("single", "replay", "dlf", "dlf_fit", "refit", "adaptive")
 
 
 class TrustController:
@@ -152,6 +155,73 @@ class TrustController:
         return self.kappa_base * (1.0 - self.t) if self.enable else self.kappa_base
 
 
+class AdaptiveSMTrainController:
+    """自適應 SM 訓練量：以「held-out 的 fresh HFSS 點」量 member0 的泛化，自調每輪 SM 重訓的 epoch 數。
+
+    做法 (見 docs/discuss/decisions.md「自適應 SM 訓練量」)：本輪把 member0 訓到 target_epochs()，沿途在
+    schedule() 的 epoch 點快照 member0 權重；**下一輪**的新點 (held-out、還沒被這些快照訓過) 逐一評快照
+    → 得「訓練量→泛化誤差」→ per-bucket EMA → argmin。argmin 落在本輪最大訓練量點 (邊界) = 還能再多訓 →
+    加碼 target；argmin 落在中間 = 訓過頭 → target 移向 argmin。避免「1 epoch 太少」與「逼 min_loss 過擬合」
+    兩個極端。enable=False → 惰性 (target_epochs() 回 fallback、schedule() 空、不快照) → 與原樣相同。
+
+    只探測 member0 (各成員同架構同資料、只差 init 擾動 → 曲線代表全體)；快照留記憶體、每輪覆蓋 (零磁碟)。"""
+
+    def __init__(self, *, enable: bool, snapshots: int = 5, epoch_min: int = 1, epoch_max: int = 64,
+                 ema: float = 0.3, fallback_epochs: int = 1):
+        self.enable = bool(enable)
+        self.n = max(2, int(snapshots))                 # 快照點數 (≥2 才有曲線)
+        self.epoch_min = max(1, int(epoch_min))
+        self.epoch_max = max(self.epoch_min + 1, int(epoch_max))
+        self.ema = float(ema)
+        self.fallback = max(1, int(fallback_epochs))    # enable=False / 尚無觀測時的訓練量
+        self.bucket: dict = {}                          # {epoch(int): EMA(held-out err)}
+        #! 誤設護欄：ema 是 EMA 係數，須 ∈ (0,1]。
+        if not (0.0 < self.ema <= 1.0):
+            raise ValueError(f"adaptive.ema 須 ∈ (0,1]，得到 {ema}")
+        self.target = self._geomid()                    # 初值取範圍幾何中點
+
+    def _geomid(self) -> int:
+        return int(round(math.exp((math.log(self.epoch_min) + math.log(self.epoch_max)) / 2)))
+
+    def schedule(self) -> list:
+        """本輪要快照 member0 的 epoch 點：[epoch_min, target] 內 log 間距的 n 個 (去重遞增)。enable=False → []。"""
+        if not self.enable:
+            return []
+        hi = math.log(max(self.epoch_min + 1, self.target))
+        lo = math.log(self.epoch_min)
+        pts = {max(1, int(round(math.exp(lo + (hi - lo) * i / (self.n - 1))))) for i in range(self.n)}
+        return sorted(pts)
+
+    def observe(self, errors: dict):
+        """errors: {epoch: held-out 誤差}（上一輪快照在這一輪新點上的誤差）。per-bucket EMA → 更新 target。"""
+        if not self.enable or not errors:
+            return
+        finite = {int(e): float(v) for e, v in errors.items() if math.isfinite(v)}
+        if not finite:
+            return
+        for e, v in finite.items():
+            self.bucket[e] = v if e not in self.bucket else self.ema * v + (1.0 - self.ema) * self.bucket[e]
+        best = min(self.bucket, key=self.bucket.get)     # 泛化最佳的訓練量 (跨輪 EMA 後)
+        top = max(finite)                                # 本輪最大訓練量快照點 (邊界)
+        # 邊界(最多訓的贏) → 加碼探更多；否則 target 移向 argmin。再對 target 做 EMA、慢走不震盪。
+        cand = min(self.epoch_max, int(round(self.target * 1.3))) if best >= top else best
+        self.target = max(self.epoch_min, min(self.epoch_max,
+                          int(round(self.ema * cand + (1.0 - self.ema) * self.target))))
+
+    def target_epochs(self) -> int:
+        """本輪 SM 重訓的 epoch 數 (enable=False → fallback)。"""
+        return int(self.target) if self.enable else self.fallback
+
+    def probe_stats(self, errors: dict) -> dict:
+        """監控用：本輪 held-out 探測曲線的 argmin/最小/最大誤差 (落 csv)。無有限值 → 空 dict。"""
+        finite = {int(e): float(v) for e, v in (errors or {}).items() if math.isfinite(v)}
+        if not finite:
+            return {}
+        best = min(finite, key=finite.get)
+        return {"probe_argmin": float(best), "probe_min_err": float(finite[best]),
+                "probe_max_err": float(max(finite.values()))}
+
+
 @dataclass
 class TrainConfig:
     """一組實驗的設定 (從 YAML 載入)。"""
@@ -170,6 +240,7 @@ class TrainConfig:
     radiation: dict = field(default_factory=dict)   # 方向圖 (選用，預設 off)：見 SECTION_KEYS["radiation"]
     selection: dict = field(default_factory=dict)   # 多候選選擇 (選用，僅 batch_latent)：見 SECTION_KEYS["selection"]
     trust: dict = field(default_factory=dict)        # 閉迴路信任控制 (選用，預設 off)：見 SECTION_KEYS["trust"]
+    adaptive: dict = field(default_factory=dict)     # 自適應 SM 訓練量 (選用；由 sm_train.mode: adaptive 開)：見 SECTION_KEYS["adaptive"]
 
     def __post_init__(self):
         if self.port not in PORT_SPECS:
@@ -199,6 +270,10 @@ class TrainConfig:
         mode = self.sm_train.get("mode", "single")
         if mode not in SM_MODES:
             raise ValueError(f"sm_train.mode 未知值: {mode!r} (允許: {list(SM_MODES)})")
+        #! adaptive 區段有設但 mode 非 adaptive → 該區段不會生效 → fail-fast (比照 island_suppression 靜默沒開的教訓)。
+        if self.adaptive and mode != "adaptive":
+            raise ValueError(f"設了 adaptive 區段但 sm_train.mode={mode!r} (非 'adaptive') → 該區段不會生效；"
+                             f"要用自適應 SM 訓練量請設 sm_train.mode: adaptive。")
 
 
 def load_config(path) -> TrainConfig:

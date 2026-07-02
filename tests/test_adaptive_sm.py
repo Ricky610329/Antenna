@@ -1,0 +1,97 @@
+"""
+tests/test_adaptive_sm.py — AdaptiveSMTrainController 純邏輯 + config 驗證測試（不碰 NAS/模型）。
+
+自適應 SM 訓練量控制器：以 held-out fresh 點量泛化、自調每輪 SM 重訓 epoch 數（見 docs/discuss/decisions.md）。
+"""
+import pytest
+
+from antenna.training import AdaptiveSMTrainController, TrainConfig
+
+
+def _ctrl(**kw):
+    base = dict(enable=True, snapshots=5, epoch_min=1, epoch_max=64, ema=0.3)
+    base.update(kw)
+    return AdaptiveSMTrainController(**base)
+
+
+def _targets():
+    return {"S11": {"side": 0, "center": -10, "width": [5, 0, 7, 0, 5], "method": "low"},
+            "Gain": {"side": -19, "center": 4, "width": [5, 0, 7, 0, 5], "method": "high"}}
+
+
+def test_disabled_is_inert():
+    """enable=False → schedule 空、target=fallback、observe 不改變任何東西（golden 安全）。"""
+    c = AdaptiveSMTrainController(enable=False, fallback_epochs=1)
+    assert c.schedule() == []
+    assert c.target_epochs() == 1
+    c.observe({1: 5.0, 64: 2.0})
+    assert c.target_epochs() == 1
+
+
+def test_schedule_log_spaced_in_range():
+    c = _ctrl()
+    s = c.schedule()
+    assert 2 <= len(s) <= 5                     # 去重後可能 <5
+    assert s == sorted(s) and s[0] >= 1 and s[-1] <= c.target
+    assert all(isinstance(x, int) for x in s)
+
+
+def test_target_init_geomid():
+    c = _ctrl(epoch_min=1, epoch_max=100)
+    assert 1 < c.target_epochs() < 100          # 幾何中點
+
+
+def test_observe_boundary_increases_target():
+    """最多訓的快照泛化最好(邊界) → target 加碼探更多。"""
+    c = _ctrl(ema=1.0)                           # ema=1 → 立即反應、好斷言
+    t0 = c.target_epochs()
+    errs = {ep: (100.0 - ep) for ep in c.schedule()}   # 越多訓誤差越低 → argmin=最大點(邊界)
+    c.observe(errs)
+    assert c.target_epochs() > t0
+
+
+def test_observe_inside_moves_toward_argmin():
+    """中間某訓練量泛化最好(U 型) → target 移向該點、不一味加碼。"""
+    c = _ctrl(ema=1.0)
+    sched = c.schedule()
+    mid = sched[len(sched) // 2]
+    errs = {ep: abs(ep - mid) + 1.0 for ep in sched}   # argmin=mid
+    c.observe(errs)
+    assert abs(c.target_epochs() - mid) <= 1
+
+
+def test_observe_ignores_empty_and_nonfinite():
+    c = _ctrl(ema=1.0)
+    t0 = c.target_epochs()
+    c.observe({})
+    assert c.target_epochs() == t0
+    c.observe({1: float("nan"), 5: float("inf")})
+    assert c.target_epochs() == t0
+
+
+def test_probe_stats():
+    c = _ctrl()
+    st = c.probe_stats({2: 3.0, 8: 1.0, 30: 5.0})
+    assert st["probe_argmin"] == 8.0 and st["probe_min_err"] == 1.0 and st["probe_max_err"] == 5.0
+    assert c.probe_stats({}) == {}
+
+
+def test_bad_ema_rejected():
+    with pytest.raises(ValueError, match="ema"):
+        AdaptiveSMTrainController(enable=True, ema=0.0)
+    with pytest.raises(ValueError, match="ema"):
+        AdaptiveSMTrainController(enable=True, ema=1.5)
+
+
+def test_config_adaptive_section_requires_mode():
+    """設了 adaptive 區段但 mode 非 adaptive → fail-fast（比照 island_suppression 靜默沒開的教訓）。"""
+    with pytest.raises(ValueError, match="adaptive"):
+        TrainConfig(name="x", port="single", targets=_targets(), adaptive={"snapshots": 5})
+    # mode: adaptive + adaptive 區段 → OK；adaptive 進了 SM_MODES
+    cfg = TrainConfig(name="x", port="single", targets=_targets(),
+                      sm_train={"mode": "adaptive"}, adaptive={"snapshots": 5, "epoch_max": 32})
+    assert cfg.sm_train["mode"] == "adaptive"
+    # adaptive 區段打錯鍵 → 白名單 raise
+    with pytest.raises(ValueError, match="adaptive"):
+        TrainConfig(name="x", port="single", targets=_targets(),
+                    sm_train={"mode": "adaptive"}, adaptive={"snapshotss": 5})
