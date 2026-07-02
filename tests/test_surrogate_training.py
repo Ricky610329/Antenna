@@ -101,6 +101,41 @@ def test_train_by_datas_min_loss_early_exit(tmp_path):
     assert len(hist2) > 1                                   # 不設 min_loss → 不會第 1 epoch 就停
 
 
+def test_train_by_datas_captures_snapshots(tmp_path):
+    """自適應訓練量：snapshot_epochs 給了 → 在對應 epoch 邊界存權重快照；沒給 → 不存 (原行為)。"""
+    sm = MLPSurrogate(tmp_path / "cksnap", 625, (2, 17), max_epoch=1)
+    sm.train_by_datas(_store(tmp_path), epochs=3, snapshot_epochs=[1, 2], early_stop=False, verbose=False)
+    assert set(sm._probe_snapshots) == {1, 2}
+    assert all(isinstance(v, dict) and v for v in sm._probe_snapshots.values())
+    sm2 = MLPSurrogate(tmp_path / "cksnap2", 625, (2, 17), max_epoch=1)
+    sm2.train_by_datas(_store(tmp_path), epochs=2, verbose=False)
+    assert sm2._probe_snapshots == {}
+
+
+def test_eval_snapshot_finite_and_nonintrusive(tmp_path):
+    """eval_snapshot：載快照到暫存複本評估 → 回有限誤差，且『不動到線上 model 權重』。"""
+    import math
+    sm = MLPSurrogate(tmp_path / "ckeval", 625, (2, 17), max_epoch=1)
+    sm.train_by_datas(_store(tmp_path), epochs=2, snapshot_epochs=[1], early_stop=False, verbose=False)
+    snap = sm._probe_snapshots[1]
+    before = {k: v.clone() for k, v in sm.model.state_dict().items()}
+    err = sm.eval_snapshot(snap, torch.rand(625), torch.rand(2, 17))
+    assert isinstance(err, float) and math.isfinite(err)
+    after = sm.model.state_dict()
+    assert all(torch.equal(before[k], after[k]) for k in before)   # 線上 model 權重未被動到
+
+
+def test_ensemble_snapshots_member0_only(tmp_path):
+    """集成：snapshot_epochs 只作用 member0，ensemble._probe_snapshots 取自它；eval_snapshot 可用。"""
+    import math
+    from antenna.models.surrogates import EnsembleMLPSurrogate
+    ens = EnsembleMLPSurrogate(tmp_path / "ckens", 625, (2, 17), max_epoch=1, ensemble_size=3, init_perturb=0.0)
+    ens.train_by_datas(_store(tmp_path), epochs=2, snapshot_epochs=[1], early_stop=False, verbose=False)
+    assert set(ens._probe_snapshots) == {1}
+    err = ens.eval_snapshot(ens._probe_snapshots[1], torch.rand(625), torch.rand(2, 17))
+    assert math.isfinite(err)
+
+
 def test_sm_requires_grad_false_freezes_params_but_keeps_input_grad(tmp_path):
     """審查後優化的不變式：smodel.requires_grad(False) 後，SM 反傳『不在 SM 參數上累積梯度』
     (GEN 不會誤更新 SM)，但梯度仍穿過 SM 流回輸入 (GEN 仍學得動)。eval 模式不被動到。"""

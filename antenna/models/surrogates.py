@@ -77,7 +77,7 @@ class SurrogateModel(Models):
         self.epoch += 1
         return MultiResponses(self.model(pattern))
 
-    def train_by_datas(self, dataset:Dataset, epochs: int = 100, batch_size: Optional[int] = None, *, min_loss: Optional[float] = None, verbose:bool = True) -> List[float]:
+    def train_by_datas(self, dataset:Dataset, epochs: int = 100, batch_size: Optional[int] = None, *, min_loss: Optional[float] = None, verbose:bool = True, snapshot_epochs=None, early_stop: bool = True) -> List[float]:
         """
         Train the model using the provided dataset.
 
@@ -99,6 +99,7 @@ class SurrogateModel(Models):
         #? 與 train_one_data 的差異：這裡掃整個資料集多個 epoch，是「全域校正」而非「就地微調」。
         self.requires_grad(True, train=True)  #? 解凍參數並切到 train 模式 (BatchNorm/Dropout 生效)
         self.record.reset()
+        self._probe_snapshots = {}            #? 自適應訓練量：{epoch(1-indexed): 權重快照}；snapshot_epochs 給了才填
 
         if dataset is None or len(dataset) <= 0:
             return []  #? 空資料集 → 無事可做，直接回傳空清單 (常見於閉迴路初期還沒收集到資料)
@@ -149,6 +150,9 @@ class SurrogateModel(Models):
             avg_epoch_loss = self.record.average('loss')  #? 本 epoch 所有 batch 的平均 loss
             self.record.reset('loss', delete=True)        #? 清掉 batch 級暫存，下個 epoch 重新累積
             self.record['epoch_loss'] = avg_epoch_loss    #? 推進到 epoch 級曲線 (即最終回傳值)
+            if snapshot_epochs and (epoch + 1) in snapshot_epochs:   #? 自適應：快照此刻權重 (供下一輪 held-out 探測訓練量)
+                self._probe_snapshots[epoch + 1] = {k: v.detach().cpu().clone()
+                                                    for k, v in self.model.state_dict().items()}
 
             epoch_bar.set_postfix({"Loss": f"{avg_epoch_loss:.4e}"})
 
@@ -157,8 +161,9 @@ class SurrogateModel(Models):
                 if verbose: logger.success(f'Fit reached (loss {avg_epoch_loss:.4e} ≤ {min_loss}) at epoch {epoch + 1}.')
                 break
 
-            #? 早停：若最近 epochs/2 個 epoch 的 epoch_loss 都沒比之前更好，就提前結束 (省時，避免過擬合)
-            if self.record.early_stop('epoch_loss', int(epochs / 2)):
+            #? 早停：若最近 epochs/2 個 epoch 的 epoch_loss 都沒比之前更好，就提前結束 (省時，避免過擬合)。
+            #  early_stop=False (自適應訓練量) → 關掉，確保訓滿 epochs、所有排定的快照都拿得到。
+            if early_stop and self.record.early_stop('epoch_loss', int(epochs / 2)):
                 logger.success(f'Early Stopping triggered at epoch {epoch + 1}!')
                 break
 
@@ -166,7 +171,21 @@ class SurrogateModel(Models):
         #? 回傳每 epoch 平均 loss 清單；若每個 epoch 都全 NaN 被跳過 (epoch_loss 從未寫入) → 回空清單,
         #  不讓 record['epoch_loss'] 撞 KeyError (呼叫端都容忍空回傳)。
         return self.record['epoch_loss'] if 'epoch_loss' in self.record else []
-    
+
+    def eval_snapshot(self, state_dict, pattern: Tensor, real_response: Tensor) -> float:
+        """把一份權重快照載進「暫存複本」(不碰線上 self.model)、對這張 pattern 預測、回傳與真實響應的 MSE。
+        供自適應訓練量控制器做 held-out 泛化評估。複本 lazy 深拷貝一次、之後每次載入重用 (省事、不重建架構)。"""
+        if getattr(self, "_scratch", None) is None:
+            import copy
+            self._scratch = copy.deepcopy(self.model)
+        self._scratch.load_state_dict(state_dict)
+        self._scratch.eval()
+        with torch.no_grad():
+            pred = self._scratch(tensor(pattern))
+            err = self.criterion(pred.reshape(-1, *self.response_shape),
+                                 tensor(real_response).reshape(-1, *self.response_shape))
+        return float(err)
+
     def train_one_data(self, pattern:Tensor, real_response:Tensor, min_loss=None, max_epoch=None, *, verbose:bool = True):
         """
         The model is trained using a single set of data.
@@ -498,13 +517,22 @@ class EnsembleSurrogate:
             out = m.train_one_data(pattern, real_response, min_loss=min_loss, max_epoch=max_epoch, verbose=verbose)
         return out   # 回傳最後一成員的逐步 loss (僅監控；呼叫端多半忽略)
 
-    def train_by_datas(self, dataset, epochs: int = 100, batch_size=None, *, min_loss=None, verbose: bool = True):
+    def train_by_datas(self, dataset, epochs: int = 100, batch_size=None, *, min_loss=None, verbose: bool = True,
+                       snapshot_epochs=None, early_stop: bool = True):
         #? fan-out：每個成員各自重訓整批。多樣性主要來自「不同 init + 暖啟動擾動」(文獻結論)；
         #  洗牌序差異是次要 (各成員 new 一個 Generator、序可能相同)，不靠它撐分歧。
+        #? snapshot_epochs 只傳 member0：探測訓練量用它一條軌跡代表全體 (各成員同架構同資料、只差 init 擾動)。
         out = []
-        for m in self.members:
-            out = m.train_by_datas(dataset, epochs=epochs, batch_size=batch_size, min_loss=min_loss, verbose=verbose)
+        for i, m in enumerate(self.members):
+            out = m.train_by_datas(dataset, epochs=epochs, batch_size=batch_size, min_loss=min_loss,
+                                   verbose=verbose, snapshot_epochs=(snapshot_epochs if i == 0 else None),
+                                   early_stop=early_stop)
+        self._probe_snapshots = getattr(self.members[0], "_probe_snapshots", {})
         return out
+
+    def eval_snapshot(self, state_dict, pattern, real_response) -> float:
+        #? held-out 泛化評估委派給 member0 (探測用的快照就是它存的)。
+        return self.members[0].eval_snapshot(state_dict, pattern, real_response)
 
     def rad_predict(self, pattern) -> Tensor:
         return torch.stack([m.rad_predict(pattern) for m in self.members]).mean(0)
