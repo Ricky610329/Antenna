@@ -22,6 +22,9 @@ factorial 續 R3（探索×DIP），唯一新變因＝三臂全把 `sm_train.mod
 | E+D | `single_r4_dip_explore` | `mode: dlf→adaptive`（sigmoid、lr 0.015 不變） | R3 E+D（固定 dlf） |
 
 - adaptive 旋鈕（三臂相同）：`snapshots 5 / epoch_min 1 / epoch_max 32 / ema 0.3`；ensemble 保持 5、探測只用 member0。
+- **⚠ 歸因注意（兩個機制）**：`mode: dlf→adaptive` 實際換了兩件事——elite 訓練量 1→自適應、**且拿掉對最新點的
+  `train_one_data` 單筆擬合**（反模式；最新點在 elite 裡照訓）。R4 vs R3 的結論要寫「SM 更新規則整包換」，
+  不能歸因到單一機制（見 `docs/discuss/decisions.md` 補記）。
 - **判準**: worst_margin（真目標）+ trust_t 升 + sm_bias 降；cross-round 比 R3 同臂看自適應有沒有幫上。
 - **HFSS 預算**: 各 500 epoch（沿 R3；⚠ 每輪 SM 重訓量會比 dlf 大，正式機量 SM 佔 HFSS 比例）。
 
@@ -31,7 +34,8 @@ factorial 續 R3（探索×DIP），唯一新變因＝三臂全把 `sm_train.mod
 | E | （待派） | proposed | — |
 | D | （待派） | proposed | — |
 | E+D | （待派） | proposed | — |
-- 事件 / 全域變更: 進 R4 前一批工程（Round4 準備）：新增追蹤訊號（flips/stall/sm_bias/wm_per-label/sm_train_epochs/probe_*）；實作 opt-in 自適應-SM（golden 零漂移）。發前先跑 `python -m script.status` 掃機器真相。
+- 事件 / 全域變更: 進 R4 前一批工程（Round4 準備）：新增追蹤訊號（flips/stall/sm_bias/wm_per-label/sm_train_epochs/probe_*/elite_n）；實作 opt-in 自適應-SM（golden 零漂移）。發前先跑 `python -m script.status` 掃機器真相。
+- 2026-07-02 發車前健檢：修控制器「低訓練量死鎖」（float target + 本輪觀測投票，模擬實證；沒修的話 R4 很可能默默退化回 dlf、整輪白跑）＋ `seed_target()` 斷點續跑續 target ＋ `elite_n` 成本訊號。詳見 `docs/discuss/decisions.md` 補記。
 
 ## 4. 分析 (Analyze)
 （待跑完 `python -m script.round_report --round 04 --runs … --labels E D E+D`）
