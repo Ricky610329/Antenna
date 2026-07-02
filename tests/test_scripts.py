@@ -59,3 +59,53 @@ def test_cos_basis_shape_and_k0_constant():
 
 def test_mad_median_abs_delta():
     assert _mad([1.0, 3.0, 3.0, 6.0]) == 2.0  # 逐差 2,0,3 → 中位 2
+
+
+# ── run_curve：x 軸綁 hfss_calls（真實模擬次數；使用者定案 2026-07-02） ────────────────
+
+
+def _fake_run_dir(tmp_path, with_calls: bool):
+    """造一個最小 run 夾：config.yaml + metrics.csv + patterns/*.pt (2 顆 pattern、1 次 cache 命中)。"""
+    import torch
+    import yaml
+    targets = {"S11": {"side": 0, "center": -10, "width": [5, 0, 7, 0, 5], "method": "low"},
+               "Gain": {"side": -19, "center": 4, "width": [5, 0, 7, 0, 5], "method": "high"}}
+    (tmp_path / "config.yaml").write_text(
+        yaml.safe_dump({"name": "t", "port": "single", "targets": targets}), encoding="utf-8")
+    pat = tmp_path / "patterns"
+    pat.mkdir()
+    # aaa: S11 全 -12 (margin +2)、Gain 全 5 (margin +1) → worst=+1；bbb: Gain 全 3 → worst=−1
+    resp_a = torch.cat([torch.full((1, 17), -12.0), torch.full((1, 17), 5.0)])
+    resp_b = torch.cat([torch.full((1, 17), -12.0), torch.full((1, 17), 3.0)])
+    torch.save((torch.zeros(25, 25), resp_a, 1.0), pat / "aaa.pt")
+    torch.save((torch.zeros(25, 25), resp_b, 2.0), pat / "bbb.pt")
+    hdr = "epoch,pattern_hash" + (",hfss_calls" if with_calls else "")
+    rows = ["1,aaa,1", "2,bbb,2", "3,aaa,2"] if with_calls else ["1,aaa", "2,bbb", "3,aaa"]
+    (tmp_path / "metrics.csv").write_text(hdr + "\n" + "\n".join(rows) + "\n", encoding="utf-8")
+    return tmp_path
+
+
+def test_run_curve_uses_hfss_calls_and_merges_cache_hits(tmp_path):
+    """有 hfss_calls 欄 → x=真實模擬次數；cache 命中 (同 x) 收斂成一點、best-so-far 正確。"""
+    from antenna.utils import config as _config
+    _dev = _config.device
+    try:
+        from script.benchmark_vs_random import run_curve
+        xs, best = run_curve(_fake_run_dir(tmp_path, with_calls=True))
+        assert xs == [1, 2]                       # 3 列 → 2 個真實模擬 (第 3 列 cache 命中不佔 x)
+        assert best[0] == best[1] == 1.0          # best-so-far 保持在 aaa 的 worst=+1
+    finally:
+        _config.device = _dev                     # 該 script 匯入時把全域 device 設 cpu → 還原,不影響後續測試
+
+
+def test_run_curve_falls_back_to_epoch_for_old_runs(tmp_path):
+    """舊 run 無 hfss_calls 欄 → 回退 epoch (行為與原樣相同)。"""
+    from antenna.utils import config as _config
+    _dev = _config.device
+    try:
+        from script.benchmark_vs_random import run_curve
+        xs, best = run_curve(_fake_run_dir(tmp_path, with_calls=False))
+        assert xs == [1, 2, 3]
+        assert best == [1.0, 1.0, 1.0]
+    finally:
+        _config.device = _dev

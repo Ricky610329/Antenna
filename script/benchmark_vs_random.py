@@ -53,12 +53,16 @@ def _resolve_run(name_or_path):
 
 
 def run_curve(run_dir):
-    """讀一個 run → (epochs, best_worst_margin_so_far)。跳過 skip/無 hash 的 epoch。"""
+    """讀一個 run → (x, best_worst_margin_so_far)。跳過 skip/無 hash 的 epoch。
+
+    x 軸＝`hfss_calls`（累計真實模擬次數；使用者定案 2026-07-02——epoch 含 cache 命中/skip、
+    與模擬預算對不上）。cache 命中的 epoch 共用同一 x → 收斂成一點；舊 run 無此欄 → 回退 epoch。"""
     import pandas as pd
     run_dir = Path(run_dir)
     cfg = load_config(str(run_dir / "config.yaml"))
     df = pd.read_csv(str(run_dir / "metrics.csv"))
-    epochs, wm = [], []
+    has_calls = "hfss_calls" in df.columns
+    xs, wm = [], []
     for _, row in df.iterrows():
         h = str(row.get("pattern_hash", "") or "")
         if not h or h == "nan":
@@ -68,14 +72,20 @@ def run_curve(run_dir):
             continue
         _patt, resp, _loss = torch.load(str(f), weights_only=True)
         m = _margin(resp, cfg)
-        epochs.append(int(row["epoch"])); wm.append(m)
+        x = (int(row["hfss_calls"]) if has_calls and pd.notna(row.get("hfss_calls"))
+             else int(row["epoch"]))          # 欄位升級前的舊列 → 回退 epoch (計數器有續 seed,大致連續)
+        xs.append(x); wm.append(m)
     if not wm:
         raise SystemExit(f"{run_dir} 沒有可評估的 epoch")
-    # best-so-far (worst-margin 越高越好 → 累計最大)
-    best = []
+    # best-so-far (worst-margin 越高越好 → 累計最大)；同一 x (cache 命中,無新模擬) 收斂成一點
+    epochs, best = [], []
     cur = -1e9
-    for v in wm:
-        cur = max(cur, v); best.append(cur)
+    for x, v in zip(xs, wm):
+        cur = max(cur, v)
+        if epochs and x == epochs[-1]:
+            best[-1] = cur
+        else:
+            epochs.append(x); best.append(cur)
     return epochs, best
 
 
@@ -95,7 +105,7 @@ def main():
     ap = argparse.ArgumentParser(description="worst-margin(dB) vs HFSS-call benchmark (離線)")
     ap.add_argument("--runs", nargs="+", required=True, help="結果夾名(結尾相符)或路徑,可多個疊圖")
     ap.add_argument("--random-store", default=None, help="random-sim 資料集名 (DATASET_PATH 下) → 畫 random best-of-N")
-    ap.add_argument("--at", type=int, default=None, help="在此 epoch 預算下印各 run 的 best worst-margin (公平對標點)")
+    ap.add_argument("--at", type=int, default=None, help="在此 HFSS-call 預算下印各 run 的 best worst-margin (公平對標點)")
     ap.add_argument("--out", default="tmp/report/benchmark.png", help="疊圖輸出 PNG")
     args = ap.parse_args()
 
@@ -118,7 +128,7 @@ def main():
         ax.plot(rx, rbest, "k--", lw=2, label=f"random best-of-N ({args.random_store})")
 
     ax.axhline(0, color="r", ls=":", lw=1, label="spec 達標線 (margin=0)")
-    ax.set_xlabel("epoch (≈ HFSS-call)"); ax.set_ylabel("best worst-margin so far (dB)  [越高越好, >0=達標]")
+    ax.set_xlabel("HFSS calls"); ax.set_ylabel("best worst-margin so far (dB)  [越高越好, >0=達標]")
     ax.set_title("worst-margin vs HFSS-call"); ax.legend(fontsize=8); ax.grid(alpha=0.3)
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     fig.tight_layout(); fig.savefig(args.out, dpi=120); plt.close(fig)

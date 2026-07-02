@@ -165,7 +165,7 @@ class TrainingMonitor:
                             ("sched", ("lr", "tau", "tau_eff", "sigma", "grad_norm")),
                             # index：r_feed/耗時/skip + worst_margin(in-band S11/Gain dB 餘裕,真目標) + metal_frac(崩塌)。
                             ("index", ("r_feed", "time", "skipped", "worst_margin", "metal_frac",
-                                       "flips", "stall", "wm_S11", "wm_Gain")),
+                                       "flips", "stall", "wm_S11", "wm_Gain", "hfss_calls")),
                             # loss 分量拆解 → 歸因 plateau 誰主導 (sm_target 對照 sim_loss = SM 準度)；
                             # rad_fit = 方向圖頭線上擬合 loss (看 rad head 收斂沒)。
                             ("components", ("sm_target", "sc_loss", "bnd_loss", "rad_fit")),

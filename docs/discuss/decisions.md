@@ -6,6 +6,14 @@
 
 ---
 
+## 曲線 x 軸綁「真實 HFSS 模擬次數」（2026-07-02）
+- **定案**（Ricky）：loss/worst_margin 曲線要跟**實際模擬次數**綁定，不用 epoch——epoch 含 cache 命中/skip，
+  跟模擬預算對不上、判讀會困惑。
+- **實作**：新欄 `hfss_calls`（累計真實模擬；cache/skip 不加；dense 每 epoch 落、斷點續跑續舊值，舊 run 用
+  sm_gap fresh 標記數回填 seed）；`run_curve`（benchmark/round_report 共用）x 軸改用它、cache 命中收斂成一點、
+  舊 run 回退 epoch；TB index 群組同步。`--at` 語意隨之變成「HFSS-call 預算」（跨 run 對標更公平）。
+- **限制**：跑一半的 run 要等下次重啟（表頭遷移）才開始有此欄；之前的列由 fallback 撐。
+
 ## 自適應 SM 訓練量：機制 + 旋鈕定案（2026-07-02）
 承下「SM 線上訓練強度」的方向，機制與旋鈕定了（**設計方向定案，實作時可微調**）；工作筆記見 [scratch.md](scratch.md)。
 

@@ -142,6 +142,9 @@ def test_adaptive_run_completes_and_logs(tmp_path):
     assert all(r["sm_train_epochs"] != "" for r in rows)          # 每 epoch 都記自適應訓練量
     assert any(r["probe_argmin"] != "" for r in rows)             # held-out 探測有跑到 (第 ≥2 個 fresh epoch)
     assert any(r["elite_n"] != "" for r in rows)                  # elite 集大小有落欄 (成本解讀用)
+    #? hfss_calls = 累計真實模擬次數 (mock 每 epoch 都 fresh → 等於 epoch 序)、dense 每列都有
+    calls = [float(r["hfss_calls"]) for r in rows]
+    assert calls == [1.0, 2.0, 3.0, 4.0, 5.0]
 
 
 def test_config_adaptive_section_requires_mode():

@@ -44,7 +44,9 @@ SCALAR_KEYS = ("epoch", "sim_loss", "gen_loss", "best_loss", "sim_loss_avg", "r_
                "sm_gap", "sm_fit_loss", "sm_fit_epochs", "worst_margin", "metal_frac", "grad_norm",
                # 追蹤訊號 (2026-07-02 補，好管理)：flips=相鄰 epoch 像素翻轉數(探索量)；stall=best_loss 連續幾
                #   epoch 沒刷新；sm_bias=sim_loss−sm_target(SM 樂觀偏差,fresh)；wm_S11/wm_Gain=per-label worst_margin(single)。
-               "flips", "stall", "sm_bias", "wm_S11", "wm_Gain",
+               #   hfss_calls=累計「真實 HFSS 模擬」次數 (cache 命中/skip 不加)——loss/wm 曲線的正確 x 軸
+               #   (epoch 含 cache/skip,與模擬預算對不上;使用者定案 2026-07-02)。
+               "flips", "stall", "sm_bias", "wm_S11", "wm_Gain", "hfss_calls",
                # 自適應 SM 訓練量 (mode:adaptive)：本輪實際訓練 epoch 數 + held-out 探測曲線 argmin/最小/最大誤差
                #   + elite_n=本輪 elite 集大小 (成本=epochs×elite_n 步,解讀正式機 wall-clock 用)。
                "sm_train_epochs", "probe_argmin", "probe_min_err", "probe_max_err", "elite_n",

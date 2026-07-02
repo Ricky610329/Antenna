@@ -93,7 +93,7 @@ def benchmark_figure(run_dirs, labels, cfg0, random_store, at, out_path):
         except Exception as e:
             logger.warning(f"random_store '{random_store}' 讀取失敗 → 跳過 random 線(只比各臂曲線):{e}")
     ax.axhline(0, color="r", ls=":", lw=1, label="spec met (margin=0)")
-    ax.set_xlabel("epoch (~ HFSS-call)"); ax.set_ylabel("best worst-margin so far (dB) [higher=better]")
+    ax.set_xlabel("HFSS calls"); ax.set_ylabel("best worst-margin so far (dB) [higher=better]")
     ax.set_title("worst-margin vs HFSS-call"); ax.legend(fontsize=8); ax.grid(alpha=0.3)
     fig.tight_layout(); fig.savefig(out_path, dpi=120); plt.close(fig)
 
@@ -111,7 +111,7 @@ def main():
     ap.add_argument("--runs", nargs="+", required=True, help="結果夾名(結尾相符)或路徑,多個=多臂")
     ap.add_argument("--labels", nargs="*", default=None, help="各臂顯示名(對齊 round 檔 A/B/C);省略用結果夾名")
     ap.add_argument("--random-store", default=None, help="random-sim 資料集名 → 疊 random best-of-N")
-    ap.add_argument("--at", type=int, default=None, help="epoch 預算(公平對標點;省略=全程)")
+    ap.add_argument("--at", type=int, default=None, help="HFSS-call 預算(公平對標點;省略=全程)")
     ap.add_argument("--out-dir", default=None, help="圖輸出夾(預設 docs/log/assets/round-NN)")
     args = ap.parse_args()
 

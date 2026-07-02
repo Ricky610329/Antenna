@@ -705,6 +705,9 @@ def run_training(
     reopened_once = False          # 本波連敗是否已 reopen 過 (再連敗 → 判系統性故障中斷)
     last_stack = None              # 最近一筆成功響應 (skip 的 epoch 拿來佔位給監控)
     prev_pattern = None            # 上一 epoch 的 pattern (算 flips 探索量；首 epoch 無)
+    #? 累計真實 HFSS 模擬次數 (cache 命中/skip 不算)——loss 曲線的正確 x 軸。斷點續跑：續舊欄；
+    #  舊 run 無此欄 → 用歷史 fresh 標記數 (sm_gap 只在 fresh epoch 落值) 回填,計數不歸零。
+    hfss_calls = int(float(state.last("hfss_calls", len(state.series("sm_gap")))))
     prev_best = state.last("best_loss", float("inf"))  # 追 stall：best_loss 上次刷新的值 (續跑沿用載回的最佳)
     stall = 0                      # best_loss 連續幾個 epoch 沒刷新 (停滯偵測)
     while epoch < epochs:
@@ -798,6 +801,7 @@ def run_training(
         if cached is None and not skipped:
             consecutive_skips = 0           # 成功 → 連敗歸零
             reopened_once = False
+            hfss_calls += 1                 # 真的燒了一次 HFSS (cache/skip 分支不加)
             sim_loss = result.criterion()
             stack = result.stack()
             last_stack = stack
@@ -966,6 +970,7 @@ def run_training(
         if flips_val is not None:
             state.append("flips", float(flips_val))
         state.append("stall", float(stall))
+        state.append("hfss_calls", float(hfss_calls))   # 每 epoch 都落 (dense) → 任何欄都能改用它當 x 軸
         if sm_bias_val is not None:
             state.append("sm_bias", sm_bias_val)
         for _lbl in ("S11", "Gain"):
