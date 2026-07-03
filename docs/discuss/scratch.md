@@ -119,3 +119,13 @@
   線上 SM 每輪只訓 target（探測/行動解耦、held-out 鐵律保留）。實作＝adaptive 區段加 `probe_every: M`
   （default off → 現行為＝golden 安全）。取代先前「偶爾 scout」的半熟版。
 - 延伸（先不動）：trust 的 sm_gap 也是單點+EMA,同哲學可共用 M 點平均。
+
+## 欠訓實錘 + R4.5 改案：fixed-K 先行（2026-07-03）
+- **實錘**：三臂每輪訓完 sm_fit_loss 停在 7.7-10.6（學長壓到 0.1,差兩個數量級）→ 連 elite 都沒擬合,
+  3-5 epoch＝深度欠訓。我先前「可能夠」判斷收回。（SM 有 harvest warm-start,但線上 3-5 ep 追不上分布飄移。）
+- **兩端都被資料反對**：1-5 ep 欠訓（本實錘）/ 壓到 0.1 過擬合（R1 dlf_fit 最差+Ricky 經驗）→
+  中間帶（fit_loss 壓到 ~1-3,估 16-64 ep）**從未測過**。adaptive 本該自動找它,但探測自鎖沒上去過。
+- **R4.5 改案（Ricky 固定 K 提案）**：~~probe-round 先行~~ → **fixed-K 先行**（先確認「多訓有用」再談自動找）——
+  零程式碼:`adaptive: {epoch_min: K, epoch_max: K+1}` 夾死 target。推 K=16（fit_loss 收斂速率估 4-8× 到 1-3 區）。
+  順手 replay_size 256→512（Ricky「暫存幾百點」）。probe-round 退 R5。
+- 待 Ricky 定 K → 備三 config + round 檔,R4 收檔即發。
