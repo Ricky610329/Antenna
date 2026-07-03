@@ -107,3 +107,15 @@
 - **主假設仍未驗證**：三臂 trust 全鎖 0.05（gap 絕對值 6.5-9 仍遠高於門檻）——E+D 的躍遷是探索撞到的,
   不是 trust 進入利用。學長「線上學習要等」在 sigmoid 臂成立（gap 在降）;E 臂相反。
 - R4.5 續 hold（使用者定調等久一點）。⚠ E+D 心跳 36 分偏慢,下次確認有前進。
+
+## R4.5 規格成形：「probe round」（Ricky 多點+平滑 × scout 全範圍，2026-07-03）
+- **Ricky 直覺**：sm gap/探測該採更多點、對點平滑後再找 argmin。→ 對，但要拆兩軸：
+- **軸一（雜訊,Ricky 的多點+平滑）**：K=1 的單點排名常被跨輪點難度雜訊翻掉（probe_min 跨輪彈 15↔60）。
+  ⚠ held-out 陷阱：舊點對新快照是洩題的 → 唯一乾淨多點來源＝「快照誕生後才進來的點」→
+  **快照組留 M 輪**（M~8）,t+1..t+M 的 fresh 點逐一評、M 點平均後才 observe/換組。零額外 HFSS。
+- **軸二（範圍壓縮,平滑救不了）**：快照擠 1-5 → 曲線天生平 → 自鎖。既然每 M 輪才探測,那次就用
+  **丟棄式複本訓到 epoch_max、log 間距全範圍快照**（不動線上 SM;SM 訓練 vs HFSS 毫秒級=免費）。
+- **合體＝probe round**：每 M 輪全範圍快照 → M 點平均曲線 → bucket EMA → argmin → target;
+  線上 SM 每輪只訓 target（探測/行動解耦、held-out 鐵律保留）。實作＝adaptive 區段加 `probe_every: M`
+  （default off → 現行為＝golden 安全）。取代先前「偶爾 scout」的半熟版。
+- 延伸（先不動）：trust 的 sm_gap 也是單點+EMA,同哲學可共用 M 點平均。
