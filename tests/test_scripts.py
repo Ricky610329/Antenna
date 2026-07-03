@@ -116,6 +116,78 @@ def test_resolve_run_prefers_exact_suffix(tmp_path, monkeypatch):
         _config.device = _dev
 
 
+# ── pattern_anatomy：結構特徵 + variogram 分箱（純函式,不碰 NAS；analysis-01） ────────────
+
+
+def _feat(p):
+    from antenna.utils import config as _config
+    _dev = _config.device
+    try:
+        from script.pattern_anatomy import pattern_features
+        return pattern_features(p)
+    finally:
+        _config.device = _dev
+
+
+def test_pattern_features_empty_and_full():
+    import numpy as np
+    f0 = _feat(np.zeros((25, 25)))
+    assert f0["n_comp"] == 0 and f0["metal_frac"] == 0.0 and f0["feed_touch"] == 0.0
+    f1 = _feat(np.ones((25, 25)))
+    assert f1["n_comp"] == 1 and f1["main_frac"] == 1.0 and f1["r_feed"] == 1.0
+    assert f1["sym_lr"] == 1.0 and f1["perim_ratio"] == 0.0 and f1["n_holes"] == 0
+    assert f1["feed_touch"] == 1.0
+
+
+def test_pattern_features_two_blocks_and_feed():
+    """兩塊分離金屬 (feed 在其中一塊)：n_comp=2、r_feed=feed 塊佔比。「連成一塊算一組」的定義驗證。"""
+    import numpy as np
+    p = np.zeros((25, 25))
+    p[0:5, 0:5] = 1                     # 塊 A：25 px (不含 feed)
+    p[20:25, 10:15] = 1                 # 塊 B：25 px,含 feed (24,12)
+    f = _feat(p)
+    assert f["n_comp"] == 2
+    assert f["feed_touch"] == 1.0
+    assert abs(f["r_feed"] - 0.5) < 1e-9        # feed 塊 25/50
+    assert abs(f["main_frac"] - 0.5) < 1e-9     # 兩塊同大
+    assert f["n_holes"] == 0
+
+
+def test_pattern_features_hole_and_perimeter():
+    import numpy as np
+    p = np.zeros((25, 25))
+    p[10:13, 10:13] = 1
+    p[11, 11] = 0                        # 3×3 環,中心挖洞 → 1 個不觸邊的介質組
+    f = _feat(p)
+    assert f["n_comp"] == 1 and f["n_holes"] == 1
+    single = np.zeros((25, 25))
+    single[5, 5] = 1                     # 單像素:內部邊界 4 條 / 金屬 1 → perim_ratio=4
+    assert abs(_feat(single)["perim_ratio"] - 4.0) < 1e-9
+
+
+def test_pattern_features_symmetry():
+    import numpy as np
+    p = np.zeros((25, 25))
+    p[3, 5] = 1
+    p[3, 19] = 1                         # 5 的鏡像欄 = 24-5 = 19 → 完全對稱
+    assert _feat(p)["sym_lr"] == 1.0
+    q = np.zeros((25, 25))
+    q[0, 0] = 1                          # 鏡像位 (0,24) 是 0 → 兩格不一致
+    assert abs(_feat(q)["sym_lr"] - (625 - 2) / 625) < 1e-9
+
+
+def test_binned_median():
+    from antenna.utils import config as _config
+    _dev = _config.device
+    try:
+        from script.pattern_anatomy import binned_median
+        med, cnt = binned_median([1, 2, 5, 10], [1.0, 2.0, 3.0, 4.0], [1, 3, 6, 11])
+        assert list(cnt) == [2, 1, 1]
+        assert med[0] == 1.5 and med[1] == 3.0 and med[2] == 4.0
+    finally:
+        _config.device = _dev
+
+
 def test_run_curve_falls_back_to_epoch_for_old_runs(tmp_path):
     """舊 run 無 hfss_calls 欄 → 回退 epoch (行為與原樣相同)。"""
     from antenna.utils import config as _config

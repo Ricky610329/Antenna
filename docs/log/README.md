@@ -20,5 +20,10 @@
 | 05 | 滑動視窗 SM 訓練量（修 R4 欠訓+探測自鎖） | 🔵 running（2026-07-03 發） | — | [round-05](round-05-window-sm.md) |
 | 06 | 離線期望基準（每輪 HFSS 的期望 best；零 HFSS） | ✅ archived（2026-07-03 當日完成） | **期望爬升到不了 spec**（-9.18+0.75·ln k,躍遷主導）；**達標 pattern 已在池內（oracle +0.38）**；學長同預算贏 1-2dB；池抽樣等效預算 200-450× → **分布≫策略** | [round-06](round-06-offline-expected-best.md) |
 
+## 離線分析（analysis-NN；不佔 round——**慣例 2026-07-03**：round 編號只給燒 HFSS 的實驗，round-06 為慣例前歸檔、不回改）
+| # | 主題 | 狀態 | 結論(一句) | 檔 |
+|---|---|---|---|---|
+| 01 | pattern 解剖：地形隨機性 × S11/Gain 結構歸因 | ✅ archived（2026-07-03 當日完成） | **地形非抽獎**（翻1-2px 只動不相關水位的 12-16%,有效半徑~數十翻轉;跨區大跳≈重抽）；**S11←少組+feed連通、Gain←少洞、共同敵人=細碎**（配對: 同Gain下 S11 好=組數−9.5;同S11下 Gain 好=洞−5）→ 解 R3-D 之謎、先驗要分工 | [analysis-01](analysis-01-pattern-anatomy.md) |
+
 ## 研究脈絡（一句話串起來）
 generator G = 單 pattern 超特徵 → 轉 **generator-free SM-guided 搜尋**(輸 random)→ **Round 1** 測「是不是 SM 訓練不足」→ **否**(訓飽反而過擬合)→ 病灶是 SM-guided 搜尋本身 → **Round 2** 上文獻治本(ensemble + trust)→ 治本微幅未決定性、且實測搜尋「凍住」(每 epoch 才翻 ~6 像素)→ **Round 3** factorial 測「探索(lr↑)× DIP(generator 帶回來連通先驗)」的效果與加乘 → 健檢發現三臂共同瓶頸＝**SM 欠訓**(dlf 每輪只訓 1 epoch → 樂觀、trust 鎖 0.05 不利用) → **Round 4** 上**自適應 SM 訓練量**(held-out fresh 點自調每輪重訓 epoch 數)修這個瓶頸、重跑 E/D/E+D 去 confound → 中檢:E+D **破紀錄 -2.89**(探索撞到)但實錘**深度欠訓**(fit_loss 仍 8-11)+探測自鎖(target 3-5) → **Round 5** 上**滑動視窗訓練量**(訓到視窗頂+argmin 貼邊 ×2/÷2,Ricky 設計)把 SM 真的訓起來。平行地,**Round 6**(離線、零 HFSS)把我們/學長/random 三塊歷史放同一把尺:期望爬升到不了 spec、達標 pattern 已在 harvest 池內、**分布≫策略** → 「池頂端 warm-start」升候選。

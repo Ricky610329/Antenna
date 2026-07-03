@@ -163,3 +163,12 @@
     重錨」候選）;(b) 學長機制對照組（他多條 run 300-700 輪逼近/達標,我們丟掉的成分裡有有效的）。
   - 侷限:我們 k>200 中位只剩 1-2 run;學長軌跡序=online.dataset 插入序;分析腳本/npz/圖在 session
     scratchpad（一次性,要留就開 round 正式化進 `script/`+`docs/log/`）。
+
+## analysis-01 發現（2026-07-03，詳見 docs/log/analysis-01）
+- 運氣論點裁決：**局部錯（翻1-2px 只有不相關水位 12-16%→引導有依據）、全域對（>百餘翻轉≈重抽）**
+  → 引導管局部開採、機率管跨區發現，分工明確。
+- **S11/Gain 結構配方不同**：S11←n_comp少+r_feed高+整塊（共振體完整）;Gain←n_holes少（口徑乾淨,組數無妨）;
+  共同敵人 perim_ratio 細碎、共同朋友 sym_lr 對稱（10-5-10 候選+1）。
+- **解 R3-D 之謎**：sigmoid 只修了「S11 側結構」（r_feed 0.95）,不管洞/細碎 → Gain 卡住 → worst_margin 不動。
+- 💡 半熟：island_suppression/tv 權重從「服務 Gain」視角重審（現有 loss 剛好對應去洞/平滑,從沒這樣調過）;
+  掛 ONGOING 候選、觸發=R5 收檔判讀時一起看。
