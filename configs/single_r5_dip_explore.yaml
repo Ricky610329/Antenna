@@ -1,0 +1,68 @@
+# Round 5 E+D — DIP + 探索 + 滑動視窗 SM 訓練量
+# = single_r4_dip_explore（sigmoid、lr 0.015、ensemble+trust）唯一變因：sm_train.mode adaptive→adaptive_window。
+# 假設同 R5 E；R4 此臂曾破專案紀錄（-2.89@154,探索撞到）——看 SM 訓起來後能否把「撞到」變「開採」。
+#   對照 R4 E+D。判準：sm_fit_loss 壓到 ~1-3 + 破紀錄後的持續刷新 + worst_margin。
+name: pixel_single_r5_dip_explore
+port: single
+
+epochs: 500
+lr: 0.015
+patience: 10
+
+loss:
+  spectral_connectivity: 0.0005
+  boundary: 0.1
+  uncertainty: 0.05
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+  mode: adaptive_window             # ← 唯一變因 vs R4 同臂（adaptive → 滑動視窗訓練量）
+  newest_steps: 50
+  replay_size: 512                  # 加大暫存（500ep 後半不擠掉舊點）
+
+adaptive:                           # 滑動視窗訓練量旋鈕（見 WindowSMTrainController / docs/discuss/decisions.md）
+  snapshots: 5                      # log2 階梯採樣點數（hi, hi/2, …, hi/16）
+  epoch_min: 8                      # 視窗頂 hi 的下限
+  epoch_max: 256                    # 視窗頂 hi 的上限（使用者定的天花板）
+  hi_init: 64                       # hi 起點（fit_loss 收斂速率估的中間帶；有證據自己 ×2 往上爬）
+  ema: 0.3                          # bucket 誤差 EMA（吸 K=1 單點雜訊）
+  patience: 3                       # argmin 連續貼邊幾次才滑動（遲滯防震盪）
+
+scheduler:
+  on_plateau: linear
+
+generator:
+  name: sigmoid                     # DIP（vs E 的 direct）
+
+surrogate:
+  name: ensemble
+  ensemble_size: 5
+  init_perturb: 0.02
+  pretrained: sm_harvest.pth
+  offline_dataset: harvest_single
+
+trust:
+  enable: true
+  g0: 1.0
+  ema: 0.3
+  t_min: 0.05
+  t_max: 0.95
+  tau_inflate: 3.0
+
+targets:
+  S11:  { side: 0,   center: -10, width: [5, 0, 7, 0, 5], method: low }
+  Gain: { side: -19, center: 4,   width: [5, 0, 7, 0, 5], method: high }
+
+radiation:
+  enable: true
+  weight: 0.1
+  window_deg: 45
+  floor_db: 3
+  boresight_weight: 1.0
+  warmup_epochs: 30
+  n_theta: 181
+  n_basis: 8
+  freeze_trunk: true
+  sm_max_epoch: 1000

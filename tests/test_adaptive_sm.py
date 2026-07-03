@@ -5,7 +5,7 @@ tests/test_adaptive_sm.py — AdaptiveSMTrainController 純邏輯 + config 驗�
 """
 import pytest
 
-from antenna.training import AdaptiveSMTrainController, TrainConfig
+from antenna.training import AdaptiveSMTrainController, TrainConfig, WindowSMTrainController
 
 
 def _ctrl(**kw):
@@ -147,6 +147,89 @@ def test_adaptive_run_completes_and_logs(tmp_path):
     assert calls == [1.0, 2.0, 3.0, 4.0, 5.0]
 
 
+# ── WindowSMTrainController（滑動視窗訓練量,mode: adaptive_window；Ricky 設計 2026-07-03） ─────────
+
+
+def _wctrl(**kw):
+    base = dict(enable=True, snapshots=5, epoch_min=8, epoch_max=256, hi_init=64, ema=1.0, patience=3)
+    base.update(kw)
+    return WindowSMTrainController(**base)
+
+
+def test_window_schedule_log2_ladder():
+    """階梯 = hi, hi/2, …, hi/2^(n-1)；訓練量恆為視窗頂。"""
+    c = _wctrl()
+    assert c.schedule() == [4, 8, 16, 32, 64]
+    assert c.target_epochs() == 64
+
+
+def test_window_slides_up_on_persistent_top_argmin():
+    """argmin 連續 patience 次貼頂 → hi×2 (「最佳都靠後→默默增加」)；未滿 patience 不動 (遲滯)。"""
+    c = _wctrl()
+    errs_top_best = lambda: {ep: 100.0 - ep for ep in c.schedule()}    # 越多訓越好 → argmin=頂
+    c.observe(errs_top_best()); c.observe(errs_top_best())
+    assert c.target_epochs() == 64                     # 2 < patience=3 → 還不動
+    c.observe(errs_top_best())
+    assert c.target_epochs() == 128                    # 第 3 次 → ×2
+    assert c.schedule() == [8, 16, 32, 64, 128]        # 階梯跟著滑,4/5 個 key 與舊視窗重疊
+    for _ in range(6):                                 # 持續貼頂 → 爬到上限後夾住
+        c.observe(errs_top_best())
+    assert c.target_epochs() == 256
+
+
+def test_window_slides_down_on_persistent_bottom_argmin():
+    """argmin 連續貼底 → hi÷2 (訓過頭)；夾在 epoch_min。"""
+    c = _wctrl(hi_init=32)
+    errs_bot_best = lambda: {ep: 1.0 + 0.1 * ep for ep in c.schedule()}   # 越少訓越好 → argmin=底
+    for _ in range(3):
+        c.observe(errs_bot_best())
+    assert c.target_epochs() == 16
+    for _ in range(9):
+        c.observe(errs_bot_best())
+    assert c.target_epochs() == 8                      # epoch_min=8 夾住
+
+
+def test_window_interior_argmin_holds_and_resets_streak():
+    """argmin 落中間 → 視窗不動,且把貼邊連擊歸零 (防「斷續貼邊」誤觸滑動)。"""
+    c = _wctrl()
+    top = lambda: {ep: 100.0 - ep for ep in c.schedule()}
+    mid = lambda: {ep: abs(ep - 16) + 1.0 for ep in c.schedule()}      # argmin=16 (中間)
+    c.observe(top()); c.observe(top()); c.observe(mid()); c.observe(top()); c.observe(top())
+    assert c.target_epochs() == 64                     # 連擊被中間值打斷 → 從未滿 3 → 不滑
+
+
+def test_window_disabled_inert_and_seed():
+    off = WindowSMTrainController(enable=False, fallback_epochs=1)
+    assert off.schedule() == [] and off.target_epochs() == 1
+    off.observe({8: 1.0, 64: 0.5})
+    assert off.target_epochs() == 1
+    c = _wctrl()
+    c.seed_target(128.0)                               # 斷點續跑：續視窗位置 (夾範圍)
+    assert c.target_epochs() == 128
+    c.seed_target(9999)
+    assert c.target_epochs() == 256
+
+
+def test_window_run_completes_and_logs(tmp_path):
+    """mock 整合：adaptive_window run 跑得完、sm_train_epochs=視窗頂、探測/elite_n 有落欄、無 NaN。"""
+    import csv
+    import math
+    from antenna.training import run_training
+    from test_baseline_loop import _MockSim
+    cfg = TrainConfig(name="t_window", port="single", targets=_targets(),
+                      lr=0.005, sm_train={"mode": "adaptive_window", "lr": 0.001},
+                      adaptive={"snapshots": 3, "epoch_min": 2, "epoch_max": 8, "hi_init": 4, "ema": 0.5})
+    gl = []
+    run_training(cfg, simulator=_MockSim(("S11", "Gain")), record_path=tmp_path, seed=0,
+                 max_epochs=5, on_epoch=lambda e, m: gl.append(m["gen_loss"]), verbose=False)
+    assert len(gl) == 5 and all(math.isfinite(x) for x in gl)
+    with open(tmp_path / "metrics.csv", newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert all(float(r["sm_train_epochs"]) >= 2.0 for r in rows)      # 訓練量=視窗頂 (≥epoch_min)
+    assert any(r["probe_argmin"] != "" for r in rows)                 # held-out 探測有跑
+    assert any(r["elite_n"] != "" for r in rows)
+
+
 def test_config_adaptive_section_requires_mode():
     """設了 adaptive 區段但 mode 非 adaptive → fail-fast（比照 island_suppression 靜默沒開的教訓）。"""
     with pytest.raises(ValueError, match="adaptive"):
@@ -155,6 +238,11 @@ def test_config_adaptive_section_requires_mode():
     cfg = TrainConfig(name="x", port="single", targets=_targets(),
                       sm_train={"mode": "adaptive"}, adaptive={"snapshots": 5, "epoch_max": 32})
     assert cfg.sm_train["mode"] == "adaptive"
+    # mode: adaptive_window 也吃 adaptive 區段 (含 window 專屬鍵 hi_init/patience)
+    cfg2 = TrainConfig(name="x", port="single", targets=_targets(),
+                       sm_train={"mode": "adaptive_window"},
+                       adaptive={"snapshots": 5, "epoch_min": 8, "epoch_max": 256, "hi_init": 64, "patience": 3})
+    assert cfg2.sm_train["mode"] == "adaptive_window"
     # adaptive 區段打錯鍵 → 白名單 raise
     with pytest.raises(ValueError, match="adaptive"):
         TrainConfig(name="x", port="single", targets=_targets(),

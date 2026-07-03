@@ -81,9 +81,11 @@ SECTION_KEYS = {
     "selection": {"boundary_weight", "feasibility_max", "diversity_weight", "uncertainty_weight"},
     # 閉迴路信任控制 (TrustController)：gap (SM vs HFSS) → t → 調 tau/λ_trust/κ。enable=False → 靜態。
     "trust": {"enable", "g0", "ema", "t_min", "t_max", "tau_inflate"},
-    # 自適應 SM 訓練量 (AdaptiveSMTrainController)：以 held-out fresh HFSS 點量 member0 泛化、自調每輪重訓
-    # epoch 數 (沿途快照 member0、下一輪新點評快照取 argmin)。由 sm_train.mode: adaptive 開啟；此區放旋鈕。
-    "adaptive": {"snapshots", "epoch_min", "epoch_max", "ema"},
+    # 自適應 SM 訓練量：mode: adaptive (AdaptiveSMTrainController，訓到 target、快照 [min..target]) 或
+    # mode: adaptive_window (WindowSMTrainController，訓到視窗頂 hi、log2 階梯快照、argmin 貼邊→視窗×2/÷2)。
+    # 兩模式共用此區旋鈕；hi_init/patience 僅 window 用 (adaptive 忽略)；epoch_min/epoch_max 在 window
+    # 模式＝hi 的下/上限。
+    "adaptive": {"snapshots", "epoch_min", "epoch_max", "ema", "hi_init", "patience"},
 }
 TARGET_KEYS = {"side", "center", "width", "method", "interval"}
 #! 各 port 目標的「必填」子鍵：缺就在 load_config/建構時報錯，不拖到 setup_responses
@@ -96,7 +98,7 @@ TARGET_REQUIRED = {
 }
 #! sm_train.mode 的允許「值」(白名單只驗鍵不驗值；mode 打錯字會靜默退回 single、害 A/B 白跑 →
 #  必須額外驗值，比照 island_suppression 鍵打錯的歷史教訓)。
-SM_MODES = ("single", "replay", "dlf", "dlf_fit", "refit", "adaptive")
+SM_MODES = ("single", "replay", "dlf", "dlf_fit", "refit", "adaptive", "adaptive_window")
 
 
 class TrustController:
@@ -236,6 +238,78 @@ class AdaptiveSMTrainController:
                 "probe_max_err": float(max(finite.values()))}
 
 
+class WindowSMTrainController(AdaptiveSMTrainController):
+    """滑動視窗 SM 訓練量 (mode: adaptive_window；Ricky 設計 2026-07-03)。
+
+    與 AdaptiveSMTrainController 的差異＝**訓練量恆為視窗頂 hi**（不是自調的 target）：每輪把 elite
+    訓滿 hi epoch、沿 log2 階梯 [hi/2^(n-1) … hi] 快照 member0；下一輪 held-out 點評快照 → bucket EMA →
+    看 argmin 落視窗哪裡——連續 patience 次貼**頂**（最佳都靠後）→ hi×2（默默增加）；連續貼**底** →
+    hi÷2（訓過頭）；落中間 → 不動（收斂在最佳落點附近）。
+
+    為什麼能解 adaptive 的「低 target 自鎖」：探測永遠涵蓋到訓練量上緣，「再多訓有沒有好處」隨時有證據。
+    代價（誠實）：live SM 最多過衝一個 octave（真最佳 ≈ hi/2 時）——遠離「壓到 0.1」的過擬合區（R1 教訓）。
+    ×2 滑動使階梯 key 跨視窗重疊 (n-1)/n → bucket EMA 直接沿用。held-out 鐵律/快照機制與父類相同。
+    enable=False → 惰性（target_epochs 回 fallback、不快照），與原樣相同。"""
+
+    def __init__(self, *, enable: bool, snapshots: int = 5, epoch_min: int = 8, epoch_max: int = 256,
+                 hi_init: int = 64, ema: float = 0.3, patience: int = 3, fallback_epochs: int = 1):
+        self.enable = bool(enable)
+        self.n = max(2, int(snapshots))                 # 階梯點數 (hi, hi/2, …, hi/2^(n-1))
+        self.epoch_min = max(2, int(epoch_min))         # hi 下限 (視窗頂最低)
+        self.epoch_max = max(self.epoch_min, int(epoch_max))
+        self.ema = float(ema)
+        if not (0.0 < self.ema <= 1.0):
+            raise ValueError(f"adaptive.ema 須 ∈ (0,1]，得到 {ema}")
+        self.patience = max(1, int(patience))           # argmin 連續貼邊幾次才滑動 (遲滯防震盪)
+        self.fallback = max(1, int(fallback_epochs))
+        self.bucket: dict = {}                          # {epoch(int): EMA(held-out err)}，key 跨視窗重疊可沿用
+        self.hi = float(min(self.epoch_max, max(self.epoch_min, int(hi_init))))
+        self._edge_streak = 0                           # >0=連續貼頂次數、<0=連續貼底、0=中間
+
+    def schedule(self) -> list:
+        """log2 階梯：hi, hi/2, …, hi/2^(n-1) (去重遞增)。enable=False → []。"""
+        if not self.enable:
+            return []
+        hi = int(round(self.hi))
+        return sorted({max(1, int(round(hi / 2 ** k))) for k in range(self.n)})
+
+    def target_epochs(self) -> int:
+        """每輪訓練量＝視窗頂 (探測永遠看得到上緣；這是與 adaptive 的本質差異)。"""
+        return int(round(self.hi)) if self.enable else self.fallback
+
+    def observe(self, errors: dict):
+        """held-out 誤差 → bucket EMA → argmin 位置決定視窗滑動 (貼頂×2 / 貼底÷2 / 中間不動)。"""
+        if not self.enable or not errors:
+            return
+        finite = {int(e): float(v) for e, v in errors.items() if math.isfinite(v)}
+        if not finite:
+            return
+        for e, v in finite.items():
+            self.bucket[e] = v if e not in self.bucket else self.ema * v + (1.0 - self.ema) * self.bucket[e]
+        best = min(finite, key=lambda e: self.bucket[e])   # 只有本輪觀測到的桶投票 (同父類教訓)
+        top, bot = max(finite), min(finite)
+        if best >= top:
+            self._edge_streak = self._edge_streak + 1 if self._edge_streak > 0 else 1
+        elif best <= bot:
+            self._edge_streak = self._edge_streak - 1 if self._edge_streak < 0 else -1
+        else:
+            self._edge_streak = 0                          # 落中間 → 遲滯歸零、視窗不動
+        if self._edge_streak >= self.patience:
+            self.hi = min(float(self.epoch_max), self.hi * 2.0)
+            self._edge_streak = 0
+        elif self._edge_streak <= -self.patience:
+            self.hi = max(float(self.epoch_min), self.hi / 2.0)
+            self._edge_streak = 0
+
+    def seed_target(self, value):
+        """斷點續跑：用 metrics.csv 最後一筆 sm_train_epochs (=當時的 hi) 續視窗位置。"""
+        if not self.enable or value is None:
+            return
+        v = float(value)
+        if math.isfinite(v):
+            self.hi = max(float(self.epoch_min), min(float(self.epoch_max), v))
+
+
 @dataclass
 class TrainConfig:
     """一組實驗的設定 (從 YAML 載入)。"""
@@ -284,10 +358,10 @@ class TrainConfig:
         mode = self.sm_train.get("mode", "single")
         if mode not in SM_MODES:
             raise ValueError(f"sm_train.mode 未知值: {mode!r} (允許: {list(SM_MODES)})")
-        #! adaptive 區段有設但 mode 非 adaptive → 該區段不會生效 → fail-fast (比照 island_suppression 靜默沒開的教訓)。
-        if self.adaptive and mode != "adaptive":
-            raise ValueError(f"設了 adaptive 區段但 sm_train.mode={mode!r} (非 'adaptive') → 該區段不會生效；"
-                             f"要用自適應 SM 訓練量請設 sm_train.mode: adaptive。")
+        #! adaptive 區段有設但 mode 非 adaptive/adaptive_window → 該區段不會生效 → fail-fast (比照 island_suppression 靜默沒開的教訓)。
+        if self.adaptive and mode not in ("adaptive", "adaptive_window"):
+            raise ValueError(f"設了 adaptive 區段但 sm_train.mode={mode!r} (非 'adaptive'/'adaptive_window') → 該區段不會生效；"
+                             f"要用自適應 SM 訓練量請設 sm_train.mode: adaptive 或 adaptive_window。")
 
 
 def load_config(path) -> TrainConfig:
@@ -427,10 +501,11 @@ def _update_surrogate(sm_mode, smodel, replay, output_element, stack, sim_loss, 
                 sm_fit_hist = smodel.train_by_datas(elite, epochs=1, verbose=verbose)
         else:                                              # 純 replay：回放整個緩衝
             sm_fit_hist = smodel.train_by_datas(replay, epochs=1, verbose=verbose)
-    elif sm_mode == "adaptive":
-        #? 自適應訓練量 (見 AdaptiveSMTrainController)：全收 → dlf 的 elite(λ_t) 篩選 → 把 elite 訓到
-        #  sm_ctrl.target_epochs()（自調、非固定 1），沿途在 sm_ctrl.schedule() 的 epoch 點快照 member0
-        #  供下一輪 held-out 探測。early_stop/min_loss 關掉以訓滿、拿齊快照。elite 空 → 這輪不訓、無快照。
+    elif sm_mode in ("adaptive", "adaptive_window"):
+        #? 自適應訓練量 (Adaptive=自調 target / Window=訓到視窗頂+滑動,見各控制器 docstring)：全收 →
+        #  dlf 的 elite(λ_t) 篩選 → 把 elite 訓到 sm_ctrl.target_epochs()，沿途在 sm_ctrl.schedule() 的
+        #  epoch 點快照 member0 供下一輪 held-out 探測。early_stop/min_loss 關掉以訓滿、拿齊快照。
+        #  elite 空 → 這輪不訓、無快照。
         replay.add(~output_element, stack, sim_loss.item())
         hist = state.series("sim_loss")
         lam = (sum(hist) + sim_loss.item()) / (len(hist) + 1)
@@ -549,14 +624,23 @@ def run_training(
     sm_mode = cfg.sm_train.get("mode", "single")                  # single | replay | dlf | dlf_fit | refit
     sm_newest_steps = cfg.sm_train.get("newest_steps", 50)        # replay/dlf：對最新一筆跑幾步 (取代擬到死)
     sm_elite_epochs = cfg.sm_train.get("elite_epochs", 50)        # dlf_fit/refit：每輪重訓 epoch 上限 (配 min_loss 訓到 fit)
-    replay = ReplayBuffer(cfg.sm_train.get("replay_size", 256)) if sm_mode in ("replay", "dlf", "dlf_fit", "refit", "adaptive") else None
-    #? 自適應 SM 訓練量控制器 (mode:adaptive 才啟用；否則惰性 → target_epochs 回 fallback、不快照 → 與原樣相同)。
-    sm_ctrl = AdaptiveSMTrainController(
-        enable=(sm_mode == "adaptive"),
-        snapshots=cfg.adaptive.get("snapshots", 5), epoch_min=cfg.adaptive.get("epoch_min", 1),
-        epoch_max=cfg.adaptive.get("epoch_max", 64), ema=cfg.adaptive.get("ema", 0.3),
-    )
-    sm_ctrl.seed_target(state.last("sm_train_epochs", None))   # 斷點續跑：續上次的 target (見 seed_target)
+    replay = ReplayBuffer(cfg.sm_train.get("replay_size", 256)) if sm_mode in ("replay", "dlf", "dlf_fit", "refit", "adaptive", "adaptive_window") else None
+    #? 自適應 SM 訓練量控制器 (mode:adaptive/adaptive_window 才啟用；否則惰性 → target_epochs 回 fallback、
+    #  不快照 → 與原樣相同)。window = 訓到視窗頂 + argmin 貼邊滑動 (解 adaptive 的低 target 自鎖)。
+    if sm_mode == "adaptive_window":
+        sm_ctrl = WindowSMTrainController(
+            enable=True,
+            snapshots=cfg.adaptive.get("snapshots", 5), epoch_min=cfg.adaptive.get("epoch_min", 8),
+            epoch_max=cfg.adaptive.get("epoch_max", 256), hi_init=cfg.adaptive.get("hi_init", 64),
+            ema=cfg.adaptive.get("ema", 0.3), patience=cfg.adaptive.get("patience", 3),
+        )
+    else:
+        sm_ctrl = AdaptiveSMTrainController(
+            enable=(sm_mode == "adaptive"),
+            snapshots=cfg.adaptive.get("snapshots", 5), epoch_min=cfg.adaptive.get("epoch_min", 1),
+            epoch_max=cfg.adaptive.get("epoch_max", 64), ema=cfg.adaptive.get("ema", 0.3),
+        )
+    sm_ctrl.seed_target(state.last("sm_train_epochs", None))   # 斷點續跑：續上次的 target/視窗 (見 seed_target)
     prev_snapshots = {}     # 上一輪 member0 權重快照 {epoch: state_dict}，供本輪 held-out 探測 (記憶體、每輪覆蓋)
     if bnd_w > 0 and replay is None:
         logger.warning("loss.boundary > 0 但 sm_train.mode 非 replay/dlf/dlf_fit/refit（無緩衝定義已見分布）→ boundary loss 停用")
@@ -815,7 +899,7 @@ def run_training(
                 trust.update(_sm_pred_pre, sim_loss.item())   # 閉迴路:同一個訓前 gap 餵控制器
             #? 自適應訓練量：這一輪的新點是 held-out (產生它的那版 SM 沒訓過它) → 拿它評「上一輪的快照」→ observe。
             #  held-out 鐵律：評的是「產生這個點的那段先前訓練」的快照，不是接下來要對它訓練的那段 (否則洩題)。
-            if sm_mode == "adaptive" and prev_snapshots:
+            if sm_mode in ("adaptive", "adaptive_window") and prev_snapshots:
                 probe_errs = {ep: smodel.eval_snapshot(sd, output_element.series, stack)
                               for ep, sd in prev_snapshots.items()}
                 sm_ctrl.observe(probe_errs)
@@ -826,7 +910,7 @@ def run_training(
                 sm_mode, smodel, replay, output_element, stack, sim_loss, state,
                 newest_steps=sm_newest_steps, elite_epochs=sm_elite_epochs, sm_ctrl=sm_ctrl, verbose=verbose,
             )
-            if sm_mode == "adaptive":              # 這一輪的新快照 → 下一輪的 held-out 探測對象 (記憶體、覆蓋上一輪)
+            if sm_mode in ("adaptive", "adaptive_window"):   # 這一輪的新快照 → 下一輪的 held-out 探測對象 (記憶體、覆蓋上一輪)
                 prev_snapshots = dict(getattr(smodel, "_probe_snapshots", {}))
             # 方向圖 (選用)：讀 last_radiation、清理 dB target、順手存 rad_store、線上訓練方向圖頭。
             #  細節抽成 _radiation_online_step (行為逐位元不變)；rad_theta 首次拿到真 θ 後即固定。
@@ -977,7 +1061,7 @@ def run_training(
             if _lbl in wm_by_label:
                 state.append(f"wm_{_lbl}", float(wm_by_label[_lbl]))
         prev_pattern = cur_pattern              # 供下一 epoch 算 flips
-        if sm_mode == "adaptive":               # 本輪訓練量 (每 epoch) + held-out 探測曲線 (僅有 prev 快照時)
+        if sm_mode in ("adaptive", "adaptive_window"):   # 本輪訓練量 (每 epoch) + held-out 探測曲線 (僅有 prev 快照時)
             state.append("sm_train_epochs", float(sm_ctrl.target_epochs()))
             for _k in ("probe_argmin", "probe_min_err", "probe_max_err"):
                 if _k in probe_stats:
@@ -1050,7 +1134,7 @@ def run_training(
             for _lbl in ("S11", "Gain"):
                 if _lbl in wm_by_label:
                     snap[f"wm_{_lbl}"] = float(wm_by_label[_lbl])
-            if sm_mode == "adaptive":                   # 自適應訓練量 + 探測曲線 (監控 TB)
+            if sm_mode in ("adaptive", "adaptive_window"):   # 自適應訓練量 + 探測曲線 (監控 TB)
                 snap["sm_train_epochs"] = float(sm_ctrl.target_epochs())
                 snap.update(probe_stats)
             if worst_margin_val is not None:
