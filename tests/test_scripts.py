@@ -98,6 +98,24 @@ def test_run_curve_uses_hfss_calls_and_merges_cache_hits(tmp_path):
         _config.device = _dev                     # 該 script 匯入時把全域 device 設 cpu → 還原,不影響後續測試
 
 
+def test_resolve_run_prefers_exact_suffix(tmp_path, monkeypatch):
+    """回歸 (2026-07-03)：子字串比對讓 `x_dip` 同時命中 `x_dip` 與 `x_dip_explore`、再被 mtime 挑走
+    錯的夾 → R3/R4 歸檔兩臂數字相同。修法＝結尾相符優先。"""
+    from antenna.utils import config as _config
+    _dev = _config.device
+    try:
+        import script.benchmark_vs_random as bvr
+        rd = tmp_path / "result"
+        (rd / "[m-1] pixel_x_dip").mkdir(parents=True)
+        (rd / "[m-2] pixel_x_dip_explore").mkdir(parents=True)
+        (rd / "[m-2] pixel_x_dip_explore" / "newer.txt").write_text("x")   # 讓錯的夾 mtime 較新
+        monkeypatch.setattr(bvr, "ROOTDIR", tmp_path)
+        assert bvr._resolve_run("x_dip").name.endswith("pixel_x_dip")      # 不被較新的 dip_explore 搶走
+        assert bvr._resolve_run("x_dip_explore").name.endswith("pixel_x_dip_explore")
+    finally:
+        _config.device = _dev
+
+
 def test_run_curve_falls_back_to_epoch_for_old_runs(tmp_path):
     """舊 run 無 hfss_calls 欄 → 回退 epoch (行為與原樣相同)。"""
     from antenna.utils import config as _config

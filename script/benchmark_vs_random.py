@@ -38,12 +38,19 @@ def _margin(response, cfg):
 
 
 def _resolve_run(name_or_path):
-    """run 名 → 結果夾路徑：先試絕對/相對路徑；否則在 ROOTDIR/result 下找結尾相符的最新一個。"""
+    """run 名 → 結果夾路徑：先試絕對/相對路徑；否則在 ROOTDIR/result 下找**結尾相符**的最新一個
+    (結尾優先；都沒有才退回子字串)。
+
+    #! 結尾優先是硬需求：子字串比對會讓 `single_r4_dip` 同時命中 `…r4_dip` 與 `…r4_dip_explore`、
+    #  再被「最近活動」挑走錯的夾 → round 報告兩臂數字相同 (2026-07-03 R3/R4 歸檔實際踩到)。"""
     p = Path(name_or_path)
     if p.is_dir():
         return p
     rd = ROOTDIR.joinpath("result")
-    cands = [d for d in os.listdir(str(rd)) if name_or_path in d] if rd.is_dir() else []
+    all_dirs = os.listdir(str(rd)) if rd.is_dir() else []
+    cands = [d for d in all_dirs if d.endswith(name_or_path)]
+    if not cands:
+        cands = [d for d in all_dirs if name_or_path in d]
     if not cands:
         raise SystemExit(f"找不到 run：{name_or_path} (不是路徑、也不在 {rd} 下)")
     # 取最近活動的那個 (mtime 最大)

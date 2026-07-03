@@ -42,12 +42,12 @@
 | 臂 | 最佳 worst_margin | 達到 epoch |
 |---|---|---|
 | E | -3.63 dB | 89 |
-| D | -5.69 dB | 8 |
 | E+D | -5.69 dB | 8 |
+| D | -5.83 dB | 8 |
 
 - 對照 reference ②（R2：dlf+ensemble+trust、direct、lr 0.005）最佳 **-3.87 dB@430ep** → **E 用不到 ¼ 的 epoch 追平並小勝**（+0.24 dB）→ 解凍（lr↑）是真實有效的旋鈕。
-- D 與 E+D **同 seed、sigmoid 早期軌跡相同** → best 都在 ep8（同一顆早期解），之後 90+/120+ epoch 再沒刷新 = 幾乎沒有效搜尋。
-- 附註：status 的 wm 欄給 D -5.83、round_report 掃 pattern 重算 -5.69（0.14 dB 小差）；歸檔以 round_report 為準。
+- D 與 E+D best 都停在 ep8（各自的早期解 -5.83／-5.69），之後 90+/120+ epoch 再沒刷新 = 幾乎沒有效搜尋。
+- **2026-07-03 更正**：原表 D 誤記 -5.69（`_resolve_run` 子字串 bug——`single_r3_dip` 被解析到 `…dip_explore` 資料夾、兩臂數字相同）；修復後 D 真值 **-5.83@8**（與 status 的 wm 欄一致，原「0.14 dB 小差」註腳即此 bug）。原「D/E+D 同 seed 同一顆解」推論一併撤回——兩臂只是同樣早停，非同一解。圖已重產。
 - random best-of-N 對照仍缺：`harvest_single_random` 資料夾存在但 **0 筆**（round-01 至今未收）→ benchmark 圖無 random 線。
 - 圖：`assets/round-03/E_best.png` · `D_best.png` · `E+D_best.png` · `benchmark.png`。
 

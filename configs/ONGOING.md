@@ -13,17 +13,7 @@
 
 ## 🔵 進行中 / 待跑
 
-### Round 4 — 自適應 SM 訓練量（factorial，🔵 **proposed**，2026-07-02）→ 詳見 [docs/log/round-04](../docs/log/round-04-adaptive-sm.md)
-| 臂 | config | = R3 同臂改什麼 | 隔離 |
-|---|---|---|---|
-| E 探索 | `single_r4_explore` | `mode: dlf→adaptive` | 自適應 SM 訓練量 |
-| D DIP | `single_r4_dip` | `mode: dlf→adaptive` | 同上（sigmoid 臂） |
-| E+D | `single_r4_dip_explore` | `mode: dlf→adaptive` | 同上（sigmoid+lr↑） |
-- **由來**：R3 健檢定位共同瓶頸＝SM 欠訓（dlf 每輪 1 epoch → trust 鎖 0.05 不利用 → plateau）。R4 三臂全上**自適應訓練量**（held-out fresh 點量泛化、自調每輪 elite 重訓 epoch 數，沿途快照 member0、下一輪新點評 argmin；opt-in `mode:adaptive`、golden 零漂移）→ 移除 confound、修瓶頸。adaptive 旋鈕：`snapshots 5/epoch_min 1/epoch_max 32/ema 0.3`，ensemble 保持 5。
-- **判準**：worst_margin（真目標）+ trust_t 升離 0.05 + sm_bias 降；cross-round 比 R3 同臂。**發前先跑 `python -m script.status`**、各 500 epoch。⚠ 每輪 SM 重訓量比 dlf 大，正式機量 SM 佔 HFSS 比例。
-- **狀態**：**running**（2026-07-02 發：E@216、D@37、E+D@218；07-03 ~200ep）。**07-03 中檢**：E+D **破專案紀錄 -2.89@154**（探索撞到、非 trust 利用）；但實錘深度欠訓（fit_loss 仍 8-11）＋探測自鎖（target 3-5）→ 催生 Round 5。跑到 500 收檔。
-
-### Round 5 — 滑動視窗 SM 訓練量（🔵 **proposed**，2026-07-03，**待 R4 收檔發**）→ 詳見 [docs/log/round-05](../docs/log/round-05-window-sm.md)
+### Round 5 — 滑動視窗 SM 訓練量（🔵 **running**，2026-07-03 發）→ 詳見 [docs/log/round-05](../docs/log/round-05-window-sm.md)
 | 臂 | config | = R4 同臂改什麼 | 隔離 |
 |---|---|---|---|
 | E | `single_r5_explore` | `mode: adaptive→adaptive_window` + ensemble 5→3 | 滑動視窗訓練量（⚠兩變更） |
@@ -31,7 +21,7 @@
 | E+D | `single_r5_dip_explore` | 同上 | 同上（紀錄臂：看「撞到」能否變「開採」） |
 - **由來**：R4 實錘兩件事——深度欠訓（每輪訓完 elite fit_loss 仍 7.7-10.6，學長壓 0.1）＋ adaptive 探測自鎖（target 停 3-5、曲線 80-100% 平）。**滑動視窗（Ricky 設計）**：每輪訓到視窗頂 hi、log2 階梯快照、argmin **落「上二階」**（不必貼頂——最佳點上方保留兩階冗餘）連 3 次→hi×2／落最低一階→hi÷2；起點 64、**上限 1024**（爬到頂≈學長「破千」量級）、下限 8；`replay_size 512`、`ensemble 3`（省成本）。工程完成（`mode: adaptive_window`、golden 零漂移）。
 - **判準（分層）**：① fit_loss 壓到 ~1-3 → ② sm_gap/sm_bias 降、trust_t 升 → ③ worst_margin vs R4 同臂。⚠ 視窗爬到頂＝數十萬步/輪，**正式機務必盯 `time` 欄**看 SM 佔比；失控把天花板降回 256/512（一行 config）。
-- **發車**：R4 到 500 收檔 → `python -m script.status` 確認 → 正式機 `git pull` → `python train.py configs/single_r5_<E/D/E+D>.yaml`（機器沿用）。
+- **狀態**：**2026-07-03 發**（E@216、D@37、E+D@218，config 快照已驗證新版；R4 三臂已停）。各 500 epoch。
 
 ---
 
@@ -54,6 +44,7 @@
 
 ## ✅ 已歸檔（一行指標，完整結論在 round 檔）
 
+- **Round 04 — 自適應 SM 訓練量** → [docs/log/round-04](../docs/log/round-04-adaptive-sm.md)：**E+D 破專案紀錄 -2.89@154**（探索躍遷,+2.80 vs R3）；主假設未驗證（探測自鎖 3-5ep、fit_loss 仍 8-11、trust 全鎖;E/D 輸 R3 ~0.9dB）→ R5 滑動視窗。2026-07-03 停（E@208/D@222/E+D@201）。圖 `docs/log/assets/round-04/`。
 - **Round 03 — 探索 × DIP factorial** → [docs/log/round-03](../docs/log/round-03-explore-dip.md)：**E(lr↑)最佳 -3.63@89（¼ epoch 追平②）**;DIP 連通成功(r_feed~0.95)但停滯(best@8);三臂被 SM 欠訓汙染、factorial 不乾淨 → R4 修瓶頸重跑。2026-07-02 停(E@189/D@101/E+D@132)。圖 `docs/log/assets/round-03/`。
 - **Round 01 — SM 訓練量 A/B** → [docs/log/round-01](../docs/log/round-01-sm-training-ab.md)：**訓練量非 bottleneck**(dlf −4.18≈refit −4.21 > dlf_fit −5.58、皆差 spec ~4dB)。圖 `docs/log/assets/round-01/`。
 - **Round 02 — ensemble + trust 治本** → [docs/log/round-02](../docs/log/round-02-ensemble-trust.md)：**治本微幅、未決定性**(②③ trust 微贏 Round-1 ~0.3-0.5dB、① ens-only 輸、皆未收斂;trust_t 卡低)。2026-07-01 提早停(未到 500)釋放機器給 Round 3;② ~417ep 當 Round-3 reference。

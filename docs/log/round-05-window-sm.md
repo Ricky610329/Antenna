@@ -1,7 +1,7 @@
 # Round 5 — 滑動視窗 SM 訓練量（修 R4 的欠訓 + 探測自鎖）
 
-- 狀態: proposed
-- 提出 / 開跑 / 結論: 2026-07-03 / — / —
+- 狀態: running
+- 提出 / 開跑 / 結論: 2026-07-03 / 2026-07-03 / —
 - 一句話問題: 把每輪 SM 訓練量從「自鎖在 3–5 epoch」提到「滑動視窗自動找的量級（起點 64、上限 1024）」，能否把 fit_loss 從 ~8–11 壓進 ~1–3 的中間帶、讓 sm_gap/sm_bias 降、trust 進入利用？
 - 一句話結論: —（待跑）
 - 指向: `configs/README.md`（single_r5_*）· 對照 = R4 同臂（[round-04](round-04-adaptive-sm.md)）· `docs/discuss/decisions.md`「滑動視窗」· memory [[project_sm_training_redesign]]
@@ -28,12 +28,13 @@
 - **HFSS 預算**: 各 500 epoch；機器沿用 E@216 / D@37 / E+D@218。
 
 ## 3. 執行紀錄 (Run)
-| 臂 | 機器（計畫） | 狀態 / 進度 | 結果夾 |
+| 臂 | 機器 | 狀態 / 進度 | 結果夾 |
 | — | — | — | — |
-| E | 216 | proposed（待 R4 收檔） | — |
-| D | 37 | proposed（待 R4 收檔） | — |
-| E+D | 218 | proposed（待 R4 收檔） | — |
-- 事件: 2026-07-03 實作 `adaptive_window`（controller + 接線 + 測試，golden 零漂移）；config ready。**發車前**: `python -m script.status` 確認 R4 已停、正式機 `git pull`。
+| E | 216 | running（2026-07-03 發） | `[Patch-single-216-43e98b] pixel_single_r5_explore` |
+| D | 37 | running（2026-07-03 發） | `[Patch-single-37-69f1d3] pixel_single_r5_dip` |
+| E+D | 218 | running（2026-07-03 發） | `[Patch-single-218-b817c3] pixel_single_r5_dip_explore` |
+- 事件: 2026-07-03 實作 `adaptive_window`（controller + 接線 + 測試，golden 零漂移）→ 同日修正滑動規則為**區位制**（argmin 落上二階即 ×2，不必貼頂——保留冗餘）、上限 256→1024、ensemble 5→3 → **同日發車**（三臂 config 快照已驗證為新版）。
+- 事件: 2026-07-03 修 `_resolve_run` 子字串 bug（round 報告兩臂數字相同的元凶；R3 D 數字已更正）。
 
 ## 4. 分析 (Analyze)
 （待跑完 `python -m script.round_report --round 05 --runs single_r5_explore single_r5_dip single_r5_dip_explore --labels E D E+D`）
