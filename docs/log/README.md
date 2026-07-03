@@ -19,7 +19,8 @@
 | 04 | 自適應 SM 訓練量（修 R3 SM 欠訓瓶頸） | ✅ archived（2026-07-03 停,E@208/D@222/E+D@201） | **E+D 破紀錄 -2.89@154**（探索躍遷,+2.80 vs R3）；但主假設未驗證——探測自鎖 3-5ep、fit_loss 仍 8-11、trust 全鎖；E/D 輸 R3 ~0.9dB → R5 | [round-04](round-04-adaptive-sm.md) |
 | 05 | 滑動視窗 SM 訓練量（修 R4 欠訓+探測自鎖） | 🔵 running（2026-07-03 發；同日晚 D 臂提早收讓機給 R7，餘 E/E+D） | — | [round-05](round-05-window-sm.md) |
 | 06 | 離線期望基準（每輪 HFSS 的期望 best；零 HFSS） | ✅ archived（2026-07-03 當日完成） | **期望爬升到不了 spec**（-9.18+0.75·ln k,躍遷主導）；**達標 pattern 已在池內（oracle +0.38）**；學長同預算贏 1-2dB；池抽樣等效預算 200-450× → **分布≫策略** | [round-06](round-06-offline-expected-best.md) |
-| 07 | 除塵驗證（達標 pattern 拔 1-3px 粉塵 HFSS 重驗＋順收 rad） | 🔜 proposed（2026-07-03 備妥,待 .37 停妥發） | — | [round-07](round-07-dedust.md) |
+| 07 | 除塵驗證（達標 pattern 拔 1-3px 粉塵 HFSS 重驗＋順收 rad） | ✅ archived（2026-07-03 當日完成,15 筆/45 分） | **粉塵=共振的一部分（4/5 崩 -4.7~-16.9dB）→ 乾淨解用搜的不能用修的**；例外 p03 整塊型近零代價＝可製造最佳已知點（-2.68,rad+0.24）；oracle 重驗真（p00 +0.44）；rad=獨立第三關、與可製造同向 | [round-07](round-07-dedust.md) |
+| 08 | 乾淨子空間測繪（前緣真值/補洞因果/SM 校準/random 基線,97 筆） | 🔜 proposed（2026-07-03 備妥,待確認發車） | — | [round-08](round-08-clean-mapping.md) |
 
 ## 離線分析（analysis-NN；不佔 round——**慣例 2026-07-03**：round 編號只給燒 HFSS 的實驗，round-06 為慣例前歸檔、不回改）
 | # | 主題 | 狀態 | 結論(一句) | 檔 |

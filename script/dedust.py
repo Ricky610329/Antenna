@@ -34,8 +34,8 @@ from antenna.losses import worst_margin
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 POOL_NPZ = os.path.join(REPO, "tmp", "pattern_anatomy", "pool.npz")
-INPUT_DIR = DATASET_PATH.joinpath("dedust_r7_input")   # 選出的 pattern + manifest（NAS，正式機共享）
-STORE_DIR = DATASET_PATH.joinpath("dedust_r7")         # run 結果（SampleStore + rad/ + results.json）
+DEFAULT_INPUT = "dedust_r7_input"                      # 輸入夾名（DATASET_PATH 下；--input 換 round）
+DEFAULT_STORE = "dedust_r7"                            # 結果夾名（SampleStore + rad/ + results.json）
 DEFAULT_CFG = os.path.join(REPO, "configs", "single_r5_explore.yaml")   # targets/radiation 與現行分析同尺
 
 FEED = (24, 12)                                        # single feed 像素（對齊 FeedReachability.single_feed）
@@ -98,21 +98,79 @@ def rad_window_margin(theta, gain, window_deg: float = 45.0, floor_db: float = 3
     return float(gain[win].min() - (g0 - floor_db))
 
 
+def close_holes(p):
+    """補洞：被金屬包住（不觸邊）的介質區全部填成金屬。回 (新 pattern, 填入像素數)。
+    analysis-01「Gain←少洞」的因果檢驗編輯（R8 B 臂）。"""
+    from scipy.ndimage import label
+    p = np.asarray(p).reshape(25, 25) > 0.5
+    inv, m = label(~p, structure=_CROSS)
+    border = set(np.unique(np.concatenate(
+        [inv[0, :], inv[-1, :], inv[:, 0], inv[:, -1]])).tolist())
+    out = p.copy()
+    for h in set(range(1, m + 1)) - border:
+        out[inv == h] = True
+    return out, int(out.sum() - p.sum())
+
+
+def _ensure_feed_pad(p, min_size: int = 4, feed=FEED):
+    """修復後 feed 組若 < min_size（被翻/blob 沒長到 → 孤立小 feed）→ 蓋 3×3 貼底 pad，
+    保證饋電件本身可裁。pad ≥ min_size 故後續不會被 strip。"""
+    from scipy.ndimage import label
+    lab, n = label(p, structure=_CROSS)
+    fid = int(lab[feed])
+    if fid > 0 and int((lab == fid).sum()) >= min_size:
+        return p
+    out = p.copy()
+    r, c = feed
+    out[max(0, r - 2):r + 1, max(0, c - 1):c + 2] = True
+    return out
+
+
+def perturb_repair(p, k: int, seed: int, min_size: int = 4, feed=FEED):
+    """翻 k 個隨機像素後「無粉塵修復」（strip <min_size、feed 強制金屬＋pad 保底）——
+    產生乾淨子空間內的鄰域樣本（R8 C 臂：SM 校準採樣）。決定性（seed）。"""
+    rng = np.random.default_rng(seed)
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    flat = rng.choice(625, size=k, replace=False)
+    p.ravel()[flat] = ~p.ravel()[flat]
+    p[feed] = True
+    out, _ = strip_small(p, min_size, feed=feed)
+    return _ensure_feed_pad(out, min_size, feed=feed)
+
+
+def smooth_blob(seed: int, metal_frac: float = 0.5, sigma: float = 2.5, min_size: int = 4, feed=FEED):
+    """平滑隨機 blob：高斯濾波雜訊取閾值 → 天然整塊、無粉塵（修復＋feed pad 保險）。
+    乾淨子空間的廣域覆蓋樣本（R8 C 臂）。決定性（seed）。"""
+    from scipy.ndimage import gaussian_filter
+    rng = np.random.default_rng(seed)
+    field = gaussian_filter(rng.random((25, 25)), sigma=sigma)
+    thr = np.quantile(field, 1.0 - metal_frac)
+    p = field >= thr
+    p[feed] = True
+    out, _ = strip_small(p, min_size, feed=feed)
+    return _ensure_feed_pad(out, min_size, feed=feed)
+
+
 # ---------------------------------------------------------------- 小工具
 def _r(x, nd=2):
     return round(float(x), nd)
 
 
-def _load_manifest():
-    path = INPUT_DIR.joinpath("manifest.json")
+def _dir(name):
+    """輸入/結果夾：DATASET_PATH 下的名字（跨機共享靠 NAS）。"""
+    return DATASET_PATH.joinpath(name)
+
+
+def _load_manifest(input_dir):
+    path = input_dir.joinpath("manifest.json")
     if not path.exists():
-        raise SystemExit(f"找不到 {path} —— 先在開發機跑 `python -m script.dedust select`。")
+        raise SystemExit(f"找不到 {path} —— 先在開發機跑 select / select-r8。")
     with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
-def _save_manifest(manifest):
-    path = INPUT_DIR.joinpath("manifest.json")
+def _save_manifest(manifest, input_dir):
+    path = input_dir.joinpath("manifest.json")
     tmp = str(path) + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1)
@@ -149,7 +207,8 @@ def select(args):
             picked.append((int(i), "near"))
 
     # 3) 產變體 + 落地（d1=拔 1px、d3=拔 1-3px；與前一級相同就略過）
-    INPUT_DIR.mkdir(parents=True, exist_ok=True)
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
     manifest = []
     for k, (pool_i, tag) in enumerate(picked):
         p = pats[pool_i]
@@ -163,18 +222,112 @@ def select(args):
             variants.append(("d3", d3, r3))
         for kind, pat, removed in variants:
             pid = f"p{k:02d}_{kind}"
-            torch.save(torch.tensor(pat, dtype=torch.float32), str(INPUT_DIR.joinpath(f"{pid}.pt")))
+            torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
             manifest.append(dict(id=pid, kind=kind, family=tag, pool_idx=pool_i,
                                  removed_px=removed, pool_wm=pool_margin, **piece_stats(pat)))
-    _save_manifest(manifest)
+    _save_manifest(manifest, input_dir)
 
     n_sims = len(manifest)
-    print(f"\n選出 {len(picked)} 個原版、共 {n_sims} 筆待模擬 → {INPUT_DIR}")
+    print(f"\n選出 {len(picked)} 個原版、共 {n_sims} 筆待模擬 → {input_dir}")
     print("\n| id | 家族 | 池wm(S11/Gain/worst) | 拔掉px | n_comp | 1px | 2-3px | 主件px |")
     print("|---|---|---|---|---|---|---|---|")
     for m in manifest:
         print(f"| {m['id']} | {m['family']} | {m['pool_wm'][0]:+.2f}/{m['pool_wm'][1]:+.2f}/{m['pool_wm'][2]:+.2f} "
               f"| {m['removed_px']} | {m['n_comp']} | {m['n_1px']} | {m['n_2_3px']} | {m['main_px']} |")
+
+
+# ---------------------------------------------------------------- select-r8（開發機，零 HFSS）
+def select_r8(args):
+    """R8「乾淨子空間測繪」四臂輸入生成（詳見 docs/log/round-08）：
+    A 乾淨前緣（main_frac≥0.9）top-K 原版+d3 —— 「整塊型可拔」通則檢驗＋前緣 HFSS 真值
+    B 規則編輯 —— p03_d3 原樣重跑（跨 round 噪聲地板）＋補洞變體（Gain←少洞 因果檢驗）
+    C SM 校準採樣 —— 錨點擾動修復＋平滑 blob（把 SM 在即將搜尋的乾淨區餵亮；順收 rad）
+    D 真 uniform random —— 補 R6 誠實缺口（池≠隨機 的量化基線）
+    """
+    if not os.path.exists(POOL_NPZ):
+        raise SystemExit(f"缺 {POOL_NPZ} —— 先跑 `python -m script.pattern_anatomy collect-pool`。")
+    d = np.load(POOL_NPZ)
+    ok = ~np.isnan(d["wm"][:, 2])
+    wm = d["wm"][ok]
+    feats = d["feats"][ok]
+    pats = np.unpackbits(d["packed"][ok], axis=1)[:, :625].reshape(-1, 25, 25).astype(bool)
+    worst, main_frac = wm[:, 2], feats[:, 1]
+
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, removed=0, pool_i=None, base_id=None):
+        row = dict(id=pid, kind=kind, family=family, removed_px=int(removed), **piece_stats(pat))
+        if pool_i is not None:
+            row["pool_idx"] = int(pool_i)
+            row["pool_wm"] = [_r(wm[pool_i, 0]), _r(wm[pool_i, 1]), _r(wm[pool_i, 2])]
+        if base_id:
+            row["base_id"] = base_id
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(row)
+
+    # -- A: 乾淨前緣 top-K（wm 降冪、互相 Hamming>60 保多樣）×（orig + d3）
+    cand = np.where(main_frac >= 0.9)[0]
+    cand = cand[np.argsort(worst[cand])[::-1]]
+    picked = []
+    for i in cand:
+        if len(picked) >= args.frontier:
+            break
+        if all(np.count_nonzero(pats[i] != pats[j]) > 60 for j in picked):
+            picked.append(int(i))
+    a_d3 = {}                                        # k → (id, pattern)：B/C 臂的錨點來源
+    for k, i in enumerate(picked):
+        p = pats[i]
+        emit(f"a{k:02d}_orig", "orig", f"A{k}", p, pool_i=i)
+        d3, r3 = strip_small(p, 4)
+        if r3 > 0:
+            emit(f"a{k:02d}_d3", "d3", f"A{k}", d3, removed=r3, pool_i=i)
+            a_d3[k] = (f"a{k:02d}_d3", d3)
+        else:
+            a_d3[k] = (f"a{k:02d}_orig", p)          # 本來就乾淨 → orig 即錨點
+
+    # -- B: p03_d3 重跑 + 補洞；A 臂前 3 名 d3 補洞（Δ 基準走 base_id）
+    p03_path = _dir(args.r7_input).joinpath("p03_d3.pt")
+    if not p03_path.exists():
+        raise SystemExit(f"缺 {p03_path}（R7 輸入）—— B/C 臂要用 p03_d3 當錨點。")
+    p03 = np.asarray(torch.load(str(p03_path), weights_only=True)).reshape(25, 25) > 0.5
+    emit("b00_ref", "orig", "B0", p03)               # 與 R7 同 pattern 重跑一次＝HFSS 重複性噪聲地板
+    h, filled = close_holes(p03)
+    if filled:
+        emit("b00_holes", "holes", "B0", h, removed=-filled, base_id="b00_ref")
+    for k in range(min(3, len(picked))):
+        bid, bp = a_d3[k]
+        h, filled = close_holes(bp)
+        if filled:
+            emit(f"b{k + 1:02d}_holes", "holes", f"B{k + 1}", h, removed=-filled, base_id=bid)
+
+    # -- C: 錨點（p03_d3 + A 臂前 7 名 d3）× 翻 {8,32}px 修復 ×2 seed + 平滑 blob
+    anchors = [p03] + [a_d3[k][1] for k in range(min(7, len(picked)))]
+    n = 0
+    for ap in anchors:
+        for kk in (8, 32):
+            for _ in range(2):
+                emit(f"c{n:02d}_probe", "probe", "C", perturb_repair(ap, kk, seed=n))
+                n += 1
+    for s in range(args.blobs):
+        emit(f"c{n:02d}_blob", "blob", "C", smooth_blob(seed=1000 + s))
+        n += 1
+
+    # -- D: 真 uniform random（iid p=0.5、feed 強制金屬、不修復——就是要真隨機）
+    rng = np.random.default_rng(2026)
+    for k in range(args.rand):
+        p = rng.random((25, 25)) < 0.5
+        p[FEED] = True
+        emit(f"d{k:02d}_rand", "rand", "D", p)
+
+    _save_manifest(manifest, input_dir)
+    counts = {}
+    for m in manifest:
+        counts[m["id"][0]] = counts.get(m["id"][0], 0) + 1
+    print(f"R8 輸入完成 → {input_dir}")
+    print(f"各臂筆數: A={counts.get('a', 0)}  B={counts.get('b', 0)}  C={counts.get('c', 0)}  "
+          f"D={counts.get('d', 0)}  共 {len(manifest)}（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
 # ---------------------------------------------------------------- sm-screen（開發機，零 HFSS）
@@ -189,22 +342,26 @@ def sm_screen(args):
     sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
     sm.model.eval()
 
-    manifest = _load_manifest()
+    input_dir = _dir(args.input)
+    manifest = _load_manifest(input_dir)
     for m in manifest:
-        p = torch.load(str(INPUT_DIR.joinpath(f"{m['id']}.pt")), weights_only=True)
+        p = torch.load(str(input_dir.joinpath(f"{m['id']}.pt")), weights_only=True)
         with torch.no_grad():
             pred = sm.model(p.flatten())
         w, per = worst_margin(pred, labels, cfg.targets)
         m["sm_wm"] = [_r(per[labels[0]]), _r(per[labels[1]]), _r(w)]
-    _save_manifest(manifest)
+    _save_manifest(manifest, input_dir)
 
     orig = {m["id"].split("_", 1)[0]: m for m in manifest if m["kind"] == "orig"}   # 鍵=pXX（family near 不唯一）
     print("| id | 池wm | SM wm(S11/Gain/worst) | SM Δworst vs orig |")
     print("|---|---|---|---|")
+    by_id = {m["id"]: m for m in manifest}
     for m in manifest:
-        dv = m["sm_wm"][2] - orig[m["id"].split("_", 1)[0]]["sm_wm"][2]
-        print(f"| {m['id']} | {m['pool_wm'][2]:+.2f} | {m['sm_wm'][0]:+.2f}/{m['sm_wm'][1]:+.2f}/{m['sm_wm'][2]:+.2f} "
-              f"| {dv:+.2f} |")
+        base = by_id.get(m.get("base_id")) or orig.get(m["id"].split("_", 1)[0])   # 明示基準優先（B 臂）
+        dv = f"{m['sm_wm'][2] - base['sm_wm'][2]:+.2f}" if base else "—"
+        pool = f"{m['pool_wm'][2]:+.2f}" if m.get("pool_wm") else "—"
+        print(f"| {m['id']} | {pool} | {m['sm_wm'][0]:+.2f}/{m['sm_wm'][1]:+.2f}/{m['sm_wm'][2]:+.2f} "
+              f"| {dv} |")
     print("\n⚠ SM 是 harvest 池上訓的（碎 pattern 主導），對除塵版屬輕度外插——Δ 只當方向訊號、以 HFSS 為準。")
 
 
@@ -218,12 +375,14 @@ def run(args):
     labels = PORT_SPECS[cfg.port]["labels"]
     window = cfg.radiation.get("window_deg", 45)
     floor = cfg.radiation.get("floor_db", 3)
-    manifest = _load_manifest()
+    input_dir = _dir(args.input)
+    store_dir = _dir(args.store)
+    manifest = _load_manifest(input_dir)
 
-    STORE_DIR.mkdir(parents=True, exist_ok=True)
-    rad_dir = STORE_DIR.joinpath("rad")
+    store_dir.mkdir(parents=True, exist_ok=True)
+    rad_dir = store_dir.joinpath("rad")
     rad_dir.mkdir(parents=True, exist_ok=True)
-    results_path = STORE_DIR.joinpath("results.json")
+    results_path = store_dir.joinpath("results.json")
     results = {}
     if results_path.exists():
         with open(results_path, encoding="utf-8") as f:
@@ -235,7 +394,7 @@ def run(args):
             json.dump(results, f, ensure_ascii=False, indent=1)
         os.replace(tmp, results_path)
 
-    store = SampleStore(STORE_DIR)
+    store = SampleStore(store_dir)
     todo = [(n, m) for n, m in enumerate(manifest) if m["id"] not in results]
     print(f"待模擬 {len(todo)}/{len(manifest)} 筆（已完成的跳過；中斷再跑即續）")
 
@@ -244,7 +403,7 @@ def run(args):
     sim.open()
     try:
         for num, m in todo:
-            p = torch.load(str(INPUT_DIR.joinpath(f"{m['id']}.pt")), weights_only=True)
+            p = torch.load(str(input_dir.joinpath(f"{m['id']}.pt")), weights_only=True)
             print(f"[{m['id']}] 模擬中… ({num + 1}/{len(manifest)})")
             try:
                 sim.start(num)
@@ -277,10 +436,11 @@ def run(args):
     print(f"\n完成。結果：{results_path}；報表：python -m script.dedust report")
 
 
-# ---------------------------------------------------------------- report（匯總表，貼 round-07 §4）
+# ---------------------------------------------------------------- report（匯總表，貼 round 檔 §4）
 def report(args):
-    manifest = _load_manifest()
-    results_path = STORE_DIR.joinpath("results.json")
+    input_dir = _dir(args.input)
+    manifest = _load_manifest(input_dir)
+    results_path = _dir(args.store).joinpath("results.json")
     results = {}
     if results_path.exists():
         with open(results_path, encoding="utf-8") as f:
@@ -288,14 +448,16 @@ def report(args):
 
     hfss_orig = {m["id"].split("_", 1)[0]: results.get(m["id"], {}).get("wm")
                  for m in manifest if m["kind"] == "orig"}
-    print("| id | 拔px | 池wm | SM wm | HFSS S11/Gain/worst | Δworst vs orig | rad餘裕 | 分 |")
+    print("| id | 拔px | 池wm | SM wm | HFSS S11/Gain/worst | Δworst vs 基準 | rad餘裕 | 分 |")
     print("|---|---|---|---|---|---|---|---|")
     for m in manifest:
         r = results.get(m["id"], {})
         sm = f"{m['sm_wm'][2]:+.2f}" if "sm_wm" in m else "—"
         if "wm" in r:
             wmtx = f"{r['wm'][0]:+.2f}/{r['wm'][1]:+.2f}/{r['wm'][2]:+.2f}"
-            base = hfss_orig.get(m["id"].split("_", 1)[0])
+            #? Δ 基準：明示 base_id（跨組編輯,如 B 臂補洞）優先,否則同組 orig
+            base = results.get(m["base_id"], {}).get("wm") if m.get("base_id") \
+                else hfss_orig.get(m["id"].split("_", 1)[0])
             dv = f"{r['wm'][2] - base[2]:+.2f}" if (base and m["kind"] != "orig") else "—"
             radm = f"{r['rad_margin']:+.2f}" if "rad_margin" in r else "—"
             t = f"{r.get('time_s', 0) / 60:.0f}m"
@@ -303,7 +465,8 @@ def report(args):
             wmtx, dv, radm, t = f"✗ {r['error'][:30]}", "—", "—", "—"
         else:
             wmtx, dv, radm, t = "（待跑）", "—", "—", "—"
-        print(f"| {m['id']} | {m['removed_px']} | {m['pool_wm'][2]:+.2f} | {sm} | {wmtx} | {dv} | {radm} | {t} |")
+        pool = f"{m['pool_wm'][2]:+.2f}" if m.get("pool_wm") else "—"
+        print(f"| {m['id']} | {m.get('removed_px', 0)} | {pool} | {sm} | {wmtx} | {dv} | {radm} | {t} |")
 
     done = [r for r in results.values() if "wm" in r]
     if done:
@@ -316,23 +479,37 @@ def main():
     ap = argparse.ArgumentParser(description="Round-07 除塵驗證工具（select/sm-screen 開發機、run 正式機）")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("select", help="挑家族代表+近標者、產除塵變體 → NAS dedust_r7_input/")
+    s = sub.add_parser("select", help="R7：挑家族代表+近標者、產除塵變體")
+    s.add_argument("--input", default=DEFAULT_INPUT, help="輸入夾名（DATASET_PATH 下）")
     s.add_argument("--pass-thr", type=float, default=0.0, help="達標門檻 (預設 0)")
     s.add_argument("--near-thr", type=float, default=-1.0, help="近標補充門檻 (預設 -1)")
     s.add_argument("--extras", type=int, default=3, help="近標補充數上限 (預設 3)")
     s.add_argument("--max-dist", type=int, default=100, help="家族 Hamming 門檻 (預設 100)")
     s.set_defaults(fn=select)
 
+    s = sub.add_parser("select-r8", help="R8：乾淨子空間測繪四臂輸入（A 前緣/B 規則編輯/C SM 校準/D 隨機基線）")
+    s.add_argument("--input", default="dedust_r8_input")
+    s.add_argument("--r7-input", default=DEFAULT_INPUT, help="R7 輸入夾（取 p03_d3 錨點）")
+    s.add_argument("--frontier", type=int, default=15, help="A 臂前緣原版數")
+    s.add_argument("--blobs", type=int, default=20, help="C 臂 blob 數")
+    s.add_argument("--rand", type=int, default=10, help="D 臂 uniform random 數")
+    s.set_defaults(fn=select_r8)
+
     s = sub.add_parser("sm-screen", help="sm_harvest.pth 預測預篩（零 HFSS）")
+    s.add_argument("--input", default=DEFAULT_INPUT)
     s.add_argument("--config", default=DEFAULT_CFG)
     s.set_defaults(fn=sm_screen)
 
     s = sub.add_parser("run", help="正式機：HFSS 驗證 manifest 所有 pattern（可中斷續跑）")
+    s.add_argument("--input", default=DEFAULT_INPUT)
+    s.add_argument("--store", default=DEFAULT_STORE, help="結果夾名（DATASET_PATH 下）")
     s.add_argument("--config", default=DEFAULT_CFG)
-    s.add_argument("--out", default="_dedust_r7", help="HFSS 工作目錄（正式機本地碟）")
+    s.add_argument("--out", default="_dedust", help="HFSS 工作目錄（正式機本地碟）")
     s.set_defaults(fn=run)
 
-    s = sub.add_parser("report", help="匯總表（貼 round-07 §4）")
+    s = sub.add_parser("report", help="匯總表（貼 round 檔 §4）")
+    s.add_argument("--input", default=DEFAULT_INPUT)
+    s.add_argument("--store", default=DEFAULT_STORE)
     s.set_defaults(fn=report)
 
     args = ap.parse_args()

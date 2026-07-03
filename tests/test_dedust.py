@@ -5,7 +5,8 @@
 """
 import numpy as np
 
-from script.dedust import cluster_families, piece_stats, rad_window_margin, strip_small
+from script.dedust import (FEED, close_holes, cluster_families, perturb_repair, piece_stats,
+                           rad_window_margin, smooth_blob, strip_small)
 
 
 def _pattern(*blocks):
@@ -54,6 +55,37 @@ def test_cluster_families_groups_neighbors():
     b = _pattern((12, 22, 12, 22), FEED_BLK)       # 大跳＝另一家族
     labels = cluster_families([a, a2, b], max_dist=10)
     assert labels[0] == labels[1] != labels[2]
+
+
+def test_close_holes_fills_enclosed_only():
+    p = _pattern(BIG, FEED_BLK)
+    p[3:5, 3:5] = False                            # 被主件包住的 2×2 洞
+    out, filled = close_holes(p)
+    assert filled == 4 and out[3:5, 3:5].all()
+    out2, filled2 = close_holes(out)               # 沒洞 → no-op
+    assert filled2 == 0 and (out2 == out).all()
+    q = _pattern(BIG, FEED_BLK)
+    q[0, 3] = False                                # 觸邊凹口不是洞、不能填
+    assert close_holes(q)[1] == 0
+
+
+class TestPerturbRepair:
+    def test_clean_and_deterministic(self):
+        p = _pattern(BIG, FEED_BLK)
+        a = perturb_repair(p, 32, seed=7)
+        b = perturb_repair(p, 32, seed=7)
+        assert (a == b).all()                      # 同 seed 決定性（可續跑/可重現）
+        assert a[FEED]                             # feed 永遠金屬
+        assert piece_stats(a)["n_1px"] == 0        # 修復後無 1px 粉塵
+        assert (perturb_repair(p, 32, seed=8) != a).any()   # 不同 seed 真的不同
+
+
+def test_smooth_blob_clean_and_deterministic():
+    a = smooth_blob(seed=3)
+    assert (a == smooth_blob(seed=3)).all()
+    assert a[FEED]
+    s = piece_stats(a)
+    assert s["n_1px"] == 0 and s["metal_px"] > 0
 
 
 class TestRadWindowMargin:

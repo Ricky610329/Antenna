@@ -23,14 +23,17 @@
 - **判準（分層）**：① fit_loss 壓到 ~1-3 → ② sm_gap/sm_bias 降、trust_t 升 → ③ worst_margin vs R4 同臂。⚠ 視窗爬到頂＝數十萬步/輪，**正式機務必盯 `time` 欄**看 SM 佔比；失控把天花板降回 256/512（一行 config）。
 - **狀態**：**2026-07-03 發**（E@216、D@37、E+D@218；R4 三臂已停）。各 500 epoch。**同日晚止血**：冷啟動超衝（elite ~12 筆時視窗直衝 1024→過擬合+30分/ep）→ `epoch_max` 1024→256 **重啟三臂**（斷點續跑,hi 自動夾回）；治本（hi 與 elite 規模掛鉤）＝R5.5 候選,下個 session 處理。**同日晚 D 臂提早收**（wm最佳 -7.66@~34ep 墊底、D-only 隔離問題 R3/R4 已答過）→ **只剩 E / E+D 兩臂**；.37 機器讓給「除塵驗證」（見下方 🔜）。
 
-### Round 7 — 除塵驗證（🔜 **備妥待發**，2026-07-03）→ 詳見 [docs/log/round-07](../docs/log/round-07-dedust.md)
-- **一句話**：池內達標 pattern＝「幾塊大銅片＋1-3px 粉塵」（2 家族）；拔粉塵 HFSS 重驗（15 筆,orig/d1/d3），驗「可製造達標」能不能直接到手；每 solve 順收 rad（±45° 首驗＋Stage-3 資料）。
-- **備妥**：工具 `script/dedust.py`（select/sm-screen 已跑、輸入落 NAS `dedust_r7_input/`）＋ round 檔＋測試（tests/test_dedust.py）。SM 預篩：除塵掉 0.2-1.6dB（弱訊號,SM 偏差 ~1.3dB）。
-- **發車**：.37 停妥（R5 D 臂已收）後在正式機跑 `python -m script.dedust run`（估 1.5-4 hr,可中斷續跑）→ `report` 貼 round-07 §4。
+### Round 8 — 乾淨子空間測繪（🔜 **備妥待發**，2026-07-03 深夜）→ 詳見 [docs/log/round-08](../docs/log/round-08-clean-mapping.md)
+- **一句話**：搜之前先測繪——A 乾淨前緣真值+除塵通則（30）/ B 補洞因果+噪聲地板（5）/ C SM 校準採樣（52）/ D 真 uniform random 基線（10）＝**97 筆 ≈4.8hr**，輸入已落 NAS `dedust_r8_input/`（含 SM 重錨前基線預篩）。
+- **發車（.37,先 git pull＋等 commit push）**：`python -m script.dedust run --input dedust_r8_input --store dedust_r8`；進度 `report --input dedust_r8_input --store dedust_r8`。
+- **待使用者確認**：①像素 mm/最小可裁尺寸（現假設全件≥4px,改了重生成即可,零 HFSS）②組件數上限 ③D 臂是否進指導者簡報。
 
 ---
 
 ## 🔜 候選 / 待排（**[使用者] = 你提的**；看 benchmark + Round 2 結果再決定優先序）
+- ~~[R7] R7.5 乾淨前緣重驗~~ → **併入 Round 8 A 臂**（見上方 🔜 R8 區塊/[round-08](../docs/log/round-08-clean-mapping.md)）。
+- **[R7] 乾淨子空間 warm-start 精修 round**：起點= p03_d3（可製造最佳已知,-2.68/rad+0.24）+ R8 A 臂產物；線上學習回鍋當精修器（差距 ~2.7dB 正在 analysis-01 局部射程內）,候選生成端掛 `strip_small` 無粉塵修復＋B 臂驗過的編輯算子。**觸發：R8 收檔＋SM 重錨完成**。
+- **[R7] SM 乾淨區重錨**：`dedust_r7`+`dedust_r8` 真值（SM 最盲區,實測低估 5-15dB）併進 SM 訓練/重錨——**= R8 C 臂判準的後半**（重錨前基線已存 r8 manifest 的 sm_wm）。搭「週期 harvest 重錨」候選一起做。
 - **[analysis-01] 去洞/平滑先驗「服務 Gain」**：analysis-01 實錘 S11/Gain 結構配方不同（S11←少組+feed連通、Gain←少洞、共同敵人=細碎）→ 現有 `island_suppression`/`tv` loss 剛好對應「去洞/平滑」,但從未以 Gain 視角調權重；sigmoid 只修 S11 側結構＝R3-D Gain 卡住之謎的解。**觸發條件：R5 收檔判讀時一起看**（若 Gain 側仍是 worst_margin 瓶頸即試）。動 loss 權重前依規矩討論。詳見 [docs/log/analysis-01](../docs/log/analysis-01-pattern-anatomy.md) §3。
 - **[討論] 選擇端 known-bad 鄰域懲罰（治 R4 E ping-pong）**：acquisition 罰「採過且證實爛」的鄰域；SM 續走 elite-only（CartPole 論點：只學好的保地形、盲區問題在選擇端解）。**觸發條件：R4 結束時 trust_t 未升離 0.05 且 ping-pong（flips 雙峰）未消**；若 trust 升了它自癒、本條作廢。analysis-01 佐證：~300 翻轉的跨區跳落在不相關區＝重抽。詳見 `docs/discuss/scratch.md`「ping-pong」塊。
 - **[使用者] DIP + 探索 → 已成 Round 3（config ready）**：E(lr↑)/D(sigmoid DIP)/E+D factorial,見上方 Round 3 區塊與 [docs/log/round-03](../docs/log/round-03-explore-dip.md)。待 Round 2 判讀完後發。
@@ -50,6 +53,8 @@
 ---
 
 ## ✅ 已歸檔（一行指標，完整結論在 round 檔）
+
+- **Round 07 — 除塵驗證** → [docs/log/round-07](../docs/log/round-07-dedust.md)：**粉塵=共振的一部分（4/5 崩 -4.7~-16.9dB）→ 乾淨可製造解要用搜的、不能用修的**；例外 p03 整塊型近零代價＝可製造最佳已知點（wm -2.68、rad +0.24）；R6 oracle 重驗真（p00 +0.44 達標）；rad ±45°=獨立第三關（p00 rad -2.71）且與可製造同向；SM 乾淨區低估 5-15dB；rad 15 條入袋（Stage-3 解鎖）。批次驗證實測 **3 分/筆**。2026-07-03 當日完成。
 
 - **Round 06 — 離線期望基準（零 HFSS）** → [docs/log/round-06](../docs/log/round-06-offline-expected-best.md)：**期望爬升到不了 spec**（fit -9.18+0.75·ln k、躍遷主導 46%）；**達標 pattern 已在 harvest 池（oracle +0.38）**；學長同預算贏 1-2dB（KM 500 輪內達標 6% vs 我們 0%）；**分布≫策略** → 池頂端 warm-start 升候選。工具 `script/expected_best.py`（每 round 收檔可重跑疊圖）。圖 `docs/log/assets/round-06/`。2026-07-03 當日完成。
 - **Round 04 — 自適應 SM 訓練量** → [docs/log/round-04](../docs/log/round-04-adaptive-sm.md)：**E+D 破專案紀錄 -2.89@154**（探索躍遷,+2.80 vs R3）；主假設未驗證（探測自鎖 3-5ep、fit_loss 仍 8-11、trust 全鎖;E/D 輸 R3 ~0.9dB）→ R5 滑動視窗。2026-07-03 停（E@208/D@222/E+D@201）。圖 `docs/log/assets/round-04/`。
