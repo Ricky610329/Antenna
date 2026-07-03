@@ -5,7 +5,7 @@
 > - config 全集（不刪）→ [README.md](README.md)
 > **流程**：新實驗 → `docs/log/` 開 round 檔 + 這裡加「🔵 進行中」一行指向它；跑完結論寫進 round 檔，這裡只留「✅ 已歸檔」一行指標。
 
-最後更新：2026-07-02
+最後更新：2026-07-03
 
 **全域變更（2026-06-28）**：① 驗證預算改為**跑到 500 epoch**（約 3 天；原 250）→ Round-2 config `epochs: 500`。② **回滾機制已移除**（對 generator-free + K 候選 + 線上 SM 不合身、且原實作有 off-by-one + 覆蓋最佳檔兩個 bug）→ Round 1 的「不收斂」有它一份；探索改靠 K 候選 + SM 引導 (+ trust)。最佳 pattern 仍安全存 `patterns/`。
 
@@ -32,7 +32,8 @@
 - ~~**[使用者] val-早停**~~ → **已成 Round 4**（`mode:adaptive`）：用「下一個 held-out HFSS 點」評 member0 快照、自調每輪 SM 重訓 epoch 數。見上方 Round 4 區塊與 [docs/log/round-04](../docs/log/round-04-adaptive-sm.md)。
 - **[使用者] 可解釋性 / SM 歸因（AlphaFold-like）**：用 SM 做屬性分析，找「哪些像素對好 pattern 貢獻最大」→ 當設計先驗/引導。先記錄、之後測。
 - **[使用者] 把「對稱」做對（下一次想試）**：現行硬 mirror（`MirrorGenerator`，**12-1-12** = 對中央 1 欄做完整左右鏡射）表現普通、可能太死。試**部分對稱**：例如 **10-5-10**（外側 10 欄左右對稱 + **中央 5 欄自由**，給饋電/中央共振區自由度），或改成**軟對稱 loss**（鼓勵而非硬鎖）。做之前先定哪種（generator 結構切法 vs loss）+ 中央自由帶寬度。動 loss 前依規矩討論。
-- **[使用者] 週期 harvest 重錨（更極致 refit）**：把過往好樣本（含 harvest）週期性整批重訓 SM，讓資料越跑越多、暖啟動越來越好（現在 run 的資料不回灌中央池，這條補那塊）。
+- **[R6 分析] harvest 池頂端 warm-start（候選/初始 pattern，不只 SM）**：R6 實錘達標 pattern 已在池內（oracle **+0.38**、池內 18 筆 ≥0）且「分布≫策略」（池抽樣等效預算領先 200-450×）→ 讓搜尋**從池內 top 樣本出發/混入候選**，而非從頭找。**觸發條件：R5 收檔後討論排程**。詳見 [docs/log/round-06](../docs/log/round-06-offline-expected-best.md) §5。
+- **[使用者] 週期 harvest 重錨（更極致 refit）**：把過往好樣本（含 harvest）週期性整批重訓 SM，讓資料越跑越多、暖啟動越來越好（現在 run 的資料不回灌中央池，這條補那塊）。R6 分析 +1 佐證（池=最有價值資產）。
 - **[使用者] 結構性先驗 → 走架構、不走 loss（主題）**：**連通** 和 **對稱** 是同一類——都是 pattern 的**結構性先驗**,適合用 **generator 架構(DIP)** 內建,而不是靠 loss 硬拉。
   - **連通**：不動 `sc loss`（**已驗證有效**）;連通交給 **DIP**（sigmoid 架構天生連通,r_feed 0.62 vs direct 0.2）→ **Round 3 D 正在測**。
   - **對稱**：10-5-10 部分對稱（見上方對稱候選）——同樣走 generator 結構切法。
@@ -44,6 +45,7 @@
 
 ## ✅ 已歸檔（一行指標，完整結論在 round 檔）
 
+- **Round 06 — 離線期望基準（零 HFSS）** → [docs/log/round-06](../docs/log/round-06-offline-expected-best.md)：**期望爬升到不了 spec**（fit -9.18+0.75·ln k、躍遷主導 46%）；**達標 pattern 已在 harvest 池（oracle +0.38）**；學長同預算贏 1-2dB（KM 500 輪內達標 6% vs 我們 0%）；**分布≫策略** → 池頂端 warm-start 升候選。工具 `script/expected_best.py`（每 round 收檔可重跑疊圖）。圖 `docs/log/assets/round-06/`。2026-07-03 當日完成。
 - **Round 04 — 自適應 SM 訓練量** → [docs/log/round-04](../docs/log/round-04-adaptive-sm.md)：**E+D 破專案紀錄 -2.89@154**（探索躍遷,+2.80 vs R3）；主假設未驗證（探測自鎖 3-5ep、fit_loss 仍 8-11、trust 全鎖;E/D 輸 R3 ~0.9dB）→ R5 滑動視窗。2026-07-03 停（E@208/D@222/E+D@201）。圖 `docs/log/assets/round-04/`。
 - **Round 03 — 探索 × DIP factorial** → [docs/log/round-03](../docs/log/round-03-explore-dip.md)：**E(lr↑)最佳 -3.63@89（¼ epoch 追平②）**;DIP 連通成功(r_feed~0.95)但停滯(best@8);三臂被 SM 欠訓汙染、factorial 不乾淨 → R4 修瓶頸重跑。2026-07-02 停(E@189/D@101/E+D@132)。圖 `docs/log/assets/round-03/`。
 - **Round 01 — SM 訓練量 A/B** → [docs/log/round-01](../docs/log/round-01-sm-training-ab.md)：**訓練量非 bottleneck**(dlf −4.18≈refit −4.21 > dlf_fit −5.58、皆差 spec ~4dB)。圖 `docs/log/assets/round-01/`。

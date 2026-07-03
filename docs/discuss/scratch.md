@@ -133,3 +133,33 @@
   零程式碼:`adaptive: {epoch_min: K, epoch_max: K+1}` 夾死 target。推 K=16（fit_loss 收斂速率估 4-8× 到 1-3 區）。
   順手 replay_size 256→512（Ricky「暫存幾百點」）。probe-round 退 R5。
 - 待 Ricky 定 K → 備三 config + round 檔,R4 收檔即發。
+
+## 💡 理論邊界：k 筆 HFSS 最多能降多少 best loss?（Ricky 提問,2026-07-03,半熟討論中）
+> **狀態：✅ 已升級**（2026-07-03 當日）→ **Round 06**（離線期望基準,零 HFSS）：工具 `script/expected_best.py`、
+> 結論見 [docs/log/round-06](../log/round-06-offline-expected-best.md)。下方數字已進 round 檔 §4;本條留思路軌跡。
+- **問題釘死**：對確定性 f 不加假設,「最優策略」退化成一步到位 → 邊界必須「相對於某參照」。拆三層:
+  1. **物理地板 L_phys**（Chu/Bode–Fano,孔徑↔Q↔頻寬匹配深度）——與策略無關,選做 sanity。
+  2. **分布端點 L_dist**（候選分布的左尾端點）——**生成端**決定;EVT(GPD) fit 左尾可外插估計+CI,
+     同時給 E[best-of-N] 理論曲線（random 的封閉參照線）。
+  3. **策略效率 L_k(π)**——同預算離 L_dist 多遠;greedy vs 非貪婪的戰場**只在這層**。
+- **關鍵定性**：非貪婪不改變上界（端點由分布定）,只改變逼近速度;fixed-budget simple-regret 理論裡
+  純 greedy 無保證、最優長得像「先廣後窄」;R4 E+D 躍遷（探索撞到質變區）是活例。
+- **可操作**：harvest 24k = 自家 mini NAS-Bench → **offline pool replay**（oracle=pool-min;
+  random/greedy/UCB/EI 各一條 best-vs-k 曲線,零 HFSS 成本）+ **三條 EVT 尾**（harvest / uniform-random /
+  G 線上已評點）→ 把「輸 random」責任拆成生成 vs 選點,並給 headroom 尺。
+- 侷限要誠實：pool=學長分布的 oracle,非全空間;G 新 pattern 不在 pool → G 端點只能用線上已評點粗 fit。
+- 狀態:討論中、未定案;熟了升 ONGOING 候選（天然觸發點:R5 收檔後、開發機閒置時,零 HFSS 成本）。
+- **↳ 首輪實測完成（2026-07-03 下午,Ricky 定「最單純先來」）**：三塊資料全量算完（自家 16 runs metrics /
+  harvest 24,189 筆逐筆 worst_margin / 學長原樹 41 條 single 軌跡唯讀重建,margin 全用同一份
+  `antenna.losses.worst_margin`+現行 targets 重算,跨來源可比）。**關鍵數字**：
+  - **oracle（池內最佳）= +0.38 dB（達標!）**＝學長 `pixel_base_2` @286 輪;另 +0.07@414、-0.01@660——
+    **這個 spec 的達標 pattern 已在 harvest 池裡**。
+  - 我們 greedy 家族（R2-R5）中位:-6.2@100、-4.3@200;fit ≈ **-9.18+0.75·ln k** → 外插 500 輪 -4.5;
+    邊際增益 k=100 時 ~+0.008 dB/輪 → **期望路徑爬不到 spec（需 ~2×10⁵ 輪）,實際進步靠罕見躍遷**。
+  - 學長方法中位:-4.3@100、-3.6@200、-2.1@500 → **同預算贏我們 1-2 dB**。
+  - random best-of-N（harvest 池盲抽,⚠非 uniform random——池=學長搜尋軌跡聯集、偏好區）:
+    -1.1@100、-0.56@250 → 等效預算領先我們 fit **200-450×**。「分布 >> 策略」實錘。
+  - 兩個低垂果實浮出:(a) **候選/初始 pattern 從池頂端 warm-start**（不只 SM warm-start;接「週期 harvest
+    重錨」候選）;(b) 學長機制對照組（他多條 run 300-700 輪逼近/達標,我們丟掉的成分裡有有效的）。
+  - 侷限:我們 k>200 中位只剩 1-2 run;學長軌跡序=online.dataset 插入序;分析腳本/npz/圖在 session
+    scratchpad（一次性,要留就開 round 正式化進 `script/`+`docs/log/`）。
