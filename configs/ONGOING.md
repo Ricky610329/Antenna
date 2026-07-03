@@ -21,7 +21,12 @@
 | E+D | `single_r5_dip_explore` | 同上 | 同上（紀錄臂：看「撞到」能否變「開採」） |
 - **由來**：R4 實錘兩件事——深度欠訓（每輪訓完 elite fit_loss 仍 7.7-10.6，學長壓 0.1）＋ adaptive 探測自鎖（target 停 3-5、曲線 80-100% 平）。**滑動視窗（Ricky 設計）**：每輪訓到視窗頂 hi、log2 階梯快照、argmin **落「上二階」**（不必貼頂——最佳點上方保留兩階冗餘）連 3 次→hi×2／落最低一階→hi÷2；起點 64、**上限 1024**（爬到頂≈學長「破千」量級）、下限 8；`replay_size 512`、`ensemble 3`（省成本）。工程完成（`mode: adaptive_window`、golden 零漂移）。
 - **判準（分層）**：① fit_loss 壓到 ~1-3 → ② sm_gap/sm_bias 降、trust_t 升 → ③ worst_margin vs R4 同臂。⚠ 視窗爬到頂＝數十萬步/輪，**正式機務必盯 `time` 欄**看 SM 佔比；失控把天花板降回 256/512（一行 config）。
-- **狀態**：**2026-07-03 發**（E@216、D@37、E+D@218；R4 三臂已停）。各 500 epoch。**同日晚止血**：冷啟動超衝（elite ~12 筆時視窗直衝 1024→過擬合+30分/ep）→ `epoch_max` 1024→256 **重啟三臂**（斷點續跑,hi 自動夾回）；治本（hi 與 elite 規模掛鉤）＝R5.5 候選,下個 session 處理。
+- **狀態**：**2026-07-03 發**（E@216、D@37、E+D@218；R4 三臂已停）。各 500 epoch。**同日晚止血**：冷啟動超衝（elite ~12 筆時視窗直衝 1024→過擬合+30分/ep）→ `epoch_max` 1024→256 **重啟三臂**（斷點續跑,hi 自動夾回）；治本（hi 與 elite 規模掛鉤）＝R5.5 候選,下個 session 處理。**同日晚 D 臂提早收**（wm最佳 -7.66@~34ep 墊底、D-only 隔離問題 R3/R4 已答過）→ **只剩 E / E+D 兩臂**；.37 機器讓給「除塵驗證」（見下方 🔜）。
+
+### Round 7 — 除塵驗證（🔜 **備妥待發**，2026-07-03）→ 詳見 [docs/log/round-07](../docs/log/round-07-dedust.md)
+- **一句話**：池內達標 pattern＝「幾塊大銅片＋1-3px 粉塵」（2 家族）；拔粉塵 HFSS 重驗（15 筆,orig/d1/d3），驗「可製造達標」能不能直接到手；每 solve 順收 rad（±45° 首驗＋Stage-3 資料）。
+- **備妥**：工具 `script/dedust.py`（select/sm-screen 已跑、輸入落 NAS `dedust_r7_input/`）＋ round 檔＋測試（tests/test_dedust.py）。SM 預篩：除塵掉 0.2-1.6dB（弱訊號,SM 偏差 ~1.3dB）。
+- **發車**：.37 停妥（R5 D 臂已收）後在正式機跑 `python -m script.dedust run`（估 1.5-4 hr,可中斷續跑）→ `report` 貼 round-07 §4。
 
 ---
 

@@ -17,8 +17,9 @@
 | 02 | ensemble + trust(文獻治本) | ✅ archived(2026-07-01 停,②~417ep) | **治本微幅、未決定性**(②③微贏~0.3-0.5dB、①輸、皆未收斂;trust_t 卡低) | [round-02](round-02-ensemble-trust.md) |
 | 03 | 探索 × DIP（factorial E/D/E+D） | ✅ archived（2026-07-02 停,E@189/D@101/E+D@132） | **E(lr↑)最佳 -3.63@89（¼ epoch 追平②）**;DIP 連通成功但停滯;三臂被 SM 欠訓汙染 → R4 修瓶頸重跑 | [round-03](round-03-explore-dip.md) |
 | 04 | 自適應 SM 訓練量（修 R3 SM 欠訓瓶頸） | ✅ archived（2026-07-03 停,E@208/D@222/E+D@201） | **E+D 破紀錄 -2.89@154**（探索躍遷,+2.80 vs R3）；但主假設未驗證——探測自鎖 3-5ep、fit_loss 仍 8-11、trust 全鎖；E/D 輸 R3 ~0.9dB → R5 | [round-04](round-04-adaptive-sm.md) |
-| 05 | 滑動視窗 SM 訓練量（修 R4 欠訓+探測自鎖） | 🔵 running（2026-07-03 發） | — | [round-05](round-05-window-sm.md) |
+| 05 | 滑動視窗 SM 訓練量（修 R4 欠訓+探測自鎖） | 🔵 running（2026-07-03 發；同日晚 D 臂提早收讓機給 R7，餘 E/E+D） | — | [round-05](round-05-window-sm.md) |
 | 06 | 離線期望基準（每輪 HFSS 的期望 best；零 HFSS） | ✅ archived（2026-07-03 當日完成） | **期望爬升到不了 spec**（-9.18+0.75·ln k,躍遷主導）；**達標 pattern 已在池內（oracle +0.38）**；學長同預算贏 1-2dB；池抽樣等效預算 200-450× → **分布≫策略** | [round-06](round-06-offline-expected-best.md) |
+| 07 | 除塵驗證（達標 pattern 拔 1-3px 粉塵 HFSS 重驗＋順收 rad） | 🔜 proposed（2026-07-03 備妥,待 .37 停妥發） | — | [round-07](round-07-dedust.md) |
 
 ## 離線分析（analysis-NN；不佔 round——**慣例 2026-07-03**：round 編號只給燒 HFSS 的實驗，round-06 為慣例前歸檔、不回改）
 | # | 主題 | 狀態 | 結論(一句) | 檔 |
