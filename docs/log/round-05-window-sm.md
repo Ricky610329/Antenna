@@ -35,6 +35,7 @@
 | E+D | 218 | running（2026-07-03 發） | `[Patch-single-218-b817c3] pixel_single_r5_dip_explore` |
 - 事件: 2026-07-03 實作 `adaptive_window`（controller + 接線 + 測試，golden 零漂移）→ 同日修正滑動規則為**區位制**（argmin 落上二階即 ×2，不必貼頂——保留冗餘）、上限 256→1024、ensemble 5→3 → **同日發車**（三臂 config 快照已驗證為新版）。
 - 事件: 2026-07-03 修 `_resolve_run` 子字串 bug（round 報告兩臂數字相同的元凶；R3 D 數字已更正）。
+- 事件: 2026-07-03 晚 **冷啟動超衝止血**——健檢（~22-32ep）發現 sigmoid 兩臂視窗 4 連滑直衝 1024（elite 僅 ~12 筆＝純背誦；fit 0.17-0.91 過擬合、gap 不動、D 30分/ep）→ `epoch_max` 1024→256 重啟三臂（`seed_target` 自動把 hi 夾回、bucket 重學亦順帶解 E 臂 EMA 滯後）。**根因（視窗上限未與 elite 規模掛鉤）留待 R5.5 治本**，詳見 scratch「R5 健檢」交接塊。判讀曲線注意 ep≤重啟點為 1024-cap 段。
 
 ## 4. 分析 (Analyze)
 （待跑完 `python -m script.round_report --round 05 --runs single_r5_explore single_r5_dip single_r5_dip_explore --labels E D E+D`）

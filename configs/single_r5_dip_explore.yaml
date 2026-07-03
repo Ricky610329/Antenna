@@ -25,7 +25,7 @@ sm_train:
 adaptive:                           # 滑動視窗訓練量旋鈕（見 WindowSMTrainController / docs/discuss/decisions.md）
   snapshots: 5                      # log2 階梯採樣點數（hi, hi/2, …, hi/16）
   epoch_min: 8                      # 視窗頂 hi 的下限
-  epoch_max: 1024                   # 視窗頂 hi 的上限（使用者定的天花板；爬到頂≈學長量級,正式機盯 time 欄看 SM 佔比）
+  epoch_max: 256                    # 視窗頂 hi 的上限（2026-07-03 止血 1024→256：冷啟動超衝——elite 僅 ~12 筆時視窗直衝 1024,fit 壓到 0.2-0.9 過擬合+30分/ep;斷點續跑 seed_target 會把 hi 夾回此上限）
   hi_init: 64                       # hi 起點（fit_loss 收斂速率估的中間帶；有證據自己 ×2 往上爬）
   ema: 0.3                          # bucket 誤差 EMA（吸 K=1 單點雜訊）
   patience: 3                       # argmin 連續貼邊幾次才滑動（遲滯防震盪）
