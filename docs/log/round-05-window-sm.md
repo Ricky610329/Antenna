@@ -2,7 +2,7 @@
 
 - 狀態: proposed
 - 提出 / 開跑 / 結論: 2026-07-03 / — / —
-- 一句話問題: 把每輪 SM 訓練量從「自鎖在 3–5 epoch」提到「滑動視窗自動找的量級（起點 64、上限 256）」，能否把 fit_loss 從 ~8–11 壓進 ~1–3 的中間帶、讓 sm_gap/sm_bias 降、trust 進入利用？
+- 一句話問題: 把每輪 SM 訓練量從「自鎖在 3–5 epoch」提到「滑動視窗自動找的量級（起點 64、上限 1024）」，能否把 fit_loss 從 ~8–11 壓進 ~1–3 的中間帶、讓 sm_gap/sm_bias 降、trust 進入利用？
 - 一句話結論: —（待跑）
 - 指向: `configs/README.md`（single_r5_*）· 對照 = R4 同臂（[round-04](round-04-adaptive-sm.md)）· `docs/discuss/decisions.md`「滑動視窗」· memory [[project_sm_training_redesign]]
 
@@ -21,9 +21,9 @@
 | D DIP | `single_r5_dip` | 同上 | R4 D（bias ~8、stall 154） |
 | E+D | `single_r5_dip_explore` | 同上 | R4 E+D（**破紀錄 -2.89@154**，探索撞到） |
 
-- window 旋鈕（三臂相同）: `snapshots 5 / epoch_min 8 / epoch_max 256 / hi_init 64 / ema 0.3 / patience 3`。
+- window 旋鈕（三臂相同）: `snapshots 5 / epoch_min 8 / epoch_max 1024 / hi_init 64 / ema 0.3 / patience 3`（上限 1024＝使用者定，2026-07-03 由 256 調高——爬到頂≈學長「破千」量級）。
 - **判準**（分層）: ① `sm_fit_loss` 壓到 ~1–3（機制生效的直接證據）→ ② `sm_gap`/`sm_bias` 降、`trust_t` 升離 0.05（SM 可信）→ ③ worst_margin vs R4 同臂（真目標）。輔看 `sm_train_epochs`（hi 軌跡：爬到哪、有沒有震盪）與 `probe_argmin`（最佳落點）。
-- **成本**: hi=256 × elite ~200 點 ≈ 5 萬步/輪——開發機估仍遠小於 HFSS（5–8 分/ep），但**正式機要量 `time` 欄**確認 SM 佔比（[[feedback_profile_on_prod_real_hfss]]）。
+- **成本**: 視窗爬到頂時 hi=1024 × elite 數百點 ≈ **數十萬步/輪**——這已不再必然可忽略，**正式機務必盯 `time` 欄**看 SM 佔 wall-clock 比例（[[feedback_profile_on_prod_real_hfss]]）；若佔比失控，天花板降回 256/512 是一行 config 的事。
 - **HFSS 預算**: 各 500 epoch；機器沿用 E@216 / D@37 / E+D@218。
 
 ## 3. 執行紀錄 (Run)
