@@ -12,12 +12,15 @@
 - **兩端都被自家資料反對**：1–5 ep 欠訓（本實錘）／壓到 0.1 過擬合（R1 dlf_fit 最差＋Ricky 經驗）→ 目標＝
   從未測過的中間帶（fit_loss ~1–3）。
 - **機制（Ricky 設計）**：`mode: adaptive_window`——每輪 elite 訓滿視窗頂 hi、沿 log2 階梯 [hi/16…hi] 快照
-  member0；held-out argmin **連續 patience(3) 次貼頂 → hi×2、貼底 → hi÷2、中間 → 不動**。起點 64、**上限 1024**
-  （Ricky 定，2026-07-03 由 256 調高——爬到頂≈學長「破千」量級）、下限 8；×2 滑動使階梯 key 跨視窗重疊 4/5 →
+  member0；held-out argmin **區位**決定滑動：連續 patience(3) 次落「**上二階**」（hi 或 hi/2，**不必貼頂**——
+  最佳點上方保留至少兩階冗餘，Ricky 2026-07-03 修正）→ hi×2、落「最低一階」→ hi÷2、中段 → 不動。起點 64、
+  **上限 1024**（Ricky 定——爬到頂≈學長「破千」量級）、下限 8；×2 滑動使階梯 key 跨視窗重疊 4/5 →
   bucket EMA 沿用；held-out 鐵律不變。
-- **已知代價（誠實）**：live SM 最多過衝一個 octave（真最佳 ≈ hi/2 時）；視窗爬到頂時 1024 × elite 數百點 ≈
-  **數十萬步/輪**——正式機務必盯 `time` 欄看 SM 佔比，失控就把天花板降回 256/512（一行 config）。
-  順手 `replay_size 256→512`（Ricky「暫存幾百點」）。
+- **ensemble 5→3（R5，Ricky 定）**：省 SM 訓練成本（×0.6）；代價＝不確定性估計（trust/κ 的成員分歧）略粗。
+  （R4 期的「保持 5」決策是當時脈絡；R5 起以 3 為準。）⚠ R5 vs R4 因此是**兩個實質變更**，歸因寫整包。
+- **已知代價（誠實）**：live SM 過衝最佳點（等衡 hi≈4–8×argmin，偏成長）；成本單位＝1 epoch＝elite_n 步：
+  R4 實測 elite ~90–120 → 起點 64 ≈ 2.2 萬步/輪（幾十秒）、**爬到頂 1024 ≈ 35 萬步/輪（可能與 HFSS 同量級）**
+  ——正式機務必盯 `time` 欄，失控把天花板降 256/512（一行 config）。順手 `replay_size 256→512`。
 - 實作：`WindowSMTrainController`（training.py，繼承 Adaptive 共用 probe_stats）；configs `single_r5_*`；
   取代 scratch 裡的 fixed-K 案與 probe-round 案（M 點平均若雜訊仍主導再上，見 round-05 §6）。
 

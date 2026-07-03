@@ -163,6 +163,16 @@ def test_window_schedule_log2_ladder():
     assert c.target_epochs() == 64
 
 
+def test_window_grows_on_near_top_argmin():
+    """回歸 (2026-07-03「不必貼頂、保留冗餘」)：argmin 落「上二階」(次高階即可,不必正貼頂) 也觸發 ×2——
+    最佳點上方永遠保留至少兩階探測冗餘。"""
+    c = _wctrl()                                           # 階梯 [4,8,16,32,64]
+    errs_second_best = lambda: {ep: (0.5 if ep == 32 else 1.0 + ep * 0.01) for ep in c.schedule()}
+    for _ in range(3):                                     # argmin=32=次高階 (非頂 64)
+        c.observe(errs_second_best())
+    assert c.target_epochs() == 128                        # 舊規則 (只認貼頂) 不會動；新規則 ×2
+
+
 def test_window_slides_up_on_persistent_top_argmin():
     """argmin 連續 patience 次貼頂 → hi×2 (「最佳都靠後→默默增加」)；未滿 patience 不動 (遲滯)。"""
     c = _wctrl()

@@ -9,11 +9,12 @@
 ## 1. 假設 (Propose)
 - **問題**: R4 兩個實測發現——① **深度欠訓**：每輪訓完 elite 的訓練 loss 仍停在 7.7–10.6（學長壓到 0.1，差兩個數量級），連訓練集都沒擬合；② **adaptive 探測自鎖**：target 停 3–5、探測曲線 80–100% 平坦（快照全擠低處 → 差異小於雜訊 → 永遠沒有「往上」的證據）。
 - **假設**: 訓練量的正確答案在「1–5（欠訓）」與「壓到 0.1（R1 實測過擬合最差）」之間的**從未測過的中間帶**（fit_loss ~1–3，估 16–64+ epoch）。滑動視窗（Ricky 設計）讓訓練量有證據自己爬：每輪訓到視窗頂 → 探測永遠涵蓋上緣 → 無自鎖。
-- **機制**（`mode: adaptive_window`，`WindowSMTrainController`）: 每輪 elite 訓滿視窗頂 hi、沿 log2 階梯 [hi/16…hi] 快照 member0；下一輪 held-out 點評快照 → bucket EMA → argmin 連續 3 次貼頂 → hi×2、貼底 → hi÷2、中間 → 不動。×2 滑動使階梯 key 跨視窗重疊 4/5 → EMA 沿用。已知代價：live SM 最多過衝一個 octave。
+- **機制**（`mode: adaptive_window`，`WindowSMTrainController`）: 每輪 elite 訓滿視窗頂 hi、沿 log2 階梯 [hi/16…hi] 快照 member0；下一輪 held-out 點評快照 → bucket EMA → argmin **區位**決定滑動——連續 3 次落「**上二階**」（hi 或 hi/2，不必貼頂；Ricky：最佳點上方保留至少兩階冗餘）→ hi×2、落「最低一階」→ hi÷2、中段 → 不動。×2 滑動使階梯 key 跨視窗重疊 4/5 → EMA 沿用。已知代價：live SM 過衝最佳點（等衡時 hi≈4–8×argmin，偏多訓、偏成長——與「別回 0.1」之間由視窗上限擋住）。
 - **依據**: R4 fit_loss 實錘（2026-07-03，見 `docs/discuss/scratch.md`）；R1（壓到收斂最差 → 別回 0.1）；[[project_sm_training_redesign]]。
 
 ## 2. 實驗設計 (Design)
-續 R4 factorial，三臂唯一變因 `sm_train.mode: adaptive → adaptive_window`（+ `replay_size 256→512`）。
+續 R4 factorial，三臂改動：`sm_train.mode: adaptive → adaptive_window` + `ensemble 5→3`（使用者定，省 SM 成本）+ `replay_size 256→512`。
+**⚠ 歸因注意**：R5 vs R4 是**兩個實質變更**（視窗訓練量＋ensemble 縮編）——結論要寫整包，不確定性估計（trust/κ 用的成員分歧）在 3 成員下略粗，若 trust 行為異常先想到這個。
 
 | 臂 | config | = R4 同臂改什麼 | 對照 baseline |
 | — | — | — | — |
@@ -21,9 +22,9 @@
 | D DIP | `single_r5_dip` | 同上 | R4 D（bias ~8、stall 154） |
 | E+D | `single_r5_dip_explore` | 同上 | R4 E+D（**破紀錄 -2.89@154**，探索撞到） |
 
-- window 旋鈕（三臂相同）: `snapshots 5 / epoch_min 8 / epoch_max 1024 / hi_init 64 / ema 0.3 / patience 3`（上限 1024＝使用者定，2026-07-03 由 256 調高——爬到頂≈學長「破千」量級）。
+- window 旋鈕（三臂相同）: `snapshots 5 / epoch_min 8 / epoch_max 1024 / hi_init 64 / ema 0.3 / patience 3`（上限 1024＝使用者定，2026-07-03 由 256 調高——爬到頂≈學長「破千」量級）；`ensemble 3`。
 - **判準**（分層）: ① `sm_fit_loss` 壓到 ~1–3（機制生效的直接證據）→ ② `sm_gap`/`sm_bias` 降、`trust_t` 升離 0.05（SM 可信）→ ③ worst_margin vs R4 同臂（真目標）。輔看 `sm_train_epochs`（hi 軌跡：爬到哪、有沒有震盪）與 `probe_argmin`（最佳落點）。
-- **成本**: 視窗爬到頂時 hi=1024 × elite 數百點 ≈ **數十萬步/輪**——這已不再必然可忽略，**正式機務必盯 `time` 欄**看 SM 佔 wall-clock 比例（[[feedback_profile_on_prod_real_hfss]]）；若佔比失控，天花板降回 256/512 是一行 config 的事。
+- **成本**（單位澄清：1 epoch＝把 elite 整包過一遍＝elite_n 步，batch_size=None 一筆一步）: R4 實測 elite ~90–120 → 起點 hi=64 ≈ 64×115×3 ≈ **2.2 萬步/輪（幾十秒）**沒問題；**爬到頂 hi=1024 ≈ 35 萬步/輪（可能 5–10 分,與 HFSS 同量級）**——**正式機務必盯 `time` 欄**（[[feedback_profile_on_prod_real_hfss]]）；失控就把天花板降 256/512（一行 config）。
 - **HFSS 預算**: 各 500 epoch；機器沿用 E@216 / D@37 / E+D@218。
 
 ## 3. 執行紀錄 (Run)

@@ -38,7 +38,7 @@ generator:
 
 surrogate:
   name: ensemble
-  ensemble_size: 5
+  ensemble_size: 3                  # ← R5 由 5 收成 3（使用者定：省 SM 訓練成本;不確定性估計略粗）
   init_perturb: 0.02
   pretrained: sm_harvest.pth
   offline_dataset: harvest_single

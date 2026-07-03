@@ -243,8 +243,9 @@ class WindowSMTrainController(AdaptiveSMTrainController):
 
     與 AdaptiveSMTrainController 的差異＝**訓練量恆為視窗頂 hi**（不是自調的 target）：每輪把 elite
     訓滿 hi epoch、沿 log2 階梯 [hi/2^(n-1) … hi] 快照 member0；下一輪 held-out 點評快照 → bucket EMA →
-    看 argmin 落視窗哪裡——連續 patience 次貼**頂**（最佳都靠後）→ hi×2（默默增加）；連續貼**底** →
-    hi÷2（訓過頭）；落中間 → 不動（收斂在最佳落點附近）。
+    看 argmin 落視窗哪個**區位**——連續 patience 次落「上二階」(hi 或 hi/2,最佳靠後,不必貼頂——最佳點
+    上方保留至少兩階冗餘,Ricky 2026-07-03) → hi×2（默默增加）；連續落「最低一階」→ hi÷2（訓過頭）；
+    落中段 → 不動（收斂在最佳落點附近、上方永遠有探測餘裕）。
 
     為什麼能解 adaptive 的「低 target 自鎖」：探測永遠涵蓋到訓練量上緣，「再多訓有沒有好處」隨時有證據。
     代價（誠實）：live SM 最多過衝一個 octave（真最佳 ≈ hi/2 時）——遠離「壓到 0.1」的過擬合區（R1 教訓）。
@@ -278,7 +279,7 @@ class WindowSMTrainController(AdaptiveSMTrainController):
         return int(round(self.hi)) if self.enable else self.fallback
 
     def observe(self, errors: dict):
-        """held-out 誤差 → bucket EMA → argmin 位置決定視窗滑動 (貼頂×2 / 貼底÷2 / 中間不動)。"""
+        """held-out 誤差 → bucket EMA → argmin **區位**決定視窗滑動 (上二階×2 / 最低一階÷2 / 中段不動)。"""
         if not self.enable or not errors:
             return
         finite = {int(e): float(v) for e, v in errors.items() if math.isfinite(v)}
@@ -287,13 +288,16 @@ class WindowSMTrainController(AdaptiveSMTrainController):
         for e, v in finite.items():
             self.bucket[e] = v if e not in self.bucket else self.ema * v + (1.0 - self.ema) * self.bucket[e]
         best = min(finite, key=lambda e: self.bucket[e])   # 只有本輪觀測到的桶投票 (同父類教訓)
-        top, bot = max(finite), min(finite)
-        if best >= top:
+        rungs = sorted(finite)
+        #? 區位 (Ricky 2026-07-03「不必貼頂、保留冗餘」)：最佳落上二階＝靠後＝上方餘裕不足 → 加碼；
+        #  只有落「最低一階」才算訓過頭 → 減碼 (不對稱、偏成長)。階梯 <3 階時上二階優先 (偏 grow)。
+        grow_zone = set(rungs[-2:])
+        if best in grow_zone:
             self._edge_streak = self._edge_streak + 1 if self._edge_streak > 0 else 1
-        elif best <= bot:
+        elif best == rungs[0]:
             self._edge_streak = self._edge_streak - 1 if self._edge_streak < 0 else -1
         else:
-            self._edge_streak = 0                          # 落中間 → 遲滯歸零、視窗不動
+            self._edge_streak = 0                          # 落中段 → 遲滯歸零、視窗不動
         if self._edge_streak >= self.patience:
             self.hi = min(float(self.epoch_max), self.hi * 2.0)
             self._edge_streak = 0

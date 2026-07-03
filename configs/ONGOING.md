@@ -26,10 +26,10 @@
 ### Round 5 — 滑動視窗 SM 訓練量（🔵 **proposed**，2026-07-03，**待 R4 收檔發**）→ 詳見 [docs/log/round-05](../docs/log/round-05-window-sm.md)
 | 臂 | config | = R4 同臂改什麼 | 隔離 |
 |---|---|---|---|
-| E | `single_r5_explore` | `mode: adaptive→adaptive_window` | 滑動視窗訓練量 |
+| E | `single_r5_explore` | `mode: adaptive→adaptive_window` + ensemble 5→3 | 滑動視窗訓練量（⚠兩變更） |
 | D | `single_r5_dip` | 同上 | 同上（sigmoid 臂） |
 | E+D | `single_r5_dip_explore` | 同上 | 同上（紀錄臂：看「撞到」能否變「開採」） |
-- **由來**：R4 實錘兩件事——深度欠訓（每輪訓完 elite fit_loss 仍 7.7-10.6，學長壓 0.1）＋ adaptive 探測自鎖（target 停 3-5、曲線 80-100% 平）。**滑動視窗（Ricky 設計）**：每輪訓到視窗頂 hi、log2 階梯快照、argmin 連 3 次貼頂→hi×2／貼底→hi÷2；起點 64、**上限 1024**（爬到頂≈學長「破千」量級）、下限 8；`replay_size 512`。工程完成（`mode: adaptive_window`、golden 零漂移）。
+- **由來**：R4 實錘兩件事——深度欠訓（每輪訓完 elite fit_loss 仍 7.7-10.6，學長壓 0.1）＋ adaptive 探測自鎖（target 停 3-5、曲線 80-100% 平）。**滑動視窗（Ricky 設計）**：每輪訓到視窗頂 hi、log2 階梯快照、argmin **落「上二階」**（不必貼頂——最佳點上方保留兩階冗餘）連 3 次→hi×2／落最低一階→hi÷2；起點 64、**上限 1024**（爬到頂≈學長「破千」量級）、下限 8；`replay_size 512`、`ensemble 3`（省成本）。工程完成（`mode: adaptive_window`、golden 零漂移）。
 - **判準（分層）**：① fit_loss 壓到 ~1-3 → ② sm_gap/sm_bias 降、trust_t 升 → ③ worst_margin vs R4 同臂。⚠ 視窗爬到頂＝數十萬步/輪，**正式機務必盯 `time` 欄**看 SM 佔比；失控把天花板降回 256/512（一行 config）。
 - **發車**：R4 到 500 收檔 → `python -m script.status` 確認 → 正式機 `git pull` → `python train.py configs/single_r5_<E/D/E+D>.yaml`（機器沿用）。
 
