@@ -6,6 +6,19 @@
 
 ---
 
+## 滑動視窗 SM 訓練量（2026-07-03，Round 5 主角）
+- **由來（R4 實錘×2）**：① 深度欠訓——每輪訓完 elite 的訓練 loss 仍 7.7–10.6（學長壓到 0.1，差兩個數量級），
+  連訓練集都沒擬合；② adaptive 探測自鎖——target 停 3–5、曲線 80–100% 平（快照擠低處→差異<雜訊→沒有往上的證據）。
+- **兩端都被自家資料反對**：1–5 ep 欠訓（本實錘）／壓到 0.1 過擬合（R1 dlf_fit 最差＋Ricky 經驗）→ 目標＝
+  從未測過的中間帶（fit_loss ~1–3）。
+- **機制（Ricky 設計）**：`mode: adaptive_window`——每輪 elite 訓滿視窗頂 hi、沿 log2 階梯 [hi/16…hi] 快照
+  member0；held-out argmin **連續 patience(3) 次貼頂 → hi×2、貼底 → hi÷2、中間 → 不動**。起點 64、上限 256
+  （Ricky 定）、下限 8；×2 滑動使階梯 key 跨視窗重疊 4/5 → bucket EMA 沿用；held-out 鐵律不變。
+- **已知代價（誠實）**：live SM 最多過衝一個 octave（真最佳 ≈ hi/2 時）；hi=256 × elite ~200 ≈ 5 萬步/輪，
+  正式機要量 `time` 欄看 SM 佔比。順手 `replay_size 256→512`（Ricky「暫存幾百點」）。
+- 實作：`WindowSMTrainController`（training.py，繼承 Adaptive 共用 probe_stats）；configs `single_r5_*`；
+  取代 scratch 裡的 fixed-K 案與 probe-round 案（M 點平均若雜訊仍主導再上，見 round-05 §6）。
+
 ## 曲線 x 軸綁「真實 HFSS 模擬次數」（2026-07-02）
 - **定案**（Ricky）：loss/worst_margin 曲線要跟**實際模擬次數**綁定，不用 epoch——epoch 含 cache 命中/skip，
   跟模擬預算對不上、判讀會困惑。

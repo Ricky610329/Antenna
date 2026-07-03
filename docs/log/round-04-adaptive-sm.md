@@ -1,7 +1,7 @@
 # Round 4 — 自適應 SM 訓練量（修 R3 的 SM 欠訓瓶頸）
 
-- 狀態: proposed
-- 提出 / 開跑 / 結論: 2026-07-02 / — / —
+- 狀態: running
+- 提出 / 開跑 / 結論: 2026-07-02 / 2026-07-02 / —
 - 一句話問題: 用「held-out 的 fresh HFSS 點」自調每輪 SM 重訓 epoch 數，能否修掉 R3 的「SM 欠訓 → trust 鎖死 → plateau」，讓 E/D/E+D factorial 終於乾淨？
 - 一句話結論: —（待跑）
 - 指向: `configs/README.md`（single_r4_*）· 結果夾（待）· memory [[project_sm_training_redesign]] · `docs/discuss/decisions.md`「自適應 SM 訓練量」
@@ -31,12 +31,13 @@ factorial 續 R3（探索×DIP），唯一新變因＝三臂全把 `sm_train.mod
 ## 3. 執行紀錄 (Run)
 | 臂 | 機器（沿 R3 配置排除機器差異） | 狀態 / 進度 | 結果夾 |
 | — | — | — | — |
-| E | 216 | 2026-07-02 發 | `[Patch-single-216-…] pixel_single_r4_explore` |
-| D | 37（快） | 2026-07-02 發 | `[Patch-single-37-…] pixel_single_r4_dip` |
-| E+D | 218 | 2026-07-02 發 | `[Patch-single-218-…] pixel_single_r4_dip_explore` |
+| E | 216 | running（07-03 ~200ep） | `[Patch-single-216-…] pixel_single_r4_explore` |
+| D | 37（快） | running（07-03 ~215ep） | `[Patch-single-37-…] pixel_single_r4_dip` |
+| E+D | 218 | running（07-03 ~193ep，**-2.89@154 破紀錄**） | `[Patch-single-218-…] pixel_single_r4_dip_explore` |
 - 事件 / 全域變更: 進 R4 前一批工程（Round4 準備）：新增追蹤訊號（flips/stall/sm_bias/wm_per-label/sm_train_epochs/probe_*/elite_n）；實作 opt-in 自適應-SM（golden 零漂移）。發前先跑 `python -m script.status` 掃機器真相。
 - 2026-07-02 發車前健檢：修控制器「低訓練量死鎖」（float target + 本輪觀測投票，模擬實證；沒修的話 R4 很可能默默退化回 dlf、整輪白跑）＋ `seed_target()` 斷點續跑續 target ＋ `elite_n` 成本訊號。詳見 `docs/discuss/decisions.md` 補記。
 - 2026-07-02 **更正**：三臂**從起跑即為修復版**（使用者發車時注意到修復尚未 push、手動把改動帶上正式機；證據＝csv 自首個 epoch 就有 `elite_n`，該欄與死鎖修復同 commit）。先前「舊碼起跑、E 臂死鎖前兆」為誤判——E 的 `sm_train_epochs` 8→3 下滑是修復版在「探測沒資訊」（`probe_min≈probe_max`、雜訊主導）時的**預期保守行為**（退向低訓練量≈dlf、可爬回），非死鎖。**觀察點**：若某臂長期釘在 epoch_min 且探測曲線持續平 → K=1 探測被雜訊淹沒＝真訊號，屆時再議加探測點/調 ema。
+- 2026-07-03 中檢（~200ep）：**E+D 破專案紀錄 -2.89@154**（勝 R3 全程 best +2.80；長停滯後單步躍遷＝探索撞到，非 trust 利用）；sigmoid 兩臂 sm_gap 穩降（線上累積生效）、E 臂 gap 反升（ping-pong 傷 SM）；三臂 trust 仍全鎖 0.05。**實錘深度欠訓**：每輪訓完 elite fit_loss 仍 7.7-10.6（學長壓 0.1）＋探測自鎖 target 3-5 → 催生 **Round 5 滑動視窗**（[round-05](round-05-window-sm.md)，待本輪收檔發）。
 
 ## 4. 分析 (Analyze)
 （待跑完 `python -m script.round_report --round 04 --runs … --labels E D E+D`）

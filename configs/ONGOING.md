@@ -21,8 +21,17 @@
 | E+D | `single_r4_dip_explore` | `mode: dlf→adaptive` | 同上（sigmoid+lr↑） |
 - **由來**：R3 健檢定位共同瓶頸＝SM 欠訓（dlf 每輪 1 epoch → trust 鎖 0.05 不利用 → plateau）。R4 三臂全上**自適應訓練量**（held-out fresh 點量泛化、自調每輪 elite 重訓 epoch 數，沿途快照 member0、下一輪新點評 argmin；opt-in `mode:adaptive`、golden 零漂移）→ 移除 confound、修瓶頸。adaptive 旋鈕：`snapshots 5/epoch_min 1/epoch_max 32/ema 0.3`，ensemble 保持 5。
 - **判準**：worst_margin（真目標）+ trust_t 升離 0.05 + sm_bias 降；cross-round 比 R3 同臂。**發前先跑 `python -m script.status`**、各 500 epoch。⚠ 每輪 SM 重訓量比 dlf 大，正式機量 SM 佔 HFSS 比例。
-- **狀態**：**2026-07-02 三臂已發**（E@216、D@37、E+D@218，沿 R3 機器配置；R3 三 run 與 37 上的 r2_refit 均已停）。
-- **更正（同日）**：三臂**從起跑即為修復版**（使用者手動同步改動、早於 push；csv 自首 epoch 有 `elite_n` 為證）→ **不需重啟**。E 臂 target 走低＝修復版在探測沒資訊時的預期保守行為，非死鎖；觀察 `probe_min≈probe_max` 是否長期持續。
+- **狀態**：**running**（2026-07-02 發：E@216、D@37、E+D@218；07-03 ~200ep）。**07-03 中檢**：E+D **破專案紀錄 -2.89@154**（探索撞到、非 trust 利用）；但實錘深度欠訓（fit_loss 仍 8-11）＋探測自鎖（target 3-5）→ 催生 Round 5。跑到 500 收檔。
+
+### Round 5 — 滑動視窗 SM 訓練量（🔵 **proposed**，2026-07-03，**待 R4 收檔發**）→ 詳見 [docs/log/round-05](../docs/log/round-05-window-sm.md)
+| 臂 | config | = R4 同臂改什麼 | 隔離 |
+|---|---|---|---|
+| E | `single_r5_explore` | `mode: adaptive→adaptive_window` | 滑動視窗訓練量 |
+| D | `single_r5_dip` | 同上 | 同上（sigmoid 臂） |
+| E+D | `single_r5_dip_explore` | 同上 | 同上（紀錄臂：看「撞到」能否變「開採」） |
+- **由來**：R4 實錘兩件事——深度欠訓（每輪訓完 elite fit_loss 仍 7.7-10.6，學長壓 0.1）＋ adaptive 探測自鎖（target 停 3-5、曲線 80-100% 平）。**滑動視窗（Ricky 設計）**：每輪訓到視窗頂 hi、log2 階梯快照、argmin 連 3 次貼頂→hi×2／貼底→hi÷2；起點 64、上限 256、下限 8；`replay_size 512`。工程完成（`mode: adaptive_window`、golden 零漂移）。
+- **判準（分層）**：① fit_loss 壓到 ~1-3 → ② sm_gap/sm_bias 降、trust_t 升 → ③ worst_margin vs R4 同臂。⚠ 正式機量 `time` 欄看 SM 佔比（hi=256 時 ~5 萬步/輪）。
+- **發車**：R4 到 500 收檔 → `python -m script.status` 確認 → 正式機 `git pull` → `python train.py configs/single_r5_<E/D/E+D>.yaml`（機器沿用）。
 
 ---
 
