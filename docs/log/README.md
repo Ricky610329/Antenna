@@ -8,7 +8,7 @@
 > - **現在在跑什麼 / 候選池**:看 `../../configs/ONGOING.md`(live 操作板)。
 > - **跨 session 接手**:先讀本檔(走到第幾 round)+ ONGOING.md(手邊在跑什麼)。
 
-最後更新:2026-07-03
+最後更新:2026-07-06
 
 ## 時間軸
 | Round | 主題 | 狀態 | 結論(一句) | 檔 |
@@ -20,7 +20,8 @@
 | 05 | 滑動視窗 SM 訓練量（修 R4 欠訓+探測自鎖） | 🔵 running（2026-07-03 發；同日晚 D 臂提早收讓機給 R7，餘 E/E+D） | — | [round-05](round-05-window-sm.md) |
 | 06 | 離線期望基準（每輪 HFSS 的期望 best；零 HFSS） | ✅ archived（2026-07-03 當日完成） | **期望爬升到不了 spec**（-9.18+0.75·ln k,躍遷主導）；**達標 pattern 已在池內（oracle +0.38）**；學長同預算贏 1-2dB；池抽樣等效預算 200-450× → **分布≫策略** | [round-06](round-06-offline-expected-best.md) |
 | 07 | 除塵驗證（達標 pattern 拔 1-3px 粉塵 HFSS 重驗＋順收 rad） | ✅ archived（2026-07-03 當日完成,15 筆/45 分） | **粉塵=共振的一部分（4/5 崩 -4.7~-16.9dB）→ 乾淨解用搜的不能用修的**；例外 p03 整塊型近零代價＝可製造最佳已知點（-2.68,rad+0.24）；oracle 重驗真（p00 +0.44）；rad=獨立第三關、與可製造同向 | [round-07](round-07-dedust.md) |
-| 08 | 乾淨子空間測繪（前緣真值/補洞因果/SM 校準/random 基線,97 筆） | 🔜 proposed（2026-07-03 備妥,待確認發車） | — | [round-08](round-08-clean-mapping.md) |
+| 08 | 乾淨子空間測繪（前緣真值/補洞因果/SM 校準/random 基線,97 筆） | ✅ archived（2026-07-05 收檔,斷電中斷一次） | **A 崩**（整塊型除塵 \|Δ\| 中位 1.17,通則不成立）/**B 敗**（補洞非因果,rad 全負）/**C 半亮**（SM 池內 1.5-2.4dB、池外 4-5.5）/**D 實錘**（uniform 輸池抽樣 ~5dB）＋⚠池值漂移警訊→R9；附圖報告 [round-08-report](round-08-report.md) | [round-08](round-08-clean-mapping.md) |
+| 09 | 池頂端重驗＋乾淨前緣探索（過夜 162 筆,重驗 T/N/M＋探索 E/G/S） | ✅ archived（2026-07-06 晨收檔 159/162） | **oracle 活著（8/18,t00 +0.44）**；漂移家族依賴（頂帶±0.4 可信）；**可製造紀錄 −2.68→−0.29**（s05=F2×10-5-10 對稱,S11✓）；F3=可製造沃土；SM 分布外排序仍有訊號（G 贏 E 2.4dB） | [round-09](round-09-pool-revalidation.md) |
 
 ## 離線分析（analysis-NN；不佔 round——**慣例 2026-07-03**：round 編號只給燒 HFSS 的實驗，round-06 為慣例前歸檔、不回改）
 | # | 主題 | 狀態 | 結論(一句) | 檔 |
@@ -28,4 +29,4 @@
 | 01 | pattern 解剖：地形隨機性 × S11/Gain 結構歸因 | ✅ archived（2026-07-03 當日完成） | **地形非抽獎**（翻1-2px 只動不相關水位的 12-16%,有效半徑~數十翻轉;跨區大跳≈重抽）；**S11←少組+feed連通、Gain←少洞、共同敵人=細碎**（配對: 同Gain下 S11 好=組數−9.5;同S11下 Gain 好=洞−5）→ 解 R3-D 之謎、先驗要分工 | [analysis-01](analysis-01-pattern-anatomy.md) |
 
 ## 研究脈絡（一句話串起來）
-generator G = 單 pattern 超特徵 → 轉 **generator-free SM-guided 搜尋**(輸 random)→ **Round 1** 測「是不是 SM 訓練不足」→ **否**(訓飽反而過擬合)→ 病灶是 SM-guided 搜尋本身 → **Round 2** 上文獻治本(ensemble + trust)→ 治本微幅未決定性、且實測搜尋「凍住」(每 epoch 才翻 ~6 像素)→ **Round 3** factorial 測「探索(lr↑)× DIP(generator 帶回來連通先驗)」的效果與加乘 → 健檢發現三臂共同瓶頸＝**SM 欠訓**(dlf 每輪只訓 1 epoch → 樂觀、trust 鎖 0.05 不利用) → **Round 4** 上**自適應 SM 訓練量**(held-out fresh 點自調每輪重訓 epoch 數)修這個瓶頸、重跑 E/D/E+D 去 confound → 中檢:E+D **破紀錄 -2.89**(探索撞到)但實錘**深度欠訓**(fit_loss 仍 8-11)+探測自鎖(target 3-5) → **Round 5** 上**滑動視窗訓練量**(訓到視窗頂+argmin 貼邊 ×2/÷2,Ricky 設計)把 SM 真的訓起來。平行地,**Round 6**(離線、零 HFSS)把我們/學長/random 三塊歷史放同一把尺:期望爬升到不了 spec、達標 pattern 已在 harvest 池內、**分布≫策略** → 「池頂端 warm-start」升候選。
+generator G = 單 pattern 超特徵 → 轉 **generator-free SM-guided 搜尋**(輸 random)→ **Round 1** 測「是不是 SM 訓練不足」→ **否**(訓飽反而過擬合)→ 病灶是 SM-guided 搜尋本身 → **Round 2** 上文獻治本(ensemble + trust)→ 治本微幅未決定性、且實測搜尋「凍住」(每 epoch 才翻 ~6 像素)→ **Round 3** factorial 測「探索(lr↑)× DIP(generator 帶回來連通先驗)」的效果與加乘 → 健檢發現三臂共同瓶頸＝**SM 欠訓**(dlf 每輪只訓 1 epoch → 樂觀、trust 鎖 0.05 不利用) → **Round 4** 上**自適應 SM 訓練量**(held-out fresh 點自調每輪重訓 epoch 數)修這個瓶頸、重跑 E/D/E+D 去 confound → 中檢:E+D **破紀錄 -2.89**(探索撞到)但實錘**深度欠訓**(fit_loss 仍 8-11)+探測自鎖(target 3-5) → **Round 5** 上**滑動視窗訓練量**(訓到視窗頂+argmin 貼邊 ×2/÷2,Ricky 設計)把 SM 真的訓起來。平行地,**Round 6**(離線、零 HFSS)把我們/學長/random 三塊歷史放同一把尺:期望爬升到不了 spec、達標 pattern 已在 harvest 池內、**分布≫策略** → 「池頂端 warm-start」升候選 → **R7/R8** 實錘「粉塵=共振一部分、乾淨解要構造不能修」＋池值漂移警訊 → **R9**(過夜 162 筆)裁決 oracle 活著(8/18)、**可製造紀錄 −2.68→−0.29**(F2×10-5-10 對稱化)＋F3 沃土＋SM 排序訊號 → 下一步:精修 round(s05 補 Gain/g24 補 wm)× R10 設計規律目錄。

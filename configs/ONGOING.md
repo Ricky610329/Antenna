@@ -5,7 +5,7 @@
 > - config 全集（不刪）→ [README.md](README.md)
 > **流程**：新實驗 → `docs/log/` 開 round 檔 + 這裡加「🔵 進行中」一行指向它；跑完結論寫進 round 檔，這裡只留「✅ 已歸檔」一行指標。
 
-最後更新：2026-07-03
+最後更新：2026-07-06
 
 **全域變更（2026-06-28）**：① 驗證預算改為**跑到 500 epoch**（約 3 天；原 250）→ Round-2 config `epochs: 500`。② **回滾機制已移除**（對 generator-free + K 候選 + 線上 SM 不合身、且原實作有 off-by-one + 覆蓋最佳檔兩個 bug）→ Round 1 的「不收斂」有它一份；探索改靠 K 候選 + SM 引導 (+ trust)。最佳 pattern 仍安全存 `patterns/`。
 
@@ -23,9 +23,9 @@
 - **判準（分層）**：① fit_loss 壓到 ~1-3 → ② sm_gap/sm_bias 降、trust_t 升 → ③ worst_margin vs R4 同臂。⚠ 視窗爬到頂＝數十萬步/輪，**正式機務必盯 `time` 欄**看 SM 佔比；失控把天花板降回 256/512（一行 config）。
 - **狀態**：**2026-07-03 發**（E@216、D@37、E+D@218；R4 三臂已停）。各 500 epoch。**同日晚止血**：冷啟動超衝（elite ~12 筆時視窗直衝 1024→過擬合+30分/ep）→ `epoch_max` 1024→256 **重啟三臂**（斷點續跑,hi 自動夾回）；治本（hi 與 elite 規模掛鉤）＝R5.5 候選,下個 session 處理。**同日晚 D 臂提早收**（wm最佳 -7.66@~34ep 墊底、D-only 隔離問題 R3/R4 已答過）→ **只剩 E / E+D 兩臂**；.37 機器讓給「除塵驗證」（見下方 🔜）。
 
-### Round 9 — 池頂端重驗＋乾淨前緣探索（🔜 **備妥待發·過夜版**，2026-07-05）→ 詳見 [docs/log/round-09](../docs/log/round-09-pool-revalidation.md)
-- **一句話**：R8 實錘池值系統性樂觀（14/15 向下、中位 −0.52、噪聲地板 0.00）→ **重驗 T18+N12+M12**（oracle 裁決＋校正曲線）＋**探索 E78+G32+S10**（錨點=池 top-300 跨家族代表 F0-F5,乾淨投影鄰域＋SM 導引＋對稱先驗）＝**162 筆 ≈8.1hr** 過夜批次。輸入已落 NAS `dedust_r9_input/`（含 SM 預篩）。
-- **發車（.37,先 git pull）**：`python -m script.dedust run --input dedust_r9_input --store dedust_r9`；進度 `report --input dedust_r9_input --store dedust_r9`。
+### ~~Round 9 — 池頂端重驗＋乾淨前緣探索~~（✅ **2026-07-06 晨收檔 159/162**）→ [docs/log/round-09](../docs/log/round-09-pool-revalidation.md)
+- **oracle 活著（8/18,t00 +0.44）**；漂移家族依賴（頂帶 ±0.4 可信,fit −0.26+1.13x σ0.77）；**可製造紀錄 −2.68 → −0.29**（s05=F2×10-5-10 對稱化,S11 已過差 Gain 0.29；g24 rad 已過差 wm）；F3=可製造沃土（top-10 佔 7）；SM 分布外+4.3 樂觀但排序有訊號（G 贏 E 2.4dB）→ 批次 guided loop 成立。
+- **待辦**：37 空檔補跑 3 筆 COM error（`run` 同指令即重試）；正式歸檔已完成（round-09 §4/§5 + README 索引）。
 
 ### ~~Round 8 — 乾淨子空間測繪~~（✅ **2026-07-05 收檔 97/97**，斷電中斷一次續跑收完）
 - 判讀完整版 → **[round-08-report](../docs/log/round-08-report.md)**（附圖）：A 崩（除塵 |Δ| 中位 1.17、通則不成立）/ B 敗（補洞非因果,rad 四筆全負）/ C 半亮（SM 池內 1.5-2.4dB、池外 4-5.5）/ D 實錘（uniform 輸池抽樣 ~5dB）＋ ⚠ 池值漂移警訊 → 催生 R9。正式歸檔（README 索引/§5 結論）待 R9 一起。
