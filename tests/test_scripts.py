@@ -5,7 +5,7 @@ tests/test_scripts.py — status.py / analyze.py 的純函式測試（不碰 NAS
 """
 import numpy as np
 
-from script.status import _machine, _num, _liveness
+from script.status import _machine, _matches, _num, _liveness
 from script.analyze import _cos_basis, _mad
 
 
@@ -32,9 +32,20 @@ def test_liveness_terminal_states_authoritative():
     assert _lv(state="finished") == ("已完成", False)
 
 
-def test_liveness_advance_is_proof_of_alive():
-    """epoch 比上次掃描前進 = 鐵證在跑（即使心跳看似舊）。"""
-    assert _lv(advanced=True, age_min=999) == ("在跑", True)
+def test_liveness_advance_needs_fresh_heartbeat():
+    """回歸 (2026-07-05 斷電)：advanced 必須配心跳新鮮才是鐵證——上次快照隔了兩天,
+    「epoch 有前進」只證明中間跑過,不證明現在活著（死 31hr 的 run 曾因此被標「在跑」）。"""
+    assert _lv(advanced=True, age_min=1) == ("在跑", True)                    # 前進+心跳新 → 鐵證
+    assert _lv(advanced=True, age_min=999, state="running")[0] == "疑卡住"    # 前進但心跳古老 → 不算活
+    assert _lv(advanced=True, age_min=999, state=None) == ("停止", False)
+
+
+def test_matches_comma_separated():
+    """--match 逗號分隔=任一子字串相符（watchdog 一次盯多個 run）；None=全收。"""
+    assert _matches("[m] pixel_single_r5_explore", "single_r5_explore,single_r5_dip_explore")
+    assert _matches("[m] pixel_single_r5_dip_explore", "single_r5_explore,single_r5_dip_explore")
+    assert not _matches("[m] pixel_single_r4_dip", "single_r5_explore,single_r5_dip_explore")
+    assert _matches("anything", None)
 
 
 def test_liveness_running_fresh_vs_stuck():

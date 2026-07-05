@@ -15,8 +15,14 @@ script/status.py — 掃 NAS result/ 各 run 的即時狀態（取代手動猜�
 
 用法（開發機可跑，離線讀 NAS）：
     python -m script.status                       # 全部 run
-    python -m script.status --match single_r3     # 名稱含 single_r3 的
+    python -m script.status --match single_r3     # 名稱含 single_r3 的（逗號=任一相符）
     python -m script.status --match single_r3 --md  # markdown 表（可貼進 configs/ONGOING.md）
+
+watchdog（2026-07-05 斷電後補；偵測半邊,重啟仍靠人）：
+    python -m script.status --match A,B --alert                    # 有 run 不在跑 → 印警報、exit 1
+    python -m script.status --match A,B --alert --notify-topic X   # 加推手機（ntfy app 訂閱主題 X）
+排程（開發機一次性註冊,每小時掃;要「僅登入時執行」否則 T: 掛載不到）：
+    schtasks /Create /TN AntennaWatchdog /SC HOURLY /TR "cmd /c cd /d <repo> && <ant python> -m script.status --match single_r5_explore,single_r5_dip_explore --alert --notify-topic <主題>"
 """
 import argparse
 import csv
@@ -72,7 +78,7 @@ def _liveness(*, state, advanced, elapsed_enough, age_min, tpe_min):
     running 再看「epoch 是否比上次掃描前進」(鐵證) + 心跳新鮮度；無 status.json 退回純時間啟發式。
 
     :param state:          status.json 的 state（running|finished|crashed|None）。
-    :param advanced:       epoch 比上次快照前進（鐵證在跑）。
+    :param advanced:       epoch 比上次快照前進（配心跳新鮮才是鐵證在跑）。
     :param elapsed_enough: 距上次快照已過 >1.5 個 epoch 卻仍沒前進（該動沒動 → 卡）。
     :param age_min:        心跳（或 metrics）距今分鐘，用來判新鮮度。
     :param tpe_min:        每 epoch 耗時（分），定「新鮮」門檻。
@@ -81,9 +87,11 @@ def _liveness(*, state, advanced, elapsed_enough, age_min, tpe_min):
         return "當機", False
     if state == "finished":
         return "已完成", False
-    if advanced:
-        return "在跑", True                      # 鐵證：epoch 前進
     fresh = age_min <= (max(20.0, 3.0 * tpe_min) if tpe_min > 0 else 20.0)
+    #! advanced 必須配 fresh：上次快照若隔了幾天,「前進」只證明中間跑過、不證明現在活著
+    #  （2026-07-05 斷電:死 31hr 的 run 因兩天前的快照被標「在跑」→ 假陽性）。stale 就落下方心跳邏輯。
+    if advanced and fresh:
+        return "在跑", True
     if state == "running":
         if elapsed_enough or not fresh:          # 隔了>1.5ep 沒前進 / 心跳久沒更新 → 硬砍或凍住
             return "疑卡住", False
@@ -110,6 +118,25 @@ def _save_snapshot(runs):
         pass   # 快照純加分：寫不進去（唯讀碟等）也不該擋住看狀態
 
 
+def _matches(name, match):
+    """--match 過濾：None=全收；逗號分隔=任一子字串相符即收。純函式（好測）。"""
+    return not match or any(m and m in name for m in match.split(","))
+
+
+def _notify(topic, msg):
+    """推播到 ntfy.sh/<topic>（手機裝 ntfy app 訂閱同名主題即收；無帳號,主題名即通行碼 → 用隨機長字串）。
+    失敗只印不炸：推播是加分,不能反過來弄死 watchdog。"""
+    import urllib.request
+    req = urllib.request.Request(
+        f"https://ntfy.sh/{topic}", data=msg.encode("utf-8"),
+        headers={"Title": "Antenna watchdog", "Priority": "high", "Tags": "rotating_light"})
+    try:
+        urllib.request.urlopen(req, timeout=10).read()
+        print(f"(已推播 ntfy.sh/{topic})")
+    except Exception as e:
+        print(f"(推播失敗:{e})")
+
+
 def scan(match=None, prev=None):
     """回傳每個 run 的狀態 dict list（依機器排序）。prev = 上次快照（{run: {epoch, ts}}）。"""
     prev = prev or {}
@@ -117,7 +144,7 @@ def scan(match=None, prev=None):
     now = _time.time()
     runs = []
     for d in os.listdir(str(rd)):
-        if match and match not in d:
+        if not _matches(d, match):
             continue
         run_dir = rd.joinpath(d)
         csvp = run_dir.joinpath("metrics.csv")
@@ -161,9 +188,12 @@ def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description="掃 NAS result/ 各 run 即時狀態（純讀 NAS、不改）")
-    ap.add_argument("--match", default=None, help="只列名稱含此字串的 run")
+    ap.add_argument("--match", default=None, help="只列名稱含此字串的 run（逗號分隔=任一相符）")
     ap.add_argument("--md", action="store_true", help="輸出 markdown 表（可貼 ONGOING）")
     ap.add_argument("--live", action="store_true", help="只列判定為『在跑/在跑?/疑卡住』的 run（濾掉已結束/當機的舊 run）")
+    ap.add_argument("--alert", action="store_true",
+                    help="監看模式：--match 到的 run 只要有一個不在跑 → 印警報、exit 1（給排程當 watchdog）")
+    ap.add_argument("--notify-topic", default=None, help="警報時推播到 ntfy.sh/<主題>（手機 ntfy app 訂閱同主題）")
     args = ap.parse_args()
 
     prev = _load_snapshot()
@@ -186,6 +216,18 @@ def main():
             print(f"  [{r['machine']}] {r['short'][:38]:<38} ep={r['epoch']:>4} "
                   f"{_fmt(r['tpe_min'],'{:.0f}'):>3}分/ep  {r['label']:<6}({r['age_min']:.0f}分前)  "
                   f"wm最佳={_fmt(r['best_wm'])} 後20={_fmt(r['recent_wm'])} skip={r['skip']}")
+
+    if args.alert:
+        bad = [r for r in runs if not r["is_live"]]
+        if bad:
+            msg = "；".join(f"[{r['machine']}] {r['short'][:30]} {r['label']},心跳 "
+                            f"{(r['hb_age_min'] if r['hb_age_min'] is not None else r['age_min']):.0f} 分前"
+                            for r in bad)
+            print(f"⚠ 警報：{msg}")
+            if args.notify_topic:
+                _notify(args.notify_topic, msg)
+            sys.exit(1)
+        print("✓ 監看的 run 全部在跑")
 
 
 if __name__ == "__main__":

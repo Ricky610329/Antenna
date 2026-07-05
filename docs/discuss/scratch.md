@@ -7,7 +7,27 @@
 
 ---
 
-## 2026-07-02
+## 2026-07-05
+
+### 🔧 斷電事後檢討：工作流三個缺口（討論中,未定案）
+- **事件**：實驗室斷電,三台全停。復原時發現——①兩臂 R5 心跳其實停在 ~31hr 前才被發現（偵測缺口,
+  損失 ~2.6 machine-day）;②「哪台跑哪個指令」只存在對話/腦中,要現挖 ONGOING+commit（復原知識缺口）;
+  ③ dedust 續跑舊規則把 error 條目當已完成 → 空轉（續跑語義缺口,當場修了 23bc595）。
+- **有效的**：檔案制資料層全數扛住（metrics.csv append/results.json 冪等/SampleStore 零損壞）,
+  斷點續跑本身沒問題——架構對,缺的是「操作層」。
+- **候選修法**（成本由低到高）：
+  1. ONGOING 🔵 表加「重啟指令」欄（零 code 習慣）。
+  2. status.py 修「舊快照 advanced 假陽性」：epoch 前進但心跳古老 → 該報停不該報「在跑」（本次實際誤導）。
+  3. 心跳 watchdog 排程（偵測半邊;schtasks/排程 agent 定時掃 status --live、stale 就吼）。
+     CLAUDE.md 的「watchdog 先不急」= auto-restart 那半;偵測半邊便宜,本次事件是重啟優先序的證據。
+  4. `script/relaunch.py`：get_local_ip 已有 → 機器自查 IP → 讀派工表自動跑對指令（run_forever 前身）。
+- **Ricky 定調（2026-07-05）**：偵測到但人不在附近＝照樣動不了 → **2+3 是關鍵**,當日實作：
+  - 2 ✅ `_liveness` 改「advanced 必須配心跳新鮮」＋回歸測試（test_liveness_advance_needs_fresh_heartbeat）。
+  - 3 ✅ `status.py --alert`（異常 exit 1）＋ `--notify-topic`（ntfy.sh 手機推播）＋ `--match` 逗號多組;
+    排程用 schtasks 每小時掃（註冊指令在 status.py docstring;⚠「僅登入時執行」否則 T: 掛不到）。
+    實測:健康組 exit 0 / 死 run 警報 exit 1。**待 Ricky**:定 ntfy 主題名（隨機長字串）+ 手機裝 app + 註冊排程。
+  - 1（ONGOING 重啟指令欄）未做=下次發車時的習慣;4（relaunch/run_forever）維持等穩定。
+  - 「人不在附近」的完全解=遠端桌面/auto-restart（4 的範疇）,3 只縮短「發現」不解決「動手」——已知取捨。
 
 ### 💡 想法：跨輪自適應 SM 訓練強度（用下一輪 HFSS 校準上一輪「該訓多少」）
 > **狀態：✅ 已升級**（2026-07-02）→ decisions「自適應 SM 訓練量」→ 實作 `mode:adaptive` → **Round 4 跑步中**。本條保留當思路軌跡。
