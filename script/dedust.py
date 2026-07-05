@@ -395,8 +395,10 @@ def run(args):
         os.replace(tmp, results_path)
 
     store = SampleStore(store_dir)
-    todo = [(n, m) for n, m in enumerate(manifest) if m["id"] not in results]
-    print(f"待模擬 {len(todo)}/{len(manifest)} 筆（已完成的跳過；中斷再跑即續）")
+    #? 續跑規則：成功的跳過、error 的重試（COM 偶發例外佔比 ~15%,R8 實測）
+    todo = [(n, m) for n, m in enumerate(manifest)
+            if m["id"] not in results or "error" in results[m["id"]]]
+    print(f"待模擬 {len(todo)}/{len(manifest)} 筆（成功跳過、error 重試；中斷再跑即續）")
 
     out = Path(args.out).resolve()     # HFSS SaveAs 用自己的工作目錄解析相對路徑 → 必須絕對路徑
     sim = SinglePortRadSimulator(record_path=str(out))
