@@ -23,8 +23,8 @@
 - **判準（分層）**：① fit_loss 壓到 ~1-3 → ② sm_gap/sm_bias 降、trust_t 升 → ③ worst_margin vs R4 同臂。⚠ 視窗爬到頂＝數十萬步/輪，**正式機務必盯 `time` 欄**看 SM 佔比；失控把天花板降回 256/512（一行 config）。
 - **狀態**：**2026-07-03 發**（E@216、D@37、E+D@218；R4 三臂已停）。各 500 epoch。**同日晚止血**：冷啟動超衝（elite ~12 筆時視窗直衝 1024→過擬合+30分/ep）→ `epoch_max` 1024→256 **重啟三臂**（斷點續跑,hi 自動夾回）；治本（hi 與 elite 規模掛鉤）＝R5.5 候選,下個 session 處理。**同日晚 D 臂提早收**（wm最佳 -7.66@~34ep 墊底、D-only 隔離問題 R3/R4 已答過）→ **只剩 E / E+D 兩臂**；.37 機器讓給「除塵驗證」（見下方 🔜）。
 
-### Round 9 — 池頂端重驗（🔜 **備妥待發**，2026-07-05）→ 詳見 [docs/log/round-09](../docs/log/round-09-pool-revalidation.md)
-- **一句話**：R8 實錘池值系統性樂觀（14/15 向下、中位 −0.52、噪聲地板 0.00）→ **T 帳面達標 18 筆全數**＋**N 近標帶 [-1,0) 分層 12 筆**現行設定重跑＝**30 筆 ≈1.5hr**；一次答「這個 spec 現在有沒有已知解（R6 oracle 裁決）」＋「池值→現行值校正曲線」。輸入已落 NAS `dedust_r9_input/`（含 SM 預篩）。
+### Round 9 — 池頂端重驗＋乾淨前緣探索（🔜 **備妥待發·過夜版**，2026-07-05）→ 詳見 [docs/log/round-09](../docs/log/round-09-pool-revalidation.md)
+- **一句話**：R8 實錘池值系統性樂觀（14/15 向下、中位 −0.52、噪聲地板 0.00）→ **重驗 T18+N12+M12**（oracle 裁決＋校正曲線）＋**探索 E78+G32+S10**（錨點=池 top-300 跨家族代表 F0-F5,乾淨投影鄰域＋SM 導引＋對稱先驗）＝**162 筆 ≈8.1hr** 過夜批次。輸入已落 NAS `dedust_r9_input/`（含 SM 預篩）。
 - **發車（.37,先 git pull）**：`python -m script.dedust run --input dedust_r9_input --store dedust_r9`；進度 `report --input dedust_r9_input --store dedust_r9`。
 
 ### ~~Round 8 — 乾淨子空間測繪~~（✅ **2026-07-05 收檔 97/97**，斷電中斷一次續跑收完）

@@ -114,3 +114,16 @@ def test_spread_idx_stratified_deterministic():
     assert idx == sorted(idx) and len(set(idx)) == 12   # 嚴格遞增、無重複
     assert spread_idx(133, 12) == idx                    # 決定性
     assert spread_idx(5, 12) == [0, 1, 2, 3, 4]          # 不足 → 全取
+
+
+def test_symmetrize_full_and_partial():
+    """對稱先驗變體：half=12 全鏡射（外 12 欄左右一致）；half=10 中央 5 欄保留原樣。"""
+    from script.dedust import symmetrize, FEED
+    rng = np.random.default_rng(7)
+    p = rng.random((25, 25)) < 0.5
+    p[FEED] = True
+    full = symmetrize(p, 12)
+    assert all((full[:, 24 - j] == full[:, j]).all() for j in range(12))
+    part = symmetrize(p, 10)
+    assert all((part[:, 24 - j] == part[:, j]).all() for j in range(10))
+    assert full[FEED] and part[FEED]                     # feed 永遠金屬

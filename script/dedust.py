@@ -138,6 +138,25 @@ def perturb_repair(p, k: int, seed: int, min_size: int = 4, feed=FEED):
     return _ensure_feed_pad(out, min_size, feed=feed)
 
 
+def symmetrize(p, half: int, min_size: int = 4, feed=FEED):
+    """左外側 `half` 欄鏡射到右外側（中央 25−2·half 欄保留原樣）→ 對稱先驗變體。
+    half=12 ＝全鏡射（只留中央 1 欄自由）；half=10 ＝ 10-5-10 部分對稱（中央 5 欄自由，
+    ONGOING「把對稱做對」候選的結構切法）。決定性。
+
+    順序＝鏡射→除塵→**再鏡射**→feed pad：除塵保 feed 組件會單邊留件、破壞對稱，故除塵後
+    重新鏡射（pad 蓋 rows22-24×cols11-13,本身左右對稱）。極罕見 merge 差異可能殘留 <4px
+    碎片,manifest 的 n_1px 會現形。"""
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    for j in range(half):
+        p[:, 24 - j] = p[:, j]
+    p[feed] = True
+    p, _ = strip_small(p, min_size, feed=feed)
+    for j in range(half):
+        p[:, 24 - j] = p[:, j]
+    p[feed] = True
+    return _ensure_feed_pad(p, min_size, feed=feed)
+
+
 def smooth_blob(seed: int, metal_frac: float = 0.5, sigma: float = 2.5, min_size: int = 4, feed=FEED):
     """平滑隨機 blob：高斯濾波雜訊取閾值 → 天然整塊、無粉塵（修復＋feed pad 保險）。
     乾淨子空間的廣域覆蓋樣本（R8 C 臂）。決定性（seed）。"""
@@ -339,11 +358,18 @@ def spread_idx(n_total: int, n_pick: int):
 
 
 def select_r9(args):
-    """R9「池頂端重驗」輸入生成（詳見 docs/log/round-09）：
-    R8 A 臂實錘池值系統性樂觀（14/15 向下、中位 −0.52、重跑噪聲地板 0.00）→ 一個批次答兩題：
-      T 帳面達標（wm ≥ pass-thr）**全數**重驗 —— 這個 spec 在現行設定下有沒有已知解（R6 oracle 裁決）
-      N 近標帶（near-lo ≤ wm < pass-thr）依 rank 分層抽樣 —— 「池值→現行值」校正曲線的取樣點
-    原樣重跑、零編輯（report 的 Δ 欄無基準=「—」屬預期）。
+    """R9「池頂端重驗＋乾淨前緣探索」過夜批次輸入生成（詳見 docs/log/round-09）：
+    重驗（R8 池值漂移警訊的直接後續）：
+      T 帳面達標（wm ≥ pass-thr）**全數**重驗 —— 現行設定有沒有已知解（R6 oracle 裁決）
+      N 近標帶 [near-lo, pass-thr) 分層抽樣 —— 「池值→現行值」校正曲線（0 附近加密）
+      M 深帶 [cal-lo, near-lo) 分層抽樣 —— 校正曲線往搜尋工作區延伸
+    探索（找有效 pattern；錨點＝池 top-300 greedy 家族聚類的**跨家族代表**——R9 普查實錘 R8 乾淨前緣
+    只是邊緣家族（上下兩分型 F13）,top 家族是全面散布碎片雲,錨點不跨家族＝探索假多樣,見
+    assets/round-09/pool_families.png;perturb_repair 內建除塵 → 探的是各家族的「乾淨投影」鄰域）：
+      E 鄰域測繪 —— 每錨點先出 k=0（純除塵=家族乾淨投影真值）,再 k∈{4,8,16,32} × explore-seeds seed
+      G SM 導引 —— 大量候選（同錨點,k 到 48）先 SM 篩,取分數最高＋互異的 guided 筆（批次版 guided 搜尋）
+      S 對稱先驗 —— 錨點 × {全鏡射, 10-5-10 部分對稱}（ONGOING「把對稱做對」候選的初測）
+    report 的 Δ 欄無基準=「—」屬預期;錨點分析離線做（manifest 帶 anchor_pool_wm）。
     """
     if not os.path.exists(POOL_NPZ):
         raise SystemExit(f"缺 {POOL_NPZ} —— 先跑 `python -m script.pattern_anatomy collect-pool`。")
@@ -377,15 +403,94 @@ def select_r9(args):
     for k, i in enumerate(band):
         emit(f"n{k:02d}_near", "near", f"N{k}", i)
 
+    # -- M: 深帶 [cal-lo, near-lo) 校正曲線延伸（覆蓋搜尋工作區 −3~−1）
+    band2 = np.where((worst >= args.cal_lo) & (worst < args.near_lo))[0]
+    band2 = band2[np.argsort(worst[band2])[::-1]]
+    band2 = band2[spread_idx(len(band2), args.cal)]
+    for k, i in enumerate(band2):
+        emit(f"m{k:02d}_near", "near", f"M{k}", i)
+
+    def emit_gen(pid, kind, family, pat, extra=None):
+        row = dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat))
+        if extra:
+            row.update(extra)
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(row)
+
+    # -- 探索臂錨點：池 top-300 greedy 家族聚類（Hamming>100,掃描序=wm 降冪 → leader 即家族最佳）
+    top300 = np.argsort(worst)[::-1][:300]
+    leaders = []
+    for i in top300:
+        if all(np.count_nonzero(pats[i] != pats[L]) > 100 for L in leaders):
+            leaders.append(int(i))
+    anchors = {f"F{k}": pats[L] for k, L in enumerate(leaders[:args.anchors])}
+    a_info = {f"F{k}": dict(anchor_pool_idx=int(L), anchor_pool_wm=_r(worst[L]))
+              for k, L in enumerate(leaders[:args.anchors])}
+
+    # -- E: 鄰域測繪 —— 每錨點 k=0（純除塵=乾淨投影真值）+ k∈{4,8,16,32} × explore-seeds
+    n, seed = 0, 0
+    for a, ap in anchors.items():
+        emit_gen(f"e{n:02d}_x0", "explore", f"E_{a}", perturb_repair(ap, 0, seed=seed),
+                 extra=dict(anchor=a, flip_k=0, seed=seed, **a_info[a]))
+        n += 1
+        seed += 1
+        for kk in (4, 8, 16, 32):
+            for _ in range(args.explore_seeds):
+                emit_gen(f"e{n:02d}_x{kk}", "explore", f"E_{a}", perturb_repair(ap, kk, seed=seed),
+                         extra=dict(anchor=a, flip_k=kk, seed=seed, **a_info[a]))
+                n += 1
+                seed += 1
+
+    # -- G: SM 導引 —— 960 候選（錨點×k{8,16,32,48}×40 seed,seed 1000+ 與 E 不重疊）→ SM 排序＋互異取前 guided 筆
+    cfg = load_config(DEFAULT_CFG)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    n_pts = sum(cfg.targets[labels[0]]["width"])
+    from antenna.zoo import SURROGATES
+    cache = os.path.join(REPO, "tmp", "dedust")
+    os.makedirs(cache, exist_ok=True)
+    sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+    sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
+    sm.model.eval()
+    cands = []
+    gseed = 1000
+    for a, ap in anchors.items():
+        for kk in (8, 16, 32, 48):
+            for _ in range(40):
+                pat = perturb_repair(ap, kk, seed=gseed)
+                with torch.no_grad():
+                    pred = sm.model(torch.tensor(pat, dtype=torch.float32).flatten())
+                w, _per = worst_margin(pred, labels, cfg.targets)
+                cands.append((float(w), a, kk, gseed, pat))
+                gseed += 1
+    cands.sort(key=lambda c: -c[0])                      # SM 分數降冪
+    picked_pats, n = [], 0
+    for w, a, kk, s, pat in cands:
+        if n >= args.guided:
+            break
+        if all(np.count_nonzero(pat != q) > 30 for q in picked_pats):   # 互異守門（Hamming>30）
+            emit_gen(f"g{n:02d}_sm", "guided", f"G_{a}", pat,
+                     extra=dict(anchor=a, flip_k=kk, seed=s, sm_pick_wm=_r(w)))
+            picked_pats.append(pat)
+            n += 1
+
+    # -- S: 對稱先驗 —— 錨點前 5 × {全鏡射 half=12, 10-5-10 half=10}
+    n = 0
+    for a, ap in list(anchors.items())[:5]:
+        for tag, half in (("full", 12), ("1050", 10)):
+            emit_gen(f"s{n:02d}_{tag}", "sym", f"S_{a}", symmetrize(ap, half),
+                     extra=dict(anchor=a, sym=tag, **a_info[a]))
+            n += 1
+
     _save_manifest(manifest, input_dir)
-    print(f"R9 輸入完成 → {input_dir}")
-    print(f"T 帳面達標(≥{args.pass_thr:g}) 全數 {len(top)} 筆；N 近標帶[{args.near_lo:g},{args.pass_thr:g}) "
-          f"{n_band} 筆取 {len(band)}；共 {len(manifest)}（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
-    print("\n| id | 池wm(S11/Gain/worst) | n_comp | 1px | 主件px |")
-    print("|---|---|---|---|---|")
+    cnt = {}
     for m in manifest:
-        print(f"| {m['id']} | {m['pool_wm'][0]:+.2f}/{m['pool_wm'][1]:+.2f}/{m['pool_wm'][2]:+.2f} "
-              f"| {m['n_comp']} | {m['n_1px']} | {m['main_px']} |")
+        cnt[m["id"][0]] = cnt.get(m["id"][0], 0) + 1
+    print(f"R9 輸入完成 → {input_dir}")
+    print(f"T 達標全數={cnt.get('t', 0)}  N 近標[{args.near_lo:g},{args.pass_thr:g})={cnt.get('n', 0)}  "
+          f"M 深帶[{args.cal_lo:g},{args.near_lo:g})={cnt.get('m', 0)}  E 鄰域={cnt.get('e', 0)}  "
+          f"G 導引={cnt.get('g', 0)}  S 對稱={cnt.get('s', 0)}")
+    print(f"共 {len(manifest)} 筆（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr @3分/筆；"
+          f"COM 偶發 error 會跳過續跑、回來重跑同指令即重試）")
 
 
 # ---------------------------------------------------------------- sm-screen（開發機，零 HFSS）
@@ -555,11 +660,16 @@ def main():
     s.add_argument("--rand", type=int, default=10, help="D 臂 uniform random 數")
     s.set_defaults(fn=select_r8)
 
-    s = sub.add_parser("select-r9", help="R9：池頂端重驗（T 帳面達標全數＋N 近標帶分層抽樣;原樣零編輯）")
+    s = sub.add_parser("select-r9", help="R9 過夜批次：池頂端重驗(T/N/M)＋乾淨前緣探索(E 鄰域/G SM導引/S 對稱)")
     s.add_argument("--input", default="dedust_r9_input")
     s.add_argument("--pass-thr", type=float, default=0.0, help="帳面達標門檻 (預設 0)")
     s.add_argument("--near-lo", type=float, default=-1.0, help="近標帶下緣 (預設 -1)")
     s.add_argument("--near", type=int, default=12, help="近標帶抽樣數 (預設 12)")
+    s.add_argument("--cal-lo", type=float, default=-3.0, help="校正深帶下緣 (預設 -3)")
+    s.add_argument("--cal", type=int, default=12, help="校正深帶抽樣數 (預設 12)")
+    s.add_argument("--anchors", type=int, default=6, help="探索錨點數=top-300 家族代表前 N (預設 6)")
+    s.add_argument("--explore-seeds", type=int, default=3, help="E 臂每(錨點,k)組合 seed 數 (預設 3 → 6×4×3=72)")
+    s.add_argument("--guided", type=int, default=32, help="G 臂 SM 導引取樣數 (預設 32)")
     s.set_defaults(fn=select_r9)
 
     s = sub.add_parser("sm-screen", help="sm_harvest.pth 預測預篩（零 HFSS）")
