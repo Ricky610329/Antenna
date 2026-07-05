@@ -23,10 +23,12 @@
 - **判準（分層）**：① fit_loss 壓到 ~1-3 → ② sm_gap/sm_bias 降、trust_t 升 → ③ worst_margin vs R4 同臂。⚠ 視窗爬到頂＝數十萬步/輪，**正式機務必盯 `time` 欄**看 SM 佔比；失控把天花板降回 256/512（一行 config）。
 - **狀態**：**2026-07-03 發**（E@216、D@37、E+D@218；R4 三臂已停）。各 500 epoch。**同日晚止血**：冷啟動超衝（elite ~12 筆時視窗直衝 1024→過擬合+30分/ep）→ `epoch_max` 1024→256 **重啟三臂**（斷點續跑,hi 自動夾回）；治本（hi 與 elite 規模掛鉤）＝R5.5 候選,下個 session 處理。**同日晚 D 臂提早收**（wm最佳 -7.66@~34ep 墊底、D-only 隔離問題 R3/R4 已答過）→ **只剩 E / E+D 兩臂**；.37 機器讓給「除塵驗證」（見下方 🔜）。
 
-### Round 8 — 乾淨子空間測繪（🔜 **備妥待發**，2026-07-03 深夜）→ 詳見 [docs/log/round-08](../docs/log/round-08-clean-mapping.md)
-- **一句話**：搜之前先測繪——A 乾淨前緣真值+除塵通則（30）/ B 補洞因果+噪聲地板（5）/ C SM 校準採樣（52）/ D 真 uniform random 基線（10）＝**97 筆 ≈4.8hr**，輸入已落 NAS `dedust_r8_input/`（含 SM 重錨前基線預篩）。
-- **發車（.37,先 git pull＋等 commit push）**：`python -m script.dedust run --input dedust_r8_input --store dedust_r8`；進度 `report --input dedust_r8_input --store dedust_r8`。
-- **待使用者確認**：①像素 mm/最小可裁尺寸（現假設全件≥4px,改了重生成即可,零 HFSS）②組件數上限 ③D 臂是否進指導者簡報。
+### Round 9 — 池頂端重驗（🔜 **備妥待發**，2026-07-05）→ 詳見 [docs/log/round-09](../docs/log/round-09-pool-revalidation.md)
+- **一句話**：R8 實錘池值系統性樂觀（14/15 向下、中位 −0.52、噪聲地板 0.00）→ **T 帳面達標 18 筆全數**＋**N 近標帶 [-1,0) 分層 12 筆**現行設定重跑＝**30 筆 ≈1.5hr**；一次答「這個 spec 現在有沒有已知解（R6 oracle 裁決）」＋「池值→現行值校正曲線」。輸入已落 NAS `dedust_r9_input/`（含 SM 預篩）。
+- **發車（.37,先 git pull）**：`python -m script.dedust run --input dedust_r9_input --store dedust_r9`；進度 `report --input dedust_r9_input --store dedust_r9`。
+
+### ~~Round 8 — 乾淨子空間測繪~~（✅ **2026-07-05 收檔 97/97**，斷電中斷一次續跑收完）
+- 判讀完整版 → **[round-08-report](../docs/log/round-08-report.md)**（附圖）：A 崩（除塵 |Δ| 中位 1.17、通則不成立）/ B 敗（補洞非因果,rad 四筆全負）/ C 半亮（SM 池內 1.5-2.4dB、池外 4-5.5）/ D 實錘（uniform 輸池抽樣 ~5dB）＋ ⚠ 池值漂移警訊 → 催生 R9。正式歸檔（README 索引/§5 結論）待 R9 一起。
 
 ---
 

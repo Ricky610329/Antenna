@@ -104,3 +104,13 @@ class TestRadWindowMargin:
         gain = np.full(181, 5.0)
         gain[theta == 60] = -10.0                  # 窗外崩掉不影響 ±45 覆蓋
         assert rad_window_margin(theta, gain, 45, 3) == 3.0
+
+
+def test_spread_idx_stratified_deterministic():
+    """R9 近標帶分層抽樣：均勻、含頭尾、決定性；帶內不足直接全取。"""
+    from script.dedust import spread_idx
+    idx = spread_idx(133, 12)
+    assert len(idx) == 12 and idx[0] == 0 and idx[-1] == 132
+    assert idx == sorted(idx) and len(set(idx)) == 12   # 嚴格遞增、無重複
+    assert spread_idx(133, 12) == idx                    # 決定性
+    assert spread_idx(5, 12) == [0, 1, 2, 3, 4]          # 不足 → 全取

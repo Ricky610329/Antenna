@@ -44,7 +44,16 @@ python -m script.dedust report --input dedust_r8_input --store dedust_r8
 
 ## 4. 分析 (Analyze)
 
-（`report` 表貼此；另跑 SM 重錨前後誤差對比＝C 臂判準）
+**完整附圖報告 → [round-08-report.md](round-08-report.md)**（四臂逐筆數字＋4 張圖，圖在 `assets/round-08/`）。verdict 一行版：
+
+| 臂 | 判定 | 關鍵數字 |
+|---|---|---|
+| A | ❌ 崩 | \|Δ\| 中位 1.17（判準<0.5）、變好 3/15；前緣真值 best −1.80；**池→現行 HFSS 漂移 14/15 向下（中位 −0.52）** |
+| B | ❌ 敗 | rad 四筆全負、Gain 兩正兩負；噪聲地板 **0.00**（b00_ref≡R7 p03_d3） |
+| C | 🟡 半亮 | 重錨前：池內 \|err\| 1.5–2.4（bias 一致樂觀）、池外 4.4–5.5（一致悲觀）；重錨待跑 |
+| D | ✅ 實錘 | uniform best-of-10 = −8.38 vs 池抽樣 −3.47（差 ~5dB） |
+
+（SM 重錨前後誤差對比＝C 臂判準正式答案，離線待跑）
 
 ## 5. 結論 (Conclude)
 

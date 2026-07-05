@@ -330,6 +330,64 @@ def select_r8(args):
           f"D={counts.get('d', 0)}  共 {len(manifest)}（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+# ---------------------------------------------------------------- select-r9（開發機，零 HFSS）
+def spread_idx(n_total: int, n_pick: int):
+    """0..n_total-1 依序均勻取 n_pick 個索引（含頭尾;決定性,無隨機）。分層抽樣用。"""
+    if n_total <= n_pick:
+        return list(range(n_total))
+    return sorted({int(round(x)) for x in np.linspace(0, n_total - 1, n_pick)})
+
+
+def select_r9(args):
+    """R9「池頂端重驗」輸入生成（詳見 docs/log/round-09）：
+    R8 A 臂實錘池值系統性樂觀（14/15 向下、中位 −0.52、重跑噪聲地板 0.00）→ 一個批次答兩題：
+      T 帳面達標（wm ≥ pass-thr）**全數**重驗 —— 這個 spec 在現行設定下有沒有已知解（R6 oracle 裁決）
+      N 近標帶（near-lo ≤ wm < pass-thr）依 rank 分層抽樣 —— 「池值→現行值」校正曲線的取樣點
+    原樣重跑、零編輯（report 的 Δ 欄無基準=「—」屬預期）。
+    """
+    if not os.path.exists(POOL_NPZ):
+        raise SystemExit(f"缺 {POOL_NPZ} —— 先跑 `python -m script.pattern_anatomy collect-pool`。")
+    d = np.load(POOL_NPZ)
+    ok = ~np.isnan(d["wm"][:, 2])
+    wm = d["wm"][ok]
+    pats = np.unpackbits(d["packed"][ok], axis=1)[:, :625].reshape(-1, 25, 25).astype(bool)
+    worst = wm[:, 2]
+
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pool_i):
+        pat = pats[pool_i]
+        row = dict(id=pid, kind=kind, family=family, removed_px=0, pool_idx=int(pool_i),
+                   pool_wm=[_r(wm[pool_i, 0]), _r(wm[pool_i, 1]), _r(wm[pool_i, 2])],
+                   **piece_stats(pat))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(row)
+
+    top = np.where(worst >= args.pass_thr)[0]
+    top = top[np.argsort(worst[top])[::-1]]
+    for k, i in enumerate(top):
+        emit(f"t{k:02d}_top", "top", f"T{k}", i)
+
+    band = np.where((worst >= args.near_lo) & (worst < args.pass_thr))[0]
+    band = band[np.argsort(worst[band])[::-1]]           # 降冪＝rank 由好到差
+    n_band = len(band)
+    band = band[spread_idx(n_band, args.near)]
+    for k, i in enumerate(band):
+        emit(f"n{k:02d}_near", "near", f"N{k}", i)
+
+    _save_manifest(manifest, input_dir)
+    print(f"R9 輸入完成 → {input_dir}")
+    print(f"T 帳面達標(≥{args.pass_thr:g}) 全數 {len(top)} 筆；N 近標帶[{args.near_lo:g},{args.pass_thr:g}) "
+          f"{n_band} 筆取 {len(band)}；共 {len(manifest)}（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+    print("\n| id | 池wm(S11/Gain/worst) | n_comp | 1px | 主件px |")
+    print("|---|---|---|---|---|")
+    for m in manifest:
+        print(f"| {m['id']} | {m['pool_wm'][0]:+.2f}/{m['pool_wm'][1]:+.2f}/{m['pool_wm'][2]:+.2f} "
+              f"| {m['n_comp']} | {m['n_1px']} | {m['main_px']} |")
+
+
 # ---------------------------------------------------------------- sm-screen（開發機，零 HFSS）
 def sm_screen(args):
     cfg = load_config(args.config)
@@ -496,6 +554,13 @@ def main():
     s.add_argument("--blobs", type=int, default=20, help="C 臂 blob 數")
     s.add_argument("--rand", type=int, default=10, help="D 臂 uniform random 數")
     s.set_defaults(fn=select_r8)
+
+    s = sub.add_parser("select-r9", help="R9：池頂端重驗（T 帳面達標全數＋N 近標帶分層抽樣;原樣零編輯）")
+    s.add_argument("--input", default="dedust_r9_input")
+    s.add_argument("--pass-thr", type=float, default=0.0, help="帳面達標門檻 (預設 0)")
+    s.add_argument("--near-lo", type=float, default=-1.0, help="近標帶下緣 (預設 -1)")
+    s.add_argument("--near", type=int, default=12, help="近標帶抽樣數 (預設 12)")
+    s.set_defaults(fn=select_r9)
 
     s = sub.add_parser("sm-screen", help="sm_harvest.pth 預測預篩（零 HFSS）")
     s.add_argument("--input", default=DEFAULT_INPUT)
