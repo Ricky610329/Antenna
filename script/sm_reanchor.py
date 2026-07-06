@@ -5,6 +5,7 @@ script/sm_reanchor.py — SM 乾淨區重錨（R10 Stage A ／ R8 C 臂判準的
 背景：SM（sm_harvest.pth,學長池上訓的）在乾淨投影區＝分布外——一致樂觀 +1.4~+4.3（R8/R9 實測），
 排序有訊號但絕對值不可信。把 r7+r8+r9 的乾淨區 HFSS 真值（~270 筆,去重）餵回去重錨,
 配 harvest 重放（防災難性遺忘）——「週期 harvest 重錨」候選的第一次落地。
+（起點 sm_harvest.pth 由 `script/train_sm_offline.py` 初訓;同族譜:初訓→重錨。）
 
 用法（開發機,零 HFSS）：
     python -m script.sm_reanchor train   # sm_harvest.pth 起點 → 訓練 → DATASET_PATH/sm_reanchor.pth

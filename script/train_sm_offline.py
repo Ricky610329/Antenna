@@ -1,5 +1,6 @@
 """
 script/train_sm_offline.py — 用離線資料 (harvest_single) 訓一顆 SM 當「好的初始化」。
+產出=sm_harvest.pth;後續乾淨區續錨走 `script/sm_reanchor.py`（同族譜:初訓→重錨）。
 
 背景：量過 old_sm.pth 對我們的 harvest 資料預測 ≈ 隨機 (中位 MSE 38、且吐 +40/-88dB 亂值)，
 等於沒暖啟動、線上學習每次從近乎隨機重學、浪費早期昂貴 HFSS 評估。這支在 harvest 上
