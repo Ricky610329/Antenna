@@ -546,6 +546,13 @@ class SinglePortSimulator(PatchSimulator):
 
         #* 把兩張報表匯出成 CSV 檔，存到 self.path_result。
         #  檔名含 self.num (本回合 pattern 編號) 以區分不同設計；後續再讀回轉成張量。
+        #! 匯出前先刪同名舊檔 (2026-07-06)：檔名只含批內編號 → 跨批共用工作目錄時,若本次匯出
+        #  silently 失敗,讀回的會是「上一批同編號的殘留 CSV」＝無聲污染 (verify-discrete 實際踩到)。
+        #  先刪掉 → 匯出失敗會在 read_csv 炸 FileNotFoundError,錯誤變成看得見的。
+        for _stale in (self.path_result.joinpath(f"NN_patch_Sparameter_{self.num}_S11.csv"),
+                       self.path_result.joinpath(f"NN_patch_Gain_{self.num}_S11.csv")):
+            if _stale.exists():
+                _stale.unlink()
         # Export csv
         oModule.ExportToFile(
             "S Parameter Plot 1",

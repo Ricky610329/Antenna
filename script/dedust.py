@@ -806,7 +806,9 @@ def run(args):
             if m["id"] not in results or "error" in results[m["id"]]]
     print(f"待模擬 {len(todo)}/{len(manifest)} 筆（成功跳過、error 重試；中斷再跑即續）")
 
-    out = Path(args.out).resolve()     # HFSS SaveAs 用自己的工作目錄解析相對路徑 → 必須絕對路徑
+    out = Path(args.out if args.out else f"_dedust_{args.store}").resolve()   # 預設每 store 一個工作目錄
+    #! 隔離理由 (2026-07-06)：CSV 檔名只含批內編號,跨批共用目錄+匯出 silently 失敗=讀到上一批殘留
+    #  (verify-discrete 實際踩到);連同 single_port.py 的「匯出前刪舊檔」雙保險。
     sim = SinglePortRadSimulator(record_path=str(out), sweep_type=args.sweep)
     sim.open()
     try:
@@ -956,7 +958,7 @@ def main():
     s.add_argument("--input", default=DEFAULT_INPUT)
     s.add_argument("--store", default=DEFAULT_STORE, help="結果夾名（DATASET_PATH 下）")
     s.add_argument("--config", default=DEFAULT_CFG)
-    s.add_argument("--out", default="_dedust", help="HFSS 工作目錄（正式機本地碟）")
+    s.add_argument("--out", default=None, help="HFSS 工作目錄（正式機本地碟;預設 _dedust_<store>,批次間隔離防殘留污染）")
     s.add_argument("--sweep", default="Interpolating", choices=["Interpolating", "Discrete", "Fast"],
                    help="掃頻演算法（Discrete=17 點逐點硬解,慢但每點真解;掃頻法交叉驗證用）")
     s.set_defaults(fn=run)
