@@ -127,3 +127,15 @@ def test_symmetrize_full_and_partial():
     part = symmetrize(p, 10)
     assert all((part[:, 24 - j] == part[:, j]).all() for j in range(10))
     assert full[FEED] and part[FEED]                     # feed 永遠金屬
+
+
+def test_occlude_block_surgical_and_feed_safe():
+    """遮蔽掃描：只清目標區塊、不修復（孤件保留）；feed 像素在被遮區塊內也保留。"""
+    from script.dedust import occlude_block, FEED
+    p = np.ones((25, 25), bool)
+    q, removed = occlude_block(p, 0, 0)
+    assert removed == 25 and not q[0:5, 0:5].any() and q[5:].all()   # 只動 (0,0) 區塊
+    q2, removed2 = occlude_block(p, 4, 2)                            # feed (24,12) 落在 b(4,2)
+    assert q2[FEED] and removed2 == 24                               # feed 保留 → 只拔 24
+    empty = np.zeros((25, 25), bool)
+    assert occlude_block(empty, 1, 1)[1] <= 0                        # 空區塊=無資訊

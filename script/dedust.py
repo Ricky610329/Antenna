@@ -493,6 +493,50 @@ def select_r9(args):
           f"COM 偶發 error 會跳過續跑、回來重跑同指令即重試）")
 
 
+# ---------------------------------------------------------------- select-occlude（開發機，零 HFSS）
+def occlude_block(p, br: int, bc: int, bs: int = 5, feed=FEED):
+    """把第 (br,bc) 個 bs×bs 區塊的金屬清空（feed 像素永遠保留）。回 (新 pattern, 移除像素數)。
+    **手術式、不修復**——量「拔掉這一塊」的因果效應,可能留 <4px 孤件（測量探針,非候選）。純函式。"""
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    r0, c0 = br * bs, bc * bs
+    before = int(p.sum())
+    p[r0:r0 + bs, c0:c0 + bs] = False
+    p[feed] = True
+    return p, before - int(p.sum())
+
+
+def select_occlude(args):
+    """R10 Stage B（前半）：物理遮蔽掃描——錨點 pattern 的 5×5 區塊逐一清空 → HFSS 直接給出
+    **真·空間重要度圖**（哪塊承重/哪塊死區）,並校驗 SM 歸因的可信度。空區塊（無金屬可拔）自動跳過。
+    Δ 判讀離線做（各錨點 base 值已在 dedust_r9 公證,雜訊地板≈0 → 每個 Δ 都是真效果）。"""
+    src = _dir(args.source_input)
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    n = 0
+    for sid in args.ids.split(","):
+        f = src.joinpath(f"{sid}.pt")
+        if not f.exists():
+            raise SystemExit(f"找不到 {f}")
+        pat = np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
+        kept = 0
+        for br in range(5):
+            for bc in range(5):
+                q, removed = occlude_block(pat, br, bc)
+                if removed <= 0:
+                    continue                      # 空區塊=無資訊
+                pid = f"o{n:02d}_{sid.split('_')[0]}b{br}{bc}"
+                torch.save(torch.tensor(q, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+                manifest.append(dict(id=pid, kind="occlude", family=f"O_{sid}", removed_px=removed,
+                                     source_id=sid, block=[br, bc], **piece_stats(q)))
+                n += 1
+                kept += 1
+        print(f"  {sid}: {kept}/25 區塊有金屬（其餘跳過）")
+    _save_manifest(manifest, input_dir)
+    print(f"遮蔽掃描輸入完成 → {input_dir}：共 {len(manifest)} 筆"
+          f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 # ---------------------------------------------------------------- select-repeat（開發機，零 HFSS）
 def select_repeat(args):
     """同一 pattern 重複模擬 N 次 → 量 HFSS 可重複性/隨機性（模擬雜訊分布）。
@@ -695,6 +739,12 @@ def main():
     s.add_argument("--explore-seeds", type=int, default=3, help="E 臂每(錨點,k)組合 seed 數 (預設 3 → 6×4×3=72)")
     s.add_argument("--guided", type=int, default=32, help="G 臂 SM 導引取樣數 (預設 32)")
     s.set_defaults(fn=select_r9)
+
+    s = sub.add_parser("select-occlude", help="物理遮蔽掃描：錨點 5×5 區塊逐一清空 → 真空間重要度圖 (R10)")
+    s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --ids 的 .pt）")
+    s.add_argument("--ids", default="s05_1050,g24_sm", help="錨點 id,逗號分隔")
+    s.add_argument("--input", default="dedust_occl_input")
+    s.set_defaults(fn=select_occlude)
 
     s = sub.add_parser("select-repeat", help="同一 pattern 重複 N 次 → 量 HFSS 可重複性（模擬雜訊分布）")
     s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --id 的 .pt）")
