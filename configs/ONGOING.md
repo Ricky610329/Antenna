@@ -5,13 +5,20 @@
 > - config 全集（不刪）→ [README.md](README.md)
 > **流程**：新實驗 → `docs/log/` 開 round 檔 + 這裡加「🔵 進行中」一行指向它；跑完結論寫進 round 檔，這裡只留「✅ 已歸檔」一行指標。
 
-最後更新：2026-07-06
+最後更新：2026-07-06（午後）
 
 **全域變更（2026-06-28）**：① 驗證預算改為**跑到 500 epoch**（約 3 天；原 250）→ Round-2 config `epochs: 500`。② **回滾機制已移除**（對 generator-free + K 候選 + 線上 SM 不合身、且原實作有 off-by-one + 覆蓋最佳檔兩個 bug）→ Round 1 的「不收斂」有它一份；探索改靠 K 候選 + SM 引導 (+ trust)。最佳 pattern 仍安全存 `patterns/`。
 
 ---
 
 ## 🔵 進行中 / 待跑
+
+### Round 10 — 精修 × 物理歸因（🔵 **running**，2026-07-06 午後雙批發車）→ [docs/log/round-10](../docs/log/round-10-refine-attribution.md)
+- **O 遮蔽掃描 @218**（48 筆 ≈2.4hr）：s05/g24 各 24 塊 5×5 逐一清空 → 真空間重要度圖（規則 Stage B）。
+- **ref1 精修盲階段 @37**（40 筆 ≈2hr）：W s05 保對稱鄰域 / X 對稱化救援推廣（預測=變差,可證偽）/ Y g24 小步鄰域。
+- **Stage A SM 重錨 ✅**：held-out 3.20→**1.41** 進 2dB 帶（`sm_reanchor.pth`）。
+- **今晚 ref2（過夜）**：收 O+ref1 後生——遮蔽圖定向編輯＋重錨 SM 挑 top-K。**判準=三標全過第一筆**。
+- 重啟指令：218 `run --input dedust_occl_input --store dedust_occl`；37 `run --input dedust_ref1_input --store dedust_ref1`。
 
 ### Round 5 — 滑動視窗 SM 訓練量（🔵 **running**，2026-07-03 發）→ 詳見 [docs/log/round-05](../docs/log/round-05-window-sm.md)
 | 臂 | config | = R4 同臂改什麼 | 隔離 |
