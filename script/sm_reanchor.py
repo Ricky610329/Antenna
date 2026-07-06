@@ -25,7 +25,7 @@ _config.device = "cpu"
 import torch
 from torch.utils.data import TensorDataset, ConcatDataset
 
-from antenna.training import load_config, PORT_SPECS
+from antenna.training import load_config, setup_responses, PORT_SPECS
 from antenna.losses import worst_margin
 from antenna.utils.store import SampleStore
 from antenna.zoo import SURROGATES
@@ -41,6 +41,7 @@ LABELS = PORT_SPECS[_cfg.port]["labels"]
 
 from antenna.pattern import AntennaPattern
 AntennaPattern.setDefaultCoordinate((0, 25, 0, 25))   # train_by_datas 的 size_converter 需要（同 train.py）
+setup_responses(_cfg)                                 # AntennaResponse spec 安裝（size_converter 靠它讀形狀）
 
 
 def _load_clean():

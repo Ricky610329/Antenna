@@ -36,7 +36,7 @@
 ## 🔜 候選 / 待排（**[使用者] = 你提的**；看 benchmark + Round 2 結果再決定優先序）
 - ~~[R7] R7.5 乾淨前緣重驗~~ → **併入 Round 8 A 臂**（見上方 🔜 R8 區塊/[round-08](../docs/log/round-08-clean-mapping.md)）。
 - **[R7] 乾淨子空間 warm-start 精修 round**：起點= p03_d3（可製造最佳已知,-2.68/rad+0.24）+ R8 A 臂產物；線上學習回鍋當精修器（差距 ~2.7dB 正在 analysis-01 局部射程內）,候選生成端掛 `strip_small` 無粉塵修復＋B 臂驗過的編輯算子。**觸發：R8 收檔＋SM 重錨完成**。
-- **[R7] SM 乾淨區重錨**：`dedust_r7`+`dedust_r8` 真值（SM 最盲區,實測低估 5-15dB）併進 SM 訓練/重錨——**= R8 C 臂判準的後半**（重錨前基線已存 r8 manifest 的 sm_wm）。搭「週期 harvest 重錨」候選一起做。
+- ~~[R7] SM 乾淨區重錨~~ → **✅ 2026-07-06 完成**（`script/sm_reanchor.py`,held-out 3.20→**1.41** 進 2dB 帶、無遺忘;權重 `sm_reanchor.pth`）＝R8 C 臂判準結案＋「週期 harvest 重錨」第一次落地。詳見 round-08 §4。
 - **[analysis-01] 去洞/平滑先驗「服務 Gain」**：analysis-01 實錘 S11/Gain 結構配方不同（S11←少組+feed連通、Gain←少洞、共同敵人=細碎）→ 現有 `island_suppression`/`tv` loss 剛好對應「去洞/平滑」,但從未以 Gain 視角調權重；sigmoid 只修 S11 側結構＝R3-D Gain 卡住之謎的解。**觸發條件：R5 收檔判讀時一起看**（若 Gain 側仍是 worst_margin 瓶頸即試）。動 loss 權重前依規矩討論。詳見 [docs/log/analysis-01](../docs/log/analysis-01-pattern-anatomy.md) §3。
 - **[討論] 選擇端 known-bad 鄰域懲罰（治 R4 E ping-pong）**：acquisition 罰「採過且證實爛」的鄰域；SM 續走 elite-only（CartPole 論點：只學好的保地形、盲區問題在選擇端解）。**觸發條件：R4 結束時 trust_t 未升離 0.05 且 ping-pong（flips 雙峰）未消**；若 trust 升了它自癒、本條作廢。analysis-01 佐證：~300 翻轉的跨區跳落在不相關區＝重抽。詳見 `docs/discuss/scratch.md`「ping-pong」塊。
 - **[使用者] DIP + 探索 → 已成 Round 3（config ready）**：E(lr↑)/D(sigmoid DIP)/E+D factorial,見上方 Round 3 區塊與 [docs/log/round-03](../docs/log/round-03-explore-dip.md)。待 Round 2 判讀完後發。

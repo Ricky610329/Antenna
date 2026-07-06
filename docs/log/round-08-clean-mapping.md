@@ -53,7 +53,10 @@ python -m script.dedust report --input dedust_r8_input --store dedust_r8
 | C | 🟡 半亮 | 重錨前：池內 \|err\| 1.5–2.4（bias 一致樂觀）、池外 4.4–5.5（一致悲觀）；重錨待跑 |
 | D | ✅ 實錘 | uniform best-of-10 = −8.38 vs 池抽樣 −3.47（差 ~5dB） |
 
-（SM 重錨前後誤差對比＝C 臂判準正式答案，離線待跑）
+**C 臂判準結案（2026-07-06,`script/sm_reanchor.py`）**：r7+r8+r9 共 266 筆乾淨真值（去重）×8 過採樣
+＋harvest 重放 2000 重錨 → held-out 乾淨區 |wm 誤差| 中位 **3.20 → 1.41**（p90 9.70→5.22）,
+harvest 驗證 2.11→2.32（無遺忘）→ **進 2dB 帶,導航儀合格——盲是資料缺口不是架構缺口**。
+權重 `DATASET_PATH/sm_reanchor.pth`。
 
 ## 5. 結論 (Conclude)
 
