@@ -139,3 +139,14 @@ def test_occlude_block_surgical_and_feed_safe():
     assert q2[FEED] and removed2 == 24                               # feed 保留 → 只拔 24
     empty = np.zeros((25, 25), bool)
     assert occlude_block(empty, 1, 1)[1] <= 0                        # 空區塊=無資訊
+
+
+def test_perturb_blocks_confined():
+    """遮蔽圖知情編輯：翻轉只落在指定區塊集合內。滿板驗「移除」不出塊（空板加點會被除塵拔＝預期,不適合驗）。"""
+    from script.dedust import perturb_blocks
+    p = np.ones((25, 25), bool)
+    q = perturb_blocks(p, 8, seed=1, blocks=((0, 1), (0, 2)))
+    removed = p & ~q
+    rows, cols = np.where(removed)
+    assert removed.sum() > 0
+    assert rows.max() < 5 and 5 <= cols.min() and cols.max() < 15   # 挖洞只在 (0,1)/(0,2) 兩塊內

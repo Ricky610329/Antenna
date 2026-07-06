@@ -540,6 +540,105 @@ def select_refine1(args):
           f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+# ---------------------------------------------------------------- select-refine2（開發機，零 HFSS）
+def perturb_blocks(p, k: int, seed: int, blocks, bs: int = 5, min_size: int = 4, feed=FEED):
+    """只在指定 5×5 區塊集合內翻 k 像素，其餘同 perturb_repair（無粉塵修復＋feed 保底）。
+    遮蔽圖知情編輯用（在低承重/rad 正效區內動刀）。決定性。純函式。"""
+    mask = np.zeros((25, 25), bool)
+    for br, bc in blocks:
+        mask[br * bs:(br + 1) * bs, bc * bs:(bc + 1) * bs] = True
+    idx = np.flatnonzero(mask.reshape(-1))
+    rng = np.random.default_rng(seed)
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    flat = rng.choice(idx, size=min(k, len(idx)), replace=False)
+    p.ravel()[flat] = ~p.ravel()[flat]
+    p[feed] = True
+    out, _ = strip_small(p, min_size, feed=feed)
+    return _ensure_feed_pad(out, min_size, feed=feed)
+
+
+def select_refine2(args):
+    """精修 phase-2（知情階段,圍繞 w17）——目標=把 S11/Gain 帶緣餘裕再往上推、rad 不丟：
+      A w17 保對稱鄰域 —— perturb→10-5-10 再對稱化,k∈{2,4,8,16}×seeds（w17 高地密掃）
+      B 遮蔽圖知情編輯 —— 只在 s05 承重圖的「低 wm 成本/rad 正效」區塊（(0,1)(0,2)(3,1)(3,2),
+        左半+中央,鏡射自動補右半）內翻,再對稱化——規則的因果使用
+      C 重錨 SM 導引 —— 640 候選（w17 鄰域,seed 2000+）用 sm_reanchor.pth 排序,取互異 top-K
+      D y05 線續推 —— ref1 Y 臂最佳（−0.97/rad+0.48）的小步鄰域
+    全決定性;錨點真值已公證（雜訊地板≈0）。"""
+    w17 = np.asarray(torch.load(str(_dir(args.ref1_input).joinpath("w17_k8.pt")), weights_only=True)).reshape(25, 25) > 0.5
+    y05 = np.asarray(torch.load(str(_dir(args.ref1_input).joinpath("y05_k2.pt")), weights_only=True)).reshape(25, 25) > 0.5
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+
+    n, seed = 0, 6000
+    for k in (2, 4, 8, 16):
+        for _ in range(args.seeds):
+            emit(f"a{n:02d}_k{k}", "refine", "A_w17", symmetrize(perturb_repair(w17, k, seed=seed), 10),
+                 dict(anchor="w17_k8", flip_k=k, seed=seed))
+            n += 1
+            seed += 1
+
+    FREE_BLOCKS = ((0, 1), (0, 2), (3, 1), (3, 2))       # s05 承重圖: |Δwm|≤0.6 且含 rad 正效塊 (0,2)
+    n = 0
+    for k in (2, 4, 8):
+        for _ in range(args.seeds):
+            emit(f"b{n:02d}_k{k}", "blocked", "B_w17", symmetrize(perturb_blocks(w17, k, seed, FREE_BLOCKS), 10),
+                 dict(anchor="w17_k8", flip_k=k, seed=seed, blocks=list(map(list, FREE_BLOCKS))))
+            n += 1
+            seed += 1
+
+    # C: 重錨 SM 導引
+    cfg = load_config(DEFAULT_CFG)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    n_pts = sum(cfg.targets[labels[0]]["width"])
+    from antenna.zoo import SURROGATES
+    cache = os.path.join(REPO, "tmp", "dedust")
+    os.makedirs(cache, exist_ok=True)
+    sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+    sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
+    sm.model.eval()
+    cands = []
+    gseed = 7000
+    for k in (4, 8, 16, 32):
+        for _ in range(160):
+            pat = symmetrize(perturb_repair(w17, k, seed=gseed), 10)
+            with torch.no_grad():
+                pred = sm.model(torch.tensor(pat, dtype=torch.float32).flatten())
+            w, _per = worst_margin(pred, labels, cfg.targets)
+            cands.append((float(w), k, gseed, pat))
+            gseed += 1
+    cands.sort(key=lambda c: -c[0])
+    picked, n = [], 0
+    for w, k, s, pat in cands:
+        if n >= args.guided:
+            break
+        if all(np.count_nonzero(pat != q) > 20 for q in picked):
+            emit(f"c{n:02d}_sm", "guided", "C_w17", pat, dict(anchor="w17_k8", flip_k=k, seed=s, sm_pick_wm=_r(w)))
+            picked.append(pat)
+            n += 1
+
+    n = 0
+    for k in (2, 4):
+        for _ in range(3):
+            emit(f"d{n:02d}_k{k}", "refine", "D_y05", perturb_repair(y05, k, seed=seed),
+                 dict(anchor="y05_k2", flip_k=k, seed=seed))
+            n += 1
+            seed += 1
+
+    _save_manifest(manifest, input_dir)
+    cnt = {}
+    for m in manifest:
+        cnt[m["id"][0]] = cnt.get(m["id"][0], 0) + 1
+    print(f"精修 phase-2 輸入完成 → {input_dir}：A={cnt.get('a', 0)} B={cnt.get('b', 0)} "
+          f"C={cnt.get('c', 0)} D={cnt.get('d', 0)} 共 {len(manifest)}"
+          f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 # ---------------------------------------------------------------- select-occlude（開發機，零 HFSS）
 def occlude_block(p, br: int, bc: int, bs: int = 5, feed=FEED):
     """把第 (br,bc) 個 bs×bs 區塊的金屬清空（feed 像素永遠保留）。回 (新 pattern, 移除像素數)。
@@ -792,6 +891,14 @@ def main():
     s.add_argument("--seeds", type=int, default=6, help="W/Y 臂每 k 的 seed 數 (預設 6 → 18+4+18=40 筆)")
     s.add_argument("--input", default="dedust_ref1_input")
     s.set_defaults(fn=select_refine1)
+
+    s = sub.add_parser("select-refine2", help="精修 phase-2：w17 密掃 + 遮蔽圖知情編輯 + 重錨 SM 導引 + y05 線")
+    s.add_argument("--ref1-input", default="dedust_ref1_input", help="取 w17_k8/y05_k2 錨點")
+    s.add_argument("--sm", default="sm_reanchor.pth", help="C 臂導引用的 SM 權重 (DATASET_PATH 下)")
+    s.add_argument("--seeds", type=int, default=12, help="A/B 臂每 k 的 seed 數 (預設 12 → A48+B36)")
+    s.add_argument("--guided", type=int, default=32, help="C 臂取樣數")
+    s.add_argument("--input", default="dedust_ref2_input")
+    s.set_defaults(fn=select_refine2)
 
     s = sub.add_parser("select-occlude", help="物理遮蔽掃描：錨點 5×5 區塊逐一清空 → 真空間重要度圖 (R10)")
     s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --ids 的 .pt）")
