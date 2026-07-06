@@ -493,6 +493,30 @@ def select_r9(args):
           f"COM 偶發 error 會跳過續跑、回來重跑同指令即重試）")
 
 
+# ---------------------------------------------------------------- select-repeat（開發機，零 HFSS）
+def select_repeat(args):
+    """同一 pattern 重複模擬 N 次 → 量 HFSS 可重複性/隨機性（模擬雜訊分布）。
+    背景：跨 session 單點證據＝完全決定性（R8 b00_ref ≡ R7 p03_d3,diff 0.00）;本批次量
+    「同一 HFSS instance 內連續 N 解」的分布（mesh/自適應收斂有無抖動）。⚠ 本批共享一個
+    instance;要量跨 instance 變異,改 --input/--store 再跑一批即可（兩批各自開新 HFSS）。"""
+    src = _dir(args.source_input)
+    src_pt = src.joinpath(f"{args.id}.pt")
+    if not src_pt.exists():
+        raise SystemExit(f"找不到 {src_pt}——確認 --source-input / --id。")
+    pat = np.asarray(torch.load(str(src_pt), weights_only=True)).reshape(25, 25) > 0.5
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    for k in range(args.n):
+        pid = f"r{k:02d}_rep"
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(dict(id=pid, kind="repeat", family=args.id, removed_px=0,
+                             source_id=args.id, **piece_stats(pat)))
+    _save_manifest(manifest, input_dir)
+    print(f"repeat 批次完成 → {input_dir}：{args.id} × {args.n} 次"
+          f"（估 {args.n * 3} 分 ≈ {args.n * 3 / 60:.1f} hr；report 看各次 wm/rad 的散布）")
+
+
 # ---------------------------------------------------------------- sm-screen（開發機，零 HFSS）
 def sm_screen(args):
     cfg = load_config(args.config)
@@ -671,6 +695,13 @@ def main():
     s.add_argument("--explore-seeds", type=int, default=3, help="E 臂每(錨點,k)組合 seed 數 (預設 3 → 6×4×3=72)")
     s.add_argument("--guided", type=int, default=32, help="G 臂 SM 導引取樣數 (預設 32)")
     s.set_defaults(fn=select_r9)
+
+    s = sub.add_parser("select-repeat", help="同一 pattern 重複 N 次 → 量 HFSS 可重複性（模擬雜訊分布）")
+    s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --id 的 .pt）")
+    s.add_argument("--id", default="s05_1050", help="要重複的 pattern id（預設可製造紀錄 s05）")
+    s.add_argument("--n", type=int, default=30, help="重複次數 (預設 30 ≈ 1.5hr)")
+    s.add_argument("--input", default="dedust_repeat_input")
+    s.set_defaults(fn=select_repeat)
 
     s = sub.add_parser("sm-screen", help="sm_harvest.pth 預測預篩（零 HFSS）")
     s.add_argument("--input", default=DEFAULT_INPUT)
