@@ -275,3 +275,15 @@
 - 待釘死剩：top-K 驗證的 HFSS 排程（R5 跑步中）;像素實際 mm 尺寸（決定 2-3px 件可不可裁）。
 - 腳本：session scratchpad `pool_mfg_cross.py`/`pool_mfg_frontier.py`/`pool_piece_sizes.py`
   （碎片特徵已快取 `tmp/pattern_anatomy/piece_sizes.npz`;定案就正式化成 analysis-02）。
+
+## 📋 R5 期中巡檢（2026-07-06 午,status+metrics 快照;非收檔判讀）
+- 兩臂心跳活著（216-E ep186 / 218-E+D ep216,各 500）。止血後 `epoch_max 256` 夾住確認生效。
+- **E 臂（216）視窗機制照設計運作**：近60ep 視窗 64/128/256 健康震盪、probe 爆掉會自動降階
+  （ep183 probe_err~65 → 窗降 8 → 回復）;fit_loss 近30 平均 **3.85**（vs R4 的 7.7-10.6,判準①接近達成）;
+  trust_t 近30 有一半 epoch 升離 0.05 地板（平均 0.095,判準②有跡象）;wm 最佳 **-3.65** 已贏 R4-E(-4.58) ~0.9dB。
+- **⚠ E+D 臂（218）窗控制器失能疑似病灶**：近60ep 視窗 **59/60 釘死頂 256**、probe_argmin 常落頂
+  （=想再爬但被 clamp,「上二階」判準失去意義）;fit_loss 壓到 **0.48**（比判準 1-3 低、逼近學長 0.1）
+  但 sm_gap 仍 2.6-10 → **擬合緊、泛化爛=就地過擬合 elite 的老病**;trust 全鎖 0.05;
+  近30 wm 平均 **-14.2**(後20 -15.3),最佳 -4.85 輸 R4-E+D(-2.89) ~2dB。
+- 半熟推論：sigmoid 臂 elite 少+可壓很低 → 窗頂 256 對它仍太多;R5.5(hi 與 elite 規模掛鉤)剛好對症,收檔判讀時驗證。
+- 時間：E 15.6分/ep（窗 256 時單 ep ~27分）、E+D 17.5分/ep（ep214 一筆 44分 spike）;照此 E 再 ~3.4 天、E+D ~3.5 天到 500。
