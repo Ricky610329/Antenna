@@ -22,19 +22,21 @@
 
 | 批 | 機器 | 內容 | 筆數 | 狀態 |
 |---|---|---|---|---|
-| **O 遮蔽掃描** | 218 | s05/g24 各 24 個 5×5 區塊逐一清空（手術式,feed 保留） | 48 ≈2.4hr | 🔵 running |
-| **ref1 精修盲階段** | 37 | W s05 保對稱鄰域 k{2,4,8}×6 ／ X 對稱化救援推廣（g15/g24/e73/e39,預測=變差）／ Y g24 小步鄰域 | 18+4+18=40 ≈2hr | 🔵 running |
+| **O 遮蔽掃描** | 218 | s05/g24 各 24 個 5×5 區塊逐一清空（手術式,feed 保留） | 48 | ✅ 43/48（5 error 由雜項鏈補） |
+| **ref1 精修盲階段** | 37 | W s05 保對稱鄰域 ／ X 對稱化救援推廣 ／ Y g24 小步鄰域 | 40 | ✅ 37/40（**W 臂出 w17 三標全過**;3 error 由雜項鏈補） |
 | **Stage A SM 重錨** | 開發機 | 266 筆乾淨真值×8＋harvest 重放 2000 | 零 HFSS | ✅ held-out 3.20→**1.41**（合格） |
-| **ref2 精修知情階段** | 37（今晚過夜） | 遮蔽圖定向編輯＋重錨 SM 從大候選池挑 top-K | 待生（收 O+ref1 後） | 🔜 |
+| **ref2 精修知情階段** | 37（過夜） | A w17 密掃 48／B 承重圖知情編輯 36（`perturb_blocks`,低成本區塊）／C 重錨 SM 導引 32／D y05 線 6 | 122 ≈6.1hr | 🔵 running（2026-07-06 傍晚發） |
+| **雜項鏈** | 218 | ref1 補 3 error → w17 十次公證（`dedust_w17rep`）→ occl 補 5 error | 18 ≈1hr | 🔵 running |
 
 - 全部決定性；margin/rad 同一把尺；噪聲地板 ≈0（R9 附錄公證）→ 每個 Δ 都是真效果。
 
 ## 3. 執行紀錄 (Run)
 
 ```
-# 218:  python -m script.dedust run --input dedust_occl_input --store dedust_occl
-# 37:   python -m script.dedust run --input dedust_ref1_input --store dedust_ref1
-# 開發機: python -m script.sm_reanchor train && python -m script.sm_reanchor eval   # ✅ 已完成
+# 37 (過夜):  python -m script.dedust run --input dedust_ref2_input --store dedust_ref2
+# 218 (雜項鏈,一行):
+#   python -m script.dedust run --input dedust_ref1_input --store dedust_ref1 && python -m script.dedust run --input dedust_w17rep_input --store dedust_w17rep && python -m script.dedust run --input dedust_occl_input --store dedust_occl
+# 已完成: occl/ref1 主體 (2026-07-06 午後) · sm_reanchor train+eval (開發機)
 ```
 - 事件: 2026-07-06 午後兩批發車（監看掛開發機,停滯 40 分警報）。sm_reanchor 修了兩個初始化缺口
   （`setDefaultCoordinate`／`AntennaResponse.use(spec)`——腳本獨立跑訓練管線時的必要開場,已記進腳本）。

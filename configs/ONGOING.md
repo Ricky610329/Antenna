@@ -13,12 +13,11 @@
 
 ## 🔵 進行中 / 待跑
 
-### Round 10 — 精修 × 物理歸因（🔵 **running**，2026-07-06 午後雙批發車）→ [docs/log/round-10](../docs/log/round-10-refine-attribution.md)
-- **O 遮蔽掃描 @218**（48 筆 ≈2.4hr）：s05/g24 各 24 塊 5×5 逐一清空 → 真空間重要度圖（規則 Stage B）。
-- **ref1 精修盲階段 @37**（40 筆 ≈2hr）：W s05 保對稱鄰域 / X 對稱化救援推廣（預測=變差,可證偽）/ Y g24 小步鄰域。
-- **Stage A SM 重錨 ✅**：held-out 3.20→**1.41** 進 2dB 帶（`sm_reanchor.pth`）。
-- **今晚 ref2（過夜）**：收 O+ref1 後生——遮蔽圖定向編輯＋重錨 SM 挑 top-K。**判準=三標全過第一筆**。
-- 重啟指令：218 `run --input dedust_occl_input --store dedust_occl`；37 `run --input dedust_ref1_input --store dedust_ref1`。
+### Round 10 — 精修 × 物理歸因（🔵 **running**）→ [round-10](../docs/log/round-10-refine-attribution.md)｜報告 [round-10-report](../docs/log/round-10-report.md)
+- **★ 已完勝**：ref1 W 臂 `w17_k8` **三標全過**（wm +0.48／rad +0.26,3 組件零粉塵）＝s05 翻 8px(seed 5017)再 10-5-10 對稱化。X 臂 4/4 驗證「對稱化救爛毀好」；承重圖×2 落袋；SM 重錨 1.41 進帶（`sm_reanchor.pth`）。
+- **進行中（2026-07-06 傍晚發）**：37 → **ref2 過夜**（`run --input dedust_ref2_input --store dedust_ref2`,122 筆 ≈6hr：A w17 密掃 48/B 承重圖知情編輯 36/C 重錨 SM 導引 32/D y05 線 6,目標=帶緣餘裕推高+第二冠軍）；218 → **雜項鏈**（ref1 補 3 error → `dedust_w17rep` w17 十次公證 → occl 補 5 error,共 18 筆 ≈1hr）。
+- **收檔後待辦**：ref2 判讀（B 臂 vs A 臂=承重圖知情是否贏盲掃,又一條規則因果檢驗）；w17rep 散布蓋章；round-10 §5 結論＋README 索引；規則→generator（R11 工程,像素先驗 logit map/修復算子）。
+- ⚠ 監看掛在開發機 Claude session,session 沒了就沒監看——進度隨時可用 `python -m script.dedust report --input dedust_ref2_input --store dedust_ref2`（其餘 store 同理）查 NAS 真相。
 
 ### Round 5 — 滑動視窗 SM 訓練量（🔵 **running**，2026-07-03 發）→ 詳見 [docs/log/round-05](../docs/log/round-05-window-sm.md)
 | 臂 | config | = R4 同臂改什麼 | 隔離 |

@@ -1,20 +1,29 @@
 # -*- coding: utf-8 -*-
 """
-script/dedust.py — Round-07 除塵驗證 (de-dust)：harvest 池達標 pattern 的粉塵是不是 load-bearing？
+script/dedust.py — 批次 HFSS 驗證線（R7 起的研究主力）：開發機 select-* 生輸入 → 正式機 run 燒
+HFSS → 任一機 report 看結果。輸入/結果都在 NAS（`DATASET_PATH/<name>_input/` 與 `<name>/`），
+跨機共享；run 可中斷續跑（成功跳過、error 重試）；每筆 solve 順收方向圖（rad/ 夾）。
 
-背景（見 docs/log/round-07-dedust.md / docs/discuss/scratch.md 2026-07-03 戰略討論塊）：
-池內 18 筆達標 pattern 全是「3-8 塊大銅片＋10-18 顆 1-3px 粉塵」（~3 個設計家族），不符可製造性
-（裁切製程：允許不連通、但不要很多 1×1 碎片）。本工具驗證「拔掉粉塵后 margin 撐不撐得住」，
-每次 HFSS solve 順帶方向圖（±45° 覆蓋驗證 + Stage-3 rad 冷啟動資料）。
+通用流程：
+    開發機:  python -m script.dedust <select-指令> [--input X_input ...]   # 生 pattern+manifest 上 NAS
+             python -m script.dedust sm-screen --input X_input             # SM 預篩（零 HFSS,選用）
+    正式機:  python -m script.dedust run --input X_input --store X         # 燒 HFSS（可中斷續跑）
+    任一機:  python -m script.dedust report --input X_input --store X      # 進度/結果表（貼 round 檔 §4）
 
-流程：
-    開發機:  python -m script.dedust select      # pool 快取挑家族代表+近標者、產除塵變體 → NAS dedust_r7_input/
-             python -m script.dedust sm-screen   # sm_harvest.pth 預測預篩（零 HFSS；Δ 只當方向訊號）
-    正式機:  python -m script.dedust run         # HFSS 驗原版+除塵版（順收 rad）→ NAS dedust_r7/（可中斷續跑）
-    任一機:  python -m script.dedust report      # 匯總表（貼 round-07 §4）
+select 子命令（各 round 的輸入生成器；歷史見 docs/log/round-NN 檔）：
+    select          R7  除塵驗證（家族代表+近標者 × 除塵變體）
+    select-r8       R8  乾淨子空間測繪（前緣/補洞因果/SM 校準/uniform random 基線）
+    select-r9       R9  池頂端重驗（oracle 裁決+校正曲線）＋跨家族乾淨投影探索（E/G/S）
+    select-refine1  R10 精修盲階段（s05 保對稱鄰域/對稱化救援推廣/g24 鄰域）→ 出了 w17 三標全過
+    select-refine2  R10 精修知情階段（w17 密掃/承重圖知情編輯/重錨 SM 導引/y05 線）
+    select-occlude  R10 物理遮蔽掃描（5×5 區塊逐一清空 → 真空間重要度圖）
+    select-repeat   同 pattern × N 次（HFSS 可重複性；已公證雜訊地板 ≈0、跨機 bit 級一致,見 R9 §4 附錄）
 
-margin 與 analysis-01 / round-06 同一把尺（`antenna.losses.worst_margin` + 現行 targets）。
-select 依賴 `tmp/pattern_anatomy/pool.npz`（沒有先跑 `python -m script.pattern_anatomy collect-pool`）。
+慣例：margin/rad 全走同一把尺（`antenna.losses.worst_margin` + `configs/single_r5_explore.yaml` targets、
+`rad_window_margin` ±45°/3dB）；生成全決定性（seed 進 manifest,各 select 的 seed 域不重疊）；
+「可製造」= 全碎片 ≥4px＋feed pad。select/select-r8/r9 依賴 `tmp/pattern_anatomy/pool.npz`
+（先跑 `python -m script.pattern_anatomy collect-pool`）；select-refine2 依賴 NAS 的 `sm_reanchor.pth`
+（`script/sm_reanchor.py` 產出）。
 """
 import argparse
 import json
