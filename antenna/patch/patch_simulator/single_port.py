@@ -452,6 +452,7 @@ class SinglePortSimulator(PatchSimulator):
             ])
         #* 頻率掃描 (Frequency Sweep)：在 24~32GHz 量測響應隨頻率的變化
         #  以 28GHz 收斂出的網格為基礎，掃出整個頻帶的 S 參數與遠場，得到 S11/Gain 曲線。
+        logger.info(f"FrequencySweep Type={self.sweep_type} (Pattern {self.num})")   # 掃頻型式可觀測 (2026-07-06)
         oModule.InsertFrequencySweep("Setup1",
             [
                 "NAME:Sweep",
