@@ -32,7 +32,11 @@
 | — | — | — | — |
 | E | 216 | running（2026-07-03 發） | `[Patch-single-216-43e98b] pixel_single_r5_explore` |
 | D | 37 | **提早收**（2026-07-03，@~34ep） | `[Patch-single-37-69f1d3] pixel_single_r5_dip` |
-| E+D | 218 | running（2026-07-03 發） | `[Patch-single-218-b817c3] pixel_single_r5_dip_explore` |
+| E+D | 218 | **提早收**（2026-07-06，@218ep） | `[Patch-single-218-b817c3] pixel_single_r5_dip_explore` |
+- 事件: 2026-07-06 **E+D 臂提早收**（ep 218）：best −4.85 卡在 ep14＝重啟後 203 epochs 零進步；滑動視窗把
+  fit_loss 壓到 0.45（判準①達成）但 sm_gap 卡 8.3、trust 鎖 0.05——**sigmoid 臂的泛化瓶頸不在訓練量**
+  （R4 D/E+D 同病,答案已足）。機器讓給 dedust 跨機重複性批次（`dedust_repeat_218`）。餘 E 臂單獨續跑
+  （sm_gap 1.24＝專案史上最低,主假設正面證據,觀察 trust 是否解鎖到 ~250-300ep）。
 - 事件: 2026-07-03 實作 `adaptive_window`（controller + 接線 + 測試，golden 零漂移）→ 同日修正滑動規則為**區位制**（argmin 落上二階即 ×2，不必貼頂——保留冗餘）、上限 256→1024、ensemble 5→3 → **同日發車**（三臂 config 快照已驗證為新版）。
 - 事件: 2026-07-03 修 `_resolve_run` 子字串 bug（round 報告兩臂數字相同的元凶；R3 D 數字已更正）。
 - 事件: 2026-07-03 晚 **冷啟動超衝止血**——健檢（~22-32ep）發現 sigmoid 兩臂視窗 4 連滑直衝 1024（elite 僅 ~12 筆＝純背誦；fit 0.17-0.91 過擬合、gap 不動、D 30分/ep）→ `epoch_max` 1024→256 重啟三臂（`seed_target` 自動把 hi 夾回、bucket 重學亦順帶解 E 臂 EMA 滯後）。**根因（視窗上限未與 elite 規模掛鉤）留待 R5.5 治本**，詳見 scratch「R5 健檢」交接塊。判讀曲線注意 ep≤重啟點為 1024-cap 段。
