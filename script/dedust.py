@@ -493,6 +493,53 @@ def select_r9(args):
           f"COM 偶發 error 會跳過續跑、回來重跑同指令即重試）")
 
 
+# ---------------------------------------------------------------- select-refine1（開發機，零 HFSS）
+def select_refine1(args):
+    """精修 phase-1（盲階段——不依賴 SM 重錨/遮蔽圖,那些進今晚 phase-2）：
+      W s05 保對稱鄰域 —— perturb_repair(k) 後再 10-5-10 對稱化（翻轉被鏡射成對,活在 s05 同一子空間）
+      X 對稱化救援推廣 —— 冠軍 g15/g24/e73/e39 各做 10-5-10（規則測試;R9 說救爛毀好 → 預測=變差,可證偽）
+      Y g24 鄰域 —— rad 已過的種子做小步 perturb_repair,找「補 wm 不丟 rad」
+    種子/編輯全決定性;margin 同一把尺。"""
+    src = _dir(args.source_input)
+
+    def load(pid):
+        f = src.joinpath(f"{pid}.pt")
+        if not f.exists():
+            raise SystemExit(f"找不到 {f}")
+        return np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
+
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        row = dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra)
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(row)
+
+    s05 = load("s05_1050")
+    n, seed = 0, 5000                                    # seed 域與 R9 (0-/1000-) 不重疊
+    for k in (2, 4, 8):
+        for _ in range(args.seeds):
+            emit(f"w{n:02d}_k{k}", "refine", "W_s05", symmetrize(perturb_repair(s05, k, seed=seed), 10),
+                 dict(anchor="s05_1050", flip_k=k, seed=seed))
+            n += 1
+            seed += 1
+    for m, cid in enumerate(("g15_sm", "g24_sm", "e73_x16", "e39_x0")):
+        emit(f"x{m:02d}_symres", "symres", f"X_{cid}", symmetrize(load(cid), 10), dict(anchor=cid, sym="1050"))
+    g24 = load("g24_sm")
+    n = 0
+    for k in (2, 4, 8):
+        for _ in range(args.seeds):
+            emit(f"y{n:02d}_k{k}", "refine", "Y_g24", perturb_repair(g24, k, seed=seed),
+                 dict(anchor="g24_sm", flip_k=k, seed=seed))
+            n += 1
+            seed += 1
+    _save_manifest(manifest, input_dir)
+    print(f"精修 phase-1 輸入完成 → {input_dir}：W {3 * args.seeds}＋X 4＋Y {3 * args.seeds}＝{len(manifest)} 筆"
+          f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 # ---------------------------------------------------------------- select-occlude（開發機，零 HFSS）
 def occlude_block(p, br: int, bc: int, bs: int = 5, feed=FEED):
     """把第 (br,bc) 個 bs×bs 區塊的金屬清空（feed 像素永遠保留）。回 (新 pattern, 移除像素數)。
@@ -739,6 +786,12 @@ def main():
     s.add_argument("--explore-seeds", type=int, default=3, help="E 臂每(錨點,k)組合 seed 數 (預設 3 → 6×4×3=72)")
     s.add_argument("--guided", type=int, default=32, help="G 臂 SM 導引取樣數 (預設 32)")
     s.set_defaults(fn=select_r9)
+
+    s = sub.add_parser("select-refine1", help="精修 phase-1：s05 保對稱鄰域 + 對稱化救援推廣 + g24 鄰域 (盲階段)")
+    s.add_argument("--source-input", default="dedust_r9_input")
+    s.add_argument("--seeds", type=int, default=6, help="W/Y 臂每 k 的 seed 數 (預設 6 → 18+4+18=40 筆)")
+    s.add_argument("--input", default="dedust_ref1_input")
+    s.set_defaults(fn=select_refine1)
 
     s = sub.add_parser("select-occlude", help="物理遮蔽掃描：錨點 5×5 區塊逐一清空 → 真空間重要度圖 (R10)")
     s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --ids 的 .pt）")
