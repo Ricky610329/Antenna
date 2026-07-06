@@ -150,3 +150,21 @@ def test_perturb_blocks_confined():
     rows, cols = np.where(removed)
     assert removed.sum() > 0
     assert rows.max() < 5 and 5 <= cols.min() and cols.max() < 15   # 挖洞只在 (0,1)/(0,2) 兩塊內
+
+
+def test_align_curve_regression_shifted_17_points():
+    """回歸 (2026-07-06 w17 翻案根因)：Interpolating 掃頻回傳『恰 17 點但頻點偏格』時,
+    舊邏輯 (點數≠17 才內插) 按索引錯位 → 一律按頻率值對位。"""
+    from antenna.patch.patch_simulator.single_port import align_curve
+    exp = np.linspace(24, 32, 17)
+    # 情境1: 網格完全相符 → 原值直通
+    vals = np.arange(17.0)
+    assert (align_curve(exp, vals, exp) == vals).all()
+    # 情境2: 恰 17 點但整體偏移 0.5GHz → 必須內插回網格,不可按索引直塞 (舊 bug)
+    shifted = exp + 0.5
+    out = align_curve(shifted, vals, exp)
+    assert not (out == vals).all()                      # 舊行為=原樣直塞 → 抓到就是退化
+    assert abs(out[8] - np.interp(exp[8], shifted, vals)) < 1e-12
+    # 情境3: 點數≠17 → 內插 (原本就有的行為)
+    dense = np.linspace(24, 32, 33)
+    assert len(align_curve(dense, np.linspace(0, 1, 33), exp)) == 17

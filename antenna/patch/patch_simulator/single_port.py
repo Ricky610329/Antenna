@@ -21,6 +21,20 @@ def get_penalty(expected_len:int=17):
     logger.warning("模擬發生未知錯誤，回傳懲罰值")
     return {'S11': tensor([0.0] * expected_len), 'Gain': tensor([-40.0] * expected_len)}
 
+
+def align_curve(freqs, vals, freqs_expected) -> np.ndarray:
+    """把 (freqs, vals) 對齊到 freqs_expected 網格——**永遠按頻率值對位**（網格相符時原樣快速通過）。
+
+    #! 根因修復 (2026-07-06, w17 Gain +0.54 假象)：Interpolating 掃頻的頻點集合隨解算歷史而變,
+    #  舊邏輯「點數 ≠ 17 才內插」在『恰好 17 點但頻點偏格』時會按索引錯位（整段平移 0.5GHz）。
+    #  頻率欄本來就有,一律拿來對位即可;np.interp 在 x==xp 時回傳原值,無精度損失。"""
+    freqs = np.asarray(freqs, dtype=float)
+    vals = np.asarray(vals, dtype=float)
+    if len(vals) == len(freqs_expected) and np.allclose(freqs, freqs_expected):
+        return vals
+    return np.interp(freqs_expected, freqs, vals)
+
+
 class SinglePortSimulator(PatchSimulator):
     """單埠微帶貼片天線的 HFSS 模擬器。
 
@@ -557,27 +571,14 @@ class SinglePortSimulator(PatchSimulator):
         #? 24~32GHz 等分 17 點 (對應掃頻步距 0.5GHz)；訓練端 (SM/loss) 假設響應固定長度 17，
         #? 故此處強制把結果對齊到這 17 個頻點。
         freqs_expected = np.linspace(24, 32, 17)
-        expected_len = len(freqs_expected)
 
-        #* S11
+        #* S11 / Gain：一律按頻率值對位到 17 點網格 (align_curve;舊「點數≠17 才內插」有錯位陷阱,見該函式註解)
         freqs_s11 = Sparameter_dataframe.iloc[:, 0].values  # 第 0 欄：頻率 (GHz)
-        S11_vals = Sparameter_dataframe.iloc[:, 1].values   # 第 1 欄：dB(S(1,1))
-        if len(S11_vals) != expected_len:
-            #? 點數不符的成因：Interpolating 掃頻實際輸出的取樣點數未必剛好 17 (演算法自選頻點)。
-            #? 用線性插值 np.interp 依原始 (頻率, 值) 把曲線重新取樣到固定的 17 個 freqs_expected 點，
-            #? 確保回傳張量長度恆為 17，下游才能對齊比較。
-            # logger.warning(f"HFSS S11 模擬點數異常 (Pattern {self.num})！預期 {expected_len} 點，實際取得 {len(S11_vals)} 點，將自動進行插值補齊。")
-            S11_vals:np.ndarray = np.interp(freqs_expected, freqs_s11, S11_vals)
+        S11_vals = align_curve(freqs_s11, Sparameter_dataframe.iloc[:, 1].values, freqs_expected)
 
-        #* Gain
         # 注意 Gain CSV 的欄位排列不同：因含 Phi/Theta context 欄，頻率落在第 2 欄、增益值落在第 3 欄。
         freqs_gain = Gain_dataframe.iloc[:, 2].values       # 第 2 欄：頻率 (GHz)
-        Gain_vals = Gain_dataframe.iloc[:, 3].values        # 第 3 欄：dB(RealizedGainTotal)
-        if len(Gain_vals) != expected_len:
-            # 同理對 Gain 做插值補點，對齊到 17 個頻點。
-            # logger.warning(f"HFSS Gain 模擬點數異常 (Pattern {self.num})！預期 {expected_len} 點，實際取得 {len(Gain_vals)} 點，將自動進行插值補齊。")
-
-            Gain_vals:np.ndarray = np.interp(freqs_expected, freqs_gain, Gain_vals)
+        Gain_vals = align_curve(freqs_gain, Gain_dataframe.iloc[:, 3].values, freqs_expected)
 
         #* 組成回傳字典：兩條長度 17 的曲線轉成 torch.Tensor，供訓練端計算 loss / 比對。
         _result = {
