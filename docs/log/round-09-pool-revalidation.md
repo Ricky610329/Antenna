@@ -88,6 +88,17 @@ python -m script.dedust report --input dedust_r9_input --store dedust_r9
 
 ![SM 體檢](assets/round-09/sm_check.png)
 
+### 附錄 — HFSS 可重複性公證（2026-07-06,select-repeat）
+
+s05 同 pattern 重複模擬：37 同機 26 次 ＋ 218 跨機 15 次（各 4 筆 COM error,無統計影響）：
+- **worst/rad margin 全部唯一值 −0.29／−0.91**（41 次零散布）；
+- 全曲線逐點比對：同機最大差 ~1e-6 dB（浮點塵埃）、**跨機 0.00e+00（bit 級相同）**。
+- **含義**：①現行管線模擬雜訊地板 ≈ 0 → 任何 ≥0.01 dB 的 Δ 都是真效果；②R9 校正 σ0.77 **100% 是
+  學長設定 vs 現行設定的系統差**（版本演進/專案設定/學長 runs 間不一致,三種來源未裁決——真 ground truth
+  =量測,兩邊都是模擬）；③**跨機 bit 級一致 → 「換機不能接力」確定只是資料夾命名問題,非物理問題**
+  （[[project_run_identity_machine_bound]] 的疑慮解除）；④s05 的 −0.29 已 41 次公證。
+- 資料：`dedust_repeat/`（37）、`dedust_repeat_218/`（218,15/30 提早收——統計已足）。
+
 ## 5. 結論 (Conclude)
 
 - **學到什麼**：① oracle 存在（k=8，判準走 `k≥1` 分支）→ 精修路線保住，且**可製造側自己長出了種子**：
