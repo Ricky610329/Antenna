@@ -692,6 +692,26 @@ def select_occlude(args):
           f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+# ---------------------------------------------------------------- select-pick（開發機，零 HFSS）
+def select_pick(args):
+    """從既有輸入夾挑指定 pattern 組成新批次（id 原樣保留）——交叉驗證/重驗用。
+    --items "來源夾:id,來源夾:id,..."（來源夾=DATASET_PATH 下的 *_input 夾名）。"""
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    for item in args.items.split(","):
+        src_name, pid = item.strip().split(":")
+        f = _dir(src_name).joinpath(f"{pid}.pt")
+        if not f.exists():
+            raise SystemExit(f"找不到 {f}")
+        pat = np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(dict(id=pid, kind="verify", family=src_name, removed_px=0,
+                             source_input=src_name, **piece_stats(pat)))
+    _save_manifest(manifest, input_dir)
+    print(f"驗證批次完成 → {input_dir}：{len(manifest)} 筆（id 原樣保留,report 可直接對照原 store）")
+
+
 # ---------------------------------------------------------------- select-repeat（開發機，零 HFSS）
 def select_repeat(args):
     """同一 pattern 重複模擬 N 次 → 量 HFSS 可重複性/隨機性（模擬雜訊分布）。
@@ -787,7 +807,7 @@ def run(args):
     print(f"待模擬 {len(todo)}/{len(manifest)} 筆（成功跳過、error 重試；中斷再跑即續）")
 
     out = Path(args.out).resolve()     # HFSS SaveAs 用自己的工作目錄解析相對路徑 → 必須絕對路徑
-    sim = SinglePortRadSimulator(record_path=str(out))
+    sim = SinglePortRadSimulator(record_path=str(out), sweep_type=args.sweep)
     sim.open()
     try:
         for num, m in todo:
@@ -915,6 +935,11 @@ def main():
     s.add_argument("--input", default="dedust_occl_input")
     s.set_defaults(fn=select_occlude)
 
+    s = sub.add_parser("select-pick", help="從既有輸入夾挑指定 pattern 組新批次（交叉驗證/重驗用）")
+    s.add_argument("--items", required=True, help='"來源夾:id,來源夾:id,..."')
+    s.add_argument("--input", default="dedust_verify_input")
+    s.set_defaults(fn=select_pick)
+
     s = sub.add_parser("select-repeat", help="同一 pattern 重複 N 次 → 量 HFSS 可重複性（模擬雜訊分布）")
     s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --id 的 .pt）")
     s.add_argument("--id", default="s05_1050", help="要重複的 pattern id（預設可製造紀錄 s05）")
@@ -932,6 +957,8 @@ def main():
     s.add_argument("--store", default=DEFAULT_STORE, help="結果夾名（DATASET_PATH 下）")
     s.add_argument("--config", default=DEFAULT_CFG)
     s.add_argument("--out", default="_dedust", help="HFSS 工作目錄（正式機本地碟）")
+    s.add_argument("--sweep", default="Interpolating", choices=["Interpolating", "Discrete", "Fast"],
+                   help="掃頻演算法（Discrete=17 點逐點硬解,慢但每點真解;掃頻法交叉驗證用）")
     s.set_defaults(fn=run)
 
     s = sub.add_parser("report", help="匯總表（貼 round 檔 §4）")

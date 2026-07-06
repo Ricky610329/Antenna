@@ -42,7 +42,11 @@ class SinglePortSimulator(PatchSimulator):
     HFSS COM 生命週期管理；本類別只負責「單一回合」的建模、求解與結果讀取 (即 __call__)。
     回傳的響應字典含 'S11' (反射係數, dB) 與 'Gain' (正向 Realized Gain, dB)。
     """
-    def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'single_port.sab'), pixel_count:int = 25):
+    def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'single_port.sab'), pixel_count:int = 25,
+                 sweep_type: str = "Interpolating"):
+        #? sweep_type: HFSS 掃頻演算法 {"Interpolating"(預設,快;自選頻點+有理擬合) / "Discrete"(17 點逐點硬解,
+        #  慢但每點真解) / "Fast"}。Discrete 用於「掃頻法交叉驗證」——量化 Interpolating 擬合誤差 (round-10)。
+        self.sweep_type = str(sweep_type)
         #? HFSS_sab_path 預設指向本套件 sab/single_port.sab：一塊已預先繪製好的「底板」幾何，
         #? 內含基板 (Sub)、地平面 (GND)、單一饋線 (feed_line) 與激勵面 (Rectangle1)。
         #? 像素貼片只需畫在這塊底板上方即可，省去每次重建固定結構的時間。
@@ -455,10 +459,8 @@ class SinglePortSimulator(PatchSimulator):
                 "RangeType:=", "LinearStep",
                 "RangeStart:=", "24GHz",         # 掃頻起點
                 "RangeEnd:=", "32GHz",           # 掃頻終點 (涵蓋 28GHz 中心頻的 5G n257/n258 毫米波段附近)
-                "RangeStep:=", "0.5GHz",         # 步距 0.5GHz → 24~32GHz 共 17 點 (與 expected_len=17 對應)
-                "Type:=", "Interpolating",       #! 掃頻演算法選擇 {EX: Fast, Interpolating(插值掃描)}
-                # Interpolating：自適應挑少數頻點求解再內插出整條曲線，平滑且快；
-                # 對比 dual_port.py 用 "Fast" (掃描式)。
+                "RangeStep:=", "0.5GHz",         # 步距 0.5GHz → 24~32GHz 共 17 點 (與 17 點網格對應)
+                "Type:=", self.sweep_type,       #! 掃頻演算法 (建構參數;預設 Interpolating,可換 Discrete 逐點硬解)
                 "SaveFields:=", True,
                 "SaveRadFields:=", False,
                 "GenerateFieldsForAllFreqs:=", False,
@@ -586,8 +588,5 @@ class SinglePortSimulator(PatchSimulator):
             'Gain': tensor(Gain_vals.tolist()),
         }
 
-        # 把 S11 與 Gain 串成單一一維陣列 (備用，目前未被回傳)。
-        full_output = []
-        full_parameter = np.append(np.append(full_output, S11_vals), Gain_vals)
 
         return _result
