@@ -14,7 +14,8 @@
 ## 🔵 進行中 / 待跑
 
 ### Round 11 — 冠軍公差穩健化 × 規則普適性（🔵 **running**,2026-07-07）→ [round-11](../docs/log/round-11-robustness.md)
-- occl2 @37 ✅ 48/48（規則普適性過關:底排承重跨家族 ρ+0.53~0.72,低成本區/rad 旋鈕重現）;tol @218 收尾中。
+- occl2 @37 ✅ 48/48（規則普適性過關:底排承重跨家族 ρ+0.53~0.72,低成本區/rad 旋鈕重現）。
+- tol @218 ✅ 60/60（整面蝕刻全滅;局部缺陷存活=margin 函數:c21 10/18 穩健王/a15 2/18/w17 1/18）。
 - ref3 @37 過夜 🔵（159 筆:A 穩健盲掃 48+B 字典序 SM 導引 64+C 組數階梯 47（多尺寸掃位含 6 塊試點,Ricky 指示加大））。
 - wide @218 過夜 🔵（160 筆,Ricky 提議:W 遠距 k48-128 高原半徑 64+X 對稱必要性（不再對稱化）48+Y SM 遠距導引 48）。
 - 重啟指令：37 `run --input dedust_ref3_input --store dedust_ref3`;218 `run --input dedust_tol_input --store dedust_tol; run --input dedust_wide_input --store dedust_wide`（分號串接,tol 收完自動接 wide）。
