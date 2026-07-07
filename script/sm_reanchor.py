@@ -137,10 +137,45 @@ def evaluate(args):
     print("\n判準：held-out 中位 ≤ ~2 → 導航儀合格；harvest 欄惡化過多＝遺忘（調 --over/--replay 重訓）。")
 
 
+def tune(args):
+    """小網格超參搜尋（零 HFSS,開發機）：資料預載一次 → 每組合從 sm_harvest 重訓 → held-out 中位選最佳。
+    ⚠ 誠實條款：以 held-out 選模型=輕度選擇性過擬合(94 點),數字比單次訓練樂觀一點;p90 同列供對照。"""
+    import itertools
+    torch.manual_seed(0)
+    tr, ho = _load_clean()
+    max_replay = max(args.grid_replay)
+    replay_all, hval = _load_harvest(max_replay, args.val)
+    print(f"資料預載完成: 乾淨 train {len(tr)} / held-out {len(ho)} / 重放池 {len(replay_all)}")
+    rows = []
+    best = (None, 1e9)
+    for epochs, over, replay, batch in itertools.product(args.grid_epochs, args.grid_over,
+                                                         args.grid_replay, args.grid_batch):
+        torch.manual_seed(0)                     # 每組合同 seed → 差異來自超參,非亂數
+        sm = _make_sm()
+        sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
+        ds = ConcatDataset([_tds(tr)] * over + [_tds(replay_all[:replay])])
+        sm.train_by_datas(ds, epochs=epochs, batch_size=batch, verbose=False)
+        e_ho, e_hv = _wm_errs(sm, ho), _wm_errs(sm, hval)
+        med, p90, hv = float(np.median(e_ho)), float(np.percentile(e_ho, 90)), float(np.median(e_hv))
+        rows.append((med, p90, hv, epochs, over, replay, batch))
+        print(f"  ep={epochs:<3} over={over:<2} replay={replay:<4} batch={batch:<3} → "
+              f"held-out {med:.2f}/{p90:.2f}  harvest {hv:.2f}", flush=True)
+        if med < best[1]:
+            torch.manual_seed(0)
+            best = ((epochs, over, replay, batch), med)
+            sm.save_as(DATASET_PATH.joinpath(args.out))
+    rows.sort()
+    print("\n| held-out 中位 | p90 | harvest | epochs | over | replay | batch |")
+    print("|---|---|---|---|---|---|---|")
+    for med, p90, hv, e, o, rp, b in rows:
+        print(f"| {med:.2f} | {p90:.2f} | {hv:.2f} | {e} | {o} | {rp} | {b} |")
+    print(f"\n最佳 {best[0]} → 已存 {args.out}（⚠ 依判準複核 harvest 欄再採用）")
+
+
 def main():
     ap = argparse.ArgumentParser(description="SM 乾淨區重錨（R10 Stage A;train 開發機零 HFSS）")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name, fn in (("train", train), ("eval", evaluate)):
+    for name, fn in (("train", train), ("eval", evaluate), ("tune", tune)):
         s = sub.add_parser(name)
         s.add_argument("--epochs", type=int, default=40)
         s.add_argument("--batch", type=int, default=64)
@@ -148,6 +183,10 @@ def main():
         s.add_argument("--replay", type=int, default=2000, help="harvest 重放筆數")
         s.add_argument("--val", type=int, default=500, help="harvest 驗證筆數 (不進訓練)")
         s.add_argument("--out", default="sm_reanchor.pth", help="輸出權重名 (DATASET_PATH 下;v2 建議 sm_reanchor2.pth)")
+        s.add_argument("--grid-epochs", type=int, nargs="+", default=[40, 80])
+        s.add_argument("--grid-over", type=int, nargs="+", default=[4, 8, 16])
+        s.add_argument("--grid-replay", type=int, nargs="+", default=[1000, 2000])
+        s.add_argument("--grid-batch", type=int, nargs="+", default=[64])
         s.set_defaults(fn=fn)
     args = ap.parse_args()
     args.fn(args)
