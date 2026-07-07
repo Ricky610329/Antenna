@@ -16,7 +16,8 @@
 ### Round 11 — 冠軍公差穩健化 × 規則普適性（🔵 **running**,2026-07-07）→ [round-11](../docs/log/round-11-robustness.md)
 - occl2 @37 ✅ 48/48（規則普適性過關:底排承重跨家族 ρ+0.53~0.72,低成本區/rad 旋鈕重現）;tol @218 收尾中。
 - ref3 @37 過夜 🔵（159 筆:A 穩健盲掃 48+B 字典序 SM 導引 64+C 組數階梯 47（多尺寸掃位含 6 塊試點,Ricky 指示加大））。
-- 重啟指令：37 `run --input dedust_ref3_input --store dedust_ref3`;218 `run --input dedust_tol_input --store dedust_tol`。
+- wide @218 過夜 🔵（160 筆,Ricky 提議:W 遠距 k48-128 高原半徑 64+X 對稱必要性（不再對稱化）48+Y SM 遠距導引 48）。
+- 重啟指令：37 `run --input dedust_ref3_input --store dedust_ref3`;218 `run --input dedust_tol_input --store dedust_tol; run --input dedust_wide_input --store dedust_wide`（分號串接,tol 收完自動接 wide）。
 
 ### ~~Round 10 — 精修 × 物理歸因~~（✅ **2026-07-07 收檔,八冠軍 certified**）→ [round-10](../docs/log/round-10-refine-attribution.md)｜報告 [round-10-report](../docs/log/round-10-report.md)｜名鑑 [champions](../docs/champions.md)
 - **★ w17 公證後修正（2026-07-06 晚）**：十次公證 8/8 = **wm −0.06**（原單次 +0.48 為 Gain context 個案;S11 +0.83✓ rad +0.26✓）→「三標全過」收回,w17=可製造新紀錄（−0.29→−0.06,差全過 0.06）。**新規則:紀錄級結論一律公證後才算數**;g24 的 rad+0.44 也是單次、待公證。X 臂 4/4 規則、承重圖（已補成 48/48）、SM 重錨 1.41 不變。

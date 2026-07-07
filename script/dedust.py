@@ -816,6 +816,87 @@ def select_refine3(args):
           f"共 {len(manifest)}（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+def select_wide(args):
+    """R11 wide（218 過夜）——冠軍高原測繪,與 37 的 ref3（近距精修）互補。錨點=榜首+代表
+    （c21/a00/b11/a15,certified）。三臂:
+      W 遠距對稱擾動 —— k∈{48,64,96,128}+再對稱化:量 w17 高原「半徑」（R6:進步靠躍遷）
+      X 對稱必要性探針 —— k∈{2,4,8} **不再對稱化**:冠軍級的對稱是否承重,直接對答案
+      Y SM 遠距導引 —— k∈{48,96} 候選字典序排序（同 ref3 B）:測導航儀有效射程
+    全決定性（seed 12000+,不與 ref1/2/3 重疊）。"""
+    ref2 = _dir(args.ref2_input)
+    anchors = {}
+    for aid in ("c21_sm", "a00_k2", "b11_k2", "a15_k4"):
+        anchors[aid] = np.asarray(torch.load(str(ref2.joinpath(f"{aid}.pt")), weights_only=True)).reshape(25, 25) > 0.5
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+
+    n, seed = 0, 12000
+    for aid, pat0 in anchors.items():
+        for k in (48, 64, 96, 128):
+            for _ in range(args.seeds):
+                emit(f"w{n:02d}_{aid[:3]}k{k}", "wide", f"W_{aid}",
+                     symmetrize(perturb_repair(pat0, k, seed=seed), 10),
+                     dict(anchor=aid, flip_k=k, seed=seed))
+                n += 1
+                seed += 1
+    n = 0
+    for aid, pat0 in anchors.items():
+        for k in (2, 4, 8):
+            for _ in range(args.seeds):
+                emit(f"x{n:02d}_{aid[:3]}k{k}", "asym", f"X_{aid}",
+                     perturb_repair(pat0, k, seed=seed),
+                     dict(anchor=aid, flip_k=k, seed=seed))
+                n += 1
+                seed += 1
+
+    cfg = load_config(DEFAULT_CFG)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    n_pts = sum(cfg.targets[labels[0]]["width"])
+    from antenna.zoo import SURROGATES
+    cache = os.path.join(REPO, "tmp", "dedust")
+    os.makedirs(cache, exist_ok=True)
+    sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+    sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
+    sm.model.eval()
+    n = 0
+    for aid in ("c21_sm", "a15_k4"):
+        pat0 = anchors[aid]
+        cands, gseed = [], 14000
+        for k in (48, 96):
+            for _ in range(200):
+                pat = symmetrize(perturb_repair(pat0, k, seed=gseed), 10)
+                with torch.no_grad():
+                    pred = sm.model(torch.tensor(pat, dtype=torch.float32).flatten())
+                w, _per = worst_margin(pred, labels, cfg.targets)
+                ob = oob_metrics(pred.detach().cpu().numpy())["oob_bad"]
+                cands.append((float(w), ob, k, gseed, pat))
+                gseed += 1
+        top = max(c[0] for c in cands) - 0.36
+        cands.sort(key=lambda c: (0, c[1]) if c[0] >= top else (1, -c[0]))
+        picked, m = [], 0
+        for w, ob, k, sd, pat in cands:
+            if m >= args.guided:
+                break
+            if all(np.count_nonzero(pat != q) > 20 for q in picked):
+                emit(f"y{n:02d}_{aid[:3]}sm", "guided_wide", f"Y_{aid}", pat,
+                     dict(anchor=aid, flip_k=k, seed=sd, sm_pick_wm=_r(w), sm_oob=_r(ob)))
+                picked.append(pat)
+                n += 1
+                m += 1
+
+    _save_manifest(manifest, input_dir)
+    cnt = {}
+    for m in manifest:
+        cnt[m["id"][0]] = cnt.get(m["id"][0], 0) + 1
+    print(f"wide 輸入完成 → {input_dir}：W={cnt.get('w', 0)} X={cnt.get('x', 0)} Y={cnt.get('y', 0)} "
+          f"共 {len(manifest)}（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 # ---------------------------------------------------------------- select-occlude（開發機，零 HFSS）
 def occlude_block(p, br: int, bc: int, bs: int = 5, feed=FEED):
     """把第 (br,bc) 個 bs×bs 區塊的金屬清空（feed 像素永遠保留）。回 (新 pattern, 移除像素數)。
@@ -1164,6 +1245,14 @@ def main():
     s.add_argument("--asym", type=int, default=5, help="C 臂每錨點破對稱(2+2)幾個")
     s.add_argument("--six", type=int, default=2, help="C 臂每錨點 6 塊試點幾個")
     s.set_defaults(fn=select_refine3)
+
+    s = sub.add_parser("select-wide", help="R11 wide：冠軍高原半徑測繪(遠距k) + 對稱必要性(不再對稱化) + SM 遠距導引")
+    s.add_argument("--input", default="dedust_wide_input")
+    s.add_argument("--ref2-input", default="dedust_ref2_input")
+    s.add_argument("--sm", default="sm_reanchor3.pth")
+    s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
+    s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
+    s.set_defaults(fn=select_wide)
 
     s = sub.add_parser("select-occlude", help="物理遮蔽掃描：錨點 5×5 區塊逐一清空 → 真空間重要度圖 (R10)")
     s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --ids 的 .pt）")

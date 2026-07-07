@@ -23,12 +23,14 @@
 | occl2 | 37 | c21/a15 各 24 塊遮蔽 | 48 | ✅ 48/48（2026-07-07 收） |
 | tol | 218 | c21/w17/a15 × (erode1+dilate1+邊緣缺陷 k{1,2,4}×6) | 60 ≈3hr | 🔵 |
 | ref3 | 37 | 過夜:A 穩健盲掃48（occl2 低成本區）+B 字典序 SM 導引64（sm_reanchor3,含帶外）+C add_block 組數階梯47（翼對17/上3下1×16/2+2×10/6塊×4;Ricky 指示加大） | 159 ≈8hr | 🔵（2026-07-07 晚發車） |
+| wide | 218 | 過夜（tol 收完接跑;Ricky 提議冠軍擾動探索）:W 遠距對稱擾動64（k48-128,高原半徑）+X 對稱必要性48（不再對稱化）+Y SM 遠距導引48（k48/96） | 160 ≈8hr | 🔵 |
 
 ## 3. 執行紀錄 (Run)
 ```
 # 37:  python -m script.dedust run --input dedust_occl2_input --store dedust_occl2
 # 218: python -m script.dedust run --input dedust_tol_input --store dedust_tol
 # 37(ref3,過夜): python -m script.dedust run --input dedust_ref3_input --store dedust_ref3
+# 218(tol 收尾+wide 過夜,一行): python -m script.dedust run --input dedust_tol_input --store dedust_tol; python -m script.dedust run --input dedust_wide_input --store dedust_wide
 ```
 - 事件: —
 
