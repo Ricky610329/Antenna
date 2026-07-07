@@ -11,6 +11,7 @@
 | **理解系統怎麼運作**（三角色閉迴路、論文機制、模組地圖） | [`architecture.html`](architecture.html) |
 | **改程式碼**（跑測試、golden 維護、加新架構/實驗、資料層、branch 慣例） | [`development.md`](development.md) |
 | **找二值化/梯度的優化方向**（BiScaleNorm 同類方法、STE/tau/Heaviside 投影文獻表） | [`binarization_literature.md`](binarization_literature.md) |
+| **看 R1-R10 研究成果整理**（給報告用的完整敘事＋16 張圖＋PDF） | [`report/progress-r1-r10.md`](report/progress-r1-r10.md)（PDF 同資料夾;重建 `build_pdf.py`） |
 | 授權 | [`Licence IP.md`](Licence%20IP.md) |
 
 ## 建議閱讀順序
