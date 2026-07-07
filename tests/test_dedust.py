@@ -193,6 +193,9 @@ def test_oob_metrics_directions():
     assert m["oob_s11_min"] == -12.0            # 遠帶外 8 點中最負的 S11
     assert m["oob_gain_max"] == 5.0             # 遠帶外最高的 Gain
     assert m["oob_bad"] == 17.0
+    assert m["oob_gain_max_lo"] == 5.0 and m["oob_gain_max_hi"] == 5.0   # 兩側分項
+    assert m["rolloff_lo"] == 0.0               # 帶緣 5.0 − 低側最高 5.0
+    assert 24.0 <= m["oob_gain_argmax"] <= 32.0
 
 
 def test_add_block_new_component_or_none():

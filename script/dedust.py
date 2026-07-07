@@ -199,14 +199,28 @@ def smooth_blob(seed: int, metal_frac: float = 0.5, sigma: float = 2.5, min_size
 def oob_metrics(resp, n_side: int = 4) -> dict:
     """帶外選擇性指標（帶外要與帶內**反向**:S11 貼 0=全反射、Gain 越負=不輻射;Ricky 定義 2026-07-07）。
     遠帶外=兩側各 n_side 點（預設 4=24-25.5/30.5-32GHz,排除緊貼帶緣的過渡點 26.0/30.0）。
-    回 {oob_s11_min(越高越好), oob_gain_max(越低越好), oob_bad(=gain_max−s11_min,綜合惡度越低越好)}。"""
+    判準仍只用 oob_bad（=gain_max−s11_min,綜合惡度越低越好）;其餘為壓帶外戰役的追蹤欄
+    （2026-07-07 加,Ricky:「壓低的也要加更多東西 track」）:
+      分側 _lo/_hi（哪側在漏——低頻裙擺=已知主破口）、rolloff_lo/hi（帶緣→遠帶外的 Gain 落差,
+      越大=滾降越陡）、oob_gain_argmax（最壞 Gain 的頻點 GHz,診斷用）。17 點 24-32GHz 尺專用。"""
     r = np.asarray(resp, dtype=float).reshape(2, -1)
     n = r.shape[1]
-    far = list(range(n_side)) + list(range(n - n_side, n))
+    lo = list(range(n_side))
+    hi = list(range(n - n_side, n))
+    far = lo + hi
     s11_min = float(r[0][far].min())
     gain_max = float(r[1][far].max())
+    freqs = 26.5 + (np.arange(n) - 5) * 0.5
+    edge_lo, edge_hi = float(r[1][5]), float(r[1][11])       # 帶緣 Gain（26.5/29.5）
     return dict(oob_s11_min=round(s11_min, 2), oob_gain_max=round(gain_max, 2),
-                oob_bad=round(gain_max - s11_min, 2))
+                oob_bad=round(gain_max - s11_min, 2),
+                oob_gain_max_lo=round(float(r[1][lo].max()), 2),
+                oob_gain_max_hi=round(float(r[1][hi].max()), 2),
+                oob_s11_min_lo=round(float(r[0][lo].min()), 2),
+                oob_s11_min_hi=round(float(r[0][hi].min()), 2),
+                rolloff_lo=round(edge_lo - float(r[1][lo].max()), 2),
+                rolloff_hi=round(edge_hi - float(r[1][hi].max()), 2),
+                oob_gain_argmax=float(freqs[far][int(np.argmax(r[1][far]))]))
 
 
 # ---------------------------------------------------------------- 小工具
