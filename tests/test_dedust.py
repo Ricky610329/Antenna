@@ -207,3 +207,16 @@ def test_add_block_new_component_or_none():
     assert out is not None and piece_stats(out)["n_comp"] == 2
     assert add_block(base, 19, 8, 1, 4) is None  # 緊貼主件上緣 (gap=1 不足) → 併件風險 → None
     assert add_block(base, 24, 23, 2, 3) is None # 出界 → None
+
+
+def test_add_bridge_connects_components():
+    """add_bridge：懸浮件被 L 形 1px 橋接到饋電主件 → 組件數減一;材料只增不減。"""
+    from script.dedust import add_bridge, piece_stats
+    base = np.zeros((25, 25), bool)
+    base[20:25, 8:17] = True                     # 主件（含 feed）
+    base[5:8, 10:14] = True                      # 懸浮件
+    out = add_bridge(base, comp_rank=1, pair_rank=0)
+    assert out is not None
+    assert piece_stats(out)["n_comp"] == 1
+    assert out.sum() > base.sum()                # 只加金屬
+    assert add_bridge(base, comp_rank=2) is None # 沒有第二個懸浮件

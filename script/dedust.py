@@ -183,6 +183,36 @@ def add_block(p, r: int, c: int, h: int, w: int, gap: int = 1, feed=FEED):
     return p | foot
 
 
+def add_bridge(p, comp_rank: int = 1, pair_rank: int = 0, feed=FEED):
+    """搭橋：把第 comp_rank 大的「非饋電」組件用 L 形 1px 金屬橋接到饋電主件（材料只增不減）。
+    pair_rank 選第 n 近的像素對（0=最短橋）——懸浮件功能性因果測試（probes 批②）。
+    無該組件回 None。決定性（掃描序定序）。"""
+    from scipy.ndimage import label
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    lab, n = label(p, structure=_CROSS)
+    fid = int(lab[feed])
+    sizes = [(int((lab == k).sum()), k) for k in range(1, n + 1) if k != fid]
+    sizes.sort(reverse=True)
+    if comp_rank > len(sizes):
+        return None
+    tid = sizes[comp_rank - 1][1]
+    A = np.argwhere(lab == fid)
+    B = np.argwhere(lab == tid)
+    pairs = sorted(((abs(a[0] - b[0]) + abs(a[1] - b[1]), tuple(a), tuple(b))
+                    for a in A for b in B))
+    if pair_rank >= len(pairs):
+        return None
+    _d, (ar, ac), (br, bc) = pairs[pair_rank]
+    r, c = br, bc
+    while r != ar:                                # 先走列
+        r += 1 if ar > r else -1
+        p[r, c] = True
+    while c != ac:                                # 再走欄
+        c += 1 if ac > c else -1
+        p[r, c] = True
+    return p
+
+
 def smooth_blob(seed: int, metal_frac: float = 0.5, sigma: float = 2.5, min_size: int = 4, feed=FEED):
     """平滑隨機 blob：高斯濾波雜訊取閾值 → 天然整塊、無粉塵（修復＋feed pad 保險）。
     乾淨子空間的廣域覆蓋樣本（R8 C 臂）。決定性（seed）。"""
@@ -911,6 +941,84 @@ def select_wide(args):
           f"共 {len(manifest)}（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+def select_probes(args):
+    """probes＋帶外批（判準預註冊於 scratch「下一批規格」塊,2026-07-07）：
+      N c25 公證 ×6 —— ref3 新王候選（+0.22/+0.34,5 塊翼對）紀錄級鐵則重複驗證
+      P1 全對稱冠軍 ×8 —— symmetrize(12):「中央帶=匹配旋鈕、對稱度=rad/帶外旋鈕」因果測試
+      P2 搭橋 ×6 —— 懸浮件串接主件（材料只增）:「懸浮=功能非缺陷」反向因果（孤島論點壓陣）
+      P3 t07 構造化 ×5 —— 論文圖 4-4 pattern 的對稱化/除塵改造（第二山頭?）
+      P4 底緣精修 ×32 —— 壓帶外機理主臂:只翻底緣（row≥20,左半+中央）1-2px vs 全域邊緣對照"""
+    ref2 = _dir(args.ref2_input)
+    champs = ["c21_sm", "a00_k2", "b11_k2", "c10_sm", "c18_sm", "c17_sm", "a15_k4", "a11_k2"]
+    P = {cid: np.asarray(torch.load(str(ref2.joinpath(f"{cid}.pt")), weights_only=True)).reshape(25, 25) > 0.5
+         for cid in champs}
+    c25 = np.asarray(torch.load(str(_dir(args.ref3_input).joinpath("c25_a15w10_2_22.pt")),
+                                weights_only=True)).reshape(25, 25) > 0.5
+    t07 = np.asarray(torch.load(str(_dir("dedust_r9_input").joinpath("t07_top.pt")),
+                                weights_only=True)).reshape(25, 25) > 0.5
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+
+    for k in range(6):                            # N 公證
+        emit(f"n{k:02d}_c25rep", "notarize", "N_c25", c25, dict(source_id="c25_a15w10_2_22"))
+    for cid in champs:                            # P1 全對稱
+        emit(f"p{cid[:3]}_full", "fullsym", "P1_fullsym", symmetrize(P[cid], 12),
+             dict(anchor=cid, sym="full12"))
+    n = 0                                         # P2 搭橋
+    for src, pat0, ranks in (("c21_sm", P["c21_sm"], ((1, 0), (1, 40))),
+                             ("b11_k2", P["b11_k2"], ((1, 0), (1, 40))),
+                             ("t07_top", t07, ((1, 0), (2, 0)))):
+        for cr, pr in ranks:
+            q = add_bridge(pat0, comp_rank=cr, pair_rank=pr)
+            if q is None:
+                continue
+            emit(f"q{n:02d}_{src[:3]}br", "bridge", "P2_bridge", q,
+                 dict(anchor=src, comp_rank=cr, pair_rank=pr))
+            n += 1
+    variants = [("sym1050", symmetrize(t07, 10)), ("sym12", symmetrize(t07, 12))]
+    dd, _ = strip_small(t07, 4)                   # P3 t07 構造化
+    variants += [("strip4", _ensure_feed_pad(dd)), ("strip_sym1050", symmetrize(dd, 10))]
+    # strip_sym12 與 sym12 重複（全鏡射把除塵差異蓋掉）——check-dup 實抓,刪
+
+    for tag, q in variants:
+        emit(f"t_{tag}", "construct", "P3_t07", q, dict(anchor="t07_top", variant=tag))
+    n, seed = 0, 16000                            # P4 底緣精修 vs 全域邊緣對照
+    for aid in ("c21_sm", "a15_k4"):
+        pat0 = P[aid]
+        em, ed = edge_sets(pat0)
+        half = np.zeros((25, 25), bool)
+        half[:, :13] = True                       # 左半+中央（再對稱化不會蓋掉編輯）
+        lo = (em | ed) & half
+        lo[:20] = False                           # 底緣帶 row>=20
+        gl = (em | ed) & half
+        for zone, mask, ks, seeds in (("edgelo", lo, (1, 2), 5), ("edgeglob", gl, (1, 2), 3)):
+            cand = np.argwhere(mask)
+            for k in ks:
+                for _ in range(seeds):
+                    rng = np.random.default_rng(seed)
+                    q = pat0.copy()
+                    for r, c in cand[rng.choice(len(cand), size=min(k, len(cand)), replace=False)]:
+                        q[r, c] = ~q[r, c]
+                    q[FEED] = True
+                    q = symmetrize(q, 10)
+                    emit(f"e{n:02d}_{aid[:3]}{zone[4:]}k{k}", zone, f"P4_{aid}", q,
+                         dict(anchor=aid, flip_k=k, seed=seed, zone=zone))
+                    n += 1
+                    seed += 1
+
+    _save_manifest(manifest, input_dir)
+    cnt = {}
+    for m in manifest:
+        cnt[m["kind"]] = cnt.get(m["kind"], 0) + 1
+    print(f"probes 輸入完成 → {input_dir}：{cnt} 共 {len(manifest)}"
+          f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
@@ -927,7 +1035,10 @@ def check_dup(args):
                                     ).reshape(-1).__gt__(0.5).tobytes()
                 for m in man if d.joinpath(f"{m['id']}.pt").exists()}
 
-    new = load_folder(args.input)
+    man_kind = {m["id"]: m.get("kind", "") for m in json.load(
+        open(str(DATASET_PATH.joinpath(args.input, "manifest.json")), encoding="utf-8"))}
+    new = {k: v for k, v in load_folder(args.input).items()
+           if man_kind.get(k) not in ("repeat", "notarize")}     # 蓄意重複(公證)不算違規
     seen, bad = {}, 0
     for k, v in new.items():
         if v in seen:
@@ -1306,6 +1417,12 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-probes", help="probes＋帶外批：c25公證+全對稱冠軍+搭橋+t07構造化+底緣精修")
+    s.add_argument("--input", default="dedust_probes_input")
+    s.add_argument("--ref2-input", default="dedust_ref2_input")
+    s.add_argument("--ref3-input", default="dedust_ref3_input")
+    s.set_defaults(fn=select_probes)
 
     s = sub.add_parser("check-dup", help="發車前查重：批內 + 對歷史輸入夾交叉（exit 1=有重複）")
     s.add_argument("--input", required=True)

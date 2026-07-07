@@ -16,7 +16,10 @@
 ### Round 11 — 冠軍公差穩健化 × 規則普適性（🔵 **running**,2026-07-07）→ [round-11](../docs/log/round-11-robustness.md)
 - occl2 @37 ✅ 48/48（規則普適性過關:底排承重跨家族 ρ+0.53~0.72,低成本區/rad 旋鈕重現）。
 - tol @218 ✅ 60/60（整面蝕刻全滅;局部缺陷存活=margin 函數:c21 10/18 穩健王/a15 2/18/w17 1/18）。
-- ref3 @37 過夜 🔵（159 筆:A 穩健盲掃 48+B 字典序 SM 導引 64+C 組數階梯 47（多尺寸掃位含 6 塊試點,Ricky 指示加大））。
+- ref3 @37 ✅ 159/159（**三標過 27 筆;新王候選 c25 +0.22/+0.34=5 塊翼對,組數階梯大成功**;
+  SM 帶外排序 ρ+0.21 偏弱）。
+- probes @37 🔵（56 筆 ≈2.8hr:c25 公證 6+全對稱冠軍 8+搭橋 6+t07 構造化 4+底緣精修 32）;
+  重啟:`run --input dedust_probes_input --store dedust_probes`。
 - wide @218 過夜 🔵（160 筆,Ricky 提議:W 遠距 k48-128 高原半徑 64+X 對稱必要性（不再對稱化）48+Y SM 遠距導引 48）。
 - 重啟指令：37 `run --input dedust_ref3_input --store dedust_ref3`;218 `run --input dedust_tol_input --store dedust_tol; run --input dedust_wide_input --store dedust_wide`（分號串接,tol 收完自動接 wide）。
 
@@ -47,11 +50,7 @@
 ---
 
 ## 🔜 候選 / 待排
-- **🔜 已排定下一批:probes＋帶外批（~55 筆 ≈3hr,Ricky 確認「兩邊壓下去」進下一批）**——
-  ①全對稱冠軍×8（對稱度=rad/帶外旋鈕?）②搭橋測試×8（懸浮件功能性,孤島論點壓陣）
-  ③圖4-4/t07 構造化×6（第二山頭?）④**底緣精修×~30（壓帶外機理主臂:只翻主件底緣 1-2px,
-  判準=雙側 oob_bad↓ 且硬約束不破;若今晚 B/Y 臂證明 SM 帶外排序有訊號則加 SM 預篩）**;
-  判準寫死於 scratch;觸發=ref3/wide 收檔任一機空;需新算子 add_bridge＋底緣 edge_sets 生成。
+- ~~probes＋帶外批~~ ✅ 已發車（上方 🔵;c25 公證臂併入;SM 帶外訊號弱=P4 未上預篩）。
 - **[使用者] 組數階梯探索（3→5→7 塊）**：多塊=多共振器=選擇性潛力;ref3 先掛 add_block 先導臂
   （承重圖低成本區放鏡射塊對）,有訊號升 R12 系統對比。詳見 scratch 2026-07-07 塊。（**[使用者] = 你提的**；看 benchmark + Round 2 結果再決定優先序）
 - ~~[R7] R7.5 乾淨前緣重驗~~ → **併入 Round 8 A 臂**（見上方 🔜 R8 區塊/[round-08](../docs/log/round-08-clean-mapping.md)）。
