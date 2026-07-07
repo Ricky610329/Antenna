@@ -193,3 +193,14 @@ def test_oob_metrics_directions():
     assert m["oob_s11_min"] == -12.0            # 遠帶外 8 點中最負的 S11
     assert m["oob_gain_max"] == 5.0             # 遠帶外最高的 Gain
     assert m["oob_bad"] == 17.0
+
+
+def test_add_block_new_component_or_none():
+    """add_block：留 gap=獨立新件（組數+1）;貼太近會併件→回 None;出界→None。"""
+    from script.dedust import add_block, piece_stats
+    base = np.zeros((25, 25), bool)
+    base[20:25, 8:17] = True                     # 下方主件（含 feed (24,12)）
+    out = add_block(base, 2, 3, 3, 3)            # 遠處 3×3 → 新件
+    assert out is not None and piece_stats(out)["n_comp"] == 2
+    assert add_block(base, 19, 8, 1, 4) is None  # 緊貼主件上緣 (gap=1 不足) → 併件風險 → None
+    assert add_block(base, 24, 23, 2, 3) is None # 出界 → None

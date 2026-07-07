@@ -166,6 +166,23 @@ def symmetrize(p, half: int, min_size: int = 4, feed=FEED):
     return _ensure_feed_pad(p, min_size, feed=feed)
 
 
+def add_block(p, r: int, c: int, h: int, w: int, gap: int = 1, feed=FEED):
+    """加塊：在 (r,c) 蓋 h×w 金屬矩形成為**獨立新組件**——與既有金屬保持 ≥gap 圈空隙
+    （否則 4-連通併件、組數不變）;出界或放不下回 None 讓呼叫端跳過。純幾何、決定性。
+    組數階梯探索用（Ricky 2026-07-07:冠軍全 3 塊 → 試 4/5 塊;4=上3下1 或 2+2 皆可）。
+    對稱放法由呼叫端組合:外側帶（c+w-1 ≤ 9）蓋完再 symmetrize(10) 得鏡射對（+2 件）;
+    中央帶跨 col 12 對稱蓋（c=12-(w-1)//2, w 奇數）得單件（+1 件）。h·w ≥ 4 才過可製造。"""
+    from scipy.ndimage import binary_dilation
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    if r < 0 or c < 0 or r + h > 25 or c + w > 25:
+        return None
+    foot = np.zeros((25, 25), bool)
+    foot[r:r + h, c:c + w] = True
+    if (binary_dilation(foot, structure=_CROSS, iterations=gap) & p).any():
+        return None
+    return p | foot
+
+
 def smooth_blob(seed: int, metal_frac: float = 0.5, sigma: float = 2.5, min_size: int = 4, feed=FEED):
     """平滑隨機 blob：高斯濾波雜訊取閾值 → 天然整塊、無粉塵（修復＋feed pad 保險）。
     乾淨子空間的廣域覆蓋樣本（R8 C 臂）。決定性（seed）。"""
