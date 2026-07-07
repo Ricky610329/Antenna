@@ -683,7 +683,8 @@ def select_refine3(args):
     字典序目標（decisions 2026-07-07）:①硬約束（三標;穩健=局部缺陷存活,tol 實測整面蝕刻無解）
     → ②帶內 min-margin↑ → ③帶外惡度 oob_bad↓（加分,永不換帶內）。
       A 穩健盲掃 —— occl2 低成本區塊內翻（LOW_BLOCKS 左半代表,鏡射自動補右）+ 再對稱化
-      B SM 導引（sm_reanchor3）—— 兩層排序:預測達標者按 oob_bad 升冪,未達標按預測 wm 降冪
+      B SM 導引（sm_reanchor3）—— 兩層排序:預測頂帶（max−0.36=作戰區誤差內）按 oob_bad 升冪,
+        其餘按預測 wm 降冪（頂帶內排 wm=排雜訊,排 oob 才有資訊）
       C add_block 組數階梯 —— 翼對(5塊)/頂中央單塊(4塊=上3下1)/破對稱 2+2（Ricky 2026-07-07 定)
     全決定性;判準先於發車寫死於 round-11。"""
     ref2 = _dir(args.ref2_input)
@@ -732,7 +733,8 @@ def select_refine3(args):
                 ob = oob_metrics(pred.detach().cpu().numpy())["oob_bad"]
                 cands.append((float(w), ob, k, gseed, pat))
                 gseed += 1
-        cands.sort(key=lambda c: (0, c[1]) if c[0] >= 0 else (1, -c[0]))
+        top = max(c[0] for c in cands) - 0.36                 # 頂帶=SM 作戰區誤差內（0.36dB,R10 量化）
+        cands.sort(key=lambda c: (0, c[1]) if c[0] >= top else (1, -c[0]))
         picked, m = [], 0
         for w, ob, k, sd, pat in cands:
             if m >= args.guided:
