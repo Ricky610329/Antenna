@@ -15,7 +15,7 @@
 
 ### Round 11 — 冠軍公差穩健化 × 規則普適性（🔵 **running**,2026-07-07）→ [round-11](../docs/log/round-11-robustness.md)
 - occl2 @37 ✅ 48/48（規則普適性過關:底排承重跨家族 ρ+0.53~0.72,低成本區/rad 旋鈕重現）;tol @218 收尾中。
-- ref3 @37 過夜 🔵（123 筆:A 穩健盲掃+B 字典序 SM 導引（帶外進排序）+C add_block 組數階梯先導）。
+- ref3 @37 過夜 🔵（159 筆:A 穩健盲掃 48+B 字典序 SM 導引 64+C 組數階梯 47（多尺寸掃位含 6 塊試點,Ricky 指示加大））。
 - 重啟指令：37 `run --input dedust_ref3_input --store dedust_ref3`;218 `run --input dedust_tol_input --store dedust_tol`。
 
 ### ~~Round 10 — 精修 × 物理歸因~~（✅ **2026-07-07 收檔,八冠軍 certified**）→ [round-10](../docs/log/round-10-refine-attribution.md)｜報告 [round-10-report](../docs/log/round-10-report.md)｜名鑑 [champions](../docs/champions.md)

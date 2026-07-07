@@ -767,16 +767,46 @@ def select_refine3(args):
         idx = np.linspace(0, len(cands) - 1, k).round().astype(int)
         return [cands[i] for i in idx]
 
+    def scan_multi(pat0, sizes, cols_of, want_comp, mirror):
+        """多尺寸掃位串接＋按 pattern bytes 去重（不同尺寸可能落同一格局）。"""
+        outs, seen = [], set()
+        for h, w in sizes:
+            for r, c, q in scan_positions(pat0, h, w, cols_of(w), want_comp, mirror):
+                key = q.tobytes()
+                if key not in seen:
+                    seen.add(key)
+                    outs.append((r, c, h, w, q))
+        return outs
+
     n = 0
+    SIZES = ((2, 2), (2, 3), (3, 3), (2, 4))
     for aid, pat0 in anchors.items():
-        for (topo, tag, h, w, cols, comp, mirror, k) in (
-                ("5=3+wing_pair", "w", 3, 3, range(0, 7), 5, True, args.blocks_per),
-                ("4=3+top_center", "m", 3, 3, (11,), 4, False, 3),
-                ("4=asym", "x", 3, 3, range(0, 23), 4, False, 2)):
-            for r, c, q in spaced(scan_positions(pat0, h, w, cols, comp, mirror), k):
-                emit(f"c{n:02d}_{aid[:3]}{tag}{r}_{c}", "addblock", f"C_{aid}", q,
-                     dict(anchor=aid, topo=topo, block_at=[r, c, h, w]))
-                n += 1
+        picks = []
+        picks += [("5=3+wing_pair", t) for t in spaced(
+            scan_multi(pat0, SIZES, lambda w: range(0, 10 - w), 5, True), args.wing)]
+        picks += [("4=3+top_center", t) for t in spaced(
+            scan_multi(pat0, SIZES, lambda w: (12 - (w - 1) // 2,), 4, False), args.center)]
+        picks += [("4=asym", t) for t in spaced(
+            scan_multi(pat0, SIZES, lambda w: range(0, 26 - w), 4, False), args.asym)]
+        for topo, (r, c, h, w, q) in picks:
+            tag = {"5=3+wing_pair": "w", "4=3+top_center": "m", "4=asym": "x"}[topo]
+            emit(f"c{n:02d}_{aid[:3]}{tag}{r}_{c}_{h}{w}", "addblock", f"C_{aid}", q,
+                 dict(anchor=aid, topo=topo, block_at=[r, c, h, w]))
+            n += 1
+        # 6 塊試點:先蓋中央塊(4塊) → 再放翼對(6塊),各錨點取前 2 個可行組合
+        got = 0
+        for _rc, _cc, hh, ww, q4 in scan_multi(pat0, ((3, 3), (2, 3)), lambda w: (12 - (w - 1) // 2,), 4, False):
+            if got >= args.six:
+                break
+            hits = scan_multi(q4, ((2, 2), (3, 3)), lambda w: range(0, 10 - w), 6, True)
+            if not hits:
+                continue
+            r, c, h, w, q6 = hits[0]
+            emit(f"c{n:02d}_{aid[:3]}s{r}_{c}_{h}{w}", "addblock", f"C_{aid}", q6,
+                 dict(anchor=aid, topo="6=3+center+pair", block_at=[r, c, h, w],
+                      center_at=[_rc, _cc, hh, ww]))
+            n += 1
+            got += 1
 
     _save_manifest(manifest, input_dir)
     cnt = {}
@@ -1129,7 +1159,10 @@ def main():
     s.add_argument("--sm", default="sm_reanchor3.pth", help="B 臂導引權重 (DATASET_PATH 下)")
     s.add_argument("--seeds", type=int, default=12, help="A 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=32, help="B 臂每錨點取幾個")
-    s.add_argument("--blocks-per", type=int, default=4, help="C 臂每錨點翼對放幾個")
+    s.add_argument("--wing", type=int, default=10, help="C 臂每錨點翼對(5塊)幾個")
+    s.add_argument("--center", type=int, default=8, help="C 臂每錨點頂中央(4塊)幾個")
+    s.add_argument("--asym", type=int, default=5, help="C 臂每錨點破對稱(2+2)幾個")
+    s.add_argument("--six", type=int, default=2, help="C 臂每錨點 6 塊試點幾個")
     s.set_defaults(fn=select_refine3)
 
     s = sub.add_parser("select-occlude", help="物理遮蔽掃描：錨點 5×5 區塊逐一清空 → 真空間重要度圖 (R10)")
