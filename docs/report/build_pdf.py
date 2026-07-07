@@ -7,13 +7,15 @@
 """
 import os
 import subprocess
+import sys
 
 import markdown
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MD = os.path.join(HERE, "progress-r1-r10.md")
-HTML = os.path.join(HERE, "progress-r1-r10.html")
-PDF = os.path.join(HERE, "progress-r1-r10.pdf")
+STEM = sys.argv[1] if len(sys.argv) > 1 else "progress-r1-r10"   # 檔名（不含副檔）,預設 R1-R10 主報告
+MD = os.path.join(HERE, f"{STEM}.md")
+HTML = os.path.join(HERE, f"{STEM}.html")
+PDF = os.path.join(HERE, f"{STEM}.pdf")
 EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 
 CSS = """
@@ -46,7 +48,7 @@ def main():
     body = markdown.markdown(text, extensions=["tables", "fenced_code"])
     # 流式排版:不強制章起新頁(避免孤兒頁/半空頁);h2 靠 page-break-after:avoid 黏住後文
     html = ("<!DOCTYPE html><html lang='zh-Hant'><head><meta charset='utf-8'>"
-            f"<title>R1-R10 研究成果報告</title><style>{CSS}</style></head>"
+            f"<title></title><style>{CSS}</style></head>"
             f"<body>{body}</body></html>")
     open(HTML, "w", encoding="utf-8").write(html)
     if os.path.exists(PDF):
