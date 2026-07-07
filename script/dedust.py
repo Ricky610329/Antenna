@@ -678,6 +678,112 @@ def select_refine2(args):
           f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+def select_refine3(args):
+    """R11 ref3（過夜主力）——穩健化精修 × 帶外選擇性 × 組數階梯,錨點 c21/a15（certified）。
+    字典序目標（decisions 2026-07-07）:①硬約束（三標;穩健=局部缺陷存活,tol 實測整面蝕刻無解）
+    → ②帶內 min-margin↑ → ③帶外惡度 oob_bad↓（加分,永不換帶內）。
+      A 穩健盲掃 —— occl2 低成本區塊內翻（LOW_BLOCKS 左半代表,鏡射自動補右）+ 再對稱化
+      B SM 導引（sm_reanchor3）—— 兩層排序:預測達標者按 oob_bad 升冪,未達標按預測 wm 降冪
+      C add_block 組數階梯 —— 翼對(5塊)/頂中央單塊(4塊=上3下1)/破對稱 2+2（Ricky 2026-07-07 定)
+    全決定性;判準先於發車寫死於 round-11。"""
+    ref2 = _dir(args.ref2_input)
+    anchors = {}
+    for aid in ("c21_sm", "a15_k4"):
+        anchors[aid] = np.asarray(torch.load(str(ref2.joinpath(f"{aid}.pt")), weights_only=True)).reshape(25, 25) > 0.5
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+
+    # A 穩健盲掃:occl2 低成本區（頂部;左半代表塊,對稱化自動補鏡射側）
+    LOW_BLOCKS = ((0, 1), (0, 2), (1, 1))
+    n, seed = 0, 8000
+    for aid, pat0 in anchors.items():
+        for k in (2, 4):
+            for _ in range(args.seeds):
+                emit(f"a{n:02d}_{aid[:3]}k{k}", "robust", f"A_{aid}",
+                     symmetrize(perturb_blocks(pat0, k, seed, LOW_BLOCKS), 10),
+                     dict(anchor=aid, flip_k=k, seed=seed, blocks=list(map(list, LOW_BLOCKS))))
+                n += 1
+                seed += 1
+
+    # B SM 導引（字典序:預測達標 → oob_bad 升冪;未達標 → 預測 wm 降冪）
+    cfg = load_config(DEFAULT_CFG)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    n_pts = sum(cfg.targets[labels[0]]["width"])
+    from antenna.zoo import SURROGATES
+    cache = os.path.join(REPO, "tmp", "dedust")
+    os.makedirs(cache, exist_ok=True)
+    sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+    sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
+    sm.model.eval()
+    n = 0
+    for aid, pat0 in anchors.items():
+        cands, gseed = [], 9000
+        for k in (4, 8, 16, 32):
+            for _ in range(200):
+                pat = symmetrize(perturb_repair(pat0, k, seed=gseed), 10)
+                with torch.no_grad():
+                    pred = sm.model(torch.tensor(pat, dtype=torch.float32).flatten())
+                w, _per = worst_margin(pred, labels, cfg.targets)
+                ob = oob_metrics(pred.detach().cpu().numpy())["oob_bad"]
+                cands.append((float(w), ob, k, gseed, pat))
+                gseed += 1
+        cands.sort(key=lambda c: (0, c[1]) if c[0] >= 0 else (1, -c[0]))
+        picked, m = [], 0
+        for w, ob, k, sd, pat in cands:
+            if m >= args.guided:
+                break
+            if all(np.count_nonzero(pat != q) > 12 for q in picked):
+                emit(f"b{n:02d}_{aid[:3]}sm", "guided", f"B_{aid}", pat,
+                     dict(anchor=aid, flip_k=k, seed=sd, sm_pick_wm=_r(w), sm_oob=_r(ob)))
+                picked.append(pat)
+                n += 1
+                m += 1
+
+    # C add_block 組數階梯:翼對(+2件=5塊)/頂中央(+1件=4塊 上3下1)/破對稱 2+2
+    def scan_positions(pat0, h, w, cols, want_comp, mirror):
+        """row-major 掃全部可放位（決定性）;回 (r,c,拓撲驗證後的 pattern) 清單。"""
+        outs = []
+        for r in range(0, 26 - h):
+            for c in cols:
+                q = add_block(pat0, r, c, h, w)
+                if q is None:
+                    continue
+                qq = symmetrize(q, 10) if mirror else q
+                if piece_stats(qq)["n_comp"] == want_comp:
+                    outs.append((r, c, qq))
+        return outs
+
+    def spaced(cands, k):
+        """從掃位結果均勻抽 k 個（頭尾覆蓋,決定性）。"""
+        if len(cands) <= k:
+            return cands
+        idx = np.linspace(0, len(cands) - 1, k).round().astype(int)
+        return [cands[i] for i in idx]
+
+    n = 0
+    for aid, pat0 in anchors.items():
+        for (topo, tag, h, w, cols, comp, mirror, k) in (
+                ("5=3+wing_pair", "w", 3, 3, range(0, 7), 5, True, args.blocks_per),
+                ("4=3+top_center", "m", 3, 3, (11,), 4, False, 3),
+                ("4=asym", "x", 3, 3, range(0, 23), 4, False, 2)):
+            for r, c, q in spaced(scan_positions(pat0, h, w, cols, comp, mirror), k):
+                emit(f"c{n:02d}_{aid[:3]}{tag}{r}_{c}", "addblock", f"C_{aid}", q,
+                     dict(anchor=aid, topo=topo, block_at=[r, c, h, w]))
+                n += 1
+
+    _save_manifest(manifest, input_dir)
+    cnt = {}
+    for m in manifest:
+        cnt[m["id"][0]] = cnt.get(m["id"][0], 0) + 1
+    print(f"ref3 輸入完成 → {input_dir}：A={cnt.get('a', 0)} B={cnt.get('b', 0)} C={cnt.get('c', 0)} "
+          f"共 {len(manifest)}（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 # ---------------------------------------------------------------- select-occlude（開發機，零 HFSS）
 def occlude_block(p, br: int, bc: int, bs: int = 5, feed=FEED):
     """把第 (br,bc) 個 bs×bs 區塊的金屬清空（feed 像素永遠保留）。回 (新 pattern, 移除像素數)。
@@ -1014,6 +1120,15 @@ def main():
     s.add_argument("--guided", type=int, default=32, help="C 臂取樣數")
     s.add_argument("--input", default="dedust_ref2_input")
     s.set_defaults(fn=select_refine2)
+
+    s = sub.add_parser("select-refine3", help="R11 ref3：穩健盲掃(occl2低成本區) + 字典序SM導引(含帶外) + add_block 組數階梯")
+    s.add_argument("--input", default="dedust_ref3_input")
+    s.add_argument("--ref2-input", default="dedust_ref2_input", help="錨點來源 (c21_sm/a15_k4)")
+    s.add_argument("--sm", default="sm_reanchor3.pth", help="B 臂導引權重 (DATASET_PATH 下)")
+    s.add_argument("--seeds", type=int, default=12, help="A 臂每 (錨點,k) 幾個 seed")
+    s.add_argument("--guided", type=int, default=32, help="B 臂每錨點取幾個")
+    s.add_argument("--blocks-per", type=int, default=4, help="C 臂每錨點翼對放幾個")
+    s.set_defaults(fn=select_refine3)
 
     s = sub.add_parser("select-occlude", help="物理遮蔽掃描：錨點 5×5 區塊逐一清空 → 真空間重要度圖 (R10)")
     s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --ids 的 .pt）")
