@@ -897,6 +897,45 @@ def select_wide(args):
           f"共 {len(manifest)}（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
+                  "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
+                  "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
+                  "dedust_champ_input", "dedust_ref3_input", "dedust_wide_input")
+
+
+def check_dup(args):
+    """發車前查重（教訓 2026-07-07:ref3 出現 4/319 重複——掃位跨拓撲撞位、k=2 被再對稱化蓋回錨點）。
+    查 --input 批內重複＋與歷史輸入夾（HISTORY_INPUTS 中既存者,排除自身）的交叉重複。exit 1=有重複。"""
+    def load_folder(folder):
+        d = DATASET_PATH.joinpath(folder)
+        man = json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8"))
+        return {m["id"]: np.asarray(torch.load(str(d.joinpath(f"{m['id']}.pt")), weights_only=True)
+                                    ).reshape(-1).__gt__(0.5).tobytes()
+                for m in man if d.joinpath(f"{m['id']}.pt").exists()}
+
+    new = load_folder(args.input)
+    seen, bad = {}, 0
+    for k, v in new.items():
+        if v in seen:
+            print(f"批內重複: {k} == {seen[v]}")
+            bad += 1
+        else:
+            seen[v] = k
+    hist = {}
+    for fol in HISTORY_INPUTS:
+        if fol == args.input or not DATASET_PATH.joinpath(fol, "manifest.json").exists():
+            continue
+        for k, v in load_folder(fol).items():
+            hist.setdefault(v, f"{fol}:{k}")
+    for k, v in new.items():
+        if v in hist:
+            print(f"與歷史重複: {k} == {hist[v]}")
+            bad += 1
+    print(f"{args.input}: {len(new)} 筆,重複 {bad}")
+    if bad:
+        raise SystemExit(1)
+
+
 # ---------------------------------------------------------------- select-occlude（開發機，零 HFSS）
 def occlude_block(p, br: int, bc: int, bs: int = 5, feed=FEED):
     """把第 (br,bc) 個 bs×bs 區塊的金屬清空（feed 像素永遠保留）。回 (新 pattern, 移除像素數)。
@@ -1253,6 +1292,10 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("check-dup", help="發車前查重：批內 + 對歷史輸入夾交叉（exit 1=有重複）")
+    s.add_argument("--input", required=True)
+    s.set_defaults(fn=check_dup)
 
     s = sub.add_parser("select-occlude", help="物理遮蔽掃描：錨點 5×5 區塊逐一清空 → 真空間重要度圖 (R10)")
     s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --ids 的 .pt）")
