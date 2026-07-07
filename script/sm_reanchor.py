@@ -34,8 +34,12 @@ from antenna.zoo import SURROGATES
 import os
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_CFG = os.path.join(REPO, "configs", "single_r5_explore.yaml")
-CLEAN_STORES = ("dedust_r7", "dedust_r8", "dedust_r9")      # repeat 店不收（同 pattern 重複）
-OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（NAS,跨機可用）
+#? 去重「先見先贏」→ certified 店排最前:同 pattern 若在 ref2(37+舊萃取碼,Gain 有已知污染個案,
+#  如 w17 分身 +0.48)也出現,以 verify/公證店的正確響應為準。ref2 其餘未知風險=誠實記錄、靠量取勝。
+CLEAN_STORES = ("dedust_verify_interp", "dedust_verify_disc2", "dedust_w17rep", "dedust_repeat",
+                "dedust_repeat_218", "dedust_r7", "dedust_r8", "dedust_r9",
+                "dedust_ref1", "dedust_occl", "dedust_ref2")
+OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）
 
 _cfg = load_config(DEFAULT_CFG)
 LABELS = PORT_SPECS[_cfg.port]["labels"]
@@ -102,7 +106,7 @@ def train(args):
     ds = ConcatDataset([_tds(tr)] * args.over + [_tds(replay)])
     print(f"訓練集 {len(ds)} 筆（乾淨 ×{args.over} 過採樣 + 重放）,epochs={args.epochs}, batch={args.batch}")
     losses = sm.train_by_datas(ds, epochs=args.epochs, batch_size=args.batch, verbose=True)
-    out = DATASET_PATH.joinpath(OUT_PTH)
+    out = DATASET_PATH.joinpath(args.out)
     sm.save_as(out)
     print(f"loss: 首 {losses[0]:.3f} → 末 {losses[-1]:.3f}；權重 → {out}")
 
@@ -112,7 +116,10 @@ def evaluate(args):
     _, hval = _load_harvest(args.replay, args.val)
     print(f"| 模型 | 乾淨 held-out ({len(ho)}) 中位/p90 | 乾淨 train ({len(tr)}) 中位 | harvest 驗證 ({len(hval)}) 中位 |")
     print("|---|---|---|---|")
-    for tag, pth in (("重錨前 sm_harvest", "sm_harvest.pth"), ("重錨後 sm_reanchor", OUT_PTH)):
+    for tag, pth in (("重錨前 sm_harvest", "sm_harvest.pth"), ("v1 sm_reanchor", "sm_reanchor.pth"),
+                     (f"本版 {args.out}", args.out)):
+        if tag.startswith("本版") and args.out == "sm_reanchor.pth":
+            continue                                   # --out 沒換名 → v1 那列已涵蓋
         f = DATASET_PATH.joinpath(pth)
         if not f.exists():
             print(f"| {tag} | （{pth} 不存在,跳過） | | |")
@@ -135,6 +142,7 @@ def main():
         s.add_argument("--over", type=int, default=8, help="乾淨 train 過採樣倍數 (預設 8 ≈ 與重放等量)")
         s.add_argument("--replay", type=int, default=2000, help="harvest 重放筆數")
         s.add_argument("--val", type=int, default=500, help="harvest 驗證筆數 (不進訓練)")
+        s.add_argument("--out", default="sm_reanchor.pth", help="輸出權重名 (DATASET_PATH 下;v2 建議 sm_reanchor2.pth)")
         s.set_defaults(fn=fn)
     args = ap.parse_args()
     args.fn(args)
