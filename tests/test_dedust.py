@@ -168,3 +168,15 @@ def test_align_curve_regression_shifted_17_points():
     # 情境3: 點數≠17 → 內插 (原本就有的行為)
     dense = np.linspace(24, 32, 33)
     assert len(align_curve(dense, np.linspace(0, 1, 33), exp)) == 17
+
+
+def test_edge_sets_feed_protected():
+    """公差掃描的合法擾動位置：金屬邊緣+貼金屬介質;feed 永遠不可動。"""
+    from script.dedust import edge_sets, FEED
+    p = np.zeros((25, 25), bool)
+    p[10:15, 10:15] = 1
+    p[FEED] = True
+    em, ed = edge_sets(p)
+    assert em[10, 10] and not em[12, 12]        # 角=邊緣,中心=內部
+    assert ed[9, 12] and not ed[0, 0]           # 貼金屬的介質才算
+    assert not em[FEED]                          # feed 保護

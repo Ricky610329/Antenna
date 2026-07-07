@@ -692,6 +692,58 @@ def select_occlude(args):
           f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+# ---------------------------------------------------------------- select-tolerance（開發機，零 HFSS）
+def edge_sets(p, feed=FEED):
+    """回 (金屬邊緣像素, 貼金屬的介質像素) 兩個布林圖——製造公差擾動的合法位置。純函式。"""
+    from scipy.ndimage import binary_erosion, binary_dilation
+    p = np.asarray(p).reshape(25, 25) > 0.5
+    edge_metal = p & ~binary_erosion(p, structure=_CROSS)
+    edge_diel = binary_dilation(p, structure=_CROSS) & ~p
+    edge_metal[feed] = False                     # feed 像素不可動
+    return edge_metal, edge_diel
+
+
+def select_tolerance(args):
+    """製造公差掃描：模擬蝕刻誤差對冠軍 pattern 的影響（**手術式,不修復**——真實製造缺陷不會被演算法修）：
+      erode1 / dilate1 —— 全邊界收/漲 1px（系統性 under/over-etch 的極端）
+      k∈{1,2,4} × seeds —— 邊緣隨機翻 k 像素（局部缺陷;只翻邊緣=物理上合理的誤差位置）
+    判讀：margin 對公差的敏感度＝冠軍的「工程餘裕」;若 erode/dilate 就崩 → 需要更胖的 margin。"""
+    from scipy.ndimage import binary_erosion, binary_dilation
+    src = _dir(args.source_input)
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        pat = pat.copy()
+        pat[FEED] = True
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+
+    seed = 9000
+    for sid in args.ids.split(","):
+        f = src.joinpath(f"{sid}.pt")
+        if not f.exists():
+            raise SystemExit(f"找不到 {f}")
+        p = np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
+        tag = sid.split("_")[0]
+        emit(f"t_{tag}_erode1", "tol", f"T_{sid}", binary_erosion(p, structure=_CROSS), dict(source_id=sid, mode="erode1"))
+        emit(f"t_{tag}_dilate1", "tol", f"T_{sid}", binary_dilation(p, structure=_CROSS), dict(source_id=sid, mode="dilate1"))
+        em, ed = edge_sets(p)
+        pool = np.flatnonzero((em | ed).reshape(-1))
+        for k in (1, 2, 4):
+            for j in range(args.seeds):
+                rng = np.random.default_rng(seed)
+                q = p.copy()
+                flat = rng.choice(pool, size=min(k, len(pool)), replace=False)
+                q.ravel()[flat] = ~q.ravel()[flat]
+                emit(f"t_{tag}_k{k}s{j}", "tol", f"T_{sid}", q, dict(source_id=sid, flip_k=k, seed=seed))
+                seed += 1
+    _save_manifest(manifest, input_dir)
+    print(f"公差掃描輸入完成 → {input_dir}：{len(manifest)} 筆"
+          f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 # ---------------------------------------------------------------- select-pick（開發機，零 HFSS）
 def select_pick(args):
     """從既有輸入夾挑指定 pattern 組成新批次（id 原樣保留）——交叉驗證/重驗用。
@@ -936,6 +988,13 @@ def main():
     s.add_argument("--ids", default="s05_1050,g24_sm", help="錨點 id,逗號分隔")
     s.add_argument("--input", default="dedust_occl_input")
     s.set_defaults(fn=select_occlude)
+
+    s = sub.add_parser("select-tolerance", help="製造公差掃描：erode/dilate + 邊緣隨機缺陷 (冠軍工程餘裕)")
+    s.add_argument("--ids", default="c21_sm,w17_k8", help="冠軍 id,逗號分隔")
+    s.add_argument("--source-input", default="dedust_ref2_input", help="來源輸入夾 (w17 要用 dedust_ref1_input 時逐 id 不支援,放同夾或先 select-pick)")
+    s.add_argument("--seeds", type=int, default=6, help="每 k 的 seed 數 (預設 6 → 每冠軍 2+18=20 筆)")
+    s.add_argument("--input", default="dedust_tol_input")
+    s.set_defaults(fn=select_tolerance)
 
     s = sub.add_parser("select-pick", help="從既有輸入夾挑指定 pattern 組新批次（交叉驗證/重驗用）")
     s.add_argument("--items", required=True, help='"來源夾:id,來源夾:id,..."')
