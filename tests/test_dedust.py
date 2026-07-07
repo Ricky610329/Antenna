@@ -180,3 +180,16 @@ def test_edge_sets_feed_protected():
     assert em[10, 10] and not em[12, 12]        # 角=邊緣,中心=內部
     assert ed[9, 12] and not ed[0, 0]           # 貼金屬的介質才算
     assert not em[FEED]                          # feed 保護
+
+
+def test_oob_metrics_directions():
+    """帶外選擇性：S11 取遠帶外最壞(min,想要高)、Gain 取遠帶外最壞(max,想要低)、惡度=差。"""
+    from script.dedust import oob_metrics
+    r = np.zeros((2, 17))
+    r[0, :] = -12.0; r[0, 0] = -3.0            # 帶外 S11 貼 0 較好 → min 取到 -12(帶外壞點在別處)?
+    r[0, 16] = -12.0
+    r[1, :] = 5.0; r[1, 1] = -8.0
+    m = oob_metrics(r)
+    assert m["oob_s11_min"] == -12.0            # 遠帶外 8 點中最負的 S11
+    assert m["oob_gain_max"] == 5.0             # 遠帶外最高的 Gain
+    assert m["oob_bad"] == 17.0

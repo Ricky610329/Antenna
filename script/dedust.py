@@ -179,6 +179,19 @@ def smooth_blob(seed: int, metal_frac: float = 0.5, sigma: float = 2.5, min_size
     return _ensure_feed_pad(out, min_size, feed=feed)
 
 
+def oob_metrics(resp, n_side: int = 4) -> dict:
+    """帶外選擇性指標（帶外要與帶內**反向**:S11 貼 0=全反射、Gain 越負=不輻射;Ricky 定義 2026-07-07）。
+    遠帶外=兩側各 n_side 點（預設 4=24-25.5/30.5-32GHz,排除緊貼帶緣的過渡點 26.0/30.0）。
+    回 {oob_s11_min(越高越好), oob_gain_max(越低越好), oob_bad(=gain_max−s11_min,綜合惡度越低越好)}。"""
+    r = np.asarray(resp, dtype=float).reshape(2, -1)
+    n = r.shape[1]
+    far = list(range(n_side)) + list(range(n - n_side, n))
+    s11_min = float(r[0][far].min())
+    gain_max = float(r[1][far].max())
+    return dict(oob_s11_min=round(s11_min, 2), oob_gain_max=round(gain_max, 2),
+                oob_bad=round(gain_max - s11_min, 2))
+
+
 # ---------------------------------------------------------------- 小工具
 def _r(x, nd=2):
     return round(float(x), nd)
@@ -889,6 +902,7 @@ def run(args):
                 if cuts:
                     entry["rad"] = cuts
                     entry["rad_margin"] = min(cuts.values())
+            entry.update(oob_metrics(resp))               # 帶外選擇性 (2026-07-07 起隨批入檔)
             store.add(p, resp)                           # (pattern, 真響應) 入庫：可再餵 SM 重錨/Stage-3
             results[m["id"]] = entry
             _flush()
@@ -910,8 +924,8 @@ def report(args):
 
     hfss_orig = {m["id"].split("_", 1)[0]: results.get(m["id"], {}).get("wm")
                  for m in manifest if m["kind"] == "orig"}
-    print("| id | 拔px | 池wm | SM wm | HFSS S11/Gain/worst | Δworst vs 基準 | rad餘裕 | 分 |")
-    print("|---|---|---|---|---|---|---|---|")
+    print("| id | 拔px | 池wm | SM wm | HFSS S11/Gain/worst | Δworst vs 基準 | rad餘裕 | 帶外惡度 | 分 |")
+    print("|---|---|---|---|---|---|---|---|---|")
     for m in manifest:
         r = results.get(m["id"], {})
         sm = f"{m['sm_wm'][2]:+.2f}" if "sm_wm" in m else "—"
@@ -928,7 +942,8 @@ def report(args):
         else:
             wmtx, dv, radm, t = "（待跑）", "—", "—", "—"
         pool = f"{m['pool_wm'][2]:+.2f}" if m.get("pool_wm") else "—"
-        print(f"| {m['id']} | {m.get('removed_px', 0)} | {pool} | {sm} | {wmtx} | {dv} | {radm} | {t} |")
+        ob = f"{r['oob_bad']:.1f}" if "oob_bad" in r else "—"
+        print(f"| {m['id']} | {m.get('removed_px', 0)} | {pool} | {sm} | {wmtx} | {dv} | {radm} | {ob} | {t} |")
 
     done = [r for r in results.values() if "wm" in r]
     if done:
