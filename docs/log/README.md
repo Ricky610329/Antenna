@@ -8,7 +8,7 @@
 > - **現在在跑什麼 / 候選池**:看 `../../configs/ONGOING.md`(live 操作板)。
 > - **跨 session 接手**:先讀本檔(走到第幾 round)+ ONGOING.md(手邊在跑什麼)。
 
-最後更新:2026-07-07
+最後更新:2026-07-08
 
 ## 時間軸
 | Round | 主題 | 狀態 | 結論(一句) | 檔 |
@@ -23,7 +23,8 @@
 | 08 | 乾淨子空間測繪（前緣真值/補洞因果/SM 校準/random 基線,97 筆） | ✅ archived（2026-07-05 收檔,斷電中斷一次） | **A 崩**（整塊型除塵 \|Δ\| 中位 1.17,通則不成立）/**B 敗**（補洞非因果,rad 全負）/**C 半亮**（SM 池內 1.5-2.4dB、池外 4-5.5）/**D 實錘**（uniform 輸池抽樣 ~5dB）＋⚠池值漂移警訊→R9；附圖報告 [round-08-report](round-08-report.md) | [round-08](round-08-clean-mapping.md) |
 | 09 | 池頂端重驗＋乾淨前緣探索（過夜 162 筆,重驗 T/N/M＋探索 E/G/S） | ✅ archived（2026-07-06 全收 162/162＋可重複性公證 41 次） | **oracle 活著（8/18,t00 +0.44）**；漂移家族依賴（頂帶±0.4 可信）；**可製造紀錄 −2.68→−0.29**（s05=F2×10-5-10 對稱,S11✓）；F3=可製造沃土；SM 分布外排序仍有訊號（G 贏 E 2.4dB） | [round-09](round-09-pool-revalidation.md) |
 | 10 | 精修 × 物理歸因（ref1/ref2/遮蔽/重錨/交叉驗證,共 ~350 筆） | ✅ archived（2026-07-07,八冠軍 certified） | **八個三標全過冠軍（best c21 +0.20/+0.12）,可製造紀錄一週 −2.68→+0.20**;對稱化規則過因果關;承重圖;+0.48 假象偵破→量測誠信體系;SM 作戰區 0.36dB;名鑑 [champions](../champions.md) | [round-10](round-10-refine-attribution.md)＋[report](round-10-report.md) |
-| 11 | 冠軍公差穩健化 × 規則普適性（tol/occl2/ref3） | 🔵 running（2026-07-07 雙批發車） | — | [round-11](round-11-robustness.md) |
+| 11 | 冠軍公差穩健化 × 規則普適性（tol/occl2/ref3/probes/wide） | 🔵 running（2026-07-07~08） | ref3 三標過 27;新王候選 c25 +0.22;對稱度=rad旋鈕(因果);搭橋崩=懸浮件功能(反駁孤島抑制);穩健王 c21 | [round-11](round-11-robustness.md) |
+| 12 | 收斂（穩健冠軍）× 破單一化（第二山頭） | ⏸ queued（2026-07-08 備妥,R11 收檔後跑） | — | [round-12](round-12-consolidate-diversify.md) |
 
 ## 離線分析（analysis-NN；不佔 round——**慣例 2026-07-03**：round 編號只給燒 HFSS 的實驗，round-06 為慣例前歸檔、不回改）
 | # | 主題 | 狀態 | 結論(一句) | 檔 |

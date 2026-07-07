@@ -1157,6 +1157,118 @@ def select_tolerance(args):
           f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+def select_crown(args):
+    """R12 收斂線（公證＋穩健化,選要送製造的那一個）——top 三標候選逐一:
+      公證 ×2（同 pattern 重跑,鐵則:紀錄級一律多維驗證,防 +0.48 假象）
+      局部缺陷 k1 ×4（邊緣隨機翻 1px;candidate 間的區分度在此——c21 存活率遠高於其他薄冠軍）
+    判準:公證值一致 且 局部缺陷存活率高 → 穩健冠軍。整面 erode/dilate 不跑（tol 已證全滅,低資訊）。
+    --items "來源夾:id,..."（跨批候選;id 前綴保留供 report 對照）。"""
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        pat = (np.asarray(pat).reshape(25, 25) > 0.5).copy()
+        pat[FEED] = True
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+
+    seed = 20000
+    for item in args.items.split(","):
+        src_name, pid = item.strip().split(":")
+        f = _dir(src_name).joinpath(f"{pid}.pt")
+        if not f.exists():
+            raise SystemExit(f"找不到 {f}")
+        p = np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
+        tag = pid[:6]
+        for r in range(2):
+            emit(f"v{tag}_n{r}", "notarize", f"C_{pid}", p, dict(source_id=pid))
+        em, ed = edge_sets(p)
+        epool = np.flatnonzero((em | ed).reshape(-1))
+        for j in range(4):
+            rng = np.random.default_rng(seed)
+            q = p.copy()
+            q.ravel()[rng.choice(epool, size=min(1, len(epool)), replace=False)] ^= True
+            emit(f"v{tag}_d{j}", "tol", f"C_{pid}", q, dict(source_id=pid, flip_k=1, seed=seed))
+            seed += 1
+    _save_manifest(manifest, input_dir)
+    print(f"crown 輸入完成 → {input_dir}：{len(manifest)} 筆"
+          f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
+def select_family2(args):
+    """R12 破單一化線（找第二座山頭）——非 w17 家族深掘。pool top-300 聚類的最大非 w17 家族
+    （F0/F1/F4,對 w17 Hamming>230）取前 N 成員,除塵 → 對稱化{10,12} → SM 篩選:
+    測「w17/F2 是不是唯一能過三標的家族,還是只是我們沒深挖別家」。R9 每族只試 leader 一個,本批深掘。"""
+    pool = np.load(os.path.join(REPO, "tmp", "pattern_anatomy", "pool.npz"))
+    ok = ~np.isnan(pool["wm"][:, 2])
+    worst = pool["wm"][ok][:, 2]
+    pats = np.unpackbits(pool["packed"][ok], axis=1)[:, :625].reshape(-1, 25, 25).astype(bool)
+    order = np.argsort(worst)[::-1][:300]
+    leaders, members = [], {}
+    for i in order:
+        for L in leaders:
+            if np.count_nonzero(pats[i] != pats[L]) <= 100:
+                members[L].append(i)
+                break
+        else:
+            leaders.append(i)
+            members[i] = [i]
+    fam_idx = [int(x) for x in args.families.split(",")]      # F 編號（leader wm 降冪序）
+
+    cfg = load_config(DEFAULT_CFG)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    n_pts = sum(cfg.targets[labels[0]]["width"])
+    from antenna.zoo import SURROGATES
+    cache = os.path.join(REPO, "tmp", "dedust")
+    os.makedirs(cache, exist_ok=True)
+    sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+    sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
+    sm.model.eval()
+
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest, n = [], 0
+
+    def emit(pid, family, pat, extra):
+        manifest.append(dict(id=pid, kind="family2", family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+
+    for fk in fam_idx:
+        L = leaders[fk]
+        ms = sorted(members[L], key=lambda i: -worst[i])[:args.per_family]
+        cands, gseed = [], 30000 + fk * 1000
+        for mi in ms:
+            base = pats[mi]
+            variants = [("clean", strip_small(base, 4)[0]),
+                        ("sym1050", symmetrize(base, 10)),
+                        ("sym12", symmetrize(base, 12))]
+            for kk in (4, 8):                                 # 鄰域擾動採樣（增家族內多樣性,對稱化保可製造）
+                variants.append((f"nb{kk}", symmetrize(perturb_repair(base, kk, seed=gseed), 10)))
+                gseed += 1
+            for tag, variant in variants:
+                variant = _ensure_feed_pad(variant)
+                if piece_stats(variant)["n_1px"] > 0:
+                    continue                                  # 仍有粉塵→不可製造,跳過
+                with torch.no_grad():
+                    pred = sm.model(torch.tensor(variant, dtype=torch.float32).flatten())
+                w, _ = worst_margin(pred, labels, cfg.targets)
+                cands.append((float(w), fk, tag, float(worst[mi]), variant))
+        cands.sort(key=lambda c: -c[0])                       # SM 預測 wm 降冪
+        picked = []
+        for w, fk2, tag, pv, variant in cands:
+            if len(picked) >= args.top_per_family:
+                break
+            if all(np.count_nonzero(variant != q) > 20 for q in picked):
+                emit(f"f{n:02d}_F{fk2}{tag[:3]}", f"F{fk2}", variant,
+                     dict(pool_family=fk2, variant=tag, pool_wm=pv, sm_pick_wm=_r(w)))
+                picked.append(variant)
+                n += 1
+    _save_manifest(manifest, input_dir)
+    print(f"family2 輸入完成 → {input_dir}：{len(manifest)} 筆"
+          f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 # ---------------------------------------------------------------- select-pick（開發機，零 HFSS）
 def select_pick(args):
     """從既有輸入夾挑指定 pattern 組成新批次（id 原樣保留）——交叉驗證/重驗用。
@@ -1417,6 +1529,19 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-crown", help="R12 收斂：top 候選公證×2 + 穩健 erode/dilate/缺陷 → 選穩健冠軍")
+    s.add_argument("--input", default="dedust_crown_input")
+    s.add_argument("--items", required=True, help="'來源夾:id,...' 跨批 top 三標候選")
+    s.set_defaults(fn=select_crown)
+
+    s = sub.add_parser("select-family2", help="R12 破單一化：非 w17 pool 家族深掘（除塵+對稱化+SM篩）")
+    s.add_argument("--input", default="dedust_family2_input")
+    s.add_argument("--families", default="0,1,4", help="pool 家族編號（wm 降冪序,逗號分隔）")
+    s.add_argument("--sm", default="sm_reanchor3.pth")
+    s.add_argument("--per-family", type=int, default=12, help="每族取前幾個成員")
+    s.add_argument("--top-per-family", type=int, default=14, help="每族 SM 篩後留幾個")
+    s.set_defaults(fn=select_family2)
 
     s = sub.add_parser("select-probes", help="probes＋帶外批：c25公證+全對稱冠軍+搭橋+t07構造化+底緣精修")
     s.add_argument("--input", default="dedust_probes_input")
