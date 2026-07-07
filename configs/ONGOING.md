@@ -5,7 +5,7 @@
 > - config 全集（不刪）→ [README.md](README.md)
 > **流程**：新實驗 → `docs/log/` 開 round 檔 + 這裡加「🔵 進行中」一行指向它；跑完結論寫進 round 檔，這裡只留「✅ 已歸檔」一行指標。
 
-最後更新：2026-07-06（午後）
+最後更新：2026-07-07
 
 **全域變更（2026-06-28）**：① 驗證預算改為**跑到 500 epoch**（約 3 天；原 250）→ Round-2 config `epochs: 500`。② **回滾機制已移除**（對 generator-free + K 候選 + 線上 SM 不合身、且原實作有 off-by-one + 覆蓋最佳檔兩個 bug）→ Round 1 的「不收斂」有它一份；探索改靠 K 候選 + SM 引導 (+ trust)。最佳 pattern 仍安全存 `patterns/`。
 
@@ -13,7 +13,11 @@
 
 ## 🔵 進行中 / 待跑
 
-### Round 10 — 精修 × 物理歸因（🔵 **running**）→ [round-10](../docs/log/round-10-refine-attribution.md)｜報告 [round-10-report](../docs/log/round-10-report.md)
+### Round 11 — 冠軍公差穩健化 × 規則普適性（🔵 **running**,2026-07-07）→ [round-11](../docs/log/round-11-robustness.md)
+- occl2 @37（c21/a15 承重圖,48 筆）＋ tol @218（c21/w17/a15 公差掃描,60 筆）→ 判讀後生 ref3 過夜（穩健化精修,掛 sm_reanchor3）。
+- 重啟指令：37 `run --input dedust_occl2_input --store dedust_occl2`;218 `run --input dedust_tol_input --store dedust_tol`。
+
+### ~~Round 10 — 精修 × 物理歸因~~（✅ **2026-07-07 收檔,八冠軍 certified**）→ [round-10](../docs/log/round-10-refine-attribution.md)｜報告 [round-10-report](../docs/log/round-10-report.md)｜名鑑 [champions](../docs/champions.md)
 - **★ w17 公證後修正（2026-07-06 晚）**：十次公證 8/8 = **wm −0.06**（原單次 +0.48 為 Gain context 個案;S11 +0.83✓ rad +0.26✓）→「三標全過」收回,w17=可製造新紀錄（−0.29→−0.06,差全過 0.06）。**新規則:紀錄級結論一律公證後才算數**;g24 的 rad+0.44 也是單次、待公證。X 臂 4/4 規則、承重圖（已補成 48/48）、SM 重錨 1.41 不變。
 - **進行中（2026-07-06 傍晚發）**：37 → **ref2 過夜**（`run --input dedust_ref2_input --store dedust_ref2`,122 筆 ≈6hr：A w17 密掃 48/B 承重圖知情編輯 36/C 重錨 SM 導引 32/D y05 線 6,目標=帶緣餘裕推高+第二冠軍）；218 → **雜項鏈**（ref1 補 3 error → `dedust_w17rep` w17 十次公證 → occl 補 5 error,共 18 筆 ≈1hr）。
 - **收檔後待辦**：ref2 判讀（任何紀錄級候選→先公證再宣稱;B vs A=承重圖知情是否贏盲掃）；g24 公證＋w17 在 37 補公證（確認 −0.06 跨機）；round-10 §5 結論＋README 索引；規則→generator（R11）。
