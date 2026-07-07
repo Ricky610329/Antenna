@@ -36,9 +36,12 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_CFG = os.path.join(REPO, "configs", "single_r5_explore.yaml")
 #? 去重「先見先贏」→ certified 店排最前:同 pattern 若在 ref2(37+舊萃取碼,Gain 有已知污染個案,
 #  如 w17 分身 +0.48)也出現,以 verify/公證店的正確響應為準。ref2 其餘未知風險=誠實記錄、靠量取勝。
-CLEAN_STORES = ("dedust_verify_interp", "dedust_verify_disc2", "dedust_w17rep", "dedust_repeat",
+CLEAN_STORES = ("dedust_ref2v", "dedust_champ_disc",                       # 修復版重驗 (擋 ref2 毒樣本,如 b20)
+                "dedust_verify_interp", "dedust_verify_disc2", "dedust_w17rep", "dedust_repeat",
                 "dedust_repeat_218", "dedust_r7", "dedust_r8", "dedust_r9",
                 "dedust_ref1", "dedust_occl", "dedust_ref2")
+#? ref2 殘餘風險: 已實錘假象觸發率 ~9% (11 抽 1),無 certified 對照的 ref2 條目可能還有 ~10 筆髒 Gain——
+#  佔訓練集 <0.3%,MSE 回歸可容忍;隨後續重驗逐步被 certified 店覆蓋。store 不存在時自動略過。
 OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）
 
 _cfg = load_config(DEFAULT_CFG)
@@ -53,6 +56,8 @@ def _load_clean():
     """r7+r8+r9 乾淨區真值 → 去重（pattern bytes）→ hash 排序 → 每第 5 筆 held-out。決定性。"""
     seen = {}
     for name in CLEAN_STORES:
+        if not DATASET_PATH.joinpath(name).is_dir():
+            continue                                     # 尚未跑出來的 store (如 champ_disc) 自動略過
         store = SampleStore(DATASET_PATH.joinpath(name), verbose=False)
         for i in range(len(store)):
             x, y = store[i]
