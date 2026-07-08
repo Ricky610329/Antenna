@@ -19,9 +19,8 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 14 — 組件級軸（🔵 **running**,2026-07-08 雙批）→ [round-14](../docs/log/round-14-component-axis.md)
-- ablate@37（10 筆:c21/a15 消融,量各組件貢獻）+ resize@218（13 筆:組件尺寸 ±1±2 響應曲線,resize_component 首戰）。
-- 重啟：37 `run --input dedust_ablate_input --store dedust_ablate`;218 `run --input dedust_resize_input --store dedust_resize`。
+### ~~Round 14 — 組件級軸~~（✅ **2026-07-08 收檔**）→ [round-14](../docs/log/round-14-component-axis.md)
+- 翼=帶內引擎(+6dB)且付 rad/帶外=張力機理;冠軍在尖銳最優;細旋鈕=小塊;像素級退役。兩台現空。
 
 ### ~~Round 12 — 收斂 × 破單一化~~（✅ **2026-07-08 收檔**）→ [round-12](../docs/log/round-12-consolidate-diversify.md)
 - crown 8 候選全公證;新王 c25 +0.22;family2 否決第二山頭=w17 特殊性確立;穩健王 c21。
