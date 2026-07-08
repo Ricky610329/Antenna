@@ -220,3 +220,20 @@ def test_add_bridge_connects_components():
     assert piece_stats(out)["n_comp"] == 1
     assert out.sum() > base.sum()                # 只加金屬
     assert add_bridge(base, comp_rank=2) is None # 沒有第二個懸浮件
+
+
+def test_resize_component_grow_shrink():
+    """resize_component：wings 成組縮放保拓撲;grow 不併件;shrink 出碎片回 None。"""
+    from script.dedust import resize_component, piece_stats
+    base = np.zeros((25, 25), bool)
+    base[18:25, 6:19] = True                     # 主件(含 feed)
+    base[2:6, 3:8] = True                        # 左翼 4×5
+    base[2:6, 17:22] = True                      # 右翼
+    g = resize_component(base, "wings", 1)
+    assert g is not None and piece_stats(g)["n_comp"] == 3
+    assert g.sum() > base.sum()
+    sh = resize_component(base, "wings", -1)
+    assert sh is not None and sh.sum() < base.sum() and piece_stats(sh)["n_comp"] == 3
+    assert resize_component(base, "wings", -2) is None   # 4×5 翼縮 2 圈 → 消失
+    gm = resize_component(base, "main", 1)
+    assert gm is not None and piece_stats(gm)["n_comp"] == 3   # 沒併到翼

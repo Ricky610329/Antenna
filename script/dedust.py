@@ -213,6 +213,38 @@ def add_bridge(p, comp_rank: int = 1, pair_rank: int = 0, feed=FEED):
     return p
 
 
+def resize_component(p, which: str, delta: int, min_size: int = 4, feed=FEED):
+    """組件級大小調整（Ricky「像素級→組件級」方向,R14 起的主力算子）：
+    which="main"（feed 主件）或 "wings"（全部非 feed 組件,成組縮放保對稱）;
+    delta=±N（邊界 grow/shrink N 圈,4-連通形態學）。grow 保持組件獨立（不併件,留 ≥1px 間隙）;
+    shrink 後任一組件 <min_size 或 feed 丟失 → 回 None。純形態學、決定性。"""
+    from scipy.ndimage import label, binary_dilation, binary_erosion
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    lab, n = label(p, structure=_CROSS)
+    fid = int(lab[feed])
+    if fid == 0:
+        return None
+    target = (lab == fid) if which == "main" else (p & (lab != fid))
+    others = p & ~target
+    if delta > 0:
+        for _ in range(delta):
+            grown = binary_dilation(target, structure=_CROSS)
+            forbidden = binary_dilation(others, structure=_CROSS)   # 與其他組件保 ≥1px 間隙
+            target = grown & ~forbidden
+    else:
+        for _ in range(-delta):
+            target = binary_erosion(target, structure=_CROSS)
+    out = others | target
+    out[feed] = True
+    lab2, n2 = label(out, structure=_CROSS)
+    sizes = np.bincount(lab2.ravel())[1:]
+    if n2 == 0 or (sizes < min_size).any():
+        return None                                   # 縮出碎片/消失 → 無效
+    if which == "wings" and n2 != n:
+        return None                                   # 翼消失或併件 → 拓撲變了,不是尺寸調整
+    return out
+
+
 def smooth_blob(seed: int, metal_frac: float = 0.5, sigma: float = 2.5, min_size: int = 4, feed=FEED):
     """平滑隨機 blob：高斯濾波雜訊取閾值 → 天然整塊、無粉塵（修復＋feed pad 保險）。
     乾淨子空間的廣域覆蓋樣本（R8 C 臂）。決定性（seed）。"""
@@ -1055,6 +1087,49 @@ def select_ablate(args):
           f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+def select_resize(args):
+    """R14 組件尺寸掃描——各錨點 × {main,wings} × delta∈{−2,−1,+1,+2}:量「組件尺寸→三標/帶外」
+    的響應曲線（組件級軸的第一批;與消融互補:消融=有無,這裡=大小）。純形態學決定性、歷史排除。"""
+    ref = {"x00_c21k2": "dedust_wide_input", "c21_sm": "dedust_ref2_input",
+           "a15_k4": "dedust_ref2_input", "c25_a15w10_2_22": "dedust_ref3_input"}
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    hist = set()
+    for fol in HISTORY_INPUTS:
+        d = DATASET_PATH.joinpath(fol)
+        if not d.joinpath("manifest.json").exists():
+            continue
+        for m in json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8")):
+            f = d.joinpath(f"{m['id']}.pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+    n_skip = 0
+    for pid, fol in ref.items():
+        p = np.asarray(torch.load(str(_dir(fol).joinpath(f"{pid}.pt")), weights_only=True)).reshape(25, 25) > 0.5
+        tag = pid[:4]
+        for which in ("main", "wings"):
+            for delta in (-2, -1, 1, 2):
+                q = resize_component(p, which, delta)
+                if q is None:
+                    continue
+                if q.tobytes() in hist:
+                    n_skip += 1
+                    continue
+                st = piece_stats(q)
+                if st["n_1px"] > 0:
+                    continue
+                sign = "p" if delta > 0 else "m"
+                manifest.append(dict(id=f"r{tag}_{which[0]}{sign}{abs(delta)}", kind="resize",
+                                     family=f"R_{pid}", removed_px=0, **st,
+                                     source_id=pid, which=which, delta=delta))
+                torch.save(torch.tensor(q, dtype=torch.float32),
+                           str(input_dir.joinpath(f"{manifest[-1]['id']}.pt")))
+    _save_manifest(manifest, input_dir)
+    print(f"resize 輸入完成 → {input_dir}：{len(manifest)} 筆（跳過歷史 {n_skip};"
+          f"估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 def select_blocks(args):
     """R13 組數階梯系統對比——固定錨點,系統掃 3/4/5/6 塊拓撲,答「組數 vs 三標+選擇性」。
     錨點=c21/a15（3 塊冠軍,c25 母體）;每目標組數用 add_block 掃位×尺寸 → 對稱化 → SM 篩 top-K。
@@ -1671,6 +1746,10 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-resize", help="R14 組件尺寸掃描：錨點 × {main,wings} × ±1,±2 圈 (組件級軸)")
+    s.add_argument("--input", default="dedust_resize_input")
+    s.set_defaults(fn=select_resize)
 
     s = sub.add_parser("select-ablate", help="元件消融(Ricky)：full→去各翼→累積,量每組件貢獻 (下主件永保留)")
     s.add_argument("--input", default="dedust_ablate_input")

@@ -19,7 +19,9 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### 兩台現空——下一批候選見下
+### Round 14 — 組件級軸（🔵 **running**,2026-07-08 雙批）→ [round-14](../docs/log/round-14-component-axis.md)
+- ablate@37（10 筆:c21/a15 消融,量各組件貢獻）+ resize@218（13 筆:組件尺寸 ±1±2 響應曲線,resize_component 首戰）。
+- 重啟：37 `run --input dedust_ablate_input --store dedust_ablate`;218 `run --input dedust_resize_input --store dedust_resize`。
 
 ### ~~Round 12 — 收斂 × 破單一化~~（✅ **2026-07-08 收檔**）→ [round-12](../docs/log/round-12-consolidate-diversify.md)
 - crown 8 候選全公證;新王 c25 +0.22;family2 否決第二山頭=w17 特殊性確立;穩健王 c21。
@@ -61,10 +63,7 @@
 ---
 
 ## 🔜 候選 / 待排
-- **🔜 元件消融實驗（Ricky,工具備妥）**：c21/a15 去上翼只留下主件,量各組件貢獻;dedust_ablate_input 10 筆待跑
-  （bakeoff/R13 任一機空即跑）。指令：`run --input dedust_ablate_input --store dedust_ablate`。
-- **[方向] 像素級→組件級（Ricky 2026-07-08）**：消融後探索改測「組件大小調整」不測像素翻;需新算子
-  resize_component;R14+ 算子換代。詳見 scratch 2026-07-08 兩塊。
+- ~~元件消融 / 像素級→組件級~~ ✅ 升 R14（上方 🔵;resize_component 已實作）。
 - ~~probes＋帶外批~~ ✅ 已發車（c25 公證臂併入;SM 帶外訊號弱=P4 未上預篩）。
 - **🔜 R12 已備妥（2026-07-08,R11 收檔後接跑）→ [round-12](../docs/log/round-12-consolidate-diversify.md)**：
   收斂線 crown@37（8 top 候選公證+缺陷穩健,48 筆）＋破單一化線 family2@218（非 w17 家族深掘,45 筆）;
