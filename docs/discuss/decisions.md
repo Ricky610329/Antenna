@@ -122,3 +122,22 @@
   公差=erode/dilate/edge-flip。generator 先驗照此參數化。
 - 證據:R14 ablate（翼合值 6dB/首翼 4.4/次翼 1.5;去翼 rad+1.3、oob−2.8）+ resize（main+1圈 −1、wings+1圈 −19;
   oob 隨 main 增大爆炸）+ R13 組數 + R11 搭橋/occl2——四探針交叉一致。
+
+
+## 敘事轉向：線上學習＝工具，agent + human-in-the-loop 共同優化（2026-07-08,Ricky 定調）
+- **定調（Ricky）**：專案敘事從「單一優化的線上學習」轉為「**線上學習是工具箱一員**,由 agent 與
+  human-in-the-loop 一起進行優化」。這是 2026-07-03「研究定位」條目（線上學習=方法論中的局部開採階段,
+  不是研究本身）的自然延伸——當時把線上學習降為階段,現在把「誰在調度這些階段」補上：agent+人。
+- **文獻背書（docs/reference 三篇,Sengupta 組,詳見 docs/reference/README.md）**：
+  - 2026 SSC Magazine＝錨點：終局架構明畫「Foundational Model + **Human Inputs**」（Fig 1b）、
+    L1–L5 自主性光譜（線上學習=其中一級的一個工具）、"AI is a collaborator, not merely a
+    brute-force optimizer"、AI 現階段強項=「加速探索/揭露 tradeoff/卸載重複優化」（p.66）。
+  - ISSCC 2026 13.2＝方法佐證：「spec→design 一對多,最終取捨由人的主觀因素決定→架構演化可控性
+    是 AI 設計被採用的前提」;designer inputs + hybrid design/optimization 明列在流程圖。
+  - 2024 MWSCAS＝對照組：全自動 push-button 路線,明寫排除人工介入——立靶用。
+- **誠實邊界（novelty 空間）**：文獻的 human-in-the-loop＝事前注入約束/prior＋事後在等價解中挑選;
+  "agent"=RL agent 非 LLM agent。「agent 與 human **迭代迴圈**共同調度工具（池篩/結構規則/HFSS 驗證/
+  線上學習收尾）」文獻沒有現成先例——這正是我們可以claim 的一步,但表述時別把兩種 agent 混同。
+- **對外表述紀律（沿用 07-03）**：說「線上學習的正確角色是局部開採、是工具箱一員」,不說「線上學習沒用」。
+- **回看**：我們實際工作型態早已如此（Ricky 出假設/定調 → Claude 分析/生批次 → HFSS 公證 → 回灌決策）,
+  這次是把它從「工作方式」升級為「研究敘事本身」。

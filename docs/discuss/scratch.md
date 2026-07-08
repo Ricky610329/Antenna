@@ -377,3 +377,16 @@
 - **新算子需求**：`resize_component`(整個組件邊界 grow/shrink N px,或等比縮放)——取代 perturb_repair 的隨機翻。
   設計待做:對稱保持(翼成對縮放)、feed 組件下限(≥min_size)、決定性。
 - **含義**：R14+ 的精修/探索算子換代;generator 先驗也該是「組件尺寸參數」而非像素圖。→ 升 decisions 待消融結果。
+
+## 📚 docs/reference 三篇精讀→行動候選（2026-07-08,Ricky 丟三篇 Sengupta 組文獻）
+- 摘要索引落 `docs/reference/README.md`;敘事定調升 decisions（同日）。這裡只記**可執行候選**：
+- **① 雙保真 warm-start 配方**（2024 MWSCAS + 2026 SSC 皆用）：粗保真大批量預訓 → 高保真小批量 fine-tune。
+  我們的映射=harvest 池(24189/10023)當粗層、dedust 細算資料當細層,SM 離線預訓後才進 per-task loop。
+  與文獻定論 warm-start 同向,這是「怎麼 warm-start」的具體配方。觸發:SM 治本軸開工時優先試。
+- **② GA/演化 baseline**（2024 MWSCAS:離散空間明示適配族群算法）：組件級參數空間維度低(resize/add_block
+  幾個整數參數),GA 成本可控——可當 single_guided 系的對照臂。半熟,等組件級 generator 先驗成形再說。
+- **③ 「canvassing」框架**：dedust 批次線可對外表述為「設計空間 canvassing」(ISSCC 13.2 的 Pareto 掃描,
+  作者稱最被忽略的效益)——零 code,純敘事升級,寫報告/碩論時用。
+- **④ 我們已走在他們呼籲的方向**（2026 SSC 點名領域缺 benchmark/驗證）:worst_margin 同一把尺+雜訊地板
+  公證+random best-of-N 基線=方法論貢獻,可寫進碩論當一節。
+- **不借**:RL 架構搜尋、pixel 級逆設計(全需數十萬樣本離線攤提,我們預算餵不起;R14 已實證 pixel 級退役)。
