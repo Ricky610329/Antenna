@@ -24,7 +24,8 @@
 | 09 | 池頂端重驗＋乾淨前緣探索（過夜 162 筆,重驗 T/N/M＋探索 E/G/S） | ✅ archived（2026-07-06 全收 162/162＋可重複性公證 41 次） | **oracle 活著（8/18,t00 +0.44）**；漂移家族依賴（頂帶±0.4 可信）；**可製造紀錄 −2.68→−0.29**（s05=F2×10-5-10 對稱,S11✓）；F3=可製造沃土；SM 分布外排序仍有訊號（G 贏 E 2.4dB） | [round-09](round-09-pool-revalidation.md) |
 | 10 | 精修 × 物理歸因（ref1/ref2/遮蔽/重錨/交叉驗證,共 ~350 筆） | ✅ archived（2026-07-07,八冠軍 certified） | **八個三標全過冠軍（best c21 +0.20/+0.12）,可製造紀錄一週 −2.68→+0.20**;對稱化規則過因果關;承重圖;+0.48 假象偵破→量測誠信體系;SM 作戰區 0.36dB;名鑑 [champions](../champions.md) | [round-10](round-10-refine-attribution.md)＋[report](round-10-report.md) |
 | 11 | 冠軍公差穩健化 × 規則普適性（tol/occl2/ref3/probes/wide,~535 筆） | ✅ archived（2026-07-08） | 承重圖跨家族(通則);**新王 c25 +0.22(組數階梯)**;對稱度=rad旋鈕(因果);搭橋崩=懸浮件功能(反駁孤島抑制);穩健王 c21 50% | [round-11](round-11-robustness.md) |
-| 12 | 收斂（穩健冠軍）× 破單一化（第二山頭） | 🔵 running（2026-07-08,crown+family2 收） | 8 候選全公證;**第二山頭否決=w17 特殊性確立**;穩健王 c21;製造冠軍待 bake-off | [round-12](round-12-consolidate-diversify.md) |
+| 12 | 收斂（穩健冠軍）× 破單一化（第二山頭） | ✅ archived（2026-07-08） | 8 候選全公證;**第二山頭否決=w17 特殊性確立**;穩健王 c21;製造冠軍待 bake-off | [round-12](round-12-consolidate-diversify.md) |
+| 13 | 組數階梯系統對比（3/4/5/6 塊） | 🔵 running（2026-07-08@218） | — | [round-13](round-13-block-ladder.md) |
 
 ## 離線分析（analysis-NN；不佔 round——**慣例 2026-07-03**：round 編號只給燒 HFSS 的實驗，round-06 為慣例前歸檔、不回改）
 | # | 主題 | 狀態 | 結論(一句) | 檔 |

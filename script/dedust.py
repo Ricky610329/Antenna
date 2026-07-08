@@ -1019,6 +1019,112 @@ def select_probes(args):
           f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+def select_blocks(args):
+    """R13 組數階梯系統對比——固定錨點,系統掃 3/4/5/6 塊拓撲,答「組數 vs 三標+選擇性」。
+    錨點=c21/a15（3 塊冠軍,c25 母體）;每目標組數用 add_block 掃位×尺寸 → 對稱化 → SM 篩 top-K。
+    3 塊=錨點本身（baseline,含缺陷 k1×4 供穩健對照）。判準:各組數 best wm/rad/oob 曲線 + 邊際報酬。"""
+    ref2 = _dir(args.ref2_input)
+    anchors = {aid: np.asarray(torch.load(str(ref2.joinpath(f"{aid}.pt")), weights_only=True)).reshape(25, 25) > 0.5
+               for aid in ("c21_sm", "a15_k4")}
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    hist = set()                                          # 已跑過的 pattern(避免與 ref3 C 臂等重跑)
+    for fol in ("dedust_ref3_input", "dedust_wide_input", "dedust_ref2_input"):
+        d = DATASET_PATH.joinpath(fol)
+        if not d.joinpath("manifest.json").exists():
+            continue
+        for m in json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8")):
+            f = d.joinpath(f"{m['id']}.pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+    skipped = [0]
+
+    def emit(pid, kind, family, pat, extra):
+        if (np.asarray(pat).reshape(-1) > 0.5).tobytes() in hist:
+            skipped[0] += 1
+            return False                                  # 歷史已跑,跳過(分析時從原 store 併)
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+        return True
+
+    cfg = load_config(DEFAULT_CFG)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    n_pts = sum(cfg.targets[labels[0]]["width"])
+    from antenna.zoo import SURROGATES
+    cache = os.path.join(REPO, "tmp", "dedust")
+    os.makedirs(cache, exist_ok=True)
+    sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+    sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
+    sm.model.eval()
+
+    def sm_wm(pat):
+        with torch.no_grad():
+            pred = sm.model(torch.tensor(pat, dtype=torch.float32).flatten())
+        return float(worst_margin(pred, labels, cfg.targets)[0])
+
+    def scan(pat0, want_comp, mirror, cols, sizes):
+        """掃可放位×尺寸 → 拓撲驗證後的互異 pattern 清單（按 pattern bytes 去重）。"""
+        outs, seen = [], set()
+        for h, w in sizes:
+            colrange = cols(w)
+            for r in range(0, 26 - h):
+                for c in colrange:
+                    q = add_block(pat0, r, c, h, w)
+                    if q is None:
+                        continue
+                    qq = symmetrize(q, 10) if mirror else q
+                    if piece_stats(qq)["n_comp"] != want_comp or piece_stats(qq)["n_1px"] > 0:
+                        continue
+                    key = qq.tobytes()
+                    if key not in seen:
+                        seen.add(key)
+                        outs.append(qq)
+        return outs
+
+    SIZES = ((2, 2), (2, 3), (3, 3), (2, 4))
+    n = 0
+    for aid, pat0 in anchors.items():
+        tag = aid[:3]
+        # 3 塊 baseline（錨點本人,穩健對照從 crown/tol 併,這裡只補缺陷新樣本）
+        n += emit(f"g{n:02d}_{tag}_3base", "block3", f"B_{aid}", pat0, dict(anchor=aid, ncomp_target=3))
+        em, ed = edge_sets(pat0)
+        epool = np.flatnonzero((em | ed).reshape(-1))
+        seed = 40000 + hash(aid) % 1000
+        for j in range(4):
+            rng = np.random.default_rng(seed)
+            q = pat0.copy()
+            q.ravel()[rng.choice(epool, size=1, replace=False)] ^= True
+            n += emit(f"g{n:02d}_{tag}_3d{j}", "block3", f"B_{aid}", q, dict(anchor=aid, ncomp_target=3, flip_k=1, seed=seed))
+            seed += 1
+        # 4/5/6 塊：掃位 → SM 篩 top-K
+        for ncomp, mirror, cols in ((4, False, lambda w: (12 - (w - 1) // 2,)),
+                                    (5, True, lambda w: range(0, 10 - w)),
+                                    (6, True, lambda w: range(0, 10 - w))):
+            cands = scan(pat0, ncomp, mirror, cols, SIZES)
+            if ncomp == 6:                                    # 6 塊=先蓋中央塊再翼對
+                base4 = scan(pat0, 4, False, lambda w: (12 - (w - 1) // 2,), ((3, 3), (2, 3)))
+                cands = []
+                for b4 in base4[:3]:
+                    cands += scan(b4, 6, True, lambda w: range(0, 10 - w), ((2, 2), (3, 3)))
+            ranked = sorted(((sm_wm(q), q) for q in cands), key=lambda t: -t[0])
+            got = 0
+            for _w, q in ranked:
+                if got >= args.per_topo:
+                    break
+                if emit(f"g{n:02d}_{tag}_{ncomp}b", "blockN", f"B_{aid}", q,
+                        dict(anchor=aid, ncomp_target=ncomp, sm_pick_wm=_r(_w))):
+                    n += 1
+                    got += 1
+
+    _save_manifest(manifest, input_dir)
+    cnt = {}
+    for m in manifest:
+        cnt[m["ncomp_target"]] = cnt.get(m["ncomp_target"], 0) + 1
+    print(f"blocks 輸入完成 → {input_dir}：組數分布 {cnt} 共 {len(manifest)}"
+          f"（跳過歷史已跑 {skipped[0]} 筆;估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
@@ -1529,6 +1635,13 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-blocks", help="R13 組數階梯系統對比：錨點固定,掃 3/4/5/6 塊拓撲 (add_block+SM篩)")
+    s.add_argument("--input", default="dedust_blocks_input")
+    s.add_argument("--ref2-input", default="dedust_ref2_input")
+    s.add_argument("--sm", default="sm_reanchor3.pth")
+    s.add_argument("--per-topo", type=int, default=12, help="每 (錨點,組數) SM 篩後留幾個")
+    s.set_defaults(fn=select_blocks)
 
     s = sub.add_parser("select-crown", help="R12 收斂：top 候選公證×2 + 穩健 erode/dilate/缺陷 → 選穩健冠軍")
     s.add_argument("--input", default="dedust_crown_input")

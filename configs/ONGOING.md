@@ -13,9 +13,14 @@
 
 ## 🔵 進行中 / 待跑
 
-### Round 12 — 收斂 × 破單一化（🔵 **running**,2026-07-08）→ [round-12](../docs/log/round-12-consolidate-diversify.md)
-- crown ✅ 48/48（8 候選全公證;新王 c25 +0.22;穩健王 c21 50%）;family2 ✅ 42/45（**第二山頭否決,w17 特殊**）。
-- 兩台現空;下一步待定：穩健 bake-off（加冕製造冠軍）或 R13 組數階梯系統對比。
+### Round 13 — 組數階梯系統對比（🔵 **running**,2026-07-08@218）→ [round-13](../docs/log/round-13-block-ladder.md)
+- blocks 批 63 新筆（c21/a15 × 3/4/5/6 塊,歷史排除）+ 併 ref3 C 臂組數數據。重啟:`run --input dedust_blocks_input --store dedust_blocks`。
+
+### 穩健 bake-off（🔵 **running**@37,2026-07-08）
+- c25/c21/x00 × 缺陷 k1×18 → 加冕製造冠軍。重啟:`run --input dedust_bakeoff_input --store dedust_bakeoff`。
+
+### ~~Round 12 — 收斂 × 破單一化~~（✅ **2026-07-08 收檔**）→ [round-12](../docs/log/round-12-consolidate-diversify.md)
+- crown 8 候選全公證;新王 c25 +0.22;family2 否決第二山頭=w17 特殊性確立;穩健王 c21。
 
 ### ~~Round 11 — 冠軍公差穩健化 × 規則普適性~~（✅ **2026-07-08 收檔,五批**）→ [round-11](../docs/log/round-11-robustness.md)
 - occl2 @37 ✅ 48/48（規則普適性過關:底排承重跨家族 ρ+0.53~0.72,低成本區/rad 旋鈕重現）。

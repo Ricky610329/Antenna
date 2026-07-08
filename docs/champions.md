@@ -29,6 +29,14 @@
 下主體＋上雙翼」的構型（w17 家族）。短板一致是 **Gain 帶緣**（wm＝Gain margin，全員如此）；
 S11 餘裕最寬（+0.49~+1.18）、rad phi90 全員 >1.6（phi0 是 rad 的緊邊）。
 
+## 目前最佳：新王 c25 vs 前王 c21
+
+![新王 c25 vs 前王 c21](log/assets/newking.png)
+
+c25＝在 a15（3 塊 rad 王）上用**組數階梯加一對翼**（橘）＋10-5-10 對稱化 → 5 組件、wm +0.20→+0.22、
+**rad +0.12→+0.34**。帶內 S11/Gain 與 c21 幾乎重疊（c25 略勝），rad phi90 邊緣抬高＝多的翼對買到的覆蓋餘裕。
+圖:`script/figs/report_newking.py`（決定性可重跑）。
+
 ## Gallery（橘＝與前任 w17 的差異像素）
 
 ![八冠軍 gallery](log/assets/round-10/champions8_gallery.png)
