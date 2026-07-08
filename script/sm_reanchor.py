@@ -39,7 +39,11 @@ DEFAULT_CFG = os.path.join(REPO, "configs", "single_r5_explore.yaml")
 CLEAN_STORES = ("dedust_ref2v", "dedust_champ_disc",                       # 修復版重驗 (擋 ref2 毒樣本,如 b20)
                 "dedust_verify_interp", "dedust_verify_disc2", "dedust_w17rep", "dedust_repeat",
                 "dedust_repeat_218", "dedust_r7", "dedust_r8", "dedust_r9",
-                "dedust_ref1", "dedust_occl", "dedust_ref2")
+                "dedust_ref1", "dedust_occl", "dedust_ref2",
+                # v4 追加（R11-R14 全批,2026-07-09;certified 優先序維持=前面的店先見先贏）
+                "dedust_ref3", "dedust_probes", "dedust_wide", "dedust_crown", "dedust_family2",
+                "dedust_bakeoff", "dedust_blocks", "dedust_ablate", "dedust_resize",
+                "dedust_occl2", "dedust_tol")
 #? ref2 殘餘風險: 已實錘假象觸發率 ~9% (11 抽 1),無 certified 對照的 ref2 條目可能還有 ~10 筆髒 Gain——
 #  佔訓練集 <0.3%,MSE 回歸可容忍;隨後續重驗逐步被 certified 店覆蓋。store 不存在時自動略過。
 OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）

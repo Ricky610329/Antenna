@@ -1236,6 +1236,193 @@ def select_blocks(args):
           f"（跳過歷史已跑 {skipped[0]} 筆;估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+def select_r15(args):
+    """R15 對照組實驗（push-button vs 工具箱,同一組件空間、同 SM v4、同 HFSS 驗證預算）：
+      G 臂=GA（MWSCAS 式全代理演化,fitness=SM 預測 wm − 0.02·oob,盲搜）→ 互異 top-50 驗證
+      I 臂=知情（區調整圖低成本區放塊+R13 甜蜜尺寸+SM 字典序頂帶按 oob）→ 50 驗證
+      N 臂=空間內均勻隨機 20（隔離「空間 vs 搜尋」的貢獻）
+    組件空間（三臂同一個）:錨點∈{x00,c21,a15,c25} × 0-3 塊(r∈0..22,c∈0..11,h,w∈{2,3}) → symmetrize(10)。
+    判準預註冊於 round-15;歷史已跑自動排除。輸出兩個輸入夾（G+N→37 / I→218）。"""
+    ANCH = {"x00": ("dedust_wide_input", "x00_c21k2"), "c21": ("dedust_ref2_input", "c21_sm"),
+            "a15": ("dedust_ref2_input", "a15_k4"), "c25": ("dedust_ref3_input", "c25_a15w10_2_22")}
+    A = {k: np.asarray(torch.load(str(_dir(f).joinpath(i + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+         for k, (f, i) in ANCH.items()}
+    hist = set()
+    for fol in HISTORY_INPUTS:
+        d = DATASET_PATH.joinpath(fol)
+        if not d.joinpath("manifest.json").exists():
+            continue
+        for m in json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8")):
+            f = d.joinpath(m["id"] + ".pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+
+    cfg = load_config(DEFAULT_CFG)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    from antenna.zoo import SURROGATES
+    cache = os.path.join(REPO, "tmp", "dedust")
+    os.makedirs(cache, exist_ok=True)
+    sm = SURROGATES["mlp"](cache, 625, (len(labels), sum(cfg.targets[labels[0]]["width"])))
+    sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
+    sm.model.eval()
+
+    # 每錨點預掃合法放塊位置（單塊可放;組合衝突於 build 時跳過）——避免隨機基因塌回錨點本體
+    VALID = {}
+    for aid, base in A.items():
+        vs = []
+        for h in (2, 3, 4):
+            for w in (2, 3, 4):
+                for r in range(0, 23 - h + 1):
+                    for c in range(0, 12):
+                        if add_block(base, r, c, h, w) is not None:
+                            vs.append((r, c, h, w))
+        VALID[aid] = vs
+    print("合法放塊位:", {k: len(v) for k, v in VALID.items()})
+
+    def build(gen):
+        aid, idxs = gen
+        p = A[aid]
+        for ix in idxs:
+            r, c, h, w = VALID[aid][ix % len(VALID[aid])]
+            q = add_block(p, r, c, h, w)
+            if q is not None:
+                p = q
+        p = symmetrize(p, 10)
+        return p if piece_stats(p)["n_1px"] == 0 else None
+
+    _score_cache = {}
+
+    def score(pat):
+        key = pat.tobytes()
+        if key not in _score_cache:
+            with torch.no_grad():
+                pred = sm.model(torch.tensor(pat, dtype=torch.float32).flatten())
+            w, _ = worst_margin(pred, labels, cfg.targets)
+            _score_cache[key] = (float(w), oob_metrics(pred.detach().cpu().numpy())["oob_bad"])
+        return _score_cache[key]
+
+    def rnd_genome(rng):
+        aid = list(A)[int(rng.integers(0, 4))]
+        return (aid, [int(rng.integers(0, len(VALID[aid]))) for _ in range(int(rng.integers(0, 4)))])
+
+    # ---- G 臂：GA（決定性,全 SM）----
+    rng = np.random.default_rng(15000)
+    pop = [rnd_genome(rng) for _ in range(args.pop)]
+
+    def fit(gen):
+        pat = build(gen)
+        if pat is None:
+            return -99.0, None
+        w, ob = score(pat)
+        return w - 0.02 * ob, pat
+
+    seen_best = {}
+    for _g in range(args.gens):
+        scored = []
+        for gen in pop:
+            f, pat = fit(gen)
+            scored.append((f, gen))
+            if pat is not None:
+                seen_best[pat.tobytes()] = (f, pat)
+        scored.sort(key=lambda t: -t[0])
+        elite = [gen for _f, gen in scored[:8]]
+        nxt = list(elite)
+        while len(nxt) < args.pop:
+            def pick():
+                cand = [scored[int(rng.integers(0, len(scored)))] for _ in range(3)]
+                return max(cand, key=lambda t: t[0])[1]
+            pa, pb = pick(), pick()
+            blocks = [b for b in (pa[1] + pb[1]) if rng.random() < 0.5][:3]
+            child = (pa[0] if rng.random() < 0.8 else pb[0], blocks)
+            if rng.random() < 0.6:
+                m = rng.random()
+                bl = list(child[1])
+                nv = len(VALID[child[0]])
+                if m < 0.3 and bl:
+                    i = int(rng.integers(0, len(bl)))
+                    bl[i] = int(np.clip(bl[i] + rng.integers(-40, 41), 0, nv - 1))
+                elif m < 0.5 and len(bl) < 3:
+                    bl.append(int(rng.integers(0, nv)))
+                elif m < 0.7 and bl:
+                    bl.pop(int(rng.integers(0, len(bl))))
+                elif m < 0.85:
+                    child = (list(A)[int(rng.integers(0, 4))], bl)
+                child = (child[0], bl)
+            nxt.append(child)
+        pop = nxt
+    ga_rank = sorted(seen_best.values(), key=lambda t: -t[0])
+    print("GA: 演化評估互異 pattern " + str(len(seen_best)) + ", 最高 fitness " + format(ga_rank[0][0], "+.2f"))
+
+    def diverse_pick(ranked_pats, k):
+        out = []
+        for pat in ranked_pats:
+            if len(out) >= k:
+                break
+            if pat.tobytes() in hist:
+                continue
+            if all(np.count_nonzero(pat != q) > 8 for q in out):
+                out.append(pat)
+        return out
+
+    ga_pick = diverse_pick([p for _f, p in ga_rank], args.verify)
+
+    # ---- I 臂：知情 ----
+    cands = []
+    for aid in ("x00", "c25", "c21", "a15"):
+        g2 = np.random.default_rng(16000 + sum(ord(ch) for ch in aid))
+        pool = list(range(len(VALID[aid])))
+        for ix in pool:                                      # 單塊全枚舉（全空間）
+            pat = build((aid, [ix]))
+            if pat is None:
+                continue
+            zone = 1 if VALID[aid][ix][0] <= 8 else 0        # 知識:低成本帶加一層
+            w, ob = score(pat)
+            cands.append((zone, w, ob, pat))
+        for _n in range(400):                                # 雙/三塊抽樣
+            idxs = [pool[int(g2.integers(0, len(pool)))] for _ in range(1 + int(g2.integers(1, 3)))]
+            pat = build((aid, idxs))
+            if pat is None:
+                continue
+            zone = 1 if all(VALID[aid][ix % len(VALID[aid])][0] <= 8 for ix in idxs) else 0
+            w, ob = score(pat)
+            cands.append((zone, w, ob, pat))
+    top = max(c[1] for c in cands) - 0.36
+    # 知識分層:①低成本帶 ②SM 頂帶(按 oob) ③其餘按 wm——字典序
+    cands.sort(key=lambda c: (-c[0], (0, c[2]) if c[1] >= top else (1, -c[1])))
+    inf_pick = diverse_pick([p for _z, _w, _o, p in cands], args.verify)
+    print("知情臂: 候選 " + str(len(cands)) + ", 揀 " + str(len(inf_pick)))
+
+    k = min(len(ga_pick), len(inf_pick))                     # 公平同額（判準要求同驗證預算）
+    ga_pick, inf_pick = ga_pick[:k], inf_pick[:k]
+    print("同額預算: 每臂 " + str(k) + " 筆")
+
+    # ---- N 臂：空間內均勻隨機 ----
+    rng2 = np.random.default_rng(17000)
+    n_pick = []
+    while len(n_pick) < args.random_n:
+        pat = build(rnd_genome(rng2))
+        if pat is None or pat.tobytes() in hist:
+            continue
+        if all(np.count_nonzero(pat != q) > 8 for q in n_pick):
+            n_pick.append(pat)
+
+    for fol, groups in ((args.input_ga, (("g", ga_pick), ("n", n_pick))),
+                        (args.input_inf, (("i", inf_pick),))):
+        d = _dir(fol)
+        d.mkdir(parents=True, exist_ok=True)
+        man = []
+        for tag, picks in groups:
+            for k, pat in enumerate(picks):
+                w, ob = score(pat)
+                pid = tag + format(k, "02d") + "_r15"
+                kindmap = {"g": "ga", "i": "informed", "n": "randspace"}
+                man.append(dict(id=pid, kind=kindmap[tag], family="R15_" + tag.upper(),
+                                removed_px=0, **piece_stats(pat), sm_pick_wm=_r(w), sm_oob=_r(ob)))
+                torch.save(torch.tensor(pat, dtype=torch.float32), str(d.joinpath(pid + ".pt")))
+        _save_manifest(man, d)
+        print("→ " + str(d) + ": " + str(len(man)) + " 筆")
+
+
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
@@ -1746,6 +1933,16 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-r15", help="R15 對照組：GA(push-button) vs 知情 vs 空間隨機,同組件空間+SM v4+同驗證預算")
+    s.add_argument("--input-ga", default="dedust_r15ga_input", help="G+N 臂輸入夾（37）")
+    s.add_argument("--input-inf", default="dedust_r15inf_input", help="I 臂輸入夾（218）")
+    s.add_argument("--sm", default="sm_reanchor4.pth")
+    s.add_argument("--pop", type=int, default=64)
+    s.add_argument("--gens", type=int, default=40)
+    s.add_argument("--verify", type=int, default=30, help="G/I 臂各驗證幾筆(實際=兩臂可湊的同額 min)")
+    s.add_argument("--random-n", type=int, default=20)
+    s.set_defaults(fn=select_r15)
 
     s = sub.add_parser("select-resize", help="R14 組件尺寸掃描：錨點 × {main,wings} × ±1,±2 圈 (組件級軸)")
     s.add_argument("--input", default="dedust_resize_input")

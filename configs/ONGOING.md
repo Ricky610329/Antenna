@@ -19,6 +19,11 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
+### Round 15 — push-button vs 工具箱（🔵 **running**,2026-07-09）→ [round-15](../docs/log/round-15-pushbutton-vs-toolbox.md)
+- G(GA盲搜)30+N(隨機)20 @37;I(知情)30 @218;同組件空間+SM v4;判準預註冊。
+- 重啟：37 `run --input dedust_r15ga_input --store dedust_r15ga`;218 `run --input dedust_r15inf_input --store dedust_r15inf`。
+- SM v4 ✅（sm_reanchor4.pth;held-out 0.61/作戰區 0.44 飽和=非資料受限）。
+
 ### ~~Round 14 — 組件級軸~~（✅ **2026-07-08 收檔**）→ [round-14](../docs/log/round-14-component-axis.md)
 - 翼=帶內引擎(+6dB)且付 rad/帶外=張力機理;冠軍在尖銳最優;細旋鈕=小塊;像素級退役。兩台現空。
 
