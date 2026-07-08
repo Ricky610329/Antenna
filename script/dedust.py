@@ -1019,6 +1019,42 @@ def select_probes(args):
           f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
 
 
+def select_ablate(args):
+    """元件消融實驗（Ricky）——量每個組件的貢獻:full → 去掉各非饋電組件 → 累積組合。
+    feed 組件(下主件)永遠保留(饋電必需);對每個冠軍列出「去掉哪些翼」的所有組合 HFSS 實測。
+    判準:單翼移除 Δwm/Δrad/Δoob → 各翼貢獻量;與搭橋實驗(加材料連接)互補=移除材料的因果。
+    --items "來源夾:id,...";公證 ×2(消融解是新 pattern,鐵則)。"""
+    from scipy.ndimage import label
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        pat = (np.asarray(pat).reshape(25, 25) > 0.5).copy()
+        pat[FEED] = True
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+
+    for item in args.items.split(","):
+        src_name, pid = item.strip().split(":")
+        p = np.asarray(torch.load(str(_dir(src_name).joinpath(f"{pid}.pt")), weights_only=True)).reshape(25, 25) > 0.5
+        lab, n = label(p, structure=_CROSS)
+        fid = int(lab[FEED])
+        wings = sorted((k for k in range(1, n + 1) if k != fid),
+                       key=lambda k: -int((lab == k).sum()))        # 大翼在前,序穩定
+        tag = pid[:4]
+        for r in range(2):                                          # full 公證基準
+            emit(f"z{tag}_full{r}", "notarize", f"AB_{pid}", p, dict(source_id=pid, ablate="none"))
+        emit(f"z{tag}_botonly", "ablate", f"AB_{pid}", (lab == fid),
+             dict(source_id=pid, ablate="wings_removed", kept="feed_only"))
+        for wi, wk in enumerate(wings):                             # 下主件+單翼（各翼獨立貢獻）
+            emit(f"z{tag}_botw{wi}", "ablate", f"AB_{pid}", (lab == fid) | (lab == wk),
+                 dict(source_id=pid, ablate=f"keep_wing{wi}", wing_px=int((lab == wk).sum())))
+    _save_manifest(manifest, input_dir)
+    print(f"消融輸入完成 → {input_dir}：{len(manifest)} 筆"
+          f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr）")
+
+
 def select_blocks(args):
     """R13 組數階梯系統對比——固定錨點,系統掃 3/4/5/6 塊拓撲,答「組數 vs 三標+選擇性」。
     錨點=c21/a15（3 塊冠軍,c25 母體）;每目標組數用 add_block 掃位×尺寸 → 對稱化 → SM 篩 top-K。
@@ -1635,6 +1671,11 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-ablate", help="元件消融(Ricky)：full→去各翼→累積,量每組件貢獻 (下主件永保留)")
+    s.add_argument("--input", default="dedust_ablate_input")
+    s.add_argument("--items", required=True, help="'來源夾:id,...' 要消融的冠軍")
+    s.set_defaults(fn=select_ablate)
 
     s = sub.add_parser("select-blocks", help="R13 組數階梯系統對比：錨點固定,掃 3/4/5/6 塊拓撲 (add_block+SM篩)")
     s.add_argument("--input", default="dedust_blocks_input")

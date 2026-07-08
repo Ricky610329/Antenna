@@ -59,6 +59,10 @@
 ---
 
 ## 🔜 候選 / 待排
+- **🔜 元件消融實驗（Ricky,工具備妥）**：c21/a15 去上翼只留下主件,量各組件貢獻;dedust_ablate_input 10 筆待跑
+  （bakeoff/R13 任一機空即跑）。指令：`run --input dedust_ablate_input --store dedust_ablate`。
+- **[方向] 像素級→組件級（Ricky 2026-07-08）**：消融後探索改測「組件大小調整」不測像素翻;需新算子
+  resize_component;R14+ 算子換代。詳見 scratch 2026-07-08 兩塊。
 - ~~probes＋帶外批~~ ✅ 已發車（c25 公證臂併入;SM 帶外訊號弱=P4 未上預篩）。
 - **🔜 R12 已備妥（2026-07-08,R11 收檔後接跑）→ [round-12](../docs/log/round-12-consolidate-diversify.md)**：
   收斂線 crown@37（8 top 候選公證+缺陷穩健,48 筆）＋破單一化線 family2@218（非 w17 家族深掘,45 筆）;
