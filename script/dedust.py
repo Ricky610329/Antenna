@@ -1181,15 +1181,15 @@ def select_crown(args):
             raise SystemExit(f"找不到 {f}")
         p = np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
         tag = pid[:6]
-        for r in range(2):
+        for r in range(args.notarize):
             emit(f"v{tag}_n{r}", "notarize", f"C_{pid}", p, dict(source_id=pid))
         em, ed = edge_sets(p)
         epool = np.flatnonzero((em | ed).reshape(-1))
-        for j in range(4):
+        for j in range(args.defects):
             rng = np.random.default_rng(seed)
             q = p.copy()
             q.ravel()[rng.choice(epool, size=min(1, len(epool)), replace=False)] ^= True
-            emit(f"v{tag}_d{j}", "tol", f"C_{pid}", q, dict(source_id=pid, flip_k=1, seed=seed))
+            emit(f"v{tag}_d{j:02d}", "tol", f"C_{pid}", q, dict(source_id=pid, flip_k=1, seed=seed))
             seed += 1
     _save_manifest(manifest, input_dir)
     print(f"crown 輸入完成 → {input_dir}：{len(manifest)} 筆"
@@ -1533,6 +1533,8 @@ def main():
     s = sub.add_parser("select-crown", help="R12 收斂：top 候選公證×2 + 穩健 erode/dilate/缺陷 → 選穩健冠軍")
     s.add_argument("--input", default="dedust_crown_input")
     s.add_argument("--items", required=True, help="'來源夾:id,...' 跨批 top 三標候選")
+    s.add_argument("--notarize", type=int, default=2, help="每候選公證重跑次數")
+    s.add_argument("--defects", type=int, default=4, help="每候選局部缺陷 k1 樣本數(bake-off 調高)")
     s.set_defaults(fn=select_crown)
 
     s = sub.add_parser("select-family2", help="R12 破單一化：非 w17 pool 家族深掘（除塵+對稱化+SM篩）")
