@@ -13,11 +13,13 @@
 
 ## 🔵 進行中 / 待跑
 
-### Round 13 — 組數階梯系統對比（🔵 **running**,2026-07-08@218）→ [round-13](../docs/log/round-13-block-ladder.md)
-- blocks 批 63 新筆（c21/a15 × 3/4/5/6 塊,歷史排除）+ 併 ref3 C 臂組數數據。重啟:`run --input dedust_blocks_input --store dedust_blocks`。
+### ~~Round 13 — 組數階梯~~（✅ **2026-07-08 收檔**）→ [round-13](../docs/log/round-13-block-ladder.md)
+- 組數=真設計軸但報酬有取捨:4-5 塊甜蜜點(5 塊買 rad/4 塊買選擇性)、6 塊遞減;margin 天花板僅微升。
 
-### 穩健 bake-off（🔵 **running**@37,2026-07-08）
-- c25/c21/x00 × 缺陷 k1×18 → 加冕製造冠軍。重啟:`run --input dedust_bakeoff_input --store dedust_bakeoff`。
+### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
+- 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
+
+### 兩台現空——下一批候選見下
 
 ### ~~Round 12 — 收斂 × 破單一化~~（✅ **2026-07-08 收檔**）→ [round-12](../docs/log/round-12-consolidate-diversify.md)
 - crown 8 候選全公證;新王 c25 +0.22;family2 否決第二山頭=w17 特殊性確立;穩健王 c21。
