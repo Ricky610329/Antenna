@@ -27,7 +27,8 @@
 | 12 | 收斂（穩健冠軍）× 破單一化（第二山頭） | ✅ archived（2026-07-08） | 8 候選全公證;**第二山頭否決=w17 特殊性確立**;穩健王 c21;製造冠軍待 bake-off | [round-12](round-12-consolidate-diversify.md) |
 | 13 | 組數階梯系統對比（3/4/5/6 塊） | ✅ archived（2026-07-08） | 組數是真設計軸但報酬有取捨:4-5塊甜蜜點(5塊買rad/4塊買選擇性)、6塊遞減;margin天花板僅+0.20→+0.22;製造冠軍 x00(72%穩健) | [round-13](round-13-block-ladder.md) |
 | 14 | 組件級軸：消融（有無）× 尺寸（大小） | ✅ archived（2026-07-08） | **翼=帶內引擎(+6dB,遞減)且付 rad/帶外**=三標張力機理定位;冠軍在尖銳最優(±1圈=懸崖);細旋鈕=小塊非圈;像素級退役 | [round-14](round-14-component-axis.md) |
-| 15 | 對照組實驗：push-button(GA) vs 工具箱(知情) @ 同組件空間+SM v4+同額預算 | 🔵 running（2026-07-09） | （SM v4 先出爐:held-out 0.80→0.61,作戰區飽和 0.44=非資料受限） | [round-15](round-15-pushbutton-vs-toolbox.md) |
+| 15 | 對照組實驗：push-button(GA) vs 工具箱(知情) @ 同組件空間+SM v4+同額預算 | 🔵 running（收尾批 r15v 跑步中） | **GA 勝數量(11 vs 7)/知情勝 best(i02 +0.29 新王候選)/知情≈隨機**;教訓=移除成本圖≠添加收益圖;正確結論=空間即知識載體 | [round-15](round-15-pushbutton-vs-toolbox.md) |
+| 16 | 添加收益圖（治先驗跨算子誤用） | 🔵 running（2026-07-09@218） | — | [round-16](round-16-addition-map.md) |
 
 ## 離線分析（analysis-NN；不佔 round——**慣例 2026-07-03**：round 編號只給燒 HFSS 的實驗，round-06 為慣例前歸檔、不回改）
 | # | 主題 | 狀態 | 結論(一句) | 檔 |

@@ -1423,6 +1423,135 @@ def select_r15(args):
         print("→ " + str(d) + ": " + str(len(man)) + " 筆")
 
 
+def select_r15v(args):
+    """R15 收尾批（37）：新王認證＋rad 救援＋理論模板探針。
+      V 公證/缺陷 —— i02(+0.29 新王候選)×[公證3+缺陷4]、g16×[公證2+缺陷2]、g14×公證2（鐵則）
+      R rad 救援 —— g14(+0.40/rad −0.39,史上最高帶內 margin)加第 4 塊 ×6 位置（試把 rad 拉回 0）
+      T 理論模板 —— 實心矩形貼片（非池衍生種子,局部最佳討論的逃逸探針）h∈{8,10,12}×w∈{13,17} 貼底置中
+    判準:V=公證一致+缺陷存活;R=任一筆 rad≥0 且 wm≥0.2=救援成功;T=任一筆 wm≥−1=新盆地線索。"""
+    W = {"i02_r15": "dedust_r15inf_input", "g16_r15": "dedust_r15ga_input", "g14_r15": "dedust_r15ga_input"}
+    P = {k: np.asarray(torch.load(str(_dir(f).joinpath(k + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+         for k, f in W.items()}
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        pat = (np.asarray(pat).reshape(25, 25) > 0.5).copy()
+        pat[FEED] = True
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(pid + ".pt")))
+
+    seed = 50000
+    for pid, (n_not, n_def) in (("i02_r15", (3, 4)), ("g16_r15", (2, 2)), ("g14_r15", (2, 0))):
+        p = P[pid]
+        for r in range(n_not):
+            emit("v" + pid[:3] + "_n" + str(r), "notarize", "V_" + pid, p, dict(source_id=pid))
+        if n_def:
+            em, ed = edge_sets(p)
+            epool = np.flatnonzero((em | ed).reshape(-1))
+            for j in range(n_def):
+                rng = np.random.default_rng(seed)
+                q = p.copy()
+                q.ravel()[rng.choice(epool, size=1, replace=False)] ^= True
+                emit("v" + pid[:3] + "_d" + str(j), "tol", "V_" + pid, q, dict(source_id=pid, flip_k=1, seed=seed))
+                seed += 1
+
+    # R: g14 rad 救援——掃第 4 塊可放位,均勻取 6
+    g14 = P["g14_r15"]
+    spots = []
+    for h in (2, 3):
+        for w in (2, 3):
+            for r in range(0, 23):
+                for c in range(0, 12):
+                    if add_block(g14, r, c, h, w) is not None:
+                        spots.append((r, c, h, w))
+    idx = np.linspace(0, len(spots) - 1, min(6, len(spots))).round().astype(int)
+    for k in idx:
+        r, c, h, w = spots[int(k)]
+        q = symmetrize(add_block(g14, r, c, h, w), 10)
+        if piece_stats(q)["n_1px"] > 0:
+            continue
+        emit("rg14_" + str(r) + "_" + str(c), "rescue", "R_g14", q, dict(source_id="g14_r15", block_at=[r, c, h, w]))
+
+    # T: 理論模板——實心矩形貼片貼底置中（非池衍生）
+    for h in (8, 10, 12):
+        for w in (13, 17):
+            q = np.zeros((25, 25), bool)
+            c0 = (25 - w) // 2
+            q[25 - h:25, c0:c0 + w] = True
+            emit("t_rect" + str(h) + "x" + str(w), "theory", "T_rect", q, dict(rect=[h, w]))
+    _save_manifest(manifest, input_dir)
+    print("r15v 輸入完成 → " + str(input_dir) + ": " + str(len(manifest)) + " 筆")
+
+
+def select_addmap(args):
+    """R16 機理臂（218）：「添加收益圖」——治 R15 的「移除成本圖≠添加收益圖」教訓。
+      A 單塊全掃 —— x00 全部合法位（2×2）逐一加塊 → 每個位置的 Δwm/Δrad/Δoob 真值圖
+      B 贏家塊歸因 —— g14/i02/g16 的加料組件逐一移除（含鏡射夥伴）→ 各塊貢獻
+    判準:A=位置-收益圖與遮蔽圖的相關性（同/不同=知識遷移邊界的定量答案）;B=贏家是靠哪塊贏的。"""
+    from scipy.ndimage import label as _label
+    x00 = np.asarray(torch.load(str(_dir("dedust_wide_input").joinpath("x00_c21k2.pt")), weights_only=True)).reshape(25, 25) > 0.5
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    hist = set()
+    for fol in HISTORY_INPUTS + ("dedust_r15ga_input", "dedust_r15inf_input"):
+        d = DATASET_PATH.joinpath(fol)
+        if not d.joinpath("manifest.json").exists():
+            continue
+        for m in json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8")):
+            f = d.joinpath(m["id"] + ".pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+
+    def emit(pid, kind, family, pat, extra):
+        pat = (np.asarray(pat).reshape(25, 25) > 0.5).copy()
+        pat[FEED] = True
+        if pat.tobytes() in hist:
+            return False
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(pid + ".pt")))
+        return True
+
+    n = 0
+    for r in range(0, 22):
+        for c in range(0, 12):
+            q = add_block(x00, r, c, 2, 2)
+            if q is None:
+                continue
+            q = symmetrize(q, 10)
+            if piece_stats(q)["n_1px"] > 0:
+                continue
+            if emit("a" + format(n, "02d") + "_x00r" + str(r) + "c" + str(c), "addmap", "A_x00",
+                    q, dict(source_id="x00_c21k2", block_at=[r, c, 2, 2])):
+                n += 1
+
+    ANCH = {"g14_r15": ("dedust_r15ga_input", "x00_c21k2", "dedust_wide_input"),
+            "g16_r15": ("dedust_r15ga_input", "c21_sm", "dedust_ref2_input"),
+            "i02_r15": ("dedust_r15inf_input", "c25_a15w10_2_22", "dedust_ref3_input")}
+    m = 0
+    for pid, (fol, aid, afol) in ANCH.items():
+        p = np.asarray(torch.load(str(_dir(fol).joinpath(pid + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+        base = np.asarray(torch.load(str(_dir(afol).joinpath(aid + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+        diff = p & ~base
+        lab, k = _label(diff, structure=_CROSS)
+        groups = {}
+        for g in range(1, k + 1):                       # 鏡射夥伴併一組（col→24−col）
+            cells = np.argwhere(lab == g)
+            key = tuple(sorted(map(tuple, np.vstack([cells, np.column_stack([cells[:, 0], 24 - cells[:, 1]])]).tolist())))
+            groups.setdefault(key, []).append(g)
+        for gi, gs in enumerate(groups.values()):
+            q = p.copy()
+            for g in gs:
+                q[lab == g] = False
+            if emit("b" + format(m, "02d") + "_" + pid[:3] + "g" + str(gi), "blockablate", "B_" + pid,
+                    q, dict(source_id=pid, group=gi, removed=int(sum((lab == g).sum() for g in gs)))):
+                m += 1
+    _save_manifest(manifest, input_dir)
+    print("addmap 輸入完成 → " + str(input_dir) + ": " + str(len(manifest)) + " 筆")
+
+
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
@@ -1933,6 +2062,14 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-r15v", help="R15 收尾：i02/g16/g14 公證+缺陷 + g14 rad 救援 + 理論模板探針")
+    s.add_argument("--input", default="dedust_r15v_input")
+    s.set_defaults(fn=select_r15v)
+
+    s = sub.add_parser("select-addmap", help="R16 機理：添加收益圖(x00 單塊全掃) + 贏家塊歸因(逐塊移除)")
+    s.add_argument("--input", default="dedust_addmap_input")
+    s.set_defaults(fn=select_addmap)
 
     s = sub.add_parser("select-r15", help="R15 對照組：GA(push-button) vs 知情 vs 空間隨機,同組件空間+SM v4+同驗證預算")
     s.add_argument("--input-ga", default="dedust_r15ga_input", help="G+N 臂輸入夾（37）")
