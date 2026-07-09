@@ -1514,18 +1514,50 @@ def select_addmap(args):
         torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(pid + ".pt")))
         return True
 
+    c25 = np.asarray(torch.load(str(_dir("dedust_ref3_input").joinpath("c25_a15w10_2_22.pt")),
+                                 weights_only=True)).reshape(25, 25) > 0.5
+    ANCHORS_A = {"x00": x00, "c25": c25}
     n = 0
-    for r in range(0, 22):
-        for c in range(0, 12):
-            q = add_block(x00, r, c, 2, 2)
-            if q is None:
-                continue
-            q = symmetrize(q, 10)
-            if piece_stats(q)["n_1px"] > 0:
-                continue
-            if emit("a" + format(n, "02d") + "_x00r" + str(r) + "c" + str(c), "addmap", "A_x00",
-                    q, dict(source_id="x00_c21k2", block_at=[r, c, 2, 2])):
-                n += 1
+    single_ok = {}                                       # (aid,r,c,h) → pattern（供可加性探針配對）
+    for aid, base in ANCHORS_A.items():
+        for h in (2, 3):
+            for r in range(0, 23 - h + 1):
+                for c in range(0, 12):
+                    q = add_block(base, r, c, h, h)
+                    if q is None:
+                        continue
+                    q = symmetrize(q, 10)
+                    if piece_stats(q)["n_1px"] > 0:
+                        continue
+                    single_ok[(aid, r, c, h)] = q
+                    if emit("a" + format(n, "03d") + "_" + aid + "r" + str(r) + "c" + str(c) + "s" + str(h),
+                            "addmap", "A_" + aid, q, dict(source_id=aid, block_at=[r, c, h, h])):
+                        n += 1
+    # C 臂:可加性探針——中帶(rows 4-11)成對放塊,測 Δ(pair) ?= Δa+Δb
+    rngc = np.random.default_rng(60000)
+    mid = [k for k in single_ok if 4 <= k[1] <= 11 and k[3] == 2]
+    m = 0
+    tried = 0
+    while m < 10 and tried < 200:
+        tried += 1
+        ka = mid[int(rngc.integers(0, len(mid)))]
+        kb = mid[int(rngc.integers(0, len(mid)))]
+        if ka[0] != kb[0] or ka == kb:
+            continue
+        aid = ka[0]
+        base = ANCHORS_A[aid]
+        q = add_block(base, ka[1], ka[2], 2, 2)
+        if q is None:
+            continue
+        q = add_block(q, kb[1], kb[2], 2, 2)
+        if q is None:
+            continue
+        q = symmetrize(q, 10)
+        if piece_stats(q)["n_1px"] > 0:
+            continue
+        if emit("c" + format(m, "02d") + "_" + aid + "pair", "addpair", "C_" + aid, q,
+                dict(source_id=aid, block_a=list(ka[1:]), block_b=list(kb[1:]))):
+            m += 1
 
     ANCH = {"g14_r15": ("dedust_r15ga_input", "x00_c21k2", "dedust_wide_input"),
             "g16_r15": ("dedust_r15ga_input", "c21_sm", "dedust_ref2_input"),
