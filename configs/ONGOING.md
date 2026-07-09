@@ -20,9 +20,9 @@
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
 ### Round 15 收尾批 + Round 16（🔵 **running**,2026-07-09）→ [round-15](../docs/log/round-15-pushbutton-vs-toolbox.md)｜[round-16](../docs/log/round-16-addition-map.md)
-- R15 主批 ✅（GA 勝數量/知情勝 best i02 +0.29/知情≈隨機;§4 已記）。
-- r15v @37 🔵（19 筆:i02/g16/g14 公證+缺陷+g14 rad 救援+理論模板 6）;addmap @218 🔵（16 筆:添加收益圖+贏家塊歸因）。
-- 重啟：37 `run --input dedust_r15v_input --store dedust_r15v`;218 `run --input dedust_addmap_input --store dedust_addmap`。
+- R15 ✅ 收檔（含 r15v:**換王 i02 +0.29 公證✓**;g14 +0.40 帶內紀錄;理論模板否證新盆地）。
+- r15v @37 ✅;addmap @218 🔵;r16b @37 🔵（翼修邊+再分配+擴錨,34 筆）。
+- 重啟：37 `run --input dedust_r16b_input --store dedust_r16b`;218 `run --input dedust_addmap_input --store dedust_addmap`。
 - **r16b @37 已備**（r15v 收完接跑,34 筆:翼修邊12+等金屬再分配4+addmap 擴錨18）:
   `run --input dedust_r16b_input --store dedust_r16b`。
 
