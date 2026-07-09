@@ -20,7 +20,7 @@ import statistics as st
 import numpy as np
 import torch
 
-from antenna.utils import config, ROOTDIR
+from antenna.utils import config, ROOTDIR, DATASET_PATH
 config.device = "cpu"
 
 
@@ -132,6 +132,76 @@ def cmd_rad_error(args):
     print(f"  窗內 ±{args.window:.0f}° RMSE 中位={st.median(win):.2f} dB  (對比 floor;越大=凍 trunk 越擬不準)")
 
 
+def cmd_components(args):
+    """組件尺寸分布 vs 三標（Ricky 觀察「N 組塊大小很不平均」的量化;2026-07-09,analysis-02）。
+    掃全部 dedust store 去重真值 → 每 pattern 的組件尺寸統計（n/main/second/minc/cv/metal）
+    對 wm/rad/oob 做 Spearman（全樣本+作戰區）＋三標過 profile。零 HFSS,可重跑。"""
+    import json
+    from scipy.ndimage import label as _label
+    from scipy.stats import spearmanr
+    from script.dedust import _CROSS, oob_metrics
+    from antenna.utils.store import SampleStore
+    stores = [d for d in os.listdir(str(DATASET_PATH))
+              if d.startswith("dedust_") and not d.endswith("_input") and not d.endswith("_src")]
+    data = {}
+    for stname in stores:
+        inp = stname + "_input"
+        if not DATASET_PATH.joinpath(stname, "results.json").exists() or not DATASET_PATH.joinpath(inp).is_dir():
+            continue
+        res = json.load(open(str(DATASET_PATH.joinpath(stname, "results.json")), encoding="utf-8"))
+        smap = {}
+        sto = SampleStore(DATASET_PATH.joinpath(stname), verbose=False)
+        for k in range(len(sto)):
+            x, y = sto[k]
+            smap[(np.asarray(x).reshape(-1) > 0.5).tobytes()] = np.asarray(y).reshape(2, -1)
+        for i, r in res.items():
+            if "wm" not in r:
+                continue
+            f = DATASET_PATH.joinpath(inp, i + ".pt")
+            if not f.exists():
+                continue
+            p = np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
+            key = p.reshape(-1).tobytes()
+            if key in data:
+                continue
+            resp = smap.get(key)
+            ob = oob_metrics(resp)["oob_bad"] if resp is not None else None
+            data[key] = (p, r["wm"][2], r.get("rad_margin"), ob)
+    rows = []
+    for p, wm, rad, ob in data.values():
+        lab, n = _label(p, structure=_CROSS)
+        if n == 0:
+            continue
+        sizes = np.sort(np.bincount(lab.ravel())[1:])[::-1].astype(float)
+        rows.append(dict(n=n, main=sizes[0], main_frac=sizes[0] / sizes.sum(),
+                         second=sizes[1] if n > 1 else 0, minc=sizes[-1],
+                         cv=float(sizes.std() / sizes.mean()) if n > 1 else 0.0,
+                         metal=sizes.sum(), wm=wm, rad=rad, ob=ob))
+    print("樣本: " + str(len(rows)) + " 互異 pattern（現行 HFSS 真值,全 store 去重）")
+
+    def corr(feat, target, subset=None):
+        xs = [r[feat] for r in rows if (subset is None or subset(r)) and r[target] is not None]
+        ys = [r[target] for r in rows if (subset is None or subset(r)) and r[target] is not None]
+        if len(xs) < 20:
+            return "  —"
+        rho, pv = spearmanr(xs, ys)
+        star = "**" if pv < 0.01 else ("*" if pv < 0.05 else "")
+        return format(rho, "+.2f") + star
+
+    feats = ("n", "main", "main_frac", "second", "minc", "cv", "metal")
+    for title, sub2 in (("全樣本", None), ("作戰區(wm≥−3)", lambda r: r["wm"] >= -3)):
+        print("\n== " + title + " Spearman（** p<.01 / * p<.05）==")
+        print("| 特徵 | wm | rad | oob(低=好) |")
+        print("|---|---|---|---|")
+        for f in feats:
+            print("| " + f + " | " + corr(f, "wm", sub2) + " | " + corr(f, "rad", sub2) + " | " + corr(f, "ob", sub2) + " |")
+    tp = [r for r in rows if r["wm"] >= 0 and (r["rad"] if r["rad"] is not None else -9) >= 0]
+    print("\n三標過 " + str(len(tp)) + " 筆 profile（含缺陷變體,非全可製造）:")
+    for f in ("n", "main", "second", "minc", "metal"):
+        v = [r[f] for r in tp]
+        print("  " + f + ": 中位 " + format(np.median(v), ".0f") + " 範圍 [" + format(min(v), ".0f") + ", " + format(max(v), ".0f") + "]")
+
+
 def main():
     ap = argparse.ArgumentParser(description="可重現診斷分析（純讀 NAS）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -141,6 +211,8 @@ def main():
     rr.add_argument("--k", nargs="+", type=int, default=[4, 6, 8, 10, 12, 16, 24]); rr.add_argument("--window", type=float, default=45)
     rr.set_defaults(func=cmd_rad_repr)
     re = sub.add_parser("rad-error"); re.add_argument("--run", required=True); re.add_argument("--n", type=int, default=30)
+    cp = sub.add_parser("components", help="組件尺寸分布 vs 三標 (全 store 真值,零 HFSS;analysis-02)")
+    cp.set_defaults(func=cmd_components)
     re.add_argument("--window", type=float, default=45); re.set_defaults(func=cmd_rad_error)
     args = ap.parse_args()
     args.func(args)
