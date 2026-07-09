@@ -1738,6 +1738,8 @@ def select_r17(args):
          for k, (f, i) in SRC.items()}
     hist = set()
     for fol in HISTORY_INPUTS:
+        if fol == args.input:                     # 自身夾跳過,否則重跑 select 全被查重擋空
+            continue
         d = DATASET_PATH.joinpath(fol)
         if not d.joinpath("manifest.json").exists():
             continue
@@ -1826,6 +1828,86 @@ def select_r17(args):
     print("r17 輸入完成 → %s: %s 共 %d 筆" % (input_dir, kinds, len(manifest)))
 
 
+def select_r18(args):
+    """R18 帶外戰役第二批（218;歷史挖礦 analysis-03 三方向落地,判準寫死於 round-18 檔）:
+      V 舊藏公證 —— 挖礦出土的未公證高價值:b20_k4(+0.32/oob 9.56,margin+帶外雙挑戰)×3、
+        vpc18_f_d2(+0.27/9.53)×2、vb43_a1_d0(oob 9.03,帶外紀錄挑戰)×2、x20_a00k8(9.15)×1
+      S 低側家族構造化救援 —— 池頂低側家族(lo −1.7~−4.5=唯一破 w17 低側地板的族群,
+        但 rad/製造全滅)×{sym10,sym12,純除塵}——s05 劇本換目標:救「低側乾淨」而非 wm;
+        生還者(wm≥−1 且 lo≤+1)進 R19 rad 救援,全滅=低側優勢係粉塵諧振本體(R7 定律帶外版)
+      T 手術擴錨 —— c18_sm(三標內帶外紀錄 9.04,跨店雙響應公證)上 vslot/colcut/hslot"""
+    SRC = {"b20": ("dedust_ref2_input", "b20_k4"), "vpd2": ("dedust_crown_input", "vpc18_f_d2"),
+           "vb43": ("dedust_crown_input", "vb43_a1_d0"), "x20": ("dedust_wide_input", "x20_a00k8"),
+           "c18": ("dedust_ref2_input", "c18_sm")}
+    LOW = {pid: "dedust_r9_input" for pid in ("t09_top", "t03_top", "n09_near", "t08_top",
+                                              "t07_top", "t04_top", "t11_top", "t14_top")}
+    LOW["p00_orig"] = "dedust_r7_input"
+    P = {k: np.asarray(torch.load(str(_dir(f).joinpath(i + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+         for k, (f, i) in SRC.items()}
+    hist = set()
+    for fol in HISTORY_INPUTS:
+        if fol == args.input:
+            continue
+        d = DATASET_PATH.joinpath(fol)
+        if not d.joinpath("manifest.json").exists():
+            continue
+        for m in json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8")):
+            f = d.joinpath(m["id"] + ".pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra, dedup=True):
+        if pat is None:
+            return False
+        pat = (np.asarray(pat).reshape(25, 25) > 0.5).copy()
+        pat[FEED] = True
+        if dedup and pat.tobytes() in hist:
+            return False
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(pid + ".pt")))
+        return True
+
+    # V: 舊藏公證（蓄意重複,不查重）
+    for pid, reps in (("b20", 3), ("vpd2", 2), ("vb43", 2), ("x20", 1)):
+        for j in range(reps):
+            emit("n_%s_%d" % (pid, j), "notarize", "N_%s" % pid, P[pid],
+                 dict(source_id=SRC[pid][1]), dedup=False)
+
+    # S: 低側家族構造化救援（sym10/sym12=對稱化+除塵;dust=純除塵不對稱——隔離「對稱」與「除塵」）
+    for pid, fol in LOW.items():
+        p = np.asarray(torch.load(str(_dir(fol).joinpath(pid + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+        short = pid.split("_")[0]
+        dq, _ = strip_small(p.copy(), 4)
+        for tag, q in (("s10", symmetrize(p, 10)), ("s12", symmetrize(p, 12)),
+                       ("dust", _ensure_feed_pad(dq, 4))):
+            if piece_stats(q)["n_1px"] == 0:
+                emit("lw_%s_%s" % (short, tag), "lowrescue", "S_%s" % short, q,
+                     dict(source_id=pid, variant=tag))
+
+    # T: 手術擴錨到帶外紀錄保持者 c18_sm（對稱性先驗證,非不變則走純除塵收尾）
+    c18 = P["c18"]
+    sym_ok = bool((symmetrize(c18.copy(), 10) == c18).all())
+    for op, ks in (("vslot", (2, 5, 8)), ("colcut", (1, 2)), ("hslot", (3,))):
+        for k in ks:
+            q = _surgery(c18, op, k)
+            if sym_ok:
+                q = symmetrize(q, 10)
+            else:
+                q, _ = strip_small(q, 4)
+                q = _ensure_feed_pad(q, 4)
+            if piece_stats(q)["n_1px"] == 0:
+                emit("%s_c18_k%d" % (op, k), "surgery", "T_%s_c18" % op, q,
+                     dict(source_id="c18_sm", op=op, k=k))
+    _save_manifest(manifest, input_dir)
+    kinds = {}
+    for m in manifest:
+        kinds[m["kind"]] = kinds.get(m["kind"], 0) + 1
+    print("r18 輸入完成 → %s: %s 共 %d 筆 (c18 對稱不變=%s)" % (input_dir, kinds, len(manifest), sym_ok))
+
+
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
@@ -1834,7 +1916,7 @@ HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedu
                   "dedust_family2_input", "dedust_blocks_input", "dedust_probes_input",
                   "dedust_ablate_input", "dedust_resize_input", "dedust_r15ga_input",
                   "dedust_r15inf_input", "dedust_r15v_input", "dedust_addmap_input",
-                  "dedust_r16b_input")
+                  "dedust_r16b_input", "dedust_r17_input", "dedust_r18_input")
 
 
 def check_dup(args):
@@ -2341,6 +2423,10 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-r18", help="R18 帶外二批：舊藏公證(b20/vpd2/vb43/x20)+低側家族構造化救援+c18手術")
+    s.add_argument("--input", default="dedust_r18_input")
+    s.set_defaults(fn=select_r18)
 
     s = sub.add_parser("select-r17", help="R17 帶外主目標：低側陷波條+翼幾何decouple+高側疊塊+公證a024")
     s.add_argument("--input", default="dedust_r17_input")

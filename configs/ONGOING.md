@@ -19,20 +19,25 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 17 — 帶外主目標:低側裙擺攻堅（🟡 **待機器**,2026-07-09 備好）→ [round-17](../docs/log/round-17-oob-primary.md)
-- Ricky 定調「帶外當主目標探索幾輪」。拆側破案:低側=全家族地板 ≈9.2(高側旋鈕=中央塊已在手)。
-- **45 筆**已過查重:帶外手術 20(vslot/colcut 主攻低側+hslot/rowcut/mslot 對照)+雙中央塊 10+
-  **分組/尺寸 7**(Ricky「只加 2×2 不算測分組」→等金屬 12px 三態+尺寸階梯)+公證 8
-  (**a024 +0.35 挑戰 i02**;**i12 舊藏 +0.32/rad−0.01/oob 9.95 卡線重測**)。
+### Round 17 — 帶外主目標:低側裙擺攻堅（🔵 **running @37**,2026-07-09 發車）→ [round-17](../docs/log/round-17-oob-primary.md)
+- Ricky 定調「帶外當主目標探索幾輪」。拆側破案:低側=w17 家族地板 ≈9.2(高側旋鈕=中央塊已在手)。
+- **45 筆**:帶外手術 20(vslot/colcut 主攻低側)+雙中央塊 10+分組/尺寸 7(Ricky「只加 2×2 不算測分組」)
+  +公證 8(**a024 +0.35 挑戰 i02**;**i12 舊藏 +0.32/rad−0.01/oob 9.95 卡線重測**)。
 - ⚠ x00′ 發現:addmap/r16b 的 x00 條目被 symmetrize 蓋掉翻轉 (4,18)=實為 x00′(round-16 §3 caveat);R17 起已修。
-- 發車（37 的 r16b 收完即接,或 218 先空就 218 跑）:`python -m script.dedust run --input dedust_r17_input --store dedust_r17`。
+- 重啟:37 `run --input dedust_r17_input --store dedust_r17`。
+- 判準修訂(判讀前,analysis-03):三標內帶外紀錄=c18_sm **9.04**(跨店雙響應公證),非 10.14。
 
-### Round 15 收尾批 + Round 16（🔵 **running**,2026-07-09）→ [round-15](../docs/log/round-15-pushbutton-vs-toolbox.md)｜[round-16](../docs/log/round-16-addition-map.md)
-- R15 ✅ 收檔（含 r15v:**換王 i02 +0.29 公證✓**;g14 +0.40 帶內紀錄;理論模板否證新盆地）。
-- r15v @37 ✅;addmap @218 🔵;r16b @37 🔵（翼修邊+再分配+擴錨,34 筆）。
-- 重啟：37 `run --input dedust_r16b_input --store dedust_r16b`;218 `run --input dedust_addmap_input --store dedust_addmap`。
-- **r16b @37 已備**（r15v 收完接跑,34 筆:翼修邊12+等金屬再分配4+addmap 擴錨18）:
-  `run --input dedust_r16b_input --store dedust_r16b`。
+### Round 18 — 帶外二批:挖礦落地（🟡 **待發 @218**,2026-07-09 備好）→ [round-18](../docs/log/round-18-oob-mining.md)｜[analysis-03](../docs/log/analysis-03-history-mining.md)
+- 歷史挖礦(1286 真值,帶外拆側全量回算)三方向落地,**34 筆已過查重**:
+  - V 公證 8:**b20_k4 +0.32/oob 9.56(margin+帶外雙挑戰)**、vpc18_f_d2(+0.27/9.53)、vb43(9.03)、x20(9.15)。
+  - S 低側家族救援 20:池頂族(lo −4.5;t09 oob 7.2 破 9 地板;rad/製造全滅)×{sym10,sym12,除塵}——悲觀先驗已註記。
+  - T c18_sm(帶外紀錄 9.04)手術 6。
+- **發車:218 `python -m script.dedust run --input dedust_r18_input --store dedust_r18`**。
+
+### ~~Round 15 收尾批 + Round 16~~（✅ **2026-07-09 全收檔**）→ [round-15](../docs/log/round-15-pushbutton-vs-toolbox.md)｜[round-16](../docs/log/round-16-addition-map.md)
+- R15:換王 i02 +0.29 公證✓;push-button 至少打平=「空間即知識載體」。
+- R16:單塊近全負(空間飽和),唯一正點 r9c11×3×3;配對正交互(貪心不夠);g14 rad 兇手=g3;
+  翼修邊/再分配雙雙因果否決。
 
 ### ~~Round 14 — 組件級軸~~（✅ **2026-07-08 收檔**）→ [round-14](../docs/log/round-14-component-axis.md)
 - 翼=帶內引擎(+6dB)且付 rad/帶外=張力機理;冠軍在尖銳最優;細旋鈕=小塊;像素級退役。兩台現空。
