@@ -29,6 +29,11 @@
 # 218: python -m script.dedust run --input dedust_addmap_input --store dedust_addmap
 # (37 並行: python -m script.dedust run --input dedust_r15v_input --store dedust_r15v — R15 收尾,記於 round-15 §3)
 ```
+- ⚠ **x00′ caveat（2026-07-09 R17 備批時發現）**：x00 是破對稱錨點（翻轉含 (4,18)），而 addmap
+  A 臂/x00 與 r16b 的 wx00/mx00 生成時走了 `symmetrize(10)` 收尾——會把 (4,18) 蓋回 c21 態，
+  **實際錨點＝少一個翻轉的 x00′**。批內相對比較（位置間 Δ、劑量曲線形狀）仍有效；但對 x00 本人
+  （wm +0.19/oob 10.74）的絕對 Δ 有 1px baseline 偏移，判讀時勿直接相減。R17 起 x00 條目改走
+  除塵不對稱化（`_finish`），身分保全已驗證。
 
 ## 4. 分析 (Analyze)
 （待收檔;A 臂分析=本批+R13 blocks+R15 全部單塊數據合併成完整添加收益圖）

@@ -1732,7 +1732,8 @@ def select_r17(args):
            "i02": ("dedust_r15inf_input", "i02_r15"),
            "a024": ("dedust_addmap_input", "a024_c25r9c11s3"),
            "a017": ("dedust_addmap_input", "a017_c25r8c11s2"),
-           "a022": ("dedust_addmap_input", "a022_c25r7c11s3")}
+           "a022": ("dedust_addmap_input", "a022_c25r7c11s3"),
+           "i12": ("dedust_r15inf_input", "i12_r15")}
     P = {k: np.asarray(torch.load(str(_dir(f).joinpath(i + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
          for k, (f, i) in SRC.items()}
     hist = set()
@@ -1759,14 +1760,24 @@ def select_r17(args):
         torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(pid + ".pt")))
         return True
 
-    # T: 帶外手術掃描（切削改諧振;symmetrize 收尾=除塵+保對稱）
+    def _finish(q, aid):
+        """收尾除塵。⚠ x00 破對稱錨點（翻轉含 (4,18),symmetrize 會蓋回=毀身分——addmap/r16b
+        的 x00 條目已中招,見 round-16 caveat）→ 只除塵不對稱化;其餘錨點走 symmetrize 慣例。"""
+        if q is None:
+            return None
+        if aid == "x00":
+            q, _ = strip_small((np.asarray(q).reshape(25, 25) > 0.5).copy(), 4)
+            return _ensure_feed_pad(q, 4)
+        return symmetrize(q, 10)
+
+    # T: 帶外手術掃描（切削改諧振;_finish 收尾=除塵+保對稱/保 x00 身分）
     SURG = (("c25", "hslot", (1, 3, 5, 7)), ("x00", "hslot", (2, 5)),
             ("c25", "vslot", (2, 5, 8)), ("x00", "vslot", (3, 7)),
             ("c25", "rowcut", (1, 2, 3)), ("c25", "colcut", (1, 2)), ("x00", "colcut", (1,)),
             ("c25", "mslot", (15, 17, 19)))
     for aid, op, ks in SURG:
         for k in ks:
-            q = symmetrize(_surgery(P[aid], op, k), 10)
+            q = _finish(_surgery(P[aid], op, k), aid)
             if piece_stats(q)["n_1px"] == 0:
                 emit("%s_%s_k%d" % (op, aid, k), "surgery", "T_%s_%s" % (op, aid), q,
                      dict(source_id=aid, op=op, k=k))
@@ -1777,15 +1788,34 @@ def select_r17(args):
         for r1, s1, r2, s2 in PAIRS:
             q1 = add_block(P[aid], r1, 11, s1, 3)
             q2 = add_block(q1, r2, 11, s2, 3) if q1 is not None else None
-            if q2 is None:
-                continue
-            q = symmetrize(q2, 10)
-            if piece_stats(q)["n_1px"] == 0:
+            q = _finish(q2, aid)
+            if q is not None and piece_stats(q)["n_1px"] == 0:
                 emit("cc_%s_r%ds%d_r%ds%d" % (aid, r1, s1, r2, s2), "dblcentral", "C_%s" % aid, q,
                      dict(source_id=aid, blocks=[[r1, 11, s1, 3], [r2, 11, s2, 3]]))
 
+    # S: 分組/尺寸軸（Ricky 2026-07-09「只加 2×2 不算測分組」）——中央帶等金屬 12px 三態＋尺寸階梯。
+    #    等金屬分組: 1×(4×3)＝階梯 h4 兼任 vs 2×(2×3) vs 3×(2×2)——同金屬同區域,唯一變因=分組
+    GROUPS = (("g2", ((5, 11, 2, 3), (9, 11, 2, 3))),
+              ("g3", ((5, 11, 2, 2), (8, 11, 2, 2), (11, 12, 2, 2))))
+    for aid in ("c25", "x00"):
+        for gid, blocks in GROUPS:
+            q = P[aid]
+            for r, c, h, w in blocks:
+                q = add_block(q, r, c, h, w) if q is not None else None
+            q = _finish(q, aid)
+            if q is not None and piece_stats(q)["n_1px"] == 0:
+                emit("eq12_%s_%s" % (aid, gid), "grouping", "S_%s" % aid, q,
+                     dict(source_id=aid, blocks=[list(b) for b in blocks]))
+        # 尺寸階梯（同欄 col11 w3,下緣對齊 row11;3×3@r9=addmap a024 已測當第一階）
+        for r, h in ((8, 4), (7, 5)):
+            q = _finish(add_block(P[aid], r, 11, h, 3), aid)
+            if q is not None and piece_stats(q)["n_1px"] == 0:
+                emit("lad_%s_h%dr%d" % (aid, h, r), "sizeladder", "S_%s" % aid, q,
+                     dict(source_id=aid, block_at=[r, 11, h, 3]))
+
     # N: 公證（鐵則:紀錄級一律重複量測;蓄意重複,不查重）
-    for pid, reps in (("a024", 3), ("a017", 2), ("a022", 1)):
+    # i12=c25 雙中央塊(R15 知情臂舊藏):wm +0.32/rad −0.01/oob 9.95——rad 卡線,翻正=三帶皆冠
+    for pid, reps in (("a024", 3), ("a017", 2), ("a022", 1), ("i12", 2)):
         for j in range(reps):
             emit("n_%s_%d" % (pid, j), "notarize", "N_%s" % pid, P[pid],
                  dict(source_id=SRC[pid][1]), dedup=False)

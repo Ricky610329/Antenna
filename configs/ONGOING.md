@@ -21,7 +21,10 @@
 
 ### Round 17 — 帶外主目標:低側裙擺攻堅（🟡 **待機器**,2026-07-09 備好）→ [round-17](../docs/log/round-17-oob-primary.md)
 - Ricky 定調「帶外當主目標探索幾輪」。拆側破案:低側=全家族地板 ≈9.2(高側旋鈕=中央塊已在手)。
-- 35 筆已過查重:帶外手術 20(vslot/colcut 主攻低側+hslot/rowcut/mslot 對照)+雙中央塊 9+公證 6(**a024 +0.35 挑戰 i02**)。
+- **45 筆**已過查重:帶外手術 20(vslot/colcut 主攻低側+hslot/rowcut/mslot 對照)+雙中央塊 10+
+  **分組/尺寸 7**(Ricky「只加 2×2 不算測分組」→等金屬 12px 三態+尺寸階梯)+公證 8
+  (**a024 +0.35 挑戰 i02**;**i12 舊藏 +0.32/rad−0.01/oob 9.95 卡線重測**)。
+- ⚠ x00′ 發現:addmap/r16b 的 x00 條目被 symmetrize 蓋掉翻轉 (4,18)=實為 x00′(round-16 §3 caveat);R17 起已修。
 - 發車（37 的 r16b 收完即接,或 218 先空就 218 跑）:`python -m script.dedust run --input dedust_r17_input --store dedust_r17`。
 
 ### Round 15 收尾批 + Round 16（🔵 **running**,2026-07-09）→ [round-15](../docs/log/round-15-pushbutton-vs-toolbox.md)｜[round-16](../docs/log/round-16-addition-map.md)
