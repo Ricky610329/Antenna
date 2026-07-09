@@ -34,12 +34,13 @@ def resp_of(store, pat):
 
 
 def main():
-    c25 = loadp("dedust_ref3_input", "c25_a15w10_2_22")
-    c21 = loadp("dedust_ref2_input", "c21_sm")
-    a15 = loadp("dedust_ref2_input", "a15_k4")           # c25 的母體(加翼對前)
-    r25, r21 = resp_of("dedust_ref3", c25), resp_of("dedust_ref2v", c21)
-    rad25 = torch.load(str(DATASET_PATH.joinpath("dedust_ref3", "rad", "c25_a15w10_2_22.pt")), weights_only=True)
-    rad21 = torch.load(str(DATASET_PATH.joinpath("dedust_ref2v", "rad", "c21_sm.pt")), weights_only=True)
+    # v2 (2026-07-09): 新王 i02 vs 前王 c25（i02=c25+中帶雙塊,母體=c25）
+    c25 = loadp("dedust_r15inf_input", "i02_r15")        # 新王 i02
+    c21 = loadp("dedust_ref3_input", "c25_a15w10_2_22")  # 前王 c25（對比基準）
+    a15 = loadp("dedust_ref3_input", "c25_a15w10_2_22")  # i02 的母體=c25（橘=加的塊）
+    r25, r21 = resp_of("dedust_r15inf", c25), resp_of("dedust_ref3", c21)
+    rad25 = torch.load(str(DATASET_PATH.joinpath("dedust_r15inf", "rad", "i02_r15.pt")), weights_only=True)
+    rad21 = torch.load(str(DATASET_PATH.joinpath("dedust_ref3", "rad", "c25_a15w10_2_22.pt")), weights_only=True)
     freq = 26.5 + (np.arange(r25.shape[1]) - 5) * 0.5
 
     fig = plt.figure(figsize=(13.2, 6.4))
@@ -52,14 +53,14 @@ def main():
     img[c25 != a15] = 2                                   # 橘=相對母體 a15 加的翼對(組數階梯)
     axp.imshow(img, cmap=ListedColormap([SURF, DBLUE, ORANGE]), vmin=0, vmax=2, origin="upper", interpolation="nearest")
     axp.scatter([FEED[1]], [FEED[0]], marker="^", s=52, color=AQUA, zorder=5, edgecolor=SURF, lw=0.9)
-    axp.set_title("新王 c25（橘＝相對母體 a15 加的翼對）\n5 組件 · wm +0.22 · rad +0.34", color=INK, fontsize=10)
+    axp.set_title("新王 i02（橘＝相對母體 c25 加的中央塊(8px)）\n6 組件 · wm +0.29 · rad +0.21 · 公證 3/3", color=INK, fontsize=10)
     axp.set_xticks([]); axp.set_yticks([])
     for s in axp.spines.values():
         s.set_color(GRID)
     axc = fig.add_subplot(gs[:, 1])
     axc.imshow(c21.astype(int), cmap=ListedColormap([SURF, "#9fb4d4"]), vmin=0, vmax=1, origin="upper", interpolation="nearest")
     axc.scatter([FEED[1]], [FEED[0]], marker="^", s=52, color=AQUA, zorder=5, edgecolor=SURF, lw=0.9)
-    axc.set_title("前王 c21\n3 組件 · wm +0.20 · rad +0.12", color=INK2, fontsize=10.5)
+    axc.set_title("前王 c25\n5 組件 · wm +0.22 · rad +0.34", color=INK2, fontsize=10.5)
     axc.set_xticks([]); axc.set_yticks([])
     for s in axc.spines.values():
         s.set_color(GRID)
@@ -70,11 +71,11 @@ def main():
         ax = fig.add_subplot(gr)
         ax.axvspan(26.5, 29.5, color=GRID, alpha=0.45)
         ax.axhline(spec, color=RED, ls=":", lw=1.3)
-        ax.plot(freq, r21[idx], color="#9fb4d4", lw=1.8, label="c21（前王）")
-        ax.plot(freq, r25[idx], color=DBLUE, lw=2.3, label="c25（新王）")
+        ax.plot(freq, r21[idx], color="#9fb4d4", lw=1.8, label="c25（前王）")
+        ax.plot(freq, r25[idx], color=DBLUE, lw=2.3, label="i02（新王）")
         band = r25[idx][5:12]
         m = (spec - band.max()) if low else (band.min() - spec)
-        style_ax(ax, "頻率 (GHz)", f"{nm} (dB)", f"{nm}（spec {'≤−10' if low else '≥+4'}, c25 margin {m:+.2f}）", tfs=10)
+        style_ax(ax, "頻率 (GHz)", f"{nm} (dB)", f"{nm}（spec {'≤−10' if low else '≥+4'}, i02 margin {m:+.2f}）", tfs=10)
         if idx == 0:
             ax.legend(fontsize=8.6, loc="lower left", framealpha=0.94).get_frame().set_edgecolor(GRID)
     for (gr, cut) in ((gs[1, 2], "phi0"), (gs[1, 3], "phi90")):
@@ -84,7 +85,7 @@ def main():
         ax.plot(np.asarray(rad25["theta"]), np.asarray(rad25[cut]), color=DBLUE, lw=2.3)
         ax.set_xlim(-90, 90); ax.set_xticks([-90, -45, 0, 45, 90])
         style_ax(ax, "θ (deg)", "Gain (dB)", f"Radiation {cut} — 灰帶＝±45° 窗", tfs=10.5)
-    fig.suptitle("目前最佳 pattern：新王 c25（組數階梯 5 塊）vs 前王 c21（SM 導引 3 塊）——加一對翼把 rad +0.12→+0.34",
+    fig.suptitle("目前最佳 pattern：新王 i02（R15 知情臂,6 塊）vs 前王 c25（組數階梯 5 塊）——中央一塊把 wm +0.22→+0.29",
                  color=INK, fontsize=13)
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     save(fig, "newking.png")
