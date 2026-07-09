@@ -1908,6 +1908,154 @@ def select_r18(args):
     print("r18 輸入完成 → %s: %s 共 %d 筆 (c18 對稱不變=%s)" % (input_dir, kinds, len(manifest), sym_ok))
 
 
+def select_r19data(args):
+    """R19 模型線資料批（Ricky 2026-07-09:「大量基於現有王結構做組件級隨機 variation,
+    37/218 各收 200 組不重複,為訓練輪作準備」）——SM v5 的新區域覆蓋批:
+      九個王錨點（加權:margin/製造/帶外/rad 王系）× 組件級算子隨機鏈（1-3 個:加塊/移塊/手術/
+      修翼/再分配/邊緣翻/縮放;全 seeded 決定性）→ 兩夾各 --n 筆、全域去重（批內+27 夾歷史）。
+      標籤自然涵蓋好壞全譜（正負樣本都是訓練訊號）;r19a 另搭載 R17 三筆單次紀錄級公證（鐵則）。"""
+    ANCH = (("a024", "dedust_addmap_input", "a024_c25r9c11s3", .20),
+            ("c25", "dedust_ref3_input", "c25_a15w10_2_22", .15),
+            ("x00", "dedust_wide_input", "x00_c21k2", .15),
+            ("c21", "dedust_ref2_input", "c21_sm", .12),
+            ("a15", "dedust_ref2_input", "a15_k4", .10),
+            ("i02", "dedust_r15inf_input", "i02_r15", .10),
+            ("g16", "dedust_r15ga_input", "g16_r15", .08),
+            ("c18", "dedust_ref2_input", "c18_sm", .06),
+            ("g14", "dedust_r15ga_input", "g14_r15", .04))
+    P = {a: np.asarray(torch.load(str(_dir(f).joinpath(i + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+         for a, f, i, _ in ANCH}
+    aw = np.array([w for *_, w in ANCH]); aw /= aw.sum()
+    hist = set()
+    for fol in HISTORY_INPUTS:
+        if fol in (args.input_a, args.input_b):
+            continue
+        d = DATASET_PATH.joinpath(fol)
+        if not d.joinpath("manifest.json").exists():
+            continue
+        for m in json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8")):
+            f = d.joinpath(m["id"] + ".pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+    rng = np.random.default_rng(args.seed)
+    from scipy.ndimage import label as _label
+
+    def op_addblock(p):
+        for _ in range(10):
+            r, c = int(rng.integers(0, 22)), int(rng.integers(0, 23))
+            h, w = int(rng.integers(2, 4)), int(rng.integers(2, 4))
+            q = add_block(p, r, c, h, w)
+            if q is not None:
+                return q, ["addblock", r, c, h, w]
+        return None, None
+
+    def op_rmblock(p):
+        lab, n = _label(p, structure=_CROSS)
+        fid = int(lab[FEED])
+        small = [k for k in range(1, n + 1) if k != fid and (lab == k).sum() <= 20]
+        if not small:
+            return None, None
+        k = small[int(rng.integers(0, len(small)))]
+        q = p.copy(); q[lab == k] = False
+        return q, ["rmblock", int((lab == k).sum())]
+
+    def op_surgery(p):
+        op = ("hslot", "vslot", "rowcut", "colcut", "mslot")[int(rng.integers(0, 5))]
+        k = {"hslot": int(rng.integers(0, 13)), "vslot": int(rng.integers(1, 12)),
+             "rowcut": int(rng.integers(1, 4)), "colcut": int(rng.integers(1, 3)),
+             "mslot": int(rng.integers(14, 21))}[op]
+        return _surgery(p, op, k), ["surgery", op, k]
+
+    def op_wingtrim(p):
+        k = int(rng.integers(1, 7))
+        return _trim_wings(p, k), ["wingtrim", k]
+
+    def op_realloc(p):
+        k = int(rng.integers(2, 9))
+        return _realloc(p, k), ["realloc", k]
+
+    def op_flips(p):
+        em, ed = edge_sets(p)
+        pool = np.flatnonzero((em | ed).reshape(-1))
+        k = int(rng.integers(1, 9))
+        q = p.copy()
+        q.ravel()[rng.choice(pool, size=min(k, len(pool)), replace=False)] ^= True
+        return q, ["flips", k]
+
+    def op_resize(p):
+        which = ("main", "wings")[int(rng.integers(0, 2))]
+        delta = (-1, 1)[int(rng.integers(0, 2))]
+        return resize_component(p, which, delta), ["resize", which, delta]
+
+    OPS = ((op_addblock, .28), (op_rmblock, .10), (op_surgery, .20), (op_wingtrim, .08),
+           (op_realloc, .07), (op_flips, .17), (op_resize, .10))
+    ow = np.array([w for _, w in OPS]); ow /= ow.sum()
+    dirs = [_dir(args.input_a), _dir(args.input_b)]
+    for d in dirs:
+        d.mkdir(parents=True, exist_ok=True)
+    manifests = [[], []]
+    total, attempts = 2 * args.n, 0
+    # 擾動幅度分層配額（Ricky:「不一樣的 pixel 要有合理的分布」）——diff_px 對錨點,五帶強制
+    BANDS = ((1, 3, .15), (4, 10, .30), (11, 25, .30), (26, 60, .18), (61, 120, .07))
+    quota = [int(round(fr * total)) for _, _, fr in BANDS]
+    quota[1] += total - sum(quota)                # 湊整差額進次小帶
+    filled = [0] * len(BANDS)
+    made = 0
+    while made < total and attempts < total * 200:
+        attempts += 1
+        ai = int(rng.choice(len(ANCH), p=aw))
+        aid = ANCH[ai][0]
+        q = P[aid]
+        chain = []
+        for _ in range(int(rng.choice((1, 2, 3), p=(.5, .35, .15)))):
+            fn = OPS[int(rng.choice(len(OPS), p=ow))][0]
+            q, desc = fn(q)
+            if q is None:
+                break
+            chain.append(desc)
+        if q is None or not chain:
+            continue
+        q, _n = strip_small((np.asarray(q).reshape(25, 25) > 0.5).copy(), 4)
+        q = _ensure_feed_pad(q, 4)
+        st = piece_stats(q)
+        if st["n_1px"] > 0 or not (250 <= st["metal_px"] <= 520):
+            continue
+        d = int((q != P[aid]).sum())
+        band = next((i for i, (lo, hi, _) in enumerate(BANDS) if lo <= d <= hi), None)
+        if band is None or filled[band] >= quota[band]:
+            continue
+        key = q.tobytes()
+        if key in hist:
+            continue
+        hist.add(key)
+        filled[band] += 1
+        b = made % 2                              # 交錯分夾=兩機分布一致
+        pid = "vg%04d_%s" % (made, aid)
+        manifests[b].append(dict(id=pid, kind="vargen", family="V_" + aid, removed_px=0,
+                                 **st, source_id=aid, ops=chain, diff_px=d))
+        torch.save(torch.tensor(q, dtype=torch.float32), str(dirs[b].joinpath(pid + ".pt")))
+        made += 1
+    print("diff_px 各帶(配額/實收):", ["%d-%d:%d/%d" % (lo, hi, f, qt)
+                                       for (lo, hi, _), f, qt in zip(BANDS, filled, quota)])
+    # r19a 搭載:R17 三筆單次紀錄級公證（cc margin/平衡/rad 王挑戰者,各 ×2;鐵則）
+    for pid in ("cc_c25_r6s2_r9s3", "cc_x00_r5s2_r8s3", "cc_c25_r6s2_r9s2"):
+        p = np.asarray(torch.load(str(_dir("dedust_r17_input").joinpath(pid + ".pt")),
+                                  weights_only=True)).reshape(25, 25) > 0.5
+        for j in range(2):
+            nid = "n_%s_%d" % (pid, j)
+            manifests[0].append(dict(id=nid, kind="notarize", family="N_" + pid, removed_px=0,
+                                     **piece_stats(p), source_id=pid))
+            torch.save(torch.tensor(p, dtype=torch.float32), str(dirs[0].joinpath(nid + ".pt")))
+    for man, d in zip(manifests, dirs):
+        _save_manifest(man, d)
+    kinds = {}
+    for man in manifests:
+        for m in man:
+            kinds[m["kind"]] = kinds.get(m["kind"], 0) + 1
+    print("r19data 完成 → %s %d 筆 / %s %d 筆 (%s;嘗試 %d)" % (
+        dirs[0], len(manifests[0]), dirs[1], len(manifests[1]), kinds, attempts))
+
+
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
@@ -1916,7 +2064,8 @@ HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedu
                   "dedust_family2_input", "dedust_blocks_input", "dedust_probes_input",
                   "dedust_ablate_input", "dedust_resize_input", "dedust_r15ga_input",
                   "dedust_r15inf_input", "dedust_r15v_input", "dedust_addmap_input",
-                  "dedust_r16b_input", "dedust_r17_input", "dedust_r18_input")
+                  "dedust_r16b_input", "dedust_r17_input", "dedust_r18_input",
+                  "dedust_r19a_input", "dedust_r19b_input")
 
 
 def check_dup(args):
@@ -2423,6 +2572,13 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-r19data", help="R19 模型線資料批：王錨點×組件級算子隨機鏈,雙夾各 n 筆不重複(訓練用)")
+    s.add_argument("--input-a", default="dedust_r19a_input", help="37 跑的夾(含 cc 公證 6 筆)")
+    s.add_argument("--input-b", default="dedust_r19b_input", help="218 跑的夾")
+    s.add_argument("--n", type=int, default=200, help="每夾 vargen 筆數")
+    s.add_argument("--seed", type=int, default=20260709)
+    s.set_defaults(fn=select_r19data)
 
     s = sub.add_parser("select-r18", help="R18 帶外二批：舊藏公證(b20/vpd2/vb43/x20)+低側家族構造化救援+c18手術")
     s.add_argument("--input", default="dedust_r18_input")
