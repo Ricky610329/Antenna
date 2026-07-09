@@ -23,6 +23,8 @@
 - R15 主批 ✅（GA 勝數量/知情勝 best i02 +0.29/知情≈隨機;§4 已記）。
 - r15v @37 🔵（19 筆:i02/g16/g14 公證+缺陷+g14 rad 救援+理論模板 6）;addmap @218 🔵（16 筆:添加收益圖+贏家塊歸因）。
 - 重啟：37 `run --input dedust_r15v_input --store dedust_r15v`;218 `run --input dedust_addmap_input --store dedust_addmap`。
+- **r16b @37 已備**（r15v 收完接跑,34 筆:翼修邊12+等金屬再分配4+addmap 擴錨18）:
+  `run --input dedust_r16b_input --store dedust_r16b`。
 
 ### ~~Round 14 — 組件級軸~~（✅ **2026-07-08 收檔**）→ [round-14](../docs/log/round-14-component-axis.md)
 - 翼=帶內引擎(+6dB)且付 rad/帶外=張力機理;冠軍在尖銳最優;細旋鈕=小塊;像素級退役。兩台現空。

@@ -18,12 +18,14 @@
 | A addmap | **x00＋c25 雙錨點 × 2×2/3×3 雙尺寸**全合法位單塊掃（歷史排除,分析時併 R13/R15 單塊數據） | ~23 |
 | B 塊歸因 | g14/i02/g16 加料組件逐組移除（鏡射夥伴併組） | ~8 |
 | C 可加性探針 | 中帶（rows 4-11）成對放塊 ×10——測 Δ(pair) ?= Δa+Δb（加塊效果線性可疊加嗎?） | 10 |
+| **r16b @37**（r15v 收完接跑） | W 翼修邊 {c21,a15,x00,c25}×k{2,4,6}（analysis-02「縮小翼」因果）＋M 等金屬再分配 {c21,x00}×k{4,8}（分配>堆料對照）＋A 擴錨 c21/a15 單塊掃 | 34 |
 
 （2026-07-09 加厚:Ricky「R16 不跑多一點嗎」——雙錨點測收益圖普適性、雙尺寸測尺寸依賴、C 臂測可加性=
 若線性可疊加,加塊優化可以貪心;若強交互,必須組合搜尋——generator 設計的關鍵分岔。）
 
 ## 3. 執行紀錄 (Run)
 ```
+# 37 (r15v 收完接跑): python -m script.dedust run --input dedust_r16b_input --store dedust_r16b
 # 218: python -m script.dedust run --input dedust_addmap_input --store dedust_addmap
 # (37 並行: python -m script.dedust run --input dedust_r15v_input --store dedust_r15v — R15 收尾,記於 round-15 §3)
 ```

@@ -1584,6 +1584,118 @@ def select_addmap(args):
     print("addmap 輸入完成 → " + str(input_dir) + ": " + str(len(manifest)) + " 筆")
 
 
+def _trim_wings(p, k, feed=FEED):
+    """翼修邊 k px（組件內細粒度縮放,analysis-02 探針）：左翼邊緣像素按 (row,col) 序移除 k 個
+    → symmetrize(10) 鏡射到右翼＝雙翼對稱修邊。回 None 若翼太小。純函式決定性。"""
+    from scipy.ndimage import label as _label, binary_erosion
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    lab, n = _label(p, structure=_CROSS)
+    fid = int(lab[feed])
+    wings = p & (lab != fid)
+    left = wings.copy()
+    left[:, 13:] = False                                  # 只動左半,鏡射補右
+    edge = left & ~binary_erosion(left, structure=_CROSS)
+    cells = np.argwhere(edge)
+    if len(cells) < k:
+        return None
+    for r, c in cells[:k]:
+        p[r, c] = False
+    q = symmetrize(p, 10)
+    st = piece_stats(q)
+    return q if (st["n_1px"] == 0 and st["n_comp"] == n) else None
+
+
+def _realloc(p, k, feed=FEED):
+    """等金屬量再分配（analysis-02 探針）：主件底緣修 k px＋翼長 k px（金屬總量近守恆）。
+    主件修=底排(row≥20)邊緣像素 row-major 前 k 個（避開 feed pad 周邊 ±2 欄）;
+    翼長=左翼相鄰空位 row-major 前 k 個。回 None 若失敗。決定性。"""
+    from scipy.ndimage import label as _label, binary_erosion, binary_dilation
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    lab, n = _label(p, structure=_CROSS)
+    fid = int(lab[feed])
+    main = (lab == fid)
+    edge = main & ~binary_erosion(main, structure=_CROSS)
+    edge[:20] = False
+    edge[:, feed[1] - 2:feed[1] + 3] = False              # 避開 feed 周邊
+    edge[:, 13:] = False                                  # 左半,鏡射補右
+    cells = np.argwhere(edge)
+    if len(cells) < k:
+        return None
+    for r, c in cells[:k]:
+        p[r, c] = False
+    wings = (np.asarray(p).reshape(25, 25) > 0.5) & (lab != fid) & (lab > 0)
+    grow = binary_dilation(wings, structure=_CROSS) & ~p
+    grow[:, 13:] = False
+    gcells = np.argwhere(grow)
+    if len(gcells) < k:
+        return None
+    for r, c in gcells[:k]:
+        p[r, c] = True
+    q = symmetrize(p, 10)
+    st = piece_stats(q)
+    return q if (st["n_1px"] == 0 and st["n_comp"] == n) else None
+
+
+def select_r16b(args):
+    """R16 續批（37,r15v 收完接跑）——analysis-02 兩個因果探針＋添加收益圖擴錨:
+      W 翼修邊 —— {c21,a15,x00,c25} × k∈{2,4,6}:「縮小翼」的直接因果（analysis-02 cv 相關性升級檢驗）
+      M 等金屬再分配 —— {c21,x00} × k∈{4,8}:主件−k+翼+k,「分配>堆料」假說的乾淨對照
+      A 添加收益圖擴錨 —— c21/a15 單塊全掃（2×2+3×3,歷史排除）:與 218 批的 x00/c25 拼成四錨點收益圖
+    判準:W=修邊後 wm/rad/oob 的劑量反應曲線;M=再分配後 wm 升=分配假說過因果關;A=收益圖跨錨點相關。"""
+    SRC = {"c21": ("dedust_ref2_input", "c21_sm"), "a15": ("dedust_ref2_input", "a15_k4"),
+           "x00": ("dedust_wide_input", "x00_c21k2"), "c25": ("dedust_ref3_input", "c25_a15w10_2_22")}
+    P = {k: np.asarray(torch.load(str(_dir(f).joinpath(i + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+         for k, (f, i) in SRC.items()}
+    hist = set()
+    for fol in HISTORY_INPUTS + ("dedust_r15ga_input", "dedust_r15inf_input", "dedust_r15v_input",
+                                 "dedust_addmap_input"):
+        d = DATASET_PATH.joinpath(fol)
+        if not d.joinpath("manifest.json").exists():
+            continue
+        for m in json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8")):
+            f = d.joinpath(m["id"] + ".pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra):
+        if pat is None or pat.tobytes() in hist:
+            return False
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(pid + ".pt")))
+        return True
+
+    for aid, p in P.items():
+        for k in (2, 4, 6):
+            emit("w" + aid + "_t" + str(k), "wingtrim", "W_" + aid, _trim_wings(p, k),
+                 dict(source_id=aid, trim_px=k))
+    for aid in ("c21", "x00"):
+        for k in (4, 8):
+            emit("m" + aid + "_k" + str(k), "realloc", "M_" + aid, _realloc(P[aid], k),
+                 dict(source_id=aid, realloc_px=k))
+    n = 0
+    for aid in ("c21", "a15"):
+        for h in (2, 3):
+            for r in range(0, 23 - h + 1):
+                for c in range(0, 12):
+                    q = add_block(P[aid], r, c, h, h)
+                    if q is None:
+                        continue
+                    q = symmetrize(q, 10)
+                    if piece_stats(q)["n_1px"] > 0:
+                        continue
+                    if emit("a" + format(n, "03d") + "_" + aid + "r" + str(r) + "c" + str(c) + "s" + str(h),
+                            "addmap", "A_" + aid, q, dict(source_id=aid, block_at=[r, c, h, h])):
+                        n += 1
+    _save_manifest(manifest, input_dir)
+    kinds = {}
+    for m in manifest:
+        kinds[m["kind"]] = kinds.get(m["kind"], 0) + 1
+    print("r16b 輸入完成 → " + str(input_dir) + ": " + str(kinds) + " 共 " + str(len(manifest)) + " 筆")
+
+
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
@@ -2094,6 +2206,10 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-r16b", help="R16 續批：翼修邊+等金屬再分配 (analysis-02 因果探針) + 添加收益圖擴錨")
+    s.add_argument("--input", default="dedust_r16b_input")
+    s.set_defaults(fn=select_r16b)
 
     s = sub.add_parser("select-r15v", help="R15 收尾：i02/g16/g14 公證+缺陷 + g14 rad 救援 + 理論模板探針")
     s.add_argument("--input", default="dedust_r15v_input")
