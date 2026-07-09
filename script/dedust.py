@@ -1696,10 +1696,115 @@ def select_r16b(args):
     print("r16b 輸入完成 → " + str(input_dir) + ": " + str(kinds) + " 共 " + str(len(manifest)) + " 筆")
 
 
+def _surgery(p, op, k):
+    """帶外手術算子（R17）。冠軍家族實形＝上半碎片雲＋下主件（無平移/加寄生條空間），
+    帶外攻堅改走「切削改諧振」——slot 陷波是貼片天線經典手法:
+      hslot k=列 → 整列清空（雲區 1px 水平槽,切垂直電流路徑;整列自然對稱）
+      vslot k=欄 → 該欄+鏡射欄 rows0-12 清空（切雲的水平電流路徑→低側諧振上推,主攻低側）
+      rowcut k → 頂部 k 列全清（雲高方向性縮減;≠R14 形態學整圈 erode）
+      colcut k → 最外 k 欄+鏡射欄 rows0-12 清空（雲寬縮減,同樣主攻水平諧振）
+      mslot k=列 → 主件該列 cols0-9+鏡射段清空（主件陷波槽,留中央橋;避開 feed pad 列）
+    回未除塵 pattern;呼叫端 symmetrize(10) 收尾（除塵+保對稱）。決定性。"""
+    p = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    if op == "hslot":
+        p[k, :] = False
+    elif op == "vslot":
+        p[0:13, k] = False
+        p[0:13, 24 - k] = False
+    elif op == "rowcut":
+        p[0:k, :] = False
+    elif op == "colcut":
+        p[0:13, 0:k] = False
+        p[0:13, 25 - k:25] = False
+    elif op == "mslot":
+        p[k, 0:10] = False
+    return p
+
+
+def select_r17(args):
+    """R17 帶外主目標批（Ricky 2026-07-09「當作主目標探索幾輪」）——判準寫死於 round-17 檔。
+    問題核心:「低側裙擺（24-25.5,全家族地板 ≈9.2）是體質還是可壓?」三臂:
+      T 帶外手術 —— slot/rowcut/colcut/mslot 切削掃描（_surgery;雲形態下的頻率手術,
+        vslot/colcut 主攻低側水平諧振、mslot=主件陷波、hslot/rowcut=劑量對照）
+      C 雙中央塊 —— c25/x00 中央帶疊兩塊（addmap 已證單塊=高側旋鈕,測疊加+可加性）
+      N 公證 —— a024(+0.35 未公證,挑戰 i02)×3＋a017(−0.01 卡線)×2＋a022×1（鐵則）"""
+    SRC = {"c25": ("dedust_ref3_input", "c25_a15w10_2_22"), "x00": ("dedust_wide_input", "x00_c21k2"),
+           "i02": ("dedust_r15inf_input", "i02_r15"),
+           "a024": ("dedust_addmap_input", "a024_c25r9c11s3"),
+           "a017": ("dedust_addmap_input", "a017_c25r8c11s2"),
+           "a022": ("dedust_addmap_input", "a022_c25r7c11s3")}
+    P = {k: np.asarray(torch.load(str(_dir(f).joinpath(i + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+         for k, (f, i) in SRC.items()}
+    hist = set()
+    for fol in HISTORY_INPUTS:
+        d = DATASET_PATH.joinpath(fol)
+        if not d.joinpath("manifest.json").exists():
+            continue
+        for m in json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8")):
+            f = d.joinpath(m["id"] + ".pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+
+    def emit(pid, kind, family, pat, extra, dedup=True):
+        if pat is None:
+            return False
+        pat = (np.asarray(pat).reshape(25, 25) > 0.5).copy()
+        pat[FEED] = True
+        if dedup and pat.tobytes() in hist:
+            return False
+        manifest.append(dict(id=pid, kind=kind, family=family, removed_px=0, **piece_stats(pat), **extra))
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(input_dir.joinpath(pid + ".pt")))
+        return True
+
+    # T: 帶外手術掃描（切削改諧振;symmetrize 收尾=除塵+保對稱）
+    SURG = (("c25", "hslot", (1, 3, 5, 7)), ("x00", "hslot", (2, 5)),
+            ("c25", "vslot", (2, 5, 8)), ("x00", "vslot", (3, 7)),
+            ("c25", "rowcut", (1, 2, 3)), ("c25", "colcut", (1, 2)), ("x00", "colcut", (1,)),
+            ("c25", "mslot", (15, 17, 19)))
+    for aid, op, ks in SURG:
+        for k in ks:
+            q = symmetrize(_surgery(P[aid], op, k), 10)
+            if piece_stats(q)["n_1px"] == 0:
+                emit("%s_%s_k%d" % (op, aid, k), "surgery", "T_%s_%s" % (op, aid), q,
+                     dict(source_id=aid, op=op, k=k))
+
+    # C: 雙中央塊（中央帶 col11 起 w=3;候選對寫死,不合法自動跳過）
+    PAIRS = ((5, 2, 8, 3), (5, 2, 9, 3), (6, 2, 9, 3), (5, 3, 9, 3), (6, 2, 9, 2), (5, 2, 10, 2))
+    for aid in ("c25", "x00"):
+        for r1, s1, r2, s2 in PAIRS:
+            q1 = add_block(P[aid], r1, 11, s1, 3)
+            q2 = add_block(q1, r2, 11, s2, 3) if q1 is not None else None
+            if q2 is None:
+                continue
+            q = symmetrize(q2, 10)
+            if piece_stats(q)["n_1px"] == 0:
+                emit("cc_%s_r%ds%d_r%ds%d" % (aid, r1, s1, r2, s2), "dblcentral", "C_%s" % aid, q,
+                     dict(source_id=aid, blocks=[[r1, 11, s1, 3], [r2, 11, s2, 3]]))
+
+    # N: 公證（鐵則:紀錄級一律重複量測;蓄意重複,不查重）
+    for pid, reps in (("a024", 3), ("a017", 2), ("a022", 1)):
+        for j in range(reps):
+            emit("n_%s_%d" % (pid, j), "notarize", "N_%s" % pid, P[pid],
+                 dict(source_id=SRC[pid][1]), dedup=False)
+    _save_manifest(manifest, input_dir)
+    kinds = {}
+    for m in manifest:
+        kinds[m["kind"]] = kinds.get(m["kind"], 0) + 1
+    print("r17 輸入完成 → %s: %s 共 %d 筆" % (input_dir, kinds, len(manifest)))
+
+
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
-                  "dedust_champ_input", "dedust_ref3_input", "dedust_wide_input")
+                  "dedust_champ_input", "dedust_ref3_input", "dedust_wide_input",
+                  "dedust_repeat_input", "dedust_bakeoff_input", "dedust_crown_input",
+                  "dedust_family2_input", "dedust_blocks_input", "dedust_probes_input",
+                  "dedust_ablate_input", "dedust_resize_input", "dedust_r15ga_input",
+                  "dedust_r15inf_input", "dedust_r15v_input", "dedust_addmap_input",
+                  "dedust_r16b_input")
 
 
 def check_dup(args):
@@ -2206,6 +2311,10 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-r17", help="R17 帶外主目標：低側陷波條+翼幾何decouple+高側疊塊+公證a024")
+    s.add_argument("--input", default="dedust_r17_input")
+    s.set_defaults(fn=select_r17)
 
     s = sub.add_parser("select-r16b", help="R16 續批：翼修邊+等金屬再分配 (analysis-02 因果探針) + 添加收益圖擴錨")
     s.add_argument("--input", default="dedust_r16b_input")

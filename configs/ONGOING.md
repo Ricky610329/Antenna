@@ -19,6 +19,11 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
+### Round 17 — 帶外主目標:低側裙擺攻堅（🟡 **待機器**,2026-07-09 備好）→ [round-17](../docs/log/round-17-oob-primary.md)
+- Ricky 定調「帶外當主目標探索幾輪」。拆側破案:低側=全家族地板 ≈9.2(高側旋鈕=中央塊已在手)。
+- 35 筆已過查重:帶外手術 20(vslot/colcut 主攻低側+hslot/rowcut/mslot 對照)+雙中央塊 9+公證 6(**a024 +0.35 挑戰 i02**)。
+- 發車（37 的 r16b 收完即接,或 218 先空就 218 跑）:`python -m script.dedust run --input dedust_r17_input --store dedust_r17`。
+
 ### Round 15 收尾批 + Round 16（🔵 **running**,2026-07-09）→ [round-15](../docs/log/round-15-pushbutton-vs-toolbox.md)｜[round-16](../docs/log/round-16-addition-map.md)
 - R15 ✅ 收檔（含 r15v:**換王 i02 +0.29 公證✓**;g14 +0.40 帶內紀錄;理論模板否證新盆地）。
 - r15v @37 ✅;addmap @218 🔵;r16b @37 🔵（翼修邊+再分配+擴錨,34 筆）。
