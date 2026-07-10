@@ -2589,11 +2589,46 @@ def worker(args):
                 f.write(str(e))
             print(f"✗ {st} 中止:{e}\nworker 停機（修復 HFSS 後刪 jobs_state/{st}.fail 與 .claim 重派）")
             raise
+        #! done 語義（2026-07-10 修）:「跑完」≠「全成功」——殘留 error 記進 .done 並顯性警告,
+        #  哨兵 --factory 會列出;重派=刪 .done+.claim（三連敗同一筆=毒樣本嫌疑,人工判）。
+        rp = DATASET_PATH.joinpath(st, "results.json")
+        errs = []
+        if rp.exists():
+            _res = json.load(open(str(rp), encoding="utf-8"))
+            errs = [i for i, v in _res.items() if "error" in v]
         with open(str(sd.joinpath(st + ".done")), "w", encoding="utf-8") as f:
-            json.dump(dict(machine=me, at=time.strftime("%Y-%m-%d %H:%M:%S")), f)
-        print(f"✔ {st} 完成")
+            json.dump(dict(machine=me, at=time.strftime("%Y-%m-%d %H:%M:%S"),
+                           errors=len(errs), error_ids=errs[:20]), f)
+        print(f"✔ {st} 完成（殘留 error {len(errs)} 筆{': ' + ','.join(errs[:5]) if errs else ''}）")
         if args.once:
             break
+
+
+def jobs_ls(args):
+    """看佇列現況（人用;零 token）:每個 job 的 認領/進度/done/殘留 error。"""
+    import time
+    qp, sd = _jobs_paths()
+    if not qp.exists():
+        print("（無 jobs.json）")
+        return
+    for j in sorted(json.load(open(str(qp), encoding="utf-8")), key=lambda j: j.get("prio", 9)):
+        st = j["store"]
+        rp = DATASET_PATH.joinpath(st, "results.json")
+        mp = DATASET_PATH.joinpath(j["input"], "manifest.json")
+        total = len(json.load(open(str(mp), encoding="utf-8"))) if mp.exists() else "?"
+        done_n = 0
+        if rp.exists():
+            res = json.load(open(str(rp), encoding="utf-8"))
+            done_n = sum(1 for v in res.values() if "wm" in v)
+        state = "排隊中"
+        for tag in ("fail", "done", "claim"):
+            fp = sd.joinpath(f"{st}.{tag}")
+            if fp.exists():
+                info = open(str(fp), encoding="utf-8").read()[:100]
+                age = (time.time() - __import__("os").path.getmtime(str(fp))) / 60
+                state = f"{tag}（{age:.0f} 分前）{info}"
+                break
+        print(f"[prio {j.get('prio', 9)}] {st}: {done_n}/{total} | {state}")
 
 
 # ---------------------------------------------------------------- report（匯總表，貼 round 檔 §4）
@@ -2836,6 +2871,9 @@ def main():
     s.add_argument("--store", required=True)
     s.add_argument("--prio", type=int, default=5, help="小=先跑")
     s.set_defaults(fn=jobs_add)
+
+    s = sub.add_parser("jobs-ls", help="看派工佇列現況（認領/進度/done/殘留 error）")
+    s.set_defaults(fn=jobs_ls)
 
     s = sub.add_parser("report", help="匯總表（貼 round 檔 §4）")
     s.add_argument("--input", default=DEFAULT_INPUT)

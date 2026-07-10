@@ -197,6 +197,14 @@ def _factory_scan(stale_min=30):
         for f in os.listdir(str(sd)):
             if f.endswith(".fail"):
                 alarms.append(f"工廠停機: {f}（HFSS 疑壞死,修復後刪 .fail/.claim 重派）")
+            elif f.endswith(".done"):
+                try:
+                    d = _json.load(open(str(sd.joinpath(f)), encoding="utf-8"))
+                    if d.get("errors"):
+                        lines.append(f"  ⚠ {f[:-5]}: 完成但殘留 error {d['errors']} 筆 {d.get('error_ids', [])[:3]}"
+                                     "（重派=刪 .done+.claim;三連敗=毒樣本嫌疑）")
+                except Exception:
+                    pass
     if not qp.exists():
         return lines, alarms
     jobs = _json.load(open(str(qp), encoding="utf-8"))
