@@ -1927,7 +1927,7 @@ def select_r19data(args):
          for a, f, i, _ in ANCH}
     aw = np.array([w for *_, w in ANCH]); aw /= aw.sum()
     hist = set()
-    for fol in HISTORY_INPUTS:
+    for fol in _all_input_folders():              # 自動掃描(2026-07-11:vgen3 撞 vgen2 教訓,舊清單漏新夾)
         if fol in (args.input_a, args.input_b):
             continue
         d = DATASET_PATH.joinpath(fol)
