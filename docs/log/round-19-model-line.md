@@ -1,7 +1,7 @@
 # Round 19 — 模型線第一批：王結構變異資料收集（SM v5 前置）
 
-- **狀態**: proposed  <!-- proposed | running | analyzing | concluded | archived -->
-- **提出 / 開跑 / 結論**: 2026-07-09 / — / —
+- **狀態**: running（2026-07-10 兩機發車;a 夾曾被 218 誤跑但零結果落地,無污染）
+- **提出 / 開跑 / 結論**: 2026-07-09 / 2026-07-10 / —
 - **一句話問題**: 密集的組件級變異真值（王鄰域 800 筆）能否把 SM 的新區域排序救回來（R15 分布外 ρ+0.03 的病）？
 - **一句話結論 (TL;DR)**: 待跑
 - **指向**: 觸發＝R17/R18 判死低側（decisions 2026-07-09）· `select-r19data` · scratch「模型線接棒」塊
@@ -40,8 +40,8 @@
 ```
 | 夾 | 機器 | 狀態 | 結果夾 |
 |---|---|---|---|
-| r19a | 37 | 待發 | `dataset/dedust_r19a` |
-| r19b | 218 | 待發 | `dataset/dedust_r19b` |
+| r19a | 37 | 🔵 running（07-10） | `dataset/dedust_r19a` |
+| r19b | 218 | 🔵 running（07-10） | `dataset/dedust_r19b` |
 
 ## 4. 分析 (Analyze)
 （待收檔；收檔後流程＝sm_reanchor CLEAN_STORES 補 R17/R18/R19 → v5 訓練 → held-out 驗排序 → §4 貼數字）
