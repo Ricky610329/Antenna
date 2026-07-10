@@ -3,6 +3,10 @@
 > 一篇一節：出處、核心方法、對本專案的用途。三篇皆 Princeton Sengupta 組系列作（2024→2026），
 > 合讀＝該組從「像素化逆設計」走到「人機協作端到端合成」的完整軌跡。
 > 對照本專案的行動候選在 `docs/discuss/scratch.md`（2026-07-08 塊）、敘事定調在 `docs/discuss/decisions.md`。
+> **逐篇深度筆記在 [notes/](notes/)**（paper-reader agent 產出,含方法管線/物理意義/可移植配方/金句頁碼;
+> 本索引=一眼版,筆記=寫作引用版）:[2024 MWSCAS](notes/2024-mwscas-dl-rf-antennas.md)·
+> [2026 SSCM](notes/2026-sscm-ai-rfic.md)·[2026 ISSCC 13.2](notes/2026-isscc-13-2-style.md)。
+> 新文獻進庫 → 用 `.claude/agents/paper-reader.md` agent 派讀。
 
 ## 2024 MWSCAS — Deep Learning Enabled Design of RF/mmWave IC and Antennas
 
@@ -17,7 +21,7 @@
 ## 2026 SSC Magazine — AI for RFIC Design: Early Advancements, Opportunities, and Challenges
 
 - **出處**：IEEE Solid-State Circuits Magazine, Spring 2026, pp.52–68（Sengupta 組立場文/五年回顧）。
-- **方法**：一次性離線大投資訓 forward 代理（250K 粗＋90K 細 transfer learning，訓完推論毫秒級）；
+- **方法**：一次性離線大投資訓 forward 代理（250K 粗＋75K 細 transfer learning——原索引誤記 90K,以原文 Fig 8 為準;訓完推論毫秒級）；
   逆設計三路線（代理+GA／tandem NN／controlled diffusion "DALL·EM" 用 prior 控制產物風格）；
   RL 端到端合成（ISSCC 2025 PA）；快速合成掃 PDK 近似 Pareto front。
 - **對我們**：**敘事級資產（最重要的一篇）**。
