@@ -62,3 +62,4 @@
 
 詳見 `docs/`：`quickstart.md`（跑起來）、`training.md`（config）、`architecture.html`（模組地圖 + 論文術語）、`development.md`（測試/golden/擴充）。
 文件若與 code 不一致，**以 code 與 `tests/` 為準**。
+**子目錄各有局部 CLAUDE.md**（`docs/log/`、`docs/report/`、`script/`、`antenna/`、`tests/`、`configs/`）——該目錄的操作/撰寫規範在那裡，本檔只留原則；兩邊守「指向不複製」。

@@ -11,8 +11,12 @@
 | **理解系統怎麼運作**（三角色閉迴路、論文機制、模組地圖） | [`architecture.html`](architecture.html) |
 | **改程式碼**（跑測試、golden 維護、加新架構/實驗、資料層、branch 慣例） | [`development.md`](development.md) |
 | **找二值化/梯度的優化方向**（BiScaleNorm 同類方法、STE/tau/Heaviside 投影文獻表） | [`binarization_literature.md`](binarization_literature.md) |
-| **看 R1-R10 研究成果整理**（完整敘事＋16 張圖＋PDF） | [`report/progress-r1-r10.md`](report/progress-r1-r10.md)（PDF 同資料夾;重建 `build_pdf.py <stem>`） |
-| **看 R11-R14 成果（分數先行版）**（冠軍榜/組數/組件語言/w17 特殊性） | [`report/progress-r11-r14.md`](report/progress-r11-r14.md) |
+| **看總進度（R1-R18 演進版）**（每輪最佳 gallery＋血統鏈＋帶外定案） | [`report/progress-r1-r18.md`](report/progress-r1-r18.md)（PDF 同資料夾;重建 `build_pdf.py <stem>`;撰寫規範 [`report/CLAUDE.md`](report/CLAUDE.md)） |
+| 看 R1-R10 / R11-R14 分卷報告 | [`report/progress-r1-r10.md`](report/progress-r1-r10.md)／[`report/progress-r11-r14.md`](report/progress-r11-r14.md) |
+| **查研究時間軸**（每個 round 的假設→實驗→結論） | [`log/README.md`](log/README.md)（索引;撰寫規範 [`log/CLAUDE.md`](log/CLAUDE.md)） |
+| **查現任冠軍與配方** | [`champions.md`](champions.md)（名鑑）＋[`design_priors.md`](design_priors.md)(設計規則) |
+| **接續討論**（半熟點子/定案結論兩層） | [`discuss/scratch.md`](discuss/scratch.md)／[`discuss/decisions.md`](discuss/decisions.md) |
+| **查外部文獻背書**（Sengupta 組三篇等） | [`reference/README.md`](reference/README.md) |
 | **碩論大綱 v2**（agent+HITL 敘事、P0-P2 寫作順序、R4 三件事寫法） | [`thesis_outline.md`](thesis_outline.md) |
 | 授權 | [`Licence IP.md`](Licence%20IP.md) |
 

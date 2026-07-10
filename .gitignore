@@ -207,7 +207,8 @@ tmp/
 temp_downloads/
 # 學長論文 (約 5MB binary)，留本機，不進 git 歷史
 docs/Paper.pdf
-docs/report/progress-r1-r10.html
-
-docs/report/status-2026-07-08.html
-docs/report/progress-r11-r14.html
+# 報告 build 中間產物（PDF 是交付物、進 git;html 不進）
+docs/report/*.html
+# Windows 檔案總管雜物
+Thumbs.db
+desktop.ini
