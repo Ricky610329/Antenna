@@ -2452,9 +2452,9 @@ def run(args):
     sim = _open_sim()
     fails = 0                                            # 連續失敗計數（HFSS 壞死保險絲）
     try:
-        for num, m in todo:
+        for k, (num, m) in enumerate(todo):
             p = torch.load(str(input_dir.joinpath(f"{m['id']}.pt")), weights_only=True)
-            print(f"[{m['id']}] 模擬中… ({num + 1}/{len(manifest)})")
+            print(f"[{m['id']}] 模擬中… (本次第 {k + 1}/{len(todo)} 筆;manifest #{num + 1}/{len(manifest)})")
             done_evt, fired = threading.Event(), threading.Event()
             threading.Thread(target=_watchdog, args=(done_evt, fired), daemon=True).start()
             try:
