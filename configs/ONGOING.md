@@ -17,7 +17,11 @@
 - 正式機常駐:`python -m script.dedust worker`（認領 NAS `dataset/jobs.json` 佇列;原子 claim 防互踩;
   單筆 watchdog 900s 殺卡住的 HFSS;連敗 5 筆標 .fail 停機）。派工:`jobs-add --input X_input --store X --prio N`。
 - 停止=建 `dataset/jobs_state/STOP`;stale 接管=45 分無進度可被別台接手。
-- 待辦:216 收 R5 E 臂後掛 worker;status --alert 排程啟用（ntfy topic 待 Ricky 定）。
+- **哨兵（零 token 純腳本）**:`python -m script.status --factory --alert --notify-topic <主題>`——
+  掃佇列進度+卡住(30分無結果)+停機(.fail);排程 `schtasks /Create /TN AntennaFactory /SC HOURLY /TR "..."`。
+  **待 Ricky:定 ntfy 主題(隨機長字串)+手機裝 ntfy app+回報後我出完整註冊指令**。
+- 收檔流程已 skill 化:**/close-round NN**（12 步清單,判準勾稽）。
+- 待辦:216 收 R5 E 臂後掛 worker。
 
 ### ~~Round 13 — 組數階梯~~（✅ **2026-07-08 收檔**）→ [round-13](../docs/log/round-13-block-ladder.md)
 - 組數=真設計軸但報酬有取捨:4-5 塊甜蜜點(5 塊買 rad/4 塊買選擇性)、6 塊遞減;margin 天花板僅微升。

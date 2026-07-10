@@ -21,6 +21,7 @@ script/status.py — 掃 NAS result/ 各 run 的即時狀態（取代手動猜�
 watchdog（2026-07-05 斷電後補；偵測半邊,重啟仍靠人）：
     python -m script.status --match A,B --alert                    # 有 run 不在跑 → 印警報、exit 1
     python -m script.status --match A,B --alert --notify-topic X   # 加推手機（ntfy app 訂閱主題 X）
+    python -m script.status --factory --alert --notify-topic X     # 資料工廠哨兵（佇列進度+卡住/停機;零 token）
 排程（開發機一次性註冊,每小時掃;要「僅登入時執行」否則 T: 掛載不到）：
     schtasks /Create /TN AntennaWatchdog /SC HOURLY /TR "cmd /c cd /d <repo> && <ant python> -m script.status --match single_r5_explore,single_r5_dip_explore --alert --notify-topic <主題>"
 """
@@ -183,6 +184,47 @@ def _fmt(v, spec="{:.2f}"):
     return spec.format(v) if v is not None else "—"
 
 
+def _factory_scan(stale_min=30):
+    """資料工廠哨兵（2026-07-10;零 token 純腳本層）：掃 NAS 佇列與批次進度,回 (狀態行, 警報)。
+    警報條件：①jobs_state/*.fail 存在（worker 保險絲停機）②已認領 job 的 store 超過 stale_min
+    分鐘沒新結果（=兩層 watchdog 的外層;內層單筆 timeout 在 dedust run）。"""
+    import json as _json
+    from antenna.utils import DATASET_PATH
+    qp = DATASET_PATH.joinpath("jobs.json")
+    sd = DATASET_PATH.joinpath("jobs_state")
+    lines, alarms = [], []
+    if sd.exists():
+        for f in os.listdir(str(sd)):
+            if f.endswith(".fail"):
+                alarms.append(f"工廠停機: {f}（HFSS 疑壞死,修復後刪 .fail/.claim 重派）")
+    if not qp.exists():
+        return lines, alarms
+    jobs = _json.load(open(str(qp), encoding="utf-8"))
+    now = _time.time()
+    for j in jobs:
+        st = j["store"]
+        if sd.joinpath(st + ".done").exists():
+            continue
+        claimed = sd.joinpath(st + ".claim").exists()
+        rp = DATASET_PATH.joinpath(st, "results.json")
+        mp = DATASET_PATH.joinpath(j["input"], "manifest.json")
+        total = len(_json.load(open(str(mp), encoding="utf-8"))) if mp.exists() else "?"
+        if rp.exists():
+            res = _json.load(open(str(rp), encoding="utf-8"))
+            done = sum(1 for v in res.values() if "wm" in v)
+            age = (now - os.path.getmtime(str(rp))) / 60
+            lines.append(f"  job {st}: {done}/{total} 完成,最新結果 {age:.0f} 分前"
+                         f"{'（已認領）' if claimed else '（未認領）'}")
+            if claimed and age > stale_min:
+                alarms.append(f"job {st} 疑卡住: 已認領但 {age:.0f} 分無新結果（>{stale_min}）")
+        else:
+            ref = sd.joinpath(st + ".claim")
+            if claimed and (now - os.path.getmtime(str(ref))) / 60 > stale_min:
+                alarms.append(f"job {st} 疑卡住: 認領 {(now - os.path.getmtime(str(ref))) / 60:.0f} 分仍零結果")
+            lines.append(f"  job {st}: 0/{total}{'（已認領）' if claimed else '（排隊中）'}")
+    return lines, alarms
+
+
 def main():
     #? Windows 主控台常是 cp950(Big5)，遇到非 Big5 字元會 UnicodeEncodeError → 強制 utf-8 輸出、免設 env。
     if hasattr(sys.stdout, "reconfigure"):
@@ -193,8 +235,27 @@ def main():
     ap.add_argument("--live", action="store_true", help="只列判定為『在跑/在跑?/疑卡住』的 run（濾掉已結束/當機的舊 run）")
     ap.add_argument("--alert", action="store_true",
                     help="監看模式：--match 到的 run 只要有一個不在跑 → 印警報、exit 1（給排程當 watchdog）")
+    ap.add_argument("--factory", action="store_true",
+                    help="資料工廠哨兵：掃 dedust 佇列進度＋卡住/停機偵測（配 --alert 推播;零 token 純腳本）")
+    ap.add_argument("--stale", type=int, default=30, help="--factory 判卡住的無進度分鐘數")
     ap.add_argument("--notify-topic", default=None, help="警報時推播到 ntfy.sh/<主題>（手機 ntfy app 訂閱同主題）")
     args = ap.parse_args()
+
+    if args.factory:
+        lines, alarms = _factory_scan(args.stale)
+        print("資料工廠狀態:")
+        for ln in lines or ["  （佇列空）"]:
+            print(ln)
+        if alarms:
+            msg = "；".join(alarms)
+            print(f"⚠ 工廠警報：{msg}")
+            if args.alert:
+                if args.notify_topic:
+                    _notify(args.notify_topic, msg)
+                sys.exit(1)
+        elif args.alert and not args.match:
+            print("✓ 工廠無警報")
+            return
 
     prev = _load_snapshot()
     runs = scan(args.match, prev)
