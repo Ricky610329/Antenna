@@ -2684,10 +2684,45 @@ def run(args):
     #  (verify-discrete 實際踩到);連同 single_port.py 的「匯出前刪舊檔」雙保險。
     import threading
 
+    def _kill_hfss():
+        try:
+            from script.kill import kill as _kill
+            _kill()
+        except Exception as ke:
+            print(f"  watchdog kill 失敗: {ke}")
+
+    def _guard(fn, timeout, desc):
+        """COM 呼叫留主執行緒（STA）,watchdog 執行緒超時殺 HFSS 讓呼叫拋錯——
+        每一個會碰 COM 的環節都要有處決線（2026-07-11 教訓:重開卡死=永久凍結）。"""
+        done_evt = threading.Event()
+
+        def _wd():
+            if not done_evt.wait(timeout):
+                print(f"  ⏱ {desc} 超過 {timeout}s——殺 HFSS 解鎖")
+                _kill_hfss()
+        threading.Thread(target=_wd, daemon=True).start()
+        try:
+            return fn()
+        finally:
+            done_evt.set()
+
     def _open_sim():
-        s = SinglePortRadSimulator(record_path=str(out), sweep_type=args.sweep)
-        s.open()
-        return s
+        #! 開啟/重開會卡死（license/殭屍行程;218 實測 2026-07-11）→ watchdog + 3 試保險絲
+        import time as _t
+        last = None
+        for attempt in range(3):
+            def _mk():
+                s = SinglePortRadSimulator(record_path=str(out), sweep_type=args.sweep)
+                s.open()
+                return s
+            try:
+                return _guard(_mk, 300, f"HFSS 開啟（第 {attempt + 1} 試）")
+            except Exception as e:
+                last = e
+                print(f"  HFSS 開啟失敗（{attempt + 1}/3）: {e}")
+                _kill_hfss()
+                _t.sleep(15)
+        raise SystemExit(f"HFSS 連續 3 次開不起來——疑似壞死,中止本批（{last}）")
 
     def _watchdog(done_evt, fired):
         #! 卡住偵測（資料工廠 2026-07-10）：COM 呼叫可以「無例外地永遠不回來」——單筆超時就殺
@@ -2723,14 +2758,21 @@ def run(args):
                 if fails >= getattr(args, "max_fail", 5):
                     raise SystemExit(f"連續 {fails} 筆失敗——HFSS 疑似壞死,中止本批"
                                      "（已完成部分已落檔,修復後重跑同指令即續）")
-                try:                                     # 殺過/壞過的 COM 連線重開再戰
-                    sim.quit()
-                except Exception:
-                    pass
+                _kill_hfss()                             # 先殺透再重開（quit 對殭屍 COM 會卡,跳過）
                 sim = _open_sim()
                 continue
             done_evt.set()
             fails = 0
+            #? 接管防互踩:若本批綁 claim 且已被別台接管（stale takeover）→ 優雅退出,不再寫 store
+            cp = getattr(args, "claim_path", None)
+            if cp is not None:
+                try:
+                    owner = json.load(open(cp, encoding="utf-8")).get("machine")
+                except Exception:
+                    owner = None
+                if owner != getattr(args, "claim_me", None):
+                    print(f"⚠ claim 已被 {owner} 接管——本機停寫退出（避免 results.json 互踩）")
+                    return
 
             resp = torch.stack([torch.as_tensor(result[l]).float().reshape(-1) for l in labels])
             w, per = worst_margin(resp, labels, cfg.targets)
@@ -2751,7 +2793,7 @@ def run(args):
             print(f"  ✓ wm={entry['wm']}  rad_margin={entry.get('rad_margin', '—')}  {entry['time_s']}s")
     finally:
         try:
-            sim.quit()
+            _guard(sim.quit, 120, "HFSS 收尾關閉")
         except Exception:
             pass
     print(f"\n完成。結果：{results_path}；報表：python -m script.dedust report")
@@ -2843,7 +2885,8 @@ def worker(args):
         st = picked["store"]
         print(f"▶ 認領 {st}（input {picked['input']}）")
         ns = argparse.Namespace(config=args.config, input=picked["input"], store=st, out=None,
-                                sweep=args.sweep, timeout=args.timeout, max_fail=args.max_fail)
+                                sweep=args.sweep, timeout=args.timeout, max_fail=args.max_fail,
+                                claim_path=str(sd.joinpath(st + ".claim")), claim_me=me)
         try:
             run(ns)
         except SystemExit as e:                          # 連敗保險絲:標 fail、停機等人工
