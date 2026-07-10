@@ -2829,6 +2829,7 @@ def worker(args):
             if args.once:
                 print("佇列空/無可認領,--once 收工")
                 break
+            print(f"({time.strftime('%H:%M:%S')}) 佇列無可認領,{args.poll}s 後再掃")   # 心跳:睡眠不裝死
             time.sleep(args.poll)
             continue
         st = picked["store"]
