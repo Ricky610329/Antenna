@@ -2429,21 +2429,55 @@ def run(args):
     out = Path(args.out if args.out else f"_dedust_{args.store}").resolve()   # 預設每 store 一個工作目錄
     #! 隔離理由 (2026-07-06)：CSV 檔名只含批內編號,跨批共用目錄+匯出 silently 失敗=讀到上一批殘留
     #  (verify-discrete 實際踩到);連同 single_port.py 的「匯出前刪舊檔」雙保險。
-    sim = SinglePortRadSimulator(record_path=str(out), sweep_type=args.sweep)
-    sim.open()
+    import threading
+
+    def _open_sim():
+        s = SinglePortRadSimulator(record_path=str(out), sweep_type=args.sweep)
+        s.open()
+        return s
+
+    def _watchdog(done_evt, fired):
+        #! 卡住偵測（資料工廠 2026-07-10）：COM 呼叫可以「無例外地永遠不回來」——單筆超時就殺
+        #  HFSS 行程樹（script.kill,線上線容錯同款）,讓卡住的 COM 呼叫拋例外走 error 路徑。
+        #  若殺完 COM 仍不返回（罕見）,第二層=外部 status 掃 results.json staleness 告警。
+        if not done_evt.wait(getattr(args, "timeout", 900)):
+            fired.set()
+            print(f"  ⏱ 單筆超過 {getattr(args, 'timeout', 900)}s＝疑似卡住,強制終結 HFSS（watchdog）")
+            try:
+                from script.kill import kill as _kill
+                _kill()
+            except Exception as ke:
+                print(f"  watchdog kill 失敗: {ke}")
+
+    sim = _open_sim()
+    fails = 0                                            # 連續失敗計數（HFSS 壞死保險絲）
     try:
         for num, m in todo:
             p = torch.load(str(input_dir.joinpath(f"{m['id']}.pt")), weights_only=True)
             print(f"[{m['id']}] 模擬中… ({num + 1}/{len(manifest)})")
+            done_evt, fired = threading.Event(), threading.Event()
+            threading.Thread(target=_watchdog, args=(done_evt, fired), daemon=True).start()
             try:
                 sim.start(num)
                 result = sim(p)
                 elapsed = sim.end()
             except Exception as e:                       #! 單筆失敗不炸整批：記 error、下一筆（比照線上 skip）
-                results[m["id"]] = {"error": str(e)}
+                done_evt.set()
+                results[m["id"]] = {"error": ("watchdog_timeout: " if fired.is_set() else "") + str(e)}
                 _flush()
                 print(f"  ✗ {e}")
+                fails += 1
+                if fails >= getattr(args, "max_fail", 5):
+                    raise SystemExit(f"連續 {fails} 筆失敗——HFSS 疑似壞死,中止本批"
+                                     "（已完成部分已落檔,修復後重跑同指令即續）")
+                try:                                     # 殺過/壞過的 COM 連線重開再戰
+                    sim.quit()
+                except Exception:
+                    pass
+                sim = _open_sim()
                 continue
+            done_evt.set()
+            fails = 0
 
             resp = torch.stack([torch.as_tensor(result[l]).float().reshape(-1) for l in labels])
             w, per = worst_margin(resp, labels, cfg.targets)
@@ -2463,8 +2497,103 @@ def run(args):
             _flush()
             print(f"  ✓ wm={entry['wm']}  rad_margin={entry.get('rad_margin', '—')}  {entry['time_s']}s")
     finally:
-        sim.quit()
+        try:
+            sim.quit()
+        except Exception:
+            pass
     print(f"\n完成。結果：{results_path}；報表：python -m script.dedust report")
+
+
+# ---------------------------------------------------------------- 資料工廠（NAS 派工,2026-07-10）
+def _jobs_paths():
+    """佇列=DATASET_PATH/jobs.json（人/agent 編輯）;狀態檔=jobs_state/<store>.{claim,done,fail}。"""
+    sd = DATASET_PATH.joinpath("jobs_state")
+    sd.mkdir(parents=True, exist_ok=True)
+    return DATASET_PATH.joinpath("jobs.json"), sd
+
+
+def jobs_add(args):
+    """把一個批次加進 NAS 派工佇列（round 檔照常開、check-dup 照常跑——佇列只管「誰去燒」）。"""
+    qp, _ = _jobs_paths()
+    jobs = json.load(open(str(qp), encoding="utf-8")) if qp.exists() else []
+    if any(j["store"] == args.store for j in jobs):
+        raise SystemExit(f"{args.store} 已在佇列")
+    if not DATASET_PATH.joinpath(args.input, "manifest.json").exists():
+        raise SystemExit(f"{args.input} 無 manifest——先跑 select 與 check-dup")
+    jobs.append(dict(input=args.input, store=args.store, prio=args.prio))
+    tmp = str(qp) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(jobs, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, qp)
+    print(f"已入佇列: {args.store} (prio {args.prio});目前 {len(jobs)} 個 job")
+
+
+def worker(args):
+    """資料工廠 worker（Ricky 2026-07-10「三台都變資料收集系統,用 NAS 控制」）——正式機常駐:
+    迴圈＝讀 jobs.json（prio 升冪）→ 跳過 done/被認領 → **原子認領**（jobs_state/<store>.claim,
+    O_EXCL 建檔含機器 IP）→ run（斷點續跑＋單筆 watchdog＋連敗保險絲）→ 標 done → 下一個;
+    佇列空 → 睡 --poll 秒再掃。**同 store 兩機並跑由 claim 檔擋掉**（results.json 互踩防護）。
+    stale 接管:claim 存在但 store 無進度超過 --stale 分鐘（機器死了）→ 別台可接手續跑。
+    停止:建 jobs_state/STOP（跑完當前 job 收工）或 Ctrl-C。run 觸發保險絲（連敗）→ 寫
+    <store>.fail 並停機（HFSS 壞死要人工/告警介入;修復後刪 .fail+.claim 即可重派）。"""
+    import time
+    from antenna.utils.web import get_local_ip
+    me = get_local_ip()
+    qp, sd = _jobs_paths()
+    print(f"worker 上線 @ {me}（poll {args.poll}s / 單筆 timeout {args.timeout}s / stale {args.stale}m）")
+    while True:
+        if sd.joinpath("STOP").exists():
+            print("STOP 檔存在,worker 收工")
+            break
+        jobs = sorted(json.load(open(str(qp), encoding="utf-8")), key=lambda j: j.get("prio", 9)) \
+            if qp.exists() else []
+        picked = None
+        for j in jobs:
+            st = j["store"]
+            if sd.joinpath(st + ".done").exists() or sd.joinpath(st + ".fail").exists():
+                continue
+            cp = sd.joinpath(st + ".claim")
+            if cp.exists():
+                rp = DATASET_PATH.joinpath(st, "results.json")
+                progressed = rp.exists() and (time.time() - os.path.getmtime(str(rp))) < args.stale * 60
+                claim_fresh = (time.time() - os.path.getmtime(str(cp))) < args.stale * 60
+                if progressed or claim_fresh:
+                    continue
+                print(f"接管 stale job {st}（無進度＞{args.stale} 分）")
+                try:
+                    os.remove(str(cp))
+                except OSError:
+                    continue
+            try:
+                fd = os.open(str(cp), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError:
+                continue                                  # 別台剛好搶到
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(dict(machine=me, at=time.strftime("%Y-%m-%d %H:%M:%S")), f)
+            picked = j
+            break
+        if picked is None:
+            if args.once:
+                print("佇列空/無可認領,--once 收工")
+                break
+            time.sleep(args.poll)
+            continue
+        st = picked["store"]
+        print(f"▶ 認領 {st}（input {picked['input']}）")
+        ns = argparse.Namespace(config=args.config, input=picked["input"], store=st, out=None,
+                                sweep=args.sweep, timeout=args.timeout, max_fail=args.max_fail)
+        try:
+            run(ns)
+        except SystemExit as e:                          # 連敗保險絲:標 fail、停機等人工
+            with open(str(sd.joinpath(st + ".fail")), "w", encoding="utf-8") as f:
+                f.write(str(e))
+            print(f"✗ {st} 中止:{e}\nworker 停機（修復 HFSS 後刪 jobs_state/{st}.fail 與 .claim 重派）")
+            raise
+        with open(str(sd.joinpath(st + ".done")), "w", encoding="utf-8") as f:
+            json.dump(dict(machine=me, at=time.strftime("%Y-%m-%d %H:%M:%S")), f)
+        print(f"✔ {st} 完成")
+        if args.once:
+            break
 
 
 # ---------------------------------------------------------------- report（匯總表，貼 round 檔 §4）
@@ -2688,7 +2817,25 @@ def main():
     s.add_argument("--out", default=None, help="HFSS 工作目錄（正式機本地碟;預設 _dedust_<store>,批次間隔離防殘留污染）")
     s.add_argument("--sweep", default="Interpolating", choices=["Interpolating", "Discrete", "Fast"],
                    help="掃頻演算法（Discrete=17 點逐點硬解,慢但每點真解;掃頻法交叉驗證用）")
+    s.add_argument("--timeout", type=int, default=900, help="單筆 watchdog 秒數（超時殺 HFSS 標 error 續跑;中位 160s/P90 176s）")
+    s.add_argument("--max-fail", type=int, default=5, dest="max_fail", help="連續失敗幾筆判 HFSS 壞死中止")
     s.set_defaults(fn=run)
+
+    s = sub.add_parser("worker", help="資料工廠 worker：常駐認領 NAS 佇列 job（jobs.json）自動跑批")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--sweep", default="Interpolating", choices=["Interpolating", "Discrete", "Fast"])
+    s.add_argument("--poll", type=int, default=300, help="佇列空時幾秒掃一次")
+    s.add_argument("--timeout", type=int, default=900)
+    s.add_argument("--max-fail", type=int, default=5, dest="max_fail")
+    s.add_argument("--stale", type=int, default=45, help="claim 無進度幾分鐘可被接管")
+    s.add_argument("--once", action="store_true", help="只跑一個 job 就收工（測試用）")
+    s.set_defaults(fn=worker)
+
+    s = sub.add_parser("jobs-add", help="把批次加進派工佇列（select+check-dup 先跑完）")
+    s.add_argument("--input", required=True)
+    s.add_argument("--store", required=True)
+    s.add_argument("--prio", type=int, default=5, help="小=先跑")
+    s.set_defaults(fn=jobs_add)
 
     s = sub.add_parser("report", help="匯總表（貼 round 檔 §4）")
     s.add_argument("--input", default=DEFAULT_INPUT)

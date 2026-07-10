@@ -11,6 +11,10 @@
 3. 新 select 函式的 docstring 寫死：臂別、筆數、判準（與 round 檔 §1 一致）。
 4. **生成決定性**：select 內不用未 seed 的隨機（`np.random.default_rng(seed)`）；同 seed 同輸出。
 5. 同一個 store **不可兩台機同時跑**（results.json 整份重寫會互踩）；跨機接力 OK（斷點續跑）。
+   **資料工廠模式**下這由 `jobs_state/<store>.claim` 原子認領自動保證——正式機常駐
+   `python -m script.dedust worker`,派工用 `jobs-add --input X_input --store X [--prio N]`;
+   單筆 watchdog（預設 900s 殺 HFSS 標 error 續跑）＋連敗保險絲（5 筆→標 .fail 停機等人工）;
+   停止=建 `jobs_state/STOP`。
 6. 錨點注意：x00 是破對稱錨點（含 (4,18) 翻轉），x00 條目收尾用除塵不對稱化（`_finish` 語義），
    不要 `symmetrize`（round-16 §3 caveat）。
 

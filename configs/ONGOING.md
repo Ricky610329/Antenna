@@ -13,6 +13,12 @@
 
 ## 🔵 進行中 / 待跑
 
+### 資料工廠（🟢 **基礎設施就緒**,2026-07-10）
+- 正式機常駐:`python -m script.dedust worker`（認領 NAS `dataset/jobs.json` 佇列;原子 claim 防互踩;
+  單筆 watchdog 900s 殺卡住的 HFSS;連敗 5 筆標 .fail 停機）。派工:`jobs-add --input X_input --store X --prio N`。
+- 停止=建 `dataset/jobs_state/STOP`;stale 接管=45 分無進度可被別台接手。
+- 待辦:216 收 R5 E 臂後掛 worker;status --alert 排程啟用（ntfy topic 待 Ricky 定）。
+
 ### ~~Round 13 — 組數階梯~~（✅ **2026-07-08 收檔**）→ [round-13](../docs/log/round-13-block-ladder.md)
 - 組數=真設計軸但報酬有取捨:4-5 塊甜蜜點(5 塊買 rad/4 塊買選擇性)、6 塊遞減;margin 天花板僅微升。
 
