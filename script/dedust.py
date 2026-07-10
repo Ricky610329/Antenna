@@ -2056,6 +2056,251 @@ def select_r19data(args):
         dirs[0], len(manifests[0]), dirs[1], len(manifests[1]), kinds, attempts))
 
 
+def select_r20gen(args):
+    """R20 一代選批（模型線終審＝真值在迴圈的 (μ+λ) 演化;判準寫死於 round-20 檔）:
+      G GA 臂（--ga 60）—— 父母（現任榜＋上代真值贏家）× 算子鏈子代 λ≈5000 → SM 粗篩
+        （帶狀 wm 排序＋帶外 tiebreak;R19 校準:粗排可用/細排不可用/帶外 ρ0.603 可信）＋多樣性 → 60
+      N 隨機對照（--rand 60）—— 同一子代池、不經 SM、均勻抽＝模型線終審的對照臂
+      F 碎片探索（--frag 30）—— 池頂碎片族（p00/t07/n09…,wm 正 rad 死）× 輕變異
+        （flips/塊/hslot=rad 旋鈕/部分除塵）,不強制可製造（Ricky:「探索碎片化好 pattern 的空間」）
+    全部樣本 manifest 記 pred_wm/pred_oob＝前瞻性驗證（每代自動一次模型考試,收檔算 ρ）。
+    gen>1:父母自動＝上一代真值字典序 top＋現任榜 elitism。算子權重＝R19 真值校準
+    （三標過率 flips20/addblock18/rmblock17% vs surgery1/resize0%）。輸出三夾（%3 交錯,三機並行）。"""
+    from scipy.ndimage import label as _label
+    from antenna.training import setup_responses
+    from antenna.zoo import SURROGATES
+    rng = np.random.default_rng(args.seed + args.gen)
+
+    def loadp(fol, pid):
+        return np.asarray(torch.load(str(_dir(fol).joinpath(pid + ".pt")), weights_only=True)).reshape(25, 25) > 0.5
+
+    # ---- 父母池
+    ELITE = [("a024", "dedust_addmap_input", "a024_c25r9c11s3"),
+             ("ccr9s2", "dedust_r17_input", "cc_c25_r6s2_r9s2"),
+             ("ccx00", "dedust_r17_input", "cc_x00_r5s2_r8s3")]
+    if args.gen == 1:
+        PAR = ELITE + [("ccr9s3", "dedust_r17_input", "cc_c25_r6s2_r9s3"),
+                       ("i02", "dedust_r15inf_input", "i02_r15"),
+                       ("c25", "dedust_ref3_input", "c25_a15w10_2_22"),
+                       ("x00", "dedust_wide_input", "x00_c21k2"),
+                       ("g16", "dedust_r15ga_input", "g16_r15"),
+                       ("c18", "dedust_ref2_input", "c18_sm"),
+                       ("vg0258", "dedust_r19a_input", "vg0258_c25"),
+                       ("vg0338", "dedust_r19a_input", "vg0338_c18"),
+                       ("vg0765", "dedust_r19b_input", "vg0765_a024")]
+    else:                                             # 上一代真值字典序 top9 + elitism 3
+        prev, seen_k = [], set()
+        for suf in "abc":
+            st = f"{args.input_prefix}{args.gen - 1}{suf}"
+            rp = DATASET_PATH.joinpath(st, "results.json")
+            if not rp.exists():
+                raise SystemExit(f"上一代 {st} 無結果——先收完再開新代")
+            res = json.load(open(str(rp), encoding="utf-8"))
+            for i, r in res.items():
+                if "wm" not in r or i.startswith("n_"):
+                    continue
+                p = loadp(st + "_input", i)
+                k = p.tobytes()
+                if k in seen_k:
+                    continue
+                seen_k.add(k)
+                tri = r["wm"][2] >= 0 and (r.get("rad_margin") or -9) >= 0
+                prev.append((tri, r["wm"][2], i, st + "_input"))
+        prev.sort(reverse=True)
+        PAR = ELITE + [(i, fol, i) for _, _, i, fol in prev[:9]]
+    P = {}
+    for name, fol, pid in PAR:
+        if name not in P:
+            P[name] = loadp(fol, pid)
+    print(f"gen{args.gen} 父母 {len(P)}: {list(P)}")
+
+    # ---- 算子庫（優化配方;權重=R19 真值三標過率校準）
+    def op_flips(p):
+        em, ed = edge_sets(p)
+        pool = np.flatnonzero((em | ed).reshape(-1))
+        k = int(rng.integers(1, 9))
+        q = p.copy()
+        q.ravel()[rng.choice(pool, size=min(k, len(pool)), replace=False)] ^= True
+        return q, ["flips", k]
+
+    def op_addblock(p):
+        for _ in range(8):
+            r, c = int(rng.integers(0, 22)), int(rng.integers(0, 23))
+            h, w = int(rng.integers(2, 4)), int(rng.integers(2, 4))
+            q = add_block(p, r, c, h, w)
+            if q is not None:
+                return q, ["addblock", r, c, h, w]
+        return None, None
+
+    def op_rmblock(p):
+        lab, n = _label(p, structure=_CROSS)
+        fid = int(lab[FEED])
+        small = [k for k in range(1, n + 1) if k != fid and (lab == k).sum() <= 20]
+        if not small:
+            return None, None
+        k = small[int(rng.integers(0, len(small)))]
+        q = p.copy(); q[lab == k] = False
+        return q, ["rmblock", int((lab == k).sum())]
+
+    def op_realloc(p):
+        return _realloc(p, int(rng.integers(2, 7))), ["realloc"]
+
+    def op_wtrim(p):
+        return _trim_wings(p, int(rng.integers(1, 4))), ["wingtrim"]
+
+    def op_hslot(p):
+        k = int(rng.integers(0, 13))
+        return _surgery(p, "hslot", k), ["hslot", k]
+
+    def op_dustpart(p):                               # 部分除塵（F 臂:朝可製造走一步,不走到底）
+        lab, n = _label(p, structure=_CROSS)
+        fid = int(lab[FEED])
+        sizes = [(int((lab == k).sum()), k) for k in range(1, n + 1) if k != fid]
+        sizes.sort()
+        take = [k for _, k in sizes[:int(rng.integers(1, 5))]]
+        if not take:
+            return None, None
+        q = p.copy()
+        for k in take:
+            q[lab == k] = False
+        return q, ["dustpart", len(take)]
+
+    OPS_G = ((op_flips, .38), (op_addblock, .27), (op_rmblock, .21), (op_realloc, .07),
+             (op_wtrim, .04), (op_hslot, .03))
+    OPS_F = ((op_flips, .35), (op_addblock, .20), (op_rmblock, .15), (op_hslot, .20), (op_dustpart, .10))
+
+    def gen_children(anchors, ops, per_anchor, dmax, manuf, hist):
+        ws = np.array([w for _, w in ops]); ws /= ws.sum()
+        out = []
+        for aname, ap in anchors.items():
+            made, tries = 0, 0
+            while made < per_anchor and tries < per_anchor * 25:
+                tries += 1
+                q = ap
+                chain = []
+                for _ in range(int(rng.choice((1, 2), p=(.6, .4)))):
+                    fn = ops[int(rng.choice(len(ops), p=ws))][0]
+                    q, desc = fn(q)
+                    if q is None:
+                        break
+                    chain.append(desc)
+                if q is None or not chain:
+                    continue
+                q = (np.asarray(q).reshape(25, 25) > 0.5).copy()
+                q[FEED] = True
+                if manuf:
+                    q, _n = strip_small(q, 4)
+                    q = _ensure_feed_pad(q, 4)
+                st = piece_stats(q)
+                if manuf and st["n_1px"] > 0:
+                    continue
+                if not (230 <= st["metal_px"] <= 520):
+                    continue
+                d = int((q != ap).sum())
+                if not (1 <= d <= dmax):
+                    continue
+                k = q.tobytes()
+                if k in hist:
+                    continue
+                hist.add(k)
+                out.append(dict(pat=q, parent=aname, ops=chain, d=d, stats=st))
+                made += 1
+        return out
+
+    hist = set()
+    for fol in _all_input_folders():
+        d = DATASET_PATH.joinpath(fol)
+        for m in json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8")):
+            f = d.joinpath(m["id"] + ".pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+
+    per_g = max(1, (args.ga + args.rand) * 40 // max(len(P), 1))
+    cand_g = gen_children(P, OPS_G, per_g, 25, True, hist)
+    FRAG = {n: loadp(f, i) for n, f, i in
+            (("p00", "dedust_r7_input", "p00_orig"), ("t07", "dedust_r9_input", "t07_top"),
+             ("t08", "dedust_r9_input", "t08_top"), ("n09", "dedust_r9_input", "n09_near"),
+             ("t04", "dedust_r9_input", "t04_top"), ("t11", "dedust_r9_input", "t11_top"),
+             ("t14", "dedust_r9_input", "t14_top"), ("t09", "dedust_r9_input", "t09_top"))}
+    cand_f = gen_children(FRAG, OPS_F, max(1, args.frag * 40 // len(FRAG)), 40, False, hist)
+    print(f"子代池: G {len(cand_g)} / F {len(cand_f)}")
+
+    # ---- SM 粗篩＋前瞻性預測（全部候選都預測;帶狀排序=1dB 帶內用帶外 tiebreak）
+    cfg = load_config(args.config)
+    setup_responses(cfg)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    n_pts = sum(cfg.targets[labels[0]]["width"])
+    cache = os.path.join(REPO, "tmp", "r20_sm")
+    os.makedirs(cache, exist_ok=True)
+    sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+    sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
+
+    def predict(cands):
+        pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in cands])
+        with torch.no_grad():
+            raw = sm.model(pats).reshape(len(cands), len(labels), n_pts)
+        for k, c in enumerate(cands):
+            w, _ = worst_margin(raw[k], labels, cfg.targets)
+            c["pred_wm"] = _r(float(w))
+            c["pred_oob"] = oob_metrics(raw[k].numpy())["oob_bad"]
+
+    predict(cand_g)
+    predict(cand_f)
+
+    def pick(cands, n, top_frac, min_d=6):
+        order = sorted(range(len(cands)),
+                       key=lambda i: (-np.floor(cands[i]["pred_wm"]), cands[i]["pred_oob"]))
+        order = order[:max(n * 3, int(len(cands) * top_frac))]
+        picked = []
+        for i in order:
+            if len(picked) >= n:
+                break
+            if all(int((cands[i]["pat"] != cands[j]["pat"]).sum()) >= min_d for j in picked):
+                picked.append(i)
+        for i in order:                               # 多樣性湊不滿就放寬
+            if len(picked) >= n:
+                break
+            if i not in picked:
+                picked.append(i)
+        return picked
+
+    gi = pick(cand_g, args.ga, .4)
+    rest = [i for i in range(len(cand_g)) if i not in gi]
+    ni = list(rng.choice(rest, size=min(args.rand, len(rest)), replace=False))
+    fi = pick(cand_f, args.frag, .5)
+
+    entries = []
+    for arm, idxs, cands in (("ga", gi, cand_g), ("rand", ni, cand_g), ("frag", fi, cand_f)):
+        for j, i in enumerate(idxs):
+            c = cands[i]
+            entries.append(dict(id=f"{arm[0]}{args.gen}_{j:03d}_{c['parent']}", kind=arm,
+                                family=f"{arm.upper()}_g{args.gen}", removed_px=0, **c["stats"],
+                                source_id=c["parent"], ops=c["ops"], diff_px=c["d"],
+                                pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], _pat=c["pat"]))
+    if args.gen == 1:                                 # 公證搭載（R19 單次紀錄級;鐵則）
+        for pid, fol, reps in (("vg0338_c18", "dedust_r19a_input", 2), ("vg0396_c18", "dedust_r19a_input", 1),
+                               ("vg0258_c25", "dedust_r19a_input", 2), ("vg0765_a024", "dedust_r19b_input", 1)):
+            p = loadp(fol, pid)
+            for j in range(reps):
+                entries.append(dict(id=f"n_{pid}_{j}", kind="notarize", family="N_" + pid,
+                                    removed_px=0, **piece_stats(p), source_id=pid, _pat=p))
+    dirs = []
+    for suf in "abc":
+        d = _dir(f"{args.input_prefix}{args.gen}{suf}_input")
+        d.mkdir(parents=True, exist_ok=True)
+        dirs.append(d)
+    manifests = [[], [], []]
+    for k, e in enumerate(entries):
+        pat = e.pop("_pat")
+        b = k % 3
+        manifests[b].append(e)
+        torch.save(torch.tensor(pat, dtype=torch.float32), str(dirs[b].joinpath(e["id"] + ".pt")))
+    for man, d in zip(manifests, dirs):
+        _save_manifest(man, d)
+    print(f"r20 gen{args.gen} 完成: GA {len(gi)}+隨機 {len(ni)}+碎片 {len(fi)}"
+          f"{'+公證 6' if args.gen == 1 else ''} → 三夾 {[len(m) for m in manifests]}")
+
+
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
@@ -2068,9 +2313,17 @@ HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedu
                   "dedust_r19a_input", "dedust_r19b_input")
 
 
+def _all_input_folders():
+    """查重全集＝NAS 上全部輸入夾（自動掃描;2026-07-10 起取代手動維護 HISTORY_INPUTS——
+    漏補清單的教訓從制度上消滅）。HISTORY_INPUTS 保留給舊 select 的內建去重引用。"""
+    return tuple(sorted(
+        d for d in os.listdir(str(DATASET_PATH))
+        if d.endswith("_input") and DATASET_PATH.joinpath(d, "manifest.json").exists()))
+
+
 def check_dup(args):
     """發車前查重（教訓 2026-07-07:ref3 出現 4/319 重複——掃位跨拓撲撞位、k=2 被再對稱化蓋回錨點）。
-    查 --input 批內重複＋與歷史輸入夾（HISTORY_INPUTS 中既存者,排除自身）的交叉重複。exit 1=有重複。"""
+    查 --input 批內重複＋與全部歷史輸入夾（自動掃描,排除自身）的交叉重複。exit 1=有重複。"""
     def load_folder(folder):
         d = DATASET_PATH.joinpath(folder)
         man = json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8"))
@@ -2090,8 +2343,8 @@ def check_dup(args):
         else:
             seen[v] = k
     hist = {}
-    for fol in HISTORY_INPUTS:
-        if fol == args.input or not DATASET_PATH.joinpath(fol, "manifest.json").exists():
+    for fol in _all_input_folders():
+        if fol == args.input:
             continue
         for k, v in load_folder(fol).items():
             hist.setdefault(v, f"{fol}:{k}")
@@ -2736,6 +2989,17 @@ def main():
     s.add_argument("--seeds", type=int, default=4, help="W/X 臂每 (錨點,k) 幾個 seed")
     s.add_argument("--guided", type=int, default=24, help="Y 臂每錨點取幾個")
     s.set_defaults(fn=select_wide)
+
+    s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
+    s.add_argument("--gen", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260710)
+    s.add_argument("--sm", default="sm_reanchor5.pth", help="粗篩用 SM 權重（NAS;每代重錨後換版本名）")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--ga", type=int, default=60)
+    s.add_argument("--rand", type=int, default=60)
+    s.add_argument("--frag", type=int, default=30)
+    s.add_argument("--input-prefix", default="dedust_r20g", dest="input_prefix")
+    s.set_defaults(fn=select_r20gen)
 
     s = sub.add_parser("select-r19data", help="R19 模型線資料批：王錨點×組件級算子隨機鏈,雙夾各 n 筆不重複(訓練用)")
     s.add_argument("--input-a", default="dedust_r19a_input", help="37 跑的夾(含 cc 公證 6 筆)")

@@ -29,9 +29,12 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### 🔴 決策點:R20 怎麼走（v5 門檻未過,三選項待 Ricky 拍板）→ [round-19 §6](../docs/log/round-19-model-line.md)
-- (a) GA 照打但 SM 降級=粗篩+帶外 tiebreak,配同額隨機對照(模型線終審) / (b) 模型線收束回構造法+工廠 /
-  (c) 先做帶內細排序誤差來源分析。公證批(vg0338 帶外 8.84 挑戰/vg0258/vg0765)+r19b 補 1 筆併下批。
+### Round 20 — 模型線終審:演化 vs 隨機＋碎片探索（🔵 **running**,2026-07-10 gen1 發車）→ [round-20](../docs/log/round-20-evolution-loop.md)
+- Ricky 拍板(a)+碎片臂+「SM 多試」。一代=G 60(SM 帶狀粗篩+帶外 tiebreak)+N 60(同池隨機對照)+F 30(碎片族)≈2hr。
+- 判準寫死:3 代累計 G vs N 三項至少一優=模型線有效/全平=蓋棺;F 任一 rad≥0 且 wm≥0=碎片可解;
+  前瞻 ρ 每代自動考模型;gen1 搭載公證(vg0338 帶外王挑戰×2/vg0396/vg0258×2/vg0765)。
+- gen1 156 筆已入佇列(prio 3,三夾);收檔→重錨 v6→`select-r20gen --gen 2 --sm sm_reanchor6.pth`。
+- 佇列現況隨時看:`python -m script.dedust jobs-ls`。
 
 ### ~~Round 19 — 模型線第一批~~（✅ **2026-07-10 收檔**）→ [round-19](../docs/log/round-19-model-line.md)
 - **門檻未過(wm ρ 0.493<0.5)=飽和是本質**;帶外排序 0.603 可用;rad 王易主 cc_r9s2 +0.62;vg0338 帶外 8.84 單次。
