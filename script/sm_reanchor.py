@@ -43,7 +43,12 @@ CLEAN_STORES = ("dedust_ref2v", "dedust_champ_disc",                       # 修
                 # v4 追加（R11-R14 全批,2026-07-09;certified 優先序維持=前面的店先見先贏）
                 "dedust_ref3", "dedust_probes", "dedust_wide", "dedust_crown", "dedust_family2",
                 "dedust_bakeoff", "dedust_blocks", "dedust_ablate", "dedust_resize",
-                "dedust_occl2", "dedust_tol")
+                "dedust_occl2", "dedust_tol",
+                # v5 追加（R15-R19a,2026-07-10）:手術/低側族/王鄰域變異=新區域覆蓋。
+                # ⚠ dedust_r19b 刻意不進——與 r19a 交錯分夾同分布,整夾保留當 R19 門檻 held-out
+                #   （round-19 §1:vargen held-out wm 排序 ρ≥0.5 且 oob 顯著 → R20 GA 發車）。
+                "dedust_r15ga", "dedust_r15inf", "dedust_r15v", "dedust_addmap",
+                "dedust_r16b", "dedust_r17", "dedust_r18", "dedust_r19a")
 #? ref2 殘餘風險: 已實錘假象觸發率 ~9% (11 抽 1),無 certified 對照的 ref2 條目可能還有 ~10 筆髒 Gain——
 #  佔訓練集 <0.3%,MSE 回歸可容忍;隨後續重驗逐步被 certified 店覆蓋。store 不存在時自動略過。
 OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）
