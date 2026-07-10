@@ -1,9 +1,9 @@
 # Round 5 — 滑動視窗 SM 訓練量（修 R4 的欠訓 + 探測自鎖）
 
-- 狀態: running
-- 提出 / 開跑 / 結論: 2026-07-03 / 2026-07-03 / —
+- 狀態: concluded（2026-07-10 收 E 臂@216,ep~401;D/E+D 早收見 §3）
+- 提出 / 開跑 / 結論: 2026-07-03 / 2026-07-03 / 2026-07-10
 - 一句話問題: 把每輪 SM 訓練量從「自鎖在 3–5 epoch」提到「滑動視窗自動找的量級（起點 64、上限 1024）」，能否把 fit_loss 從 ~8–11 壓進 ~1–3 的中間帶、讓 sm_gap/sm_bias 降、trust 進入利用？
-- 一句話結論: —（待跑）
+- 一句話結論: **主假設成立但不解渴**——滑動視窗把 gap 壓到 1.24（史上最低,訓練量確實修好）,但 best-wm 停 −3.65@401ep（未破 R4 −2.89）、後 20 均 −13＝隨機遊走、trust 未解鎖——**瓶頸不在訓練量在泛化/搜尋**;線上線就此收束（工具定位,詳 decisions 敘事定調）。效率終值:39-42 分/ep（HFSS 佔比 <10%）＝37 筆真值/天,vs 批次線 540/天=15×（analysis 見 scratch 2026-07-10 工廠塊）。
 - 指向: `configs/README.md`（single_r5_*）· 對照 = R4 同臂（[round-04](round-04-adaptive-sm.md)）· `docs/discuss/decisions.md`「滑動視窗」· memory [[project_sm_training_redesign]]
 
 ## 1. 假設 (Propose)

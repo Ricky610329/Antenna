@@ -17,7 +17,7 @@
 | 02 | ensemble + trust(文獻治本) | ✅ archived(2026-07-01 停,②~417ep) | **治本微幅、未決定性**(②③微贏~0.3-0.5dB、①輸、皆未收斂;trust_t 卡低) | [round-02](round-02-ensemble-trust.md) |
 | 03 | 探索 × DIP（factorial E/D/E+D） | ✅ archived（2026-07-02 停,E@189/D@101/E+D@132） | **E(lr↑)最佳 -3.63@89（¼ epoch 追平②）**;DIP 連通成功但停滯;三臂被 SM 欠訓汙染 → R4 修瓶頸重跑 | [round-03](round-03-explore-dip.md) |
 | 04 | 自適應 SM 訓練量（修 R3 SM 欠訓瓶頸） | ✅ archived（2026-07-03 停,E@208/D@222/E+D@201） | **E+D 破紀錄 -2.89@154**（探索躍遷,+2.80 vs R3）；但主假設未驗證——探測自鎖 3-5ep、fit_loss 仍 8-11、trust 全鎖；E/D 輸 R3 ~0.9dB → R5 | [round-04](round-04-adaptive-sm.md) |
-| 05 | 滑動視窗 SM 訓練量（修 R4 欠訓+探測自鎖） | 🔵 running（2026-07-03 發；同日晚 D 臂提早收讓機給 R7，餘 E/E+D） | — | [round-05](round-05-window-sm.md) |
+| 05 | 滑動視窗 SM 訓練量（修 R4 欠訓+探測自鎖） | ✅ archived（2026-07-10 收 E 臂） | **gap 1.24 史上最低=訓練量修好;best −3.65 未破紀錄、trust 未解鎖=瓶頸在泛化/搜尋**;線上線收束（37 筆/天 vs 批次 540=15×） | [round-05](round-05-window-sm.md) |
 | 06 | 離線期望基準（每輪 HFSS 的期望 best；零 HFSS） | ✅ archived（2026-07-03 當日完成） | **期望爬升到不了 spec**（-9.18+0.75·ln k,躍遷主導）；**達標 pattern 已在池內（oracle +0.38）**；學長同預算贏 1-2dB；池抽樣等效預算 200-450× → **分布≫策略** | [round-06](round-06-offline-expected-best.md) |
 | 07 | 除塵驗證（達標 pattern 拔 1-3px 粉塵 HFSS 重驗＋順收 rad） | ✅ archived（2026-07-03 當日完成,15 筆/45 分） | **粉塵=共振的一部分（4/5 崩 -4.7~-16.9dB）→ 乾淨解用搜的不能用修的**；例外 p03 整塊型近零代價＝可製造最佳已知點（-2.68,rad+0.24）；oracle 重驗真（p00 +0.44）；rad=獨立第三關、與可製造同向 | [round-07](round-07-dedust.md) |
 | 08 | 乾淨子空間測繪（前緣真值/補洞因果/SM 校準/random 基線,97 筆） | ✅ archived（2026-07-05 收檔,斷電中斷一次） | **A 崩**（整塊型除塵 \|Δ\| 中位 1.17,通則不成立）/**B 敗**（補洞非因果,rad 全負）/**C 半亮**（SM 池內 1.5-2.4dB、池外 4-5.5）/**D 實錘**（uniform 輸池抽樣 ~5dB）＋⚠池值漂移警訊→R9；附圖報告 [round-08-report](round-08-report.md) | [round-08](round-08-clean-mapping.md) |

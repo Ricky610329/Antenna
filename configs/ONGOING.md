@@ -81,15 +81,8 @@
 - **收檔後待辦**：ref2 判讀（任何紀錄級候選→先公證再宣稱;B vs A=承重圖知情是否贏盲掃）；g24 公證＋w17 在 37 補公證（確認 −0.06 跨機）；round-10 §5 結論＋README 索引；規則→generator（R11）。
 - ⚠ 監看掛在開發機 Claude session,session 沒了就沒監看——進度隨時可用 `python -m script.dedust report --input dedust_ref2_input --store dedust_ref2`（其餘 store 同理）查 NAS 真相。
 
-### Round 5 — 滑動視窗 SM 訓練量（🔵 **running**，2026-07-03 發）→ 詳見 [docs/log/round-05](../docs/log/round-05-window-sm.md)
-| 臂 | config | = R4 同臂改什麼 | 隔離 |
-|---|---|---|---|
-| E | `single_r5_explore` | `mode: adaptive→adaptive_window` + ensemble 5→3 | 滑動視窗訓練量（⚠兩變更） |
-| D | `single_r5_dip` | 同上 | 同上（sigmoid 臂） |
-| E+D | `single_r5_dip_explore` | 同上 | 同上（紀錄臂：看「撞到」能否變「開採」） |
-- **由來**：R4 實錘兩件事——深度欠訓（每輪訓完 elite fit_loss 仍 7.7-10.6，學長壓 0.1）＋ adaptive 探測自鎖（target 停 3-5、曲線 80-100% 平）。**滑動視窗（Ricky 設計）**：每輪訓到視窗頂 hi、log2 階梯快照、argmin **落「上二階」**（不必貼頂——最佳點上方保留兩階冗餘）連 3 次→hi×2／落最低一階→hi÷2；起點 64、**上限 1024**（爬到頂≈學長「破千」量級）、下限 8；`replay_size 512`、`ensemble 3`（省成本）。工程完成（`mode: adaptive_window`、golden 零漂移）。
-- **判準（分層）**：① fit_loss 壓到 ~1-3 → ② sm_gap/sm_bias 降、trust_t 升 → ③ worst_margin vs R4 同臂。⚠ 視窗爬到頂＝數十萬步/輪，**正式機務必盯 `time` 欄**看 SM 佔比；失控把天花板降回 256/512（一行 config）。
-- **狀態**：**2026-07-03 發**（E@216、D@37、E+D@218；R4 三臂已停）。各 500 epoch。**同日晚止血**：冷啟動超衝（elite ~12 筆時視窗直衝 1024→過擬合+30分/ep）→ `epoch_max` 1024→256 **重啟三臂**（斷點續跑,hi 自動夾回）；治本（hi 與 elite 規模掛鉤）＝R5.5 候選,下個 session 處理。**同日晚 D 臂提早收**（wm最佳 -7.66@~34ep 墊底、D-only 隔離問題 R3/R4 已答過）→ 只剩 E / E+D 兩臂；.37 機器讓給「除塵驗證」。**2026-07-06 E+D 臂提早收**（ep218:best 卡 ep14 停滯 203、fit 0.45 但 gap 鎖 8.3——sigmoid 泛化瓶頸不在訓練量,答案已足）→ **只剩 216 E 臂**（gap 1.24 史上最低=主假設正面證據,看 trust 解鎖與否到 ~250-300ep）；.218 讓給 dedust 跨機重複批次。
+### ~~Round 5 — 滑動視窗 SM 訓練量~~（✅ **2026-07-10 收 E 臂,線上線收束**）→ [round-05](../docs/log/round-05-window-sm.md)
+- gap 1.24=訓練量修好;best −3.65@401ep 未破紀錄、trust 未解鎖=瓶頸在泛化/搜尋。**216 釋出→掛 worker（工廠第三機）**。
 
 ### ~~Round 9 — 池頂端重驗＋乾淨前緣探索~~（✅ **2026-07-06 晨收檔 159/162**）→ [docs/log/round-09](../docs/log/round-09-pool-revalidation.md)
 - **oracle 活著（8/18,t00 +0.44）**；漂移家族依賴（頂帶 ±0.4 可信,fit −0.26+1.13x σ0.77）；**可製造紀錄 −2.68 → −0.29**（s05=F2×10-5-10 對稱化,S11 已過差 Gain 0.29；g24 rad 已過差 wm）；F3=可製造沃土（top-10 佔 7）；SM 分布外+4.3 樂觀但排序有訊號（G 贏 E 2.4dB）→ 批次 guided loop 成立。
