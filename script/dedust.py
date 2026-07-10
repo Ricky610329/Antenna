@@ -2807,6 +2807,14 @@ def worker(args):
                 continue
             cp = sd.joinpath(st + ".claim")
             if cp.exists():
+                try:
+                    owner = json.load(open(str(cp), encoding="utf-8")).get("machine")
+                except Exception:
+                    owner = None
+                if owner == me:                       # 自己的 claim=worker 重啟場景 → 直接續跑
+                    print(f"↻ 續跑自己的 claim: {st}")
+                    picked = j
+                    break
                 rp = DATASET_PATH.joinpath(st, "results.json")
                 progressed = rp.exists() and (time.time() - os.path.getmtime(str(rp))) < args.stale * 60
                 claim_fresh = (time.time() - os.path.getmtime(str(cp))) < args.stale * 60
