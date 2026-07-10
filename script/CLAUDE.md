@@ -6,8 +6,8 @@
 
 1. 流程：開發機 `select-*` 生輸入上 NAS → **`check-dup --input X_input` 必跑**（exit 1 就不發車）→
    正式機 `run --input X_input --store X`（可中斷續跑、error 條目重試）→ 任一機 `report`。
-2. **新增輸入夾時把名字補進 `HISTORY_INPUTS`**（check-dup 的覆蓋範圍）；蓄意重複＝kind
-   `notarize`/`repeat`（查重豁免，公證靠這個）。
+2. check-dup **自動掃描全部輸入夾**（2026-07-10 起免維護清單;舊 select 內建去重仍引用 HISTORY_INPUTS）；
+   蓄意重複＝kind `notarize`/`repeat`（查重豁免，公證靠這個）。
 3. 新 select 函式的 docstring 寫死：臂別、筆數、判準（與 round 檔 §1 一致）。
 4. **生成決定性**：select 內不用未 seed 的隨機（`np.random.default_rng(seed)`）；同 seed 同輸出。
 5. 同一個 store **不可兩台機同時跑**（results.json 整份重寫會互踩）；跨機接力 OK（斷點續跑）。
