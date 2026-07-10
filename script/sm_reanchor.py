@@ -48,7 +48,9 @@ CLEAN_STORES = ("dedust_ref2v", "dedust_champ_disc",                       # 修
                 # ⚠ dedust_r19b 刻意不進——與 r19a 交錯分夾同分布,整夾保留當 R19 門檻 held-out
                 #   （round-19 §1:vargen held-out wm 排序 ρ≥0.5 且 oob 顯著 → R20 GA 發車）。
                 "dedust_r15ga", "dedust_r15inf", "dedust_r15v", "dedust_addmap",
-                "dedust_r16b", "dedust_r17", "dedust_r18", "dedust_r19a")
+                "dedust_r16b", "dedust_r17", "dedust_r18", "dedust_r19a",
+                # v6 追加（2026-07-11）:r19b 考卷任務已卸（R20 起改前瞻性驗證）+ R20 gen1 真值
+                "dedust_r19b", "dedust_r20g1a", "dedust_r20g1b", "dedust_r20g1c")
 #? ref2 殘餘風險: 已實錘假象觸發率 ~9% (11 抽 1),無 certified 對照的 ref2 條目可能還有 ~10 筆髒 Gain——
 #  佔訓練集 <0.3%,MSE 回歸可容忍;隨後續重驗逐步被 certified 店覆蓋。store 不存在時自動略過。
 OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）
