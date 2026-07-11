@@ -2302,17 +2302,19 @@ def select_r20gen(args):
 
 
 def select_r21harvest(args):
-    """R21 收割管線（R20 三代終審的贏家配方,Ricky 拍板 (a) 2026-07-11）:
-    「隨機生成＋SM 帶外過濾＋真值驗證」量產——GA 選代機制已拆除。每批 --n 筆分兩半:
-      O 帶外收割（n/2）—— pred_wm 砍尾 40% → pred_oob 升冪 → 多樣性（R20 ③ 19:10 的兌現配方）
-      M margin 樂透（n/2）—— 純隨機不經 SM（R20 ①②:margin 大獎全出自隨機;+0.39/+0.36 皆 d1）
-    錨點=現任榜加權（c18 王朝血系重倉）＋自動吸收前批贏家;毒名單（HFSS 敵意血系）排除。
-    全樣本記 pred_wm/pred_oob（前瞻驗證,判讀看無偏 M 臂）。判準寫死 round-21。"""
+    """R21 收割管線（R20 贏家配方;Ricky 拍板 (a)＋探索稅修訂 2026-07-11 batch4 起）:
+      O 帶外收割 —— pred_wm 砍尾 40% → pred_oob 升冪 → 多樣性（R20 ③ 19:10 的兌現配方）
+      M margin 樂透 —— 純隨機不經 SM（margin 大獎全出自隨機;+0.39/+0.36 皆 d1）
+      L 低側收割（--lo,預設 0;先決=lo-realized 排序回測過門檻）—— pred 低側 realized 峰升冪
+      W 大跳彩票（--wild,預設 8）—— d 26-60,持續複驗「26px 死區」結論
+    **錨點兩池抽樣（治支系馬太效應,Ricky 2026-07-11）**:王朝池（c18 血系）70% / 冷支池 30%,
+    池內均勻;自動吸收前批贏家（按血系標記歸池）;毒名單排除。全樣本記 pred_*（前瞻驗證看無偏 M 臂）。"""
     from scipy.ndimage import label as _label
     from antenna.training import setup_responses
     from antenna.zoo import SURROGATES
     rng = np.random.default_rng(args.seed + args.batch)
     POISON = ("g2_029", "t14", "vg0795")              # HFSS 敵意血系（R20 gen3;不當錨點）
+    DYN = ("c18", "vg0338", "vg0396", "g1_038", "g1_039", "r2_016", "r3_001")   # 王朝血系標記
 
     def loadp(fol, pid):
         f = _dir(fol).joinpath(pid + ".pt")
@@ -2323,17 +2325,21 @@ def select_r21harvest(args):
                     break
         return np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
 
-    ANCH = [("r2_016", "dedust_r20g2b_input", "r2_016_g1_039_vg0338", .14),
-            ("r3_001", "dedust_r20g3b_input", "r3_001_r2_016_g1_039_vg0338", .14),
-            ("vg0338", "dedust_r19a_input", "vg0338_c18", .10),
-            ("vg0396", "dedust_r19a_input", "vg0396_c18", .06),
-            ("g1_038", "dedust_r20g1b_input", "g1_038_vg0338", .06),
-            ("a024", "dedust_addmap_input", "a024_c25r9c11s3", .10),
-            ("ccr9s2", "dedust_r17_input", "cc_c25_r6s2_r9s2", .08),
-            ("ccx00", "dedust_r17_input", "cc_x00_r5s2_r8s3", .08),
-            ("vg0765", "dedust_r19b_input", "vg0765_a024", .08),
-            ("c18", "dedust_ref2_input", "c18_sm", .08),
-            ("c25", "dedust_ref3_input", "c25_a15w10_2_22", .08)]
+    ANCH = [("r2_016", "dedust_r20g2b_input", "r2_016_g1_039_vg0338"),
+            ("r3_001", "dedust_r20g3b_input", "r3_001_r2_016_g1_039_vg0338"),
+            ("vg0338", "dedust_r19a_input", "vg0338_c18"),
+            ("vg0396", "dedust_r19a_input", "vg0396_c18"),
+            ("g1_038", "dedust_r20g1b_input", "g1_038_vg0338"),
+            ("c18", "dedust_ref2_input", "c18_sm"),
+            # —— 冷支池固定名額（不被吸收機制稀釋）——
+            ("a024", "dedust_addmap_input", "a024_c25r9c11s3"),
+            ("ccr9s2", "dedust_r17_input", "cc_c25_r6s2_r9s2"),
+            ("ccx00", "dedust_r17_input", "cc_x00_r5s2_r8s3"),
+            ("vg0765", "dedust_r19b_input", "vg0765_a024"),
+            ("c25", "dedust_ref3_input", "c25_a15w10_2_22"),
+            ("x00", "dedust_wide_input", "x00_c21k2"),
+            ("g16", "dedust_r15ga_input", "g16_r15"),
+            ("i02", "dedust_r15inf_input", "i02_r15")]
     for b in range(1, args.batch):                    # 自動吸收前批三標贏家
         for suf in "abc":
             st = f"dedust_r21b{b}{suf}"
@@ -2346,15 +2352,20 @@ def select_r21harvest(args):
                     continue
                 tri = r["wm"][2] >= 0 and (r.get("rad_margin") or -9) >= 0
                 if tri and (r["wm"][2] >= 0.15 or (r.get("oob_bad") or 99) < 9.5):
-                    ANCH.append((i, st + "_input", i, .05))
-    P, aw = {}, []
-    for name, fol, pid, w in ANCH:
+                    ANCH.append((i, st + "_input", i))
+    P = {}
+    for name, fol, pid in ANCH:
         if name not in P and not any(px in name for px in POISON):
             P[name] = loadp(fol, pid)
-            aw.append(w)
-    aw = np.array(aw); aw /= aw.sum()
-    names = list(P)
-    print(f"batch{args.batch} 錨點 {len(P)}")
+    dyn_names = [n for n in P if any(m in n for m in DYN)]
+    cold_names = [n for n in P if n not in dyn_names]
+    print(f"batch{args.batch} 錨點 {len(P)}（王朝池 {len(dyn_names)} / 冷支池 {len(cold_names)};抽樣 70/30）")
+
+    def pick_anchor():
+        pool = dyn_names if (rng.random() < 0.7 and dyn_names) else cold_names
+        if not pool:
+            pool = list(P)
+        return pool[int(rng.integers(0, len(pool)))]
 
     def op_flips(p):
         em, ed = edge_sets(p)
@@ -2392,14 +2403,17 @@ def select_r21harvest(args):
             f = dd.joinpath(m["id"] + ".pt")
             if f.exists():
                 hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
-    cands, tries = [], 0
+    cands, wilds, tries = [], [], 0
     target_pool = args.n * 35
-    while len(cands) < target_pool and tries < target_pool * 25:
+    wild_target = max(args.wild, 1) * 40
+    while (len(cands) < target_pool or len(wilds) < wild_target) and tries < target_pool * 25:
         tries += 1
-        ai = int(rng.choice(len(names), p=aw))
-        q = P[names[ai]]
+        want_wild = args.wild > 0 and len(wilds) < wild_target and rng.random() < 0.18
+        aname = pick_anchor()
+        q = P[aname]
         chain = []
-        for _ in range(int(rng.choice((1, 2), p=(.65, .35)))):
+        n_ops = int(rng.choice((2, 3, 4))) if want_wild else int(rng.choice((1, 2), p=(.65, .35)))
+        for _ in range(n_ops):
             fn = OPS[int(rng.choice(len(OPS), p=ws))][0]
             q, desc = fn(q)
             if q is None:
@@ -2414,15 +2428,18 @@ def select_r21harvest(args):
         st = piece_stats(q)
         if st["n_1px"] > 0 or not (230 <= st["metal_px"] <= 520):
             continue
-        d = int((q != P[names[ai]]).sum())
-        if not (1 <= d <= 25):
-            continue
+        d = int((q != P[aname]).sum())
         k = q.tobytes()
         if k in hist:
             continue
-        hist.add(k)
-        cands.append(dict(pat=q, parent=names[ai], ops=chain, d=d, stats=st))
-    print(f"子代池 {len(cands)}")
+        c = dict(pat=q, parent=aname, ops=chain, d=d, stats=st)
+        if 26 <= d <= 60 and len(wilds) < wild_target:
+            hist.add(k)
+            wilds.append(c)
+        elif 1 <= d <= 25 and len(cands) < target_pool:
+            hist.add(k)
+            cands.append(c)
+    print(f"子代池 {len(cands)}＋彩票池 {len(wilds)}")
     cfg = load_config(args.config)
     setup_responses(cfg)
     labels = PORT_SPECS[cfg.port]["labels"]
@@ -2431,37 +2448,54 @@ def select_r21harvest(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in cands])
+    allc = cands + wilds
+    pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
-        raw = sm.model(pats).reshape(len(cands), len(labels), n_pts)
-    for k, c in enumerate(cands):
+        raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
+    for k, c in enumerate(allc):
         w, _ = worst_margin(raw[k], labels, cfg.targets)
         c["pred_wm"] = _r(float(w))
-        c["pred_oob"] = oob_metrics(raw[k].numpy())["oob_bad"]
-    half = args.n // 2
+        r = raw[k].numpy()
+        c["pred_oob"] = oob_metrics(r)["oob_bad"]
+        # 低側 realized 峰（Gain+失配損耗;壓左側的物理正確目標量,Ricky 2026-07-11 討論）
+        ml = 10 * np.log10(np.clip(1 - 10 ** (r[0][:4] / 10), 1e-6, 1))
+        c["pred_lor"] = _r(float((r[1][:4] + ml).max()))
+    n_core = args.n - args.lo - args.wild
+    half = n_core // 2
+
+    def _diverse(pool, n, taken):
+        out = []
+        for i in pool:
+            if len(out) >= n:
+                break
+            if i in taken:
+                continue
+            if all(int((cands[i]["pat"] != cands[j]["pat"]).sum()) >= 6 for j in out):
+                out.append(i)
+        for i in pool:
+            if len(out) >= n:
+                break
+            if i not in out and i not in taken:
+                out.append(i)
+        return out
+
     order = sorted(range(len(cands)), key=lambda i: cands[i]["pred_wm"], reverse=True)
-    pool_o = sorted(order[:int(len(order) * .6)], key=lambda i: cands[i]["pred_oob"])
-    oi = []
-    for i in pool_o:
-        if len(oi) >= half:
-            break
-        if all(int((cands[i]["pat"] != cands[j]["pat"]).sum()) >= 6 for j in oi):
-            oi.append(i)
-    for i in pool_o:
-        if len(oi) >= half:
-            break
-        if i not in oi:
-            oi.append(i)
-    rest = [i for i in range(len(cands)) if i not in oi]
-    mi = list(rng.choice(rest, size=min(args.n - len(oi), len(rest)), replace=False))
+    trimmed = order[:int(len(order) * .6)]
+    oi = _diverse(sorted(trimmed, key=lambda i: cands[i]["pred_oob"]), half, set())
+    li = _diverse(sorted(trimmed, key=lambda i: cands[i]["pred_lor"]), args.lo, set(oi)) if args.lo else []
+    rest = [i for i in range(len(cands)) if i not in oi and i not in li]
+    mi = list(rng.choice(rest, size=min(args.n - args.lo - args.wild - len(oi), len(rest)), replace=False))
+    wi = list(rng.choice(len(wilds), size=min(args.wild, len(wilds)), replace=False)) if wilds else []
     entries = []
-    for arm, idxs in (("oobharv", oi), ("mlotto", mi)):
+    for arm, idxs, src in (("oobharv", oi, cands), ("loharv", li, cands),
+                           ("mlotto", mi, cands), ("wild", wi, wilds)):
         for j, i in enumerate(idxs):
-            c = cands[i]
+            c = src[i]
             entries.append(dict(id=f"{arm[0]}{args.batch}_{j:03d}_{c['parent'][:12]}", kind=arm,
                                 family=f"{arm.upper()}_b{args.batch}", removed_px=0, **c["stats"],
                                 source_id=c["parent"], ops=c["ops"], diff_px=c["d"],
-                                pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], _pat=c["pat"]))
+                                pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
+                                _pat=c["pat"]))
     dirs = []
     for suf in "abc":
         dd = _dir(f"dedust_r21b{args.batch}{suf}_input")
@@ -2475,7 +2509,8 @@ def select_r21harvest(args):
         torch.save(torch.tensor(pat, dtype=torch.float32), str(dirs[b].joinpath(e["id"] + ".pt")))
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
-    print(f"r21 batch{args.batch}: 帶外收割 {len(oi)}+margin 樂透 {len(mi)} → 三夾 {[len(m) for m in manifests]}")
+    print(f"r21 batch{args.batch}: 帶外收割 {len(oi)}+低側收割 {len(li)}+margin 樂透 {len(mi)}"
+          f"+彩票 {len(wi)} → 三夾 {[len(m) for m in manifests]}")
 
 
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
@@ -3225,6 +3260,8 @@ def main():
     s.add_argument("--sm", default="sm_reanchor7.pth")
     s.add_argument("--config", default=DEFAULT_CFG)
     s.add_argument("--n", type=int, default=150)
+    s.add_argument("--lo", type=int, default=0, help="低側 realized 收割臂筆數（先決:排序回測過門檻才開）")
+    s.add_argument("--wild", type=int, default=8, help="大跳彩票筆數（d 26-60,26px 死區持續複驗）")
     s.set_defaults(fn=select_r21harvest)
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
