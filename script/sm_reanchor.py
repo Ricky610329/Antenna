@@ -57,7 +57,9 @@ CLEAN_STORES = ("dedust_ref2v", "dedust_champ_disc",                       # 修
                 "dedust_r20g3a", "dedust_r20g3b", "dedust_r20g3c", "dedust_r20n",
                 "dedust_vgen3a", "dedust_vgen3b", "dedust_r21b1a", "dedust_r21b1b", "dedust_r21b1c",
                 # v9 追加（2026-07-11）:R21 batch2
-                "dedust_r21b2a", "dedust_r21b2b", "dedust_r21b2c")
+                "dedust_r21b2a", "dedust_r21b2b", "dedust_r21b2c",
+                # v10 追加（2026-07-11）:R21 batch3
+                "dedust_r21b3a", "dedust_r21b3b", "dedust_r21b3c")
 #? ref2 殘餘風險: 已實錘假象觸發率 ~9% (11 抽 1),無 certified 對照的 ref2 條目可能還有 ~10 筆髒 Gain——
 #  佔訓練集 <0.3%,MSE 回歸可容忍;隨後續重驗逐步被 certified 店覆蓋。store 不存在時自動略過。
 OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）
