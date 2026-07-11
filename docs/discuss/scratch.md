@@ -167,6 +167,13 @@
 - **↳ 範式傘（Ricky 提供,2026-07-07）**：Jiayi Weng《Learning Beyond Gradients》的 **Heuristic Learning**
   （https://trinkle23897.github.io/learning-beyond-gradients/）——我們的批次迴圈幾乎是 HL 在 EM 設計的
   完整實例（算子庫=程式策略/manifest=狀態表示/HFSS+pytest=反饋/store+seed=試驗回放/git+round 檔=記憶/
+
+## 🔍 error 回收批的兩個觀察（2026-07-11,batch4 等收檔期間;單次、未公證）
+- **m2_046_r2_016：oob_bad 8.30 但 wm −0.78**（帶內不過）——低於帶外王 o1_035 的 8.65,但無三標資格。
+  線索:r2_016 王朝血系有「更深帶外」的潛力,O 臂若以 r2_016 為錨點主攻帶外可能還有肉。
+- **o3_020_o2_048：oob_bad 5.41、wm −5.08**——放棄帶內可以把帶外打到 5.4 級。
+  ⇒「帶外地板 ≈9.0/8.6」是**三標條件下**的地板,無條件地板深得多——論文寫帶外戰役時這是關鍵限定詞。
+- 佐證面：13 筆重派回收 10 筆（77%）,transient 假說再驗證;毒血系 12 筆不重派＝省 ~6hr watchdog。
   +0.48→回歸測試=「吸收反饋」/design_priors=「壓縮歷史」）。**R6/R10 = HL vs 梯度學習的定量對比證據**
   （文章沒有的）。用法：當範式傘命名敘事,related work 仍錨 surrogate-assisted opt 文獻（blog 非 peer-reviewed）;
   我們超出 HL 的四點=昂貴 oracle 批次經濟學+SM 混編/判準預註冊+因果探針/量測誠信層/可製造性內建算子。

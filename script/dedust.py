@@ -2405,7 +2405,7 @@ def select_r21harvest(args):
                 hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
     cands, wilds, tries = [], [], 0
     target_pool = args.n * 35
-    wild_target = max(args.wild, 1) * 40
+    wild_target = args.wild * 40                      # wild=0 → 不生彩票池（舊 max(,1) 會空轉等不到）
     while (len(cands) < target_pool or len(wilds) < wild_target) and tries < target_pool * 25:
         tries += 1
         want_wild = args.wild > 0 and len(wilds) < wild_target and rng.random() < 0.18
@@ -2461,7 +2461,7 @@ def select_r21harvest(args):
         ml = 10 * np.log10(np.clip(1 - 10 ** (r[0][:4] / 10), 1e-6, 1))
         c["pred_lor"] = _r(float((r[1][:4] + ml).max()))
     n_core = args.n - args.lo - args.wild
-    half = n_core // 2
+    half = n_core // 2 if args.o < 0 else args.o      # --o 0=純樂透填空批（機器空檔用,不動判準）
 
     def _diverse(pool, n, taken):
         out = []
@@ -2487,12 +2487,14 @@ def select_r21harvest(args):
     mi = list(rng.choice(rest, size=min(args.n - args.lo - args.wild - len(oi), len(rest)), replace=False))
     wi = list(rng.choice(len(wilds), size=min(args.wild, len(wilds)), replace=False)) if wilds else []
     entries = []
+    tag = args.tag or f"b{args.batch}"                # --tag=填空批命名（gN;夾/id/family 全隔離,防撞正批）
+    idt = args.tag or str(args.batch)
     for arm, idxs, src in (("oobharv", oi, cands), ("loharv", li, cands),
                            ("mlotto", mi, cands), ("wild", wi, wilds)):
         for j, i in enumerate(idxs):
             c = src[i]
-            entries.append(dict(id=f"{arm[0]}{args.batch}_{j:03d}_{c['parent'][:12]}", kind=arm,
-                                family=f"{arm.upper()}_b{args.batch}", removed_px=0, **c["stats"],
+            entries.append(dict(id=f"{arm[0]}{idt}_{j:03d}_{c['parent'][:12]}", kind=arm,
+                                family=f"{arm.upper()}_{tag}", removed_px=0, **c["stats"],
                                 source_id=c["parent"], ops=c["ops"], diff_px=c["d"],
                                 pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
                                 _pat=c["pat"]))
@@ -2500,7 +2502,7 @@ def select_r21harvest(args):
     #? 切片數=拖尾粒度（2026-07-11 Ricky「不浪費算力」）:夾多於機器,先跑完的機接下一夾,
     #  慢機只拖住自己那夾——batch5 起用 --shards 6（3 機 × 2）。
     for suf in "abcdefgh"[:args.shards]:
-        dd = _dir(f"dedust_r21b{args.batch}{suf}_input")
+        dd = _dir(f"dedust_r21{tag}{suf}_input")
         dd.mkdir(parents=True, exist_ok=True)
         dirs.append(dd)
     manifests = [[] for _ in dirs]
@@ -2511,7 +2513,7 @@ def select_r21harvest(args):
         torch.save(torch.tensor(pat, dtype=torch.float32), str(dirs[b].joinpath(e["id"] + ".pt")))
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
-    print(f"r21 batch{args.batch}: 帶外收割 {len(oi)}+低側收割 {len(li)}+margin 樂透 {len(mi)}"
+    print(f"r21 {tag}: 帶外收割 {len(oi)}+低側收割 {len(li)}+margin 樂透 {len(mi)}"
           f"+彩票 {len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
@@ -3309,6 +3311,8 @@ def main():
     s.add_argument("--lo", type=int, default=0, help="低側 realized 收割臂筆數（先決:排序回測過門檻才開）")
     s.add_argument("--wild", type=int, default=8, help="大跳彩票筆數（d 26-60,26px 死區持續複驗）")
     s.add_argument("--shards", type=int, default=3, help="輸出切幾夾（夾多於機器=慢機不拖全隊;batch5 起建議 6）")
+    s.add_argument("--o", type=int, default=-1, help="O 臂筆數（-1=核心半數;0=純樂透填空批,配 --tag）")
+    s.add_argument("--tag", default=None, help="填空批命名（如 g1 → 夾 dedust_r21g1*_input、id mg1_*;正批留空）")
     s.set_defaults(fn=select_r21harvest)
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
