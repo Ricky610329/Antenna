@@ -6,19 +6,26 @@ script/analyze.py — 可重現的診斷分析工具（把散在對話裡的一�
   volatility  各 run 每 epoch 的像素翻轉數 + sim_loss/r_feed 波動（探索量;trust/ensemble/refit 的效果）
   rad-repr    方向圖用 K 個 cosine mode 的最佳擬合殘差 vs K（表達力上限;全域 vs ±45°窗內）
   rad-error   已訓 rad head 的窗內 pred-vs-real 誤差（需載 SM;判「凍 trunk」是否是瓶頸）
+  gain        性能期望儀表（三層帳:階梯命中率/學習曲線斜率/近王→紀錄轉換）——
+              本意=用實測數字擋「過早悲觀/過早樂觀」,不做尾巴外推（偽精確禁區）
 
 用法：
   python -m script.analyze volatility --runs single_r3_explore single_r3_dip --labels E D
   python -m script.analyze rad-repr   --run single_r2_enstrust_harvest
   python -m script.analyze rad-error  --run single_r2_enstrust_harvest
+  python -m script.analyze gain --line r21 [--record 0.39]
 """
 import argparse
 import csv
 import os
 import statistics as st
+import sys
 
 import numpy as np
 import torch
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")   # cp950 console 印全形/符號
 
 from antenna.utils import config, ROOTDIR, DATASET_PATH
 config.device = "cpu"
@@ -202,6 +209,82 @@ def cmd_components(args):
         print("  " + f + ": 中位 " + format(np.median(v), ".0f") + " 範圍 [" + format(min(v), ".0f") + ", " + format(max(v), ".0f") + "]")
 
 
+def cmd_gain(args):
+    """性能期望三層帳（2026-07-12,Ricky「像 AdamW 一樣對提升有預期」＋防過早悲觀）:
+    L1 階梯命中率——每批×臂在近門檻的實測命中率（不外推;下滑=礦脈枯竭早警）
+    L2 學習曲線——best-so-far vs 累積 N 擬 R(N)=a+b·lnN,邊際增益 b/N（每百筆期望 dB）
+    L3 轉換率——歷史「近王級(≥--near)→紀錄推進」比率;新臂零歷史=走預註冊存活測試,不給 dB 期望。"""
+    import json
+    LADDER = (0.0, 0.20, 0.30, 0.35)
+    stores = []                                       # (mtime, 批標籤, manifest, results)
+    for fol in os.listdir(str(DATASET_PATH)):
+        if not (fol.startswith(f"dedust_{args.line}") and fol.endswith("_input")):
+            continue
+        st_name = fol[:-6]
+        rp = DATASET_PATH.joinpath(st_name, "results.json")
+        mp = DATASET_PATH.joinpath(fol, "manifest.json")
+        if not (rp.exists() and mp.exists()):
+            continue
+        man = json.load(open(str(mp), encoding="utf-8"))
+        res = json.load(open(str(rp), encoding="utf-8"))
+        batch = st_name[len("dedust_"):].rstrip("abcdefgh")   # r21b1a → r21b1
+        stores.append((os.path.getmtime(str(rp)), batch, man, res))
+    if not stores:
+        raise SystemExit(f"找不到 dedust_{args.line}*_input 批次")
+    stores.sort()
+    samp = []                                         # 時序展平（store 粒度排序）
+    for _, batch, man, res in stores:
+        for m in man:
+            r = res.get(m["id"])
+            if r is None or "error" in r:
+                continue
+            samp.append(dict(batch=batch, kind=m.get("kind", "?"), wm=r["wm"][2],
+                             rad=r.get("rad_margin"), oob=r.get("oob_bad")))
+
+    def tri(s):
+        return s["wm"] >= 0 and (s["rad"] if s["rad"] is not None else -9) >= 0
+
+    print(f"—— L1 階梯命中率（{args.line};三標樣本計;n=非error 筆數）——")
+    hdr = "| 批 | 臂 | n | 三標 | " + " | ".join(f"wm≥{t:+.2f}" for t in LADDER) + f" | >紀錄{args.record:+.2f} | oob<10(三標) |"
+    print(hdr); print("|" + "---|" * (hdr.count("|") - 1))
+    batches = sorted({s["batch"] for s in samp})
+    for b in batches:
+        for k in sorted({s["kind"] for s in samp if s["batch"] == b}):
+            g = [s for s in samp if s["batch"] == b and s["kind"] == k]
+            t3 = [s for s in g if tri(s)]
+            cells = [f"{100*len([s for s in t3 if s['wm'] >= t])/len(g):.0f}%" for t in LADDER]
+            rec = len([s for s in t3 if s["wm"] > args.record])
+            o10 = len([s for s in t3 if (s["oob"] or 99) < 10])
+            print(f"| {b} | {k} | {len(g)} | {100*len(t3)/len(g):.0f}% | " + " | ".join(cells)
+                  + f" | {rec} | {100*o10/len(g):.0f}% |")
+
+    print("\n—— L2 學習曲線（best-so-far wm,三標;R(N)=a+b·lnN）——")
+    best, curve = -9.0, []
+    for i, s in enumerate([s for s in samp if tri(s)], 1):
+        if s["wm"] > best:
+            best = s["wm"]
+        curve.append((i, best))
+    if len(curve) >= 10:
+        N = np.array([c[0] for c in curve], float)
+        R = np.array([c[1] for c in curve], float)
+        b_, _a = np.polyfit(np.log(N), R, 1)
+        marg = b_ / N[-1] * 100
+        need = int(0.01 * N[-1] / b_) if b_ > 1e-6 else -1
+        print(f"  累積三標 {int(N[-1])} 筆,best {best:+.2f};擬合 b={b_:.3f} → 邊際增益 ≈ {marg:+.4f} dB/百筆（遞減中）")
+        print(f"  以當前斜率估再 +0.01 ≈ {need if need >= 0 else '∞'} 筆三標"
+              f"（全程擬合=樂觀上界;換 HFSS 預算再 ×(1/三標率)）")
+    else:
+        print("  三標樣本 <10,曲線不擬")
+
+    near = [s for s in samp if tri(s) and s["wm"] >= args.near]
+    ups = sum(1 for i in range(1, len(curve)) if curve[i][1] > curve[i - 1][1])
+    print("\n—— L3 近王→紀錄轉換（本線內）——")
+    print(f"  近王級(wm≥{args.near:+.2f}三標) {len(near)} 筆;best-so-far 推進 {ups} 次 → 轉換 ≈ 每 {len(near)/max(ups,1):.1f} 筆近王出 1 次推進")
+    fresh = {k for k in {s['kind'] for s in samp} if len([s for s in samp if s['kind'] == k]) < 30}
+    if fresh:
+        print(f"  ⚠ 新臂 {sorted(fresh)}: 歷史不足,走 round 檔預註冊存活測試（資訊帳）,不給 dB 期望")
+
+
 def main():
     ap = argparse.ArgumentParser(description="可重現診斷分析（純讀 NAS）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -213,6 +296,11 @@ def main():
     re = sub.add_parser("rad-error"); re.add_argument("--run", required=True); re.add_argument("--n", type=int, default=30)
     cp = sub.add_parser("components", help="組件尺寸分布 vs 三標 (全 store 真值,零 HFSS;analysis-02)")
     cp.set_defaults(func=cmd_components)
+    gn = sub.add_parser("gain", help="性能期望三層帳（階梯/曲線/轉換;防過早悲觀）")
+    gn.add_argument("--line", default="r21", help="批次線前綴（掃 dedust_<line>*_input）")
+    gn.add_argument("--record", type=float, default=0.39, help="現任 wm 紀錄")
+    gn.add_argument("--near", type=float, default=0.30, help="近王級門檻")
+    gn.set_defaults(func=cmd_gain)
     re.add_argument("--window", type=float, default=45); re.set_defaults(func=cmd_rad_error)
     args = ap.parse_args()
     args.func(args)

@@ -5,7 +5,7 @@
 > - config 全集（不刪）→ [README.md](README.md)
 > **流程**：新實驗 → `docs/log/` 開 round 檔 + 這裡加「🔵 進行中」一行指向它；跑完結論寫進 round 檔，這裡只留「✅ 已歸檔」一行指標。
 
-最後更新：2026-07-07
+最後更新：2026-07-12
 
 **全域變更（2026-06-28）**：① 驗證預算改為**跑到 500 epoch**（約 3 天；原 250）→ Round-2 config `epochs: 500`。② **回滾機制已移除**（對 generator-free + K 候選 + 線上 SM 不合身、且原實作有 off-by-one + 覆蓋最佳檔兩個 bug）→ Round 1 的「不收斂」有它一份；探索改靠 K 候選 + SM 引導 (+ trust)。最佳 pattern 仍安全存 `patterns/`。
 
@@ -20,8 +20,8 @@
 - **哨兵（零 token 純腳本）**:`python -m script.status --factory --alert --notify-topic <主題>`——
   掃佇列進度+卡住(30分無結果)+停機(.fail);排程 `schtasks /Create /TN AntennaFactory /SC HOURLY /TR "..."`。
   **待 Ricky:定 ntfy 主題(隨機長字串)+手機裝 ntfy app+回報後我出完整註冊指令**。
-- 收檔流程已 skill 化:**/close-round NN**（12 步清單,判準勾稽）。
-- 待辦:216 收 R5 E 臂後掛 worker。
+- 收檔流程已 skill 化:**/close-round NN**（12 步清單,判準勾稽）＋ **/gain-check**（性能期望三層帳,
+  防過早悲觀/樂觀;每批收檔與輪結算都跑）。三機皆已掛 worker（2026-07-11 起;個性見 memory 機器檔案）。
 
 ### ~~Round 13 — 組數階梯~~（✅ **2026-07-08 收檔**）→ [round-13](../docs/log/round-13-block-ladder.md)
 - 組數=真設計軸但報酬有取捨:4-5 塊甜蜜點(5 塊買 rad/4 塊買選擇性)、6 塊遞減;margin 天花板僅微升。
@@ -29,10 +29,15 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 21 — 收割管線（🔵 **running**,2026-07-11 batch1 發車）→ [round-21](../docs/log/round-21-harvest-pipeline.md)
-- R20 贏家配方量產:O 帶外收割(SM 過濾)75+M margin 樂透(純隨機)75/批;c18 王朝血系重倉+吸收贏家。
-- 判準:O 臂「三標且oob<10」≥11% 成立/連兩批<6% 停批;紀錄照鐵則下批公證;每批重錨。
-- 佇列看 `jobs-ls`;每批 ≈2hr 自動循環。
+### Round 21 — 收割管線（🔵 **batch5 收尾中**,收檔即結輪）→ [round-21](../docs/log/round-21-harvest-pipeline.md)
+- batch1-4 已判:配方成立但**過濾器紅利=一次性**（O<M 連兩批,oob ρ 連三批死）;馬太效應確診＋探索稅止跌;
+  帶外王易主 o1_035 8.65（公證3/3）;batch4=150/150 零 error 首例。
+- batch5（v11,6 夾切片首航）跑完 → /close-round 21 → v12 重錨 → **R22 接棒**。
+
+### Round 22 — 分布組合批（🟡 **待發**,觸發=batch5 收檔+v12）→ [round-22](../docs/log/round-22-distribution-portfolio.md)
+- Ricky 拍板（2026-07-12）:降王朝比例、探索其他分布;「短期內沒有足夠好的表現得容忍」。
+- 六臂 150:O10 哨兵/M50 王朝/C40 冷支專屬/Q30 偏科生修復（SM 用活著的 wm 能力）/H12 hslot 部分槽/W8 彩票。
+- 發車:`select-r22mix --batch 1 --sm sm_reanchor12.pth` → check-dup ×6 → jobs-add ×6;判準寫死於 round 檔 §1。
 
 ### ~~Round 20 — 模型線終審~~（✅ **2026-07-11 收檔,Ricky 拍板 (a)**）→ [round-20](../docs/log/round-20-evolution-loop.md)
 - ③帶外 GA 19:10 顯著優=SM 有效僅帶外;①②隨機優+GA 逐代衰退=分布收窄;F 碎片族三代 0/85 蓋棺。
@@ -101,6 +106,9 @@
 ---
 
 ## 🔜 候選 / 待排
+- **d1 殼層窮舉（2026-07-12 期望模型討論產物）**：紀錄鏈 c18→vg0338→r2_016→r3_001 全是 1px 子代
+  ＝紀錄來自王鄰域局部滲透而非樂透尾巴 → 直接窮舉 r3_001 可製造單翻殼層（~150-250 筆,1-2 批量）,
+  把「破紀錄機率」降維成「有限驗證」:找到新王或證明局部最優。**觸發=R22 b1 收檔後,或 M 臂連兩批 best<+0.35**。
 - **[使用者] 模型線接棒帶外戰役（GA/線上學習＋資料回灌,2026-07-09）**：構造法乾涸就換模型抓耦合——
   ①SM v5 重錨（CLEAN_STORES 補 R17/R18 手術+池頂族 ~80 筆,驗新區域 oob/lo 排序）→②rad head 盤點
   （張力拓撲 (wm+lo)↔rad,模型線最缺 rad 預測器）→③GA over 組件-算子空間（非像素;fitness=字典序）。

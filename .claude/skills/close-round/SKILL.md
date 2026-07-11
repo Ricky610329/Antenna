@@ -15,7 +15,8 @@ append-only、單次 vs 公證）。若任一步發現異常（判準未預註�
 2. **確認批次真的收完**：對 round 檔 §3 列的每個 store 查 `results.json` 完成數 vs manifest 總數、
    error 數（error>0 先問要不要補跑）。公證臂逐筆核對重複一致性。
 3. **拉數據**：`python -m script.dedust report --input X_input --store X`（批次線）或
-   `python -m script.round_report --round NN --runs … --labels …`（線上線,圖落 `docs/log/assets/round-NN/`）。
+   `python -m script.round_report --round NN --runs … --labels …`（線上線,圖落 `docs/log/assets/round-NN/`）;
+   批次線 round **加跑 /gain-check（性能期望三層帳）**,一行摘要貼 §4——防對算法過早悲觀/樂觀。
 4. **§4 分析**：對照 §1 **發車前寫死的判準**逐條判定（過/不過都要寫）;未公證數字一律標「單次」;
    意外發現另立小節。
 5. **§5 結論／§6 後續**：學到什麼、促成/否決哪個候選;新待辦升 ONGOING 🔜（含觸發條件）。
