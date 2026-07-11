@@ -3288,7 +3288,31 @@ def run(args):
                         owner = None
                     if owner != getattr(args, "claim_me", None):
                         print(f"⚠ claim 已被 {owner} 接管——本機停寫退出（避免 results.json 互踩）")
-                        return
+                        return "yield"
+                #? tier-2 讓位（2026-07-12 Ricky「空窗期跑 tier2,一接到 job 就暫停」）:
+                #  填空批（prio ≥ tier2_prio）每筆完成後掃佇列,出現可認領的 tier-1 → 釋放 claim 退出;
+                #  進度全在 results.json（冪等）,之後任一機續跑——暫停/恢復零額外儲存機制。
+                if getattr(args, "job_prio", 0) >= getattr(args, "tier2_prio", 99):
+                    _qp = DATASET_PATH.joinpath("jobs.json")
+                    _sd = DATASET_PATH.joinpath("jobs_state")
+                    try:
+                        _jobs = json.load(open(str(_qp), encoding="utf-8")) if _qp.exists() else []
+                    except Exception:
+                        _jobs = []
+                    for _j in _jobs:
+                        if _j.get("prio", 9) >= getattr(args, "tier2_prio", 99):
+                            continue
+                        _st = _j["store"]
+                        if _sd.joinpath(_st + ".done").exists() or _sd.joinpath(_st + ".fail").exists() \
+                                or _sd.joinpath(_st + ".claim").exists():
+                            continue
+                        print(f"⏸ tier-1 job {_st} 出現——tier-2 讓位（進度已落檔,空窗時任一機續跑）")
+                        if cp is not None:
+                            try:
+                                os.remove(cp)
+                            except OSError:
+                                pass
+                        return "yield"
 
                 resp = torch.stack([torch.as_tensor(result[l]).float().reshape(-1) for l in labels])
                 w, per = worst_margin(resp, labels, cfg.targets)
@@ -3407,10 +3431,12 @@ def worker(args):
         print(f"▶ 認領 {st}（input {picked['input']}）")
         ns = argparse.Namespace(config=args.config, input=picked["input"], store=st, out=None,
                                 sweep=args.sweep, timeout=args.timeout, max_fail=args.max_fail,
-                                retry_pass=args.retry_pass,
+                                retry_pass=args.retry_pass, job_prio=picked.get("prio", 9),
+                                tier2_prio=args.tier2_prio,
                                 claim_path=str(sd.joinpath(st + ".claim")), claim_me=me)
         try:
-            run(ns)
+            if run(ns) == "yield":                       # tier-2 讓位/被接管:不標 done,回佇列重掃
+                continue
         except SystemExit as e:                          # 連敗保險絲:標 fail、停機等人工
             with open(str(sd.joinpath(st + ".fail")), "w", encoding="utf-8") as f:
                 f.write(str(e))
@@ -3731,6 +3757,8 @@ def main():
     s.add_argument("--retry-pass", type=int, default=2, dest="retry_pass")
     s.add_argument("--stale", type=int, default=45, help="claim 無進度幾分鐘可被接管")
     s.add_argument("--once", action="store_true", help="只跑一個 job 就收工（測試用）")
+    s.add_argument("--tier2-prio", type=int, default=8, dest="tier2_prio",
+                   help="prio ≥ 此值=tier-2 填空批（每筆完成後掃佇列,tier-1 出現即讓位）")
     s.set_defaults(fn=worker)
 
     s = sub.add_parser("jobs-add", help="把批次加進派工佇列（select+check-dup 先跑完）")
