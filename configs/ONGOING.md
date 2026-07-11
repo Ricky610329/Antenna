@@ -29,15 +29,13 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 21 — 收割管線（🔵 **batch5 收尾中**,收檔即結輪）→ [round-21](../docs/log/round-21-harvest-pipeline.md)
-- batch1-4 已判:配方成立但**過濾器紅利=一次性**（O<M 連兩批,oob ρ 連三批死）;馬太效應確診＋探索稅止跌;
-  帶外王易主 o1_035 8.65（公證3/3）;batch4=150/150 零 error 首例。
-- batch5（v11,6 夾切片首航）跑完 → /close-round 21 → v12 重錨 → **R22 接棒**。
+### Round 22 — 分布組合批（🔵 **running**,2026-07-12 b1 發車）→ [round-22](../docs/log/round-22-distribution-portfolio.md)
+- 六臂 150:O10 哨兵/M50 王朝/C40 冷支專屬/Q30 偏科生修復/H12 hslot 部分槽/W8 彩票＋**m5_054 rad 公證×2**。
+- tier-2 填空池（prio 9,搶佔讓位）墊底,佇列永不見底;判準見 round 檔 §1;每批收檔跑 /gain-check。
 
-### Round 22 — 分布組合批（🟡 **待發**,觸發=batch5 收檔+v12）→ [round-22](../docs/log/round-22-distribution-portfolio.md)
-- Ricky 拍板（2026-07-12）:降王朝比例、探索其他分布;「短期內沒有足夠好的表現得容忍」。
-- 六臂 150:O10 哨兵/M50 王朝/C40 冷支專屬/Q30 偏科生修復（SM 用活著的 wm 能力）/H12 hslot 部分槽/W8 彩票。
-- 發車:`select-r22mix --batch 1 --sm sm_reanchor12.pth` → check-dup ×6 → jobs-add ×6;判準寫死於 round 檔 §1。
+### ~~Round 21 — 收割管線~~（✅ **2026-07-12 收檔,五批 774 筆**）→ [round-21](../docs/log/round-21-harvest-pipeline.md)
+- 量產成立（M 臂 17-27%）+帶外王 o1_035 8.65 公證;SM 帶外過濾紅利=一次性;馬太確診+探索稅止跌;
+  rad 候選 0.89 單次→R22 公證;制度收穫=自癒/切片/tier-2 搶佔/gain 儀表/機器個性檔案。
 
 ### ~~Round 20 — 模型線終審~~（✅ **2026-07-11 收檔,Ricky 拍板 (a)**）→ [round-20](../docs/log/round-20-evolution-loop.md)
 - ③帶外 GA 19:10 顯著優=SM 有效僅帶外;①②隨機優+GA 逐代衰退=分布收窄;F 碎片族三代 0/85 蓋棺。
