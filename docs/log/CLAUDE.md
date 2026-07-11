@@ -24,6 +24,9 @@
 
 - README 索引行：`| NN | 主題 | 狀態(日期) | 結論一句(粗體關鍵詞) | [round-NN](檔名) |`——收檔時 +1 行。
 - 圖落 `assets/round-NN/`，一律由可重跑的 script 產生（`script/round_report.py` 或 figs 腳本），不手貼截圖。
+- **紀錄易主（換王/破紀錄,公證後）→ 渲染新舊對比圖進 round 檔**：
+  `python -m script.figs.champ_compare --new <id> --old <id> --out docs/log/assets/round-NN/newking_*.png`
+  （自動定位 pattern/響應/rad;產出後照例 Read 目檢再嵌入）。
 - round 檔**只連結、不複製**其他層內容（configs/README、docs 設計文件、結果夾）。
 - 時間戳先跑 `date` 再寫（跨午夜 session 教訓，2026-07-10）。
 - 批次實驗的機器指令寫進 §3（含重啟指令）——斷電/接手時這是唯一真相。

@@ -17,3 +17,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 | `report_r1r10_batch.py` | 報告 F4-F11（R6 期望邊界/分布、R7 除塵、歸因、R8 四臂、R9 家族/校正/s05） |
 | `report_r1r10_champs.py` | 報告 F12-F16（血統/承重圖/八冠軍/曲線/+0.48 案例） |
 | `report_r1r18.py` | 總報告 E1-E6（每輪最佳 gallery/血統鏈/紀錄時間軸/帶外 Pareto/分組答案/新王 a024）→ progress-r1-r18 |
+| `champ_compare.py` | **通用新舊冠軍對比圖**（CLI:--new/--old 自動定位;紀錄易主收檔必渲染,規則見 docs/log/CLAUDE.md） |
