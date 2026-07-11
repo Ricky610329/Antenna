@@ -52,7 +52,10 @@ CLEAN_STORES = ("dedust_ref2v", "dedust_champ_disc",                       # 修
                 # v6 追加（2026-07-11）:r19b 考卷任務已卸（R20 起改前瞻性驗證）+ R20 gen1 真值
                 "dedust_r19b", "dedust_r20g1a", "dedust_r20g1b", "dedust_r20g1c",
                 # v7 追加（2026-07-11）:gen2 三夾 + vgen2 資料批
-                "dedust_r20g2a", "dedust_r20g2b", "dedust_r20g2c", "dedust_vgen2a", "dedust_vgen2b")
+                "dedust_r20g2a", "dedust_r20g2b", "dedust_r20g2c", "dedust_vgen2a", "dedust_vgen2b",
+                # v8 追加（2026-07-11）:gen3+g20n 公證+vgen3+R21 batch1
+                "dedust_r20g3a", "dedust_r20g3b", "dedust_r20g3c", "dedust_r20n",
+                "dedust_vgen3a", "dedust_vgen3b", "dedust_r21b1a", "dedust_r21b1b", "dedust_r21b1c")
 #? ref2 殘餘風險: 已實錘假象觸發率 ~9% (11 抽 1),無 certified 對照的 ref2 條目可能還有 ~10 筆髒 Gain——
 #  佔訓練集 <0.3%,MSE 回歸可容忍;隨後續重驗逐步被 certified 店覆蓋。store 不存在時自動略過。
 OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）
