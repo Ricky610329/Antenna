@@ -2487,8 +2487,10 @@ def select_r21harvest(args):
     mi = list(rng.choice(rest, size=min(args.n - args.lo - args.wild - len(oi), len(rest)), replace=False))
     wi = list(rng.choice(len(wilds), size=min(args.wild, len(wilds)), replace=False)) if wilds else []
     entries = []
-    tag = args.tag or f"b{args.batch}"                # --tag=填空批命名（gN;夾/id/family 全隔離,防撞正批）
-    idt = args.tag or str(args.batch)
+    tag = args.tag or f"b{args.batch}"                # --tag=填空批命名（夾/id/family 全隔離,防撞正批）
+    #? R23 命名規範:tag 直接帶 round 前綴（如 r22g1 → 夾 dedust_r22g1*、id m22g1_*）;無前綴=legacy r21
+    fol = tag if tag.startswith("r2") else f"r21{tag}"
+    idt = tag[1:] if tag.startswith("r2") else (args.tag or str(args.batch))
     for arm, idxs, src in (("oobharv", oi, cands), ("loharv", li, cands),
                            ("mlotto", mi, cands), ("wild", wi, wilds)):
         for j, i in enumerate(idxs):
@@ -2502,7 +2504,7 @@ def select_r21harvest(args):
     #? 切片數=拖尾粒度（2026-07-11 Ricky「不浪費算力」）:夾多於機器,先跑完的機接下一夾,
     #  慢機只拖住自己那夾——batch5 起用 --shards 6（3 機 × 2）。
     for suf in "abcdefgh"[:args.shards]:
-        dd = _dir(f"dedust_r21{tag}{suf}_input")
+        dd = _dir(f"dedust_{fol}{suf}_input")
         dd.mkdir(parents=True, exist_ok=True)
         dirs.append(dd)
     manifests = [[] for _ in dirs]
@@ -2513,7 +2515,7 @@ def select_r21harvest(args):
         torch.save(torch.tensor(pat, dtype=torch.float32), str(dirs[b].joinpath(e["id"] + ".pt")))
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
-    print(f"r21 {tag}: 帶外收割 {len(oi)}+低側收割 {len(li)}+margin 樂透 {len(mi)}"
+    print(f"{fol}: 帶外收割 {len(oi)}+低側收割 {len(li)}+margin 樂透 {len(mi)}"
           f"+彩票 {len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
@@ -2707,7 +2709,9 @@ def select_r22mix(args):
             outs.append(dict(pat=q, parent=anchor, ops=[["hslot_part", r0, L]],
                              d=int((q != p).sum()), stats=st))
         return outs
-    hs = [c for a in ("r3_001", "a024", "c25") for c in hslot_doses(a)]
+    #? H 錨點按批輪替（構造決定性,同錨同劑量=重複會被查重擋 → 每批換組;batch4 起回繞,屆時 H 判準已到期）
+    H_POOL = ("r3_001", "a024", "c25", "r2_016", "x00", "g16", "ccr9s2", "i02", "vg0765")
+    hs = [c for a in H_POOL[((args.batch - 1) * 3) % len(H_POOL):][:3] for c in hslot_doses(a)]
 
     cfg = load_config(args.config)
     setup_responses(cfg)
