@@ -9,6 +9,9 @@
 2. check-dup **自動掃描全部輸入夾**（2026-07-10 起免維護清單;舊 select 內建去重仍引用 HISTORY_INPUTS）；
    蓄意重複＝kind `notarize`/`repeat`（查重豁免，公證靠這個）。
 3. 新 select 函式的 docstring 寫死：臂別、筆數、判準（與 round 檔 §1 一致）。
+   **命名規範（R23 起,Ricky 2026-07-12）**：round 號一路貫穿——夾 `dedust_r<NN>b<批><夾>`、
+   id `<臂字母><NN>b<批>_<序>_<親>`（如 `m23b1_003_r2_016`）、填空池 `r<NN>g*`、公證 `r<NN>n*`;
+   **不再用跨 round 的全域批次計數**（R21 m5_→R22 m6_ 是反例,R22 就算了）。
 4. **生成決定性**：select 內不用未 seed 的隨機（`np.random.default_rng(seed)`）；同 seed 同輸出。
 5. 同一個 store **不可兩台機同時跑**（results.json 整份重寫會互踩）；跨機接力 OK（斷點續跑）。
    **資料工廠模式**下這由 `jobs_state/<store>.claim` 原子認領自動保證——正式機常駐
