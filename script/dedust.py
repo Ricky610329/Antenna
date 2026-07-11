@@ -2,7 +2,7 @@
 """
 script/dedust.py — 批次 HFSS 驗證線（R7 起的研究主力）：開發機 select-* 生輸入 → 正式機 run 燒
 HFSS → 任一機 report 看結果。輸入/結果都在 NAS（`DATASET_PATH/<name>_input/` 與 `<name>/`），
-跨機共享；run 可中斷續跑（成功跳過、error 重試）；每筆 solve 順收方向圖（rad/ 夾）。
+跨機共享；run 可中斷續跑（成功跳過、error 重試）＋批尾自動補測；每筆 solve 順收方向圖（rad/ 夾）。
 
 通用流程：
     開發機:  python -m script.dedust <select-指令> [--input X_input ...]   # 生 pattern+manifest 上 NAS
@@ -2949,65 +2949,108 @@ def run(args):
             except Exception as ke:
                 print(f"  watchdog kill 失敗: {ke}")
 
+    def _errstr(e):
+        """COM 錯誤可讀化:HRESULT → 名稱標籤（原訊息常是 cp950 亂碼,碼比字可靠;2026-07-11 37 教訓）。"""
+        known = {-2147417851: "RPC_E_SERVERFAULT(HFSS 內部例外)",
+                 -2147023170: "RPC_S_CALL_FAILED(HFSS 行程死亡)",
+                 -2147023174: "RPC_S_SERVER_UNAVAILABLE(HFSS 已關閉)",
+                 -2147352567: "DISP_E_EXCEPTION(COM 例外)"}
+        a = getattr(e, "args", ())
+        codes = [c for c in a[:1] if isinstance(c, int)]
+        if len(a) > 2 and isinstance(a[2], tuple):       # com_error excepinfo 的 scode=真正原因
+            codes += [c for c in a[2] if isinstance(c, int) and c < 0]
+        tags = " ".join(known.get(c, f"0x{c & 0xFFFFFFFF:08X}") for c in codes)
+        return (tags + " | " if tags else "") + str(e)
+
     sim = _open_sim()
     fails = 0                                            # 連續失敗計數（HFSS 壞死保險絲）
     try:
-        for k, (num, m) in enumerate(todo):
-            p = torch.load(str(input_dir.joinpath(f"{m['id']}.pt")), weights_only=True)
-            print(f"[{m['id']}] 模擬中… (本次第 {k + 1}/{len(todo)} 筆;manifest #{num + 1}/{len(manifest)})")
-            done_evt, fired = threading.Event(), threading.Event()
-            threading.Thread(target=_watchdog, args=(done_evt, fired), daemon=True).start()
-            try:
-                sim.start(num)
-                result = sim(p)
-                elapsed = sim.end()
-            except Exception as e:                       #! 單筆失敗不炸整批：記 error、下一筆（比照線上 skip）
-                done_evt.set()
-                results[m["id"]] = {"error": ("watchdog_timeout: " if fired.is_set() else "") + str(e)}
-                _flush()
-                print(f"  ✗ {e}")
-                fails += 1
-                if fails >= getattr(args, "max_fail", 5):
-                    raise SystemExit(f"連續 {fails} 筆失敗——HFSS 疑似壞死,中止本批"
-                                     "（已完成部分已落檔,修復後重跑同指令即續）")
-                _kill_hfss()                             # 先殺透再重開（quit 對殭屍 COM 會卡,跳過）
-                sim = _open_sim()
-                continue
-            done_evt.set()
-            fails = 0
-            #? 接管防互踩:若本批綁 claim 且已被別台接管（stale takeover）→ 優雅退出,不再寫 store
-            cp = getattr(args, "claim_path", None)
-            if cp is not None:
+        #? 批尾自動補測（2026-07-11,37 HFSS bug）:主輪跑完殘留 error → 殺透重開 HFSS 再補,
+        #  最多 --retry-pass 輪——COM 偶發錯多為 transient（b1a 手動補測 4 筆全清=依據）,
+        #  免人工刪 .done+.claim 重派;同一筆 attempts≥3 判毒樣本嫌疑,不再試（人工判）。
+        for rpass in range(1 + getattr(args, "retry_pass", 2)):
+            if rpass:
+                todo = [(n, m) for n, m in enumerate(manifest)
+                        if "error" in results.get(m["id"], {})
+                        and results[m["id"]].get("attempts", 1) < 3]
+                if not todo:
+                    break
+                print(f"↻ 批尾補測第 {rpass} 輪：殘留 error {len(todo)} 筆,殺透重開 HFSS 重試")
                 try:
-                    owner = json.load(open(cp, encoding="utf-8")).get("machine")
+                    _guard(sim.quit, 120, "補測前 HFSS 關閉")
                 except Exception:
-                    owner = None
-                if owner != getattr(args, "claim_me", None):
-                    print(f"⚠ claim 已被 {owner} 接管——本機停寫退出（避免 results.json 互踩）")
-                    return
+                    pass
+                _kill_hfss()
+                sim = _open_sim()
+                fails = 0
+            aborted = False
+            for k, (num, m) in enumerate(todo):
+                p = torch.load(str(input_dir.joinpath(f"{m['id']}.pt")), weights_only=True)
+                print(f"[{m['id']}] 模擬中… (本次第 {k + 1}/{len(todo)} 筆;manifest #{num + 1}/{len(manifest)})")
+                done_evt, fired = threading.Event(), threading.Event()
+                threading.Thread(target=_watchdog, args=(done_evt, fired), daemon=True).start()
+                try:
+                    sim.start(num)
+                    result = sim(p)
+                    elapsed = sim.end()
+                except Exception as e:                   #! 單筆失敗不炸整批：記 error、下一筆（比照線上 skip）
+                    done_evt.set()
+                    es = ("watchdog_timeout: " if fired.is_set() else "") + _errstr(e)
+                    att = results.get(m["id"], {}).get("attempts", 0) + 1
+                    results[m["id"]] = {"error": es, "attempts": att}
+                    _flush()
+                    print(f"  ✗ (第 {att} 次) {es}")
+                    fails += 1
+                    if not rpass and fails >= getattr(args, "max_fail", 5):
+                        raise SystemExit(f"連續 {fails} 筆失敗——HFSS 疑似壞死,中止本批"
+                                         "（已完成部分已落檔,修復後重跑同指令即續）")
+                    if rpass and fails >= 3:             # 補測輪不拉保險絲:連 3 敗=HFSS 又壞,放棄補測照 done 收
+                        print("  補測連 3 敗——放棄補測,殘留 error 交 .done 記錄")
+                        aborted = True
+                        break
+                    _kill_hfss()                         # 先殺透再重開（quit 對殭屍 COM 會卡,跳過）
+                    sim = _open_sim()
+                    continue
+                done_evt.set()
+                fails = 0
+                #? 接管防互踩:若本批綁 claim 且已被別台接管（stale takeover）→ 優雅退出,不再寫 store
+                cp = getattr(args, "claim_path", None)
+                if cp is not None:
+                    try:
+                        owner = json.load(open(cp, encoding="utf-8")).get("machine")
+                    except Exception:
+                        owner = None
+                    if owner != getattr(args, "claim_me", None):
+                        print(f"⚠ claim 已被 {owner} 接管——本機停寫退出（避免 results.json 互踩）")
+                        return
 
-            resp = torch.stack([torch.as_tensor(result[l]).float().reshape(-1) for l in labels])
-            w, per = worst_margin(resp, labels, cfg.targets)
-            entry = {"wm": [_r(per[labels[0]]), _r(per[labels[1]]), _r(w)], "time_s": _r(elapsed, 1)}
+                resp = torch.stack([torch.as_tensor(result[l]).float().reshape(-1) for l in labels])
+                w, per = worst_margin(resp, labels, cfg.targets)
+                entry = {"wm": [_r(per[labels[0]]), _r(per[labels[1]]), _r(w)], "time_s": _r(elapsed, 1)}
 
-            rad = sim.last_radiation                     # 方向圖順手收：±window 覆蓋餘裕 + 原始資料落檔
-            if isinstance(rad, dict) and rad.get("theta") is not None:
-                torch.save(rad, str(rad_dir.joinpath(f"{m['id']}.pt")))
-                cuts = {f"phi{phi}": _r(rad_window_margin(rad["theta"], rad[f"phi{phi}"], window, floor))
-                        for phi in (0, 90) if rad.get(f"phi{phi}") is not None}
-                if cuts:
-                    entry["rad"] = cuts
-                    entry["rad_margin"] = min(cuts.values())
-            entry.update(oob_metrics(resp))               # 帶外選擇性 (2026-07-07 起隨批入檔)
-            store.add(p, resp)                           # (pattern, 真響應) 入庫：可再餵 SM 重錨/Stage-3
-            results[m["id"]] = entry
-            _flush()
-            print(f"  ✓ wm={entry['wm']}  rad_margin={entry.get('rad_margin', '—')}  {entry['time_s']}s")
+                rad = sim.last_radiation                 # 方向圖順手收：±window 覆蓋餘裕 + 原始資料落檔
+                if isinstance(rad, dict) and rad.get("theta") is not None:
+                    torch.save(rad, str(rad_dir.joinpath(f"{m['id']}.pt")))
+                    cuts = {f"phi{phi}": _r(rad_window_margin(rad["theta"], rad[f"phi{phi}"], window, floor))
+                            for phi in (0, 90) if rad.get(f"phi{phi}") is not None}
+                    if cuts:
+                        entry["rad"] = cuts
+                        entry["rad_margin"] = min(cuts.values())
+                entry.update(oob_metrics(resp))           # 帶外選擇性 (2026-07-07 起隨批入檔)
+                store.add(p, resp)                       # (pattern, 真響應) 入庫：可再餵 SM 重錨/Stage-3
+                results[m["id"]] = entry
+                _flush()
+                print(f"  ✓ wm={entry['wm']}  rad_margin={entry.get('rad_margin', '—')}  {entry['time_s']}s")
+            if aborted:
+                break
     finally:
         try:
             _guard(sim.quit, 120, "HFSS 收尾關閉")
         except Exception:
             pass
+    poison = [i for i, v in results.items() if "error" in v and v.get("attempts", 1) >= 3]
+    if poison:
+        print(f"⚠ 毒樣本嫌疑（3 連敗）{len(poison)} 筆: {','.join(poison[:10])}——人工判;重派=刪 .done+.claim")
     print(f"\n完成。結果：{results_path}；報表：python -m script.dedust report")
 
 
@@ -3038,7 +3081,7 @@ def jobs_add(args):
 def worker(args):
     """資料工廠 worker（Ricky 2026-07-10「三台都變資料收集系統,用 NAS 控制」）——正式機常駐:
     迴圈＝讀 jobs.json（prio 升冪）→ 跳過 done/被認領 → **原子認領**（jobs_state/<store>.claim,
-    O_EXCL 建檔含機器 IP）→ run（斷點續跑＋單筆 watchdog＋連敗保險絲）→ 標 done → 下一個;
+    O_EXCL 建檔含機器 IP）→ run（斷點續跑＋單筆 watchdog＋連敗保險絲＋批尾自動補測）→ 標 done → 下一個;
     佇列空 → 睡 --poll 秒再掃。**同 store 兩機並跑由 claim 檔擋掉**（results.json 互踩防護）。
     stale 接管:claim 存在但 store 無進度超過 --stale 分鐘（機器死了）→ 別台可接手續跑。
     停止:建 jobs_state/STOP（跑完當前 job 收工）或 Ctrl-C。run 觸發保險絲（連敗）→ 寫
@@ -3098,6 +3141,7 @@ def worker(args):
         print(f"▶ 認領 {st}（input {picked['input']}）")
         ns = argparse.Namespace(config=args.config, input=picked["input"], store=st, out=None,
                                 sweep=args.sweep, timeout=args.timeout, max_fail=args.max_fail,
+                                retry_pass=args.retry_pass,
                                 claim_path=str(sd.joinpath(st + ".claim")), claim_me=me)
         try:
             run(ns)
@@ -3392,6 +3436,8 @@ def main():
                    help="掃頻演算法（Discrete=17 點逐點硬解,慢但每點真解;掃頻法交叉驗證用）")
     s.add_argument("--timeout", type=int, default=900, help="單筆 watchdog 秒數（超時殺 HFSS 標 error 續跑;中位 160s/P90 176s）")
     s.add_argument("--max-fail", type=int, default=5, dest="max_fail", help="連續失敗幾筆判 HFSS 壞死中止")
+    s.add_argument("--retry-pass", type=int, default=2, dest="retry_pass",
+                   help="批尾自動補測輪數（殘留 error 殺重開 HFSS 重試;0=關）")
     s.set_defaults(fn=run)
 
     s = sub.add_parser("worker", help="資料工廠 worker：常駐認領 NAS 佇列 job（jobs.json）自動跑批")
@@ -3400,6 +3446,7 @@ def main():
     s.add_argument("--poll", type=int, default=300, help="佇列空時幾秒掃一次")
     s.add_argument("--timeout", type=int, default=900)
     s.add_argument("--max-fail", type=int, default=5, dest="max_fail")
+    s.add_argument("--retry-pass", type=int, default=2, dest="retry_pass")
     s.add_argument("--stale", type=int, default=45, help="claim 無進度幾分鐘可被接管")
     s.add_argument("--once", action="store_true", help="只跑一個 job 就收工（測試用）")
     s.set_defaults(fn=worker)
