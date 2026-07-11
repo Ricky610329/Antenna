@@ -2497,20 +2497,22 @@ def select_r21harvest(args):
                                 pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
                                 _pat=c["pat"]))
     dirs = []
-    for suf in "abc":
+    #? 切片數=拖尾粒度（2026-07-11 Ricky「不浪費算力」）:夾多於機器,先跑完的機接下一夾,
+    #  慢機只拖住自己那夾——batch5 起用 --shards 6（3 機 × 2）。
+    for suf in "abcdefgh"[:args.shards]:
         dd = _dir(f"dedust_r21b{args.batch}{suf}_input")
         dd.mkdir(parents=True, exist_ok=True)
         dirs.append(dd)
-    manifests = [[], [], []]
+    manifests = [[] for _ in dirs]
     for k, e in enumerate(entries):
         pat = e.pop("_pat")
-        b = k % 3
+        b = k % len(dirs)
         manifests[b].append(e)
         torch.save(torch.tensor(pat, dtype=torch.float32), str(dirs[b].joinpath(e["id"] + ".pt")))
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
     print(f"r21 batch{args.batch}: 帶外收割 {len(oi)}+低側收割 {len(li)}+margin 樂透 {len(mi)}"
-          f"+彩票 {len(wi)} → 三夾 {[len(m) for m in manifests]}")
+          f"+彩票 {len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
@@ -3306,6 +3308,7 @@ def main():
     s.add_argument("--n", type=int, default=150)
     s.add_argument("--lo", type=int, default=0, help="低側 realized 收割臂筆數（先決:排序回測過門檻才開）")
     s.add_argument("--wild", type=int, default=8, help="大跳彩票筆數（d 26-60,26px 死區持續複驗）")
+    s.add_argument("--shards", type=int, default=3, help="輸出切幾夾（夾多於機器=慢機不拖全隊;batch5 起建議 6）")
     s.set_defaults(fn=select_r21harvest)
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")

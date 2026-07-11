@@ -35,6 +35,8 @@
 # 每批: python -m script.dedust select-r21harvest --batch N [--sm sm_reanchorX.pth]
 #       check-dup ×3 → jobs-add ×3;收檔 → 判讀 → 重錨 → 下一批
 # batch1: 2026-07-11 11:22 發車（150 筆,查重 0;SM=v7）
+# 2026-07-11 22:08 重派 b2b/b3c/vgen2a 殘留 error 13 筆（dedust 新增批尾自動補測後回收;
+#   毒血系 r20g3b/g3c 12 筆〔g2_029×7+t14×5〕不重派）;batch5 起 select --shards 6（慢機不拖全隊）
 ```
 | 批 | 狀態 |
 |---|---|
