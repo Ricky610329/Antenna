@@ -274,8 +274,12 @@ def oob_metrics(resp, n_side: int = 4) -> dict:
     gain_max = float(r[1][far].max())
     freqs = 26.5 + (np.arange(n) - 5) * 0.5
     edge_lo, edge_hi = float(r[1][5]), float(r[1][11])       # 帶緣 Gain（26.5/29.5）
+    in_gain_min = float(r[1][5:12].min())                    # 帶內 Gain 最低點（26.5-29.5）
     return dict(oob_s11_min=round(s11_min, 2), oob_gain_max=round(gain_max, 2),
                 oob_bad=round(gain_max - s11_min, 2),
+                # 相對選擇性（Ricky 2026-07-12「帶內相對帶外高就可以」）:帶內min−帶外max,分側
+                contrast_lo=round(in_gain_min - float(r[1][lo].max()), 2),
+                contrast_hi=round(in_gain_min - float(r[1][hi].max()), 2),
                 oob_gain_max_lo=round(float(r[1][lo].max()), 2),
                 oob_gain_max_hi=round(float(r[1][hi].max()), 2),
                 oob_s11_min_lo=round(float(r[0][lo].min()), 2),
