@@ -6,6 +6,9 @@
 
 1. 流程：開發機 `select-*` 生輸入上 NAS → **`check-dup --input X_input` 必跑**（exit 1 就不發車）→
    正式機 `run --input X_input --store X`（可中斷續跑、error 條目重試）→ 任一機 `report`。
+   **收檔判讀＝`analyze batch --round R --batch N`**（臂別/前瞻/紀錄候選+公證指令/→行動）;
+   收檔偵測＝`dedust watch --stores ...`（Monitor 直接掛）;重錨＝`sm_reanchor train --add "..." --out vN.pth`
+   （自動 append `configs/clean_stores.txt`）。整鏈 runbook＝`/batch-cycle` skill。
 2. check-dup **自動掃描全部輸入夾**（2026-07-10 起免維護清單;舊 select 內建去重仍引用 HISTORY_INPUTS）；
    蓄意重複＝kind `notarize`/`repeat`（查重豁免，公證靠這個）。
 3. 新 select 函式的 docstring 寫死：臂別、筆數、判準（與 round 檔 §1 一致）。

@@ -36,52 +36,24 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_CFG = os.path.join(REPO, "configs", "single_r5_explore.yaml")
 #? 去重「先見先贏」→ certified 店排最前:同 pattern 若在 ref2(37+舊萃取碼,Gain 有已知污染個案,
 #  如 w17 分身 +0.48)也出現,以 verify/公證店的正確響應為準。ref2 其餘未知風險=誠實記錄、靠量取勝。
-CLEAN_STORES = ("dedust_ref2v", "dedust_champ_disc",                       # 修復版重驗 (擋 ref2 毒樣本,如 b20)
-                "dedust_verify_interp", "dedust_verify_disc2", "dedust_w17rep", "dedust_repeat",
-                "dedust_repeat_218", "dedust_r7", "dedust_r8", "dedust_r9",
-                "dedust_ref1", "dedust_occl", "dedust_ref2",
-                # v4 追加（R11-R14 全批,2026-07-09;certified 優先序維持=前面的店先見先贏）
-                "dedust_ref3", "dedust_probes", "dedust_wide", "dedust_crown", "dedust_family2",
-                "dedust_bakeoff", "dedust_blocks", "dedust_ablate", "dedust_resize",
-                "dedust_occl2", "dedust_tol",
-                # v5 追加（R15-R19a,2026-07-10）:手術/低側族/王鄰域變異=新區域覆蓋。
-                # ⚠ dedust_r19b 刻意不進——與 r19a 交錯分夾同分布,整夾保留當 R19 門檻 held-out
-                #   （round-19 §1:vargen held-out wm 排序 ρ≥0.5 且 oob 顯著 → R20 GA 發車）。
-                "dedust_r15ga", "dedust_r15inf", "dedust_r15v", "dedust_addmap",
-                "dedust_r16b", "dedust_r17", "dedust_r18", "dedust_r19a",
-                # v6 追加（2026-07-11）:r19b 考卷任務已卸（R20 起改前瞻性驗證）+ R20 gen1 真值
-                "dedust_r19b", "dedust_r20g1a", "dedust_r20g1b", "dedust_r20g1c",
-                # v7 追加（2026-07-11）:gen2 三夾 + vgen2 資料批
-                "dedust_r20g2a", "dedust_r20g2b", "dedust_r20g2c", "dedust_vgen2a", "dedust_vgen2b",
-                # v8 追加（2026-07-11）:gen3+g20n 公證+vgen3+R21 batch1
-                "dedust_r20g3a", "dedust_r20g3b", "dedust_r20g3c", "dedust_r20n",
-                "dedust_vgen3a", "dedust_vgen3b", "dedust_r21b1a", "dedust_r21b1b", "dedust_r21b1c",
-                # v9 追加（2026-07-11）:R21 batch2
-                "dedust_r21b2a", "dedust_r21b2b", "dedust_r21b2c",
-                # v10 追加（2026-07-11）:R21 batch3
-                "dedust_r21b3a", "dedust_r21b3b", "dedust_r21b3c",
-                # v11 追加（2026-07-11）:R21 batch4（150/150 零 error 首例）
-                "dedust_r21b4a", "dedust_r21b4b", "dedust_r21b4c",
-                # v12 追加（2026-07-12）:R21 batch5（六夾切片）＋g1 填空批
-                "dedust_r21b5a", "dedust_r21b5b", "dedust_r21b5c",
-                "dedust_r21b5d", "dedust_r21b5e", "dedust_r21b5f",
-                "dedust_r21g1a", "dedust_r21g1b",
-                # v13 追加（2026-07-12）:R22 b1 六夾＋n1 公證＋g2a 填空（b/c 未完待後補）
-                "dedust_r22b1a", "dedust_r22b1b", "dedust_r22b1c",
-                "dedust_r22b1d", "dedust_r22b1e", "dedust_r22b1f",
-                "dedust_r22n1", "dedust_r21g2a",
-                # v14 追加（2026-07-12）:R22 b2 六夾＋n2 三公證＋g2b/c 填空
-                "dedust_r22b2a", "dedust_r22b2b", "dedust_r22b2c",
-                "dedust_r22b2d", "dedust_r22b2e", "dedust_r22b2f",
-                "dedust_r22n2o", "dedust_r22n2h", "dedust_r22n2w",
-                "dedust_r21g2b", "dedust_r21g2c",
-                # v15 追加（2026-07-12）:R22 b3 六夾＋n3＋r22g1 填空池
-                "dedust_r22b3a", "dedust_r22b3b", "dedust_r22b3c",
-                "dedust_r22b3d", "dedust_r22b3e", "dedust_r22b3f",
-                "dedust_r22n3", "dedust_r22g1a", "dedust_r22g1b", "dedust_r22g1c",
-                # v16 追加（2026-07-12）:R23 b1 六夾（sel 鍵首批）
-                "dedust_r23b1a", "dedust_r23b1b", "dedust_r23b1c",
-                "dedust_r23b1d", "dedust_r23b1e", "dedust_r23b1f")
+#? 2026-07-12 檔案化（弱模型化:重錨不再改原始碼）——清單在 configs/clean_stores.txt,
+#  追加走 `train --add "storeA,storeB"`（自動 append+訓練;git diff 可審計）。
+_CS_PATH = os.path.join(REPO, "configs", "clean_stores.txt")
+
+
+def _load_clean_stores():
+    if not os.path.exists(_CS_PATH):
+        raise SystemExit(f"{_CS_PATH} 不存在——CLEAN_STORES 已檔案化(2026-07-12),請自 git 還原該檔")
+    out = []
+    with open(_CS_PATH, encoding="utf-8") as f:
+        for line in f:
+            line = line.split("#")[0].strip()
+            if line and line not in out:
+                out.append(line)
+    return tuple(out)
+
+
+CLEAN_STORES = _load_clean_stores()
 #? ref2 殘餘風險: 已實錘假象觸發率 ~9% (11 抽 1),無 certified 對照的 ref2 條目可能還有 ~10 筆髒 Gain——
 #  佔訓練集 <0.3%,MSE 回歸可容忍;隨後續重驗逐步被 certified 店覆蓋。store 不存在時自動略過。
 OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）
@@ -145,6 +117,17 @@ def _wm_errs(sm, items):
 
 
 def train(args):
+    global CLEAN_STORES
+    if getattr(args, "add", None):                       # 重錨一鍵化:append clean_stores.txt 再訓
+        import time as _t
+        new = [s.strip() for s in args.add.split(",") if s.strip() and s.strip() not in CLEAN_STORES]
+        if new:
+            with open(_CS_PATH, "a", encoding="utf-8") as f:
+                f.write(f"# {args.out} 追加（{_t.strftime('%Y-%m-%d')}）\n")
+                for n in new:
+                    f.write(n + "\n")
+            CLEAN_STORES = CLEAN_STORES + tuple(new)
+            print(f"clean_stores.txt +{len(new)}: {','.join(new)}")
     tr, ho = _load_clean()
     replay, _ = _load_harvest(args.replay, args.val)
     print(f"乾淨真值 {len(tr) + len(ho)} 筆（train {len(tr)} / held-out {len(ho)}）＋ harvest 重放 {len(replay)}")
@@ -308,6 +291,7 @@ def main():
         s.add_argument("--replay", type=int, default=2000, help="harvest 重放筆數")
         s.add_argument("--val", type=int, default=500, help="harvest 驗證筆數 (不進訓練)")
         s.add_argument("--out", default="sm_reanchor.pth", help="輸出權重名 (DATASET_PATH 下;v2 建議 sm_reanchor2.pth)")
+        s.add_argument("--add", default=None, help='逗號分隔新 store,先 append configs/clean_stores.txt 再訓（重錨一鍵化）')
         s.add_argument("--grid-epochs", type=int, nargs="+", default=[40, 80])
         s.add_argument("--grid-over", type=int, nargs="+", default=[4, 8, 16])
         s.add_argument("--grid-replay", type=int, nargs="+", default=[1000, 2000])

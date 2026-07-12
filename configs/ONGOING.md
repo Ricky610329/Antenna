@@ -20,8 +20,12 @@
 - **哨兵（零 token 純腳本）**:`python -m script.status --factory --alert --notify-topic <主題>`——
   掃佇列進度+卡住(30分無結果)+停機(.fail);排程 `schtasks /Create /TN AntennaFactory /SC HOURLY /TR "..."`。
   **待 Ricky:定 ntfy 主題(隨機長字串)+手機裝 ntfy app+回報後我出完整註冊指令**。
-- 收檔流程已 skill 化:**/close-round NN**（12 步清單,判準勾稽）＋ **/gain-check**（性能期望三層帳,
-  防過早悲觀/樂觀;每批收檔與輪結算都跑）。三機皆已掛 worker（2026-07-11 起;個性見 memory 機器檔案）。
+- **流程全 skill 化（2026-07-12 弱模型化）**:主入口 **/batch-cycle**（收檔→判讀→公證→重錨→發車→
+  補池→掛偵測→記帳）;/notarize（公證/換王）/new-round /close-round /gain-check /stall-protocol。
+  工具面:`analyze batch`（判讀一鍵）`dedust watch`（偵測）`sm_reanchor train --add`（重錨一鍵,
+  清單=configs/clean_stores.txt）;紀錄門檻真相源=`docs/records.json`。
+- worker 三機常駐（2026-07-11 起;個性見 memory）;**自產 tier-2（--selfgen 預設開）=佇列全空自動翻
+  歷史 bit 產資料,任何 job 入佇列即讓位——HFSS 制度上不停**。
 
 ### ~~Round 13 — 組數階梯~~（✅ **2026-07-08 收檔**）→ [round-13](../docs/log/round-13-block-ladder.md)
 - 組數=真設計軸但報酬有取捨:4-5 塊甜蜜點(5 塊買 rad/4 塊買選擇性)、6 塊遞減;margin 天花板僅微升。

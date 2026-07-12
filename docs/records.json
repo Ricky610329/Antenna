@@ -1,0 +1,12 @@
+{
+  "_comment": "紀錄與門檻的機器真相源（2026-07-12 起）。換王/破紀錄=先改這裡、champions.md 散文跟上（/notarize skill 步驟）。analyze gain/batch 預設讀此檔。",
+  "updated": "2026-07-12",
+  "buffer": 0.15,
+  "kappa": 10,
+  "near": 0.30,
+  "wm":         {"id": "k23b1_021_m22g1_025_cc", "value": 0.41, "certified": "2026-07-12 R23n1 3/3"},
+  "rad":        {"id": "o23b1_007_k8_042_k7_00", "value": 1.00, "certified": "2026-07-12 R23n1 3/3"},
+  "oob":        {"id": "o6_001_o4_035_o3_05",    "value": 8.61, "certified": "2026-07-12 R22n2 3/3"},
+  "usable_oob": {"id": "k7_038_m3_010_o1_04",    "value": 9.09, "certified": "R22b2 單次;可用帶外=wm>=0.15且rad>=0 的 min oob_bad"},
+  "inband":     {"id": "h7_010_g16",             "value": 0.46, "certified": "2026-07-12 R22n3 3/3;非三標參考點"}
+}

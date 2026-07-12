@@ -10,9 +10,9 @@ description: 跑性能期望三層帳（階梯命中率/學習曲線斜率/近�
 
 ## 執行
 
-1. 現任紀錄從 `docs/champions.md` 查（wm 紀錄當 `--record`，近王門檻取紀錄 −0.09 左右）：
+1. 直接跑（門檻**自動讀 `docs/records.json`**,不用人肉抄;旗標僅供覆蓋）：
    ```
-   python -m script.analyze gain --line <線前綴> --record <現任wm> --near <紀錄-0.09>
+   python -m script.analyze gain --line <線前綴>
    ```
 2. 三層各自判讀（**各管各的，不混算**）：
    - **L1 階梯**：看「近門檻列」（≥+0.20/+0.30）**跨批趨勢**——連兩批下滑＝礦脈枯竭早警

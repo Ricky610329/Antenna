@@ -213,7 +213,13 @@ def cmd_gain(args):
     """性能期望三層帳（2026-07-12,Ricky「像 AdamW 一樣對提升有預期」＋防過早悲觀）:
     L1 階梯命中率——每批×臂在近門檻的實測命中率（不外推;下滑=礦脈枯竭早警）
     L2 學習曲線——best-so-far vs 累積 N 擬 R(N)=a+b·lnN,邊際增益 b/N（每百筆期望 dB）
-    L3 轉換率——歷史「近王級(≥--near)→紀錄推進」比率;新臂零歷史=走預註冊存活測試,不給 dB 期望。"""
+    L3 轉換率——歷史「近王級(≥--near)→紀錄推進」比率;新臂零歷史=走預註冊存活測試,不給 dB 期望。
+    門檻預設自動讀 docs/records.json（旗標可覆蓋;弱模型化 2026-07-12）。"""
+    if args.record is None or args.oob_record is None or args.near is None:
+        _rec = _records()
+        args.record = args.record if args.record is not None else _rec["wm"]["value"]
+        args.oob_record = args.oob_record if args.oob_record is not None else _rec["oob"]["value"]
+        args.near = args.near if args.near is not None else round(_rec["wm"]["value"] - 0.09, 2)
     import json
     LADDER = (0.0, 0.20, 0.30, 0.35)
     stores = []                                       # (mtime, 批標籤, manifest, results)
@@ -324,6 +330,131 @@ def cmd_gain(args):
         print(f"  ⚠ 新臂 {sorted(fresh)}: 歷史不足,走 round 檔預註冊存活測試（資訊帳）,不給 dB 期望")
 
 
+def _records():
+    """docs/records.json＝紀錄與門檻的機器真相源（換王先改它;analyze gain/batch 預設讀它）。"""
+    import json
+    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "records.json")
+    return json.load(open(p, encoding="utf-8"))
+
+
+def cmd_batch(args):
+    """收檔判讀一鍵化（弱模型化 2026-07-12,取代每批手寫 judge script）:
+    自動發現 dedust_r<round>b<batch>* 夾,輸出完成度/臂別表/可用帶外推進/前瞻 ρ（含 rad 頭退鍵線）/
+    紀錄候選＋現成公證指令/「→ 行動」摘要——弱模型照「→」行執行即可,判斷都在程式裡。"""
+    import json
+    import re
+    from scipy.stats import spearmanr
+    rec = _records()
+    buf = rec["buffer"]
+    stores = []
+    for suf in "abcdefgh":
+        st = f"dedust_r{args.round}b{args.batch}{suf}"
+        if DATASET_PATH.joinpath(st, "results.json").exists() \
+                and DATASET_PATH.joinpath(st + "_input", "manifest.json").exists():
+            stores.append(st)
+    if not stores:
+        raise SystemExit(f"找不到 dedust_r{args.round}b{args.batch}* 的 store（還沒收檔?）")
+    rows, incomplete = [], []
+    for st in stores:
+        man = json.load(open(str(DATASET_PATH.joinpath(st + "_input", "manifest.json")), encoding="utf-8"))
+        res = json.load(open(str(DATASET_PATH.joinpath(st, "results.json")), encoding="utf-8"))
+        okn = sum(1 for m in man if m["id"] in res and "error" not in res[m["id"]])
+        if okn < len(man):
+            incomplete.append(f"{st}: {okn}/{len(man)}")
+        for m in man:
+            r = res.get(m["id"])
+            if r is None or "error" in r:
+                continue
+            rows.append(dict(id=m["id"], st=st, kind=m.get("kind", "?"), src=m.get("source_id", ""),
+                             wm=r["wm"][2], rad=r.get("rad_margin"), oob=r.get("oob_bad"),
+                             pwm=m.get("pred_wm"), poob=m.get("pred_oob"), prad=m.get("pred_rad"),
+                             d=m.get("diff_px")))
+    print(f"== r{args.round} b{args.batch} 收檔判讀（{len(stores)} 夾 {len(rows)} 筆;門檻源 records.json {rec['updated']}）==")
+    if incomplete:
+        print("⚠ 未收全（先決定等/補跑,別急著下結論）: " + "; ".join(incomplete))
+
+    def tri(s):
+        return s["wm"] >= 0 and (s["rad"] if s["rad"] is not None else -9) >= 0
+
+    def usable(s):
+        return s["wm"] >= buf and (s["rad"] if s["rad"] is not None else -9) >= 0
+
+    print("\n-- 臂別（合格=wm≥buffer∧rad≥0）--")
+    for kind in sorted({s["kind"] for s in rows}):
+        g = [s for s in rows if s["kind"] == kind]
+        t3 = [s for s in g if tri(s)]
+        us = [s for s in g if usable(s)]
+        best = max(g, key=lambda s: s["wm"])
+        buo = min(us, key=lambda s: s["oob"] or 99) if us else None
+        print(f"  {kind}: n={len(g)} 三標 {len(t3)}({100 * len(t3) / len(g):.0f}%)"
+              f" 合格 {len(us)}({100 * len(us) / len(g):.0f}%) | best {best['id']} wm{best['wm']:+.2f}"
+              + (f" | 合格最佳oob {buo['id']} {buo['oob']}" if buo else ""))
+
+    print(f"\n-- 可用帶外（紀錄 {rec['usable_oob']['value']}＝{rec['usable_oob']['id']}）--")
+    us_all = sorted([s for s in rows if usable(s)], key=lambda s: s["oob"] or 99)
+    adv = [s for s in us_all if (s["oob"] or 99) < rec["usable_oob"]["value"]]
+    for s in us_all[:5]:
+        print(f"  {s['oob']}  {s['id']} [{s['kind']}] wm{s['wm']:+.2f} rad{s['rad']:+.2f}"
+              + ("  ★ 推進!" if s in adv else ""))
+
+    print("\n-- 前瞻（M 臂 mlotto,pred × realized）--")
+    mm = [s for s in rows if s["kind"] == "mlotto"]
+    rad_rho = None
+    for pk, ak, nm in (("pwm", "wm", "wm"), ("poob", "oob", "oob"), ("prad", "rad", "rad頭")):
+        xs = [(s[pk], s[ak]) for s in mm if s[pk] is not None and s[ak] is not None]
+        if len(xs) > 5:
+            rho, p = spearmanr([a for a, _ in xs], [b for _, b in xs])
+            print(f"  {nm}: rho={rho:+.3f} (p={p:.3f}, n={len(xs)})")
+            if pk == "prad":
+                rad_rho = rho
+
+    print("\n-- 紀錄候選（單次;鐵則=下批公證）--")
+    cands = []
+    for s in rows:
+        tags = []
+        if s["wm"] > rec["wm"]["value"]:
+            tags.append(f"wm{s['wm']:+.2f}>{rec['wm']['value']}")
+        if tri(s) and (s["oob"] or 99) < rec["oob"]["value"]:
+            tags.append(f"oob{s['oob']}<{rec['oob']['value']}")
+        if tri(s) and (s["rad"] or -9) > rec["rad"]["value"]:
+            tags.append(f"rad{s['rad']}>{rec['rad']['value']}")
+        if usable(s) and (s["oob"] or 99) < rec["usable_oob"]["value"]:
+            tags.append(f"可用oob{s['oob']}<{rec['usable_oob']['value']}")
+        if tags:
+            cands.append((s, tags))
+    if cands:
+        nums = [int(mo.group(1)) for f in os.listdir(str(DATASET_PATH))
+                if (mo := re.match(rf"dedust_r{args.round}n(\d+)", f))]
+        nx = (max(nums) + 1) if nums else 1
+        for j, (s, tags) in enumerate(cands):
+            sub = "abcdefgh"[j % 8]
+            print(f"  ★ {s['id']} [{s['kind']}] {','.join(tags)}")
+            print(f"    → python -m script.dedust select-repeat --source-input {s['st']}_input"
+                  f" --id {s['id']} --n 2 --input dedust_r{args.round}n{nx}{sub}_input")
+            print(f"    → python -m script.dedust jobs-add --input dedust_r{args.round}n{nx}{sub}_input"
+                  f" --store dedust_r{args.round}n{nx}{sub} --prio 2")
+    else:
+        print("  （無）")
+
+    for kind in ("slotchain", "denovo", "infogain", "hslot", "repair"):
+        g = sorted([s for s in rows if s["kind"] == kind], key=lambda s: -s["wm"])[:5]
+        if g:
+            print(f"\n-- {kind} top5 --")
+            for s in g:
+                print(f"  {s['id']} wm{s['wm']:+.2f} rad {s['rad']} oob {s['oob']}"
+                      f" {'★三標' if tri(s) else ''} (src {s['src']}, d{s['d']})")
+
+    print("\n== → 行動（照抄執行;細節見 /batch-cycle skill）==")
+    print(f"  ① 公證候選 {len(cands)} 件" + ("——照上方 select-repeat/jobs-add 指令發車(prio 2),收檔走 /notarize" if cands else "——無,跳過"))
+    print("  ② 可用帶外: " + (f"★ 推進 {adv[0]['oob']}（{adv[0]['id']},單次→列入公證）" if adv
+                            else "零推進（連續零推進批數對照 round 檔 §1 回報線）"))
+    if rad_rho is not None:
+        print(f"  ③ rad 頭前瞻 {rad_rho:+.3f}: " + ("≥0.3 續鍵（下批保留 --rad-key）" if rad_rho >= 0.3
+                                                  else "<0.3——若連兩批<0.3 → 下批移除 --rad-key"))
+    print("  ④ 重錨: python -m script.sm_reanchor train --add \"" + ",".join(stores) + "\" --out sm_reanchorNN.pth")
+    print("  ⑤ 下批 select → check-dup（exit 1 停）→ jobs-add → 池存量<48 補 → dedust watch 掛偵測")
+
+
 def cmd_credit(args):
     """血統貢獻分（R24 探索誘因包 D,Ricky 核准 2026-07-12）:紀錄 id 沿 source_id 鏈回溯,
     每個祖先給其出身臂記一分——探索的延遲報酬記帳（例:margin 王經 g1 填空池=池記功）。
@@ -365,12 +496,16 @@ def main():
     re = sub.add_parser("rad-error"); re.add_argument("--run", required=True); re.add_argument("--n", type=int, default=30)
     cp = sub.add_parser("components", help="組件尺寸分布 vs 三標 (全 store 真值,零 HFSS;analysis-02)")
     cp.set_defaults(func=cmd_components)
-    gn = sub.add_parser("gain", help="性能期望三層帳（階梯/曲線/轉換;防過早悲觀）")
-    gn.add_argument("--line", default="r22", help="批次線前綴（掃 dedust_<line>*_input）")
-    gn.add_argument("--record", type=float, default=0.39, help="現任 wm 紀錄")
-    gn.add_argument("--oob-record", type=float, default=8.61, dest="oob_record", help="現任帶外紀錄（旗艦軸）")
-    gn.add_argument("--near", type=float, default=0.30, help="近王級門檻")
+    gn = sub.add_parser("gain", help="性能期望三層帳（階梯/曲線/轉換;防過早悲觀;門檻自動讀 records.json）")
+    gn.add_argument("--line", default="r23", help="批次線前綴（掃 dedust_<line>*_input）")
+    gn.add_argument("--record", type=float, default=None, help="現任 wm 紀錄（預設讀 docs/records.json）")
+    gn.add_argument("--oob-record", type=float, default=None, dest="oob_record", help="現任帶外紀錄（預設讀 records.json）")
+    gn.add_argument("--near", type=float, default=None, help="近王級門檻（預設=wm 紀錄−0.09）")
     gn.set_defaults(func=cmd_gain)
+    bt = sub.add_parser("batch", help="收檔判讀一鍵化（臂別/可用帶外/前瞻/紀錄候選+公證指令/→行動;/batch-cycle step①）")
+    bt.add_argument("--round", type=int, required=True)
+    bt.add_argument("--batch", type=int, required=True)
+    bt.set_defaults(func=cmd_batch)
     cr = sub.add_parser("credit", help="血統貢獻分（探索延遲報酬記帳;R24 配額股息計分輸入）")
     cr.add_argument("--ids", default="k23b1_021_m22g1_025_cc,o23b1_007_k8_042_k7_00,"
                     "o6_001_o4_035_o3_05,m5_054_m3_026_m1_01,h7_010_g16",

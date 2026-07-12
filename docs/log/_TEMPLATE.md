@@ -7,6 +7,9 @@
 - **指向**: configs/README「<段>」· 結果夾 §3 · memory [[project_xxx]] · 設計文件 docs/xxx.md
 
 > 本檔只放**連結指向**其他層(configs/README=config 全集、docs/設計文件=為什麼、結果夾=原始數字),不複製內容。
+> **批次線 round**：§2 表改「臂×配額×判準」、§3 code block 必含發車指令/check-dup/公證/補池
+> （斷電接手唯一真相）;紀錄門檻引 `docs/records.json` 不抄死數字;開輪走 `/new-round`、
+> 每批走 `/batch-cycle`、結輪走 `/close-round`。線上線 round 忽略本行。
 
 ## 1. 假設 (Propose)
 - **問題 / 假設**:

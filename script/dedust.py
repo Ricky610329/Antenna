@@ -3728,6 +3728,32 @@ def worker(args):
             break
 
 
+def watch(args):
+    """收檔偵測（blocking;弱模型化 2026-07-12——Monitor 直接掛本命令,不再手寫 bash watcher）:
+    每 --poll 秒掃 jobs_state,各 store 到終態印一行;全部終態結束（有 .fail → exit 1,全 done → exit 0）。
+    用法: Monitor(command='python -m script.dedust watch --stores dedust_r23b4a,...')"""
+    import time
+    _, sd = _jobs_paths()
+    stores = [s.strip() for s in args.stores.split(",") if s.strip()]
+    seen, fail = set(), False
+    while len(seen) < len(stores):
+        for st in stores:
+            if st in seen:
+                continue
+            fp, dp = sd.joinpath(st + ".fail"), sd.joinpath(st + ".done")
+            if fp.exists():
+                print(f"{st} FAIL(保險絲): {open(str(fp), encoding='utf-8').read()[:150]}", flush=True)
+                seen.add(st)
+                fail = True
+            elif dp.exists():
+                print(f"{st} DONE: {open(str(dp), encoding='utf-8').read()[:200]}", flush=True)
+                seen.add(st)
+        if len(seen) < len(stores):
+            time.sleep(args.poll)
+    print("全部終態——可收檔判讀（analyze batch）", flush=True)
+    raise SystemExit(1 if fail else 0)
+
+
 def jobs_ls(args):
     """看佇列現況（人用;零 token）:每個 job 的 認領/進度/done/殘留 error。"""
     import time
@@ -4068,6 +4094,11 @@ def main():
 
     s = sub.add_parser("jobs-ls", help="看派工佇列現況（認領/進度/done/殘留 error）")
     s.set_defaults(fn=jobs_ls)
+
+    s = sub.add_parser("watch", help="收檔偵測（blocking;Monitor 直接掛;全終態 exit0/含 fail exit1）")
+    s.add_argument("--stores", required=True, help="逗號分隔 store 名（dedust_r23b4a,...）")
+    s.add_argument("--poll", type=int, default=180)
+    s.set_defaults(fn=watch)
 
     s = sub.add_parser("report", help="匯總表（貼 round 檔 §4）")
     s.add_argument("--input", default=DEFAULT_INPUT)
