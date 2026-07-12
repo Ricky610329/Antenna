@@ -33,9 +33,11 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 23 — 價值軸主戰（🔵 **running**,2026-07-12 b1 發車）→ [round-23](../docs/log/round-23-selectivity-axis.md)
-- sel_score 選批鍵（三標硬閘+帶外主鍵+rad 頭 ρ=0.498 進鍵）;主指標=**可用帶外**（基線 9.09,連三批零推進=回報線）。
-- 六臂 150:O50 sel 主力/M35 對照/C42 冷支/S15 槽鏈二批（錨輪替）/W8;tier-2 池墊底;每批 /gain-check。
+### Round 23 — 價值軸主戰（🔵 **running**,b3 收尾中）→ [round-23](../docs/log/round-23-selectivity-axis.md)
+- sel_score 選批鍵（三標硬閘+帶外主鍵+rad 頭進鍵,前瞻連兩批過線）;主指標=**可用帶外**（基線 9.09,
+  連三批零推進=回報線——**b3 即第三批**）。b1 雙王易主（margin +0.41/rad +1.00 皆公證 3/3）。
+- 現組成:O46 sel/M33 對照/C40 冷支/S15 槽鏈/D12 de novo（學費 5 批制,b3 首航）/W4;
+  每批走 **/batch-cycle**（收檔→判讀 analyze batch→重錨 train --add→發車→補池→watch）。
 
 ### ~~Round 22 — 分布組合批~~（✅ **2026-07-12 收檔,三批**）→ [round-22](../docs/log/round-22-distribution-portfolio.md)
 - **一天三公證紀錄**（rad +0.89/帶外 8.61/帶內 +0.46）+死區告破;C 冷支=新主產線;S 槽鏈首批成立;

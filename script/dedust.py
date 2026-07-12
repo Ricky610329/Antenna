@@ -4,20 +4,21 @@ script/dedust.py — 批次 HFSS 驗證線（R7 起的研究主力）：開發�
 HFSS → 任一機 report 看結果。輸入/結果都在 NAS（`DATASET_PATH/<name>_input/` 與 `<name>/`），
 跨機共享；run 可中斷續跑（成功跳過、error 重試）＋批尾自動補測；每筆 solve 順收方向圖（rad/ 夾）。
 
-通用流程：
-    開發機:  python -m script.dedust <select-指令> [--input X_input ...]   # 生 pattern+manifest 上 NAS
-             python -m script.dedust sm-screen --input X_input             # SM 預篩（零 HFSS,選用）
-    正式機:  python -m script.dedust run --input X_input --store X         # 燒 HFSS（可中斷續跑）
-    任一機:  python -m script.dedust report --input X_input --store X      # 進度/結果表（貼 round 檔 §4）
+現役流程（2026-07-12 起,資料工廠＋弱模型化;整鏈 runbook＝/batch-cycle skill）：
+    開發機:  select-r23 --batch N --sm ... [--rad-key]     # 現役生成器（六臂;各 round 檔 §3=真相）
+             check-dup --input X_input                     # 必跑,exit 1 不發車
+             jobs-add --input X_input --store X --prio 3   # 入 NAS 佇列（填空池 prio 9）
+             watch --stores X,Y,...                        # 收檔偵測（Monitor 直接掛）
+             （判讀= python -m script.analyze batch --round R --batch N）
+    正式機:  worker                                        # 常駐:認領佇列+watchdog+補測+tier-2 讓位
+                                                           # +--selfgen 自產（佇列空也不停）
+    公證:    select-repeat --source-input ... --id ... --n 2 → jobs-add --prio 2（判定=/notarize skill）
 
-select 子命令（各 round 的輸入生成器；歷史見 docs/log/round-NN 檔）：
-    select          R7  除塵驗證（家族代表+近標者 × 除塵變體）
-    select-r8       R8  乾淨子空間測繪（前緣/補洞因果/SM 校準/uniform random 基線）
-    select-r9       R9  池頂端重驗（oracle 裁決+校正曲線）＋跨家族乾淨投影探索（E/G/S）
-    select-refine1  R10 精修盲階段（s05 保對稱鄰域/對稱化救援推廣/g24 鄰域）→ 出了 w17 三標全過
-    select-refine2  R10 精修知情階段（w17 密掃/承重圖知情編輯/重錨 SM 導引/y05 線）
-    select-occlude  R10 物理遮蔽掃描（5×5 區塊逐一清空 → 真空間重要度圖）
-    select-repeat   同 pattern × N 次（HFSS 可重複性；已公證雜訊地板 ≈0、跨機 bit 級一致,見 R9 §4 附錄）
+歷史 select 子命令（各 round 的輸入生成器,保留供重現;歷史見 docs/log/round-NN 檔）：
+    select(R7 除塵)/select-r8(測繪)/select-r9(重驗)/select-refine1-3+wide(R10-11 精修)/
+    select-occlude/tolerance/ablate/resize/blocks/crown/family2/probes(R11-16 因果批)/
+    select-r15(GA vs 知情)/r16b/r17/r18(帶外戰役)/select-r19data(模型線)/select-r20gen(演化)/
+    select-r21harvest(收割;--tag 填空池仍現役)/select-r22mix(分布組合,select-r23 的本體)
 
 慣例：margin/rad 全走同一把尺（`antenna.losses.worst_margin` + `configs/single_r5_explore.yaml` targets、
 `rad_window_margin` ±45°/3dB）；生成全決定性（seed 進 manifest,各 select 的 seed 域不重疊）；
@@ -2993,6 +2994,8 @@ def select_r22mix(args):
           f"+D{len(di)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
+#! DEPRECATED（2026-07-10 起查重改 _all_input_folders() 自動掃描）——僅舊 select 內建去重仍引用,
+#  新 code 一律不要用這個清單。
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
                   "dedust_ref2_input", "dedust_occl_input", "dedust_occl2_input", "dedust_tol_input",
                   "dedust_w17rep_input", "dedust_verify_input", "dedust_ref2v_input",
@@ -3755,21 +3758,16 @@ def watch(args):
 
 
 def jobs_ls(args):
-    """看佇列現況（人用;零 token）:每個 job 的 認領/進度/done/殘留 error。"""
+    """看佇列現況（人用;零 token）。預設隱藏已 done 的歷史 job（只列筆數）——接手降噪
+    （2026-07-12,90 行→活躍區）;--all 列全部。"""
     import time
     qp, sd = _jobs_paths()
     if not qp.exists():
         print("（無 jobs.json）")
         return
+    hidden = 0
     for j in sorted(json.load(open(str(qp), encoding="utf-8")), key=lambda j: j.get("prio", 9)):
         st = j["store"]
-        rp = DATASET_PATH.joinpath(st, "results.json")
-        mp = DATASET_PATH.joinpath(j["input"], "manifest.json")
-        total = len(json.load(open(str(mp), encoding="utf-8"))) if mp.exists() else "?"
-        done_n = 0
-        if rp.exists():
-            res = json.load(open(str(rp), encoding="utf-8"))
-            done_n = sum(1 for v in res.values() if "wm" in v)
         state = "排隊中"
         for tag in ("fail", "done", "claim"):
             fp = sd.joinpath(f"{st}.{tag}")
@@ -3778,7 +3776,19 @@ def jobs_ls(args):
                 age = (time.time() - __import__("os").path.getmtime(str(fp))) / 60
                 state = f"{tag}（{age:.0f} 分前）{info}"
                 break
+        if state.startswith("done") and not getattr(args, "all", False):
+            hidden += 1
+            continue
+        rp = DATASET_PATH.joinpath(st, "results.json")
+        mp = DATASET_PATH.joinpath(j["input"], "manifest.json")
+        total = len(json.load(open(str(mp), encoding="utf-8"))) if mp.exists() else "?"
+        done_n = 0
+        if rp.exists():
+            res = json.load(open(str(rp), encoding="utf-8"))
+            done_n = sum(1 for v in res.values() if "wm" in v)
         print(f"[prio {j.get('prio', 9)}] {st}: {done_n}/{total} | {state}")
+    if hidden:
+        print(f"（已隱藏 {hidden} 個 done 歷史 job;--all 列全部）")
 
 
 # ---------------------------------------------------------------- report（匯總表，貼 round 檔 §4）
@@ -4092,7 +4102,8 @@ def main():
     s.add_argument("--prio", type=int, default=5, help="小=先跑")
     s.set_defaults(fn=jobs_add)
 
-    s = sub.add_parser("jobs-ls", help="看派工佇列現況（認領/進度/done/殘留 error）")
+    s = sub.add_parser("jobs-ls", help="看派工佇列現況（預設隱藏 done 歷史;--all 列全部）")
+    s.add_argument("--all", action="store_true", help="連 done 歷史 job 一起列")
     s.set_defaults(fn=jobs_ls)
 
     s = sub.add_parser("watch", help="收檔偵測（blocking;Monitor 直接掛;全終態 exit0/含 fail exit1）")

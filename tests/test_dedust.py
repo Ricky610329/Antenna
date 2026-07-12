@@ -237,3 +237,28 @@ def test_resize_component_grow_shrink():
     assert resize_component(base, "wings", -2) is None   # 4×5 翼縮 2 圈 → 消失
     gm = resize_component(base, "main", 1)
     assert gm is not None and piece_stats(gm)["n_comp"] == 3   # 沒併到翼
+
+
+def test_sel_score_lexicographic():
+    """sel_score（價值軸單標量,2026-07-12）:過線+buffer=純 oob;缺口罰 κ;無 rad 視為未過。"""
+    from script.dedust import sel_score
+    assert sel_score(0.20, 0.1, 9.0) == 9.0          # 合格 → 純 oob
+    assert sel_score(0.50, 0.1, 9.0) == 9.0          # 帶內餘裕不加分（Ricky 定調）
+    assert sel_score(0.05, 0.1, 9.0) == 10.0         # wm 缺口 0.10 × κ10
+    assert sel_score(0.20, -0.1, 9.0) == 10.0        # rad 缺口 0.10 × κ10
+    assert sel_score(0.20, None, 9.0) == 19.0        # 無方向圖=rad 視 -1.0 → 罰 10
+
+
+def test_oob_metrics_contrast_sides():
+    """contrast_lo/hi＝帶內 Gain min − 帶外各側 Gain max（相對選擇性追蹤欄,2026-07-12）。"""
+    import numpy as np
+    from script.dedust import oob_metrics
+    s11 = np.full(17, -12.0)
+    gain = np.full(17, 5.0)
+    gain[:4] = 4.5                               # 低側帶外高（裙擺）
+    gain[13:] = -2.0                             # 高側帶外低（健康滾降）
+    gain[8] = 4.2                                # 帶內最低點
+    m = oob_metrics(np.stack([s11, gain]))
+    assert m["contrast_lo"] == round(4.2 - 4.5, 2) == -0.3
+    assert m["contrast_hi"] == round(4.2 - (-2.0), 2) == 6.2
+    assert m["oob_gain_max"] == 4.5
