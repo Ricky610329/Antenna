@@ -65,7 +65,16 @@ CLEAN_STORES = ("dedust_ref2v", "dedust_champ_disc",                       # 修
                 # v12 追加（2026-07-12）:R21 batch5（六夾切片）＋g1 填空批
                 "dedust_r21b5a", "dedust_r21b5b", "dedust_r21b5c",
                 "dedust_r21b5d", "dedust_r21b5e", "dedust_r21b5f",
-                "dedust_r21g1a", "dedust_r21g1b")
+                "dedust_r21g1a", "dedust_r21g1b",
+                # v13 追加（2026-07-12）:R22 b1 六夾＋n1 公證＋g2a 填空（b/c 未完待後補）
+                "dedust_r22b1a", "dedust_r22b1b", "dedust_r22b1c",
+                "dedust_r22b1d", "dedust_r22b1e", "dedust_r22b1f",
+                "dedust_r22n1", "dedust_r21g2a",
+                # v14 追加（2026-07-12）:R22 b2 六夾＋n2 三公證＋g2b/c 填空
+                "dedust_r22b2a", "dedust_r22b2b", "dedust_r22b2c",
+                "dedust_r22b2d", "dedust_r22b2e", "dedust_r22b2f",
+                "dedust_r22n2o", "dedust_r22n2h", "dedust_r22n2w",
+                "dedust_r21g2b", "dedust_r21g2c")
 #? ref2 殘餘風險: 已實錘假象觸發率 ~9% (11 抽 1),無 certified 對照的 ref2 條目可能還有 ~10 筆髒 Gain——
 #  佔訓練集 <0.3%,MSE 回歸可容忍;隨後續重驗逐步被 certified 店覆蓋。store 不存在時自動略過。
 OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）

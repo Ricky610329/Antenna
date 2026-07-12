@@ -2711,7 +2711,57 @@ def select_r22mix(args):
         return outs
     #? H 錨點按批輪替（構造決定性,同錨同劑量=重複會被查重擋 → 每批換組;batch4 起回繞,屆時 H 判準已到期）
     H_POOL = ("r3_001", "a024", "c25", "r2_016", "x00", "g16", "ccr9s2", "i02", "vg0765")
-    hs = [c for a in H_POOL[((args.batch - 1) * 3) % len(H_POOL):][:3] for c in hslot_doses(a)]
+    hs = [c for a in H_POOL[((args.batch - 1) * 3) % len(H_POOL):][:3] for c in hslot_doses(a)] \
+        if getattr(args, "h", 12) else []
+
+    #? S 槽鏈臂（b3 起;新臂協議先導 ≤15,Ricky 授權 2026-07-12）——證據:H 臂「部分槽 L5-8=帶內
+    #  增益旋鈕但付 rad」跨 5/6 錨重現（b1 c25 +0.43/a024 +0.34/r3_001 +0.28;b2 g16 +0.46）。
+    #  假設:槽的 wm 增益可保留、鏈上算子把 rad 修回。判準（發車前寫死,round-22 §1 修訂）:
+    #  三標且 wm≥+0.30=成立;三標率連兩批 <6%=收臂。
+    sc = []
+    if getattr(args, "s", 0):
+        S_ANCH = [a for a in ("c25", "a024", "r3_001", "g16") if a in P]
+        tries = 0
+        while len(sc) < args.s * 10 and tries < args.s * 120:
+            tries += 1
+            a = S_ANCH[int(rng.integers(0, len(S_ANCH)))]
+            p0 = P[a]
+            r0 = int(np.argmax([(p0[r].sum() if 6 <= r <= 18 else -1) for r in range(25)]))
+            best, cur, bs, start = 0, 0, 0, 0
+            for c in range(25):
+                if p0[r0, c]:
+                    cur += 1
+                    if cur == 1:
+                        start = c
+                    if cur > best:
+                        best, bs = cur, start
+                else:
+                    cur = 0
+            L = int(rng.integers(4, 10))
+            if L > best - 2:
+                continue
+            off = int(rng.integers(0, best - L + 1))
+            q = p0.copy()
+            q[r0, bs + off: bs + off + L] = False
+            chain = [["hslot_part", r0, L, off]]
+            for _ in range(int(rng.integers(1, 3))):       # 鏈 1-2 算子修 rad
+                fn = OPS[int(rng.choice(len(OPS), p=ws))][0]
+                q2, desc = fn(q)
+                if q2 is None:
+                    break
+                q, chain = q2, chain + [desc]
+            q = (np.asarray(q).reshape(25, 25) > 0.5).copy()
+            q[FEED] = True
+            q, _n = strip_small(q, 4)
+            q = _ensure_feed_pad(q, 4)
+            st = piece_stats(q)
+            if st["n_1px"] > 0 or not (200 <= st["metal_px"] <= 520):
+                continue
+            k = q.tobytes()
+            if k in hist:
+                continue
+            hist.add(k)
+            sc.append(dict(pat=q, parent=a, ops=chain, d=int((q != p0).sum()), stats=st))
 
     cfg = load_config(args.config)
     setup_responses(cfg)
@@ -2721,7 +2771,7 @@ def select_r22mix(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    allc = core + coldp + specp + wildp + hs
+    allc = core + coldp + specp + wildp + hs + sc
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
@@ -2754,11 +2804,14 @@ def select_r22mix(args):
     ki = _diverse(coldp, list(rng.permutation(len(coldp))), args.c)
     qi = _diverse(specp, sorted(range(len(specp)), key=lambda i: specp[i]["pred_wm"], reverse=True), args.q)
     wi = list(rng.choice(len(wildp), size=min(args.wild, len(wildp)), replace=False)) if wildp else []
+    si = _diverse(sc, sorted(range(len(sc)), key=lambda i: sc[i]["pred_wm"], reverse=True),
+                  getattr(args, "s", 0)) if sc else []
     idn = 5 + args.batch                                  # 全域批號延續（batch6=?6_）
     entries = []
     for arm, letter, idxs, src in (("oobharv", "o", oi, core), ("mlotto", "m", mi, core),
                                    ("coldmine", "k", ki, coldp), ("repair", "q", qi, specp),
-                                   ("hslot", "h", list(range(len(hs))), hs), ("wild", "w", wi, wildp)):
+                                   ("hslot", "h", list(range(len(hs))), hs),
+                                   ("slotchain", "s", si, sc), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
             entries.append(dict(id=f"{letter}{idn}_{j:03d}_{c['parent'][:12]}", kind=arm,
@@ -2779,7 +2832,7 @@ def select_r22mix(args):
         torch.save(torch.tensor(pat, dtype=torch.float32), str(dirs[b].joinpath(e["id"] + ".pt")))
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
-    print(f"r22 b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+W{len(wi)}"
+    print(f"r22 b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}+W{len(wi)}"
           f" → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
@@ -3616,6 +3669,8 @@ def main():
     s.add_argument("--m", type=int, default=50)
     s.add_argument("--c", type=int, default=40)
     s.add_argument("--q", type=int, default=30)
+    s.add_argument("--h", type=int, default=12, help="H hslot 劑量臂（0=關;b3 起低側收案後關）")
+    s.add_argument("--s", type=int, default=0, help="S 槽鏈臂（部分槽+修 rad 鏈;新臂先導 ≤15）")
     s.add_argument("--wild", type=int, default=8)
     s.add_argument("--shards", type=int, default=6)
     s.set_defaults(fn=select_r22mix)
