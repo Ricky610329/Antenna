@@ -285,6 +285,17 @@ def oob_metrics(resp, n_side: int = 4) -> dict:
                 oob_gain_argmax=float(freqs[far][int(np.argmax(r[1][far]))]))
 
 
+SEL_BUFFER, SEL_KAPPA = 0.15, 10.0                     # 可用解 wm buffer（R11 缺陷存活=margin 函數）/罰權
+
+
+def sel_score(wm, rad, oob):
+    """價值軸單一標量（Ricky 2026-07-12 定調,越低越好）:過線+buffer 後=純 oob_bad——
+    帶內餘裕不再加分,只有壓帶外有收益;未過線罰 κ·缺口（保留梯度,修復臂可導引）。
+    rad=None（無方向圖）視為未過。詳 decisions「價值軸修正」。"""
+    pen = SEL_KAPPA * (max(0.0, SEL_BUFFER - wm) + max(0.0, -(rad if rad is not None else -1.0)))
+    return round(float(oob + pen), 2)
+
+
 # ---------------------------------------------------------------- 小工具
 def _r(x, nd=2):
     return round(float(x), nd)
@@ -2560,9 +2571,13 @@ def select_r22mix(args):
             ("x00", "dedust_wide_input", "x00_c21k2"),
             ("g16", "dedust_r15ga_input", "g16_r15"),
             ("i02", "dedust_r15inf_input", "i02_r15")]
-    #? 吸收=R21 全史＋R22 前批贏家（兩池歸池照 DYN 標記;馬太由 70/30 抽樣稅制衡）
-    prev = [f"dedust_r21b{b}{s}" for b in range(1, 6) for s in "abc"] + ["dedust_r21g1a", "dedust_r21g1b"] \
-        + [f"dedust_r22b{b}{s}" for b in range(1, args.batch) for s in "abcdefgh"]
+    #? 吸收=R21/R22 全史＋本輪前批贏家（兩池歸池照 DYN 標記;馬太由 70/30 抽樣稅制衡）
+    rnd = getattr(args, "round", 22)
+    prev = [f"dedust_r21b{b}{s}" for b in range(1, 6) for s in "abc"] \
+        + [f"dedust_r21g{g}{s}" for g in (1, 2) for s in "abc"] \
+        + [f"dedust_r22b{b}{s}" for b in range(1, 4) for s in "abcdef"] \
+        + ["dedust_r22g1a", "dedust_r22g1b", "dedust_r22g1c"] \
+        + [f"dedust_r{rnd}b{b}{s}" for b in range(1, args.batch) for s in "abcdefgh"]
     for st in prev:
         rp = DATASET_PATH.joinpath(st, "results.json")
         if not rp.exists():
@@ -2797,8 +2812,14 @@ def select_r22mix(args):
                 out.append(i)
         return out
 
-    trim = sorted(range(len(core)), key=lambda i: core[i]["pred_wm"], reverse=True)[:int(len(core) * .6)]
-    oi = _diverse(core, sorted(trim, key=lambda i: core[i]["pred_oob"]), args.o)
+    if getattr(args, "key", "oob") == "sel":
+        #? R23 起價值軸主鍵:pred_sel=pred_oob+κ·max(0,buffer−pred_wm)（SM 無 rad 頭,rad 罰項量測後才算）
+        oi = _diverse(core, sorted(range(len(core)),
+                                   key=lambda i: core[i]["pred_oob"]
+                                   + SEL_KAPPA * max(0.0, SEL_BUFFER - core[i]["pred_wm"])), args.o)
+    else:
+        trim = sorted(range(len(core)), key=lambda i: core[i]["pred_wm"], reverse=True)[:int(len(core) * .6)]
+        oi = _diverse(core, sorted(trim, key=lambda i: core[i]["pred_oob"]), args.o)
     mi = list(rng.choice([i for i in range(len(core)) if i not in oi],
                          size=min(args.m, len(core) - len(oi)), replace=False))
     ki = _diverse(coldp, list(rng.permutation(len(coldp))), args.c)
@@ -2806,7 +2827,9 @@ def select_r22mix(args):
     wi = list(rng.choice(len(wildp), size=min(args.wild, len(wildp)), replace=False)) if wildp else []
     si = _diverse(sc, sorted(range(len(sc)), key=lambda i: sc[i]["pred_wm"], reverse=True),
                   getattr(args, "s", 0)) if sc else []
-    idn = 5 + args.batch                                  # 全域批號延續（batch6=?6_）
+    #? 命名:R23 起 round 號貫穿（id o23b1_*、夾 dedust_r23b1*;Ricky 規範）;R22 沿用舊 idn 不回改
+    idt = f"{rnd}b{args.batch}" if rnd >= 23 else str(5 + args.batch)
+    fam = f"{rnd}b{args.batch}"
     entries = []
     for arm, letter, idxs, src in (("oobharv", "o", oi, core), ("mlotto", "m", mi, core),
                                    ("coldmine", "k", ki, coldp), ("repair", "q", qi, specp),
@@ -2814,14 +2837,14 @@ def select_r22mix(args):
                                    ("slotchain", "s", si, sc), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
-            entries.append(dict(id=f"{letter}{idn}_{j:03d}_{c['parent'][:12]}", kind=arm,
-                                family=f"{arm.upper()}_22b{args.batch}", removed_px=0, **c["stats"],
+            entries.append(dict(id=f"{letter}{idt}_{j:03d}_{c['parent'][:12]}", kind=arm,
+                                family=f"{arm.upper()}_{fam}", removed_px=0, **c["stats"],
                                 source_id=c["parent"], ops=c["ops"], diff_px=c["d"],
                                 pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
                                 _pat=c["pat"]))
     dirs = []
     for suf in "abcdefgh"[:args.shards]:
-        dd = _dir(f"dedust_r22b{args.batch}{suf}_input")
+        dd = _dir(f"dedust_r{rnd}b{args.batch}{suf}_input")
         dd.mkdir(parents=True, exist_ok=True)
         dirs.append(dd)
     manifests = [[] for _ in dirs]
@@ -2832,7 +2855,7 @@ def select_r22mix(args):
         torch.save(torch.tensor(pat, dtype=torch.float32), str(dirs[b].joinpath(e["id"] + ".pt")))
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
-    print(f"r22 b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}+W{len(wi)}"
+    print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}+W{len(wi)}"
           f" → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
@@ -3384,6 +3407,7 @@ def run(args):
                         entry["rad"] = cuts
                         entry["rad_margin"] = min(cuts.values())
                 entry.update(oob_metrics(resp))           # 帶外選擇性 (2026-07-07 起隨批入檔)
+                entry["sel"] = sel_score(entry["wm"][2], entry.get("rad_margin"), entry["oob_bad"])
                 store.add(p, resp)                       # (pattern, 真響應) 入庫：可再餵 SM 重錨/Stage-3
                 results[m["id"]] = entry
                 _flush()
@@ -3673,7 +3697,22 @@ def main():
     s.add_argument("--s", type=int, default=0, help="S 槽鏈臂（部分槽+修 rad 鏈;新臂先導 ≤15）")
     s.add_argument("--wild", type=int, default=8)
     s.add_argument("--shards", type=int, default=6)
-    s.set_defaults(fn=select_r22mix)
+    s.set_defaults(fn=select_r22mix, round=22, key="oob")
+
+    s = sub.add_parser("select-r23", help="R23 價值軸批：O 主力 sel_score 鍵+M+C+S+W（同 r22mix 機器,round 號貫穿命名）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260712)
+    s.add_argument("--sm", default="sm_reanchor15.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--o", type=int, default=50, help="O 主力臂（pred_sel 升冪=價值軸主鍵）")
+    s.add_argument("--m", type=int, default=35)
+    s.add_argument("--c", type=int, default=42)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=15, help="S 槽鏈臂第二批（判準沿用 R22 §1 修訂）")
+    s.add_argument("--wild", type=int, default=8)
+    s.add_argument("--shards", type=int, default=6)
+    s.set_defaults(fn=select_r22mix, round=23, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)

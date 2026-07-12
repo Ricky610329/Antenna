@@ -6,9 +6,11 @@
 ## 檔名與生命週期
 
 - 檔名：`round-NN-<slug>.md`（用 `_TEMPLATE.md` 起）／`analysis-NN-<slug>.md`（零 HFSS 的資料分析）／
-  `round-NN-report.md`（判讀完整版，僅大 round 需要）。
+  `round-NN-report.md`（判讀完整版，僅大 round 需要）。NN 全域嚴格遞增、單一編號宇宙（Ricky 2026-07-12）。
 - 狀態：`proposed → running → concluded → archived`。**§1-§3 發車前填完**（假設/判準/指令），
   §4-§5 收檔時填，§7 是歸檔動作清單（README 索引 +1、ONGOING 移出 🔵、champions/memory 若有）。
+- **過厚警訊**（R22 教訓,2026-07-12）：§4 超過 ~3 批、或內容漂到 §1 假設之外＝該收檔開新輪——
+  輪的邊界是「假設被回答」，不是「管線停下來」；換王/公證是事件不是假設，記在當下運行的輪即可。
 - 開新 round 檔時**順手掃一遍 `../discuss/scratch.md`**（熟的升 ONGOING 候選、死的標 ❌）。
 
 ## 三條硬紀律
