@@ -244,8 +244,11 @@ def cmd_gain(args):
     def tri(s):
         return s["wm"] >= 0 and (s["rad"] if s["rad"] is not None else -9) >= 0
 
-    print(f"—— L1 階梯命中率（{args.line};三標樣本計;n=非error 筆數）——")
-    hdr = "| 批 | 臂 | n | 三標 | " + " | ".join(f"wm≥{t:+.2f}" for t in LADDER) + f" | >紀錄{args.record:+.2f} | oob<10(三標) |"
+    print(f"—— L1 階梯命中率（{args.line};三標樣本計;n=非error 筆數;oob=旗艦軸 2026-07-12）——")
+    OOBL = (10.0, 9.5, 9.0)
+    hdr = ("| 批 | 臂 | n | 三標 | " + " | ".join(f"wm≥{t:+.2f}" for t in LADDER)
+           + f" | wm>{args.record:+.2f} | " + " | ".join(f"oob<{t}" for t in OOBL)
+           + f" | oob<{args.oob_record} |")
     print(hdr); print("|" + "---|" * (hdr.count("|") - 1))
     batches = sorted({s["batch"] for s in samp})
     for b in batches:
@@ -254,9 +257,10 @@ def cmd_gain(args):
             t3 = [s for s in g if tri(s)]
             cells = [f"{100*len([s for s in t3 if s['wm'] >= t])/len(g):.0f}%" for t in LADDER]
             rec = len([s for s in t3 if s["wm"] > args.record])
-            o10 = len([s for s in t3 if (s["oob"] or 99) < 10])
+            ocells = [f"{100*len([s for s in t3 if (s['oob'] or 99) < t])/len(g):.0f}%" for t in OOBL]
+            orec = len([s for s in t3 if (s["oob"] or 99) < args.oob_record])
             print(f"| {b} | {k} | {len(g)} | {100*len(t3)/len(g):.0f}% | " + " | ".join(cells)
-                  + f" | {rec} | {100*o10/len(g):.0f}% |")
+                  + f" | {rec} | " + " | ".join(ocells) + f" | {orec} |")
 
     print("\n—— L2 學習曲線（best-so-far wm,三標;R(N)=a+b·lnN）——")
     best, curve = -9.0, []
@@ -297,8 +301,9 @@ def main():
     cp = sub.add_parser("components", help="組件尺寸分布 vs 三標 (全 store 真值,零 HFSS;analysis-02)")
     cp.set_defaults(func=cmd_components)
     gn = sub.add_parser("gain", help="性能期望三層帳（階梯/曲線/轉換;防過早悲觀）")
-    gn.add_argument("--line", default="r21", help="批次線前綴（掃 dedust_<line>*_input）")
+    gn.add_argument("--line", default="r22", help="批次線前綴（掃 dedust_<line>*_input）")
     gn.add_argument("--record", type=float, default=0.39, help="現任 wm 紀錄")
+    gn.add_argument("--oob-record", type=float, default=8.61, dest="oob_record", help="現任帶外紀錄（旗艦軸）")
     gn.add_argument("--near", type=float, default=0.30, help="近王級門檻")
     gn.set_defaults(func=cmd_gain)
     re.add_argument("--window", type=float, default=45); re.set_defaults(func=cmd_rad_error)
