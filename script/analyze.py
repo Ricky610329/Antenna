@@ -499,8 +499,11 @@ def cmd_batch(args):
     cands = []
     for s in rows:
         tags = []
-        if s["wm"] > rec["wm"]["value"]:
-            tags.append(f"wm{s['wm']:+.2f}>{rec['wm']['value']}")
+        # margin 王候選=必須三標(非三標高 wm 只有破帶內參考點 inband 才算,且那不換王)
+        if tri(s) and s["wm"] > rec["wm"]["value"]:
+            tags.append(f"wm{s['wm']:+.2f}>{rec['wm']['value']}(margin王,三標)")
+        elif (not tri(s)) and s["wm"] > rec["inband"]["value"]:
+            tags.append(f"wm{s['wm']:+.2f}>{rec['inband']['value']}(帶內參考,非三標;不換王)")
         if tri(s) and (s["oob"] or 99) < rec["oob"]["value"]:
             tags.append(f"oob{s['oob']}<{rec['oob']['value']}")
         if tri(s) and (s["rad"] or -9) > rec["rad"]["value"]:
