@@ -207,6 +207,89 @@ def tune(args):
     print(f"\n最佳 {best[0]} → 已存 {args.out}（⚠ 依判準複核 harvest 欄再採用）")
 
 
+# ---------------------------------------------------------------- rad 頭（K=16 cosine,2026-07-12）
+RAD_K = 16
+
+
+def _rad_dataset():
+    """全史 (pattern, phi0/phi90) 配對:掃有 rad/ 的 store,id 對回 *_input 的 .pt。
+    回 X(n,625)、C(n,2,91)=|θ|≤90 子網格曲線、M(n)=真 rad_margin、keys=pattern bytes、θ 子網格。"""
+    import json
+    from script.dedust import rad_window_margin
+    X, C, M, keys = [], [], [], []
+    theta_sub = None
+    for fol in sorted(os.listdir(str(DATASET_PATH))):
+        d = DATASET_PATH.joinpath(fol)
+        rd = d.joinpath("rad")
+        ind = DATASET_PATH.joinpath(fol + "_input")
+        if fol.endswith("_input") or not fol.startswith("dedust_") or not rd.is_dir() \
+                or not ind.joinpath("manifest.json").exists():
+            continue
+        for m in json.load(open(str(ind.joinpath("manifest.json")), encoding="utf-8")):
+            rf, pf = rd.joinpath(m["id"] + ".pt"), ind.joinpath(m["id"] + ".pt")
+            if not (rf.exists() and pf.exists()):
+                continue
+            r = torch.load(str(rf), weights_only=True)
+            if r.get("phi0") is None or r.get("phi90") is None:
+                continue
+            th = np.asarray(r["theta"], float).reshape(-1)
+            sub = np.abs(th) <= 90
+            if theta_sub is None:
+                theta_sub = th[sub]
+            c0 = np.asarray(r["phi0"], float).reshape(-1)
+            c9 = np.asarray(r["phi90"], float).reshape(-1)
+            pat = np.asarray(torch.load(str(pf), weights_only=True)).reshape(-1) > 0.5
+            X.append(pat.astype(np.float32))
+            C.append(np.stack([c0[sub], c9[sub]]).astype(np.float32))
+            M.append(min(rad_window_margin(th, c0), rad_window_margin(th, c9)))
+            keys.append(pat.tobytes())
+    return np.stack(X), np.stack(C), np.asarray(M), keys, theta_sub
+
+
+def train_rad(args):
+    """rad 頭:625 → 2×K cosine 係數（|θ|≤90 半圓）→ 雙切面曲線;±45° 窗 2× 加權。
+    K=16 依 rad-repr 表達力分析（Ricky 2026-07-12「感覺可以補 K=16」);資料=R7 起順收的全史方向圖。
+    **判準（發車前寫死）**:held-out（pattern-hash 切分,防公證重複洩漏）rad_margin 排序 ρ≥0.4
+    → pred_rad 進 pred_sel 罰項;否則只隨 manifest 記 pred_rad 供前瞻,不進選批鍵。"""
+    import hashlib
+    import torch.nn as nn
+    from scipy.stats import spearmanr
+    from script.dedust import rad_window_margin as rwm
+    X, C, M, keys, th = _rad_dataset()
+    print(f"rad 資料 {len(X)} 筆;θ 子網格 {len(th)} 點;真 margin 中位 {np.median(M):+.2f}")
+    phi = np.pi * (th - th.min()) / (th.max() - th.min())
+    B = torch.tensor(np.cos(np.arange(RAD_K).reshape(-1, 1) * phi.reshape(1, -1)), dtype=torch.float32)
+    side = np.array([int(hashlib.md5(k).hexdigest(), 16) % 7 == 0 for k in keys])
+    w = torch.tensor(np.where(np.abs(th) <= 45, 2.0, 1.0), dtype=torch.float32)
+    Xt, Ct = torch.tensor(X[~side]), torch.tensor(C[~side])
+    Xh, Mh = torch.tensor(X[side]), M[side]
+    torch.manual_seed(0)
+    net = nn.Sequential(nn.Linear(625, 512), nn.ReLU(), nn.Linear(512, 256), nn.ReLU(),
+                        nn.Linear(256, 2 * RAD_K))
+    opt = torch.optim.Adam(net.parameters(), lr=1e-3)
+    n = len(Xt)
+    for ep in range(args.epochs):
+        perm = torch.randperm(n)
+        tot = 0.0
+        for i in range(0, n, 64):
+            idx = perm[i:i + 64]
+            fit = net(Xt[idx]).reshape(-1, 2, RAD_K) @ B
+            loss = (((fit - Ct[idx]) ** 2) * w).mean()
+            opt.zero_grad(); loss.backward(); opt.step()
+            tot += float(loss) * len(idx)
+        if ep == 0 or ep % 5 == 4:
+            print(f"  ep {ep + 1}/{args.epochs} loss {tot / n:.4f}", flush=True)
+    with torch.no_grad():
+        fit = (net(Xh).reshape(-1, 2, RAD_K) @ B).numpy()
+    pm = np.array([min(rwm(th, fit[i][0]), rwm(th, fit[i][1])) for i in range(len(fit))])
+    rho, p = spearmanr(pm, Mh)
+    mae = float(np.abs(pm - Mh).mean())
+    print(f"held-out {int(side.sum())} 筆:rad_margin 排序 ρ={rho:+.3f} (p={p:.1e}) / MAE {mae:.3f} dB")
+    torch.save(dict(state=net.state_dict(), K=RAD_K, theta=np.asarray(th)),
+               str(DATASET_PATH.joinpath(args.out)))
+    print(f"→ {args.out}（判準:ρ≥0.4 才進 pred_sel 選批鍵）")
+
+
 def main():
     ap = argparse.ArgumentParser(description="SM 乾淨區重錨（R10 Stage A;train 開發機零 HFSS）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -223,6 +306,10 @@ def main():
         s.add_argument("--grid-replay", type=int, nargs="+", default=[1000, 2000])
         s.add_argument("--grid-batch", type=int, nargs="+", default=[64])
         s.set_defaults(fn=fn)
+    s = sub.add_parser("train-rad", help="rad 頭:pattern→K=16 cosine 雙切面(±45 窗加權);held-out ρ≥0.4 才進 pred_sel")
+    s.add_argument("--epochs", type=int, default=30)
+    s.add_argument("--out", default="rad_head1.pth")
+    s.set_defaults(fn=train_rad)
     args = ap.parse_args()
     args.fn(args)
 

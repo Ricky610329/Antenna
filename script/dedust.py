@@ -2797,6 +2797,27 @@ def select_r22mix(args):
         c["pred_oob"] = oob_metrics(r)["oob_bad"]
         ml = 10 * np.log10(np.clip(1 - 10 ** (r[0][:4] / 10), 1e-6, 1))
         c["pred_lor"] = _r(float((r[1][:4] + ml).max()))
+    #? rad 頭（2026-07-12,Ricky「補 K=16」）:通過 held-out ρ≥0.4 門檻才傳 --rad-head 進鍵;
+    #  pred_rad 一律記 manifest 供前瞻驗證。
+    radnet = None
+    if getattr(args, "rad_head", None):
+        import torch.nn as nn
+        _rh = torch.load(str(DATASET_PATH.joinpath(args.rad_head)), weights_only=False)
+        radnet = nn.Sequential(nn.Linear(625, 512), nn.ReLU(), nn.Linear(512, 256), nn.ReLU(),
+                               nn.Linear(256, 2 * _rh["K"]))
+        radnet.load_state_dict(_rh["state"])
+        _th = np.asarray(_rh["theta"], float)
+        _phi = np.pi * (_th - _th.min()) / (_th.max() - _th.min())
+        _B = torch.tensor(np.cos(np.arange(_rh["K"]).reshape(-1, 1) * _phi.reshape(1, -1)),
+                          dtype=torch.float32)
+        with torch.no_grad():
+            _fits = (radnet(pats).reshape(len(allc), 2, _rh["K"]) @ _B).numpy()
+        for k, c in enumerate(allc):
+            c["pred_rad"] = _r(min(rad_window_margin(_th, _fits[k][0]),
+                                   rad_window_margin(_th, _fits[k][1])))
+    else:
+        for c in allc:
+            c["pred_rad"] = None
 
     def _diverse(pool, idxs_sorted, n):
         out = []
@@ -2813,10 +2834,14 @@ def select_r22mix(args):
         return out
 
     if getattr(args, "key", "oob") == "sel":
-        #? R23 起價值軸主鍵:pred_sel=pred_oob+κ·max(0,buffer−pred_wm)（SM 無 rad 頭,rad 罰項量測後才算）
-        oi = _diverse(core, sorted(range(len(core)),
-                                   key=lambda i: core[i]["pred_oob"]
-                                   + SEL_KAPPA * max(0.0, SEL_BUFFER - core[i]["pred_wm"])), args.o)
+        #? R23 起價值軸主鍵:pred_sel=pred_oob+κ·(wm 缺口＋rad 缺口);rad 項僅 --rad-head 過門檻時生效
+        def _psel(i):
+            c = core[i]
+            pen = SEL_KAPPA * max(0.0, SEL_BUFFER - c["pred_wm"])
+            if c.get("pred_rad") is not None and getattr(args, "rad_key", False):
+                pen += SEL_KAPPA * max(0.0, -c["pred_rad"])   # rad 項:--rad-key 才進鍵（門檻 ρ≥0.4）
+            return c["pred_oob"] + pen
+        oi = _diverse(core, sorted(range(len(core)), key=_psel), args.o)
     else:
         trim = sorted(range(len(core)), key=lambda i: core[i]["pred_wm"], reverse=True)[:int(len(core) * .6)]
         oi = _diverse(core, sorted(trim, key=lambda i: core[i]["pred_oob"]), args.o)
@@ -2825,8 +2850,16 @@ def select_r22mix(args):
     ki = _diverse(coldp, list(rng.permutation(len(coldp))), args.c)
     qi = _diverse(specp, sorted(range(len(specp)), key=lambda i: specp[i]["pred_wm"], reverse=True), args.q)
     wi = list(rng.choice(len(wildp), size=min(args.wild, len(wildp)), replace=False)) if wildp else []
-    si = _diverse(sc, sorted(range(len(sc)), key=lambda i: sc[i]["pred_wm"], reverse=True),
-                  getattr(args, "s", 0)) if sc else []
+    #? S 臂鍵:rad 頭過門檻（--rad-key）時用 maximin（min(pred_wm−0.30, pred_rad)＝綁束者優先）
+    if sc and radnet is not None and getattr(args, "rad_key", False):
+        si = _diverse(sc, sorted(range(len(sc)),
+                                 key=lambda i: min(sc[i]["pred_wm"] - 0.30, sc[i]["pred_rad"]),
+                                 reverse=True), getattr(args, "s", 0))
+    elif sc:
+        si = _diverse(sc, sorted(range(len(sc)), key=lambda i: sc[i]["pred_wm"], reverse=True),
+                      getattr(args, "s", 0))
+    else:
+        si = []
     #? 命名:R23 起 round 號貫穿（id o23b1_*、夾 dedust_r23b1*;Ricky 規範）;R22 沿用舊 idn 不回改
     idt = f"{rnd}b{args.batch}" if rnd >= 23 else str(5 + args.batch)
     fam = f"{rnd}b{args.batch}"
@@ -2841,7 +2874,7 @@ def select_r22mix(args):
                                 family=f"{arm.upper()}_{fam}", removed_px=0, **c["stats"],
                                 source_id=c["parent"], ops=c["ops"], diff_px=c["d"],
                                 pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
-                                _pat=c["pat"]))
+                                pred_rad=c.get("pred_rad"), _pat=c["pat"]))
     dirs = []
     for suf in "abcdefgh"[:args.shards]:
         dd = _dir(f"dedust_r{rnd}b{args.batch}{suf}_input")
@@ -3712,6 +3745,10 @@ def main():
     s.add_argument("--s", type=int, default=15, help="S 槽鏈臂第二批（判準沿用 R22 §1 修訂）")
     s.add_argument("--wild", type=int, default=8)
     s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head1.pth", dest="rad_head",
+                   help="rad 頭權重（一律算 pred_rad 記 manifest 供前瞻;None 字串=關）")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key",
+                   help="pred_rad 進選批鍵（前提:held-out/前瞻 ρ≥0.4;預設只記不用）")
     s.set_defaults(fn=select_r22mix, round=23, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
