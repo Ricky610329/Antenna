@@ -280,6 +280,22 @@ def cmd_gain(args):
     else:
         print("  三標樣本 <10,曲線不擬")
 
+    print("\n—— L2b 旗艦軸曲線（可用帶外 best-so-far,wm≥0.15∧rad≥0;越低越好）——")
+    ubest, ucurve = 99.0, []
+    for i, s in enumerate([s for s in samp
+                           if s["wm"] >= 0.15 and (s["rad"] if s["rad"] is not None else -9) >= 0
+                           and s["oob"] is not None], 1):
+        if s["oob"] < ubest:
+            ubest = s["oob"]
+        ucurve.append((i, ubest))
+    if len(ucurve) >= 8:
+        N = np.array([c[0] for c in ucurve], float)
+        R = np.array([c[1] for c in ucurve], float)
+        b_, _a = np.polyfit(np.log(N), R, 1)
+        print(f"  合格解 {int(N[-1])} 筆,best {ubest};擬合 b={b_:.3f} → 邊際 ≈ {b_/N[-1]*100:+.4f} dB/百筆合格解")
+    else:
+        print(f"  合格解 {len(ucurve)} 筆(<8 不擬),best {ubest if ucurve else '—'}")
+
     near = [s for s in samp if tri(s) and s["wm"] >= args.near]
     ups = sum(1 for i in range(1, len(curve)) if curve[i][1] > curve[i - 1][1])
     print("\n—— L3 近王→紀錄轉換（本線內）——")
