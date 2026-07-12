@@ -19,6 +19,8 @@ append-only、單次 vs 公證）。若任一步發現異常（判準未預註�
 3. **拉數據**：批次線＝`python -m script.analyze batch --round NN --batch <各批>`（判讀一鍵化）
    ＋ **/gain-check**（三層帳,一行摘要貼 §4）;線上線＝`python -m script.round_report --round NN --runs …`
    （圖落 `docs/log/assets/round-NN/`）。
+3.5 **資料健檢**：`python -m script.analyze data`——總帳/完整性/查重洩漏警報;
+   L0 行（唯一樣本數）貼 §7,洩漏警報非零先查再收。
 4. **§4 分析**：對照 §1 **發車前寫死的判準**逐條判定（過/不過都要寫）;未公證數字一律標「單次」;
    意外發現另立小節。
 5. **§5 結論／§6 後續**：學到什麼、促成/否決哪個候選;新待辦升 ONGOING 🔜（含觸發條件）。

@@ -330,6 +330,93 @@ def cmd_gain(args):
         print(f"  ⚠ 新臂 {sorted(fresh)}: 歷史不足,走 round 檔預註冊存活測試（資訊帳）,不給 dB 期望")
 
 
+def cmd_data(args):
+    """資料總帳＋健檢一鍵化（2026-07-13,取代一次性普查腳本）:
+    ①總量帳（量測次數/唯一樣本〔hash 檔名聯集=內容定址零重複計算〕/方向圖/error 殘留）
+    ②按 round 系列分組 ③完整性（manifest↔results 缺口/孤兒 input/rad 缺漏）
+    ④重複健康度（跨店 hash 碰撞;蓄意公證店之外的碰撞=查重洩漏警報）。
+    每輪 /close-round 跑一次;接手盤點/使用者問資料量時先跑這個。"""
+    import json
+    import re
+    meas, errs, rads, files_total = 0, 0, 0, 0
+    uniq = {}                                             # hash 檔名 → [store,...]
+    groups, gaps, orphans = {}, [], []
+    stores_seen = set()
+    for fol in sorted(os.listdir(str(DATASET_PATH))):
+        d = DATASET_PATH.joinpath(fol)
+        if not fol.startswith("dedust_"):
+            continue
+        if fol.endswith("_input"):
+            if not DATASET_PATH.joinpath(fol[:-6], "results.json").exists():
+                orphans.append(fol)
+            continue
+        rp = d.joinpath("results.json")
+        if not rp.exists():
+            continue
+        stores_seen.add(fol)
+        try:
+            res = json.load(open(str(rp), encoding="utf-8"))
+        except Exception:
+            gaps.append(f"{fol}: results.json 壞損")
+            continue
+        ok = sum(1 for v in res.values() if "error" not in v)
+        errs += len(res) - ok
+        meas += ok
+        mp = DATASET_PATH.joinpath(fol + "_input", "manifest.json")
+        if mp.exists():
+            man_n = len(json.load(open(str(mp), encoding="utf-8")))
+            if ok < man_n:
+                gaps.append(f"{fol}: {ok}/{man_n}")
+        rd = d.joinpath("rad")
+        rn = len(os.listdir(str(rd))) if rd.is_dir() else 0
+        rads += rn
+        name = fol[len("dedust_"):]
+        mo = re.match(r"(r\d+)", name)
+        if mo and int(mo.group(1)[1:]) >= 19:
+            g = mo.group(1)
+        elif name.startswith(("vgen", "auto")):
+            g = name[:4]
+        else:
+            g = "R7-R18 前期"
+        groups[g] = groups.get(g, 0) + ok
+        for f in os.listdir(str(d)):
+            if f != "results.json" and d.joinpath(f).is_file():
+                files_total += 1
+                uniq.setdefault(f, []).append(fol)
+    print("== 總量帳 ==")
+    print(f"  量測次數 {meas}（error 殘留 {errs}）/ store 樣本檔 {files_total} / **唯一樣本 {len(uniq)}**"
+          f" / 方向圖 {rads}")
+    print(f"  重複量測開銷 {files_total - len(uniq)} 檔（公證/重驗=品質成本）")
+    print("\n== 按系列 ==")
+    for g, n in sorted(groups.items()):
+        print(f"  {g}: {n}")
+    print("\n== 完整性 ==")
+    print(("  ⚠ 未收全/壞損: " + "; ".join(gaps[:10])) if gaps else "  manifest↔results 全對齊 ✓")
+    print(("  ⚠ 孤兒 input（有輸入無 store,可能待跑）: " + ", ".join(orphans[:10])) if orphans
+          else "  無孤兒 input ✓")
+    dup = {f: sl for f, sl in uniq.items() if len(sl) > 1}
+    #? 蓄意重測店（公證/重驗/穩健/消融基準）＋前期歷史（check-dup 2026-07-10 上線前）不算洩漏;
+    #  警報只對 r19+ 時代的非蓄意碰撞拉——那才是防線破口。
+    INTEN = r"n\d|repeat|verify|w17rep|champ|crown|bakeoff|ablate|tol|occl|ref2v|probes"
+
+    def _new_era(s):
+        mo = re.match(r"dedust_r(\d+)", s)
+        return bool(mo and int(mo.group(1)) >= 19)
+
+    inten = {f for f, sl in dup.items() if any(re.search(INTEN, s) for s in sl)}
+    hist_dup = {f for f, sl in dup.items() if f not in inten and not any(_new_era(s) for s in sl)}
+    leak = {f: sl for f, sl in dup.items() if f not in inten and f not in hist_dup}
+    print("\n== 重複健康度 ==")
+    print(f"  跨店碰撞 {len(dup)} 檔＝蓄意重測 {len(inten)}＋前期歷史 {len(hist_dup)}＋其餘 {len(leak)}")
+    if leak:
+        print(f"  ⚠ r19+ 非蓄意碰撞 {len(leak)} 檔——先查 manifest kind:批內搭載的 notarize/repeat"
+              "（如 r19a 搭 cc 公證）屬蓄意;kind 非豁免類才是真洩漏:")
+        for f, sl in list(leak.items())[:5]:
+            print(f"    {f[:16]}… ← {', '.join(sl)}")
+    else:
+        print("  r19+ 非蓄意碰撞 0 ＝ check-dup 防線完好 ✓")
+
+
 def _records():
     """docs/records.json＝紀錄與門檻的機器真相源（換王先改它;analyze gain/batch 預設讀它）。"""
     import json
@@ -506,6 +593,8 @@ def main():
     bt.add_argument("--round", type=int, required=True)
     bt.add_argument("--batch", type=int, required=True)
     bt.set_defaults(func=cmd_batch)
+    dt = sub.add_parser("data", help="資料總帳+健檢（唯一樣本/分組/完整性/查重洩漏警報;每輪收檔跑）")
+    dt.set_defaults(func=cmd_data)
     cr = sub.add_parser("credit", help="血統貢獻分（探索延遲報酬記帳;R24 配額股息計分輸入）")
     cr.add_argument("--ids", default="k23b1_021_m22g1_025_cc,o23b1_007_k8_042_k7_00,"
                     "o6_001_o4_035_o3_05,m5_054_m3_026_m1_01,h7_010_g16",
