@@ -416,6 +416,39 @@ def cmd_data(args):
     else:
         print("  r19+ 非蓄意碰撞 0 ＝ check-dup 防線完好 ✓")
 
+    #? 自產收穫（2026-07-13,Ricky「tier2 會不會拿來分析」）:selfgen 是隨機翻全史,可能撞到好 pattern——
+    #  掃 auto 夾的三標/紀錄候選,別讓它們隱形（自產已自動餵 SM,見 sm_reanchor._load_clean_stores）。
+    rec = _records()
+    print("\n== 自產收穫（selfgen dedust_auto*;三標/紀錄候選）==")
+    hits, autos = [], 0
+    for fol in os.listdir(str(DATASET_PATH)):
+        if not fol.startswith("dedust_auto"):
+            continue
+        rp = DATASET_PATH.joinpath(fol, "results.json")
+        if not rp.exists():
+            continue
+        for i, r in json.load(open(str(rp), encoding="utf-8")).items():
+            if "wm" not in r:
+                continue
+            autos += 1
+            tri = r["wm"][2] >= 0 and (r.get("rad_margin") if r.get("rad_margin") is not None else -9) >= 0
+            if not tri:
+                continue
+            tag = []
+            if r["wm"][2] > rec["wm"]["value"]:
+                tag.append(f"wm{r['wm'][2]:+.2f}>王")
+            if (r.get("oob_bad") or 99) < rec["usable_oob"]["value"] and r["wm"][2] >= rec["buffer"]:
+                tag.append(f"可用oob{r['oob_bad']}")
+            if (r.get("rad_margin") or -9) > rec["rad"]["value"]:
+                tag.append(f"rad{r['rad_margin']}>王")
+            hits.append((fol, i, r["wm"][2], r.get("oob_bad"), tag))
+    tri_n = len(hits)
+    print(f"  自產 {autos} 筆,三標 {tri_n}"
+          + ("——★ 含紀錄候選,下方列(照 /notarize 公證)" if any(h[4] for h in hits) else "（無紀錄候選;已自動餵 SM）"))
+    for fol, i, wm, oob, tag in sorted(hits, key=lambda h: h[3] or 99)[:8]:
+        star = "★ " + ",".join(tag) if tag else ""
+        print(f"    {i[:24]} [{fol[7:]}] wm{wm:+.2f} oob{oob} {star}")
+
 
 def _records():
     """docs/records.json＝紀錄與門檻的機器真相源（換王先改它;analyze gain/batch 預設讀它）。"""

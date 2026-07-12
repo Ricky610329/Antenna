@@ -50,6 +50,13 @@ def _load_clean_stores():
             line = line.split("#")[0].strip()
             if line and line not in out:
                 out.append(line)
+    #? 自產 tier-2（selfgen dedust_auto*）永遠是乾淨 HFSS 真值 → 自動納入,免手維護
+    #  （2026-07-13 修:之前 95 筆自產資料含 8 三標卻沒餵 SM=浪費,Ricky 指出）。
+    import glob
+    for p in sorted(glob.glob(str(DATASET_PATH.joinpath("dedust_auto*")))):
+        name = os.path.basename(p)
+        if os.path.isdir(p) and DATASET_PATH.joinpath(name, "results.json").exists() and name not in out:
+            out.append(name)
     return tuple(out)
 
 
