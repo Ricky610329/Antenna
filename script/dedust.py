@@ -2739,7 +2739,7 @@ def select_r22mix(args):
         tries = 0
         while len(sc) < args.s * 10 and tries < args.s * 120:
             tries += 1
-            a = S_ANCH[int(rng.integers(0, len(S_ANCH)))]
+            a = S_ANCH[tries % len(S_ANCH)]              # 輪替配錨（b3 教訓:隨機抽=g16 14/15 錨集中）
             p0 = P[a]
             r0 = int(np.argmax([(p0[r].sum() if 6 <= r <= 18 else -1) for r in range(25)]))
             best, cur, bs, start = 0, 0, 0, 0

@@ -29,9 +29,13 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 22 — 分布組合批（🔵 **running**,2026-07-12 b1 發車）→ [round-22](../docs/log/round-22-distribution-portfolio.md)
-- 六臂 150:O10 哨兵/M50 王朝/C40 冷支專屬/Q30 偏科生修復/H12 hslot 部分槽/W8 彩票＋**m5_054 rad 公證×2**。
-- tier-2 填空池（prio 9,搶佔讓位）墊底,佇列永不見底;判準見 round 檔 §1;每批收檔跑 /gain-check。
+### Round 23 — 價值軸主戰（🔵 **running**,2026-07-12 b1 發車）→ [round-23](../docs/log/round-23-selectivity-axis.md)
+- sel_score 選批鍵（三標硬閘+帶外主鍵+rad 頭 ρ=0.498 進鍵）;主指標=**可用帶外**（基線 9.09,連三批零推進=回報線）。
+- 六臂 150:O50 sel 主力/M35 對照/C42 冷支/S15 槽鏈二批（錨輪替）/W8;tier-2 池墊底;每批 /gain-check。
+
+### ~~Round 22 — 分布組合批~~（✅ **2026-07-12 收檔,三批**）→ [round-22](../docs/log/round-22-distribution-portfolio.md)
+- **一天三公證紀錄**（rad +0.89/帶外 8.61/帶內 +0.46）+死區告破;C 冷支=新主產線;S 槽鏈首批成立;
+  Q/H 收臂=低側蓋棺;oob 鍵壽終→sel_score。
 
 ### ~~Round 21 — 收割管線~~（✅ **2026-07-12 收檔,五批 774 筆**）→ [round-21](../docs/log/round-21-harvest-pipeline.md)
 - 量產成立（M 臂 17-27%）+帶外王 o1_035 8.65 公證;SM 帶外過濾紅利=一次性;馬太確診+探索稅止跌;
