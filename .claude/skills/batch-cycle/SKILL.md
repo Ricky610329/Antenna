@@ -55,8 +55,10 @@ python -m script.dedust select-r21harvest --batch 5 --tag r<R>g<下一號> --see
 
 ### ⑥ 掛收檔偵測
 ```
-Monitor(command='python -m script.dedust watch --stores dedust_r<R>b<N+1>a,...,f', persistent=true)
+Monitor(command='/c/Users/Ricky/miniforge3/envs/ant/python.exe -m script.dedust watch --stores dedust_r<R>b<N+1>a,...,f', persistent=true)
 ```
+⚠ **必須用 ant env 完整路徑**——Monitor 的 shell 裡裸 `python`＝base miniforge，
+會撞專案自訂 Path 類炸掉（2026-07-12 實測陷阱）。
 
 ### ⑦ 記帳（每批必做）
 1. round 檔 §3 表加一行（批號/發車時間/查重 0）；§4 貼判讀重點（表格照 analyze batch 輸出精簡）。
