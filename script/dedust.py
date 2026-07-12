@@ -2606,7 +2606,8 @@ def select_r22mix(args):
         PS[name] = loadp(fol, pid)
     dyn_names = [n for n in P if any(m in n for m in DYN)]
     cold_names = [n for n in P if n not in dyn_names]
-    print(f"r22 b{args.batch} 錨點 {len(P)}（王朝 {len(dyn_names)}/冷支 {len(cold_names)}）＋偏科生 {len(PS)}")
+    print(f"r{getattr(args, 'round', 22)} b{args.batch} 錨點 {len(P)}"
+          f"（王朝 {len(dyn_names)}/冷支 {len(cold_names)}）＋偏科生 {len(PS)}")
 
     def op_flips(p):
         em, ed = edge_sets(p)
@@ -2793,9 +2794,12 @@ def select_r22mix(args):
             tries += 1
             q = np.zeros((25, 25), dtype=bool)
             q[FEED[0] - 2:, FEED[1] - 2:FEED[1] + 3] = True         # 饋點墊
-            for _ in range(int(rng.integers(3, 9))):
-                r0, c0 = int(rng.integers(0, 22)), int(rng.integers(0, 22))
-                h, w0 = int(rng.integers(2, 7)), int(rng.integers(2, 7))
+            target = int(rng.integers(250, 500))                    # 金屬預算（製造閘 230-520 內）
+            for _ in range(24):                                      # 加塊到預算（首版 3-8 塊全死於 230 下限）
+                if int(q.sum()) >= target:
+                    break
+                r0, c0 = int(rng.integers(0, 20)), int(rng.integers(0, 20))
+                h, w0 = int(rng.integers(2, 8)), int(rng.integers(2, 8))
                 q[r0:r0 + h, c0:c0 + w0] = True
             q[FEED] = True
             q, _n = strip_small(q, 4)
@@ -3579,6 +3583,59 @@ def jobs_add(args):
     print(f"已入佇列: {args.store} (prio {args.prio});目前 {len(jobs)} 個 job")
 
 
+_SELFGEN_BASES = None
+
+
+def _selfgen_chunk(me, args):
+    """佇列全空時的自產 tier-2（Ricky 2026-07-12「HFSS 不准停;不需要你主動干涉的機制」）:
+    從歷史 pattern 隨機翻 1-12 bit、查重全史,湊 --selfgen 筆進本機專屬夾 dedust_auto<ip>_input
+    → 以 job_prio=999 跑:run() 的讓位檢查對「任何可認領 job」生效,正式資料一進佇列立即讓位。
+    單機專屬 store=零互踩;決定性=seed(manifest 長度×1000+ip 末段);資料照常進重錨與查重掃描。"""
+    global _SELFGEN_BASES
+    tag = "auto" + me.split(".")[-1]
+    ind = _dir(f"dedust_{tag}_input")
+    ind.mkdir(parents=True, exist_ok=True)
+    mp = ind.joinpath("manifest.json")
+    manifest = json.load(open(str(mp), encoding="utf-8")) if mp.exists() else []
+    if _SELFGEN_BASES is None:
+        hist, bases = set(), []
+        for fol in _all_input_folders():
+            dd = DATASET_PATH.joinpath(fol)
+            for m in json.load(open(str(dd.joinpath("manifest.json")), encoding="utf-8")):
+                f = dd.joinpath(m["id"] + ".pt")
+                if f.exists():
+                    p = np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
+                    hist.add(p.tobytes())
+                    bases.append(p)
+        _SELFGEN_BASES = (bases, hist)
+        print(f"⚙ 自產基底載入:歷史 {len(bases)} 筆")
+    bases, hist = _SELFGEN_BASES
+    rng = np.random.default_rng(len(manifest) * 1000 + int(me.split(".")[-1]))
+    made, tries = [], 0
+    while len(made) < args.selfgen and tries < args.selfgen * 300:
+        tries += 1
+        q = bases[int(rng.integers(0, len(bases)))].copy()
+        k = int(rng.integers(1, 13))
+        q.ravel()[rng.choice(625, size=k, replace=False)] ^= True
+        if not (200 <= int(q.sum()) <= 550) or q.tobytes() in hist:
+            continue
+        hist.add(q.tobytes())
+        pid = f"a{tag[4:]}_{len(manifest) + len(made):05d}"
+        torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
+        made.append(dict(id=pid, kind="selfgen", family=f"AUTO_{tag}", removed_px=0,
+                         **piece_stats(q), source_id="hist_flip", ops=[["flips", k]], diff_px=k))
+    if not made:
+        return False
+    manifest += made
+    _save_manifest(manifest, ind)
+    print(f"⚙ 自產 tier-2 {len(made)} 筆 → dedust_{tag}（任何 job 入佇列即讓位）")
+    ns = argparse.Namespace(config=args.config, input=f"dedust_{tag}_input", store=f"dedust_{tag}",
+                            out=None, sweep=args.sweep, timeout=args.timeout, max_fail=args.max_fail,
+                            retry_pass=0, job_prio=999, tier2_prio=999, claim_path=None, claim_me=me)
+    run(ns)
+    return True
+
+
 def worker(args):
     """資料工廠 worker（Ricky 2026-07-10「三台都變資料收集系統,用 NAS 控制」）——正式機常駐:
     迴圈＝讀 jobs.json（prio 升冪）→ 跳過 done/被認領 → **原子認領**（jobs_state/<store>.claim,
@@ -3635,6 +3692,9 @@ def worker(args):
             if args.once:
                 print("佇列空/無可認領,--once 收工")
                 break
+            if getattr(args, "selfgen", 0):              # 佇列空 → 自產 tier-2,HFSS 不停(Ricky 2026-07-12)
+                if _selfgen_chunk(me, args):
+                    continue
             print(f"({time.strftime('%H:%M:%S')}) 佇列無可認領,{args.poll}s 後再掃")   # 心跳:睡眠不裝死
             time.sleep(args.poll)
             continue
@@ -3996,6 +4056,8 @@ def main():
     s.add_argument("--once", action="store_true", help="只跑一個 job 就收工（測試用）")
     s.add_argument("--tier2-prio", type=int, default=8, dest="tier2_prio",
                    help="prio ≥ 此值=tier-2 填空批（每筆完成後掃佇列,tier-1 出現即讓位）")
+    s.add_argument("--selfgen", type=int, default=12,
+                   help="佇列全空時自產 tier-2 段長（歷史翻bit+查重;0=關;任何 job 入佇列即讓位）")
     s.set_defaults(fn=worker)
 
     s = sub.add_parser("jobs-add", help="把批次加進派工佇列（select+check-dup 先跑完）")

@@ -244,6 +244,25 @@ def cmd_gain(args):
     def tri(s):
         return s["wm"] >= 0 and (s["rad"] if s["rad"] is not None else -9) >= 0
 
+    #? L0 常升目標（Ricky 2026-07-12「持續增加探索的範圍與資料量;確保有一個目標是提升的」）
+    tot, rads = 0, 0
+    for fol in os.listdir(str(DATASET_PATH)):
+        rp2 = DATASET_PATH.joinpath(fol, "results.json")
+        if fol.endswith("_input") or not fol.startswith("dedust_") or not rp2.exists():
+            continue
+        try:
+            rr = json.load(open(str(rp2), encoding="utf-8"))
+        except Exception:
+            continue
+        tot += sum(1 for v in rr.values() if "error" not in v)
+        rd = DATASET_PATH.joinpath(fol, "rad")
+        if rd.is_dir():
+            rads += len(os.listdir(str(rd)))
+    expl = sum(1 for s in samp if s["kind"] in ("denovo", "wild", "selfgen", "coldmine", "infogain"))
+    print("—— L0 資料與覆蓋（常升目標:探索範圍×資料量）——")
+    print(f"  全史 HFSS 真值 {tot} 筆/方向圖 {rads};本線 {len(samp)} 筆,探索類(C/D/I/W/自產) {expl}"
+          f"（{100*expl/max(len(samp),1):.0f}%）")
+
     print(f"—— L1 階梯命中率（{args.line};三標樣本計;n=非error 筆數;oob=旗艦軸 2026-07-12）——")
     OOBL = (10.0, 9.5, 9.0)
     hdr = ("| 批 | 臂 | n | 三標 | " + " | ".join(f"wm≥{t:+.2f}" for t in LADDER)
