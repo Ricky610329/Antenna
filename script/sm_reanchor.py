@@ -78,7 +78,10 @@ CLEAN_STORES = ("dedust_ref2v", "dedust_champ_disc",                       # 修
                 # v15 追加（2026-07-12）:R22 b3 六夾＋n3＋r22g1 填空池
                 "dedust_r22b3a", "dedust_r22b3b", "dedust_r22b3c",
                 "dedust_r22b3d", "dedust_r22b3e", "dedust_r22b3f",
-                "dedust_r22n3", "dedust_r22g1a", "dedust_r22g1b", "dedust_r22g1c")
+                "dedust_r22n3", "dedust_r22g1a", "dedust_r22g1b", "dedust_r22g1c",
+                # v16 追加（2026-07-12）:R23 b1 六夾（sel 鍵首批）
+                "dedust_r23b1a", "dedust_r23b1b", "dedust_r23b1c",
+                "dedust_r23b1d", "dedust_r23b1e", "dedust_r23b1f")
 #? ref2 殘餘風險: 已實錘假象觸發率 ~9% (11 抽 1),無 certified 對照的 ref2 條目可能還有 ~10 筆髒 Gain——
 #  佔訓練集 <0.3%,MSE 回歸可容忍;隨後續重驗逐步被 certified 店覆蓋。store 不存在時自動略過。
 OUT_PTH = "sm_reanchor.pth"                                  # DATASET_PATH 下（--out 可換版本名）
