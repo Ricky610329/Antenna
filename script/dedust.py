@@ -2782,6 +2782,32 @@ def select_r22mix(args):
             hist.add(k)
             sc.append(dict(pat=q, parent=a, ops=chain, d=int((q != p0).sum()), stats=st))
 
+    #? D de novo 臂（b3 起常設;Ricky 2026-07-12「非王朝系要有一定比例+針對訓 SM 去探索」）:
+    #  池外隨機塊構造（不繼承任何血統）;篩選用 sm_harvest（34k 底座=現存分布最廣「非王朝 SM」）,
+    #  資料 ≥150 後訓 sm_denovo 接棒。判準:任一三標=池外礦脈開張;連兩批零三標=收臂回觸發制。
+    dn = []
+    if getattr(args, "d", 0):
+        tries = 0
+        while len(dn) < args.d * 40 and tries < args.d * 400:
+            tries += 1
+            q = np.zeros((25, 25), dtype=bool)
+            q[FEED[0] - 2:, FEED[1] - 2:FEED[1] + 3] = True         # 饋點墊
+            for _ in range(int(rng.integers(3, 9))):
+                r0, c0 = int(rng.integers(0, 22)), int(rng.integers(0, 22))
+                h, w0 = int(rng.integers(2, 7)), int(rng.integers(2, 7))
+                q[r0:r0 + h, c0:c0 + w0] = True
+            q[FEED] = True
+            q, _n = strip_small(q, 4)
+            q = _ensure_feed_pad(q, 4)
+            st = piece_stats(q)
+            if st["n_1px"] > 0 or not (230 <= st["metal_px"] <= 520):
+                continue
+            k = q.tobytes()
+            if k in hist:
+                continue
+            hist.add(k)
+            dn.append(dict(pat=q, parent="denovo", ops=[["blocks"]], d=0, stats=st))
+
     cfg = load_config(args.config)
     setup_responses(cfg)
     labels = PORT_SPECS[cfg.port]["labels"]
@@ -2822,6 +2848,27 @@ def select_r22mix(args):
     else:
         for c in allc:
             c["pred_rad"] = None
+    #? D 臂預測:sm_harvest（34k 底座=分布最廣）篩池外樣本;rad 頭共用（訓於全史,偏差較小）
+    if dn:
+        smh = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+        smh.pre_load_model(DATASET_PATH.joinpath(getattr(args, "denovo_sm", "sm_harvest.pth")), strict=True)
+        dpats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in dn])
+        with torch.no_grad():
+            draw = smh.model(dpats).reshape(len(dn), len(labels), n_pts)
+        for k, c in enumerate(dn):
+            w, _ = worst_margin(draw[k], labels, cfg.targets)
+            c["pred_wm"] = _r(float(w))
+            rr = draw[k].numpy()
+            c["pred_oob"] = oob_metrics(rr)["oob_bad"]
+            ml = 10 * np.log10(np.clip(1 - 10 ** (rr[0][:4] / 10), 1e-6, 1))
+            c["pred_lor"] = _r(float((rr[1][:4] + ml).max()))
+            c["pred_rad"] = None
+        if radnet is not None:
+            with torch.no_grad():
+                dfits = (radnet(dpats).reshape(len(dn), 2, _rh["K"]) @ _B).numpy()
+            for k, c in enumerate(dn):
+                c["pred_rad"] = _r(min(rad_window_margin(_th, dfits[k][0]),
+                                       rad_window_margin(_th, dfits[k][1])))
 
     def _diverse(pool, idxs_sorted, n):
         out = []
@@ -2854,6 +2901,14 @@ def select_r22mix(args):
     ki = _diverse(coldp, list(rng.permutation(len(coldp))), args.c)
     qi = _diverse(specp, sorted(range(len(specp)), key=lambda i: specp[i]["pred_wm"], reverse=True), args.q)
     wi = list(rng.choice(len(wildp), size=min(args.wild, len(wildp)), replace=False)) if wildp else []
+
+    def _pselc(c):
+        pen = SEL_KAPPA * max(0.0, SEL_BUFFER - c["pred_wm"])
+        if c.get("pred_rad") is not None and getattr(args, "rad_key", False):
+            pen += SEL_KAPPA * max(0.0, -c["pred_rad"])
+        return c["pred_oob"] + pen
+    di = _diverse(dn, sorted(range(len(dn)), key=lambda i: _pselc(dn[i])),
+                  getattr(args, "d", 0)) if dn else []
     #? S 臂鍵:rad 頭過門檻（--rad-key）時用 maximin（min(pred_wm−0.30, pred_rad)＝綁束者優先）
     if sc and radnet is not None and getattr(args, "rad_key", False):
         si = _diverse(sc, sorted(range(len(sc)),
@@ -2871,7 +2926,8 @@ def select_r22mix(args):
     for arm, letter, idxs, src in (("oobharv", "o", oi, core), ("mlotto", "m", mi, core),
                                    ("coldmine", "k", ki, coldp), ("repair", "q", qi, specp),
                                    ("hslot", "h", list(range(len(hs))), hs),
-                                   ("slotchain", "s", si, sc), ("wild", "w", wi, wildp)):
+                                   ("slotchain", "s", si, sc), ("denovo", "d", di, dn),
+                                   ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
             entries.append(dict(id=f"{letter}{idt}_{j:03d}_{c['parent'][:12]}", kind=arm,
@@ -2892,8 +2948,8 @@ def select_r22mix(args):
         torch.save(torch.tensor(pat, dtype=torch.float32), str(dirs[b].joinpath(e["id"] + ".pt")))
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
-    print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}+W{len(wi)}"
-          f" → {len(dirs)} 夾 {[len(m) for m in manifests]}")
+    print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}"
+          f"+D{len(di)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
@@ -3736,18 +3792,21 @@ def main():
     s.add_argument("--shards", type=int, default=6)
     s.set_defaults(fn=select_r22mix, round=22, key="oob")
 
-    s = sub.add_parser("select-r23", help="R23 價值軸批：O 主力 sel_score 鍵+M+C+S+W（同 r22mix 機器,round 號貫穿命名）")
+    s = sub.add_parser("select-r23", help="R23 價值軸批：O 主力 sel_score 鍵+M+C+S+D denovo+W（同 r22mix 機器,round 號貫穿命名）")
     s.add_argument("--batch", type=int, required=True)
     s.add_argument("--seed", type=int, default=20260712)
     s.add_argument("--sm", default="sm_reanchor15.pth")
     s.add_argument("--config", default=DEFAULT_CFG)
-    s.add_argument("--o", type=int, default=50, help="O 主力臂（pred_sel 升冪=價值軸主鍵）")
-    s.add_argument("--m", type=int, default=35)
-    s.add_argument("--c", type=int, default=42)
+    s.add_argument("--o", type=int, default=46, help="O 主力臂（pred_sel 升冪=價值軸主鍵）")
+    s.add_argument("--m", type=int, default=33)
+    s.add_argument("--c", type=int, default=40)
     s.add_argument("--q", type=int, default=0)
     s.add_argument("--h", type=int, default=0)
-    s.add_argument("--s", type=int, default=15, help="S 槽鏈臂第二批（判準沿用 R22 §1 修訂）")
-    s.add_argument("--wild", type=int, default=8)
+    s.add_argument("--s", type=int, default=15, help="S 槽鏈臂（判準沿用 R22 §1 修訂）")
+    s.add_argument("--d", type=int, default=12, help="D de novo 常設臂（學費預算制,b3 起;篩選用 --denovo-sm）")
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm",
+                   help="D 臂專屬篩選 SM（預設 34k 底座;資料夠後換 sm_denovo*）")
+    s.add_argument("--wild", type=int, default=4)
     s.add_argument("--shards", type=int, default=6)
     s.add_argument("--rad-head", default="rad_head1.pth", dest="rad_head",
                    help="rad 頭權重（一律算 pred_rad 記 manifest 供前瞻;None 字串=關）")
