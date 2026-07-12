@@ -2644,6 +2644,7 @@ def select_r22mix(args):
             f = dd.joinpath(m["id"] + ".pt")
             if f.exists():
                 hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+    hist0 = list(hist)                                    # 生成前快照（新穎性距離只對「真歷史」量,不含本批自身）
 
     def _mutate(src_pool, pick, want_wild=False):
         aname = pick()
@@ -2870,6 +2871,26 @@ def select_r22mix(args):
                 c["pred_rad"] = _r(min(rad_window_margin(_th, dfits[k][0]),
                                        rad_window_margin(_th, dfits[k][1])))
 
+    #? B 新穎性紅利（R24 探索誘因包,Ricky 核准 2026-07-12;--novelty 才生效）:
+    #  d_hist=與全史最近 Hamming;鍵折扣 λ·min(d,20),λ=0.02（上限 0.4 dB,蓋不過真實差距）
+    if getattr(args, "novelty", False) and hist0:
+        H = np.stack([np.frombuffer(k, dtype=bool) for k in hist0]).astype(np.float32)
+        for pool in (core, coldp, specp, wildp, hs, sc, dn):
+            if not pool:
+                continue
+            A = np.stack([c["pat"].reshape(-1) for c in pool]).astype(np.float32)
+            dmat = A @ (1 - H.T) + (1 - A) @ H.T          # (M,N) Hamming
+            dmin = dmat.min(axis=1)
+            for k, c in enumerate(pool):
+                c["novelty"] = int(dmin[k])
+    else:
+        for pool in (core, coldp, specp, wildp, hs, sc, dn):
+            for c in pool:
+                c["novelty"] = None
+
+    def _nbonus(c):
+        return 0.02 * min(c["novelty"], 20) if c.get("novelty") is not None else 0.0
+
     def _diverse(pool, idxs_sorted, n):
         out = []
         for i in idxs_sorted:
@@ -2891,7 +2912,7 @@ def select_r22mix(args):
             pen = SEL_KAPPA * max(0.0, SEL_BUFFER - c["pred_wm"])
             if c.get("pred_rad") is not None and getattr(args, "rad_key", False):
                 pen += SEL_KAPPA * max(0.0, -c["pred_rad"])   # rad 項:--rad-key 才進鍵（門檻 ρ≥0.4）
-            return c["pred_oob"] + pen
+            return c["pred_oob"] + pen - _nbonus(c)           # B 新穎性紅利（--novelty）
         oi = _diverse(core, sorted(range(len(core)), key=_psel), args.o)
     else:
         trim = sorted(range(len(core)), key=lambda i: core[i]["pred_wm"], reverse=True)[:int(len(core) * .6)]
@@ -2906,9 +2927,25 @@ def select_r22mix(args):
         pen = SEL_KAPPA * max(0.0, SEL_BUFFER - c["pred_wm"])
         if c.get("pred_rad") is not None and getattr(args, "rad_key", False):
             pen += SEL_KAPPA * max(0.0, -c["pred_rad"])
-        return c["pred_oob"] + pen
+        return c["pred_oob"] + pen - _nbonus(c)
     di = _diverse(dn, sorted(range(len(dn)), key=lambda i: _pselc(dn[i])),
                   getattr(args, "d", 0)) if dn else []
+    #? A 資訊臂（R24 探索誘因包）:兩 SM（本版 vs harvest 底座）預測分歧最大=資訊量最高的量測點
+    #  （query-by-committee 主動學習）;KPI=模型更新量非三標率。
+    ii = []
+    if getattr(args, "i", 0):
+        smh2 = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+        smh2.pre_load_model(DATASET_PATH.joinpath(getattr(args, "denovo_sm", "sm_harvest.pth")), strict=True)
+        with torch.no_grad():
+            hraw = smh2.model(pats).reshape(len(allc), len(labels), n_pts)
+        for k, c in enumerate(allc):
+            hw, _ = worst_margin(hraw[k], labels, cfg.targets)
+            c["disagree"] = _r(abs(c["pred_wm"] - float(hw))
+                               + 0.5 * abs(c["pred_oob"] - oob_metrics(hraw[k].numpy())["oob_bad"]))
+        taken = set(oi) | set(mi)
+        pool_rest = [i for i in range(len(core)) if i not in taken]
+        ii = _diverse(core, sorted(pool_rest, key=lambda i: core[i].get("disagree", 0), reverse=True),
+                      getattr(args, "i", 0))
     #? S 臂鍵:rad 頭過門檻（--rad-key）時用 maximin（min(pred_wm−0.30, pred_rad)＝綁束者優先）
     if sc and radnet is not None and getattr(args, "rad_key", False):
         si = _diverse(sc, sorted(range(len(sc)),
@@ -2927,7 +2964,7 @@ def select_r22mix(args):
                                    ("coldmine", "k", ki, coldp), ("repair", "q", qi, specp),
                                    ("hslot", "h", list(range(len(hs))), hs),
                                    ("slotchain", "s", si, sc), ("denovo", "d", di, dn),
-                                   ("wild", "w", wi, wildp)):
+                                   ("infogain", "i", ii, core), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
             entries.append(dict(id=f"{letter}{idt}_{j:03d}_{c['parent'][:12]}", kind=arm,
@@ -2949,7 +2986,7 @@ def select_r22mix(args):
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
     print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}"
-          f"+D{len(di)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
+          f"+D{len(di)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 HISTORY_INPUTS = ("dedust_r7_input", "dedust_r8_input", "dedust_r9_input", "dedust_ref1_input",
@@ -3806,6 +3843,8 @@ def main():
     s.add_argument("--d", type=int, default=12, help="D de novo 常設臂（學費預算制,b3 起;篩選用 --denovo-sm）")
     s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm",
                    help="D 臂專屬篩選 SM（預設 34k 底座;資料夠後換 sm_denovo*）")
+    s.add_argument("--i", type=int, default=0, help="I 資訊臂（兩 SM 分歧 top=主動學習;R24 起 12）")
+    s.add_argument("--novelty", action="store_true", help="B 新穎性紅利進鍵（λ=0.02·min(d,20);R24 起開）")
     s.add_argument("--wild", type=int, default=4)
     s.add_argument("--shards", type=int, default=6)
     s.add_argument("--rad-head", default="rad_head1.pth", dest="rad_head",

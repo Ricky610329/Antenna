@@ -305,6 +305,36 @@ def cmd_gain(args):
         print(f"  ⚠ 新臂 {sorted(fresh)}: 歷史不足,走 round 檔預註冊存活測試（資訊帳）,不給 dB 期望")
 
 
+def cmd_credit(args):
+    """血統貢獻分（R24 探索誘因包 D,Ricky 核准 2026-07-12）:紀錄 id 沿 source_id 鏈回溯,
+    每個祖先給其出身臂記一分——探索的延遲報酬記帳（例:margin 王經 g1 填空池=池記功）。
+    R23 期間純報表校準,R24 起進配額股息計分（當批效率 40%+血統 40%+新穎產出 20%）。"""
+    import json
+    idx = {}
+    for fol in os.listdir(str(DATASET_PATH)):
+        if not (fol.startswith("dedust_") and fol.endswith("_input")):
+            continue
+        mp = DATASET_PATH.joinpath(fol, "manifest.json")
+        if not mp.exists():
+            continue
+        for m in json.load(open(str(mp), encoding="utf-8")):
+            idx.setdefault(m["id"], (m.get("kind", "?"), m.get("source_id")))
+    credit = {}
+    for rid in args.ids.split(","):
+        rid = rid.strip()
+        seen, chain, cur = set(), [], rid
+        while cur and cur in idx and cur not in seen:
+            seen.add(cur)
+            kind, src = idx[cur]
+            chain.append(f"{cur}[{kind}]")
+            credit[kind] = credit.get(kind, 0) + 1
+            cur = src
+        print(f"{rid}:\n  " + " ← ".join(chain) + (f" ← {cur}(池根)" if cur and cur not in idx else ""))
+    print("\n臂別血統貢獻分（配額股息計分輸入）:")
+    for k, v in sorted(credit.items(), key=lambda x: -x[1]):
+        print(f"  {k}: {v}")
+
+
 def main():
     ap = argparse.ArgumentParser(description="可重現診斷分析（純讀 NAS）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -322,6 +352,11 @@ def main():
     gn.add_argument("--oob-record", type=float, default=8.61, dest="oob_record", help="現任帶外紀錄（旗艦軸）")
     gn.add_argument("--near", type=float, default=0.30, help="近王級門檻")
     gn.set_defaults(func=cmd_gain)
+    cr = sub.add_parser("credit", help="血統貢獻分（探索延遲報酬記帳;R24 配額股息計分輸入）")
+    cr.add_argument("--ids", default="k23b1_021_m22g1_025_cc,o23b1_007_k8_042_k7_00,"
+                    "o6_001_o4_035_o3_05,m5_054_m3_026_m1_01,h7_010_g16",
+                    help="逗號分隔紀錄 id（預設=現任五頭銜/紀錄）")
+    cr.set_defaults(func=cmd_credit)
     re.add_argument("--window", type=float, default=45); re.set_defaults(func=cmd_rad_error)
     args = ap.parse_args()
     args.func(args)
