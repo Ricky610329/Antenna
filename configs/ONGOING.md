@@ -33,11 +33,16 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 23 — 價值軸主戰（🔵 **running**,b3 收尾中）→ [round-23](../docs/log/round-23-selectivity-axis.md)
-- sel_score 選批鍵（三標硬閘+帶外主鍵+rad 頭進鍵,前瞻連兩批過線）;主指標=**可用帶外**（基線 9.09,
-  連三批零推進=回報線——**b3 即第三批**）。b1 雙王易主（margin +0.41/rad +1.00 皆公證 3/3）。
-- 現組成:O46 sel/M33 對照/C40 冷支/S15 槽鏈/D12 de novo（學費 5 批制,b3 首航）/W4;
-  每批走 **/batch-cycle**（收檔→判讀 analyze batch→重錨 train --add→發車→補池→watch）。
+### Round 24 — 降根計畫（🔵 **running**,2026-07-13 b1 重跑中）→ [round-24](../docs/log/round-24-root-diversity.md)
+- 治 R23「可用帶外逼近未穿=深血統打轉」;根稅 --root-cap 0.4＋D20/I12/W8/novelty＋誘因包＋sm_denovo 節點。
+- ★ **軸相關枯竭導航**(decisions):某軸打轉≠該區枯竭;王朝 margin 連兩批無新高才升根稅——b4 王朝 +0.49=活躍,維持 0.4。
+- 發車=`select-r24 --batch N --sm sm_reanchor19+ --rad-key --novelty`;每批 /batch-cycle。
+- ⚠ **b1 首跑資料遭 2026-07-13 NAS 事件遺失,已 v19-rebuild 重跑中**（§4 的 9.05 待重跑確認）;
+  **接手先跑 /takeover + /reconcile**（三方對帳,防再犯）。
+
+### ~~Round 23 — 價值軸主戰~~（✅ **2026-07-13 收檔,四批+公證**）→ [round-23](../docs/log/round-23-selectivity-axis.md)
+- sel 鍵增值成立(O>M 四批)+rad 頭進鍵;可用帶外逼近未穿 9.09=深血統打轉→R24;
+  **一輪四紀錄**（margin 雙躍 +0.41→**+0.49 c18 奪回**/rad 王 +1.00/帶外王 8.61）=軸相關枯竭實證。
 
 ### ~~Round 22 — 分布組合批~~（✅ **2026-07-12 收檔,三批**）→ [round-22](../docs/log/round-22-distribution-portfolio.md)
 - **一天三公證紀錄**（rad +0.89/帶外 8.61/帶內 +0.46）+死區告破;C 冷支=新主產線;S 槽鏈首批成立;
