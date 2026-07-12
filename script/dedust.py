@@ -2675,6 +2675,24 @@ def select_r22mix(args):
         hist.add(k)
         return dict(pat=q, parent=aname, ops=chain, d=d, stats=st)
 
+    #? 根多樣性稅（R24 降根計畫;--root-cap>0 生效）:錨點沿 source_id 走到池根,
+    #  單一根的已接受占比 ≤ cap——治「同山不同坡面」打轉（credit 實測:五紀錄鏈三條同根 g1_038）。
+    _ROOT_IDX, _ROOT_CACHE = {}, {}
+    if getattr(args, "root_cap", 0):
+        for fol in _all_input_folders():
+            for m in json.load(open(str(DATASET_PATH.joinpath(fol, "manifest.json")), encoding="utf-8")):
+                _ROOT_IDX.setdefault(m["id"], m.get("source_id"))
+
+    def _root(name):
+        if name in _ROOT_CACHE:
+            return _ROOT_CACHE[name]
+        seen, cur = set(), name
+        while cur in _ROOT_IDX and _ROOT_IDX[cur] and cur not in seen:
+            seen.add(cur)
+            cur = _ROOT_IDX[cur]
+        _ROOT_CACHE[name] = cur
+        return cur
+
     def pick_two_pool():
         pool = dyn_names if (rng.random() < 0.7 and dyn_names) else cold_names
         return pool[int(rng.integers(0, len(pool)))] if pool else list(P)[0]
@@ -2686,12 +2704,20 @@ def select_r22mix(args):
         return list(PS)[int(rng.integers(0, len(PS)))]
 
     def _gen(src, pick, target, dlo=1, dhi=25, wild=False):
-        out, tries = [], 0
+        out, tries, counts = [], 0, {}
+        cap = getattr(args, "root_cap", 0)
         while len(out) < target and tries < target * 30:
             tries += 1
             c = _mutate(src, pick, want_wild=wild)
-            if c is not None and dlo <= c["d"] <= dhi:
-                out.append(c)
+            if c is None or not (dlo <= c["d"] <= dhi):
+                continue
+            if cap:
+                rt = _root(c["parent"])
+                if len(out) >= 12 and (counts.get(rt, 0) + 1) / (len(out) + 1) > cap:
+                    hist.discard(c["pat"].tobytes())      # 退回查重集,別浪費 pattern
+                    continue
+                counts[rt] = counts.get(rt, 0) + 1
+            out.append(c)
         return out
 
     core = _gen(P, pick_two_pool, (args.o + args.m) * 12)          # O+M 共池（同 R21 兩池抽樣）
@@ -3941,6 +3967,8 @@ def main():
                    help="D 臂專屬篩選 SM（預設 34k 底座;資料夠後換 sm_denovo*）")
     s.add_argument("--i", type=int, default=0, help="I 資訊臂（兩 SM 分歧 top=主動學習;R24 起 12）")
     s.add_argument("--novelty", action="store_true", help="B 新穎性紅利進鍵（λ=0.02·min(d,20);R24 起開）")
+    s.add_argument("--root-cap", type=float, default=0.0, dest="root_cap",
+                   help="根多樣性稅:單一池根占比上限（0=關;R24 起 0.4——治同根打轉）")
     s.add_argument("--wild", type=int, default=4)
     s.add_argument("--shards", type=int, default=6)
     s.add_argument("--rad-head", default="rad_head1.pth", dest="rad_head",
