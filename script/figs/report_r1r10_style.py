@@ -62,3 +62,70 @@ def show_pattern(ax, p, title="", feed=(24, 12), color=DBLUE, tfs=10):
     ax.set_yticks([])
     for s in ax.spines.values():
         s.set_color(GRID)
+
+
+def diff_pattern(ax, p_new, p_old, title="", feed=(24, 12), tfs=9.6, show_counts=True):
+    """25×25 pattern 差異底圖：白＝雙方空、藍＝雙方金屬、綠＝加銅（新有舊無）、紅＝去銅（新無舊有）。
+    p_new/p_old 任意輸入。回傳 (n_add, n_remove)。"""
+    from matplotlib.colors import ListedColormap
+    import numpy as np
+    pn = np.asarray(p_new).reshape(25, 25) > 0.5
+    po = np.asarray(p_old).reshape(25, 25) > 0.5
+    img = pn.astype(int)                       # 0=空 1=金屬
+    added = pn & ~po
+    removed = (~pn) & po
+    img[added] = 2                             # 綠＝加銅
+    img[removed] = 3                           # 紅＝去銅
+    ax.imshow(img, cmap=ListedColormap([SURF, DBLUE, GREEN, RED]), vmin=0, vmax=3,
+              origin="upper", interpolation="nearest")
+    ax.scatter([feed[1]], [feed[0]], marker="^", s=46, color=AQUA, zorder=5,
+               edgecolor=SURF, lw=0.8)
+    na, nr = int(added.sum()), int(removed.sum())
+    if title:
+        sub = f"\n綠＝加銅 {na}px・紅＝去銅 {nr}px" if show_counts else ""
+        ax.set_title(title + sub, color=INK, fontsize=tfs)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for s in ax.spines.values():
+        s.set_color(GRID)
+    return na, nr
+
+
+def polar_rad_ax(ax, theta, series, window=45, floor_db=3, rmax=None, rmin=None,
+                 show_window=True, g0_ref=None):
+    """在 polar ax 上畫方向圖切面（主波束朝上、半徑=gain dB、每環 5dB）。
+    theta：角度(度)。series：list of (gain陣列, 顏色, 標籤, 線寬)。
+    畫 ±window° 覆蓋窗（金）＋兩邊界（橘）＋G0−floor_db 圈（紅虛）。回傳 (rmin, rmax, g0)。"""
+    import numpy as np
+    th = np.asarray(theta)
+    o = th.argsort()
+    th = th[o]
+    ser = [(np.asarray(g).reshape(-1)[o], c, lab, lw) for (g, c, lab, lw) in series]
+    bi = int(np.abs(th).argmin())
+    g0 = g0_ref if g0_ref is not None else max(float(g[bi]) for g, *_ in ser)
+    gmax = max(float(g.max()) for g, *_ in ser)
+    gmin = min(float(g.min()) for g, *_ in ser)
+    if rmax is None:
+        rmax = int(np.ceil((gmax + 0.5) / 5.0) * 5)
+    if rmin is None:
+        rmin = int(max(np.floor(gmin / 5.0) * 5, rmax - 30))
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
+    ax.set_rlim(0, rmax - rmin)
+    ax.set_rlabel_position(0)
+    if show_window:
+        ax.fill_between(np.deg2rad(np.linspace(-window, window, 60)), 0, rmax - rmin,
+                        color="gold", alpha=0.14)
+        for a in (-window, window):
+            ax.plot([np.deg2rad(a)] * 2, [0, rmax - rmin], color=ORANGE, ls="--", lw=1.3)
+    ax.plot(np.deg2rad(np.linspace(-180, 180, 361)), np.full(361, (g0 - floor_db) - rmin),
+            color=RED, ls="--", lw=1.1)
+    for g, c, lab, lw in ser:
+        ax.plot(np.deg2rad(th), np.clip(g, rmin, None) - rmin, color=c, lw=lw, label=lab)
+    rt = list(range(rmin, rmax + 1, 5))
+    ax.set_rticks([t - rmin for t in rt])
+    ax.set_yticklabels([str(t) for t in rt], fontsize=7, color=INK2)
+    ax.set_thetagrids(range(0, 360, 30),
+                      ["0", "30", "60", "90", "120", "150", "180",
+                       "-150", "-120", "-90", "-60", "-30"], fontsize=7.5, color=INK2)
+    return rmin, rmax, g0

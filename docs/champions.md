@@ -5,6 +5,7 @@
 > **價值軸（2026-07-12 Ricky 定調）**：三標＝硬閘門，過線後帶內餘裕邊際價值 ≈0，**收益軸＝帶外壓低**
 > （字典序：①三標 ②oob_bad 升冪；「永不拿帶內換帶外」不變）。**帶外王＝旗艦頭銜**；
 > 可用/製造候選另要求 **wm ≥ +0.15 buffer**（R11：缺陷存活＝margin 函數）。
+> **學長池關鍵參照 pattern**（oracle F0／論文圖 4-4 t07_top／我方對稱母本 F2）見 [senior_reference_patterns.md](senior_reference_patterns.md)。
 
 ## 現任頭銜
 

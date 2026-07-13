@@ -9,7 +9,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from script.figs.report_r1r10_style import (  # noqa: E402
-    REPO, INK, INK2, MUTED, GRID, SURF, RED, DBLUE, AQUA, ORANGE,
+    REPO, INK, INK2, MUTED, GRID, SURF, RED, DBLUE, AQUA, ORANGE, GREEN,
     plt, style_ax, save)
 from matplotlib.colors import ListedColormap  # noqa: E402
 
@@ -41,11 +41,15 @@ def _find_resp(store_name, pat):
 
 
 def _diff_show(ax, p, ref, title, tfs=9.4):
-    """pattern＋與 ref 的差異像素標橘。"""
+    """pattern；有 ref 時：綠＝加銅（p 有 ref 無）、紅＝去銅（p 無 ref 有）、藍＝共同金屬。"""
     img = p.astype(int)
     if ref is not None:
-        img[p != ref] = 2
-    ax.imshow(img, cmap=ListedColormap([SURF, DBLUE, ORANGE]), vmin=0, vmax=2,
+        img[p & ~ref] = 2          # 加銅
+        img[(~p) & ref] = 3         # 去銅
+        cmap = ListedColormap([SURF, DBLUE, GREEN, RED]); vmax = 3
+    else:
+        cmap = ListedColormap([SURF, DBLUE]); vmax = 1
+    ax.imshow(img, cmap=cmap, vmin=0, vmax=vmax,
               origin="upper", interpolation="nearest")
     ax.scatter([FEED[1]], [FEED[0]], marker="^", s=46, color=AQUA, zorder=5,
                edgecolor=SURF, lw=0.8)
@@ -72,7 +76,7 @@ def fig12():
     _diff_show(axes[1], s05, None, "② s05＝① 10-5-10 對稱化\n−0.29（R9,可製造紀錄）")
     _diff_show(axes[2], w17, s05, "③ w17＝② 翻8px＋再對稱化\n−0.06（公證 8/8 一致）")
     _diff_show(axes[3], c21, w17, "④ c21＝③ SM 導引翻 32px\n+0.20（三標全過,certified）")
-    fig.suptitle("w17→冠軍血統：三步構造式編輯,從碎片雲到達標（橘＝相對上一代的變化像素;每步算子+seed 可重現）",
+    fig.suptitle("w17→冠軍血統：三步構造式編輯,從碎片雲到達標（綠＝加銅／紅＝去銅,相對上一代;每步算子+seed 可重現）",
                  color=INK, fontsize=12.2)
     fig.tight_layout()
     save(fig, "f12_lineage.png")
@@ -131,7 +135,7 @@ def fig14():
         _diff_show(ax, p, w17,
                    f"{cid}（{arm[man[cid]['family'][0]]}, k={man[cid].get('flip_k')}）\n"
                    f"wm +{v['wm'][2]:.2f} · rad +{v['rad_margin']:.2f}", tfs=9.6)
-    fig.suptitle("八冠軍 gallery（橘＝與前任 w17 的差異像素;三標全過,certified;按 wm 排序）\n"
+    fig.suptitle("八冠軍 gallery（綠＝加銅／紅＝去銅,相對前任 w17;三標全過,certified;按 wm 排序）\n"
                  "共同體質：3 組件、零粉塵、主件 240-250px——w17 高地是一整片高原",
                  color=INK, fontsize=12.5)
     fig.tight_layout(h_pad=3.0)

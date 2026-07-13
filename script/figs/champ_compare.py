@@ -11,8 +11,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from script.figs.report_r1r10_style import (  # noqa: E402
-    INK, INK2, GRID, SURF, RED, DBLUE, AQUA, ORANGE, plt, style_ax)
-from matplotlib.colors import ListedColormap  # noqa: E402
+    INK, INK2, GRID, SURF, RED, DBLUE, plt, style_ax,
+    diff_pattern, show_pattern, polar_rad_ax)
 
 from antenna.utils import config as _config, DATASET_PATH  # noqa: E402
 _config.device = "cpu"
@@ -74,6 +74,8 @@ def main():
     ap.add_argument("--title", default="新舊冠軍對比")
     ap.add_argument("--label-new", default=None, dest="label_new")
     ap.add_argument("--label-old", default=None, dest="label_old")
+    ap.add_argument("--plain", action="store_true",
+                    help="兩個 pattern 都用純底圖（非血統步、結構差很大的前後對比時用）")
     args = ap.parse_args()
     pn, stn = _locate(args.new)
     po, sto = _locate(args.old)
@@ -83,22 +85,16 @@ def main():
     ln = args.label_new or f"{args.new}（新）"
     lo = args.label_old or f"{args.old}（舊）"
 
-    fig = plt.figure(figsize=(13.2, 6.4))
-    gs = fig.add_gridspec(2, 4, width_ratios=[1, 1, 1.35, 1.35], hspace=0.42, wspace=0.34)
-    for col, (p, base, lab, c) in enumerate(((pn, po, ln, INK), (po, None, lo, INK2))):
-        ax = fig.add_subplot(gs[:, col])
-        img = p.astype(int)
-        if base is not None:
-            img[p != base] = 2
-        ax.imshow(img, cmap=ListedColormap([SURF, DBLUE, ORANGE]), vmin=0, vmax=2,
-                  origin="upper", interpolation="nearest")
-        ax.scatter([FEED[1]], [FEED[0]], marker="^", s=44, color=AQUA, zorder=5, edgecolor=SURF, lw=0.8)
-        d = int((pn != po).sum())
-        ax.set_title(f"{lab}" + (f"\n（橘＝相對舊王差異 {d}px）" if base is not None else ""),
-                     color=c, fontsize=9.6)
-        ax.set_xticks([]); ax.set_yticks([])
-        for sp in ax.spines.values():
-            sp.set_color(GRID)
+    fig = plt.figure(figsize=(13.8, 7.7))
+    gs = fig.add_gridspec(2, 4, width_ratios=[1, 1, 1.35, 1.35],
+                          left=0.02, right=0.985, top=0.9, bottom=0.11,
+                          hspace=0.6, wspace=0.44)
+    # 左欄＝新（血統步→綠加銅／紅去銅；--plain→純底圖）；右欄＝舊純底圖
+    if args.plain:
+        show_pattern(fig.add_subplot(gs[:, 0]), pn, title=ln, tfs=9.6)
+    else:
+        diff_pattern(fig.add_subplot(gs[:, 0]), pn, po, title=ln)
+    show_pattern(fig.add_subplot(gs[:, 1]), po, title=lo, color=INK2, tfs=9.6)
     for (gr, idx, spec, nm, low) in ((gs[0, 2], 0, -10, "S11", True), (gs[0, 3], 1, 4, "Gain", False)):
         ax = fig.add_subplot(gr)
         n = rn.shape[1]
@@ -110,16 +106,32 @@ def main():
         style_ax(ax, "頻率 (GHz)", f"{nm} (dB)", nm, tfs=10.5)
         if idx == 0:
             ax.legend(fontsize=8.2, loc="lower left", framealpha=0.94).get_frame().set_edgecolor(GRID)
-    for (gr, cut) in ((gs[1, 2], "phi0"), (gs[1, 3], "phi90")):
-        ax = fig.add_subplot(gr)
-        ax.axvspan(-45, 45, color=GRID, alpha=0.45)
-        for rad, c, lw in ((rado, "#9fb4d4", 1.8), (radn, DBLUE, 2.3)):
-            if rad is not None and rad.get(cut) is not None:
-                ax.plot(np.asarray(rad["theta"]), np.asarray(rad[cut]), color=c, lw=lw)
-        ax.set_xlim(-90, 90); ax.set_xticks([-90, -45, 0, 45, 90])
-        style_ax(ax, "θ (deg)", "Gain (dB)", f"Radiation {cut} — 灰帶＝±45° 窗", tfs=10.5)
-    fig.suptitle(args.title, color=INK, fontsize=12.5)
-    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    def _g0(rad):
+        if rad is None:
+            return None
+        th = np.asarray(rad["theta"]); bi = int(np.abs(th).argmin())
+        vals = [float(np.asarray(rad[c])[bi]) for c in ("phi0", "phi90") if rad.get(c) is not None]
+        return max(vals) if vals else None
+    g0n = _g0(radn)
+    for k, (gr, cut) in enumerate(((gs[1, 2], "phi0"), (gs[1, 3], "phi90"))):
+        ax = fig.add_subplot(gr, projection="polar")
+        series = []
+        if rado is not None and rado.get(cut) is not None:
+            series.append((rado[cut], "#9fb4d4", lo, 1.7))
+        if radn is not None and radn.get(cut) is not None:
+            series.append((radn[cut], DBLUE, ln, 2.3))
+        if series:
+            th = np.asarray((radn if radn is not None else rado)["theta"])
+            polar_rad_ax(ax, th, series, window=45, floor_db=3, g0_ref=g0n)
+            ax.set_title(f"方向圖 φ={cut[3:]}°（極座標）", color=INK, fontsize=9.8, pad=9)
+            if k == 0:
+                ax.legend(fontsize=7.6, loc="lower center", bbox_to_anchor=(0.5, -0.2),
+                          ncol=2, framealpha=0.9).get_frame().set_edgecolor(GRID)
+        else:
+            ax.set_title(f"方向圖 φ={cut[3:]}°（無資料）", color=INK2, fontsize=9.8)
+    fig.suptitle(args.title, color=INK, fontsize=12.8, y=0.965)
+    fig.text(0.5, 0.02, "方向圖：主波束朝上·金＝±45° 覆蓋窗·橘虛線＝窗邊界·紅虛圈＝G0−3dB 門檻（窗內不得低於此圈）",
+             ha="center", color=INK2, fontsize=8.6)
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     fig.savefig(args.out, dpi=140, bbox_inches="tight", facecolor=SURF)
     print(f"→ {args.out}")
