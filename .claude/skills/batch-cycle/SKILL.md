@@ -74,7 +74,7 @@ Monitor(command='/c/Users/Ricky/miniforge3/envs/ant/python.exe -m script.dedust 
 | analyze batch 報「未收全」且 jobs-ls 顯示卡住 >45 分 | stale 接管會自動發生；再卡→回報使用者 |
 | 可用帶外**連三批**零推進（對照 round 檔 §1） | **invoke `/stall-protocol`**，不自動續產 |
 | 判準寫死的「回報討論」節點觸發 | 停，帶 analyze batch＋gain 輸出回報使用者 |
-| 輪的假設已被回答／§4 超過 ~3 批（過厚警訊） | **invoke `/close-round <R>`** 結輪 → `/new-round` 開下一輪 |
+| **第 3 批判讀完（每輪硬上限 3 批,Ricky 2026-07-13）**／或假設已被回答 | **invoke `/close-round <R>`** 結輪 → `/new-round` 開下一輪（不拖第 4 批） |
 | 學費臂（D）滿 5 批 | 帶趨勢數據回報使用者裁決，不自動處決（漸進式成長條款） |
 
 ## 本清單不管的事
