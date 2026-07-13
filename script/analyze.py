@@ -139,14 +139,11 @@ def cmd_rad_error(args):
     print(f"  窗內 ±{args.window:.0f}° RMSE 中位={st.median(win):.2f} dB  (對比 floor;越大=凍 trunk 越擬不準)")
 
 
-def cmd_components(args):
-    """組件尺寸分布 vs 三標（Ricky 觀察「N 組塊大小很不平均」的量化;2026-07-09,analysis-02）。
-    掃全部 dedust store 去重真值 → 每 pattern 的組件尺寸統計（n/main/second/minc/cv/metal）
-    對 wm/rad/oob 做 Spearman（全樣本+作戰區）＋三標過 profile。零 HFSS,可重跑。"""
+def _load_truths():
+    """全 store 去重真值 loader（components/oobnav/terrain 共用）：掃 DATASET_PATH 全部
+    dedust_*（排除 _input/_src）→ list[(pattern bool25×25, wm, rad, resp|None)]。
+    resp=店內 (2,17) 響應,查無配對時 None。純讀 NAS、零 HFSS。"""
     import json
-    from scipy.ndimage import label as _label
-    from scipy.stats import spearmanr
-    from script.dedust import _CROSS, oob_metrics
     from antenna.utils.store import SampleStore
     stores = [d for d in os.listdir(str(DATASET_PATH))
               if d.startswith("dedust_") and not d.endswith("_input") and not d.endswith("_src")]
@@ -171,11 +168,20 @@ def cmd_components(args):
             key = p.reshape(-1).tobytes()
             if key in data:
                 continue
-            resp = smap.get(key)
-            ob = oob_metrics(resp)["oob_bad"] if resp is not None else None
-            data[key] = (p, r["wm"][2], r.get("rad_margin"), ob)
+            data[key] = (p, r["wm"][2], r.get("rad_margin"), smap.get(key))
+    return list(data.values())
+
+
+def cmd_components(args):
+    """組件尺寸分布 vs 三標（Ricky 觀察「N 組塊大小很不平均」的量化;2026-07-09,analysis-02）。
+    掃全部 dedust store 去重真值 → 每 pattern 的組件尺寸統計（n/main/second/minc/cv/metal）
+    對 wm/rad/oob 做 Spearman（全樣本+作戰區）＋三標過 profile。零 HFSS,可重跑。"""
+    from scipy.ndimage import label as _label
+    from scipy.stats import spearmanr
+    from script.dedust import _CROSS, oob_metrics
     rows = []
-    for p, wm, rad, ob in data.values():
+    for p, wm, rad, resp in _load_truths():
+        ob = oob_metrics(resp)["oob_bad"] if resp is not None else None
         lab, n = _label(p, structure=_CROSS)
         if n == 0:
             continue
@@ -207,6 +213,94 @@ def cmd_components(args):
     for f in ("n", "main", "second", "minc", "metal"):
         v = [r[f] for r in tp]
         print("  " + f + ": 中位 " + format(np.median(v), ".0f") + " 範圍 [" + format(min(v), ".0f") + ", " + format(max(v), ".0f") + "]")
+
+
+def cmd_oobnav(args):
+    """帶外拆側導航統計（analysis-03 口徑常態化;2026-07-13）。
+    ⚠ 原 2026-07-09 一次性腳本已佚,結構特徵改用固定列/欄帶重規格（feed 在 (24,12)=底列）——
+    與 analysis-03 原文數字**不可直接比,方向可比**：
+      toprows=頂 5 列（row 0-4）金屬 / midband=中帶列 10-14 金屬 / edgecols=左右各 3 欄金屬 /
+      cloudpx=上半（row 0-9）金屬 / cloud_w=上半金屬欄跨度。
+    輸出：①低/高側 Gain 峰分布 ②作戰區結構載體 Spearman vs 低側峰 ③rad top/bot 10% 特徵對比。"""
+    from scipy.ndimage import label as _label
+    from scipy.stats import spearmanr
+    from script.dedust import _CROSS, oob_metrics
+    rows = []
+    for p, wm, rad, resp in _load_truths():
+        if resp is None:
+            continue
+        m = oob_metrics(resp)
+        up = p[:10]
+        cols = np.where(up.any(axis=0))[0]
+        rows.append(dict(metal=int(p.sum()), n_comp=int(_label(p, structure=_CROSS)[1]),
+                         toprows=int(p[:5].sum()), midband=int(p[10:15].sum()),
+                         edgecols=int(p[:, :3].sum() + p[:, 22:].sum()),
+                         cloudpx=int(up.sum()), cloud_w=int(cols[-1] - cols[0] + 1) if len(cols) else 0,
+                         wm=wm, rad=rad, lo=m["oob_gain_max_lo"], hi=m["oob_gain_max_hi"],
+                         ob=m["oob_bad"]))
+    print("樣本: " + str(len(rows)) + " 互異 pattern（有響應者;現行 HFSS 真值,全 store 去重）")
+    for side, key in (("低側", "lo"), ("高側", "hi")):
+        v = sorted(r[key] for r in rows)
+        print(side + " Gain 峰 min/中位/max = " + format(v[0], "+.2f") + " / "
+              + format(v[len(v) // 2], "+.2f") + " / " + format(v[-1], "+.2f"))
+
+    feats = ("edgecols", "metal", "toprows", "cloudpx", "cloud_w", "midband", "n_comp")
+    war = [r for r in rows if r["wm"] >= -1]
+    print("\n== 作戰區(wm≥−1,n=" + str(len(war)) + ") Spearman vs 低側 Gain 峰（低=好;** p<.01）==")
+    print("| 特徵 | ρ(lo峰) | ρ(oob_bad) |")
+    print("|---|---|---|")
+    for f in feats:
+        line = "| " + f
+        xs = [r[f] for r in war]
+        for tgt in ("lo", "ob"):
+            if len(set(xs)) < 2:
+                line += " | —(常數)"
+                continue
+            rho, pv = spearmanr(xs, [r[tgt] for r in war])
+            line += " | " + format(rho, "+.2f") + ("**" if pv < 0.01 else ("*" if pv < 0.05 else ""))
+        print(line + " |")
+
+    rr = sorted((r for r in rows if r["wm"] >= 0 and r["rad"] is not None), key=lambda r: r["rad"])
+    k = max(1, len(rr) // 10)
+    print("\n== rad 對比（wm≥0 且有 rad,n=" + str(len(rr)) + ";bot10% vs top10% 特徵中位）==")
+    for f in ("midband", "metal", "cloudpx", "toprows", "n_comp"):
+        bot = np.median([r[f] for r in rr[:k]])
+        top = np.median([r[f] for r in rr[-k:]])
+        print("  " + f + ": rad差 " + format(bot, ".0f") + " vs rad好 " + format(top, ".0f"))
+
+
+def cmd_terrain(args):
+    """地形 variogram（analysis-01 A 部口徑,改用自家 HFSS 真值;2026-07-13）：
+    全 store 去重真值兩兩配對 → |Δwm| 中位 vs Hamming 距離分箱。
+    ⚠ 侷限同 analysis-01：短距對多為刻意變體（搜尋選出的移動）,短距平滑度可能略被高估。"""
+    truths = _load_truths()
+    P = np.packbits(np.array([p.reshape(-1) for p, _, _, _ in truths], dtype=np.uint8), axis=1)
+    wm = np.array([w for _, w, _, _ in truths], dtype=np.float32)
+    lut = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint16)
+    bins = ((1, 2), (3, 5), (6, 10), (11, 20), (21, 40), (41, 80), (81, 160), (161, 320), (321, 625))
+    acc = [[] for _ in bins]
+    n = len(truths)
+    for i in range(n - 1):
+        d = lut[np.bitwise_xor(P[i], P[i + 1:])].sum(axis=1)
+        dw = np.abs(wm[i] - wm[i + 1:])
+        for bi, (a, b) in enumerate(bins):
+            m = (d >= a) & (d <= b)
+            if m.any():
+                acc[bi].append(dw[m])
+    print("樣本: " + str(n) + " 互異 pattern（現行 HFSS 真值,全 store 去重;全兩兩配對）")
+    print("| Hamming 距離 | n_pairs | |Δwm| 中位 |")
+    print("|---|---|---|")
+    meds = {}
+    for (a, b), lst in zip(bins, acc):
+        v = np.concatenate(lst) if lst else np.array([])
+        meds[(a, b)] = float(np.median(v)) if len(v) else float("nan")
+        print("| " + str(a) + "-" + str(b) + " | " + str(len(v)) + " | "
+              + (format(meds[(a, b)], ".2f") if len(v) else "—") + " |")
+    far = np.concatenate([x for (a, _), lst in zip(bins, acc) if a >= 161 for x in lst] or [np.array([0.0])])
+    asym = float(np.median(far))
+    near = meds.get((1, 2), float("nan"))
+    print("\n長距漸近線(161-625) " + format(asym, ".2f") + " dB;d1-2 中位 " + format(near, ".2f")
+          + " = " + format(100 * near / asym, ".0f") + "% —— analysis-01(學長池口徑): 0.46-0.61 = 12-16%")
 
 
 def cmd_gain(args):
@@ -619,6 +713,10 @@ def main():
     re = sub.add_parser("rad-error"); re.add_argument("--run", required=True); re.add_argument("--n", type=int, default=30)
     cp = sub.add_parser("components", help="組件尺寸分布 vs 三標 (全 store 真值,零 HFSS;analysis-02)")
     cp.set_defaults(func=cmd_components)
+    on = sub.add_parser("oobnav", help="帶外拆側導航統計（分側分布+結構載體相關+rad對比;analysis-03 口徑）")
+    on.set_defaults(func=cmd_oobnav)
+    tr = sub.add_parser("terrain", help="地形 variogram——|Δwm| 中位 vs Hamming,自家真值（analysis-01 口徑）")
+    tr.set_defaults(func=cmd_terrain)
     gn = sub.add_parser("gain", help="性能期望三層帳（階梯/曲線/轉換;防過早悲觀;門檻自動讀 records.json）")
     gn.add_argument("--line", default="r23", help="批次線前綴（掃 dedust_<line>*_input）")
     gn.add_argument("--record", type=float, default=None, help="現任 wm 紀錄（預設讀 docs/records.json）")
