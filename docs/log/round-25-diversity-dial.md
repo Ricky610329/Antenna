@@ -72,6 +72,7 @@ python -m script.dedust jobs-add --input dedust_r25bNa_input --store dedust_r25b
 | 1（r25b1{a-f}） | ✅ 18:20 收檔（149/150;1 error=f25b1_009_p00〔218 重開中斷×毒樣本待觀察,p00 錨 b2 再 error 就標毒〕;★ s25b1_006 +0.58 帶內參考候選→n1 公證;重錨 v23） |
 | n1a 公證 | ✅ 18:30 收檔——**帶內紀錄 0.51→0.58 公證 3/3**（三次全 0.58;records/champions 已同步） |
 | 2（r25b2{a-f}） | ✅ 21:17 收檔（150/150 零 error,連 13 批零 error;紀錄候選 0;可用帶外連 3 批零推進→停滯驗屍=非真停滯;重錨 v24＋sm_denovo2） |
+| 3（r25b3{a-f}） | 🔵 21:4x 發車（v24;--d-sm sm_denovo2〔err 中位 3.61→1.82 校準砍半〕;錨點 428;查重 0×6;**本輪末批**,判讀完 /close-round） |
 
 ## 4. 分析 (Analyze)
 **b1（2026-07-13 18:20 收檔,149/150）——多樣性撥盤首批**：
