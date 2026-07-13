@@ -38,7 +38,9 @@
   無新高）＋王朝直系 O32+M20+C20=72（48%）＋S20＋I22＋**F 碎片/低側修復臂 24（新臂,D 暫停釋出名額）**
   ＋W12;novelty 維持 0.02（少動旋鈕）;≤3 批。
 - 可測預言判準=「批內 wm 跨度↑ → SM 前瞻 ρ↑」（analysis-04 範圍限制機理）。
-- **D 臂學費 5 批滿=暫停待 Ricky 裁決**（預設:席位轉 F,sm_denovo 萃取路徑建好後復航）。
+- **D 臂 b2 復航 8 席**（Ricky 裁決 2026-07-13:「沒三標沒關係,要有慢慢接近滿足的趨勢」）——
+  sm_denovo1 已建（train-denovo,對決形式過/誠實註:雜訊級,真訊號=harvest 反向導引 −0.21 被移除）,
+  每批重訓;KPI=min sel 逐批降（基線 82/87/81/80/75）。
 - 發車=`select-r25 --batch N --sm sm_reanchor22+ --rad-key --novelty`;每批 /batch-cycle。
 - **接手先跑 /takeover**;判準唯一真相=round-25 §1。
 
@@ -126,9 +128,7 @@
 
 ## 🔜 候選 / 待排
 - ~~R24 降根計畫（預開檔）~~（✅ 已執行並收輪 2026-07-13 → [round-24](../docs/log/round-24-root-diversity.md)）
-- **sm_denovo 萃取路徑（跨批 join manifest.kind × store.response）**：D 資料 >60 筆但散在批次店,
-  sm_reanchor 只讀整店——建萃取即可訓 sm_denovo1 與 harvest 底座對決（**D 臂復航前置**）。
-  **觸發=R25 期間閒時或 Ricky 點名**。
+- ~~sm_denovo 萃取路徑~~（✅ 2026-07-13 落地=`sm_reanchor train-denovo`;sm_denovo1 已訓、D 臂 b2 復航）
 - **de novo 先導臂 ≤15（2026-07-12 帶外側拆解討論產物）**：池外隨機構造＋可製造閘＋sel_score/rad 頭
   預篩——R8 uniform/R15 理論模板兩次否證都是舊感知時代,新濾網值得再賭一次「池=唯一沃土」。
   **觸發=R23 可用帶外連三批零推進的回檢選項之一**（與 d1 窮舉並列）。

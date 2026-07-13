@@ -2910,7 +2910,10 @@ def select_r22mix(args):
     #? D 臂預測:sm_harvest（34k 底座=分布最廣）篩池外樣本;rad 頭共用（訓於全史,偏差較小）
     if dn:
         smh = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
-        smh.pre_load_model(DATASET_PATH.joinpath(getattr(args, "denovo_sm", "sm_harvest.pth")), strict=True)
+        #? --d-sm:D 臂專屬選拔器（R25b2 起=sm_denovo1,每批 train-denovo 重訓）;
+        #  與 I 臂委員會搭檔（--denovo-sm）分離,一次只動一個旋鈕。
+        smh.pre_load_model(DATASET_PATH.joinpath(getattr(args, "d_sm", None)
+                                                 or getattr(args, "denovo_sm", "sm_harvest.pth")), strict=True)
         dpats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in dn])
         with torch.no_grad():
             draw = smh.model(dpats).reshape(len(dn), len(labels), n_pts)
@@ -4041,14 +4044,16 @@ def main():
     s.add_argument("--q", type=int, default=0)
     s.add_argument("--h", type=int, default=0)
     s.add_argument("--s", type=int, default=20)
-    s.add_argument("--d", type=int, default=0, help="D 學費 5 批滿=暫停待 Ricky 裁決(round-24 §6)")
+    s.add_argument("--d", type=int, default=8, help="D 復航 b2 起(Ricky 2026-07-13 裁決=看進步趨勢;b1=0)")
+    s.add_argument("--d-sm", default="sm_denovo1.pth", dest="d_sm",
+                   help="D 臂專屬選拔器(sm_reanchor train-denovo 產出,每批重訓)")
     s.add_argument("--f", type=int, default=24, help="F 碎片/低側修復臂(錨=帶外極乾淨載體;學費制 3 批)")
     s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
-    s.add_argument("--i", type=int, default=22, help="I 資訊臂(兩 SM 分歧=主動學習)")
+    s.add_argument("--i", type=int, default=18, help="I 資訊臂(兩 SM 分歧=主動學習;b1=22)")
     s.add_argument("--novelty", action="store_true")
     s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap",
                    help="根多樣性稅 R25=0.6(軸相關枯竭觸發:margin 連三批無新高)")
-    s.add_argument("--wild", type=int, default=12)
+    s.add_argument("--wild", type=int, default=8, help="b1=12;b2 起讓 4 席給 D 復航")
     s.add_argument("--shards", type=int, default=6)
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")

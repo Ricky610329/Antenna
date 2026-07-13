@@ -148,6 +148,79 @@ def train(args):
     print(f"loss: 首 {losses[0]:.3f} → 末 {losses[-1]:.3f}；權重 → {out}")
 
 
+def _load_denovo():
+    """跨批萃取 kind=denovo 樣本（R24 §5 缺口落地,2026-07-13）：掃全部 *_input manifest,
+    kind==denovo → input pattern 以 bool bytes 在同名 store 的 response 配對（sm_reanchor 只讀
+    整店讀不到「散在批次店的 D 樣本」,這條路補上）。去重＋bytes 排序決定性切分（每 5 筆 held-out）。"""
+    import json
+    seen = {}
+    for fol in sorted(os.listdir(str(DATASET_PATH))):
+        if not fol.endswith("_input"):
+            continue
+        stname = fol[:-len("_input")]
+        mp = DATASET_PATH.joinpath(fol, "manifest.json")
+        if not mp.exists() or not DATASET_PATH.joinpath(stname).is_dir():
+            continue
+        ids = [m["id"] for m in json.load(open(str(mp), encoding="utf-8"))
+               if m.get("kind") == "denovo"]
+        if not ids:
+            continue
+        store = SampleStore(DATASET_PATH.joinpath(stname), verbose=False)
+        smap = {}
+        for i in range(len(store)):
+            x, y = store[i]
+            smap[(np.asarray(x).reshape(-1) > 0.5).tobytes()] = (
+                torch.as_tensor(x, dtype=torch.float32), torch.as_tensor(y, dtype=torch.float32))
+        for pid in ids:
+            f = DATASET_PATH.joinpath(fol, pid + ".pt")
+            if not f.exists():
+                continue
+            key = (np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes()
+            if key in smap and key not in seen:
+                seen[key] = smap[key]
+    items = [seen[k] for k in sorted(seen)]
+    tr = [it for j, it in enumerate(items) if j % 5 != 0]
+    ho = [it for j, it in enumerate(items) if j % 5 == 0]
+    return tr, ho
+
+
+def train_denovo(args):
+    """sm_denovo：全史 D 臂樣本＋harvest 重放,自 sm_harvest 起訓;訓完就地對決
+    （判準=R24 §1 寫死:D held-out 上贏 sm_harvest → D 臂換導引復航,輸了 D 續停）。"""
+    from scipy.stats import spearmanr
+    from script.dedust import oob_metrics
+    tr, ho = _load_denovo()
+    replay, _ = _load_harvest(args.replay, args.val)
+    print(f"denovo 真值 {len(tr) + len(ho)} 筆（train {len(tr)} / held-out {len(ho)}）＋ harvest 重放 {len(replay)}")
+    torch.manual_seed(0)
+    sm = _make_sm()
+    sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
+    ds = ConcatDataset([_tds(tr)] * args.over + [_tds(replay)])
+    losses = sm.train_by_datas(ds, epochs=args.epochs, batch_size=args.batch, verbose=True)
+    out = DATASET_PATH.joinpath(args.out)
+    sm.save_as(out)
+    print(f"loss: 首 {losses[0]:.3f} → 末 {losses[-1]:.3f}；權重 → {out}")
+    base = _make_sm()
+    base.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
+    print(f"\n== 對決（D held-out {len(ho)} 筆;⚠ n 小,ρ 波動大——方向參考,別當精確值）==")
+    print("| 模型 | |wm err| 中位 | wm 排序 ρ | oob 排序 ρ |")
+    print("|---|---|---|---|")
+    for tag, mdl in (("sm_harvest(現行導引)", base), (args.out, sm)):
+        pw, tw, po, to = [], [], [], []
+        mdl.model.eval()
+        with torch.no_grad():
+            for x, y in ho:
+                pred = mdl.model(x.flatten())
+                w_p, _ = worst_margin(pred, LABELS, _cfg.targets)
+                w_t, _ = worst_margin(y, LABELS, _cfg.targets)
+                pw.append(float(w_p)); tw.append(float(w_t))
+                po.append(oob_metrics(pred.numpy())["oob_bad"])
+                to.append(oob_metrics(np.asarray(y))["oob_bad"])
+        errs = np.abs(np.asarray(pw) - np.asarray(tw))
+        print(f"| {tag} | {np.median(errs):.2f} | {spearmanr(pw, tw)[0]:+.3f} | {spearmanr(po, to)[0]:+.3f} |")
+    print("→ 兩欄排序 ρ 都贏＝換導引（select 的 --denovo-sm 換本檔）;輸/平＝D 續停,回報使用者。")
+
+
 def evaluate(args):
     tr, ho = _load_clean()
     _, hval = _load_harvest(args.replay, args.val)
@@ -304,6 +377,14 @@ def main():
         s.add_argument("--grid-replay", type=int, nargs="+", default=[1000, 2000])
         s.add_argument("--grid-batch", type=int, nargs="+", default=[64])
         s.set_defaults(fn=fn)
+    s = sub.add_parser("train-denovo", help="sm_denovo:全史 kind=denovo 萃取+harvest 重放起訓,訓完就地對決 sm_harvest(D 臂復航判準)")
+    s.add_argument("--epochs", type=int, default=40)
+    s.add_argument("--batch", type=int, default=64)
+    s.add_argument("--over", type=int, default=24, help="denovo 過採樣倍數(~84 筆×24≈與重放等量)")
+    s.add_argument("--replay", type=int, default=2000)
+    s.add_argument("--val", type=int, default=500)
+    s.add_argument("--out", default="sm_denovo1.pth")
+    s.set_defaults(fn=train_denovo)
     s = sub.add_parser("train-rad", help="rad 頭:pattern→K=16 cosine 雙切面(±45 窗加權);held-out ρ≥0.4 才進 pred_sel")
     s.add_argument("--epochs", type=int, default=30)
     s.add_argument("--out", default="rad_head1.pth")

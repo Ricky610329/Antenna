@@ -33,10 +33,22 @@
   - 判準發車後要修訂：只能在結果回來前＋留日期註記。
 - **修訂註記（2026-07-13 發車前）**：對話提案 I18/F12/novelty 0.03 → 發車定稿 **I22/F24/novelty 維持 0.02**
   ——D 暫停釋出 20 席分給 F/I/S/W;novelty 權重不動=本輪已改三個旋鈕（根稅/配額/F 臂）,少動一個好歸因。
+- **修訂註記 2（2026-07-13 14:2x,b1 結果未回）——D 臂復航（Ricky 裁決:「沒有三標沒關係,要有慢慢
+  接近滿足的趨勢」）**：
+  - sm_denovo1 已建（`sm_reanchor train-denovo`,84 筆全史 D 樣本;R24 §5 缺口落地）,對決照 R24 §1
+    寫死判準**形式上雙 ρ 贏**（wm −0.07 vs −0.21/oob +0.11 vs −0.07）→ 換導引。
+    **誠實註**：held-out n=17,兩者皆雜訊級;真訊號=sm_harvest 在 D 地形 wm ρ **−0.21＝反向導引**
+    （解釋五批進步緩慢）,換掉它=移除反訊號,非「已有可靠導航」。
+  - **b2 起 D 8 席**（I 22→18、W 12→8 釋出;F/王朝不動）,選拔器=`--d-sm sm_denovo1.pth`
+    （與 I 臂委員會搭檔分離）;**每批收檔 train-denovo 重訓**——學費→學習的迴路接通。
+  - **D KPI（第二期學費 3 批=R25 內）**：進步趨勢=min sel_score 逐批下降
+    （五批基線 82.2/87.0/80.5/80.2/75.2,best wm −7.7→−4~−5）;三標不要求。
+    三批斜率仍平（min sel 無下降）→ 帶帳本回報裁決。
 
 ## 2. 實驗設計 (Design)
 
-- 每批 150：**O 32／M 20／C 20**（王朝直系 72=48%,R24 為 95=63%）／**S 20**／**I 22**／**F 24（新）**／**W 12**。
+- 每批 150：**O 32／M 20／C 20**（王朝直系 72=48%,R24 為 95=63%）／**S 20**／**F 24（新）**／
+  b1:I 22＋W 12;**b2 起:I 18＋W 8＋D 8（復航,修訂註記 2）**。
 - F 臂錨（寫死在 `select_r22mix` 的 `FRAG`）：d23b3_000/001/006、d24b1_010、d24b2_004、d24b3_013（D 臂
   帶外極乾淨載體）＋t09_top/t03_top/t07_top/n09_near/p00_orig（R9 池頂族,analysis-03 出土）;
   變體 d≤60（粉塵錨 strip 後 d 大）,鍵=pred_sel（同 D）。
@@ -51,7 +63,9 @@ python -m script.dedust select-r25 --batch N --sm sm_reanchor<最新版> --rad-h
 python -m script.dedust check-dup --input dedust_r25bNa_input   # a..f 各跑一次,exit 1=停
 python -m script.dedust jobs-add --input dedust_r25bNa_input --store dedust_r25bNa --prio 3   # ×6
 # 收檔偵測: dedust watch --stores dedust_r25bNa,...,f（ant env 完整路徑）
-# b1 2026-07-13 13:5x 發車（v22;root-cap 0.6;O32/M20/C20/S20/I22/F24/W12）
+# b1 2026-07-13 13:5x 發車（v22;root-cap 0.6;O32/M20/C20/S20/I22/F24/W12;查重 0×6）
+# b2 起加:--d 8 --d-sm sm_denovo<最新> --i 18 --wild 8（D 復航;select-r25 預設已是 b2 值）
+# 每批收檔後: python -m script.sm_reanchor train-denovo --out sm_denovo<N+1>.pth（D 導引重訓）
 ```
 | 批 | 狀態 |
 |---|---|
