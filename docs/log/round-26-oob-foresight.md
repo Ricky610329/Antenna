@@ -51,7 +51,7 @@ python -m script.dedust jobs-add --input dedust_r26bNa_input --store dedust_r26b
 ```
 | 批 | 狀態 |
 |---|---|
-| 1（r26b1{a-f}） | 🔵 待發車（等 v25＋sm_denovo3 訓完） |
+| 1（r26b1{a-f}） | 🔵 00:3x 發車（v25;**--d-sm sm_denovo2**——denovo3 對決輸 harvest（wm ρ −0.307/oob −0.266）,照「輸=不換導引」規則落選,b1 加料後再戰;錨點 476〔滾動吸收 R25〕;查重 0×6;退 rad 鍵） |
 
 ## 4. 分析 (Analyze)
 （待收檔）
