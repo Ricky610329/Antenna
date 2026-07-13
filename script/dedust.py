@@ -2583,11 +2583,12 @@ def select_r22mix(args):
         + [f"dedust_r22b{b}{s}" for b in range(1, 4) for s in "abcdef"] \
         + ["dedust_r22g1a", "dedust_r22g1b", "dedust_r22g1c"] \
         + [f"dedust_r{rnd}b{b}{s}" for b in range(1, args.batch) for s in "abcdefgh"]
-    if rnd >= 25:                                        # R25 起:吸收 R23/R24 全批+填空池+自產店（公證店 rNNn* 除外——重複測不進錨池）
+    if rnd >= 25:                                        # R25 起:滾動吸收 R23..R(rnd−1) 全批+填空池+自產店（公證店 rNNn* 除外——重複測不進錨池）
         import re as _re
+        pre = tuple([f"dedust_r{k}" for k in range(23, rnd)] + ["dedust_auto"])
         prev += [d for d in sorted(os.listdir(str(DATASET_PATH)))
-                 if d.startswith(("dedust_r23", "dedust_r24", "dedust_auto"))
-                 and not d.endswith(("_input", "_src")) and not _re.match(r"dedust_r\d+n", d)]
+                 if d.startswith(pre) and not d.endswith(("_input", "_src"))
+                 and not _re.match(r"dedust_r\d+n", d)]
     for st in prev:
         rp = DATASET_PATH.joinpath(st, "results.json")
         if not rp.exists():
@@ -4058,6 +4059,31 @@ def main():
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.set_defaults(fn=select_r22mix, round=25, key="sel")
+
+    s = sub.add_parser("select-r26", help="R26 帶外前瞻復活驗證：退 rad 鍵+I 26 加碼+F 12 二期+D 8 判決批(同 r22mix 機器)")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260714)
+    s.add_argument("--sm", default="sm_reanchor25.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--o", type=int, default=32)
+    s.add_argument("--m", type=int, default=20, help="對照+oob 前瞻統計母體(主判準)")
+    s.add_argument("--c", type=int, default=20)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=20)
+    s.add_argument("--d", type=int, default=8, help="D 第二期判決批(min sel 89.8/93.0→本輪判)")
+    s.add_argument("--d-sm", default="sm_denovo3.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=12, help="F 第二期縮編(趨勢正續 1 期;round-26 §1)")
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=26, help="I 資訊臂加碼(R25b3 61% 爆發)")
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--wild", type=int, default=12)
+    s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key",
+                   help="R26 預設退鍵(R25 連兩批<0.3);復鍵=續記前瞻連兩批>=0.3")
+    s.set_defaults(fn=select_r22mix, round=26, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)
