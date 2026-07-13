@@ -358,9 +358,9 @@ def cmd_gain(args):
         rd = DATASET_PATH.joinpath(fol, "rad")
         if rd.is_dir():
             rads += len(os.listdir(str(rd)))
-    expl = sum(1 for s in samp if s["kind"] in ("denovo", "wild", "selfgen", "coldmine", "infogain"))
+    expl = sum(1 for s in samp if s["kind"] in ("denovo", "wild", "selfgen", "coldmine", "infogain", "fragfix"))
     print("—— L0 資料與覆蓋（常升目標:探索範圍×資料量）——")
-    print(f"  全史 HFSS 真值 {tot} 筆/方向圖 {rads};本線 {len(samp)} 筆,探索類(C/D/I/W/自產) {expl}"
+    print(f"  全史 HFSS 真值 {tot} 筆/方向圖 {rads};本線 {len(samp)} 筆,探索類(C/D/F/I/W/自產) {expl}"
           f"（{100*expl/max(len(samp),1):.0f}%）")
 
     print(f"—— L1 階梯命中率（{args.line};三標樣本計;n=非error 筆數;oob=旗艦軸 2026-07-12）——")

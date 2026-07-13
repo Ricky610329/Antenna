@@ -149,3 +149,12 @@ dedust_r24b3c
 dedust_r24b3d
 dedust_r24b3e
 dedust_r24b3f
+# sm_reanchor23.pth 追加（2026-07-13）
+dedust_r25b1a
+dedust_r25b1b
+dedust_r25b1c
+dedust_r25b1d
+dedust_r25b1e
+dedust_r25b1f
+dedust_r25g1a
+dedust_r25g1b
