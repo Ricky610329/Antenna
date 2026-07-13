@@ -87,6 +87,13 @@ python -m script.dedust jobs-add --input dedust_r25bNa_input --store dedust_r25b
   （L0 探索類清單補 fragfix——工具修訂同日）。
 - b1 無 D 樣本 → sm_denovo 不重訓（同資料同 seed=同模型）,b2 直接用 sm_denovo1。
 
+**n1a 公證判定（2026-07-13 18:30 收檔,37,零 error）**：
+| 候選 | 原測 | 重測 ×2 | 判定 |
+|---|---|---|---|
+| s25b1_006_g16（帶內參考挑戰 0.51） | wm +0.58 | +0.58／+0.58（rad 皆 −0.23） | **✓ 公證過 3/3（bit 級一致）→ 帶內紀錄 0.51→0.58**,records/champions 🎯 列已更;非換王（rad −0.23 未過三標） |
+- 槽鏈帶內天花板**連四批爬升** 0.46→0.49→0.51→0.58——比 margin 王 0.49 高 0.09;
+  「槽=帶內旋鈕付 rad」機理續穩,**rad 修回即換王**（S 臂 maximin 鍵持續押注這個方向）。
+
 ## 5. 結論 (Conclude)
 （待）
 
