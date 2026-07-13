@@ -33,12 +33,18 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 24 — 降根計畫（🔵 **running**,2026-07-13 b1 重跑中）→ [round-24](../docs/log/round-24-root-diversity.md)
-- 治 R23「可用帶外逼近未穿=深血統打轉」;根稅 --root-cap 0.4＋D20/I12/W8/novelty＋誘因包＋sm_denovo 節點。
-- ★ **軸相關枯竭導航**(decisions):某軸打轉≠該區枯竭;王朝 margin 連兩批無新高才升根稅——b4 王朝 +0.49=活躍,維持 0.4。
-- 發車=`select-r24 --batch N --sm sm_reanchor19+ --rad-key --novelty`;每批 /batch-cycle。
-- ⚠ **b1 首跑資料遭 2026-07-13 NAS 事件遺失,已 v19-rebuild 重跑中**（§4 的 9.05 待重跑確認）;
-  **接手先跑 /takeover + /reconcile**（三方對帳,防再犯）。
+### Round 25 — 多樣性加碼（🔵 **running**,2026-07-13 開輪）→ [round-25](../docs/log/round-25-diversity-dial.md)
+- Ricky 拍板「以資料多樣性而言,再降王朝與根的比例」;**root-cap 0.6**（軸相關枯竭觸發:margin 連三批
+  無新高）＋王朝直系 O32+M20+C20=72（48%）＋S20＋I22＋**F 碎片/低側修復臂 24（新臂,D 暫停釋出名額）**
+  ＋W12;novelty 維持 0.02（少動旋鈕）;≤3 批。
+- 可測預言判準=「批內 wm 跨度↑ → SM 前瞻 ρ↑」（analysis-04 範圍限制機理）。
+- **D 臂學費 5 批滿=暫停待 Ricky 裁決**（預設:席位轉 F,sm_denovo 萃取路徑建好後復航）。
+- 發車=`select-r25 --batch N --sm sm_reanchor22+ --rad-key --novelty`;每批 /batch-cycle。
+- **接手先跑 /takeover**;判準唯一真相=round-25 §1。
+
+### ~~Round 24 — 降根計畫~~（✅ **2026-07-13 收檔,3 批硬上限首例**）→ [round-24](../docs/log/round-24-root-diversity.md)
+- 根稅買到覆蓋（根系分散/非王朝三標榜首）,帶外因果未證（9.0=王朝樂透,轉 L2 跨輪長評）;
+  雙紀錄=可用帶外 **9.0**+帶內 **+0.51**;margin 連三批無新高→升稅 0.6;D 學費滿待裁決。
 
 ### ~~Round 23 — 價值軸主戰~~（✅ **2026-07-13 收檔,四批+公證**）→ [round-23](../docs/log/round-23-selectivity-axis.md)
 - sel 鍵增值成立(O>M 四批)+rad 頭進鍵;可用帶外逼近未穿 9.09=深血統打轉→R24;
@@ -119,9 +125,10 @@
 ---
 
 ## 🔜 候選 / 待排
-- **R24 降根計畫（已預開檔 🟡,觸發=R23 結輪）**→ [round-24](../docs/log/round-24-root-diversity.md)：
-  根稅 --root-cap 0.4（已實裝,旗標關著）＋D20/I12/W8/novelty＋sm_denovo 節點＋股息接管席位;
-  判準已寫死於 §1,發車=加一行 select-r24 parser＋照 §2 旗標。
+- ~~R24 降根計畫（預開檔）~~（✅ 已執行並收輪 2026-07-13 → [round-24](../docs/log/round-24-root-diversity.md)）
+- **sm_denovo 萃取路徑（跨批 join manifest.kind × store.response）**：D 資料 >60 筆但散在批次店,
+  sm_reanchor 只讀整店——建萃取即可訓 sm_denovo1 與 harvest 底座對決（**D 臂復航前置**）。
+  **觸發=R25 期間閒時或 Ricky 點名**。
 - **de novo 先導臂 ≤15（2026-07-12 帶外側拆解討論產物）**：池外隨機構造＋可製造閘＋sel_score/rad 頭
   預篩——R8 uniform/R15 理論模板兩次否證都是舊感知時代,新濾網值得再賭一次「池=唯一沃土」。
   **觸發=R23 可用帶外連三批零推進的回檢選項之一**（與 d1 窮舉並列）。

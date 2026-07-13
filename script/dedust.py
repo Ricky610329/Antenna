@@ -5,7 +5,7 @@ HFSS → 任一機 report 看結果。輸入/結果都在 NAS（`DATASET_PATH/<n
 跨機共享；run 可中斷續跑（成功跳過、error 重試）＋批尾自動補測；每筆 solve 順收方向圖（rad/ 夾）。
 
 現役流程（2026-07-12 起,資料工廠＋弱模型化;整鏈 runbook＝/batch-cycle skill）：
-    開發機:  select-r23 --batch N --sm ... [--rad-key]     # 現役生成器（六臂;各 round 檔 §3=真相）
+    開發機:  select-r25 --batch N --sm ... [--rad-key]     # 現役生成器（r22mix 機器;各 round 檔 §3=真相）
              check-dup --input X_input                     # 必跑,exit 1 不發車
              jobs-add --input X_input --store X --prio 3   # 入 NAS 佇列（填空池 prio 9）
              watch --stores X,Y,...                        # 收檔偵測（Monitor 直接掛）
@@ -18,7 +18,7 @@ HFSS → 任一機 report 看結果。輸入/結果都在 NAS（`DATASET_PATH/<n
     select(R7 除塵)/select-r8(測繪)/select-r9(重驗)/select-refine1-3+wide(R10-11 精修)/
     select-occlude/tolerance/ablate/resize/blocks/crown/family2/probes(R11-16 因果批)/
     select-r15(GA vs 知情)/r16b/r17/r18(帶外戰役)/select-r19data(模型線)/select-r20gen(演化)/
-    select-r21harvest(收割;--tag 填空池仍現役)/select-r22mix(分布組合,select-r23 的本體)
+    select-r21harvest(收割;--tag 填空池仍現役)/select-r22mix(分布組合,select-r23/r24/r25 的本體)
 
 慣例：margin/rad 全走同一把尺（`antenna.losses.worst_margin` + `configs/single_r5_explore.yaml` targets、
 `rad_window_margin` ±45°/3dB）；生成全決定性（seed 進 manifest,各 select 的 seed 域不重疊）；
@@ -2583,6 +2583,11 @@ def select_r22mix(args):
         + [f"dedust_r22b{b}{s}" for b in range(1, 4) for s in "abcdef"] \
         + ["dedust_r22g1a", "dedust_r22g1b", "dedust_r22g1c"] \
         + [f"dedust_r{rnd}b{b}{s}" for b in range(1, args.batch) for s in "abcdefgh"]
+    if rnd >= 25:                                        # R25 起:吸收 R23/R24 全批+填空池+自產店（公證店 rNNn* 除外——重複測不進錨池）
+        import re as _re
+        prev += [d for d in sorted(os.listdir(str(DATASET_PATH)))
+                 if d.startswith(("dedust_r23", "dedust_r24", "dedust_auto"))
+                 and not d.endswith(("_input", "_src")) and not _re.match(r"dedust_r\d+n", d)]
     for st in prev:
         rp = DATASET_PATH.joinpath(st, "results.json")
         if not rp.exists():
@@ -2599,12 +2604,30 @@ def select_r22mix(args):
             ("w4_003", "dedust_r21b4a_input", "w4_003_m1_050_c18"),
             ("o3_020", "dedust_r21b3c_input", "o3_020_o2_048_o1_03"),
             ("m2_046", "dedust_r21b2b_input", "m2_046_r2_016")]
-    P, PS = {}, {}
+    #? F 碎片/低側修復臂（R25;Ricky 2026-07-13「以資料多樣性再降王朝與根的比例」）:
+    #  錨=歷史 oob_bad 極低但帶內/rad 爛的實測載體（D 臂產物＋R9 池頂族;analysis-03 ★複驗:
+    #  低側可壓、碎片區=帶外乾淨載體）——目標=保帶外、修 wm/rad;鍵=pred_sel（同 D）。
+    #  學費制 3 批,判準寫死於 round-25 §1。
+    FRAG = [("d23b3_000", "dedust_r23b3c_input", "d23b3_000_denovo"),
+            ("d23b3_001", "dedust_r23b3d_input", "d23b3_001_denovo"),
+            ("d23b3_006", "dedust_r23b3c_input", "d23b3_006_denovo"),
+            ("d24b1_010", "dedust_r24b1a_input", "d24b1_010_denovo"),
+            ("d24b2_004", "dedust_r24b2a_input", "d24b2_004_denovo"),
+            ("d24b3_013", "dedust_r24b3d_input", "d24b3_013_denovo"),
+            ("t09", "dedust_r9_input", "t09_top"),
+            ("t03", "dedust_r9_input", "t03_top"),
+            ("t07", "dedust_r9_input", "t07_top"),
+            ("n09", "dedust_r9_input", "n09_near"),
+            ("p00", "dedust_r7_input", "p00_orig")]
+    P, PS, PF = {}, {}, {}
     for name, fol, pid in ANCH:
         if name not in P and not any(px in name for px in POISON):
             P[name] = loadp(fol, pid)
     for name, fol, pid in SPEC:
         PS[name] = loadp(fol, pid)
+    if getattr(args, "f", 0):
+        for name, fol, pid in FRAG:
+            PF[name] = loadp(fol, pid)
     dyn_names = [n for n in P if any(m in n for m in DYN)]
     cold_names = [n for n in P if n not in dyn_names]
     print(f"r{getattr(args, 'round', 22)} b{args.batch} 錨點 {len(P)}"
@@ -2703,6 +2726,9 @@ def select_r22mix(args):
     def pick_spec():
         return list(PS)[int(rng.integers(0, len(PS)))]
 
+    def pick_frag():
+        return list(PF)[int(rng.integers(0, len(PF)))]
+
     def _gen(src, pick, target, dlo=1, dhi=25, wild=False):
         out, tries, counts = [], 0, {}
         cap = getattr(args, "root_cap", 0)
@@ -2724,6 +2750,7 @@ def select_r22mix(args):
     coldp = _gen(P, pick_cold, args.c * 8)                          # C 冷支專屬
     specp = _gen(PS, pick_spec, args.q * 12)                        # Q 修復池
     wildp = _gen(P, pick_two_pool, args.wild * 30, dlo=26, dhi=60, wild=True)
+    fragp = _gen(PF, pick_frag, getattr(args, "f", 0) * 12, dhi=60) if PF else []   # F 修復池（粉塵錨 strip 後 d 大,放寬到 60）
 
     #? H 臂:部分槽劑量（王 × 槽長;主件最寬列開中央槽——構造法,決定性零 rng）
     def hslot_doses(anchor):
@@ -2848,7 +2875,7 @@ def select_r22mix(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    allc = core + coldp + specp + wildp + hs + sc
+    allc = core + coldp + specp + wildp + hs + sc + fragp
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
@@ -2906,7 +2933,7 @@ def select_r22mix(args):
     #  d_hist=與全史最近 Hamming;鍵折扣 λ·min(d,20),λ=0.02（上限 0.4 dB,蓋不過真實差距）
     if getattr(args, "novelty", False) and hist0:
         H = np.stack([np.frombuffer(k, dtype=bool) for k in hist0]).astype(np.float32)
-        for pool in (core, coldp, specp, wildp, hs, sc, dn):
+        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp):
             if not pool:
                 continue
             A = np.stack([c["pat"].reshape(-1) for c in pool]).astype(np.float32)
@@ -2915,7 +2942,7 @@ def select_r22mix(args):
             for k, c in enumerate(pool):
                 c["novelty"] = int(dmin[k])
     else:
-        for pool in (core, coldp, specp, wildp, hs, sc, dn):
+        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp):
             for c in pool:
                 c["novelty"] = None
 
@@ -2961,6 +2988,8 @@ def select_r22mix(args):
         return c["pred_oob"] + pen - _nbonus(c)
     di = _diverse(dn, sorted(range(len(dn)), key=lambda i: _pselc(dn[i])),
                   getattr(args, "d", 0)) if dn else []
+    fi = _diverse(fragp, sorted(range(len(fragp)), key=lambda i: _pselc(fragp[i])),
+                  getattr(args, "f", 0)) if fragp else []
     #? A 資訊臂（R24 探索誘因包）:兩 SM（本版 vs harvest 底座）預測分歧最大=資訊量最高的量測點
     #  （query-by-committee 主動學習）;KPI=模型更新量非三標率。
     ii = []
@@ -2995,6 +3024,7 @@ def select_r22mix(args):
                                    ("coldmine", "k", ki, coldp), ("repair", "q", qi, specp),
                                    ("hslot", "h", list(range(len(hs))), hs),
                                    ("slotchain", "s", si, sc), ("denovo", "d", di, dn),
+                                   ("fragfix", "f", fi, fragp),
                                    ("infogain", "i", ii, core), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
@@ -3017,7 +3047,7 @@ def select_r22mix(args):
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
     print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}"
-          f"+D{len(di)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
+          f"+D{len(di)}+F{len(fi)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 #! DEPRECATED（2026-07-10 起查重改 _all_input_folders() 自動掃描）——僅舊 select 內建去重仍引用,
@@ -3999,6 +4029,30 @@ def main():
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.set_defaults(fn=select_r22mix, round=24, key="sel")
+
+    s = sub.add_parser("select-r25", help="R25 多樣性加碼：根稅 0.6+王朝 48%+F 碎片/低側修復臂(同 r22mix 機器)")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260713)
+    s.add_argument("--sm", default="sm_reanchor22.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--o", type=int, default=32)
+    s.add_argument("--m", type=int, default=20, help="對照+王朝保底(前瞻統計/近王產線)")
+    s.add_argument("--c", type=int, default=20)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=20)
+    s.add_argument("--d", type=int, default=0, help="D 學費 5 批滿=暫停待 Ricky 裁決(round-24 §6)")
+    s.add_argument("--f", type=int, default=24, help="F 碎片/低側修復臂(錨=帶外極乾淨載體;學費制 3 批)")
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=22, help="I 資訊臂(兩 SM 分歧=主動學習)")
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap",
+                   help="根多樣性稅 R25=0.6(軸相關枯竭觸發:margin 連三批無新高)")
+    s.add_argument("--wild", type=int, default=12)
+    s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.set_defaults(fn=select_r22mix, round=25, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)
