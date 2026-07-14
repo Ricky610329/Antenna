@@ -702,6 +702,65 @@ def cmd_credit(args):
         print(f"  {k}: {v}")
 
 
+def cmd_ikpi(args):
+    """I 資訊臂 KPI（「模型更新量」量測;R24 §1 承諾三輪未辦,R28 前置落地）：
+    比較「該批發車用的 SM（--pre）」vs「吃完該批後的重錨版（--post）」在本批各臂樣本上的
+    |wm 誤差| 改善量（pre−post,正=模型從這批學到東西）——I 臂樣本若真是「資訊量最高的量測點」,
+    其改善中位應高於對照臂 M（純隨機,同批同訓練）。判準:I−M 差 >+0.1=資訊增量成立。"""
+    import json
+    from antenna.training import load_config, setup_responses, PORT_SPECS
+    from antenna.zoo import SURROGATES
+    from antenna.losses import worst_margin
+    from script.dedust import DEFAULT_CFG
+    cfg = load_config(DEFAULT_CFG)
+    setup_responses(cfg)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    n_pts = sum(cfg.targets[labels[0]]["width"])
+    cache = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tmp", "ikpi")
+    os.makedirs(cache, exist_ok=True)
+    sms = {}
+    for tag, pth in (("pre", args.pre), ("post", args.post)):
+        sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+        sm.pre_load_model(DATASET_PATH.joinpath(pth), strict=True)
+        sm.model.eval()
+        sms[tag] = sm
+    per_arm = {}
+    for suf in "abcdefgh":
+        st = f"dedust_r{args.round}b{args.batch}{suf}"
+        mp = DATASET_PATH.joinpath(st + "_input", "manifest.json")
+        rp = DATASET_PATH.joinpath(st, "results.json")
+        if not (mp.exists() and rp.exists()):
+            continue
+        man = json.load(open(str(mp), encoding="utf-8"))
+        res = json.load(open(str(rp), encoding="utf-8"))
+        for m in man:
+            r = res.get(m["id"])
+            if r is None or "wm" not in r:
+                continue
+            x = torch.tensor(np.asarray(torch.load(
+                str(DATASET_PATH.joinpath(st + "_input", m["id"] + ".pt")), weights_only=True)),
+                dtype=torch.float32).reshape(-1)
+            errs = {}
+            with torch.no_grad():
+                for tag, sm in sms.items():
+                    w, _ = worst_margin(sm.model(x), labels, cfg.targets)
+                    errs[tag] = abs(float(w) - r["wm"][2])
+            per_arm.setdefault(m.get("kind", "?"), []).append(errs["pre"] - errs["post"])
+    print(f"== I 臂 KPI（模型更新量;r{args.round} b{args.batch};{args.pre} → {args.post}）==")
+    print("| 臂 | n | |wm err| 改善中位（pre−post） |")
+    print("|---|---|---|")
+    meds = {}
+    for kind, v in sorted(per_arm.items(), key=lambda kv: -float(np.median(kv[1]))):
+        meds[kind] = float(np.median(v))
+        print(f"| {kind} | {len(v)} | {meds[kind]:+.2f} |")
+    if "infogain" in meds and "mlotto" in meds:
+        d = meds["infogain"] - meds["mlotto"]
+        verdict = ("I 樣本資訊增量成立（>+0.1）" if d > 0.1 else
+                   "I 與對照同級,無讀數（±0.1 內）" if d > -0.1 else
+                   "I 反而低於對照——分歧選點策略檢討")
+        print(f"→ I−M 對照差 {d:+.2f} dB：{verdict}")
+
+
 def main():
     ap = argparse.ArgumentParser(description="可重現診斷分析（純讀 NAS）")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -734,6 +793,12 @@ def main():
                     "o6_001_o4_035_o3_05,m5_054_m3_026_m1_01,h7_010_g16",
                     help="逗號分隔紀錄 id（預設=現任五頭銜/紀錄）")
     cr.set_defaults(func=cmd_credit)
+    ik = sub.add_parser("ikpi", help="I 資訊臂 KPI:pre/post SM 在該批各臂的 |wm err| 改善（I−M >+0.1=資訊增量成立）")
+    ik.add_argument("--round", type=int, required=True)
+    ik.add_argument("--batch", type=int, required=True)
+    ik.add_argument("--pre", required=True, help="該批發車用的 SM（如 sm_reanchor28.pth）")
+    ik.add_argument("--post", required=True, help="吃完該批後的重錨版（如 sm_reanchor29.pth）")
+    ik.set_defaults(func=cmd_ikpi)
     re.add_argument("--window", type=float, default=45); re.set_defaults(func=cmd_rad_error)
     args = ap.parse_args()
     args.func(args)

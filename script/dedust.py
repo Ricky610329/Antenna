@@ -2753,6 +2753,74 @@ def select_r22mix(args):
     wildp = _gen(P, pick_two_pool, args.wild * 30, dlo=26, dhi=60, wild=True)
     fragp = _gen(PF, pick_frag, getattr(args, "f", 0) * 12, dhi=60) if PF else []   # F 修復池（粉塵錨 strip 後 d 大,放寬到 60）
 
+    def _skeleton(p0):
+        """骨架萃取（與 analysis/mesh 同口徑:高斯 σ0.8×門檻 0.6,≥6px 質量塊）→ blk footprint 聯集。"""
+        from scipy.ndimage import gaussian_filter as _gf
+        dens = _gf(p0.astype(float), 0.8, mode="constant")
+        lab_m, nm = _label(dens > 0.6, structure=np.ones((3, 3), dtype=bool))
+        blk = np.zeros_like(p0)
+        for g in range(1, nm + 1):
+            reg = lab_m == g
+            if p0[reg].sum() >= 6:
+                blk |= reg
+        return blk
+
+    #? Y 塊內 rad 手術臂（R28;R27 結構定案的直接應用）：錨=R27 三+二顆 half 電性半成品
+    #  （wm/低側達標、全卡 rad −2~−4）;手術=挖點/開槽/中帶清理,**全限 blk mask 內、網布凍結**
+    #  （生成後驗證塊外像素零變動,違者棄）;鍵=maximin(pred_wm, pred_rad)（rad 頭復鍵中）。
+    #  判準寫死於 round-28 §1;kind=surgery,id 前綴 y。
+    surgp = []
+    if getattr(args, "surgery", 0):
+        SURG = [("p00h", "dedust_r27b1a_input", "n27b1_018_p00"),
+                ("t03h", "dedust_r27b1b_input", "n27b1_019_t03"),
+                ("t07h", "dedust_r27b1c_input", "n27b1_020_t07"),
+                ("t09h", "dedust_r27b1d_input", "n27b1_021_t09"),
+                ("n09h", "dedust_r27b1f_input", "n27b1_017_n09")]
+        for name, fol, pid in SURG:
+            p0 = loadp(fol, pid)
+            blk = _skeleton(p0)
+            in_idx = np.flatnonzero((p0 & blk).reshape(-1))
+            band = np.zeros_like(p0)
+            band[10:15] = True
+            band_idx = np.flatnonzero((p0 & blk & band).reshape(-1))
+            target = getattr(args, "surgery", 0) * 10
+            tries, made = 0, 0
+            while made < target and tries < target * 40:
+                tries += 1
+                q = p0.copy()
+                mode = int(rng.integers(0, 3))
+                if mode == 0:                                     # 挖點 1-6px
+                    k = int(rng.integers(1, 7))
+                    q.reshape(-1)[rng.choice(in_idx, size=min(k, len(in_idx)), replace=False)] = False
+                    ops = ["surg_carve", k]
+                elif mode == 1:                                   # 塊內水平槽 1×L（hslot=rad 大旋鈕知識）
+                    rr_, cc_ = np.where(p0 & blk)
+                    j = int(rng.integers(0, len(rr_)))
+                    r0, c0 = int(rr_[j]), int(cc_[j])
+                    L = int(rng.integers(3, 9))
+                    seg_mask = blk[r0, c0:c0 + L]
+                    q[r0, c0:c0 + L][seg_mask] = False
+                    ops = ["surg_slot", r0, c0, L]
+                else:                                             # 中帶清理（analysis-03:高 rad 中帶乾淨）
+                    if not len(band_idx):
+                        continue
+                    k = int(rng.integers(2, 9))
+                    q.reshape(-1)[rng.choice(band_idx, size=min(k, len(band_idx)), replace=False)] = False
+                    ops = ["surg_midband", k]
+                q[FEED] = True
+                q = _ensure_feed_pad(q, 4)
+                if ((q != p0) & ~blk).any():                      # 網布凍結驗證:塊外零變動
+                    continue
+                st = piece_stats(q)
+                if not (180 <= st["metal_px"] <= 560):
+                    continue
+                kb = q.tobytes()
+                if kb in hist:
+                    continue
+                hist.add(kb)
+                made += 1
+                surgp.append(dict(pat=q, parent=name, ops=[ops], d=int((q != p0).sum()), stats=st))
+
     #? N 網架臂（R27;Ricky 2026-07-14「圖4-4 仔細看是幾個分塊→可做 variation」＋「27 做厚一點,網架」）:
     #  實測基礎=池頂家族 8-10 密度分塊載 66% 金屬+網布,t03/t09/n09/p00 共享同一骨架（scratch 2026-07-14）。
     #  骨架萃取=高斯 σ0.8×門檻 0.6（≥6px 質量塊,與分析口徑一致）;每錨四式變體:
@@ -2762,18 +2830,6 @@ def select_r22mix(args):
     #  ⚠ 物理探測批:不過可製造閘（塵=實驗變數,同 D 臂慣例）;kind=mesh,id 前綴 n。
     meshp = []
     if getattr(args, "mesh", 0) and PF:
-        from scipy.ndimage import gaussian_filter as _gf
-
-        def _skeleton(p0):
-            dens = _gf(p0.astype(float), 0.8, mode="constant")
-            lab_m, nm = _label(dens > 0.6, structure=np.ones((3, 3), dtype=bool))
-            blk = np.zeros_like(p0)
-            for g in range(1, nm + 1):
-                reg = lab_m == g
-                if p0[reg].sum() >= 6:
-                    blk |= reg
-            return blk
-
         for name in list(PF):
             p0 = PF[name]
             blk = _skeleton(p0)
@@ -2929,7 +2985,7 @@ def select_r22mix(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp
+    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
@@ -2990,7 +3046,7 @@ def select_r22mix(args):
     #  d_hist=與全史最近 Hamming;鍵折扣 λ·min(d,20),λ=0.02（上限 0.4 dB,蓋不過真實差距）
     if getattr(args, "novelty", False) and hist0:
         H = np.stack([np.frombuffer(k, dtype=bool) for k in hist0]).astype(np.float32)
-        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp):
+        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp, surgp):
             if not pool:
                 continue
             A = np.stack([c["pat"].reshape(-1) for c in pool]).astype(np.float32)
@@ -2999,7 +3055,7 @@ def select_r22mix(args):
             for k, c in enumerate(pool):
                 c["novelty"] = int(dmin[k])
     else:
-        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp):
+        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp, surgp):
             for c in pool:
                 c["novelty"] = None
 
@@ -3062,6 +3118,18 @@ def select_r22mix(args):
             rr += 1
             if by_anchor[a]:
                 ni.append(by_anchor[a].pop(0))
+    #? Y 手術臂選拔:maximin(pred_wm, pred_rad)——目標=rad 修回而 wm 不塌;rad 頭沒載時退回 pred_wm
+    if surgp:
+        if radnet is not None:
+            yi = _diverse(surgp, sorted(range(len(surgp)),
+                          key=lambda i: min(surgp[i]["pred_wm"],
+                                            surgp[i]["pred_rad"] if surgp[i].get("pred_rad") is not None else -9),
+                          reverse=True), getattr(args, "surgery", 0))
+        else:
+            yi = _diverse(surgp, sorted(range(len(surgp)), key=lambda i: surgp[i]["pred_wm"], reverse=True),
+                          getattr(args, "surgery", 0))
+    else:
+        yi = []
     #? A 資訊臂（R24 探索誘因包）:兩 SM（本版 vs harvest 底座）預測分歧最大=資訊量最高的量測點
     #  （query-by-committee 主動學習）;KPI=模型更新量非三標率。
     ii = []
@@ -3097,6 +3165,7 @@ def select_r22mix(args):
                                    ("hslot", "h", list(range(len(hs))), hs),
                                    ("slotchain", "s", si, sc), ("denovo", "d", di, dn),
                                    ("fragfix", "f", fi, fragp), ("mesh", "n", ni, meshp),
+                                   ("surgery", "y", yi, surgp),
                                    ("infogain", "i", ii, core), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
@@ -3119,7 +3188,7 @@ def select_r22mix(args):
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
     print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}"
-          f"+D{len(di)}+F{len(fi)}+N{len(ni)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
+          f"+D{len(di)}+F{len(fi)}+N{len(ni)}+Y{len(yi)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 #! DEPRECATED（2026-07-10 起查重改 _all_input_folders() 自動掃描）——僅舊 select 內建去重仍引用,
@@ -4177,6 +4246,32 @@ def main():
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.set_defaults(fn=select_r22mix, round=27, key="sel")
+
+    s = sub.add_parser("select-r28", help="R28 塊內 rad 手術：Y 36（half 半成品錨,網布凍結,maximin 鍵）+梯子延續(同 r22mix 機器)")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260715)
+    s.add_argument("--sm", default="sm_reanchor30.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--o", type=int, default=24)
+    s.add_argument("--m", type=int, default=20, help="前瞻統計母體")
+    s.add_argument("--c", type=int, default=10)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=12)
+    s.add_argument("--d", type=int, default=14, help="D 續帳(KPI=min sel)")
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=8, help="F 最小席位(待 Ricky 裁決)")
+    s.add_argument("--mesh", type=int, default=0, help="N 臂功成休兵(H1/H2 答畢)")
+    s.add_argument("--surgery", type=int, default=36, help="Y 塊內 rad 手術(half 五錨,網布凍結)")
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=18, help="I 續高配(ikpi 首讀 I−M +0.20 成立)")
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--wild", type=int, default=8)
+    s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.set_defaults(fn=select_r22mix, round=28, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)
