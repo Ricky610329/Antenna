@@ -55,6 +55,7 @@ python -m script.dedust jobs-add --input dedust_r26bNa_input --store dedust_r26b
 | 2（r26b2{a-f}） | 🔵 04:4x 發車（v26;--d-sm **sm_denovo2**〔denovo4 對決又輸 harvest,連兩版落選——現任續留;若 denovo5 再輸,R27 檢討對決設計:改 vs 現任+加大 held-out〕;錨點 506;查重 0×6;退 rad 鍵維持） |
 | 2 收檔 | ✅ 07:46（150/150 零 error;主判準第二讀 oob ρ **−0.315**;★ D min sel 51.7 連降;可用帶外 9.11=驗屍後連 3 批→**重驗屍:L2b 轉紅,升第二層**;重錨 v27＋denovo5） |
 | 3（r26b3{a-f}） | 🔵 08:1x 發車（v27;--d-sm sm_denovo2〔denovo5 對決分裂 wm 輸/oob 贏=不換,三連任;R27 檢討對決設計確定〕;錨點 533;查重 0×6;**本輪末批**,判讀完 /close-round） |
+| 3 收檔 | ✅ 11:24（150/150 零 error;★ **o26b3_022 wm+0.53 三標=margin 王挑戰**→n1a 公證;★ F f26b3_000_t07 wm **−0.18**;主判準終判中位 +0.107;重錨 v28＋denovo6） |
 
 ## 4. 分析 (Analyze)
 **b1（2026-07-14 03:56 收檔,150/150 零 error）——主判準首讀＋D 判決批**：
