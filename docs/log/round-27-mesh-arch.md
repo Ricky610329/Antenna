@@ -59,6 +59,7 @@ python -m script.dedust jobs-add --input dedust_r27bNa_input --store dedust_r27b
 | 批 | 狀態 |
 |---|---|
 | 1（r27b1{a-f}） | ✅ 14:46 收檔（150/150 零 error;★ **H2 拆解出爐:低側住網布＋塊內塵可實心化**;rad 頭復鍵條件達成;重錨 v29） |
+| 2（r27b2{a-f}） | 🔵 15:1x 發車（v29;**--rad-key 復鍵**〔連兩批 ≥0.3 達成,留註記〕;N 臂自動輪 uniform/redust=H1 主場;錨點 617;查重 0×6） |
 
 ## 4. 分析 (Analyze)
 **b1（2026-07-14 14:46 收檔,150/150 零 error）——H2 拆解首讀=方向定案級**：
