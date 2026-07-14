@@ -36,7 +36,7 @@
 ### Round 27 — 加厚雙主軸：網架×R26 延續（🔵 **running**,2026-07-14 開輪）→ [round-27](../docs/log/round-27-mesh-arch.md)
 - Ricky 授權「27 做厚一點,網架和 26 的延續」;**≤5 批**（3 批上限本輪放寬）。
 - **N 網架臂 24**（骨架+網布四式:solidify_full/half、mesh_uniform、redust;H2 拆「低側住骨架 or 網布」
-  =重開低側案,獎品=可用帶外 9.0→7.x 級）＋R26 延續（**D 14 加碼**/I 22/O26/M20/S14/C14/W8/**F 0 退役**）。
+  =重開低側案,獎品=可用帶外 9.0→7.x 級）＋R26 延續（**D 14 加碼**/I 22/O26/M20/S14/C14/W8/**F 8 最小席位待裁決**）。
 - 續退 rad 鍵（R27b1 前瞻 ≥0.3 即復鍵）;oob 前瞻續記（續觀察帶）;每批 /batch-cycle。
 - 發車=`select-r27 --batch N --sm sm_reanchor28+ --novelty --d-sm sm_denovo2.pth`。
 
