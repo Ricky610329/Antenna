@@ -211,3 +211,11 @@ dedust_r27b2c
 dedust_r27b2d
 dedust_r27b2e
 dedust_r27b2f
+# sm_reanchor31.pth 追加（2026-07-14）
+dedust_r28b1a
+dedust_r28b1b
+dedust_r28b1c
+dedust_r28b1d
+dedust_r28b1e
+dedust_r28b1f
+dedust_r28va
