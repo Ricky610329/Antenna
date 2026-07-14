@@ -2753,6 +2753,59 @@ def select_r22mix(args):
     wildp = _gen(P, pick_two_pool, args.wild * 30, dlo=26, dhi=60, wild=True)
     fragp = _gen(PF, pick_frag, getattr(args, "f", 0) * 12, dhi=60) if PF else []   # F 修復池（粉塵錨 strip 後 d 大,放寬到 60）
 
+    #? N 網架臂（R27;Ricky 2026-07-14「圖4-4 仔細看是幾個分塊→可做 variation」＋「27 做厚一點,網架」）:
+    #  實測基礎=池頂家族 8-10 密度分塊載 66% 金屬+網布,t03/t09/n09/p00 共享同一骨架（scratch 2026-07-14）。
+    #  骨架萃取=高斯 σ0.8×門檻 0.6（≥6px 質量塊,與分析口徑一致）;每錨四式變體:
+    #    H1 mesh_redust×3=塊內原樣+網布同質量重佈（骨架承載電性?）
+    #    H2 solidify_full=塊 footprint 填實+刪網布 / solidify_half=塊填實+網布保留（低側住骨架還是網布?）
+    #    mesh_uniform=塊內原樣+棋盤均勻網布（網布要密度還是要實現?）
+    #  ⚠ 物理探測批:不過可製造閘（塵=實驗變數,同 D 臂慣例）;kind=mesh,id 前綴 n。
+    meshp = []
+    if getattr(args, "mesh", 0) and PF:
+        from scipy.ndimage import gaussian_filter as _gf
+
+        def _skeleton(p0):
+            dens = _gf(p0.astype(float), 0.8, mode="constant")
+            lab_m, nm = _label(dens > 0.6, structure=np.ones((3, 3), dtype=bool))
+            blk = np.zeros_like(p0)
+            for g in range(1, nm + 1):
+                reg = lab_m == g
+                if p0[reg].sum() >= 6:
+                    blk |= reg
+            return blk
+
+        for name in list(PF):
+            p0 = PF[name]
+            blk = _skeleton(p0)
+            mesh_px = p0 & ~blk
+            n_mesh = int(mesh_px.sum())
+            out_idx = np.flatnonzero((~blk).reshape(-1))
+            ii, jj = np.indices(p0.shape)
+            cands = [(blk.copy(), ["solidify_full"]),
+                     (blk | mesh_px, ["solidify_half"])]
+            uni = np.flatnonzero((((ii + jj) % 2 == 0) & ~blk).reshape(-1))
+            qv = (p0 & blk).reshape(-1).copy()
+            if len(uni):
+                qv[uni[np.linspace(0, len(uni) - 1, min(n_mesh, len(uni))).astype(int)]] = True
+            cands.append((qv.reshape(25, 25), ["mesh_uniform"]))
+            for t in range(3):
+                qv = (p0 & blk).reshape(-1).copy()
+                pick = rng.choice(out_idx, size=min(n_mesh, len(out_idx)), replace=False)
+                qv[pick] = True
+                cands.append((qv.reshape(25, 25), ["mesh_redust", t]))
+            for q, ops in cands:
+                q = (np.asarray(q).reshape(25, 25) > 0.5).copy()
+                q[FEED] = True
+                q = _ensure_feed_pad(q, 4)
+                st = piece_stats(q)
+                if not (180 <= st["metal_px"] <= 560):
+                    continue
+                k = q.tobytes()
+                if k in hist:
+                    continue
+                hist.add(k)
+                meshp.append(dict(pat=q, parent=name, ops=[ops], d=int((q != p0).sum()), stats=st))
+
     #? H 臂:部分槽劑量（王 × 槽長;主件最寬列開中央槽——構造法,決定性零 rng）
     def hslot_doses(anchor):
         p = P[anchor]
@@ -2876,7 +2929,7 @@ def select_r22mix(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    allc = core + coldp + specp + wildp + hs + sc + fragp
+    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
@@ -2937,7 +2990,7 @@ def select_r22mix(args):
     #  d_hist=與全史最近 Hamming;鍵折扣 λ·min(d,20),λ=0.02（上限 0.4 dB,蓋不過真實差距）
     if getattr(args, "novelty", False) and hist0:
         H = np.stack([np.frombuffer(k, dtype=bool) for k in hist0]).astype(np.float32)
-        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp):
+        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp):
             if not pool:
                 continue
             A = np.stack([c["pat"].reshape(-1) for c in pool]).astype(np.float32)
@@ -2946,7 +2999,7 @@ def select_r22mix(args):
             for k, c in enumerate(pool):
                 c["novelty"] = int(dmin[k])
     else:
-        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp):
+        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp):
             for c in pool:
                 c["novelty"] = None
 
@@ -2994,6 +3047,21 @@ def select_r22mix(args):
                   getattr(args, "d", 0)) if dn else []
     fi = _diverse(fragp, sorted(range(len(fragp)), key=lambda i: _pselc(fragp[i])),
                   getattr(args, "f", 0)) if fragp else []
+    #? N 臂選拔:按錨輪流、變體優先序 full→half→uniform→redust（H2 對照先進場,H1 隨配額擴大補齊）
+    ni = []
+    if meshp:
+        _mprio = {"solidify_full": 0, "solidify_half": 1, "mesh_uniform": 2, "mesh_redust": 3}
+        by_anchor = {}
+        for idx, c in enumerate(meshp):
+            by_anchor.setdefault(c["parent"], []).append(idx)
+        for lst in by_anchor.values():
+            lst.sort(key=lambda idx: (_mprio.get(meshp[idx]["ops"][0][0], 9), str(meshp[idx]["ops"][0][-1])))
+        anchors_l, rr = sorted(by_anchor), 0
+        while len(ni) < getattr(args, "mesh", 0) and any(by_anchor.values()):
+            a = anchors_l[rr % len(anchors_l)]
+            rr += 1
+            if by_anchor[a]:
+                ni.append(by_anchor[a].pop(0))
     #? A 資訊臂（R24 探索誘因包）:兩 SM（本版 vs harvest 底座）預測分歧最大=資訊量最高的量測點
     #  （query-by-committee 主動學習）;KPI=模型更新量非三標率。
     ii = []
@@ -3028,7 +3096,7 @@ def select_r22mix(args):
                                    ("coldmine", "k", ki, coldp), ("repair", "q", qi, specp),
                                    ("hslot", "h", list(range(len(hs))), hs),
                                    ("slotchain", "s", si, sc), ("denovo", "d", di, dn),
-                                   ("fragfix", "f", fi, fragp),
+                                   ("fragfix", "f", fi, fragp), ("mesh", "n", ni, meshp),
                                    ("infogain", "i", ii, core), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
@@ -3051,7 +3119,7 @@ def select_r22mix(args):
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
     print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}"
-          f"+D{len(di)}+F{len(fi)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
+          f"+D{len(di)}+F{len(fi)}+N{len(ni)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 #! DEPRECATED（2026-07-10 起查重改 _all_input_folders() 自動掃描）——僅舊 select 內建去重仍引用,
@@ -4084,6 +4152,31 @@ def main():
     s.add_argument("--rad-key", action="store_true", dest="rad_key",
                    help="R26 預設退鍵(R25 連兩批<0.3);復鍵=續記前瞻連兩批>=0.3")
     s.set_defaults(fn=select_r22mix, round=26, key="sel")
+
+    s = sub.add_parser("select-r27", help="R27 加厚雙主軸：N 網架臂(骨架+網布四式)×R26 延續(D 加碼/I 高配)(同 r22mix 機器)")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260714)
+    s.add_argument("--sm", default="sm_reanchor27.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--o", type=int, default=26)
+    s.add_argument("--m", type=int, default=20, help="前瞻統計母體(維持 n=20)")
+    s.add_argument("--c", type=int, default=14)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=14)
+    s.add_argument("--d", type=int, default=14, help="D 加碼(第二期判決過:min sel 連降 65.0→51.7)")
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=8, help="F 席位:依 R26b3 收官判定,可 --f 0 關")
+    s.add_argument("--mesh", type=int, default=24, help="N 網架臂(骨架+網布;H2 對照優先,H1 隨批擴)")
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=22)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--wild", type=int, default=8)
+    s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.set_defaults(fn=select_r22mix, round=27, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)
