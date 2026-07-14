@@ -3700,6 +3700,7 @@ def run(args):
 
     sim = _open_sim()
     fails = 0                                            # 連續失敗計數（HFSS 壞死保險絲）
+    blowouts = 0                                         # 保險絲熔斷次數（冷卻重生循環,2026-07-15）
     try:
         #? 批尾自動補測（2026-07-11,37 HFSS bug）:主輪跑完殘留 error → 殺透重開 HFSS 再補,
         #  最多 --retry-pass 輪——COM 偶發錯多為 transient（b1a 手動補測 4 筆全清=依據）,
@@ -3738,8 +3739,21 @@ def run(args):
                     print(f"  ✗ (第 {att} 次) {es}")
                     fails += 1
                     if not rpass and fails >= getattr(args, "max_fail", 5):
-                        raise SystemExit(f"連續 {fails} 筆失敗——HFSS 疑似壞死,中止本批"
-                                         "（已完成部分已落檔,修復後重跑同指令即續）")
+                        #? 冷卻重生（2026-07-15,216 間歇型故障）:連敗先冷卻再試,循環用盡才判死——
+                        #  死亡判定從「連 5 敗」延長為「5 敗 × --max-blowout 循環,間隔 --cooldown 秒」。
+                        blowouts += 1
+                        mb = getattr(args, "max_blowout", 3)
+                        if blowouts >= mb:
+                            raise SystemExit(f"連敗保險絲熔斷 {blowouts} 循環（各連 {fails} 敗,冷卻無效）"
+                                             "——HFSS 壞死,中止本批（已完成部分已落檔,修復後重跑即續）")
+                        cd = getattr(args, "cooldown", 600)
+                        print(f"  ⚡ 連 {fails} 敗——冷卻 {cd}s 後重開再試（熔斷 {blowouts}/{mb - 1}）")
+                        _kill_hfss()
+                        import time as _tc
+                        _tc.sleep(cd)
+                        fails = 0
+                        sim = _open_sim()
+                        continue
                     if rpass and fails >= 3:             # 補測輪不拉保險絲:連 3 敗=HFSS 又壞,放棄補測照 done 收
                         print("  補測連 3 敗——放棄補測,殘留 error 交 .done 記錄")
                         aborted = True
@@ -3898,8 +3912,10 @@ def worker(args):
     O_EXCL 建檔含機器 IP）→ run（斷點續跑＋單筆 watchdog＋連敗保險絲＋批尾自動補測）→ 標 done → 下一個;
     佇列空 → 睡 --poll 秒再掃。**同 store 兩機並跑由 claim 檔擋掉**（results.json 互踩防護）。
     stale 接管:claim 存在但 store 無進度超過 --stale 分鐘（機器死了）→ 別台可接手續跑。
-    停止:建 jobs_state/STOP（跑完當前 job 收工）或 Ctrl-C。run 觸發保險絲（連敗）→ 寫
-    <store>.fail 並停機（HFSS 壞死要人工/告警介入;修復後刪 .fail+.claim 即可重派）。"""
+    停止:建 jobs_state/STOP（跑完當前 job 收工）或 Ctrl-C。死亡判定三層（2026-07-15 升級,216 教訓）:
+    ①連 --max-fail 敗=熔斷→冷卻 --cooldown 秒重開再試,--max-blowout 循環用盡才判死;
+    ②判死→寫 <store>.fail（JSON 記 machines 名單）並停機;③別台 worker 見 .fail 名單無自己
+    →自動接管重跑（毒批收斂:全機敗過=永久 fail 等人工;舊純文字 .fail 不自動接管）。"""
     import time
     from antenna.utils.web import get_local_ip
     me = get_local_ip()
@@ -3914,10 +3930,32 @@ def worker(args):
         picked = None
         for j in jobs:
             st = j["store"]
-            if sd.joinpath(st + ".done").exists() or sd.joinpath(st + ".fail").exists():
+            if sd.joinpath(st + ".done").exists():
                 continue
             cp = sd.joinpath(st + ".claim")
-            if cp.exists():
+            fp = sd.joinpath(st + ".fail")
+            prior_fail = []
+            if fp.exists():
+                #? .fail 跨機接管（2026-07-15,216 反覆判死）:fail=「那台機判死」非「批判死」——
+                #  名單裡沒有自己→接手重試（原人工「刪 .fail 重派」自動化）;每台失敗都記名,
+                #  三台輪完=毒批,沒人再接、永久 fail 等人工。舊純文字 .fail 不接管（保守）。
+                try:
+                    fmach = json.load(open(str(fp), encoding="utf-8")).get("machines")
+                except Exception:
+                    fmach = None
+                if not fmach or me in fmach:
+                    continue
+                print(f"接管 fail job {st}（{','.join(fmach)} 判死,本機未試——自動重派）")
+                try:
+                    os.remove(str(fp))
+                except OSError:
+                    continue                              # 別台剛搶先接管
+                try:
+                    os.remove(str(cp))                    # 判死機器的殘留 claim 一併清
+                except OSError:
+                    pass
+                prior_fail = fmach
+            elif cp.exists():
                 try:
                     owner = json.load(open(str(cp), encoding="utf-8")).get("machine")
                 except Exception:
@@ -3941,7 +3979,8 @@ def worker(args):
             except FileExistsError:
                 continue                                  # 別台剛好搶到
             with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump(dict(machine=me, at=time.strftime("%Y-%m-%d %H:%M:%S")), f)
+                json.dump(dict(machine=me, at=time.strftime("%Y-%m-%d %H:%M:%S"),
+                               **({"prior_fail": prior_fail} if prior_fail else {})), f)
             picked = j
             break
         if picked is None:
@@ -3958,16 +3997,24 @@ def worker(args):
         print(f"▶ 認領 {st}（input {picked['input']}）")
         ns = argparse.Namespace(config=args.config, input=picked["input"], store=st, out=None,
                                 sweep=args.sweep, timeout=args.timeout, max_fail=args.max_fail,
+                                cooldown=args.cooldown, max_blowout=args.max_blowout,
                                 retry_pass=args.retry_pass, job_prio=picked.get("prio", 9),
                                 tier2_prio=args.tier2_prio,
                                 claim_path=str(sd.joinpath(st + ".claim")), claim_me=me)
         try:
             if run(ns) == "yield":                       # tier-2 讓位/被接管:不標 done,回佇列重掃
                 continue
-        except SystemExit as e:                          # 連敗保險絲:標 fail、停機等人工
+        except SystemExit as e:                          #? 判死:.fail 記機器名單（JSON,別台自動接管）、停機等人工
+            prior = []
+            try:
+                prior = json.load(open(str(sd.joinpath(st + ".claim")), encoding="utf-8")) \
+                    .get("prior_fail", [])
+            except Exception:
+                pass
             with open(str(sd.joinpath(st + ".fail")), "w", encoding="utf-8") as f:
-                f.write(str(e))
-            print(f"✗ {st} 中止:{e}\nworker 停機（修復 HFSS 後刪 jobs_state/{st}.fail 與 .claim 重派）")
+                json.dump(dict(machines=prior + [me], last=str(e),
+                               at=time.strftime("%Y-%m-%d %H:%M:%S")), f, ensure_ascii=False)
+            print(f"✗ {st} 中止:{e}\nworker 停機（別台 worker 會自動接管此 store;本機修復後重啟 worker 即可）")
             raise
         #! done 語義（2026-07-10 修）:「跑完」≠「全成功」——殘留 error 記進 .done 並顯性警告,
         #  哨兵 --factory 會列出;重派=刪 .done+.claim（三連敗同一筆=毒樣本嫌疑,人工判）。
@@ -3991,14 +4038,23 @@ def watch(args):
     import time
     _, sd = _jobs_paths()
     stores = [s.strip() for s in args.stores.split(",") if s.strip()]
-    seen, fail = set(), False
+    seen, fail, warned = set(), False, set()
     while len(seen) < len(stores):
         for st in stores:
             if st in seen:
                 continue
             fp, dp = sd.joinpath(st + ".fail"), sd.joinpath(st + ".done")
             if fp.exists():
-                print(f"{st} FAIL(保險絲): {open(str(fp), encoding='utf-8').read()[:150]}", flush=True)
+                #? 接管寬限（2026-07-15）:.fail 可被別台 worker 自動接管（檔會消失回到等 .done）——
+                #  先警告不判終態,超過 --fail-grace 分鐘沒人接才 FAIL。
+                age_m = (time.time() - os.path.getmtime(str(fp))) / 60
+                if age_m < args.fail_grace:
+                    if st not in warned:
+                        print(f"⚠ {st} 保險絲 .fail——等跨機接管（寬限 {args.fail_grace}m）", flush=True)
+                        warned.add(st)
+                    continue
+                print(f"{st} FAIL(保險絲,{int(age_m)}m 無人接管): "
+                      f"{open(str(fp), encoding='utf-8').read()[:150]}", flush=True)
                 seen.add(st)
                 fail = True
             elif dp.exists():
@@ -4459,7 +4515,10 @@ def main():
     s.add_argument("--sweep", default="Interpolating", choices=["Interpolating", "Discrete", "Fast"],
                    help="掃頻演算法（Discrete=17 點逐點硬解,慢但每點真解;掃頻法交叉驗證用）")
     s.add_argument("--timeout", type=int, default=900, help="單筆 watchdog 秒數（超時殺 HFSS 標 error 續跑;中位 160s/P90 176s）")
-    s.add_argument("--max-fail", type=int, default=5, dest="max_fail", help="連續失敗幾筆判 HFSS 壞死中止")
+    s.add_argument("--max-fail", type=int, default=5, dest="max_fail", help="連續失敗幾筆＝保險絲熔斷一次")
+    s.add_argument("--cooldown", type=int, default=600, help="熔斷後冷卻秒數（殺透 HFSS 睡完重開再試）")
+    s.add_argument("--max-blowout", type=int, default=3, dest="max_blowout",
+                   help="熔斷幾循環判 HFSS 壞死中止（延長死亡判定,2026-07-15）")
     s.add_argument("--retry-pass", type=int, default=2, dest="retry_pass",
                    help="批尾自動補測輪數（殘留 error 殺重開 HFSS 重試;0=關）")
     s.set_defaults(fn=run)
@@ -4470,6 +4529,8 @@ def main():
     s.add_argument("--poll", type=int, default=300, help="佇列空時幾秒掃一次")
     s.add_argument("--timeout", type=int, default=900)
     s.add_argument("--max-fail", type=int, default=5, dest="max_fail")
+    s.add_argument("--cooldown", type=int, default=600)
+    s.add_argument("--max-blowout", type=int, default=3, dest="max_blowout")
     s.add_argument("--retry-pass", type=int, default=2, dest="retry_pass")
     s.add_argument("--stale", type=int, default=45, help="claim 無進度幾分鐘可被接管")
     s.add_argument("--once", action="store_true", help="只跑一個 job 就收工（測試用）")
@@ -4492,6 +4553,8 @@ def main():
     s = sub.add_parser("watch", help="收檔偵測（blocking;Monitor 直接掛;全終態 exit0/含 fail exit1）")
     s.add_argument("--stores", required=True, help="逗號分隔 store 名（dedust_r23b4a,...）")
     s.add_argument("--poll", type=int, default=180)
+    s.add_argument("--fail-grace", type=int, default=90, dest="fail_grace",
+                   help=".fail 出現後等跨機接管幾分鐘,超過才判終態 FAIL")
     s.set_defaults(fn=watch)
 
     s = sub.add_parser("report", help="匯總表（貼 round 檔 §4）")
