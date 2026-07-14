@@ -4289,8 +4289,8 @@ def main():
     s.add_argument("--i", type=int, default=18, help="I 續高配(ikpi 首讀 I−M +0.20 成立)")
     s.add_argument("--novelty", action="store_true")
     s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
-    s.add_argument("--dyn-simcap", type=float, default=0.35, dest="dyn_simcap",
-                   help="王系相似度稅:d_dyn<12 的近王樣本批內佔比上限（Ricky 2026-07-14 反自餵;0=關）")
+    s.add_argument("--dyn-simcap", type=float, default=0.20, dest="dyn_simcap",
+                   help="王系相似度稅:d_dyn<12 的近王樣本批內佔比上限（Ricky 2026-07-14 反自餵,拍板 0.20;0=關）")
     s.add_argument("--wild", type=int, default=8)
     s.add_argument("--shards", type=int, default=6)
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
