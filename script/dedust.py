@@ -2733,7 +2733,7 @@ def select_r22mix(args):
     #? 王系相似度稅（Ricky 2026-07-14:「資料集跟模型自我正向強化——再降低和王系高度相同的」）:
     #  根稅盲區=掛別根但長得像王（冷支 g16/a024 系同屬 w17 實心語言）。d_dyn=對全部王朝系錨點
     #  的最小 Hamming;--dyn-simcap>0 時,「d_dyn<12 的近王樣本」批內佔比 ≤ cap（同 root-cap 語法）。
-    SIM_T = 12
+    SIM_T = 20                                            # Ricky 2026-07-14 再壓:12→20（家族語言多落 d13-25,原漏抓）
     _dyn_pack = None
     if getattr(args, "dyn_simcap", 0) and dyn_names:
         _dyn_pack = np.packbits(np.stack([P[n].reshape(-1) for n in dyn_names]).astype(np.uint8), axis=1)
@@ -4274,13 +4274,13 @@ def main():
     s.add_argument("--seed", type=int, default=20260715)
     s.add_argument("--sm", default="sm_reanchor30.pth")
     s.add_argument("--config", default=DEFAULT_CFG)
-    s.add_argument("--o", type=int, default=24)
-    s.add_argument("--m", type=int, default=20, help="前瞻統計母體")
-    s.add_argument("--c", type=int, default=10)
+    s.add_argument("--o", type=int, default=18)
+    s.add_argument("--m", type=int, default=20, help="前瞻統計母體(不動)")
+    s.add_argument("--c", type=int, default=8)
     s.add_argument("--q", type=int, default=0)
     s.add_argument("--h", type=int, default=0)
-    s.add_argument("--s", type=int, default=12)
-    s.add_argument("--d", type=int, default=14, help="D 續帳(KPI=min sel)")
+    s.add_argument("--s", type=int, default=10)
+    s.add_argument("--d", type=int, default=18, help="D 加碼(Ricky 2026-07-14 再降王類)")
     s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
     s.add_argument("--f", type=int, default=8, help="F 最小席位(待 Ricky 裁決)")
     s.add_argument("--mesh", type=int, default=0, help="N 臂功成休兵(H1/H2 答畢)")
@@ -4289,9 +4289,9 @@ def main():
     s.add_argument("--i", type=int, default=18, help="I 續高配(ikpi 首讀 I−M +0.20 成立)")
     s.add_argument("--novelty", action="store_true")
     s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
-    s.add_argument("--dyn-simcap", type=float, default=0.20, dest="dyn_simcap",
-                   help="王系相似度稅:d_dyn<12 的近王樣本批內佔比上限（Ricky 2026-07-14 反自餵,拍板 0.20;0=關）")
-    s.add_argument("--wild", type=int, default=8)
+    s.add_argument("--dyn-simcap", type=float, default=0.12, dest="dyn_simcap",
+                   help="王系相似度稅:d_dyn<20 的近王/近似樣本批內佔比上限（Ricky 2026-07-14 二次加壓 0.12;0=關）")
+    s.add_argument("--wild", type=int, default=14)
     s.add_argument("--shards", type=int, default=6)
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
