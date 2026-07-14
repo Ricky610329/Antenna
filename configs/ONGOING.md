@@ -33,7 +33,7 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 28 — 塊內 rad 手術（🟡 **proposed**,2026-07-14;發車前置=手術算子+I KPI 工具）→ [round-28](../docs/log/round-28-inblock-rad-surgery.md)
+### Round 28 — 塊內 rad 手術（🔵 **running**,2026-07-14 20:0x 發車;前置雙落地=Y 臂+ikpi）→ [round-28](../docs/log/round-28-inblock-rad-surgery.md)
 - 錨=R27 三顆電性半成品（p00 half +0.42/t07 half +0.35/n09 half +0.20——wm+低側達標,全卡 rad −2~−4）;
 - 算子=塊內翻轉/中帶塊縮小/塊內開槽（**全限 blk mask 內,網布凍結**——R27 結構知識直接應用）;rad 頭預篩（已復鍵）。
 - 獎品=rad ≥0 即三達標,可用帶外直接 7.x-8.x 級;**發車前必辦=I 臂 KPI 量測工具（三輪債）**。
