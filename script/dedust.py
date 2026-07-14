@@ -2876,6 +2876,47 @@ def select_r22mix(args):
                     bmapp.append(dict(pat=q, parent=name, ops=[[opn, int(g), int(reg.sum())]],
                                       d=int((q != p0).sum()), stats=st))
 
+    #? U 承重圖導引組合手術（R28b3;b2 承重圖首份真值的直接應用）:錨=t07h,凍結命脈塊
+    #  {4,7}與中承重{9,10},只動低承重塊 {2,5,6,8}（b2 實測:塊2 halve=wm−0.39 換 rad+1.42 lo−2.30）——
+    #  抽 2-3 塊組合 halve/ablate（單塊=B 臂已測,hist 自動擋）;判準=疊加性+低側組合手術,寫死 round-28 §1 b3。
+    #  kind=bmix,id 前綴 u。
+    bmixp = []
+    if getattr(args, "bmix", 0):
+        p0 = loadp("dedust_r27b1c_input", "n27b1_020_t07")
+        from scipy.ndimage import gaussian_filter as _gf3
+        dens3 = _gf3(p0.astype(float), 0.8, mode="constant")
+        lab3, nb3 = _label(dens3 > 0.6, structure=np.ones((3, 3), dtype=bool))
+        LOWLOAD = [g for g in (2, 5, 6, 8) if g <= nb3]
+        target = getattr(args, "bmix", 0)
+        tries = 0
+        while len(bmixp) < target and tries < target * 60:
+            tries += 1
+            sel = rng.choice(LOWLOAD, size=int(rng.integers(2, 4)), replace=False)
+            q = p0.copy()
+            combo = []
+            for g in sorted(int(x) for x in sel):
+                reg = (lab3 == g) & p0
+                op = ("halve", "ablate")[int(rng.integers(0, 2))]
+                if op == "ablate":
+                    q[reg] = False
+                else:
+                    ii3, jj3 = np.indices(p0.shape)
+                    q[reg & (((ii3 + jj3) % 2) == 0)] = False
+                combo += [g, op]
+            q[FEED] = True
+            q = _ensure_feed_pad(q, 4)
+            if ((q != p0) & ~((lab3 > 0) & p0)).any():        # 塊外零變動（同 Y 臂網布凍結語義）
+                continue
+            st = piece_stats(q)
+            if not (150 <= st["metal_px"] <= 560):
+                continue
+            kb = q.tobytes()
+            if kb in hist:
+                continue
+            hist.add(kb)
+            bmixp.append(dict(pat=q, parent="t07h", ops=[["surg_bmix"] + combo],
+                              d=int((q != p0).sum()), stats=st))
+
     #? N 網架臂（R27;Ricky 2026-07-14「圖4-4 仔細看是幾個分塊→可做 variation」＋「27 做厚一點,網架」）:
     #  實測基礎=池頂家族 8-10 密度分塊載 66% 金屬+網布,t03/t09/n09/p00 共享同一骨架（scratch 2026-07-14）。
     #  骨架萃取=高斯 σ0.8×門檻 0.6（≥6px 質量塊,與分析口徑一致）;每錨四式變體:
@@ -3040,7 +3081,7 @@ def select_r22mix(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp + bmapp
+    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp + bmapp + bmixp
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
@@ -3186,6 +3227,7 @@ def select_r22mix(args):
     else:
         yi = []
     bi = list(range(min(len(bmapp), getattr(args, "blockmap", 0))))   # 承重圖探針=決定性,全收到配額
+    bxi = list(range(min(len(bmixp), getattr(args, "bmix", 0))))      # U 組合手術=生成即配額,全收
     #? A 資訊臂（R24 探索誘因包）:兩 SM（本版 vs harvest 底座）預測分歧最大=資訊量最高的量測點
     #  （query-by-committee 主動學習）;KPI=模型更新量非三標率。
     ii = []
@@ -3222,6 +3264,7 @@ def select_r22mix(args):
                                    ("slotchain", "s", si, sc), ("denovo", "d", di, dn),
                                    ("fragfix", "f", fi, fragp), ("mesh", "n", ni, meshp),
                                    ("surgery", "y", yi, surgp), ("blockmap", "b", bi, bmapp),
+                                   ("bmix", "u", bxi, bmixp),
                                    ("infogain", "i", ii, core), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
@@ -3244,7 +3287,8 @@ def select_r22mix(args):
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
     print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}"
-          f"+D{len(di)}+F{len(fi)}+N{len(ni)}+Y{len(yi)}+B{len(bi)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
+          f"+D{len(di)}+F{len(fi)}+N{len(ni)}+Y{len(yi)}+B{len(bi)}+U{len(bxi)}+I{len(ii)}+W{len(wi)}"
+          f" → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 #! DEPRECATED（2026-07-10 起查重改 _all_input_folders() 自動掃描）——僅舊 select 內建去重仍引用,
@@ -4376,6 +4420,7 @@ def main():
     s.add_argument("--mesh", type=int, default=0, help="N 臂功成休兵(H1/H2 答畢)")
     s.add_argument("--surgery", type=int, default=36, help="Y 塊內 rad 手術(half 五錨,網布凍結)")
     s.add_argument("--blockmap", type=int, default=0, help="B 塊級承重圖探針(t07h/p00h 逐塊 ablate/halve,決定性;b2 搭載)")
+    s.add_argument("--bmix", type=int, default=0, help="U 承重圖導引組合手術(t07h 低承重塊 2-3 塊組合;b3 搭載)")
     s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
     s.add_argument("--i", type=int, default=18, help="I 續高配(ikpi 首讀 I−M +0.20 成立)")
     s.add_argument("--novelty", action="store_true")
