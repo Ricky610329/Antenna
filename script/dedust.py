@@ -2843,6 +2843,39 @@ def select_r22mix(args):
                 made += 1
                 surgp.append(dict(pat=q, parent=name, ops=[ops], d=int((q != p0).sum()), stats=st))
 
+    #? B 塊級承重圖探針（R28b2;Ricky 2026-07-14「對 4-4 每個區塊調整的重要性分析」——R16 承重圖
+    #  升到骨架尺度）：錨=t07h/p00h（電性最好的兩顆 half）;每個密度分塊兩探針=ablate（整塊挖除）
+    #  /halve（塊內棋盤挖半）——決定性零 rng;量 Δwm/Δrad/Δ低側=塊 × 三軸重要性表。kind=blockmap,id 前綴 b。
+    bmapp = []
+    if getattr(args, "blockmap", 0):
+        for name, fol, pid in (("t07h", "dedust_r27b1c_input", "n27b1_020_t07"),
+                               ("p00h", "dedust_r27b1a_input", "n27b1_018_p00")):
+            p0 = loadp(fol, pid)
+            from scipy.ndimage import gaussian_filter as _gf2
+            dens = _gf2(p0.astype(float), 0.8, mode="constant")
+            lab_b, nb = _label(dens > 0.6, structure=np.ones((3, 3), dtype=bool))
+            gidx = [g for g in range(1, nb + 1) if p0[lab_b == g].sum() >= 6]
+            for g in gidx:
+                reg = (lab_b == g) & p0
+                for mode, opn in (("ablate", "bm_ablate"), ("halve", "bm_halve")):
+                    q = p0.copy()
+                    if mode == "ablate":
+                        q[reg] = False
+                    else:
+                        ii2, jj2 = np.indices(p0.shape)
+                        q[reg & (((ii2 + jj2) % 2) == 0)] = False
+                    q[FEED] = True
+                    q = _ensure_feed_pad(q, 4)
+                    st = piece_stats(q)
+                    if not (150 <= st["metal_px"] <= 560):
+                        continue
+                    kb = q.tobytes()
+                    if kb in hist:
+                        continue
+                    hist.add(kb)
+                    bmapp.append(dict(pat=q, parent=name, ops=[[opn, int(g), int(reg.sum())]],
+                                      d=int((q != p0).sum()), stats=st))
+
     #? N 網架臂（R27;Ricky 2026-07-14「圖4-4 仔細看是幾個分塊→可做 variation」＋「27 做厚一點,網架」）:
     #  實測基礎=池頂家族 8-10 密度分塊載 66% 金屬+網布,t03/t09/n09/p00 共享同一骨架（scratch 2026-07-14）。
     #  骨架萃取=高斯 σ0.8×門檻 0.6（≥6px 質量塊,與分析口徑一致）;每錨四式變體:
@@ -3007,7 +3040,7 @@ def select_r22mix(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp
+    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp + bmapp
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
@@ -3068,7 +3101,7 @@ def select_r22mix(args):
     #  d_hist=與全史最近 Hamming;鍵折扣 λ·min(d,20),λ=0.02（上限 0.4 dB,蓋不過真實差距）
     if getattr(args, "novelty", False) and hist0:
         H = np.stack([np.frombuffer(k, dtype=bool) for k in hist0]).astype(np.float32)
-        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp, surgp):
+        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp, surgp, bmapp):
             if not pool:
                 continue
             A = np.stack([c["pat"].reshape(-1) for c in pool]).astype(np.float32)
@@ -3077,7 +3110,7 @@ def select_r22mix(args):
             for k, c in enumerate(pool):
                 c["novelty"] = int(dmin[k])
     else:
-        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp, surgp):
+        for pool in (core, coldp, specp, wildp, hs, sc, dn, fragp, meshp, surgp, bmapp):
             for c in pool:
                 c["novelty"] = None
 
@@ -3152,6 +3185,7 @@ def select_r22mix(args):
                           getattr(args, "surgery", 0))
     else:
         yi = []
+    bi = list(range(min(len(bmapp), getattr(args, "blockmap", 0))))   # 承重圖探針=決定性,全收到配額
     #? A 資訊臂（R24 探索誘因包）:兩 SM（本版 vs harvest 底座）預測分歧最大=資訊量最高的量測點
     #  （query-by-committee 主動學習）;KPI=模型更新量非三標率。
     ii = []
@@ -3187,7 +3221,7 @@ def select_r22mix(args):
                                    ("hslot", "h", list(range(len(hs))), hs),
                                    ("slotchain", "s", si, sc), ("denovo", "d", di, dn),
                                    ("fragfix", "f", fi, fragp), ("mesh", "n", ni, meshp),
-                                   ("surgery", "y", yi, surgp),
+                                   ("surgery", "y", yi, surgp), ("blockmap", "b", bi, bmapp),
                                    ("infogain", "i", ii, core), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
@@ -3210,7 +3244,7 @@ def select_r22mix(args):
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
     print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}"
-          f"+D{len(di)}+F{len(fi)}+N{len(ni)}+Y{len(yi)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
+          f"+D{len(di)}+F{len(fi)}+N{len(ni)}+Y{len(yi)}+B{len(bi)}+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 #! DEPRECATED（2026-07-10 起查重改 _all_input_folders() 自動掃描）——僅舊 select 內建去重仍引用,
@@ -4285,6 +4319,7 @@ def main():
     s.add_argument("--f", type=int, default=8, help="F 最小席位(待 Ricky 裁決)")
     s.add_argument("--mesh", type=int, default=0, help="N 臂功成休兵(H1/H2 答畢)")
     s.add_argument("--surgery", type=int, default=36, help="Y 塊內 rad 手術(half 五錨,網布凍結)")
+    s.add_argument("--blockmap", type=int, default=0, help="B 塊級承重圖探針(t07h/p00h 逐塊 ablate/halve,決定性;b2 搭載)")
     s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
     s.add_argument("--i", type=int, default=18, help="I 續高配(ikpi 首讀 I−M +0.20 成立)")
     s.add_argument("--novelty", action="store_true")
