@@ -19,3 +19,5 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 | `report_r1r18.py` | 總報告 E1-E6（每輪最佳 gallery/血統鏈/紀錄時間軸/帶外 Pareto/分組答案/新王 a024）→ progress-r1-r18 |
 | `champ_compare.py` | **通用新舊冠軍對比圖**（CLI:--new/--old 自動定位;紀錄易主收檔必渲染,規則見 docs/log/CLAUDE.md）。pattern 差異＝綠加銅/紅去銅、radiation＝極座標（helper 在 report_r1r10_style） |
 | `report_rad_polar.py` | 報告用：指定冠軍的方向圖**極座標**渲染（CLI:--ids/--labels;主波束朝上+±45°窗+G0−3dB 圈） |
+| `report_dist_vs_strategy.py` | 報告 §2：「分布 ≫ 策略」概念圖（輸 random 輸在分布不在搜尋;概念示意非實資料） |
+| `report_online_profile.py` | 報告 §8.1：線上 278s/ep 階段佔比 vs 批次線 160s/筆（profiling ec774de） |
