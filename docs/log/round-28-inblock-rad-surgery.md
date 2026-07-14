@@ -50,6 +50,7 @@ python -m script.dedust jobs-add --input dedust_r28bNa_input --store dedust_r28b
 | 批 | 狀態 |
 |---|---|
 | 1（r28b1{a-f}） | 🔵 20:0x 發車（v30;錨點 647;Y36 目檢過=純挖除零新增〔網布凍結成立〕,maximin 鍵偏好 midband;查重 0×6） |
+| ⚠ 216 復發 | 20:1x r28b1b 保險絲（認領後開頭連 5 筆 COM 例外 0x80070223,成功 0——**上次重開未治好**）;推播請 Ricky 重開整台;b1b 待機器健康後重派;37/218 正常 |
 
 ## 4. 分析 (Analyze)
 （待收檔）
