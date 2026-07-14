@@ -2730,9 +2730,25 @@ def select_r22mix(args):
     def pick_frag():
         return list(PF)[int(rng.integers(0, len(PF)))]
 
+    #? 王系相似度稅（Ricky 2026-07-14:「資料集跟模型自我正向強化——再降低和王系高度相同的」）:
+    #  根稅盲區=掛別根但長得像王（冷支 g16/a024 系同屬 w17 實心語言）。d_dyn=對全部王朝系錨點
+    #  的最小 Hamming;--dyn-simcap>0 時,「d_dyn<12 的近王樣本」批內佔比 ≤ cap（同 root-cap 語法）。
+    SIM_T = 12
+    _dyn_pack = None
+    if getattr(args, "dyn_simcap", 0) and dyn_names:
+        _dyn_pack = np.packbits(np.stack([P[n].reshape(-1) for n in dyn_names]).astype(np.uint8), axis=1)
+    _POP = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint16)
+
+    def _near_dyn(pat):
+        if _dyn_pack is None:
+            return False
+        q = np.packbits(pat.reshape(-1).astype(np.uint8))
+        return int(_POP[np.bitwise_xor(_dyn_pack, q)].sum(axis=1).min()) < SIM_T
+
     def _gen(src, pick, target, dlo=1, dhi=25, wild=False):
-        out, tries, counts = [], 0, {}
+        out, tries, counts, near = [], 0, {}, 0
         cap = getattr(args, "root_cap", 0)
+        scap = getattr(args, "dyn_simcap", 0)
         while len(out) < target and tries < target * 30:
             tries += 1
             c = _mutate(src, pick, want_wild=wild)
@@ -2744,6 +2760,12 @@ def select_r22mix(args):
                     hist.discard(c["pat"].tobytes())      # 退回查重集,別浪費 pattern
                     continue
                 counts[rt] = counts.get(rt, 0) + 1
+            if scap:
+                nd = _near_dyn(c["pat"])
+                if nd and len(out) >= 12 and (near + 1) / (len(out) + 1) > scap:
+                    hist.discard(c["pat"].tobytes())
+                    continue
+                near += int(nd)
             out.append(c)
         return out
 
@@ -4267,6 +4289,8 @@ def main():
     s.add_argument("--i", type=int, default=18, help="I 續高配(ikpi 首讀 I−M +0.20 成立)")
     s.add_argument("--novelty", action="store_true")
     s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.35, dest="dyn_simcap",
+                   help="王系相似度稅:d_dyn<12 的近王樣本批內佔比上限（Ricky 2026-07-14 反自餵;0=關）")
     s.add_argument("--wild", type=int, default=8)
     s.add_argument("--shards", type=int, default=6)
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
