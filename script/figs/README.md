@@ -2,7 +2,8 @@
 
 `docs/log/assets/round-NN/` 各圖的來源。一次性分析腳本、非模組（直接
 `python script/figs/<name>.py` 跑,路徑寫死 repo 位置）；資料來自 NAS 的
-dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report`（正式模組,不在此）。
+dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report`、analysis-05 的圖走
+`python -m script.analyze regularity`（正式模組,不在此）。
 
 | 腳本 | 產出 |
 |---|---|

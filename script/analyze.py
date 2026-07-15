@@ -303,6 +303,280 @@ def cmd_terrain(args):
           + " = " + format(100 * near / asym, ".0f") + "% —— analysis-01(學長池口徑): 0.46-0.61 = 12-16%")
 
 
+def cmd_regularity(args):
+    """設計規律三層掃描（analysis-05,2026-07-15）：像素級 × 組塊級 × 連通-離島。
+    全 store 去重真值（_load_truths 同一把尺）→
+      ①像素級：分層佔用圖（三標過 vs 作戰區未過）＋逐像素 Spearman vs wm/rad/oob（作戰區）
+      ②組塊級：5×5 粗格金屬量關聯（承重圖的統計版）＋組件尺寸級距的空間分布＋主件形狀
+      ③連通性：n_comp 階梯 × metal 分層、對角橋（4-連通斷/8-連通接）、離島最小間隙劑量
+    表印 stdout(markdown)、圖落 docs/log/assets/analysis-05/。零 HFSS、純讀 NAS;相關性非因果。"""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from scipy.ndimage import label as _label, distance_transform_cdt
+    from scipy.stats import spearmanr, rankdata
+    from script.dedust import _CROSS, oob_metrics
+
+    plt.rcParams.update({"font.family": ["Microsoft JhengHei", "sans-serif"],
+                         "axes.unicode_minus": False})
+    FEED = (24, 12)
+    assets = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          "docs", "log", "assets", "analysis-05")
+    os.makedirs(assets, exist_ok=True)
+    truths = _load_truths()
+    n = len(truths)
+    P = np.array([t[0] for t in truths])                                   # (n,25,25) bool
+    wm = np.array([t[1] for t in truths], np.float32)
+    rad = np.array([np.nan if t[2] is None else t[2] for t in truths], np.float32)
+    oob = np.array([np.nan if t[3] is None else oob_metrics(t[3])["oob_bad"] for t in truths],
+                   np.float32)
+    tri = (wm >= 0) & (np.nan_to_num(rad, nan=-9.0) >= 0)
+    war = wm >= -1
+    metal = P.reshape(n, -1).sum(1)
+    print(f"樣本: {n} 互異 pattern（現行 HFSS 真值,全 store 去重）; 三標過 {int(tri.sum())}"
+          f" / 作戰區(wm≥−1) {int(war.sum())} / rad 有值 {int(np.isfinite(rad).sum())}"
+          f" / 有響應(oob) {int(np.isfinite(oob).sum())}")
+
+    def _med(v):
+        v = v[np.isfinite(v)]
+        return format(float(np.median(v)), "+.2f") if len(v) else "—"
+
+    def _rho(x, y, m):
+        m = m & np.isfinite(y) & np.isfinite(x)
+        if m.sum() < 20 or len(set(x[m].tolist())) < 2:
+            return "—"
+        r, pv = spearmanr(x[m], y[m])
+        return format(r, "+.2f") + ("**" if pv < 0.01 else ("*" if pv < 0.05 else ""))
+
+    # ── 每 pattern 連通/形狀特徵＋組件尺寸級距佔用累積 ──
+    CLS = ((1, 3, "塵 1-3px"), (4, 15, "小 4-15"), (16, 63, "中 16-63"),
+           (64, 150, "翼級 64-150"), (151, 625, "主件 151+"))
+    BOX = np.ones((3, 3), bool)
+    fx = np.zeros((n, 6), np.float32)              # n4/對角橋/gap_min/r_feed/主件實心度/主件長寬比
+    occ_cls = np.zeros((2, len(CLS), 25, 25))      # 0=三標過 1=作戰區未過
+    grp_n = [0, 0]
+    for i in range(n):
+        p = P[i]
+        lab4, k4 = _label(p, structure=_CROSS)
+        _, k8 = _label(p, structure=BOX)
+        sizes = np.bincount(lab4.ravel())[1:]
+        if not sizes.size:
+            fx[i] = (0, 0, 0, 0, 0, 1)
+            continue
+        mid = int(sizes.argmax()) + 1
+        main = lab4 == mid
+        rr, cc = np.where(main)
+        fid = int(lab4[FEED])
+        gap = 0.0                                  # 全連通=0;離島最小間隙(chessboard,1=對角接觸)
+        if k4 > 1:
+            dt = distance_transform_cdt(~main, metric="chessboard")
+            gap = float(min(dt[lab4 == k].min() for k in range(1, k4 + 1) if k != mid))
+        fx[i] = (k4, k4 - k8, gap, sizes[fid - 1] / sizes.sum() if fid else 0.0,
+                 main.sum() / ((rr.ptp() + 1) * (cc.ptp() + 1)),
+                 max(rr.ptp() + 1, cc.ptp() + 1) / max(1, min(rr.ptp() + 1, cc.ptp() + 1)))
+        g = 0 if tri[i] else (1 if war[i] else -1)
+        if g >= 0:
+            grp_n[g] += 1
+            for ci, (a, b, _) in enumerate(CLS):
+                ids = np.where((sizes >= a) & (sizes <= b))[0] + 1
+                if len(ids):
+                    occ_cls[g, ci] += np.isin(lab4, ids)
+    n4, diag, gapm, rfeed, sol, ar = (fx[:, j] for j in range(6))
+
+    # ── ③ 連通 vs 不連通 ──
+    NB = ((1, 1), (2, 2), (3, 3), (4, 4), (5, 6), (7, 10), (11, 99))
+    for title, mm in (("全樣本", np.ones(n, bool)), ("作戰區(wm≥−1)", war)):
+        print(f"\n== ③ 連通階梯（4-連通 n_comp;{title}）==")
+        print("| n_comp | n | 三標率 | wm中位 | rad中位 | oob中位 | r_feed中位 |")
+        print("|---|---|---|---|---|---|---|")
+        for a, b in NB:
+            m = mm & (n4 >= a) & (n4 <= b)
+            if m.sum() < 10:
+                continue
+            lbl = str(a) if a == b else f"{a}-{b}"
+            print(f"| {lbl} | {int(m.sum())} | {100 * tri[m].mean():.0f}% | {_med(wm[m])} "
+                  f"| {_med(rad[m])} | {_med(oob[m])} | {np.median(rfeed[m]):.2f} |")
+
+    qs = np.quantile(metal, [0, .25, .5, .75, 1.0])
+    print("\n== ③ 連通 × 金屬量分層（wm 中位;控制「金屬多寡」混淆）==")
+    print("| metal 四分位 | 全連通(1) | 少件(2-4) | 多件(5+) |")
+    print("|---|---|---|---|")
+    for a, b in zip(qs[:-1], qs[1:]):
+        m = (metal >= a) & (metal <= b)
+        cells = []
+        for g in ((n4 == 1), (n4 >= 2) & (n4 <= 4), n4 >= 5):
+            mg = m & g
+            cells.append(f"{_med(wm[mg])} (n={int(mg.sum())})" if mg.sum() >= 10 else "—")
+        print(f"| {a:.0f}-{b:.0f}px | " + " | ".join(cells) + " |")
+
+    md = war & (n4 >= 2)
+    print(f"\n== ③ 不連通內部：對角橋 vs 真離島（作戰區多件 n={int(md.sum())}）==")
+    print("| 群 | n | 三標率 | wm中位 | rad中位 | oob中位 |")
+    print("|---|---|---|---|---|---|")
+    for lbl, g in (("有對角橋(8連通會接回)", md & (diag >= 1)), ("無對角橋", md & (diag == 0))):
+        if g.sum() >= 10:
+            print(f"| {lbl} | {int(g.sum())} | {100 * tri[g].mean():.0f}% | {_med(wm[g])} "
+                  f"| {_med(rad[g])} | {_med(oob[g])} |")
+    print("\n| 離島最小間隙 gap | n | 三標率 | wm中位 | rad中位 | oob中位 |")
+    print("|---|---|---|---|---|---|")
+    for a, b in ((1, 1), (2, 2), (3, 3), (4, 99)):
+        g = md & (gapm >= a) & (gapm <= b)
+        if g.sum() >= 10:
+            lbl = str(a) if a == b else f"≥{a}"
+            print(f"| {lbl} | {int(g.sum())} | {100 * tri[g].mean():.0f}% | {_med(wm[g])} "
+                  f"| {_med(rad[g])} | {_med(oob[g])} |")
+
+    print("\n== ③ 連通/形狀特徵 Spearman（作戰區;** p<.01 / * p<.05）==")
+    print("| 特徵 | wm | rad | oob(低=好) |")
+    print("|---|---|---|---|")
+    for name, v in (("n_comp", n4), ("對角橋數", diag), ("gap_min(多件)", np.where(n4 >= 2, gapm, np.nan)),
+                    ("r_feed", rfeed), ("主件實心度", sol), ("主件長寬比", ar)):
+        print(f"| {name} | {_rho(v, wm, war)} | {_rho(v, rad, war)} | {_rho(v, oob, war)} |")
+
+    # ── ① 像素級 ──
+    def _pix_rho(mask, y):
+        """binary 像素 × rank(y) 的 Pearson（=Spearman）;佔用 <5%/>95% 的近常數像素回 nan。"""
+        m = mask & np.isfinite(y)
+        X = P[m].reshape(-1, 625).astype(np.float32)
+        r = rankdata(y[m]).astype(np.float32)
+        r = (r - r.mean()) / r.std()
+        mu, sd = X.mean(0), X.std(0)
+        rho = (X * r[:, None]).mean(0) / np.where(sd > 1e-9, sd, np.nan)
+        rho[(mu < 0.05) | (mu > 0.95)] = np.nan
+        return rho.reshape(25, 25)
+
+    occ_tri = P[tri].mean(0)
+    occ_non = P[war & ~tri].mean(0)
+    rho_maps = {"wm": _pix_rho(war, wm), "rad": _pix_rho(war, rad), "oob_bad(低=好)": _pix_rho(war, oob)}
+    rw = rho_maps["wm"]
+    flat = [(-abs(v), r, c, v) for (r, c), v in np.ndenumerate(rw) if np.isfinite(v)]
+    flat.sort()
+    print("\n== ① 像素熱點 top-10（作戰區 ρ(像素=金屬, wm);(row,col),feed=(24,12)）==")
+    print("| # | 像素 | ρ | 佔用(三標) | 佔用(作戰未過) |")
+    print("|---|---|---|---|---|")
+    for j, (_, r, c, v) in enumerate(flat[:10]):
+        print(f"| {j + 1} | ({r},{c}) | {v:+.2f} | {occ_tri[r, c]:.2f} | {occ_non[r, c]:.2f} |")
+
+    fig, axes = plt.subplots(1, 3, figsize=(12.5, 4.2))
+    for ax, m, t in ((axes[0], occ_tri, f"佔用率 P(金屬)｜三標過 n={grp_n[0]}"),
+                     (axes[1], occ_non, f"佔用率｜作戰區未過 n={grp_n[1]}")):
+        im = ax.imshow(m, cmap="viridis", vmin=0, vmax=1)
+        ax.set_title(t, fontsize=10)
+        fig.colorbar(im, ax=ax, fraction=0.046)
+    im = axes[2].imshow(occ_tri - occ_non, cmap="RdBu_r", vmin=-0.35, vmax=0.35)
+    axes[2].set_title("差 (三標過 − 未過)", fontsize=10)
+    fig.colorbar(im, ax=axes[2], fraction=0.046)
+    for ax in axes:
+        ax.plot(FEED[1], FEED[0], "r*", ms=10)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    fig.tight_layout()
+    fig.savefig(os.path.join(assets, "pixel_tiers.png"), dpi=130)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(1, 3, figsize=(12.5, 4.2))
+    for ax, (name, m) in zip(axes, rho_maps.items()):
+        im = ax.imshow(m, cmap="RdBu_r", vmin=-0.4, vmax=0.4)
+        ax.set_title(f"ρ(像素=金屬, {name})｜作戰區", fontsize=10)
+        ax.plot(FEED[1], FEED[0], "k*", ms=10)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        fig.colorbar(im, ax=ax, fraction=0.046)
+    fig.tight_layout()
+    fig.savefig(os.path.join(assets, "pixel_assoc.png"), dpi=130)
+    plt.close(fig)
+
+    # ── ② 組塊級：5×5 粗格＋尺寸級距空間分布 ──
+    B = P.reshape(n, 5, 5, 5, 5).sum(axis=(2, 4)).reshape(n, 25).astype(np.float32)
+    print("\n== ② 5×5 組塊金屬量 × 目標 Spearman（作戰區;承重圖的統計版,row0=頂/row4=feed側）==")
+    grids = {}
+    for name, y in (("wm", wm), ("rad", rad), ("oob_bad", oob)):
+        g = np.full(25, np.nan)
+        m0 = war & np.isfinite(y)
+        for j in range(25):
+            if len(set(B[m0, j].tolist())) >= 2:
+                g[j] = spearmanr(B[m0, j], y[m0]).statistic
+        grids[name] = g.reshape(5, 5)
+    print("| 塊(wm) | c0 | c1 | c2 | c3 | c4 |")
+    print("|---|---|---|---|---|---|")
+    for r in range(5):
+        print(f"| r{r} | " + " | ".join(format(grids['wm'][r, c], "+.2f") for c in range(5)) + " |")
+
+    fig, axes = plt.subplots(1, 3, figsize=(12.5, 4.2))
+    for ax, (name, g) in zip(axes, grids.items()):
+        im = ax.imshow(g, cmap="RdBu_r", vmin=-0.4, vmax=0.4)
+        ax.set_title(f"5×5 塊金屬量 ρ vs {name}｜作戰區", fontsize=10)
+        for (r, c), v in np.ndenumerate(g):
+            if np.isfinite(v):
+                ax.text(c, r, f"{v:+.2f}", ha="center", va="center", fontsize=8,
+                        color="white" if abs(v) > 0.25 else "black")
+        ax.set_xticks([])
+        ax.set_yticks([])
+        fig.colorbar(im, ax=ax, fraction=0.046)
+    fig.tight_layout()
+    fig.savefig(os.path.join(assets, "block_grid.png"), dpi=130)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(len(CLS), 3, figsize=(10.5, 3.3 * len(CLS)))
+    for ci, (a, b, name) in enumerate(CLS):
+        t0 = occ_cls[0, ci] / max(grp_n[0], 1)
+        t1 = occ_cls[1, ci] / max(grp_n[1], 1)
+        for j, (m, t) in enumerate(((t0, f"{name}｜三標過"), (t1, f"{name}｜作戰未過"))):
+            im = axes[ci, j].imshow(m, cmap="viridis", vmin=0, vmax=max(t0.max(), t1.max(), 1e-9))
+            axes[ci, j].set_title(t, fontsize=9)
+            fig.colorbar(im, ax=axes[ci, j], fraction=0.046)
+        im = axes[ci, 2].imshow(t0 - t1, cmap="RdBu_r",
+                                vmin=-max(abs(t0 - t1).max(), 1e-9), vmax=max(abs(t0 - t1).max(), 1e-9))
+        axes[ci, 2].set_title("差 (三標−未過)", fontsize=9)
+        fig.colorbar(im, ax=axes[ci, 2], fraction=0.046)
+        for ax in axes[ci]:
+            ax.plot(FEED[1], FEED[0], "r*", ms=8)
+            ax.set_xticks([])
+            ax.set_yticks([])
+    fig.tight_layout()
+    fig.savefig(os.path.join(assets, "comp_class_maps.png"), dpi=130)
+    plt.close(fig)
+
+    # ── ③ 連通圖版 ──
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.2))
+    labs, data, rate = [], [], []
+    for a, b in NB:
+        m = (n4 >= a) & (n4 <= b)
+        if m.sum() >= 10:
+            labs.append(str(a) if a == b else f"{a}-{b}")
+            data.append(wm[m])
+            rate.append(100 * tri[m].mean())
+    bp = axes[0].boxplot(data, labels=[f"{l}\n(n={len(d)})" for l, d in zip(labs, data)],
+                         showfliers=False, patch_artist=True)
+    for box in bp["boxes"]:
+        box.set(facecolor="#1c5cab", alpha=0.35)
+    axes[0].set_title("wm vs n_comp（全樣本）", fontsize=10)
+    axes[0].set_ylabel("wm (dB)")
+    axes[1].bar(labs, rate, color="#1baf7a", alpha=0.8)
+    axes[1].set_title("三標率 vs n_comp", fontsize=10)
+    axes[1].set_ylabel("%")
+    gx, gy_wm, gy_ob, gn_ = [], [], [], []
+    for a, b in ((1, 1), (2, 2), (3, 3), (4, 99)):
+        g = md & (gapm >= a) & (gapm <= b)
+        if g.sum() >= 10:
+            gx.append(str(a) if a == b else f"≥{a}")
+            gy_wm.append(float(np.median(wm[g])))
+            v = oob[g]
+            gy_ob.append(float(np.nanmedian(v)) if np.isfinite(v).any() else np.nan)
+            gn_.append(int(g.sum()))
+    ax2 = axes[2].twinx()
+    axes[2].plot(gx, gy_wm, "o-", color="#1c5cab", lw=2, label="wm 中位")
+    ax2.plot(gx, gy_ob, "s--", color="#d03b3b", lw=2, label="oob_bad 中位(低=好)")
+    axes[2].set_title(f"離島最小間隙 vs 目標（作戰區多件;n={gn_}）", fontsize=10)
+    axes[2].set_xlabel("gap_min (chessboard px)")
+    axes[2].legend(loc="upper left", fontsize=8)
+    ax2.legend(loc="upper right", fontsize=8)
+    fig.tight_layout()
+    fig.savefig(os.path.join(assets, "connectivity.png"), dpi=130)
+    plt.close(fig)
+    print("\n圖: docs/log/assets/analysis-05/ (pixel_tiers / pixel_assoc / block_grid / comp_class_maps / connectivity)")
+
+
 def cmd_gain(args):
     """性能期望三層帳（2026-07-12,Ricky「像 AdamW 一樣對提升有預期」＋防過早悲觀）:
     L1 階梯命中率——每批×臂在近門檻的實測命中率（不外推;下滑=礦脈枯竭早警）
@@ -875,6 +1149,8 @@ def main():
     on.set_defaults(func=cmd_oobnav)
     tr = sub.add_parser("terrain", help="地形 variogram——|Δwm| 中位 vs Hamming,自家真值（analysis-01 口徑）")
     tr.set_defaults(func=cmd_terrain)
+    rg = sub.add_parser("regularity", help="設計規律三層掃描:像素/組塊/連通-離島（analysis-05;表+圖落 assets/analysis-05）")
+    rg.set_defaults(func=cmd_regularity)
     gn = sub.add_parser("gain", help="性能期望三層帳（階梯/曲線/轉換;防過早悲觀;門檻自動讀 records.json）")
     gn.add_argument("--line", default="r23", help="批次線前綴（掃 dedust_<line>*_input）")
     gn.add_argument("--record", type=float, default=None, help="現任 wm 紀錄（預設讀 docs/records.json）")
