@@ -655,18 +655,25 @@ def cmd_batch(args):
 
     #? KPI 面板②覆蓋/③水位（decisions 2026-07-15 戰略換軸——每批必報,跨輪畫曲線）
     DYN = ("c18", "vg0338", "vg0396", "g1_038", "g1_039", "r2_016", "r3_001")
-    root_idx, dyn_pats = {}, []
+    this_batch = {st + "_input" for st in stores}
+    root_idx, dyn_pats, hist_pats = {}, [], []
     for fol in os.listdir(str(DATASET_PATH)):
         mp = DATASET_PATH.joinpath(fol, "manifest.json")
         if not fol.endswith("_input") or not mp.exists():
             continue
         for m in json.load(open(str(mp), encoding="utf-8")):
             root_idx.setdefault(m["id"], m.get("source_id"))
-            if any(t in m["id"] for t in DYN):
+            isdyn = any(t in m["id"] for t in DYN)
+            if isdyn or fol not in this_batch:
                 f = DATASET_PATH.joinpath(fol, m["id"] + ".pt")
                 if f.exists():
-                    dyn_pats.append(np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5)
+                    p_ = np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5
+                    if isdyn:
+                        dyn_pats.append(p_)
+                    if fol not in this_batch:
+                        hist_pats.append(p_)
     dpk = np.packbits(np.stack(dyn_pats).astype(np.uint8), axis=1)
+    hpk = np.packbits(np.stack(hist_pats).astype(np.uint8), axis=1)
     POP = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint16)
 
     def _rt(name):
@@ -692,15 +699,18 @@ def cmd_batch(args):
             blood += int(any(t in _rt(m["id"]) for t in DYN))
             fresh += int(m.get("kind") in ("denovo", "selfgen") or m.get("diff_px") == -1
                          or "rand" in str(m.get("source_id", "")))
-    #? 批內互異度（Ricky 視覺質疑 2026-07-15:d_dyn 量「離王朝」不量「彼此像不像」——盲點補上）
+    #? 互異度雙口徑（Ricky 2026-07-15:批內=塌縮偵測;對全歷史=重複偵測——批內分散可為假象,
+    #  每筆貼不同歷史樣本仍是微調〔r29b2 鄰域臂批內 15-29 但對歷史 4-6〕）
     bpk2 = np.packbits(np.stack(bpats).astype(np.uint8), axis=1)
     dmat = POP[np.bitwise_xor(bpk2[:, None, :], bpk2[None, :, :])].sum(axis=2)
     np.fill_diagonal(dmat, 9999)
     intra = int(np.median(dmat.min(axis=1)))
+    nn_h = int(np.median([POP[np.bitwise_xor(hpk, q)].sum(axis=1).min() for q in bpk2]))
     print("\n-- 覆蓋/多樣性（KPI②）--")
     print(f"  近王(d_dyn<20) {near}/{nall}={near / max(nall, 1):.0%} | 王系血統根 {blood / max(nall, 1):.0%}"
           f" | d_dyn 中位 {int(np.median(dds))} | 無親新血 {fresh}/{nall}={fresh / max(nall, 1):.0%}")
-    print(f"  批內最近鄰 Hamming 中位 {intra}（隨機基準 ~260;<50=批內高度同質）")
+    print(f"  批內最近鄰中位 {intra}（塌縮偵測;隨機基準 ~260）| 對全歷史最近鄰中位 {nn_h}"
+          f"（重複偵測;<10=微調批）")
 
     wms = [s["wm"] for s in rows]
     hist = []
