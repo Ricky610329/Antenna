@@ -676,7 +676,7 @@ def cmd_batch(args):
             cur = root_idx[cur]
         return cur
     bkeys, near, blood, fresh, nall = set(), 0, 0, 0, 0
-    dds = []
+    dds, bpats = [], []
     for st in stores:
         for m in json.load(open(str(DATASET_PATH.joinpath(st + "_input", "manifest.json")), encoding="utf-8")):
             f = DATASET_PATH.joinpath(st + "_input", m["id"] + ".pt")
@@ -684,6 +684,7 @@ def cmd_batch(args):
                 continue
             p = np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5
             bkeys.add(p.tobytes())
+            bpats.append(p)
             dd = int(POP[np.bitwise_xor(dpk, np.packbits(p.astype(np.uint8)))].sum(axis=1).min())
             dds.append(dd)
             nall += 1
@@ -691,9 +692,15 @@ def cmd_batch(args):
             blood += int(any(t in _rt(m["id"]) for t in DYN))
             fresh += int(m.get("kind") in ("denovo", "selfgen") or m.get("diff_px") == -1
                          or "rand" in str(m.get("source_id", "")))
+    #? 批內互異度（Ricky 視覺質疑 2026-07-15:d_dyn 量「離王朝」不量「彼此像不像」——盲點補上）
+    bpk2 = np.packbits(np.stack(bpats).astype(np.uint8), axis=1)
+    dmat = POP[np.bitwise_xor(bpk2[:, None, :], bpk2[None, :, :])].sum(axis=2)
+    np.fill_diagonal(dmat, 9999)
+    intra = int(np.median(dmat.min(axis=1)))
     print("\n-- 覆蓋/多樣性（KPI②）--")
     print(f"  近王(d_dyn<20) {near}/{nall}={near / max(nall, 1):.0%} | 王系血統根 {blood / max(nall, 1):.0%}"
           f" | d_dyn 中位 {int(np.median(dds))} | 無親新血 {fresh}/{nall}={fresh / max(nall, 1):.0%}")
+    print(f"  批內最近鄰 Hamming 中位 {intra}（隨機基準 ~260;<50=批內高度同質）")
 
     wms = [s["wm"] for s in rows]
     hist = []

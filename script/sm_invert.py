@@ -51,6 +51,17 @@ def _find(pid):
     raise SystemExit(f"找不到 {pid}")
 
 
+def _rand_blocks(rng):
+    """結構化隨機 init（2026-07-15 Ricky 視覺質疑後修 G-free mode collapse）：
+    隨機 3-8 矩形塊+稀網布——給梯度不同「科」的起點（均勻散點 init 永遠長不出塊語言）。"""
+    q = np.zeros((25, 25), bool)
+    for _ in range(int(rng.integers(3, 9))):
+        h, w = int(rng.integers(2, 9)), int(rng.integers(2, 9))
+        r0, c0 = int(rng.integers(0, 26 - h)), int(rng.integers(0, 26 - w))
+        q[r0:r0 + h, c0:c0 + w] = True
+    return q | (rng.random((25, 25)) < float(rng.uniform(0.05, 0.25)))
+
+
 def _freeze_mask(p0, blocks):
     """命脈塊 bool mask（與 dedust._skeleton 同口徑,label 編號一致）。"""
     from scipy.ndimage import gaussian_filter, label
@@ -220,19 +231,26 @@ def gen(args):
                 {"oob_target": float(args.oob_push), "w_oob": 0.5}) for k in range(args.n_oob)])
     manifest, seen = [], set()
     n_try = 0
-    for band_name, anc, band, opts in plan:
+    for k_pl, (band_name, anc, band, opts) in enumerate(plan):
         made = False
         while not made and n_try < len(plan) * 8:
             n_try += 1
             if anc is None:
-                p0, aname = (rng.random((25, 25)) > float(rng.uniform(0.35, 0.65))), "rand"
+                #? 反 mode collapse（2026-07-15,b2 實測 free 批內 NN 168<隨機 262）:
+                #  一半結構化塊 init（不同「科」的起點）+ 一半均勻散點;每筆抖 loss 權重與
+                #  收斂深度=不同地景不同深度,拉開梯度終點。
+                p0 = (_rand_blocks(rng) if k_pl % 2 else
+                      (rng.random((25, 25)) > float(rng.uniform(0.35, 0.65))))
+                aname = "randb" if k_pl % 2 else "rand"
                 base = None
             else:
                 pid, aname = anc
                 p0, base = pats[pid], pats[pid]
             fz = fmasks.get(anc[0]) if (anc and opts.get("freeze")) else None
+            _steps = args.steps if anc is not None else int(rng.integers(args.steps // 3, args.steps + 1))
+            _wrad = args.w_rad if anc is not None else float(rng.uniform(0.5, 2.0))
             qf, info = inv.invert(base if base is not None else p0, band, rng,
-                                  steps=args.steps, lr=args.lr, w_rad=args.w_rad,
+                                  steps=_steps, lr=args.lr, w_rad=_wrad,
                                   w_oob=opts.get("w_oob", args.w_oob),
                                   oob_target=opts.get("oob_target", 8.0), freeze=fz,
                                   jitter=0.8 if anc is not None else 0.0)
