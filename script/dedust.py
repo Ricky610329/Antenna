@@ -2917,6 +2917,24 @@ def select_r22mix(args):
             bmixp.append(dict(pat=q, parent="t07h", ops=[["surg_bmix"] + combo],
                               d=int((q != p0).sum()), stats=st))
 
+    #? G 臂（R29 主力;Ricky 2026-07-14 拍板「G 臂多跑一點」）:sm_invert gen 的 staging 候選讀入——
+    #  梯度反傳生成（四帶 mix:free/surg/champ/oobp）;band/anchor 記進 ops,HFSS 回來後
+    #  pred vs realized=各帶 adversarial 率=SM 盲區地圖。kind=grad,id 前綴 g;查重=hist+check-dup 雙保險。
+    gradp = []
+    if getattr(args, "g", 0) and getattr(args, "gstage", ""):
+        gs = os.path.abspath(getattr(args, "gstage"))
+        smf = json.load(open(os.path.join(gs, "staging_manifest.json"), encoding="utf-8"))
+        for m in smf:
+            q = np.asarray(torch.load(os.path.join(gs, m["id"] + ".pt"),
+                                      weights_only=True)).reshape(25, 25) > 0.5
+            kb = q.tobytes()
+            if kb in hist:
+                continue
+            hist.add(kb)
+            gradp.append(dict(pat=q, parent=f"{m['band']}_{m['anchor']}",
+                              ops=[["grad", m["band"], m["anchor"], m["dlim"]]],
+                              d=int(m["d"]), stats=piece_stats(q)))
+
     #? N 網架臂（R27;Ricky 2026-07-14「圖4-4 仔細看是幾個分塊→可做 variation」＋「27 做厚一點,網架」）:
     #  實測基礎=池頂家族 8-10 密度分塊載 66% 金屬+網布,t03/t09/n09/p00 共享同一骨架（scratch 2026-07-14）。
     #  骨架萃取=高斯 σ0.8×門檻 0.6（≥6px 質量塊,與分析口徑一致）;每錨四式變體:
@@ -3081,7 +3099,7 @@ def select_r22mix(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp + bmapp + bmixp
+    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp + bmapp + bmixp + gradp
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
@@ -3228,6 +3246,7 @@ def select_r22mix(args):
         yi = []
     bi = list(range(min(len(bmapp), getattr(args, "blockmap", 0))))   # 承重圖探針=決定性,全收到配額
     bxi = list(range(min(len(bmixp), getattr(args, "bmix", 0))))      # U 組合手術=生成即配額,全收
+    gi2 = list(range(min(len(gradp), getattr(args, "g", 0))))         # G 梯度臂=staging 即配額,全收
     #? A 資訊臂（R24 探索誘因包）:兩 SM（本版 vs harvest 底座）預測分歧最大=資訊量最高的量測點
     #  （query-by-committee 主動學習）;KPI=模型更新量非三標率。
     ii = []
@@ -3264,7 +3283,7 @@ def select_r22mix(args):
                                    ("slotchain", "s", si, sc), ("denovo", "d", di, dn),
                                    ("fragfix", "f", fi, fragp), ("mesh", "n", ni, meshp),
                                    ("surgery", "y", yi, surgp), ("blockmap", "b", bi, bmapp),
-                                   ("bmix", "u", bxi, bmixp),
+                                   ("bmix", "u", bxi, bmixp), ("grad", "g", gi2, gradp),
                                    ("infogain", "i", ii, core), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
@@ -3286,9 +3305,9 @@ def select_r22mix(args):
         torch.save(torch.tensor(pat, dtype=torch.float32), str(dirs[b].joinpath(e["id"] + ".pt")))
     for man, dd in zip(manifests, dirs):
         _save_manifest(man, dd)
-    print(f"r{rnd} b{args.batch}: O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}+S{len(si)}"
-          f"+D{len(di)}+F{len(fi)}+N{len(ni)}+Y{len(yi)}+B{len(bi)}+U{len(bxi)}+I{len(ii)}+W{len(wi)}"
-          f" → {len(dirs)} 夾 {[len(m) for m in manifests]}")
+    print(f"r{rnd} b{args.batch}: G{len(gi2)}+O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}+H{len(hs)}"
+          f"+S{len(si)}+D{len(di)}+F{len(fi)}+N{len(ni)}+Y{len(yi)}+B{len(bi)}+U{len(bxi)}+I{len(ii)}"
+          f"+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 #! DEPRECATED（2026-07-10 起查重改 _all_input_folders() 自動掃描）——僅舊 select 內建去重仍引用,
@@ -4432,6 +4451,37 @@ def main():
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.set_defaults(fn=select_r22mix, round=28, key="sel")
+
+    s = sub.add_parser("select-r29", help="R29 G 臂主力批：梯度反傳 staging 76+常規臂 74（判準寫死於 round-29 檔）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260716)
+    s.add_argument("--sm", default="sm_reanchor33.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--g", type=int, default=76, help="G 梯度臂（sm_invert gen staging 讀入,絕對主力）")
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"), help="staging 夾路徑（sm_invert gen 產物）")
+    s.add_argument("--o", type=int, default=12, help="O 梯子房租")
+    s.add_argument("--m", type=int, default=14, help="前瞻統計母體")
+    s.add_argument("--c", type=int, default=6)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=6)
+    s.add_argument("--d", type=int, default=12, help="D 降額（b3 倒退+對決四連敗;資訊帳仍榜首故不砍臂）")
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0, help="F 退役（修復精神由 G/U 繼承）")
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=14, help="I 降額（ikpi 帳 +0.20/+0.09/−0.00 紅利消退）")
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.12, dest="dyn_simcap")
+    s.add_argument("--wild", type=int, default=10)
+    s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.set_defaults(fn=select_r22mix, round=29, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)
