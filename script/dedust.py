@@ -3889,6 +3889,13 @@ def run(args):
     poison = [i for i, v in results.items() if "error" in v and v.get("attempts", 1) >= 3]
     if poison:
         print(f"⚠ 毒樣本嫌疑（3 連敗）{len(poison)} 筆: {','.join(poison[:10])}——人工判;重派=刪 .done+.claim")
+    if args.out is None:
+        #! 工作目錄=純暫存（結果全在 NAS）,跑完即刪——不清會吃滿系統碟:216 事件 2026-07-15,
+        #  C 槽 0GB=78 個 job 的 HFSS 專案暫存,磁碟見底→COM 例外 0x80070223 爆發（重開機=假好轉）。
+        #  只刪預設命名目錄;--out 自訂路徑視為使用者要保留。續跑不受影響（HFSS 專案會重建）。
+        import shutil
+        shutil.rmtree(str(out), ignore_errors=True)
+        print(f"（工作目錄已清: {out}）")
     print(f"\n完成。結果：{results_path}；報表：python -m script.dedust report")
 
 
