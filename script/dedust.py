@@ -4178,7 +4178,8 @@ def worker(args):
                   for d in junk for r, _, fs in os.walk(d) for f in fs)
         for d in junk:
             shutil.rmtree(d, ignore_errors=True)
-        print(f"🧹 啟動清掃: {len(junk)} 個工作目錄殘留（~{tot / 1e9:.1f} GB）已清")
+        print(f"🧹 啟動清掃: {len(junk)} 個中斷殘留目錄（~{tot / 1e9:.1f} GB）已清"
+              f"——正常兜底（跑完即刪管正常結束,這裡收 Ctrl-C/當機/讓位留下的）: {','.join(junk[:4])}")
     print(f"worker 上線 @ {me}（poll {args.poll}s / 單筆 timeout {args.timeout}s / stale {args.stale}m）")
     while True:
         if sd.joinpath("STOP").exists():
