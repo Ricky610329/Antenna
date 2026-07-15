@@ -22,3 +22,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 | `report_rad_polar.py` | 報告用：指定冠軍的方向圖**極座標**渲染（CLI:--ids/--labels;主波束朝上+±45°窗+G0−3dB 圈） |
 | `report_dist_vs_strategy.py` | 報告 §2：「分布 ≫ 策略」概念圖（輸 random 輸在分布不在搜尋;概念示意非實資料） |
 | `report_online_profile.py` | 報告 §8.1：線上 278s/ep 階段佔比 vs 批次線 160s/筆（profiling ec774de） |
+| `report_sprint48.py` | R28-R29 48hr 衝刺總覽（王座演進/多樣性換血/adversarial 閉環/低側誠實面板）→ docs/report/assets/sprint48.png |
