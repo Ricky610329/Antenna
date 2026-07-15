@@ -54,6 +54,8 @@ python -m script.dedust jobs-add --input dedust_r29bNa_input --store dedust_r29b
 |---|---|
 | 1（r29b1{a-f}） | 🔵 11:2x 發車（v33;gen 76 筆足額 {free28,surg24,champ12,oobp12};錨點 714;查重 0×6;--rad-key --novelty;三機體制——216 復役審查過〔r28g1c 23ok/1err=4%〕） |
 | ★ 216 連環故障**定罪** | 14:4x Ricky 本機檢查:**C 槽 0 GB=磁碟滿**——真兇=`_dedust_<store>` 工作目錄無清理機制（78 job 暫存吃光系統碟;0x80070223=HFSS 寫暫存失敗;重開機=pagefile 收縮假好轉）。「216 單機痼疾」推翻=全機隊制度傷（218 首現同錯=也快滿）;治本=run() 跑完自動刪工作目錄＋三台手動清存量;b1 由 37/218 續跑（a-e ✔ 全零 error） |
+| 1 收檔 | ✅ 15:34（150/150 全批零 error;判讀見 §4;重錨 v34——**ikpi grad +4.50 史上最高**;維護日:三台清磁碟+新版 worker〔跑完即刪+啟動清掃+probe 探針〕,37/218 探針驗收全綠） |
+| 2（r29b2{a-f}）判決批 | 🔵 16:2x 發車（v34;gen {free24,surg16,**champ24 加倍**,oobp12};錨點 722;查重 0×6〔f 單獨補跑,六連跑 10m timeout 老問題〕;--rad-key --novelty;**adversarial training 閉環量測**=同攻擊打 v34,adv 率降幅=SM 補洞速度） |
 
 ## 4. 分析 (Analyze)
 **b1（2026-07-15 15:34 收檔,150/150 全批零 error）——G 臂首航：SM 被梯度打穿,champ 帶唯一活口**：
