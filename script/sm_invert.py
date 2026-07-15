@@ -62,6 +62,17 @@ def _rand_blocks(rng):
     return q | (rng.random((25, 25)) < float(rng.uniform(0.05, 0.25)))
 
 
+def _rand_frag(rng):
+    """碎片語言 init（Ricky 2026-07-15「比較少學長那破碎的——探索這些蠻重要」）：
+    15-30 個 1-3px 小塊+網布=學長碎片族（低側選擇性王者,6.1-8.7dB）的隨機版起點。"""
+    q = np.zeros((25, 25), bool)
+    for _ in range(int(rng.integers(15, 31))):
+        h, w = int(rng.integers(1, 4)), int(rng.integers(1, 4))
+        r0, c0 = int(rng.integers(0, 26 - h)), int(rng.integers(0, 26 - w))
+        q[r0:r0 + h, c0:c0 + w] = True
+    return q | (rng.random((25, 25)) < float(rng.uniform(0.15, 0.35)))
+
+
 def _freeze_mask(p0, blocks):
     """命脈塊 bool mask（與 dedust._skeleton 同口徑,label 編號一致）。"""
     from scipy.ndimage import gaussian_filter, label
@@ -218,8 +229,10 @@ def gen(args):
     os.makedirs(out, exist_ok=True)
     surg_anchors = [("n27b1_020_t07", "t07h"), ("n27b1_018_p00", "p00h")]
     champ_anchors = [("s28b3_005_a024", "king"), ("m23b4_030_r3_001", "exking")]
-    oob_anchors = [("m24b2_015_o1_029_vg033", "uoob"), ("n27b1_020_t07", "t07h"),
-                   ("n27b1_018_p00", "p00h")]
+    #? oobp 錨=原版碎片（非 half 實心化!Ricky 2026-07-15:管線裡沒人產碎片語言——碎片族=
+    #  低側王者,配 oobp 低側目標=一批樣本兩個目標）＋可用帶外王。
+    oob_anchors = [("m24b2_015_o1_029_vg033", "uoob"), ("t07_top", "t07f"),
+                   ("p00_orig", "p00f")]
     pats = {pid: _find(pid) for pid, _ in surg_anchors + champ_anchors + oob_anchors}
     fmasks = {pid: _freeze_mask(pats[pid], FREEZE_BLOCKS[pid]) for pid in FREEZE_BLOCKS
               if pid in pats}
@@ -237,11 +250,11 @@ def gen(args):
             n_try += 1
             if anc is None:
                 #? 反 mode collapse（2026-07-15,b2 實測 free 批內 NN 168<隨機 262）:
-                #  一半結構化塊 init（不同「科」的起點）+ 一半均勻散點;每筆抖 loss 權重與
-                #  收斂深度=不同地景不同深度,拉開梯度終點。
-                p0 = (_rand_blocks(rng) if k_pl % 2 else
-                      (rng.random((25, 25)) > float(rng.uniform(0.35, 0.65))))
-                aname = "randb" if k_pl % 2 else "rand"
+                #  init 三分=均勻散點/結構化塊/碎片語言（不同「科」的起點）;每筆抖 loss 權重
+                #  與收斂深度=不同地景不同深度,拉開梯度終點。
+                p0, aname = [(lambda: (rng.random((25, 25)) > float(rng.uniform(0.35, 0.65)), "rand")),
+                             (lambda: (_rand_blocks(rng), "randb")),
+                             (lambda: (_rand_frag(rng), "randf"))][k_pl % 3]()
                 base = None
             else:
                 pid, aname = anc
