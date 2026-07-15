@@ -3899,6 +3899,89 @@ def run(args):
     print(f"\n完成。結果：{results_path}；報表：python -m script.dedust report")
 
 
+def _probe_check(me, sd):
+    """機況探針（Ricky 2026-07-15「強化 worker,在 NAS 執行指令查各台狀況+整理」）:
+    worker 每輪 poll 檢查 jobs_state/probe_<ip末段>.json,執行**白名單動作**後寫 _result 檔並刪指令。
+    白名單=status（磁碟/殘留/git 版/HFSS 行程）/cleanup（刪 _dedust_* 殘留;空閒時執行=天然安全）
+    ——不執行任意 shell（安全紅線）。發令端=`dedust probe --machine <末段> [--action ...]`。
+    ⚠ 回應時機=worker 空閒的 poll 輪;跑 job 中不回應（最長延遲≈一個 job ~70 分）。"""
+    import glob
+    import shutil
+    import subprocess
+    import time
+    tag = me.split(".")[-1]
+    pf = sd.joinpath(f"probe_{tag}.json")
+    if not pf.exists():
+        return
+    try:
+        act = json.load(open(str(pf), encoding="utf-8")).get("action", "status")
+    except Exception:
+        act = "status"
+    out = dict(machine=me, at=time.strftime("%Y-%m-%d %H:%M:%S"), action=act)
+    try:
+        junk = [d for d in glob.glob("_dedust_*") if os.path.isdir(d)]
+        jgb = sum(os.path.getsize(os.path.join(r, f))
+                  for d in junk for r, _, fs in os.walk(d) for f in fs) / 1e9
+        if act == "status":
+            du = shutil.disk_usage(os.path.abspath(os.sep))
+            try:
+                rev = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
+                                              text=True, stderr=subprocess.DEVNULL).strip()
+            except Exception:
+                rev = "?"
+            try:
+                tl = subprocess.check_output(["tasklist", "/FI", "IMAGENAME eq ansysedt.exe"],
+                                             text=True, stderr=subprocess.DEVNULL)
+                n_hfss = tl.count("ansysedt.exe")
+            except Exception:
+                n_hfss = -1
+            tmp = os.environ.get("TEMP", "")
+            tgb = sum(os.path.getsize(os.path.join(r, f))
+                      for r, _, fs in os.walk(tmp) for f in fs
+                      if os.path.exists(os.path.join(r, f))) / 1e9 if tmp else -1
+            out.update(disk_free_gb=round(du.free / 1e9, 1), disk_total_gb=round(du.total / 1e9, 1),
+                       workdirs=len(junk), workdirs_gb=round(jgb, 2), temp_gb=round(tgb, 1),
+                       git=rev, hfss_procs=n_hfss, cwd=os.getcwd())
+        elif act == "cleanup":
+            for d in junk:
+                shutil.rmtree(d, ignore_errors=True)
+            out.update(cleaned=len(junk), freed_gb=round(jgb, 2))
+        else:
+            out["error"] = f"未知動作 {act}（白名單: status / cleanup）"
+    except Exception as e:
+        out["error"] = str(e)
+    tmpf = str(sd.joinpath(f"probe_{tag}_result.json")) + ".tmp"
+    with open(tmpf, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False)
+    os.replace(tmpf, str(sd.joinpath(f"probe_{tag}_result.json")))
+    try:
+        os.remove(str(pf))
+    except OSError:
+        pass
+    print(f"📡 探針回應: {act} → probe_{tag}_result.json")
+
+
+def probe(args):
+    """發機況探針給指定正式機（開發機側;worker 空閒 poll 輪回應,見 _probe_check）。
+    用法: python -m script.dedust probe --machine 216 [--action status|cleanup] [--wait 360]"""
+    import time
+    _, sd = _jobs_paths()
+    pf = sd.joinpath(f"probe_{args.machine}.json")
+    rf = sd.joinpath(f"probe_{args.machine}_result.json")
+    if rf.exists():
+        os.remove(str(rf))
+    with open(str(pf), "w", encoding="utf-8") as f:
+        json.dump(dict(action=args.action, from_at=time.strftime("%Y-%m-%d %H:%M:%S")), f)
+    print(f"探針已發（{args.machine}/{args.action}）——worker 空閒 poll 輪回應,最長等 {args.wait}s…")
+    t0 = time.time()
+    while time.time() - t0 < args.wait:
+        if rf.exists():
+            print(json.dumps(json.load(open(str(rf), encoding="utf-8")), ensure_ascii=False, indent=1))
+            return
+        time.sleep(5)
+    print("⚠ 逾時無回應——worker 沒跑/跑 job 中（佔線）/舊版沒有探針;指令檔留在佇列,worker 回來會補答")
+
+
 # ---------------------------------------------------------------- 資料工廠（NAS 派工,2026-07-10）
 def _jobs_paths():
     """佇列=DATASET_PATH/jobs.json（人/agent 編輯）;狀態檔=jobs_state/<store>.{claim,done,fail}。"""
@@ -4007,6 +4090,7 @@ def worker(args):
         if sd.joinpath("STOP").exists():
             print("STOP 檔存在,worker 收工")
             break
+        _probe_check(me, sd)                             # 機況探針（status/cleanup;空閒輪回應）
         jobs = sorted(json.load(open(str(qp), encoding="utf-8")), key=lambda j: j.get("prio", 9)) \
             if qp.exists() else []
         picked = None
@@ -4663,6 +4747,13 @@ def main():
     s = sub.add_parser("jobs-ls", help="看派工佇列現況（預設隱藏 done 歷史;--all 列全部）")
     s.add_argument("--all", action="store_true", help="連 done 歷史 job 一起列")
     s.set_defaults(fn=jobs_ls)
+
+    s = sub.add_parser("probe", help="機況探針：經 NAS 向正式機發白名單指令（worker 空閒輪回應）")
+    s.add_argument("--machine", required=True, help="IP 末段（216/218/37）")
+    s.add_argument("--action", default="status", choices=["status", "cleanup"],
+                   help="status=磁碟/殘留/git/HFSS 行程;cleanup=刪 _dedust_* 殘留")
+    s.add_argument("--wait", type=int, default=360, help="等回應秒數（worker 跑 job 中會佔線）")
+    s.set_defaults(fn=probe)
 
     s = sub.add_parser("watch", help="收檔偵測（blocking;Monitor 直接掛;全終態 exit0/含 fail exit1）")
     s.add_argument("--stores", required=True, help="逗號分隔 store 名（dedust_r23b4a,...）")

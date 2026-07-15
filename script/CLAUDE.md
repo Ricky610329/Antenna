@@ -24,8 +24,10 @@
    `.fail`（JSON 記 machines 名單）停機→**別台 worker 名單無自己=自動接管重跑**
    （毒批收斂:全機敗過=永久 fail 等人工）＋批尾自動補測（殘留 error 殺重開 HFSS 重試
    `--retry-pass` 輪,預設 2;同筆 3 連敗=毒樣本嫌疑不再試）;停止=建 `jobs_state/STOP`。
-   **工作目錄（`_dedust_<store>`）跑完自動刪**（2026-07-15 起;216 磁碟滿事件——0x80070223
-   連環保險絲的真兇=78 個 job 暫存吃光 C 槽;`--out` 自訂路徑不刪）。
+   **工作目錄（`_dedust_<store>`）跑完自動刪＋worker 啟動清掃**（2026-07-15 起;216 磁碟滿事件——
+   0x80070223 連環保險絲的真兇=78 個 job 暫存吃光 C 槽;`--out` 自訂路徑不刪）。
+   **機況探針**：`dedust probe --machine <IP末段> [--action status|cleanup]`——經 NAS 白名單指令,
+   worker 空閒 poll 輪回應（磁碟/殘留/git 版/HFSS 行程;跑 job 中佔線最長 ~70 分才答）。
 6. 錨點注意：x00 是破對稱錨點（含 (4,18) 翻轉），x00 條目收尾用除塵不對稱化（`_finish` 語義），
    不要 `symmetrize`（round-16 §3 caveat）。
 
