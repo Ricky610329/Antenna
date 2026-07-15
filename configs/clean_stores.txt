@@ -219,3 +219,31 @@ dedust_r28b1d
 dedust_r28b1e
 dedust_r28b1f
 dedust_r28va
+# sm_reanchor32.pth 追加（2026-07-15）
+dedust_r28b2a
+dedust_r28b2b
+dedust_r28b2c
+dedust_r28b2d
+dedust_r28b2e
+dedust_r28b2f
+# sm_reanchor33.pth 追加（2026-07-15）
+dedust_r28b3a
+dedust_r28b3b
+dedust_r28b3c
+dedust_r28b3d
+dedust_r28b3e
+dedust_r28b3f
+# sm_reanchor34.pth 追加（2026-07-15）
+dedust_r29b1a
+dedust_r29b1b
+dedust_r29b1c
+dedust_r29b1d
+dedust_r29b1e
+dedust_r29b1f
+# sm_reanchor35.pth 追加（2026-07-15）
+dedust_r29b2a
+dedust_r29b2b
+dedust_r29b2c
+dedust_r29b2d
+dedust_r29b2e
+dedust_r29b2f

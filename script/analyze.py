@@ -1008,6 +1008,29 @@ def cmd_batch(args):
     print(f"  帕累托前緣增量（wm×rad×oob 對全歷史非支配）: +{len(newf)} 筆"
           + ("  例: " + ",".join(s["id"] for s in newf[:3]) if newf else ""))
 
+    #? G 臂帶別 adversarial 表（KPI①;scratchpad 用過兩次→工具化 2026-07-15）
+    gg = [s for s in rows if s["kind"] == "grad"]
+    if gg:
+        gman = {}
+        for st2 in stores:
+            for m in json.load(open(str(DATASET_PATH.joinpath(st2 + "_input", "manifest.json")),
+                                    encoding="utf-8")):
+                if m["kind"] == "grad":
+                    gman[m["id"]] = m["ops"][0][1]
+        print("\n-- G 臂帶別 adversarial（KPI①;adv率=pred_wm≥0 而 real<−1 佔比）--")
+        print("| 帶 | n | pred_wm中位 | real_wm中位 | |Δ|中位 | adv率 | 三標 |")
+        print("|---|---|---|---|---|---|---|")
+        for band in ("free", "surg", "champ", "oobp"):
+            v = [s for s in gg if gman.get(s["id"]) == band and s.get("pwm") is not None]
+            if not v:
+                continue
+            gap = np.median([abs(s["wm"] - s["pwm"]) for s in v])
+            opt = [s for s in v if s["pwm"] >= 0]
+            advr = f"{sum(1 for s in opt if s['wm'] < -1) / len(opt):.0%}({len(opt)})" if opt else "n/a(0)"
+            t3g = sum(1 for s in v if tri(s))
+            print(f"| {band} | {len(v)} | {np.median([s['pwm'] for s in v]):+.2f} |"
+                  f" {np.median([s['wm'] for s in v]):+.2f} | {gap:.2f} | {advr} | {t3g} |")
+
     #? 反馬太④誤差錨點池（2026-07-15 Ricky 核准）:SM |pred−real| top=下批錨點——錯哪補哪。
     #  寫 NAS error_anchors.json,select_r22mix 自動吸收（外掛進冷支池）。
     epred = [s for s in rows if s.get("pwm") is not None]
