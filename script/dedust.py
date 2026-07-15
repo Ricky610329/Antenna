@@ -4079,12 +4079,12 @@ def _selfgen_chunk(me, args):
     made, tries = [], 0
     while len(made) < args.selfgen and tries < args.selfgen * 300:
         tries += 1
-        #? 三分生成（Ricky 2026-07-15「空轉輪跑隨機一點…增加 variation」——原歷史翻 1-12bit
-        #  =微調批同質大戶）:①歷史翻 bit（幅度放寬 1-30）②塊語言隨機③碎片語言隨機。
+        #? 三分生成（Ricky 2026-07-15「空轉輪跑隨機一點…增加 variation」→「再翻多一點,50 以上」
+        #  ——原歷史翻 1-12bit=微調批同質大戶）:①歷史大翻 bit（50-150=真正遠域）②塊語言③碎片語言。
         mode = tries % 3
         if mode == 0:
             q = bases[int(rng.integers(0, len(bases)))].copy()
-            k = int(rng.integers(1, 31))
+            k = int(rng.integers(50, 151))
             q.ravel()[rng.choice(625, size=k, replace=False)] ^= True
             src, ops = "hist_flip", [["flips", k]]
         elif mode == 1:
