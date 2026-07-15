@@ -2718,7 +2718,10 @@ def select_r22mix(args):
         return cur
 
     def pick_two_pool():
-        pool = dyn_names if (rng.random() < 0.7 and dyn_names) else cold_names
+        #? 王朝/冷支抽樣比:R21 起 70/30;2026-07-15 戰略換軸（decisions）降 40/60——王系鄰域
+        #  資料 ikpi ±0.05（教不了 SM）,錨點權重讓給冷支/新血。fallback 0.7=舊 select 重現性。
+        dfrac = getattr(args, "dyn_frac", 0.7)
+        pool = dyn_names if (rng.random() < dfrac and dyn_names) else cold_names
         return pool[int(rng.integers(0, len(pool)))] if pool else list(P)[0]
 
     def pick_cold():
@@ -4580,6 +4583,8 @@ def main():
     s.add_argument("--novelty", action="store_true")
     s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
     s.add_argument("--dyn-simcap", type=float, default=0.12, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.4, dest="dyn_frac",
+                   help="錨點抽樣王朝池機率（2026-07-15 戰略換軸 0.7→0.4;冷支/新血讓位）")
     s.add_argument("--wild", type=int, default=10)
     s.add_argument("--shards", type=int, default=6)
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")

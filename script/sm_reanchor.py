@@ -146,6 +146,18 @@ def train(args):
     out = DATASET_PATH.joinpath(args.out)
     sm.save_as(out)
     print(f"loss: 首 {losses[0]:.3f} → 末 {losses[-1]:.3f}；權重 → {out}")
+    #? KPI 主軸①:SM 準度曲線（decisions 2026-07-15 戰略換軸）——每版重錨自動評 held-out,
+    #  append docs/kpi.csv（進 git=跨輪曲線真相源;held-out 切分決定性,跨版可比）。
+    import time as _t2
+    errs = _wm_errs(sm, ho)
+    med, p90 = float(np.median(errs)), float(np.percentile(errs, 90))
+    kp = os.path.join(REPO, "docs", "kpi.csv")
+    newfile = not os.path.exists(kp)
+    with open(kp, "a", encoding="utf-8") as f:
+        if newfile:
+            f.write("date,sm,heldout_n,wm_err_med,wm_err_p90\n")
+        f.write(f"{_t2.strftime('%Y-%m-%d %H:%M')},{args.out},{len(errs)},{med:.3f},{p90:.3f}\n")
+    print(f"held-out 準度: |wm err| 中位 {med:.3f} / P90 {p90:.3f}（n={len(errs)}）→ docs/kpi.csv")
 
 
 def _load_denovo():

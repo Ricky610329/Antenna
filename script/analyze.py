@@ -653,6 +653,70 @@ def cmd_batch(args):
     else:
         print("  （無）")
 
+    #? KPI 面板②覆蓋/③水位（decisions 2026-07-15 戰略換軸——每批必報,跨輪畫曲線）
+    DYN = ("c18", "vg0338", "vg0396", "g1_038", "g1_039", "r2_016", "r3_001")
+    root_idx, dyn_pats = {}, []
+    for fol in os.listdir(str(DATASET_PATH)):
+        mp = DATASET_PATH.joinpath(fol, "manifest.json")
+        if not fol.endswith("_input") or not mp.exists():
+            continue
+        for m in json.load(open(str(mp), encoding="utf-8")):
+            root_idx.setdefault(m["id"], m.get("source_id"))
+            if any(t in m["id"] for t in DYN):
+                f = DATASET_PATH.joinpath(fol, m["id"] + ".pt")
+                if f.exists():
+                    dyn_pats.append(np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5)
+    dpk = np.packbits(np.stack(dyn_pats).astype(np.uint8), axis=1)
+    POP = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint16)
+
+    def _rt(name):
+        seen, cur = set(), name
+        while cur in root_idx and root_idx[cur] and cur not in seen:
+            seen.add(cur)
+            cur = root_idx[cur]
+        return cur
+    bkeys, near, blood, fresh, nall = set(), 0, 0, 0, 0
+    dds = []
+    for st in stores:
+        for m in json.load(open(str(DATASET_PATH.joinpath(st + "_input", "manifest.json")), encoding="utf-8")):
+            f = DATASET_PATH.joinpath(st + "_input", m["id"] + ".pt")
+            if not f.exists():
+                continue
+            p = np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5
+            bkeys.add(p.tobytes())
+            dd = int(POP[np.bitwise_xor(dpk, np.packbits(p.astype(np.uint8)))].sum(axis=1).min())
+            dds.append(dd)
+            nall += 1
+            near += int(dd < 20)
+            blood += int(any(t in _rt(m["id"]) for t in DYN))
+            fresh += int(m.get("kind") in ("denovo", "selfgen") or m.get("diff_px") == -1
+                         or "rand" in str(m.get("source_id", "")))
+    print("\n-- 覆蓋/多樣性（KPI②）--")
+    print(f"  近王(d_dyn<20) {near}/{nall}={near / max(nall, 1):.0%} | 王系血統根 {blood / max(nall, 1):.0%}"
+          f" | d_dyn 中位 {int(np.median(dds))} | 無親新血 {fresh}/{nall}={fresh / max(nall, 1):.0%}")
+
+    wms = [s["wm"] for s in rows]
+    hist = []
+    from script.dedust import oob_metrics as _oobm
+    for p, wm, rad, resp in _load_truths():
+        if p.reshape(-1).tobytes() in bkeys or rad is None or resp is None:
+            continue
+        hist.append((wm, rad, _oobm(resp)["oob_bad"]))
+    H = np.array(hist) if hist else np.zeros((0, 3))
+    newf = []
+    for s in rows:
+        if s["rad"] is None or s["oob"] is None:
+            continue
+        dom = ((H[:, 0] >= s["wm"]) & (H[:, 1] >= s["rad"]) & (H[:, 2] <= s["oob"])
+               & ((H[:, 0] > s["wm"]) | (H[:, 1] > s["rad"]) | (H[:, 2] < s["oob"])))
+        if not dom.any():
+            newf.append(s)
+    print("-- 整體水位/前緣（KPI③）--")
+    print(f"  本批 wm 中位 {np.median(wms):+.2f} / P90 {np.percentile(wms, 90):+.2f}"
+          f" / 作戰區(wm≥−1) {sum(w >= -1 for w in wms)}/{len(wms)}")
+    print(f"  帕累托前緣增量（wm×rad×oob 對全歷史非支配）: +{len(newf)} 筆"
+          + ("  例: " + ",".join(s["id"] for s in newf[:3]) if newf else ""))
+
     for kind in ("slotchain", "denovo", "infogain", "hslot", "repair"):
         g = sorted([s for s in rows if s["kind"] == kind], key=lambda s: -s["wm"])[:5]
         if g:
