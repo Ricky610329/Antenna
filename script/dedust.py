@@ -4028,6 +4028,26 @@ def jobs_add(args):
     print(f"已入佇列: {args.store} (prio {args.prio});目前 {len(jobs)} 個 job")
 
 
+def _rand_blocks(rng):
+    """結構化隨機（塊語言）:隨機 3-8 矩形塊+稀網布。sm_invert G-free 與 selfgen 共用。"""
+    q = np.zeros((25, 25), bool)
+    for _ in range(int(rng.integers(3, 9))):
+        h, w = int(rng.integers(2, 9)), int(rng.integers(2, 9))
+        r0, c0 = int(rng.integers(0, 26 - h)), int(rng.integers(0, 26 - w))
+        q[r0:r0 + h, c0:c0 + w] = True
+    return q | (rng.random((25, 25)) < float(rng.uniform(0.05, 0.25)))
+
+
+def _rand_frag(rng):
+    """碎片語言隨機:15-30 個 1-3px 小塊+網布（學長碎片族的隨機版）。"""
+    q = np.zeros((25, 25), bool)
+    for _ in range(int(rng.integers(15, 31))):
+        h, w = int(rng.integers(1, 4)), int(rng.integers(1, 4))
+        r0, c0 = int(rng.integers(0, 26 - h)), int(rng.integers(0, 26 - w))
+        q[r0:r0 + h, c0:c0 + w] = True
+    return q | (rng.random((25, 25)) < float(rng.uniform(0.15, 0.35)))
+
+
 _SELFGEN_BASES = None
 
 
@@ -4059,16 +4079,30 @@ def _selfgen_chunk(me, args):
     made, tries = [], 0
     while len(made) < args.selfgen and tries < args.selfgen * 300:
         tries += 1
-        q = bases[int(rng.integers(0, len(bases)))].copy()
-        k = int(rng.integers(1, 13))
-        q.ravel()[rng.choice(625, size=k, replace=False)] ^= True
+        #? 三分生成（Ricky 2026-07-15「空轉輪跑隨機一點…增加 variation」——原歷史翻 1-12bit
+        #  =微調批同質大戶）:①歷史翻 bit（幅度放寬 1-30）②塊語言隨機③碎片語言隨機。
+        mode = tries % 3
+        if mode == 0:
+            q = bases[int(rng.integers(0, len(bases)))].copy()
+            k = int(rng.integers(1, 31))
+            q.ravel()[rng.choice(625, size=k, replace=False)] ^= True
+            src, ops = "hist_flip", [["flips", k]]
+        elif mode == 1:
+            q = _rand_blocks(rng)
+            q[FEED] = True
+            src, ops = "rand_blocks", [["randb"]]
+        else:
+            q = _rand_frag(rng)
+            q[FEED] = True
+            src, ops = "rand_frag", [["randf"]]
         if not (200 <= int(q.sum()) <= 550) or q.tobytes() in hist:
             continue
         hist.add(q.tobytes())
         pid = f"a{tag[4:]}_{len(manifest) + len(made):05d}"
         torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
         made.append(dict(id=pid, kind="selfgen", family=f"AUTO_{tag}", removed_px=0,
-                         **piece_stats(q), source_id="hist_flip", ops=[["flips", k]], diff_px=k))
+                         **piece_stats(q), source_id=src, ops=ops,
+                         diff_px=(ops[0][1] if mode == 0 else -1)))    # -1=無親新血（同 grad-free 口徑）
     if not made:
         return False
     manifest += made

@@ -28,7 +28,8 @@ import torch
 from antenna.training import load_config, setup_responses, PORT_SPECS
 from antenna.losses import worst_margin
 from antenna.zoo import SURROGATES
-from script.dedust import DEFAULT_CFG, FEED, piece_stats, _all_input_folders
+from script.dedust import (DEFAULT_CFG, FEED, piece_stats, _all_input_folders,
+                           _rand_blocks, _rand_frag)
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -51,26 +52,7 @@ def _find(pid):
     raise SystemExit(f"找不到 {pid}")
 
 
-def _rand_blocks(rng):
-    """結構化隨機 init（2026-07-15 Ricky 視覺質疑後修 G-free mode collapse）：
-    隨機 3-8 矩形塊+稀網布——給梯度不同「科」的起點（均勻散點 init 永遠長不出塊語言）。"""
-    q = np.zeros((25, 25), bool)
-    for _ in range(int(rng.integers(3, 9))):
-        h, w = int(rng.integers(2, 9)), int(rng.integers(2, 9))
-        r0, c0 = int(rng.integers(0, 26 - h)), int(rng.integers(0, 26 - w))
-        q[r0:r0 + h, c0:c0 + w] = True
-    return q | (rng.random((25, 25)) < float(rng.uniform(0.05, 0.25)))
-
-
-def _rand_frag(rng):
-    """碎片語言 init（Ricky 2026-07-15「比較少學長那破碎的——探索這些蠻重要」）：
-    15-30 個 1-3px 小塊+網布=學長碎片族（低側選擇性王者,6.1-8.7dB）的隨機版起點。"""
-    q = np.zeros((25, 25), bool)
-    for _ in range(int(rng.integers(15, 31))):
-        h, w = int(rng.integers(1, 4)), int(rng.integers(1, 4))
-        r0, c0 = int(rng.integers(0, 26 - h)), int(rng.integers(0, 26 - w))
-        q[r0:r0 + h, c0:c0 + w] = True
-    return q | (rng.random((25, 25)) < float(rng.uniform(0.15, 0.35)))
+#? _rand_blocks/_rand_frag（塊語言/碎片語言隨機生成）已上移 script.dedust（selfgen 共用）
 
 
 def _freeze_mask(p0, blocks):
