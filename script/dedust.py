@@ -2962,7 +2962,16 @@ def select_r22mix(args):
     #  =帶外最強旋鈕 ρ−0.48——結構先驗首次進 select）。kind=lobeach,id 前綴 l。
     lbp = []
     if getattr(args, "lbeach", 0):
-        LBEACH = [("lb_dnv6", "dedust_r29b3c_input", "d29b3_006_denovo"),
+        #? b2 起錨集換「中繼帶」（R30b1 判讀:深淵據點 lo −8~−10 但 wm −11~−19 修不回;
+        #  全語料掃出 89 筆中繼帶——half/手術系 lo −4~−5∧wm≈0,oob_bad 6.7-8.6=天花板下 2dB,
+        #  卡的是 rad——修訂註記見 round-30 §1）。b1 用的深淵七錨保留註解供重現。
+        LBEACH = [("lb_y10n09", "dedust_r28b2c_input", "y28b2_010_n09h"),
+                  ("lb_n09", "dedust_r27b1f_input", "n27b1_017_n09"),
+                  ("lb_y35t03", "dedust_r28b1d_input", "y28b1_035_t03h"),
+                  ("lb_f3t07", "dedust_r20g3c_input", "f3_011_t07"),
+                  ("lb_t03", "dedust_r27b1b_input", "n27b1_019_t03"),
+                  ("lb_y15n09", "dedust_r28b2b_input", "y28b2_015_n09h")] if args.batch >= 2 else \
+                 [("lb_dnv6", "dedust_r29b3c_input", "d29b3_006_denovo"),
                   ("lb_exk43", "dedust_r29b3d_input", "g29b3_043_champ_exking"),
                   ("lb_err0", "dedust_r29b3a_input", "i29b3_000_err_g29b2_06"),
                   ("lb_p00h39", "dedust_r29b3f_input", "g29b3_039_surg_p00h"),

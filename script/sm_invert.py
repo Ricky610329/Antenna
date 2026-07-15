@@ -211,10 +211,10 @@ def gen(args):
     os.makedirs(out, exist_ok=True)
     surg_anchors = [("n27b1_020_t07", "t07h"), ("n27b1_018_p00", "p00h")]
     champ_anchors = [("s28b3_005_a024", "king"), ("m23b4_030_r3_001", "exking")]
-    #? oobp 錨=原版碎片（非 half 實心化!Ricky 2026-07-15:管線裡沒人產碎片語言——碎片族=
-    #  低側王者,配 oobp 低側目標=一批樣本兩個目標）＋可用帶外王。
-    oob_anchors = [("m24b2_015_o1_029_vg033", "uoob"), ("t07_top", "t07f"),
-                   ("p00_orig", "p00f")]
+    #? oobp 錨（R30b2 起=中繼帶:lo −4~−5∧wm≈0∧oob_bad 6.7-8.6 的 half/手術系——天花板 9.0
+    #  下 2dB 的實體;梯度多目標把 rad 拉回=破天花板最短路徑。R29~R30b1 版=碎片原版+uoob）。
+    oob_anchors = [("y28b1_035_t03h", "brdg_t03"), ("f3_011_t07", "brdg_t07"),
+                   ("n27b1_019_t03", "brdg_t03b")]
     pats = {pid: _find(pid) for pid, _ in surg_anchors + champ_anchors + oob_anchors}
     fmasks = {pid: _freeze_mask(pats[pid], FREEZE_BLOCKS[pid]) for pid in FREEZE_BLOCKS
               if pid in pats}
