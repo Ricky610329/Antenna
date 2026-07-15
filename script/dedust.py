@@ -3990,6 +3990,18 @@ def worker(args):
     from antenna.utils.web import get_local_ip
     me = get_local_ip()
     qp, sd = _jobs_paths()
+    #? 啟動清掃（2026-07-15 磁碟滿事件）:「跑完即刪」只管正常結束,這裡掃中斷殘留（判死/讓位/
+    #  當機留下的 _dedust_*）——worker 啟動當下本機無 active run,cwd 的 _dedust_* 全是垃圾。
+    #  存量歷史（216 C 槽 0GB 的 78 個目錄）也靠這行:pull 新版重啟 worker 即清,免手動。
+    import glob
+    import shutil
+    junk = [d for d in glob.glob("_dedust_*") if os.path.isdir(d)]
+    if junk:
+        tot = sum(os.path.getsize(os.path.join(r, f))
+                  for d in junk for r, _, fs in os.walk(d) for f in fs)
+        for d in junk:
+            shutil.rmtree(d, ignore_errors=True)
+        print(f"🧹 啟動清掃: {len(junk)} 個工作目錄殘留（~{tot / 1e9:.1f} GB）已清")
     print(f"worker 上線 @ {me}（poll {args.poll}s / 單筆 timeout {args.timeout}s / stale {args.stale}m）")
     while True:
         if sd.joinpath("STOP").exists():
