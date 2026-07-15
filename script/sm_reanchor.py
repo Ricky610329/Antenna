@@ -111,6 +111,26 @@ def _make_sm():
     return SURROGATES["mlp"](cache, 25 * 25, (len(LABELS), n_pts))
 
 
+_POP8 = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint16)
+DYN = ("c18", "vg0338", "vg0396", "g1_038", "g1_039", "r2_016", "r3_001")
+
+
+def _dyn_pack():
+    """王朝家族參照集（分層 held-out 用;同 analyze/tax 口徑）。"""
+    import json
+    pats = []
+    for fol in os.listdir(str(DATASET_PATH)):
+        mp = DATASET_PATH.joinpath(fol, "manifest.json")
+        if not fol.endswith("_input") or not mp.exists():
+            continue
+        for m in json.load(open(str(mp), encoding="utf-8")):
+            if any(t in m["id"] for t in DYN):
+                f = DATASET_PATH.joinpath(fol, m["id"] + ".pt")
+                if f.exists():
+                    pats.append(np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5)
+    return np.packbits(np.stack(pats).astype(np.uint8), axis=1)
+
+
 def _wm_errs(sm, items):
     errs = []
     sm.model.eval()
@@ -140,24 +160,48 @@ def train(args):
     print(f"乾淨真值 {len(tr) + len(ho)} 筆（train {len(tr)} / held-out {len(ho)}）＋ harvest 重放 {len(replay)}")
     sm = _make_sm()
     sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
-    ds = ConcatDataset([_tds(tr)] * args.over + [_tds(replay)])
-    print(f"訓練集 {len(ds)} 筆（乾淨 ×{args.over} 過採樣 + 重放）,epochs={args.epochs}, batch={args.batch}")
+    #? 反馬太②密度反權重（2026-07-15 Ricky 核准四機制全套）:訓練集分布=歷史選樣累積=偏——
+    #  王朝密集區樣本被重複學習。權重 ∝ 1/局部密度（Hamming<30 鄰居數）,複製式實作
+    #  （integer 重複,不動核心 train_by_datas）;均勻 ×over 過採樣退役。
+    trpk = np.packbits(np.stack([(x.numpy().reshape(-1) > 0.5) for x, _ in tr]).astype(np.uint8), axis=1)
+    nbrs = np.array([int((_POP8[np.bitwise_xor(trpk, trpk[i])].sum(axis=1) < 30).sum()) - 1
+                     for i in range(len(tr))])
+    w = 1.0 / (1.0 + nbrs)
+    reps = np.clip(np.round(args.over * w / w.mean()), 1, args.over * 3).astype(int)
+    dense_parts = []
+    for i, r_ in enumerate(reps):
+        dense_parts += [tr[i]] * int(r_)
+    ds = ConcatDataset([_tds(dense_parts), _tds(replay)])
+    print(f"訓練集 {len(ds)} 筆（密度反權重:重複 中位×{int(np.median(reps))} 範圍"
+          f" [{int(reps.min())},{int(reps.max())}],孤樣本重學/王朝密集降權 + 重放）,"
+          f"epochs={args.epochs}, batch={args.batch}")
     losses = sm.train_by_datas(ds, epochs=args.epochs, batch_size=args.batch, verbose=True)
     out = DATASET_PATH.joinpath(args.out)
     sm.save_as(out)
     print(f"loss: 首 {losses[0]:.3f} → 末 {losses[-1]:.3f}；權重 → {out}")
     #? KPI 主軸①:SM 準度曲線（decisions 2026-07-15 戰略換軸）——每版重錨自動評 held-out,
-    #  append docs/kpi.csv（進 git=跨輪曲線真相源;held-out 切分決定性,跨版可比）。
+    #  append docs/kpi.csv。反馬太③分層:held-out 從自家偏分布切=溫度計歪——按 d_dyn 分
+    #  近(<20)/中(20-60)/遠(>60)三帶各報,「遠域誤差沒降=馬太在贏」直接可讀。
     import time as _t2
     errs = _wm_errs(sm, ho)
     med, p90 = float(np.median(errs)), float(np.percentile(errs, 90))
+    dpk = _dyn_pack()
+    hd = np.array([int(_POP8[np.bitwise_xor(dpk, np.packbits((x.numpy().reshape(-1) > 0.5)
+                   .astype(np.uint8)))].sum(axis=1).min()) for x, _ in ho])
+
+    def _band(mask):
+        return float(np.median(errs[mask])) if mask.any() else float("nan")
+    e_near, e_mid, e_far = _band(hd < 20), _band((hd >= 20) & (hd <= 60)), _band(hd > 60)
     kp = os.path.join(REPO, "docs", "kpi.csv")
     newfile = not os.path.exists(kp)
     with open(kp, "a", encoding="utf-8") as f:
         if newfile:
-            f.write("date,sm,heldout_n,wm_err_med,wm_err_p90\n")
-        f.write(f"{_t2.strftime('%Y-%m-%d %H:%M')},{args.out},{len(errs)},{med:.3f},{p90:.3f}\n")
-    print(f"held-out 準度: |wm err| 中位 {med:.3f} / P90 {p90:.3f}（n={len(errs)}）→ docs/kpi.csv")
+            f.write("date,sm,heldout_n,wm_err_med,wm_err_p90,err_near,err_mid,err_far\n")
+        f.write(f"{_t2.strftime('%Y-%m-%d %H:%M')},{args.out},{len(errs)},{med:.3f},{p90:.3f},"
+                f"{e_near:.3f},{e_mid:.3f},{e_far:.3f}\n")
+    print(f"held-out 準度: |wm err| 中位 {med:.3f} / P90 {p90:.3f}（n={len(errs)}）"
+          f" | 分層 近{e_near:.2f}/中{e_mid:.2f}/遠{e_far:.2f}（n={int((hd < 20).sum())}"
+          f"/{int(((hd >= 20) & (hd <= 60)).sum())}/{int((hd > 60).sum())}）→ docs/kpi.csv")
 
 
 def _load_denovo():

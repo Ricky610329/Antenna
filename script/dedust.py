@@ -2629,6 +2629,25 @@ def select_r22mix(args):
     if getattr(args, "f", 0):
         for name, fol, pid in FRAG:
             PF[name] = loadp(fol, pid)
+    #? 反馬太④誤差錨點外掛（2026-07-15）:analyze batch 每批寫 error_anchors.json
+    #  （SM |pred−real| top 8）——錯哪補哪,自動進錨點池（無 DYN 標記→歸冷支）。
+    eaf = DATASET_PATH.joinpath("error_anchors.json")
+    if eaf.exists():
+        try:
+            _ea = json.load(open(str(eaf), encoding="utf-8")).get("anchors", [])
+        except Exception:
+            _ea = []
+        n_ea = 0
+        for e in _ea:
+            nm = "err_" + e["id"][:14]
+            if nm in P or any(px in e["id"] for px in POISON):
+                continue
+            fe = _dir(e["input"]).joinpath(e["id"] + ".pt")
+            if fe.exists():
+                P[nm] = np.asarray(torch.load(str(fe), weights_only=True)).reshape(25, 25) > 0.5
+                n_ea += 1
+        if n_ea:
+            print(f"誤差錨點外掛 +{n_ea}（error_anchors.json;錯哪補哪）")
     dyn_names = [n for n in P if any(m in n for m in DYN)]
     cold_names = [n for n in P if n not in dyn_names]
     print(f"r{getattr(args, 'round', 22)} b{args.batch} 錨點 {len(P)}"

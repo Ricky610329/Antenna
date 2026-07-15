@@ -734,6 +734,18 @@ def cmd_batch(args):
     print(f"  帕累托前緣增量（wm×rad×oob 對全歷史非支配）: +{len(newf)} 筆"
           + ("  例: " + ",".join(s["id"] for s in newf[:3]) if newf else ""))
 
+    #? 反馬太④誤差錨點池（2026-07-15 Ricky 核准）:SM |pred−real| top=下批錨點——錯哪補哪。
+    #  寫 NAS error_anchors.json,select_r22mix 自動吸收（外掛進冷支池）。
+    epred = [s for s in rows if s.get("pwm") is not None]
+    etop = sorted(epred, key=lambda s: -abs(s["wm"] - s["pwm"]))[:8]
+    ea = [dict(id=s["id"], input=s["st"] + "_input", err=round(abs(s["wm"] - s["pwm"]), 2))
+          for s in etop]
+    with open(str(DATASET_PATH.joinpath("error_anchors.json")), "w", encoding="utf-8") as f:
+        json.dump(dict(round=args.round, batch=args.batch, anchors=ea), f, ensure_ascii=False, indent=1)
+    print("\n-- 誤差錨點池（④錯哪補哪;已寫 error_anchors.json,下批 select 自動吸收）--")
+    for e in ea[:5]:
+        print(f"  {e['id']} |pred−real|={e['err']}")
+
     for kind in ("slotchain", "denovo", "infogain", "hslot", "repair"):
         g = sorted([s for s in rows if s["kind"] == kind], key=lambda s: -s["wm"])[:5]
         if g:
@@ -751,6 +763,12 @@ def cmd_batch(args):
                                                   else "<0.3——若連兩批<0.3 → 下批移除 --rad-key"))
     print("  ④ 重錨: python -m script.sm_reanchor train --add \"" + ",".join(stores) + "\" --out sm_reanchorNN.pth")
     print("  ⑤ 下批 select → check-dup（exit 1 停）→ jobs-add → 池存量<48 補 → dedust watch 掛偵測")
+    #? 反馬太①恆溫器:同質度掉水位→自動印下批調整建議（半自動負回饋,照抄執行）
+    if intra < 40 or nn_h < 15:
+        print(f"  ⑥ 多樣性恆溫 ⚠（批內 {intra}<40 或 歷史 {nn_h}<15）→ 下批: G-free/D 配額 +4~8"
+              " 或 --dyn-simcap 再壓一級（0.12→0.08）;判讀後記 round 檔")
+    else:
+        print(f"  ⑥ 多樣性恆溫: 正常（批內 {intra}/歷史 {nn_h}）")
 
 
 def cmd_credit(args):
