@@ -2971,7 +2971,8 @@ def select_r22mix(args):
                   ("lb_y35t03", "dedust_r28b1d_input", "y28b1_035_t03h"),
                   ("lb_f3t07", "dedust_r20g3c_input", "f3_011_t07"),
                   ("lb_t03", "dedust_r27b1b_input", "n27b1_019_t03"),
-                  ("lb_y15n09", "dedust_r28b2b_input", "y28b2_015_n09h")] if args.batch >= 2 else \
+                  ("lb_y15n09", "dedust_r28b2b_input", "y28b2_015_n09h")] \
+            if (args.batch >= 2 or getattr(args, "round", 0) >= 31) else \
                  [("lb_dnv6", "dedust_r29b3c_input", "d29b3_006_denovo"),
                   ("lb_exk43", "dedust_r29b3d_input", "g29b3_043_champ_exking"),
                   ("lb_err0", "dedust_r29b3a_input", "i29b3_000_err_g29b2_06"),
@@ -4744,6 +4745,40 @@ def main():
     s.add_argument("--rad-head", default="rad_head2.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.set_defaults(fn=select_r22mix, round=30, key="sel")
+
+    s = sub.add_parser("select-r31", help="R31 王系凍結輪：champ 換錨中繼帶+L20 續攻+M 樂透王錨降權（判準寫死於 round-31 檔）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260718)
+    s.add_argument("--sm", default="sm_reanchor39.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--g", type=int, default=64, help="G（free28/champ-bridge24〔中繼錨〕/oobp12;surg 併 bridge）")
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=20, help="L 中繼帶鄰域續攻（r_feed 鍵）")
+    s.add_argument("--o", type=int, default=8)
+    s.add_argument("--m", type=int, default=14, help="前瞻統計母體(不動)")
+    s.add_argument("--c", type=int, default=4)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=2)
+    s.add_argument("--d", type=int, default=16)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=12)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.12, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac",
+                   help="王朝抽樣再壓 0.4→0.2（王系凍結,Ricky 2026-07-16 叮嚀）")
+    s.add_argument("--wild", type=int, default=10)
+    s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head39.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.set_defaults(fn=select_r22mix, round=31, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)

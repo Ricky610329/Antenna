@@ -210,7 +210,11 @@ def gen(args):
     out = os.path.abspath(args.out_dir)
     os.makedirs(out, exist_ok=True)
     surg_anchors = [("n27b1_020_t07", "t07h"), ("n27b1_018_p00", "p00h")]
-    champ_anchors = [("s28b3_005_a024", "king"), ("m23b4_030_r3_001", "exking")]
+    #? 王系凍結（Ricky 2026-07-16 叮嚀:「王系列不要再增加了——低側壓不下去是王系的問題」）:
+    #  champ 帶「換錨不換機制」——近錨梯度變現保留,錨從王家（s28b3_005/m23b4 已移除）全面換
+    #  中繼帶家族（t03/n09 系:lo −4~−5∧wm 活∧oob_bad 6.7-8.6=天花板下實體）;R31 起。
+    champ_anchors = [("y28b1_035_t03h", "brc_t03"), ("y28b2_010_n09h", "brc_n09"),
+                     ("n27b1_017_n09", "brc_n09b"), ("f3_011_t07", "brc_t07")]
     #? oobp 錨（R30b2 起=中繼帶:lo −4~−5∧wm≈0∧oob_bad 6.7-8.6 的 half/手術系——天花板 9.0
     #  下 2dB 的實體;梯度多目標把 rad 拉回=破天花板最短路徑。R29~R30b1 版=碎片原版+uoob）。
     oob_anchors = [("y28b1_035_t03h", "brdg_t03"), ("f3_011_t07", "brdg_t07"),
