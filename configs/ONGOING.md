@@ -33,10 +33,15 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 31 — 王系凍結輪（🔵 **running**,2026-07-16 午;Ricky 叮嚀「王系列不要再增加了」觸發）→ [round-31](../docs/log/round-31-dynasty-freeze.md)
-- **主軸**：champ 帶「換錨不換機制」（王錨→中繼四錨 t03/n09 系）＋dyn-frac 0.2＋L20 續攻;
-  「SM 利用率元年」批=oversample 3×+pred_std 記錄+rad_head39+ensemble 首航疊加。
-- 主判準:bridge 帶 lo≤−2∧wm≥0 ≥1/批;std 三分桶校準→進鍵;rad_head39 vs 化石帳。
+### Round 32 — 海峽輪（🔵 **running**,2026-07-17 凌晨發車;Ricky「海峽臂加進去,探索要找 SM 有期望的,不為填而填」）→ [round-32](../docs/log/round-32-strait-crossover.md)
+- **主軸**：X 雜交臂首航（王朝×中繼七錨,割線/遮罩雙算子,oversample×4→LCB top 24）＋L24 續帳
+  ＋影子 CNN 對決（v43 起每版平行訓,三尺盲測,連兩批全贏→轉正）。
+- 主判準:X 同框律 wm≥−2∧lo≤−2 ≥2/批 **且** PCA 海峽落點 ≥50%;SM 期望閘審計=X 誤差<G-free。
+- 重啟指令見 round-32 §3;工作模型 sm_reanchor42+rad_head42+ens42。
+
+### ~~Round 31 — 王系凍結輪~~（✅ **2026-07-16 收檔,3 批**）→ [round-31](../docs/log/round-31-dynasty-freeze.md)
+- **梯度變現不轉移中繼帶（bridge 判死）、鄰域變異轉移（L 同框帳 1→4→7）**;深水實體 oob_bad 3.10;
+  **SM 利用率元年**（std LCB 進鍵+rad 鍵常駐+漏斗+誤差錨池）;殘閘=同框系 rad 全負∧wm 最後一哩。
 
 ### ~~Round 30 — SM 準度輪 2＋低側據點擴張~~（✅ **2026-07-16 收檔,3 批+X 臂**）→ [round-30](../docs/log/round-30-lowside-beachhead.md)
 - ★ 可用帶外 **9.0=真天花板**（窮舉 6/6）;**中繼帶發現**（lo −4.2∧wm +0.11∧oob 7.77=破天花板
