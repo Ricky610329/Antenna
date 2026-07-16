@@ -9,4 +9,5 @@ from .generators import (
 )
 from .surrogates import (
     SurrogateModel, HFSSNet, MLPSurrogate, EnsembleSurrogate, EnsembleMLPSurrogate,
+    CNNNet, CNNSurrogate,
 )

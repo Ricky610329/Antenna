@@ -157,6 +157,21 @@ def _wm_errs(sm, items):
     return np.asarray(errs)
 
 
+def _build_ds(tr, replay, over):
+    """密度反權重訓練集（反馬太②,2026-07-15）:權重 ∝ 1/局部密度（Hamming<30 鄰居數）,
+    複製式實作（integer 重複,不動核心 train_by_datas）。train 與影子 CNN 共用**同一鍋**
+    ——對決公平性的前提。回 (ds, reps)。"""
+    trpk = np.packbits(np.stack([(x.numpy().reshape(-1) > 0.5) for x, _ in tr]).astype(np.uint8), axis=1)
+    nbrs = np.array([int((_POP8[np.bitwise_xor(trpk, trpk[i])].sum(axis=1) < 30).sum()) - 1
+                     for i in range(len(tr))])
+    w = 1.0 / (1.0 + nbrs)
+    reps = np.clip(np.round(over * w / w.mean()), 1, over * 3).astype(int)
+    dense_parts = []
+    for i, r_ in enumerate(reps):
+        dense_parts += [tr[i]] * int(r_)
+    return ConcatDataset([_tds(dense_parts), _tds(replay)]), reps
+
+
 def train(args):
     global CLEAN_STORES
     if getattr(args, "add", None):                       # 重錨一鍵化:append clean_stores.txt 再訓
@@ -174,18 +189,7 @@ def train(args):
     print(f"乾淨真值 {len(tr) + len(ho)} 筆（train {len(tr)} / held-out {len(ho)}）＋ harvest 重放 {len(replay)}")
     sm = _make_sm()
     sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
-    #? 反馬太②密度反權重（2026-07-15 Ricky 核准四機制全套）:訓練集分布=歷史選樣累積=偏——
-    #  王朝密集區樣本被重複學習。權重 ∝ 1/局部密度（Hamming<30 鄰居數）,複製式實作
-    #  （integer 重複,不動核心 train_by_datas）;均勻 ×over 過採樣退役。
-    trpk = np.packbits(np.stack([(x.numpy().reshape(-1) > 0.5) for x, _ in tr]).astype(np.uint8), axis=1)
-    nbrs = np.array([int((_POP8[np.bitwise_xor(trpk, trpk[i])].sum(axis=1) < 30).sum()) - 1
-                     for i in range(len(tr))])
-    w = 1.0 / (1.0 + nbrs)
-    reps = np.clip(np.round(args.over * w / w.mean()), 1, args.over * 3).astype(int)
-    dense_parts = []
-    for i, r_ in enumerate(reps):
-        dense_parts += [tr[i]] * int(r_)
-    ds = ConcatDataset([_tds(dense_parts), _tds(replay)])
+    ds, reps = _build_ds(tr, replay, args.over)
     print(f"訓練集 {len(ds)} 筆（密度反權重:重複 中位×{int(np.median(reps))} 範圍"
           f" [{int(reps.min())},{int(reps.max())}],孤樣本重學/王朝密集降權 + 重放）,"
           f"epochs={args.epochs}, batch={args.batch}")
@@ -262,6 +266,74 @@ def train(args):
           f" | 分層 近{e_near:.2f}/中{e_mid:.2f}/遠{e_far:.2f}"
           f" | 凍結基準 {fz_med:.2f}/遠 {fz_far:.2f}（n={int(fmask.sum())}）"
           f" | rad ρ{rad_rho:+.2f} → docs/kpi.csv")
+    #? 影子 CNN 對決（R32 判準;2026-07-17）:每版重錨平行訓一顆 CNN 挑戰者,吃**同一鍋** ds。
+    #  尺1（凍結基準分層）即訓即評;尺2 前瞻/尺3 adv 率=下批 analyze batch 雙模盲測。
+    #  連兩批三尺全贏→轉正（zoo "cnn" 成預設+全鏈換錨）;輸→降級異架構 ensemble 成員。
+    if not getattr(args, "no_shadow", False):
+        vnum3 = "".join(ch for ch in os.path.basename(args.out) if ch.isdigit())
+        ep_sh = args.shadow_epochs or args.epochs * 2
+        _train_shadow_core(ds, ho, hd, fmask, vnum3, ep_sh, args.batch,
+                           mlp_ref=(med, e_near, e_far, fz_med, fz_far))
+
+
+def _train_shadow_core(ds, ho, hd, fmask, vnum, epochs, batch, mlp_ref=None):
+    """影子 CNN 訓練＋尺1 評估（train 制度段與 train-shadow 補訓共用）。
+    ⚠ 誠實註記:MLP 自 sm_harvest（學長池 24k 預訓）熱啟,CNN 從零——epochs 預設 2× 補償,
+    不對稱記錄在案（挑戰者要贏的就是「含預訓優勢的現役」）。"""
+    from antenna.zoo import SURROGATES
+    import time as _t
+    cache = os.path.join(REPO, "tmp", "sm_shadow")
+    os.makedirs(cache, exist_ok=True)
+    n_pts = sum(_cfg.targets[LABELS[0]]["width"])
+    torch.manual_seed(7)
+    smc = SURROGATES["cnn"](cache, 25 * 25, (len(LABELS), n_pts))
+    print(f"—— 影子 CNN 對決: 從零訓 {epochs}ep（同鍋 ds;尺2/尺3=下批 analyze batch 雙模盲測）")
+    losses = smc.train_by_datas(ds, epochs=epochs, batch_size=batch, verbose=False)
+    out = f"sm_shadow{vnum}.pth" if vnum else "sm_shadow_auto.pth"
+    smc.save_as(DATASET_PATH.joinpath(out))
+    errs = _wm_errs(smc, ho)
+
+    def _b(m):
+        return float(np.median(errs[m])) if m.any() else float("nan")
+    med, p90 = float(np.median(errs)), float(np.percentile(errs, 90))
+    e_near, e_far = _b(hd < 20), _b(hd > 60)
+    fz_med, fz_far = _b(fmask), _b(fmask & (hd > 60))
+    print(f"影子 loss 首 {losses[0]:.3f} → 末 {losses[-1]:.3f} → {out}")
+    print(f"影子尺1: |wm err| 中位 {med:.3f}/P90 {p90:.3f} | 近{e_near:.2f}/遠{e_far:.2f}"
+          f" | 凍結 {fz_med:.2f}/遠 {fz_far:.2f}")
+    if mlp_ref:
+        m_med, m_near, m_far, m_fz, m_fzf = mlp_ref
+        win = fz_med < m_fz and fz_far < m_fzf
+        print(f"  vs MLP（中位 {m_med:.2f}/凍結 {m_fz:.2f}/凍結遠 {m_fzf:.2f}）→ 尺1 "
+              + ("**CNN 贏**" if win else "MLP 守住") + "（判定記 round 檔;連兩批三尺全贏才轉正）")
+    kp = os.path.join(REPO, "docs", "kpi_shadow.csv")
+    newf = not os.path.exists(kp)
+    with open(kp, "a", encoding="utf-8") as f:
+        if newf:
+            f.write("date,shadow,heldout_n,med,p90,near,far,frozen_med,frozen_far\n")
+        f.write(f"{_t.strftime('%Y-%m-%d %H:%M')},{out},{len(errs)},{med:.3f},{p90:.3f},"
+                f"{e_near:.3f},{e_far:.3f},{fz_med:.3f},{fz_far:.3f}\n")
+    return out
+
+
+def train_shadow_cmd(args):
+    """獨立補訓影子 CNN（給既有版本補影子,如 v42;制度段=每版 train 自動帶）。
+    資料管線與 train 完全同鍋（_load_clean+_load_harvest+密度反權重）。"""
+    import hashlib as _hl
+    import json as _js
+    tr, ho = _load_clean()
+    replay, _ = _load_harvest(args.replay, args.val)
+    ds, _ = _build_ds(tr, replay, args.over)
+    print(f"乾淨真值 {len(tr) + len(ho)} 筆（train {len(tr)} / held-out {len(ho)}）＋ 重放 {len(replay)}")
+    dpk = _dyn_pack()
+    hd = np.array([int(_POP8[np.bitwise_xor(dpk, np.packbits((x.numpy().reshape(-1) > 0.5)
+                   .astype(np.uint8)))].sum(axis=1).min()) for x, _ in ho])
+    fz_path = os.path.join(REPO, "configs", "heldout_frozen.json")
+    fzk = set(_js.load(open(fz_path, encoding="utf-8"))["keys"]) if os.path.exists(fz_path) else set()
+    fmask = np.array([_hl.md5((x.numpy().reshape(-1) > 0.5).tobytes()).hexdigest() in fzk
+                      for x, _ in ho])
+    vnum = "".join(ch for ch in os.path.basename(args.out) if ch.isdigit())
+    _train_shadow_core(ds, ho, hd, fmask, vnum, args.epochs, args.batch)
 
 
 def _load_denovo():
@@ -499,6 +571,10 @@ def main():
                        help="跳過制度合訓 rad 頭（預設每版重錨配訓同期 rad_headNN.pth）")
         s.add_argument("--no-ens", action="store_true", dest="no_ens",
                        help="跳過 ensemble 成員訓練（預設 2 顆異 seed 半程成員 → pred_std）")
+        s.add_argument("--no-shadow", action="store_true", dest="no_shadow",
+                       help="跳過影子 CNN 對決訓練（預設每版重錨平行訓 sm_shadowNN.pth）")
+        s.add_argument("--shadow-epochs", type=int, default=None, dest="shadow_epochs",
+                       help="影子 CNN epochs（預設 --epochs×2:從零訓補償,MLP 有 harvest 預訓）")
         s.add_argument("--grid-epochs", type=int, nargs="+", default=[40, 80])
         s.add_argument("--grid-over", type=int, nargs="+", default=[4, 8, 16])
         s.add_argument("--grid-replay", type=int, nargs="+", default=[1000, 2000])
@@ -516,6 +592,14 @@ def main():
     s.add_argument("--epochs", type=int, default=30)
     s.add_argument("--out", default="rad_head1.pth")
     s.set_defaults(fn=train_rad)
+    s = sub.add_parser("train-shadow", help="獨立補訓影子 CNN（給既有版補影子;制度段=train 自動帶;同鍋資料）")
+    s.add_argument("--epochs", type=int, default=80)
+    s.add_argument("--batch", type=int, default=64)
+    s.add_argument("--over", type=int, default=8)
+    s.add_argument("--replay", type=int, default=2000)
+    s.add_argument("--val", type=int, default=500)
+    s.add_argument("--out", default="sm_shadow_auto.pth", help="用 sm_shadow<NN>.pth 對齊主 SM 版號")
+    s.set_defaults(fn=train_shadow_cmd)
     args = ap.parse_args()
     args.fn(args)
 

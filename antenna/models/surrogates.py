@@ -460,6 +460,55 @@ def MLPSurrogate(checkpoint, in_dim, response_shape, hidden=(2048, 1024, 512, 12
     )
 
 
+###* CNNNet — Conv 骨幹 (影子對決挑戰者，R32 起) ###
+#? 動機：MLP 攤平 625 像素看不見 2D 鄰接，而近期核心知識全是空間概念 (承重圖的塊、對角橋、
+#? 擺位規律)——卷積先驗直接對症。透過「影子對決」制度挑戰現役 MLP (連兩批三尺全贏才轉正，
+#? 見 script/sm_reanchor.py 影子段)；輸了降級當異架構 ensemble 成員。
+#? 介面與 HFSSNet 對齊：輸入攤平像素 (1-D 單張 / 2-D batch)，內部還原 2D 圖做卷積。
+class CNNNet(nn.Module):
+
+    def __init__(self, num_pattern_pixel=625, num_response: tuple = (3, 17),
+                 channels=(32, 64, 64), fc=256):
+        super().__init__()
+        self.num_response = tuple(num_response)
+        self.num_pattern_pixel = num_pattern_pixel
+        self.side = int(round(num_pattern_pixel ** 0.5))
+        c1, c2, c3 = channels
+        #? 兩次 MaxPool：25→12→6 (floor)，末端特徵圖 c3×6×6；參數量 ~0.7M (MLP ~4M 的 1/5)。
+        self.conv = nn.Sequential(
+            nn.Conv2d(1, c1, 3, padding=1), nn.ReLU(),
+            nn.Conv2d(c1, c1, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Conv2d(c1, c2, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
+            nn.Conv2d(c2, c3, 3, padding=1), nn.ReLU(),
+        )
+        flat = c3 * (self.side // 4) ** 2
+        self.head = nn.Sequential(nn.Linear(flat, fc), nn.PReLU(),
+                                  nn.Linear(fc, num_response[0] * num_response[1]))
+        self.to(config.device)
+
+    def forward(self, input):
+        x = input.reshape(-1, 1, self.side, self.side)
+        x = self.head(self.conv(x).flatten(1))
+        if input.dim() == 1:
+            return x.reshape(self.num_response)
+        return x.reshape(input.shape[0], *self.num_response)
+
+
+def CNNSurrogate(checkpoint, in_dim, response_shape, channels=(32, 64, 64), fc=256,
+                 lr=0.001, min_loss=0.1, max_epoch=20000):
+    """影子 CNN 工廠：CNNNet + Ranger + MSE + ReduceLROnPlateau (與 MLPSurrogate 同款外圍，
+    差異只在骨幹)。無 rad 頭 (影子對決三尺全在 wm 軸；多頭合訓等轉正後再建)。"""
+    model = CNNNet(in_dim, response_shape, channels=channels, fc=fc)
+    optimizer = Ranger(params=model.parameters(), lr=lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=10, min_lr=1e-6
+    )
+    return SurrogateModel(
+        model, nn.MSELoss(), optimizer, scheduler, rootdir=checkpoint,
+        min_loss=min_loss, max_epoch=max_epoch, response_shape=response_shape,
+    )
+
+
 ###* EnsembleSurrogate — K 個獨立 SM 成員的集成 (不確定性 = 成員分歧) ###
 #? 動機 (攻 SM 品質)：SM-guided 搜尋的命門是「SM 在它說好的地方準不準」。單一 SM 給不出
 #? 「我對這張 pattern 有多沒把握」；deep ensembles 用 K 個獨立成員的「預測分歧」當便宜的

@@ -34,7 +34,11 @@
 | L | 24 | 中繼六錨+同框筆鄰域,r_feed 鍵 | 同框律 ≥2/批 |
 | G | 44 | free（文法/碎片 init）+oobp（中繼錨） | adv 率+低側泵 |
 | 影子 CNN | — | 每版重錨平行訓（Conv 多頭:S11/Gain+rad 共享 trunk） | 三尺連兩批全贏→轉正 |
-- 工具:select-r32（xover 臂已實作 bf66901）;影子 CNN=sm_reanchor --shadow（v43 前實作）。
+- 工具:select-r32（xover 臂已實作 bf66901）;影子 CNN ✅ 已實作（2026-07-17 凌晨）——
+  zoo `cnn`（CNNNet 兩層 pool Conv,~0.7M 參數,SurrogateModel 外殼全重用）＋sm_reanchor
+  制度段（每版 train 自帶,`--no-shadow` 關;從零 2× epochs 補償 MLP 的 harvest 預訓不對稱）＋
+  `train-shadow` 補訓命令（v42 已補=b1 起有對決帳）＋analyze batch 雙模盲測段（尺2/尺3;
+  須在重錨前跑）;尺1 落 docs/kpi_shadow.csv;回歸測試 test_cnn_surrogate.py ×3。
 
 ## 3. 執行紀錄 (Run)
 ```

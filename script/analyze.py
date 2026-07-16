@@ -825,6 +825,69 @@ def _records():
     return json.load(open(p, encoding="utf-8"))
 
 
+def _shadow_duel(rows):
+    """影子 CNN 對決尺2/尺3（R32 判準;2026-07-17）:MLP vs 影子 CNN **現場**對本批樣本雙模打分
+    ——不拿 manifest pred_wm 比架構（那混了 LCB/通道差異）,兩具同版模型同條件盲測才公平。
+    影子檔不存在=跳過（v43 制度段起每版自帶）。⚠ 口徑:必須在**重錨前**跑（/batch-cycle 順序
+    ①判讀→④重錨天然滿足）——重錨後本批已進訓練集,不再是盲測。"""
+    import glob as _g
+    from scipy.stats import spearmanr
+    shads = sorted(_g.glob(str(DATASET_PATH.joinpath("sm_shadow*.pth"))),
+                   key=lambda p: int("".join(ch for ch in os.path.basename(p) if ch.isdigit()) or 0))
+    if not shads:
+        return
+    sh_p = shads[-1]
+    vnum = "".join(ch for ch in os.path.basename(sh_p) if ch.isdigit())
+    mlp_p = DATASET_PATH.joinpath(f"sm_reanchor{vnum}.pth")
+    if not mlp_p.exists():
+        return
+    from script.sm_reanchor import _make_sm, LABELS, _cfg           # 副作用:裝好 response spec
+    from antenna.zoo import SURROGATES
+    from antenna.losses import worst_margin
+    import torch as _th
+    mlp = _make_sm()
+    mlp.pre_load_model(mlp_p, strict=True)
+    n_pts = sum(_cfg.targets[LABELS[0]]["width"])
+    cnn = SURROGATES["cnn"](str(DATASET_PATH.joinpath("..", "tmp")), 25 * 25, (len(LABELS), n_pts))
+    cnn.pre_load_model(sh_p, strict=True)
+    print(f"\n-- 影子 CNN 對決（v{vnum} 雙模對本批盲測;連兩批三尺全贏→轉正,輸→ens 成員）--")
+    preds = {"mlp": [], "cnn": []}
+    real = []
+    with _th.no_grad():
+        for s in rows:
+            pf = DATASET_PATH.joinpath(s["st"] + "_input", s["id"] + ".pt")
+            if not pf.exists():
+                continue
+            x = _th.as_tensor(np.asarray(_th.load(str(pf), weights_only=True)),
+                              dtype=_th.float32).flatten()
+            for tag, mdl in (("mlp", mlp), ("cnn", cnn)):
+                w_p, _ = worst_margin(mdl.model(x), LABELS, _cfg.targets)
+                preds[tag].append(float(w_p))
+            real.append(s["wm"])
+    real = np.asarray(real)
+    verdicts = []
+    print("| 模型 | |pred−real|中位 | 前瞻ρ | adv率(pred≥0∧real<−1) |")
+    print("|---|---|---|---|")
+    stats = {}
+    for tag in ("mlp", "cnn"):
+        pw = np.asarray(preds[tag])
+        err = float(np.median(np.abs(pw - real)))
+        rho = float(spearmanr(pw, real)[0])
+        opt = pw >= 0
+        advr = float(((pw >= 0) & (real < -1)).sum() / max(int(opt.sum()), 1)) if opt.any() else float("nan")
+        stats[tag] = (err, rho, advr)
+        print(f"| {tag} | {err:.2f} | {rho:+.3f} | {advr * 100:.0f}%（n={int(opt.sum())}） |"
+              if opt.any() else f"| {tag} | {err:.2f} | {rho:+.3f} | n/a(0) |")
+    for i, nm in enumerate(("誤差", "前瞻ρ", "adv率")):
+        m, c = stats["mlp"][i], stats["cnn"][i]
+        win = (c > m) if i == 1 else (c < m)          # ρ 高者勝;誤差/adv 低者勝
+        if np.isnan(c) or np.isnan(m):
+            verdicts.append(f"{nm}=n/a")
+        else:
+            verdicts.append(f"{nm}={'CNN' if win else 'MLP'}")
+    print("  → 尺2/尺3 判定: " + " ".join(verdicts) + "（尺1=凍結基準,見重錨輸出;帳記 round 檔）")
+
+
 def cmd_batch(args):
     """收檔判讀一鍵化（弱模型化 2026-07-12,取代每批手寫 judge script）:
     自動發現 dedust_r<round>b<batch>* 夾,輸出完成度/臂別表/可用帶外推進/前瞻 ρ（含 rad 頭退鍵線）/
@@ -895,6 +958,11 @@ def cmd_batch(args):
             print(f"  {nm}: rho={rho:+.3f} (p={p:.3f}, n={len(xs)})")
             if pk == "prad":
                 rad_rho = rho
+
+    try:
+        _shadow_duel(rows)
+    except Exception as e:                                # 影子對決失敗不擋判讀主流程
+        print(f"⚠ 影子對決跳過: {e}")
 
     print("\n-- 紀錄候選（單次;鐵則=下批公證）--")
     cands = []
