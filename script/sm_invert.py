@@ -139,9 +139,14 @@ class Inverter:
             pr = pred.reshape(len(self.labels), self.n_pts)
             oob = pr[1][self._far].max() - pr[0][self._far].min()
             d = (q_st - p0t).abs().sum()
+            #? 對角橋 soft penalty（Ricky 2026-07-16「可製造性…部分阻擋,像 loss 一樣更新」）:
+            #  尖角碰=對角佔用∧兩正交空——完全可微,w=0.02 軟阻擋（梯度自己學會繞開,不硬禁）。
+            Q = q_st.reshape(25, 25)
+            diag_pen = ((Q[:-1, :-1] * Q[1:, 1:] * (1 - Q[1:, :-1]) * (1 - Q[:-1, 1:])).sum()
+                        + (Q[:-1, 1:] * Q[1:, :-1] * (1 - Q[1:, 1:]) * (1 - Q[:-1, :-1])).sum())
             loss = (torch.relu(0.3 - wm) + torch.relu(0.3 - rad_m) * w_rad
                     + torch.relu(oob - oob_target) * w_oob
-                    + torch.relu(d - band) * 0.5)
+                    + torch.relu(d - band) * 0.5 + diag_pen * 0.02)
             loss.backward()
             opt.step()
             with torch.no_grad():                            # feed 區＋命脈塊釘死

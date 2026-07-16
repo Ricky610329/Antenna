@@ -4132,6 +4132,20 @@ def _rand_frag(rng):
     return q | (rng.random((25, 25)) < float(rng.uniform(0.15, 0.35)))
 
 
+def _fix_diag_bridges(q):
+    """橋接型對角修復（Ricky 2026-07-16「避免對角=可製造性,都加入,部分阻擋」）:
+    只修「尖角碰」（對角佔用∧兩正交格皆空=蝕刻公差下斷/短不確定的製造風險點）,
+    修法=補 1px 連成實接觸（不減金屬）;島內對角無妨不動。決定性(逐格掃描,無 rng)。"""
+    q = q.copy()
+    for r in range(24):
+        for c in range(24):
+            if q[r, c] and q[r + 1, c + 1] and not q[r + 1, c] and not q[r, c + 1]:
+                q[r + 1, c] = True
+            if c > 0 and q[r, c] and q[r + 1, c - 1] and not q[r + 1, c] and not q[r, c - 1]:
+                q[r + 1, c] = True
+    return q
+
+
 _SELFGEN_BASES = None
 
 
@@ -4215,6 +4229,7 @@ def _selfgen_chunk(me, args):
             q = _rand_frag(rng)
             q[FEED] = True
             src, ops, dpx = "rand_frag", [["randf"]], -1
+        q = _fix_diag_bridges(q)                         # 可製造性:橋接型對角修復（2026-07-16）
         if not (200 <= int(q.sum()) <= 550) or q.tobytes() in hist:
             continue
         hist.add(q.tobytes())
