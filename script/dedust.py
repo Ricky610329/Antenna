@@ -3279,9 +3279,12 @@ def select_r22mix(args):
 
     if getattr(args, "key", "oob") == "sel":
         #? R23 起價值軸主鍵:pred_sel=pred_oob+κ·(wm 缺口＋rad 缺口);rad 項僅 --rad-head 過門檻時生效
+        #  R31b2 起 std 進鍵（校準過:三分桶 0.94/4.00/10.05 完美單調——LCB 保守變現,低信心折價;
+        #  探索臂 I/W/D 不動=天然吃高 std）。
         def _psel(i):
             c = core[i]
-            pen = SEL_KAPPA * max(0.0, SEL_BUFFER - c["pred_wm"])
+            wm_lcb = c["pred_wm"] - c.get("pred_std", 0.0)   # 信心調整後預測（LCB）
+            pen = SEL_KAPPA * max(0.0, SEL_BUFFER - wm_lcb)
             if c.get("pred_rad") is not None and getattr(args, "rad_key", False):
                 pen += SEL_KAPPA * max(0.0, -c["pred_rad"])   # rad 項:--rad-key 才進鍵（門檻 ρ≥0.4）
             return c["pred_oob"] + pen - _nbonus(c)           # B 新穎性紅利（--novelty）
