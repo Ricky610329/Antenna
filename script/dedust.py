@@ -4137,15 +4137,25 @@ def _rand_frag(rng):
 
 def _fix_diag_bridges(q):
     """橋接型對角修復（Ricky 2026-07-16「避免對角=可製造性,都加入,部分阻擋」）:
-    只修「尖角碰」（對角佔用∧兩正交格皆空=蝕刻公差下斷/短不確定的製造風險點）,
-    修法=補 1px 連成實接觸（不減金屬）;島內對角無妨不動。決定性(逐格掃描,無 rng)。"""
+    只修跨島「尖角碰」;島內對角不動。修法=**剪尖角（detach）**——r30diag 探針因果
+    （2026-07-16）:detach rad 中位 +0.3 系統性優於 attach（連好）−0.2——刪較小島側的
+    接觸像素=電性正確的可製造性修復。決定性;一輪掃描（部分阻擋語義）。"""
+    from scipy.ndimage import label as _lb
     q = q.copy()
+    lab, _n = _lb(q, structure=_CROSS)
+    sizes = np.bincount(lab.ravel())
     for r in range(24):
-        for c in range(24):
-            if q[r, c] and q[r + 1, c + 1] and not q[r + 1, c] and not q[r, c + 1]:
-                q[r + 1, c] = True
-            if c > 0 and q[r, c] and q[r + 1, c - 1] and not q[r + 1, c] and not q[r, c - 1]:
-                q[r + 1, c] = True
+        for c in range(25):
+            for dc in (-1, 1):
+                c2 = c + dc
+                if 0 <= c2 < 25 and q[r, c] and q[r + 1, c2] \
+                        and not q[r + 1, c] and not q[r, c2]:
+                    a, b = lab[r, c], lab[r + 1, c2]
+                    if a != b:
+                        if sizes[a] < sizes[b]:
+                            q[r, c] = False
+                        else:
+                            q[r + 1, c2] = False
     return q
 
 
