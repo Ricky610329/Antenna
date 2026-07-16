@@ -3004,6 +3004,46 @@ def select_r22mix(args):
         cand_pool.sort(key=lambda c: -c["rfeed"])
         lbp = cand_pool[:target]
 
+    #? X 海峽臂（R32;Ricky「海峽加進去,但要找 SM 有一定期望的,不是為了填而填」）:
+    #  管線首個**雙親算子**——王朝簇（wm 好）×中繼/同框簇（lo 好）雜交（水平割線拼接/高斯遮罩混合）,
+    #  oversample ×4 → SM 期望閘=LCB(pred_wm−std) top（線上學習精神:SM 在迴圈引導探索）;
+    #  目標=填「王朝↔中繼海峽」（pattern_map 增量疊圖:bridge 梯度失敗的地理原因=海峽無教材）。
+    #  kind=xover,id 前綴 x。
+    xop = []
+    if getattr(args, "xover", 0):
+        XB_SRC = [("dedust_r28b2c_input", "y28b2_010_n09h"),
+                  ("dedust_r27b1f_input", "n27b1_017_n09"),
+                  ("dedust_r28b1d_input", "y28b1_035_t03h"),
+                  ("dedust_r20g3c_input", "f3_011_t07"),
+                  ("dedust_r30b2d_input", "l30b2_009_lb_t03"),
+                  ("dedust_r31b1f_input", "l31b1_017_lb_y10n09"),
+                  ("dedust_r31b2f_input", "l31b2_005_lb_n09")]
+        xA = [P[n] for n in dyn_names] if dyn_names else list(P.values())[:20]
+        xB = [loadp(f_, p_) for f_, p_ in XB_SRC]
+        from scipy.ndimage import gaussian_filter as _gfx
+        xt = getattr(args, "xover", 0) * 4
+        tries = 0
+        while len(xop) < xt and tries < xt * 40:
+            tries += 1
+            a_ = xA[int(rng.integers(0, len(xA)))]
+            b_ = xB[int(rng.integers(0, len(xB)))]
+            if rng.random() < 0.5:                        # 水平割線拼接
+                r_ = int(rng.integers(8, 17))
+                q = (np.vstack([a_[:r_], b_[r_:]]) if rng.random() < 0.5
+                     else np.vstack([b_[:r_], a_[r_:]])).copy()
+                op_ = ["xover_h", r_]
+            else:                                         # 高斯遮罩混合
+                mask = _gfx(rng.random((25, 25)), 3) > 0.5
+                q = np.where(mask, a_, b_).copy()
+                op_ = ["xover_m"]
+            q[FEED] = True
+            q = _fix_diag_bridges(q)
+            st_ = piece_stats(q)
+            if not (200 <= st_["metal_px"] <= 550) or q.tobytes() in hist:
+                continue
+            hist.add(q.tobytes())
+            xop.append(dict(pat=q, parent="xover", ops=[op_], d=-1, stats=st_))
+
     #? N 網架臂（R27;Ricky 2026-07-14「圖4-4 仔細看是幾個分塊→可做 variation」＋「27 做厚一點,網架」）:
     #  實測基礎=池頂家族 8-10 密度分塊載 66% 金屬+網布,t03/t09/n09/p00 共享同一骨架（scratch 2026-07-14）。
     #  骨架萃取=高斯 σ0.8×門檻 0.6（≥6px 質量塊,與分析口徑一致）;每錨四式變體:
@@ -3168,7 +3208,7 @@ def select_r22mix(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp + bmapp + bmixp + gradp + lbp
+    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp + bmapp + bmixp + gradp + lbp + xop
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
@@ -3338,6 +3378,7 @@ def select_r22mix(args):
     bxi = list(range(min(len(bmixp), getattr(args, "bmix", 0))))      # U 組合手術=生成即配額,全收
     gi2 = list(range(min(len(gradp), getattr(args, "g", 0))))         # G 梯度臂=staging 即配額,全收
     li2 = list(range(min(len(lbp), getattr(args, "lbeach", 0))))      # L 低側據點=r_feed 排序後全收
+    xvi = sorted(range(len(xop)), key=lambda i: -(xop[i]["pred_wm"] - xop[i].get("pred_std", 0.0)))[:getattr(args, "xover", 0)]                                          # X 海峽=SM 期望閘 LCB top
     #? A 資訊臂（R24 探索誘因包）:兩 SM（本版 vs harvest 底座）預測分歧最大=資訊量最高的量測點
     #  （query-by-committee 主動學習）;KPI=模型更新量非三標率。
     ii = []
@@ -3375,7 +3416,7 @@ def select_r22mix(args):
                                    ("fragfix", "f", fi, fragp), ("mesh", "n", ni, meshp),
                                    ("surgery", "y", yi, surgp), ("blockmap", "b", bi, bmapp),
                                    ("bmix", "u", bxi, bmixp), ("grad", "g", gi2, gradp),
-                                   ("lobeach", "l", li2, lbp),
+                                   ("lobeach", "l", li2, lbp), ("xover", "x", xvi, xop),
                                    ("infogain", "i", ii, core), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
@@ -4875,6 +4916,40 @@ def main():
     s.add_argument("--rad-head", default="rad_head39.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.set_defaults(fn=select_r22mix, round=31, key="sel")
+
+    s = sub.add_parser("select-r32", help="R32 海峽輪：X 雜交臂（雙親+SM 期望閘 LCB）+L24 續攻+影子 CNN 對決（判準寫死於 round-32 檔）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260719)
+    s.add_argument("--sm", default="sm_reanchor42.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=24, help="X 海峽雜交臂（雙親,oversample×4→LCB top）")
+    s.add_argument("--g", type=int, default=44, help="G（free28/oobp16）")
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=24, help="L 中繼帶續攻（r_feed 鍵）")
+    s.add_argument("--o", type=int, default=8)
+    s.add_argument("--m", type=int, default=14, help="前瞻統計母體(不動)")
+    s.add_argument("--c", type=int, default=4)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=12)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=12)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.12, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=8)
+    s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head42.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.set_defaults(fn=select_r22mix, round=32, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)
