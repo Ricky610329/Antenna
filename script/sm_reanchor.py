@@ -192,16 +192,47 @@ def train(args):
     def _band(mask):
         return float(np.median(errs[mask])) if mask.any() else float("nan")
     e_near, e_mid, e_far = _band(hd < 20), _band((hd >= 20) & (hd <= 60)), _band(hd > 60)
+    #? 凍結基準集（2026-07-16 Ricky 拍板①:held-out 隨批擴張=尺在漂,v38 的 1.30 可能只是考卷變難
+    #  ——固定基準跨版可比;首跑自動凍結當下 held-out）
+    import hashlib as _hl
+    import json as _js
+    fz_path = os.path.join(REPO, "configs", "heldout_frozen.json")
+    keys_ho = [_hl.md5((x.numpy().reshape(-1) > 0.5).tobytes()).hexdigest() for x, _ in ho]
+    if not os.path.exists(fz_path):
+        with open(fz_path, "w", encoding="utf-8") as f:
+            _js.dump(dict(frozen_at=args.out, n=len(keys_ho), keys=keys_ho), f)
+        print(f"凍結基準集建立: {len(keys_ho)} 筆（{args.out} 時刻）→ configs/heldout_frozen.json")
+    fzk = set(_js.load(open(fz_path, encoding="utf-8"))["keys"])
+    fmask = np.array([k in fzk for k in keys_ho])
+    fz_med = _band(fmask)
+    fz_far = _band(fmask & (hd > 60))
+    #? 制度合訓（2026-07-16 Ricky 拍板③b:rad_head2 化石=九版沒吃新方向圖）:每版重錨配訓同期 rad 頭
+    rad_rho, rad_mae = float("nan"), float("nan")
+    if not getattr(args, "no_rad", False):
+        vnum = "".join(ch for ch in os.path.basename(args.out) if ch.isdigit())
+        rad_out = f"rad_head{vnum}.pth" if vnum else "rad_head_auto.pth"
+        print(f"—— 制度合訓: rad 頭全量重訓 → {rad_out}")
+        rad_rho, rad_mae = _train_rad_core(30, rad_out)
     kp = os.path.join(REPO, "docs", "kpi.csv")
+    hdr = "date,sm,heldout_n,wm_err_med,wm_err_p90,err_near,err_mid,err_far,frozen_med,frozen_far,rad_rho,rad_mae\n"
+    if os.path.exists(kp):                                # 舊 8 欄檔升級（一次性,舊行補空欄）
+        lines = open(kp, encoding="utf-8").read().splitlines()
+        if lines and lines[0].count(",") == 7:
+            with open(kp, "w", encoding="utf-8") as f:
+                f.write(hdr)
+                for ln in lines[1:]:
+                    f.write(ln + ",,,\n")
     newfile = not os.path.exists(kp)
     with open(kp, "a", encoding="utf-8") as f:
         if newfile:
-            f.write("date,sm,heldout_n,wm_err_med,wm_err_p90,err_near,err_mid,err_far\n")
+            f.write(hdr)
         f.write(f"{_t2.strftime('%Y-%m-%d %H:%M')},{args.out},{len(errs)},{med:.3f},{p90:.3f},"
-                f"{e_near:.3f},{e_mid:.3f},{e_far:.3f}\n")
+                f"{e_near:.3f},{e_mid:.3f},{e_far:.3f},{fz_med:.3f},{fz_far:.3f},"
+                f"{rad_rho:.3f},{rad_mae:.3f}\n")
     print(f"held-out 準度: |wm err| 中位 {med:.3f} / P90 {p90:.3f}（n={len(errs)}）"
-          f" | 分層 近{e_near:.2f}/中{e_mid:.2f}/遠{e_far:.2f}（n={int((hd < 20).sum())}"
-          f"/{int(((hd >= 20) & (hd <= 60)).sum())}/{int((hd > 60).sum())}）→ docs/kpi.csv")
+          f" | 分層 近{e_near:.2f}/中{e_mid:.2f}/遠{e_far:.2f}"
+          f" | 凍結基準 {fz_med:.2f}/遠 {fz_far:.2f}（n={int(fmask.sum())}）"
+          f" | rad ρ{rad_rho:+.2f} → docs/kpi.csv")
 
 
 def _load_denovo():
@@ -372,11 +403,9 @@ def _rad_dataset():
     return np.stack(X), np.stack(C), np.asarray(M), keys, theta_sub
 
 
-def train_rad(args):
-    """rad 頭:625 → 2×K cosine 係數（|θ|≤90 半圓）→ 雙切面曲線;±45° 窗 2× 加權。
-    K=16 依 rad-repr 表達力分析（Ricky 2026-07-12「感覺可以補 K=16」);資料=R7 起順收的全史方向圖。
-    **判準（發車前寫死）**:held-out（pattern-hash 切分,防公證重複洩漏）rad_margin 排序 ρ≥0.4
-    → pred_rad 進 pred_sel 罰項;否則只隨 manifest 記 pred_rad 供前瞻,不進選批鍵。"""
+def _train_rad_core(epochs, out):
+    """rad 頭訓練核心（train_rad 與 train 制度合訓共用;2026-07-16 Ricky 拍板 b 案——
+    rad_head2 化石問題:訓後九版沒吃過新方向圖=前瞻蹺蹺板頭號嫌疑）。回 (ρ, MAE)。"""
     import hashlib
     import torch.nn as nn
     from scipy.stats import spearmanr
@@ -394,7 +423,7 @@ def train_rad(args):
                         nn.Linear(256, 2 * RAD_K))
     opt = torch.optim.Adam(net.parameters(), lr=1e-3)
     n = len(Xt)
-    for ep in range(args.epochs):
+    for ep in range(epochs):
         perm = torch.randperm(n)
         tot = 0.0
         for i in range(0, n, 64):
@@ -404,7 +433,7 @@ def train_rad(args):
             opt.zero_grad(); loss.backward(); opt.step()
             tot += float(loss) * len(idx)
         if ep == 0 or ep % 5 == 4:
-            print(f"  ep {ep + 1}/{args.epochs} loss {tot / n:.4f}", flush=True)
+            print(f"  ep {ep + 1}/{epochs} loss {tot / n:.4f}", flush=True)
     with torch.no_grad():
         fit = (net(Xh).reshape(-1, 2, RAD_K) @ B).numpy()
     pm = np.array([min(rwm(th, fit[i][0]), rwm(th, fit[i][1])) for i in range(len(fit))])
@@ -412,8 +441,17 @@ def train_rad(args):
     mae = float(np.abs(pm - Mh).mean())
     print(f"held-out {int(side.sum())} 筆:rad_margin 排序 ρ={rho:+.3f} (p={p:.1e}) / MAE {mae:.3f} dB")
     torch.save(dict(state=net.state_dict(), K=RAD_K, theta=np.asarray(th)),
-               str(DATASET_PATH.joinpath(args.out)))
-    print(f"→ {args.out}（判準:ρ≥0.4 才進 pred_sel 選批鍵）")
+               str(DATASET_PATH.joinpath(out)))
+    print(f"→ {out}（判準:ρ≥0.4 才進 pred_sel 選批鍵）")
+    return float(rho), mae
+
+
+def train_rad(args):
+    """rad 頭:625 → 2×K cosine 係數（|θ|≤90 半圓）→ 雙切面曲線;±45° 窗 2× 加權。
+    K=16 依 rad-repr 表達力分析（Ricky 2026-07-12「感覺可以補 K=16」);資料=R7 起順收的全史方向圖。
+    **判準（發車前寫死）**:held-out（pattern-hash 切分,防公證重複洩漏）rad_margin 排序 ρ≥0.4
+    → pred_rad 進 pred_sel 罰項;否則只隨 manifest 記 pred_rad 供前瞻,不進選批鍵。"""
+    _train_rad_core(args.epochs, args.out)
 
 
 def main():
@@ -428,6 +466,8 @@ def main():
         s.add_argument("--val", type=int, default=500, help="harvest 驗證筆數 (不進訓練)")
         s.add_argument("--out", default="sm_reanchor.pth", help="輸出權重名 (DATASET_PATH 下;v2 建議 sm_reanchor2.pth)")
         s.add_argument("--add", default=None, help='逗號分隔新 store,先 append configs/clean_stores.txt 再訓（重錨一鍵化）')
+        s.add_argument("--no-rad", action="store_true", dest="no_rad",
+                       help="跳過制度合訓 rad 頭（預設每版重錨配訓同期 rad_headNN.pth）")
         s.add_argument("--grid-epochs", type=int, nargs="+", default=[40, 80])
         s.add_argument("--grid-over", type=int, nargs="+", default=[4, 8, 16])
         s.add_argument("--grid-replay", type=int, nargs="+", default=[1000, 2000])
