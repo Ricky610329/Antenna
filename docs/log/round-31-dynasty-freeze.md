@@ -49,7 +49,7 @@ python -m script.dedust jobs-add --input dedust_r31bNa_input --store dedust_r31b
 ```
 | 批 | 狀態 |
 |---|---|
-| 1（r31b1{a-f}） | 🔵 準備中（v39 重錨中=三件套+ensemble 首航;gen 待 v39） |
+| 1（r31b1{a-f}） | 🔵 13:0x 發車（v39〔凍結基準 1,772 筆建立/近1.12/rad_head39 訓練 ρ+0.32⚠<0.4,真判定=b1 M 臂前瞻/ens39×2〕;**gen 漏斗首航 228→76**（每帶 3× 挑 top）;pred_std 記錄生效;誤差錨 +8;dyn-frac 0.2;錨點 792;查重 0×6。⚠ 誠實註記:gen 漏傳帶配額（bridge 12/surg 24,設計 24/0——half 錨非王系方向未偏,主判準口徑不變,b2 修正） |
 
 ## 4. 分析 (Analyze)
 （待收檔）
