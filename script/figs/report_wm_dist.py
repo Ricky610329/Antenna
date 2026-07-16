@@ -18,7 +18,9 @@ from antenna.utils import DATASET_PATH  # noqa: E402
 
 
 def _scan_ours():
+    """回 (wm 陣列, 雙過筆數)。雙過＝wm≥0 且 rad_margin≥0。"""
     wms = []
+    n_both = 0
     root = str(DATASET_PATH)
     for d in sorted(os.listdir(root)):
         if not d.startswith("dedust_") or d.endswith(("_input", "_src")):
@@ -31,8 +33,12 @@ def _scan_ours():
         res = json.load(open(rj, encoding="utf-8"))
         for pid, e in res.items():
             if isinstance(e, dict) and isinstance(e.get("wm"), list) and "_rep" not in pid:
-                wms.append(e["wm"][2])
-    return np.asarray(wms, float)
+                w = e["wm"][2]
+                wms.append(w)
+                rm = e.get("rad_margin")
+                if w >= 0 and isinstance(rm, (int, float)) and rm >= 0:
+                    n_both += 1
+    return np.asarray(wms, float), n_both
 
 
 def main():
@@ -41,7 +47,7 @@ def main():
     args = ap.parse_args()
 
     senior = np.load(os.path.join(REPO, "tmp", "expected_best", "harvest_margins.npy"))
-    ours = _scan_ours()
+    ours, o_both = _scan_ours()
     s_pass, o_pass = int((senior >= 0).sum()), int((ours >= 0).sum())
 
     fig, ax = plt.subplots(figsize=(12.2, 6.0))
@@ -63,7 +69,7 @@ def main():
                 xy=(0.25, 3e-3), xytext=(-5.4, 8e-3), color=INK2, fontsize=10.5,
                 arrowprops=dict(arrowstyle="-|>", color=MUTED, lw=1.4))
     ax.annotate(f"新資料集：達標 {o_pass:,} 筆（{o_pass / len(ours) * 100:.1f}%）\n"
-                "其中 1,547 筆連 radiation pattern 一起過",
+                f"其中 {o_both:,} 筆連 radiation pattern 一起過",
                 xy=(0.35, 0.35), xytext=(-4.6, 0.55), color=DBLUE, fontsize=10.5,
                 fontweight="bold",
                 arrowprops=dict(arrowstyle="-|>", color=DBLUE, lw=1.6))
@@ -75,7 +81,7 @@ def main():
     fig.subplots_adjust(left=0.07, right=0.98, top=0.92, bottom=0.11)
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     fig.savefig(args.out, dpi=140, facecolor=SURF)
-    print(f"→ {args.out}  senior={len(senior)} pass={s_pass} | ours={len(ours)} pass={o_pass}")
+    print(f"→ {args.out}  senior={len(senior)} pass={s_pass} | ours={len(ours)} pass={o_pass} both={o_both}")
 
 
 if __name__ == "__main__":
