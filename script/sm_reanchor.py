@@ -86,9 +86,20 @@ def _load_clean():
             if key not in seen:
                 seen[key] = (torch.as_tensor(x, dtype=torch.float32),
                              torch.as_tensor(y, dtype=torch.float32))
-    items = [seen[k] for k in sorted(seen)]      # bytes 排序＝決定性切分
-    tr = [it for j, it in enumerate(items) if j % 5 != 0]
-    ho = [it for j, it in enumerate(items) if j % 5 == 0]
+    #? 凍結成員強制留 held-out（2026-07-16 修:「每第 5 筆」隨資料插入整體位移——v40 實測凍結
+    #  交集剩 416/1772,凍結尺失效;修法=凍結清單成員一律進 ho,其餘照 hash 每 5 筆）。
+    import hashlib as _h
+    import json as _j
+    fz_path = os.path.join(REPO, "configs", "heldout_frozen.json")
+    fzk = set(_j.load(open(fz_path, encoding="utf-8"))["keys"]) if os.path.exists(fz_path) else set()
+    tr, ho = [], []
+    j2 = 0
+    for k in sorted(seen):
+        if _h.md5(k).hexdigest() in fzk:
+            ho.append(seen[k])
+        else:
+            (ho if j2 % 5 == 0 else tr).append(seen[k])
+            j2 += 1
     return tr, ho
 
 
