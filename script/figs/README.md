@@ -18,8 +18,15 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 | `report_r1r10_batch.py` | 報告 F4-F11（R6 期望邊界/分布、R7 除塵、歸因、R8 四臂、R9 家族/校正/s05） |
 | `report_r1r10_champs.py` | 報告 F12-F16（血統/承重圖/八冠軍/曲線/+0.48 案例） |
 | `report_r1r18.py` | 總報告 E1-E6（每輪最佳 gallery/血統鏈/紀錄時間軸/帶外 Pareto/分組答案/新王 a024）→ progress-r1-r18 |
-| `champ_compare.py` | **通用新舊冠軍對比圖**（CLI:--new/--old 自動定位;紀錄易主收檔必渲染,規則見 docs/log/CLAUDE.md）。pattern 差異＝綠加銅/紅去銅、radiation＝極座標（helper 在 report_r1r10_style） |
+| `champ_compare.py` | **通用新舊冠軍對比圖**（CLI:--new/--old 自動定位;紀錄易主收檔必渲染,規則見 docs/log/CLAUDE.md）。pattern 差異＝綠加銅/紅去銅、radiation＝極座標（helper 在 report_r1r10_style）；`--plain`＝素底圖、`--old-left`＝before→after 閱讀順序 |
 | `report_rad_polar.py` | 報告用：指定冠軍的方向圖**極座標**渲染（CLI:--ids/--labels;主波束朝上+±45°窗+G0−3dB 圈） |
 | `report_dist_vs_strategy.py` | 報告 §2：「分布 ≫ 策略」概念圖（輸 random 輸在分布不在搜尋;概念示意非實資料） |
 | `report_online_profile.py` | 報告 §8.1：線上 278s/ep 階段佔比 vs 批次線 160s/筆（profiling ec774de） |
+| `report_dip_schematic.py` | 報告 §3.1：規格→生成器→pattern→SM→loss 順向/反向示意（梯度落在 pattern＝DIP 教學圖，概念示意非實資料） |
+| `report_rad_need.py` | 報告 §3.4（對外版）：兩個帶內達標設計的方向圖對比（b28b2_010 rad −4.63 ✗ vs rad 王 o23b1_007 +1.00 ✓；pattern 素色不做差異渲染） |
+| `report_senior_trajs.py` | 報告 §4（對外版）：學長 41 條軌跡疊圖（灰=個別/橘=最好+0.38/藍=逐輪中位,<15 條截斷；資料=R6 快取 senior_curves.npz） |
+| `report_wm_dist.py` | 報告 §7（對外版）：兩資料集 wm 分布疊圖（學長 24k/達標 18 vs 新 ~9.3k/達標 ~2k;現場掃 NAS 排公證夾,數字隨工廠成長） |
+| `report_diversity.py` | 報告 §7.2（對外版）：款式目錄規格書式——前 4 大款式各一代表,每款一列 [pattern\|S11\|Gain\|rad 極座標]（≤10px 連通=款式,64 款;代表優先挑有 rad 檔者） |
+| `report_occlusion.py` | 報告 §7.3（對外版）：s05 承重單色溫度圖（dedust_occl 5×5 遮蔽掃描,白→紅=掉幅,格內標 Δwm） |
+| `report_champion.py` | 報告用：單一設計規格卡 [pattern\|S11\|Gain\|rad 極座標]（CLI:--id/--title/--sub;定位/響應沿用 champ_compare,餘裕讀 store results.json） |
 | `report_sprint48.py` | R28-R29 48hr 衝刺總覽（王座演進/多樣性換血/adversarial 閉環/低側誠實面板）→ docs/report/assets/sprint48.png |

@@ -17,7 +17,7 @@ def main():
     args = ap.parse_args()
 
     # 線上迴圈 278s：HFSS 61% / rad 24% / S11 12% / 其他 3%
-    online = [("HFSS 求解＋讀回", 170, DBLUE), ("rad 單筆擬合", 67, ORANGE),
+    online = [("HFSS 求解＋讀回", 170, DBLUE), ("radiation 單筆擬合", 67, ORANGE),
               ("S11／Gain 單筆擬合", 33, GOLD), ("開專案/收尾/推論", 8, MUTED)]
     fig, ax = plt.subplots(figsize=(12.6, 4.6))
 
@@ -40,7 +40,7 @@ def main():
                 arrowprops=dict(arrowstyle="-", color=ORANGE, lw=1.4))
     ax.plot([170, 170], [1.40, 1.44], color=ORANGE, lw=1.4)
     ax.plot([278, 278], [1.40, 1.44], color=ORANGE, lw=1.4)
-    ax.text(224, 1.55, "≈ 39% 虧在「單樣本過擬合」——不是在產資料\n（rad 那 24% 撞滿 20,000 迭代純浪費）",
+    ax.text(224, 1.55, "≈ 39% 虧在「單樣本過擬合」——不是在產資料\n（radiation 那 24% 撞滿 20,000 迭代純浪費）",
             ha="center", va="bottom", color=ORANGE, fontsize=9.5, fontweight="bold")
     # 「真正產資料」標註
     ax.text(85, 0.62, "↑ 只有這 61% 真正在產資料", ha="center", color=DBLUE, fontsize=9)
