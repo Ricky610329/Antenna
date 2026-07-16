@@ -95,7 +95,10 @@ def _load_clean():
     tr, ho = [], []
     j2 = 0
     for k in sorted(seen):
-        if _h.md5(k).hexdigest() in fzk:
+        #! 凍結清單的 md5=bool bytes（評估端口徑）——切分端 key 是 float32 bytes,必須轉 bool 再湊
+        #  （v41 實測踩坑:float32 直接 md5 → 0 匹配,凍結尺假縮水 353）。
+        kb = _h.md5((np.frombuffer(k, dtype=np.float32) > 0.5).tobytes()).hexdigest()
+        if kb in fzk:
             ho.append(seen[k])
         else:
             (ho if j2 % 5 == 0 else tr).append(seen[k])
