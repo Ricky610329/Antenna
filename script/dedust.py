@@ -4097,13 +4097,29 @@ def jobs_add(args):
 
 
 def _rand_blocks(rng):
-    """結構化隨機（塊語言）:隨機 3-8 矩形塊+稀網布。sm_invert G-free 與 selfgen 共用。"""
+    """文法採樣 v2（Ricky 2026-07-16「隨機變高斯雜訊沒意義」——analysis-05 規律=生成文法）:
+    主件住下半（含 feed 側,151+px 傾向）+翼 1-2 塊住上半（row0-8,三標過的翼緊湊在高處）+
+    小件 1-3 顆擺槓桿區（中央柱上段/外緣）+稀網布;迴避中件散佈（16-63px=輸家語言）。
+    非雜訊、非王系複製——「同語言的新句子」。"""
     q = np.zeros((25, 25), bool)
-    for _ in range(int(rng.integers(3, 9))):
-        h, w = int(rng.integers(2, 9)), int(rng.integers(2, 9))
-        r0, c0 = int(rng.integers(0, 26 - h)), int(rng.integers(0, 26 - w))
-        q[r0:r0 + h, c0:c0 + w] = True
-    return q | (rng.random((25, 25)) < float(rng.uniform(0.05, 0.25)))
+    h, w = int(rng.integers(7, 13)), int(rng.integers(13, 24))     # 主件（下半場,蓋 feed 側）
+    r0 = int(rng.integers(12, 26 - h))
+    c0 = int(rng.integers(0, 26 - w))
+    q[r0:r0 + h, c0:c0 + w] = True
+    for _ in range(int(rng.integers(1, 3))):                        # 翼級（上半,row0-8）
+        h2, w2 = int(rng.integers(3, 8)), int(rng.integers(7, 17))
+        r2 = int(rng.integers(0, max(9 - h2, 1)))
+        c2 = int(rng.integers(0, 26 - w2))
+        q[r2:r2 + h2, c2:c2 + w2] = True
+    for _ in range(int(rng.integers(1, 4))):                        # 小件（中央柱上段/外緣槓桿區）
+        h3, w3 = int(rng.integers(1, 4)), int(rng.integers(1, 5))
+        if rng.random() < 0.5:
+            r3, c3 = int(rng.integers(5, 11)), int(rng.integers(10, 14))   # 中央柱上段
+        else:
+            r3, c3 = int(rng.integers(8, 12)), (int(rng.integers(0, 3)) if rng.random() < 0.5
+                                                else int(rng.integers(21, 24)))  # 外緣
+        q[r3:min(r3 + h3, 25), c3:min(c3 + w3, 25)] = True
+    return q | (rng.random((25, 25)) < float(rng.uniform(0.03, 0.15)))
 
 
 def _rand_frag(rng):
@@ -4131,7 +4147,10 @@ def _selfgen_chunk(me, args):
     mp = ind.joinpath("manifest.json")
     manifest = json.load(open(str(mp), encoding="utf-8")) if mp.exists() else []
     if _SELFGEN_BASES is None:
-        hist, bases = set(), []
+        #? 王系親代過濾（Ricky 2026-07-16「還是很容易出現王系的」）:hist_flip 的親代池排除
+        #  王朝家族近親（d_dyn<20）——王系殘影歸零;查重集 hist 仍收全歷史。
+        DYN_ = ("c18", "vg0338", "vg0396", "g1_038", "g1_039", "r2_016", "r3_001")
+        hist, bases, dynp = set(), [], []
         for fol in _all_input_folders():
             dd = DATASET_PATH.joinpath(fol)
             for m in json.load(open(str(dd.joinpath("manifest.json")), encoding="utf-8")):
@@ -4139,38 +4158,87 @@ def _selfgen_chunk(me, args):
                 if f.exists():
                     p = np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5
                     hist.add(p.tobytes())
-                    bases.append(p)
-        _SELFGEN_BASES = (bases, hist)
-        print(f"⚙ 自產基底載入:歷史 {len(bases)} 筆")
-    bases, hist = _SELFGEN_BASES
+                    bases.append((p, m["id"]))
+                    if any(t in m["id"] for t in DYN_):
+                        dynp.append(p.reshape(-1))
+        _pk = np.packbits(np.stack(dynp).astype(np.uint8), axis=1)
+        _pop = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint16)
+        keep = []
+        for p, mid in bases:
+            d_ = int(_pop[np.bitwise_xor(_pk, np.packbits(p.reshape(-1).astype(np.uint8)))]
+                     .sum(axis=1).min())
+            if d_ >= 20:
+                keep.append(p)
+        #? SM 粗篩員（漏斗化:生成 3× 挑 top;權重=NAS 最新 sm_reanchor*）
+        import glob as _gl
+        import re as _re
+        vs = sorted((int(mo.group(1)), f) for f in _gl.glob(str(DATASET_PATH.joinpath("sm_reanchor*.pth")))
+                    if (mo := _re.search(r"sm_reanchor(\d+)\.pth$", f)))
+        sm_ = None
+        if vs:
+            try:
+                from antenna.training import setup_responses
+                cfg_ = load_config(args.config)
+                setup_responses(cfg_)
+                labels_ = PORT_SPECS[cfg_.port]["labels"]
+                n_pts_ = sum(cfg_.targets[labels_[0]]["width"])
+                from antenna.zoo import SURROGATES as _SUR
+                sm_ = _SUR["mlp"](str(_dir("_selfgen_cache")), 25 * 25, (len(labels_), n_pts_))
+                sm_.pre_load_model(vs[-1][1], strict=True)
+                sm_.model.eval()
+                print(f"⚙ 自產 SM 粗篩員: sm_reanchor{vs[-1][0]}")
+            except Exception as e_:
+                print(f"⚙ SM 粗篩員載入失敗（退回無篩選）: {e_}")
+                sm_ = None
+        _SELFGEN_BASES = (keep, hist, sm_, (cfg_, labels_, n_pts_) if sm_ else None)
+        print(f"⚙ 自產基底載入:歷史 {len(bases)} 筆,非王系親代 {len(keep)} 筆")
+    bases, hist, sm_scr, sm_ctx = _SELFGEN_BASES
     rng = np.random.default_rng(len(manifest) * 1000 + int(me.split(".")[-1]))
-    made, tries = [], 0
-    while len(made) < args.selfgen and tries < args.selfgen * 300:
+    #? 三分生成（歷史大翻 bit 50-150〔非王系親代〕/文法塊語言/碎片語言）＋ SM 垃圾過濾
+    #  （Ricky 2026-07-16「隨機變高斯雜訊沒意義」:生成 3× 候選,pred_wm ≥−8 過濾雜訊級——
+    #  是「過濾」不是「擇優」,通過者保持隨機=去雜訊不塌縮回 SM 自信區〔防馬太〕）。
+    cands, tries = [], 0
+    want = args.selfgen * (3 if sm_scr is not None else 1)
+    while len(cands) < want and tries < want * 300:
         tries += 1
-        #? 三分生成（Ricky 2026-07-15「空轉輪跑隨機一點…增加 variation」→「再翻多一點,50 以上」
-        #  ——原歷史翻 1-12bit=微調批同質大戶）:①歷史大翻 bit（50-150=真正遠域）②塊語言③碎片語言。
         mode = tries % 3
         if mode == 0:
             q = bases[int(rng.integers(0, len(bases)))].copy()
             k = int(rng.integers(50, 151))
             q.ravel()[rng.choice(625, size=k, replace=False)] ^= True
-            src, ops = "hist_flip", [["flips", k]]
+            src, ops, dpx = "hist_flip", [["flips", k]], k
         elif mode == 1:
             q = _rand_blocks(rng)
             q[FEED] = True
-            src, ops = "rand_blocks", [["randb"]]
+            src, ops, dpx = "rand_blocks", [["randb"]], -1
         else:
             q = _rand_frag(rng)
             q[FEED] = True
-            src, ops = "rand_frag", [["randf"]]
+            src, ops, dpx = "rand_frag", [["randf"]], -1
         if not (200 <= int(q.sum()) <= 550) or q.tobytes() in hist:
             continue
         hist.add(q.tobytes())
+        cands.append((q, src, ops, dpx))
+    if sm_scr is not None and len(cands) > args.selfgen:
+        cfg_s, labels_s, npts_s = sm_ctx
+        pats_ = torch.stack([torch.tensor(q, dtype=torch.float32).reshape(-1) for q, _, _, _ in cands])
+        with torch.no_grad():
+            raw_ = sm_scr.model(pats_).reshape(len(cands), len(labels_s), npts_s)
+        pw = [float(worst_margin(raw_[i], labels_s, cfg_s.targets)[0]) for i in range(len(cands))]
+        ok_i = [i for i in range(len(cands)) if pw[i] >= -8.0]
+        if len(ok_i) < args.selfgen:                     # 通過太少→pred 最高者補足
+            rest = sorted((i for i in range(len(cands)) if i not in set(ok_i)),
+                          key=lambda i: -pw[i])
+            ok_i += rest[:args.selfgen - len(ok_i)]
+        print(f"⚙ SM 垃圾過濾: {len(cands)} 候選 → {len(ok_i[:args.selfgen])} 入批"
+              f"（pred≥−8 通過 {sum(1 for i in ok_i if pw[i] >= -8)}）")
+        cands = [cands[i] for i in ok_i[:args.selfgen]]
+    made = []
+    for q, src, ops, dpx in cands[:args.selfgen]:
         pid = f"a{tag[4:]}_{len(manifest) + len(made):05d}"
         torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
         made.append(dict(id=pid, kind="selfgen", family=f"AUTO_{tag}", removed_px=0,
-                         **piece_stats(q), source_id=src, ops=ops,
-                         diff_px=(ops[0][1] if mode == 0 else -1)))    # -1=無親新血（同 grad-free 口徑）
+                         **piece_stats(q), source_id=src, ops=ops, diff_px=dpx))
     if not made:
         return False
     manifest += made
