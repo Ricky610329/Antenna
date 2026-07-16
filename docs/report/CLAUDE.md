@@ -8,7 +8,9 @@
    共用 `script/figs/report_r1r10_style.py`（色票/Microsoft JhengHei/`save()`）；
    新腳本在 `script/figs/README.md` 索引 +1 行。
 2. 文：本資料夾 `<stem>.md`，圖用相對路徑 `assets/x.png`。
-3. PDF：`python docs/report/build_pdf.py <stem>`（md → html → headless Edge → PDF；流式排版）。
+3. PDF：`python docs/report/build_pdf.py <stem|md路徑> [--out-name 名] [--scale "圖.png=56%,…"]`
+   （md → html → headless Edge → PDF → pymupdf 蓋頁碼；流式排版＋h2/h3 keep-together 防標題孤懸；
+   md 可在 repo 外——對外交付報告如桌面「進度報告」也走這條線）。
 
 ## 硬驗收（不可跳過）
 
