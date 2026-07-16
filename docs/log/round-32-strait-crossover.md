@@ -1,0 +1,61 @@
+# Round 32 — 海峽輪：雙親雜交 × SM 期望閘 × 影子 CNN 對決
+
+- **狀態**: proposed（2026-07-16 晚開檔;Ricky「照這樣開 R32,海峽臂加進去,但探索還是要找 SM
+  有一定期望的,不是為了填而填（類似線上學習）」;b3 收檔+R31 收輪後發車）
+- **提出 / 開跑 / 結論**: 2026-07-16 / — / —
+- **一句話問題**: pattern 空間的「王朝↔中繼海峽」（增量疊圖:歷史與新產出皆空,bridge 梯度失敗的
+  地理原因）——用管線首個**雙親算子**（雜交）+SM 期望閘（LCB top）填出「SM 認為可能活」的
+  海峽樣本,能不能造出「wm 好∧lo 好」的橋？同時:CNN 多頭影子對決（資料 10k+/空間結構先驗）。
+- **一句話結論 (TL;DR)**: 待跑
+- **指向**: [round-31](round-31-dynasty-freeze.md)（bridge 判死/L 4 命中/std 進鍵/rad 鍵常駐）·
+  tmp/pattern_map*.png（海峽診斷）· analysis-04（CNN 一致小勝=候補）· decisions「SM 準度目標線」
+
+## 1. 假設 (Propose)
+- **證據**：①增量疊圖:海峽區歷史+新產出皆零樣本——SM 在「wm 好→lo 好」的路徑上零教材,
+  bridge 梯度失敗的地理解釋;②管線全史=單親變異（翻bit/手術/梯度）,雜交=首個天然產出
+  「兩簇之間」的算子;③L 臂 4 命中（wm+0.15∧lo−4.50)=橋的中繼端已立;④CNN:analysis-04
+  一致小勝+資料翻倍+空間知識（承重圖/對角/擺位）變核心資產=重評時機。
+- **判準（發車前寫死;Ricky 可隨時否決）**：
+  - **主判準（海峽橋）**：X 臂 realized「wm ≥−2 ∧ lo ≤−2」（同框律,承接 L 帳）≥2 筆/批;
+    且 X 臂樣本落 PCA 海峽區（事後投影驗證「真的在海峽」）≥50%——兩者兼備=雜交有效;
+    連兩批全不過=海峽不可雜交填充,回歸單親+報告。
+  - **SM 期望閘審計**：X 臂 |pred−real|（LCB 校準）vs G-free 對照——期望閘有效=X 誤差 <free。
+  - **影子 CNN（三尺盲測,v43 起每版平行訓）**：凍結基準分層誤差/M 臂前瞻 ρ（雙模打分只記錄）/
+    adv 率——**連兩批 CNN 全贏 → 轉正**（進 zoo+全鏈換錨);輸=降級為異架構 ensemble 成員。
+  - L 臂續帳（lo≤−2∧wm≥−2 ≥2/批;R31 帳 1/4）;rad_head 前瞻 ≥0.4 續鍵帳;恆溫/凍結尺照報。
+  - 紀錄門檻引 records.json;紀錄級一律公證;批數 ≤3;五軸面板;修訂留註記。
+- **配額（每批 150）**：**X 24**（雜交,oversample×4→LCB top）／**L 24**／G 44（free 28/oobp 16）／
+  M 14／O 8／I 12／D 12／W 8／C 4。
+
+## 2. 實驗設計 (Design)
+| 臂 | 配額 | 生成 | 判準 |
+|---|---|---|---|
+| X 海峽 | 24 | 王朝錨×中繼/同框七錨雜交（割線/遮罩）,96 候選→LCB top 24 | wm≥−2∧lo≤−2 ≥2+海峽落點 ≥50% |
+| L | 24 | 中繼六錨+同框筆鄰域,r_feed 鍵 | 同框律 ≥2/批 |
+| G | 44 | free（文法/碎片 init）+oobp（中繼錨） | adv 率+低側泵 |
+| 影子 CNN | — | 每版重錨平行訓（Conv 多頭:S11/Gain+rad 共享 trunk） | 三尺連兩批全贏→轉正 |
+- 工具:select-r32（xover 臂已實作 bf66901）;影子 CNN=sm_reanchor --shadow（v43 前實作）。
+
+## 3. 執行紀錄 (Run)
+```
+# 發車（開發機,conda ant;每批照 /batch-cycle）:
+python -m script.sm_invert gen --sm sm_reanchor<vN>.pth --rad-head rad_head<vN>.pth --out-dir tmp/invert_stage_r32bN --n-free 28 --n-surg 0 --n-champ 0 --n-oob 16 --seed <30+N>
+python -m script.dedust select-r32 --batch N --sm sm_reanchor<vN>.pth --gstage tmp/invert_stage_r32bN --rad-head rad_head<vN>.pth --rad-key --novelty
+python -m script.dedust check-dup --input dedust_r32bNa_input   # a..f 分開跑
+python -m script.dedust jobs-add --input dedust_r32bNa_input --store dedust_r32bNa --prio 3   # ×6
+```
+| 批 | 狀態 |
+|---|---|
+| — | 待 R31b3 收檔+收輪 |
+
+## 4. 分析 (Analyze)
+（待）
+
+## 5. 結論 (Conclude)
+（待）
+
+## 6. 後續決策 (Next)
+- 簇地圖（KPI② 的地理版,每輪 pattern_map 重跑=「大陸漂移」追蹤——figs 工具化候選）。
+
+## 7. 歸檔指向 (Archive)
+- 結果夾: `dataset/dedust_r32b*`;公證 `r32n*`。
