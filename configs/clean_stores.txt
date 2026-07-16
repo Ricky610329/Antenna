@@ -267,3 +267,10 @@ dedust_r30b1c
 dedust_r30b1d
 dedust_r30b1e
 dedust_r30b1f
+# sm_reanchor38.pth 追加（2026-07-16）
+dedust_r30b2a
+dedust_r30b2b
+dedust_r30b2c
+dedust_r30b2d
+dedust_r30b2e
+dedust_r30b2f
