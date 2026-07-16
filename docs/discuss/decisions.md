@@ -320,3 +320,13 @@
   → 每版重錨自動配訓同期 `rad_headNN.pth`（全量方向圖 9k+,30ep;--no-rad 關）;
   kpi.csv 加 rad_rho/rad_mae=rad 準度曲線。select 發車 --rad-head 用同期版。
 - **Why**: 有目標值曲線才有終點線;方向圖資料量已支撐全量重訓（Ricky:「資料量也起來了」）。
+
+## SM 利用率雙升級（2026-07-16,Ricky「1、2 都上」——「我們有利用好 SM 嗎」討論的落地）
+- **①漏斗放大**：gen --oversample 3（每帶生 3× 候選,SM 按帶目標挑 top:三標帶=maximin(wm,rad)/
+  oobp=帶外壓低）;select 常規臂候選池 ×2（core 12→24 倍/cold 8→16 倍）——SM 打分免費,
+  9k 資料的 SM 該篩更大的池（缺口:G 臂原「生成即入選」零篩選）。
+- **②ensemble 不確定性（記錄版）**：每版重錨加訓 2 顆異 seed 半程成員（epochs/2）→ select 三成員
+  pred_wm 的 std 進 manifest（pred_std）;**第一版不進選批鍵**——判讀驗證「std 分桶 |pred−real|
+  校準」成立後,再上「高信心變現/低信心探索」分流（文獻 active learning 的原則性實現）。
+- **Why**: 批次線對 SM 的利用「深度升維（inversion/adversarial）但廣度掉隊」——更新頻率降 40×
+  可接受,漏斗與不確定性是真缺口。

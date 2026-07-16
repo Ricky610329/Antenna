@@ -213,6 +213,21 @@ def train(args):
         rad_out = f"rad_head{vnum}.pth" if vnum else "rad_head_auto.pth"
         print(f"—— 制度合訓: rad 頭全量重訓 → {rad_out}")
         rad_rho, rad_mae = _train_rad_core(30, rad_out)
+    #? ensemble 不確定性成員（2026-07-16 Ricky 拍板②）:2 顆異 seed 半程成員（+主 SM=3 成員）
+    #  → select 打分記 pred_std;第一版不進選批鍵,判讀驗證 std 校準後再分流（變現/探索）。
+    if not getattr(args, "no_ens", False):
+        vnum2 = "".join(ch for ch in os.path.basename(args.out) if ch.isdigit())
+        for j, sd_ in enumerate((17, 42), 1):
+            torch.manual_seed(sd_)
+            sm_e = _make_sm()
+            sm_e.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
+            sm_e.train_by_datas(ds, epochs=max(args.epochs // 2, 10), batch_size=args.batch,
+                                verbose=False)
+            eo = f"sm_ens{vnum2}_{j}.pth" if vnum2 else f"sm_ens_auto_{j}.pth"
+            sm_e.save_as(DATASET_PATH.joinpath(eo))
+            e_med = float(np.median(_wm_errs(sm_e, ho)))
+            print(f"ensemble 成員 {j}（seed {sd_},{max(args.epochs // 2, 10)}ep）→ {eo}"
+                  f"（held-out 中位 {e_med:.3f}）")
     kp = os.path.join(REPO, "docs", "kpi.csv")
     hdr = "date,sm,heldout_n,wm_err_med,wm_err_p90,err_near,err_mid,err_far,frozen_med,frozen_far,rad_rho,rad_mae\n"
     if os.path.exists(kp):                                # 舊 8 欄檔升級（一次性,舊行補空欄）
@@ -468,6 +483,8 @@ def main():
         s.add_argument("--add", default=None, help='逗號分隔新 store,先 append configs/clean_stores.txt 再訓（重錨一鍵化）')
         s.add_argument("--no-rad", action="store_true", dest="no_rad",
                        help="跳過制度合訓 rad 頭（預設每版重錨配訓同期 rad_headNN.pth）")
+        s.add_argument("--no-ens", action="store_true", dest="no_ens",
+                       help="跳過 ensemble 成員訓練（預設 2 顆異 seed 半程成員 → pred_std）")
         s.add_argument("--grid-epochs", type=int, nargs="+", default=[40, 80])
         s.add_argument("--grid-over", type=int, nargs="+", default=[4, 8, 16])
         s.add_argument("--grid-replay", type=int, nargs="+", default=[1000, 2000])

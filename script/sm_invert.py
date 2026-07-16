@@ -218,27 +218,28 @@ def gen(args):
     pats = {pid: _find(pid) for pid, _ in surg_anchors + champ_anchors + oob_anchors}
     fmasks = {pid: _freeze_mask(pats[pid], FREEZE_BLOCKS[pid]) for pid in FREEZE_BLOCKS
               if pid in pats}
-    plan = ([("free", None, 625, {}) for _ in range(args.n_free)]
-            + [("surg", surg_anchors[k % 2], 60,
-                {"freeze": True}) for k in range(args.n_surg)]
-            + [("champ", champ_anchors[k % 2], 25, {}) for k in range(args.n_champ)]
-            + [("oobp", oob_anchors[k % 3], 60,
-                {"oob_target": float(args.oob_push), "w_oob": 0.5}) for k in range(args.n_oob)])
+    #? 漏斗（2026-07-16 Ricky 拍板①「SM 打分免費,候選池該放大」）:每帶生成 quota×--oversample
+    #  候選,按帶目標挑 top 入 staging——free/surg/champ=maximin(wm,rad) 三標導向;oobp=帶外壓低。
+    band_cfg = [("free", None, 625, {}, args.n_free),
+                ("surg", surg_anchors, 60, {"freeze": True}, args.n_surg),
+                ("champ", champ_anchors, 25, {}, args.n_champ),
+                ("oobp", oob_anchors, 60,
+                 {"oob_target": float(args.oob_push), "w_oob": 0.5}, args.n_oob)]
     manifest, seen = [], set()
-    n_try = 0
-    for k_pl, (band_name, anc, band, opts) in enumerate(plan):
-        made = False
-        while not made and n_try < len(plan) * 8:
+    for band_name, ancs, band, opts, quota in band_cfg:
+        cands, n_try = [], 0
+        want = quota * max(args.oversample, 1)
+        while len(cands) < want and n_try < want * 6:
             n_try += 1
-            if anc is None:
-                #? 反 mode collapse（2026-07-15,b2 實測 free 批內 NN 168<隨機 262）:
-                #  init 三分=均勻散點/結構化塊/碎片語言（不同「科」的起點）;每筆抖 loss 權重
-                #  與收斂深度=不同地景不同深度,拉開梯度終點。
+            k_pl = len(cands)
+            if ancs is None:
+                #? 反 mode collapse:init 三分（散點/塊/碎片）+抖 loss 權重與收斂深度
                 p0, aname = [(lambda: (rng.random((25, 25)) > float(rng.uniform(0.35, 0.65)), "rand")),
                              (lambda: (_rand_blocks(rng), "randb")),
                              (lambda: (_rand_frag(rng), "randf"))][k_pl % 3]()
-                base = None
+                base, anc = None, None
             else:
+                anc = ancs[k_pl % len(ancs)]
                 pid, aname = anc
                 p0, base = pats[pid], pats[pid]
             fz = fmasks.get(anc[0]) if (anc and opts.get("freeze")) else None
@@ -253,11 +254,19 @@ def gen(args):
             if kb in seen or not (150 <= info["metal"] <= 560):
                 continue
             seen.add(kb)
+            cands.append((qf, info, aname))
+        if band_name == "oobp":
+            cands.sort(key=lambda t: t[1]["oob"])                     # 帶外選擇性優先
+        else:
+            cands.sort(key=lambda t: -min(t[1]["wm"], t[1]["rad"]))   # maximin 三標導向
+        for qf, info, aname in cands[:quota]:
             k = len(manifest)
             pid_out = f"stage_{k:03d}"
             torch.save(torch.tensor(qf, dtype=torch.float32), os.path.join(out, pid_out + ".pt"))
             manifest.append(dict(id=pid_out, band=band_name, anchor=aname, dlim=band, **info))
-            made = True
+        if args.oversample > 1:
+            print(f"  {band_name}: 生成 {len(cands)} 挑 {min(quota, len(cands))}"
+                  f"（挑選鍵={'oob' if band_name == 'oobp' else 'maximin(wm,rad)'}）", flush=True)
     with open(os.path.join(out, "staging_manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=1)
     from collections import Counter
@@ -293,6 +302,8 @@ def main():
     g.add_argument("--n-oob", type=int, default=12, dest="n_oob")
     g.add_argument("--oob-push", type=float, default=6.0, dest="oob_push",
                    help="oobp 帶的超規格帶外目標（低側資料泵）")
+    g.add_argument("--oversample", type=int, default=3,
+                   help="漏斗倍數:每帶生成 quota×N 候選,按帶目標挑 top（1=關;時間 ∝N）")
     g.set_defaults(fn=gen)
     args = ap.parse_args()
     args.fn(args)

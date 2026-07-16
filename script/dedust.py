@@ -2791,8 +2791,9 @@ def select_r22mix(args):
             out.append(c)
         return out
 
-    core = _gen(P, pick_two_pool, (args.o + args.m) * 12)          # O+M 共池（同 R21 兩池抽樣）
-    coldp = _gen(P, pick_cold, args.c * 8)                          # C 冷支專屬
+    #? 漏斗放大（2026-07-16 Ricky 拍板①:SM 打分免費,候選池 ×2——9k 資料的 SM 該篩更大的池）
+    core = _gen(P, pick_two_pool, (args.o + args.m) * 24)          # O+M 共池（12→24 倍候選）
+    coldp = _gen(P, pick_cold, args.c * 16)                         # C 冷支專屬（8→16 倍）
     specp = _gen(PS, pick_spec, args.q * 12)                        # Q 修復池
     wildp = _gen(P, pick_two_pool, args.wild * 30, dlo=26, dhi=60, wild=True)
     fragp = _gen(PF, pick_frag, getattr(args, "f", 0) * 12, dhi=60) if PF else []   # F 修復池（粉塵錨 strip 後 d 大,放寬到 60）
@@ -3170,9 +3171,27 @@ def select_r22mix(args):
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
+    #? ensemble 不確定性（2026-07-16 Ricky 拍板②,記錄版）:sm_ens{N}_{1,2} 存在→三成員 pred_wm
+    #  的 std 進 manifest（pred_std）;**第一版不進選批鍵**——判讀驗證「std 分桶 |pred−real| 校準」
+    #  後再進鍵（高信心變現/低信心探索的原則性分流）。
+    ens_raws = []
+    _vn = "".join(ch for ch in os.path.basename(args.sm) if ch.isdigit())
+    for _j in (1, 2):
+        _fe = DATASET_PATH.joinpath(f"sm_ens{_vn}_{_j}.pth")
+        if _fe.exists():
+            _sme = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
+            _sme.pre_load_model(_fe, strict=True)
+            _sme.model.eval()
+            with torch.no_grad():
+                ens_raws.append(_sme.model(pats).reshape(len(allc), len(labels), n_pts))
+    if ens_raws:
+        print(f"ensemble 成員 ×{len(ens_raws)}（sm_ens{_vn}_*）→ pred_std 記錄")
     for k, c in enumerate(allc):
         w, _ = worst_margin(raw[k], labels, cfg.targets)
         c["pred_wm"] = _r(float(w))
+        if ens_raws:
+            _ws = [float(w)] + [float(worst_margin(er[k], labels, cfg.targets)[0]) for er in ens_raws]
+            c["pred_std"] = _r(float(np.std(_ws)))
         r = raw[k].numpy()
         c["pred_oob"] = oob_metrics(r)["oob_bad"]
         ml = 10 * np.log10(np.clip(1 - 10 ** (r[0][:4] / 10), 1e-6, 1))
@@ -3360,7 +3379,8 @@ def select_r22mix(args):
                                 family=f"{arm.upper()}_{fam}", removed_px=0, **c["stats"],
                                 source_id=c["parent"], ops=c["ops"], diff_px=c["d"],
                                 pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
-                                pred_rad=c.get("pred_rad"), _pat=c["pat"]))
+                                pred_rad=c.get("pred_rad"), pred_std=c.get("pred_std"),
+                                _pat=c["pat"]))
     dirs = []
     for suf in "abcdefgh"[:args.shards]:
         dd = _dir(f"dedust_r{rnd}b{args.batch}{suf}_input")
