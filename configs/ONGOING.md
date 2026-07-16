@@ -33,11 +33,14 @@
 ### ~~穩健 bake-off~~（✅ **2026-07-08,製造冠軍=x00**）
 - 缺陷 k1×18:x00 存活 72% > c25 56% > c21 28%。**送製造首選=x00**（wm +0.19/rad +0.19,公證✓）。
 
-### Round 30 — SM 準度輪 2＋低側據點擴張（🔵 **開輪中**,2026-07-16 凌晨;宣告制接棒 R29）
-- **主軸**：G 臂續跑（champ 主力+碎片帶）＋ gap 區據點鄰域擴張（8+ 筆 lo −8~−2 真值的變異）
-  ＋**窮舉公證**（可用帶外零推進連 6 批回報線行動:歷史 top 重測證天花板 9.0）。
-- 恆溫器連兩觸發→G-free/D 配額加碼;r_feed 分軸 key（analysis-05,select 端零成本）。
-- 判準寫死於 round-30 檔（開檔時）。
+### Round 31 — 王系凍結輪（🔵 **running**,2026-07-16 午;Ricky 叮嚀「王系列不要再增加了」觸發）→ [round-31](../docs/log/round-31-dynasty-freeze.md)
+- **主軸**：champ 帶「換錨不換機制」（王錨→中繼四錨 t03/n09 系）＋dyn-frac 0.2＋L20 續攻;
+  「SM 利用率元年」批=oversample 3×+pred_std 記錄+rad_head39+ensemble 首航疊加。
+- 主判準:bridge 帶 lo≤−2∧wm≥0 ≥1/批;std 三分桶校準→進鍵;rad_head39 vs 化石帳。
+
+### ~~Round 30 — SM 準度輪 2＋低側據點擴張~~（✅ **2026-07-16 收檔,3 批+X 臂**）→ [round-30](../docs/log/round-30-lowside-beachhead.md)
+- ★ 可用帶外 **9.0=真天花板**（窮舉 6/6）;**中繼帶發現**（lo −4.2∧wm +0.11∧oob 7.77=破天花板
+  實體差 rad 閘）;champ adv 47% 首過門檻;深淵據點判死;→R31 王系凍結。
 
 ### ~~Round 29 — G 臂主力輪~~（✅ **2026-07-16 收檔,3 批+公證;戰略換軸首輪**）→ [round-29](../docs/log/round-29-gradient-inversion.md)
 - **SM 可信半徑=d≤25**（champ 連兩批 realized 三標=準度變現通道）;adversarial training 循環成立
