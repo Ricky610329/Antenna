@@ -3408,7 +3408,18 @@ def select_r22mix(args):
             if c.get("pred_rad") is not None and getattr(args, "rad_key", False):
                 pen += SEL_KAPPA * max(0.0, -c["pred_rad"])   # rad 項:--rad-key 才進鍵（門檻 ρ≥0.4）
             return c["pred_oob"] + pen - _nbonus(c) + _dynpen(c)   # B 新穎性紅利＋R33 結構罰
-        oi = _diverse(core, sorted(range(len(core)), key=_psel), args.o)
+        #? R33b2 起 CNN 排序進鍵（b1 檢定達成:CNN ρ+0.628 vs MLP +0.074,8.5 倍;判準見 round-33 §1）:
+        #  「CNN=排序器/MLP=回歸器」——O 變現臂排序=雙 rank 平均（MLP _psel rank + CNN wm rank）,
+        #  絕對值門檻/LCB 仍 MLP。CNN 分數不在（b1 前的批）自動退回純 _psel。
+        if getattr(args, "round", 0) >= 33 and args.batch >= 2 \
+                and any(c.get("pred_wm_cnn") is not None for c in core):
+            r_mlp = {i: rk for rk, i in enumerate(sorted(range(len(core)), key=_psel))}
+            r_cnn = {i: rk for rk, i in enumerate(sorted(range(len(core)),
+                     key=lambda i: -(core[i].get("pred_wm_cnn") or -99)))}
+            oi = _diverse(core, sorted(range(len(core)),
+                          key=lambda i: r_mlp[i] + r_cnn[i]), args.o)
+        else:
+            oi = _diverse(core, sorted(range(len(core)), key=_psel), args.o)
     else:
         trim = sorted(range(len(core)), key=lambda i: core[i]["pred_wm"], reverse=True)[:int(len(core) * .6)]
         oi = _diverse(core, sorted(trim, key=lambda i: core[i]["pred_oob"]), args.o)
@@ -3833,6 +3844,51 @@ def select_repeat(args):
     _save_manifest(manifest, input_dir)
     print(f"repeat 批次完成 → {input_dir}：{args.id} × {args.n} 次"
           f"（估 {args.n * 3} 分 ≈ {args.n * 3 / 60:.1f} hr；report 看各次 wm/rad 的散布）")
+
+
+def select_scope(args):
+    """顯微鏡包（decisions 2026-07-17「窮舉×防陷困折衷」）:單一高價值錨 d=1 鄰域**全枚舉**
+    （624 變體=625 像素扣 FEED,小空間完備「不漏」）→ CNN 排序 top N 送測（SM 用強項「排序」,
+    Ricky:SM 的工作=找有潛力的域）→ **錨每輪輪換**（防陷）。每輪限一夾 25 筆=預算封頂。
+    用法: select-scope --anchor <id> --source-input <夾> --cnn sm_shadow46.pth --input dedust_r33s1_input"""
+    from antenna.zoo import SURROGATES
+    cfg = load_config(args.config)
+    labels = PORT_SPECS[cfg.port]["labels"]
+    n_pts = sum(cfg.targets[labels[0]]["width"])
+    src_pt = _dir(args.source_input).joinpath(f"{args.anchor}.pt")
+    if not src_pt.exists():
+        raise SystemExit(f"找不到 {src_pt}——確認 --source-input / --anchor。")
+    p0 = np.asarray(torch.load(str(src_pt), weights_only=True)).reshape(25, 25) > 0.5
+    variants, idxs = [], []
+    for px in range(625):
+        if (px // 25, px % 25) == FEED:
+            continue                                     # FEED 像素不可動
+        q = p0.copy()
+        q.ravel()[px] ^= True
+        variants.append(q)
+        idxs.append(px)
+    cache = os.path.join(REPO, "tmp", "dedust")
+    os.makedirs(cache, exist_ok=True)
+    smc = SURROGATES["cnn"](cache, 25 * 25, (len(labels), n_pts))
+    smc.pre_load_model(DATASET_PATH.joinpath(args.cnn), strict=True)
+    smc.model.eval()
+    pats = torch.stack([torch.tensor(q, dtype=torch.float32).reshape(-1) for q in variants])
+    with torch.no_grad():
+        raw = smc.model(pats).reshape(len(variants), len(labels), n_pts)
+    scores = [float(worst_margin(raw[k], labels, cfg.targets)[0]) for k in range(len(variants))]
+    order = sorted(range(len(variants)), key=lambda k: -scores[k])[:args.n]
+    input_dir = _dir(args.input)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    for j, k in enumerate(order):
+        pid = f"s{args.tag}_{j:02d}_{args.anchor[:10]}"
+        torch.save(torch.tensor(variants[k], dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(dict(id=pid, kind="scope", family=f"SCOPE_{args.anchor[:12]}", removed_px=0,
+                             source_id=args.anchor, ops=[["scope_d1", idxs[k]]], diff_px=1,
+                             pred_wm_cnn=_r(scores[k]), **piece_stats(variants[k])))
+    _save_manifest(manifest, input_dir)
+    print(f"顯微鏡包 → {input_dir}: {args.anchor} d=1 全枚舉 {len(variants)} → CNN top {len(manifest)}"
+          f"（分數 {scores[order[0]]:+.2f} ~ {scores[order[-1]]:+.2f};照常 check-dup → jobs-add）")
 
 
 # ---------------------------------------------------------------- sm-screen（開發機，零 HFSS）
@@ -5065,6 +5121,16 @@ def main():
     s.add_argument("--rad-head", default="rad_head45.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.set_defaults(fn=select_r22mix, round=33, key="sel")
+
+    s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
+    s.add_argument("--anchor", required=True)
+    s.add_argument("--source-input", required=True, dest="source_input")
+    s.add_argument("--cnn", default="sm_shadow45.pth")
+    s.add_argument("--n", type=int, default=25)
+    s.add_argument("--tag", default="1", help="包序號（入 id 前綴 s<tag>_）")
+    s.add_argument("--input", required=True)
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.set_defaults(fn=select_scope)
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)
