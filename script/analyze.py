@@ -697,6 +697,21 @@ def cmd_gain(args):
     if fresh:
         print(f"  ⚠ 新臂 {sorted(fresh)}: 歷史不足,走 round 檔預註冊存活測試（資訊帳）,不給 dB 期望")
 
+    #? L4 紀錄 burn rate（2026-07-17 Ricky 核准「全部都做」;冷數字防「工具勝利掩蓋結果停滯」——
+    #  對稱於 gain-check 的防過早悲觀）:近 14 天紀錄推進事件 vs HFSS 消耗,不修飾。
+    import datetime as _dt
+    hist = _rec.get("history", [])
+    if hist:
+        today = _dt.date.today()
+        cut = today - _dt.timedelta(days=14)
+        recent = [h for h in hist if _dt.date.fromisoformat(h["date"]) >= cut]
+        last = max(hist, key=lambda h: h["date"])
+        days_dry = (today - _dt.date.fromisoformat(last["date"])).days
+        print("\n—— L4 紀錄 burn rate（冷數字;history 源=records.json）——")
+        print(f"  近 14 天紀錄推進 {len(recent)} 次{[h['axis'] for h in recent]};"
+              f"最後一次推進距今 **{days_dry} 天**（{last['date']} {last['axis']} {last['value']}）")
+        print("  判讀:推進乾涸+批照跑=檢討分布/方法,別只看過程指標（decisions「單機制紀律」）")
+
 
 def cmd_data(args):
     """資料總帳＋健檢一鍵化（2026-07-13,取代一次性普查腳本）:
