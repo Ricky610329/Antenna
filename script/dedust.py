@@ -83,6 +83,24 @@ def piece_stats(p) -> dict:
                 main_px=int(sizes.max()), metal_px=int(p.sum()))
 
 
+def dyn_struct(p) -> bool:
+    """王朝表型結構判（Ricky 2026-07-17 定案,decisions「王朝重定義」）:黑名單制只擋一種——
+    「底部 1 大件（≥60px∧質心 row≥12）＋上半 ≥2 中件（≥12px∧質心 row<10）」;小碎塊(<12px)
+    不進判定。驗證:王朝家族 100% 命中/功能判 lo>0 96%（全史八成困此結構=低側壓不下去主因）。
+    用途:R33 起生成端/select 對無實測佐證的新樣本軟過濾（錨定臂豁免——親代有實測 lo 佐證）。"""
+    from scipy.ndimage import gaussian_filter, label
+    img = np.asarray(p).reshape(25, 25).astype(float)
+    lab, n = label(gaussian_filter(img, 0.8) > 0.6)
+    comps = []
+    for i in range(1, n + 1):
+        m = lab == i
+        comps.append((int(m.sum()), float(np.argwhere(m)[:, 0].mean())))
+    comps.sort(key=lambda c: -c[0])
+    if not comps or comps[0][0] < 60 or comps[0][1] < 12:
+        return False
+    return len([c for c in comps[1:] if c[1] < 10 and c[0] >= 12]) >= 2
+
+
 def cluster_families(patterns, max_dist: int = 100):
     """greedy leader clustering（Hamming ≤ max_dist 併同家族）。呼叫端先按優先序（wm 降冪）排好。
     patterns: (n, 625) 或 (n,25,25) 布林。回 labels (n,)。"""
@@ -2962,7 +2980,39 @@ def select_r22mix(args):
     #  鄰域變異找「lo 深∧wm 近活」中繼點;選拔鍵=r_feed 高者優先（analysis-05:feed 主件佔比
     #  =帶外最強旋鈕 ρ−0.48——結構先驗首次進 select）。kind=lobeach,id 前綴 l。
     lbp = []
-    if getattr(args, "lbeach", 0):
+    if getattr(args, "lbeach", 0) and getattr(args, "round", 0) >= 33:
+        #? R33 rad 閘攻堅錨組:同框系 rad 全負(六批)→錨換「lo 壓∧rad 半好」交集帶
+        #  （g29b1_031=全史唯一 rad≥−1∧lo≤−2 筆;判準=同框∧rad≥−1 ≥1/批,round-33 §1）。
+        RADGATE = [("lb_p00h31", "dedust_r29b1d_input", "g29b1_031_surg_p00h"),
+                   ("lb_p00h04", "dedust_r28b3c_input", "b28b3_004_p00h"),
+                   ("lb_deta10", "dedust_r30diag_input", "x30d_10_detach_l30b2_009_"),
+                   ("lb_t03r", "dedust_r31b3d_input", "l31b3_003_lb_t03"),
+                   ("lb_f2t11", "dedust_r20g2a_input", "f2_015_t11"),
+                   ("lb_f2t04", "dedust_r20g2c_input", "f2_029_t04")]
+        from scipy.ndimage import label as _lab3
+
+        def _rfeed3(q):
+            lab_, n_ = _lab3(q, structure=_CROSS)
+            g_ = lab_[FEED]
+            return float((lab_ == g_).sum() / max(q.sum(), 1)) if g_ > 0 else 0.0
+        target = getattr(args, "lbeach", 0)
+        cand_pool = []
+        for name, fol, pid in RADGATE:
+            p0 = loadp(fol, pid)
+            for j in range(target * 4 // len(RADGATE) + 2):
+                q = p0.copy()
+                d_ = int(rng.integers(1, 16)) if j % 5 < 3 else int(rng.integers(16, 41))
+                q.ravel()[rng.choice(625, size=d_, replace=False)] ^= True
+                q[FEED] = True
+                st_ = piece_stats(q)
+                if not (180 <= st_["metal_px"] <= 560) or q.tobytes() in hist:
+                    continue
+                hist.add(q.tobytes())
+                cand_pool.append(dict(pat=q, parent=name, ops=[["lb_flip", d_]],
+                                      d=int((q != p0).sum()), stats=st_, rfeed=_rfeed3(q)))
+        cand_pool.sort(key=lambda c: -c["rfeed"])
+        lbp = cand_pool[:target]
+    elif getattr(args, "lbeach", 0):
         #? b2 起錨集換「中繼帶」（R30b1 判讀:深淵據點 lo −8~−10 但 wm −11~−19 修不回;
         #  全語料掃出 89 筆中繼帶——half/手術系 lo −4~−5∧wm≈0,oob_bad 6.7-8.6=天花板下 2dB,
         #  卡的是 rad——修訂註記見 round-30 §1）。b1 用的深淵七錨保留註解供重現。
@@ -3227,12 +3277,26 @@ def select_r22mix(args):
                 ens_raws.append(_sme.model(pats).reshape(len(allc), len(labels), n_pts))
     if ens_raws:
         print(f"ensemble 成員 ×{len(ens_raws)}（sm_ens{_vn}_*）→ pred_std 記錄")
+    #? R33 混合鍵（記錄版,照 std 進鍵先例）:影子 CNN 前瞻 ρ 三連勝（0.59/0.56/0.64=「CNN=排序器」）
+    #  → pred_wm_cnn 記 manifest;b1 只記錄（判讀審計「CNN 排序假設檢定」）,過了才進鍵。
+    cnn_raw = None
+    if getattr(args, "round", 0) >= 33:
+        _fc = DATASET_PATH.joinpath(f"sm_shadow{_vn}.pth")
+        if _fc.exists():
+            _smc = SURROGATES["cnn"](cache, 25 * 25, (len(labels), n_pts))
+            _smc.pre_load_model(_fc, strict=True)
+            _smc.model.eval()
+            with torch.no_grad():
+                cnn_raw = _smc.model(pats).reshape(len(allc), len(labels), n_pts)
+            print(f"影子 CNN（sm_shadow{_vn}）→ pred_wm_cnn 記錄（混合鍵審計,b1 不進鍵）")
     for k, c in enumerate(allc):
         w, _ = worst_margin(raw[k], labels, cfg.targets)
         c["pred_wm"] = _r(float(w))
         if ens_raws:
             _ws = [float(w)] + [float(worst_margin(er[k], labels, cfg.targets)[0]) for er in ens_raws]
             c["pred_std"] = _r(float(np.std(_ws)))
+        if cnn_raw is not None:
+            c["pred_wm_cnn"] = _r(float(worst_margin(cnn_raw[k], labels, cfg.targets)[0]))
         r = raw[k].numpy()
         c["pred_oob"] = oob_metrics(r)["oob_bad"]
         ml = 10 * np.log10(np.clip(1 - 10 ** (r[0][:4] / 10), 1e-6, 1))
@@ -3317,6 +3381,22 @@ def select_r22mix(args):
                 out.append(i)
         return out
 
+    #? R33 反王朝結構軟過濾（Ricky 2026-07-17「只擋底1大+上2中,其他都值得試」）:
+    #  無實測佐證的候選池（core/coldp/dn/wildp）命中表型→score 罰 +2.0（黑名單制降權非硬擋）;
+    #  錨定臂（L/G/B 泵/X）豁免。批內佔比統計印出=判準①的量測。
+    if getattr(args, "round", 0) >= 33:
+        n_dyn_pool = 0
+        for pool in (core, coldp, dn, wildp):
+            for c in pool:
+                c["dynst"] = dyn_struct(c["pat"])
+                n_dyn_pool += int(c["dynst"])
+        n_all_pool = sum(len(p_) for p_ in (core, coldp, dn, wildp))
+        print(f"結構判（候選池 core/cold/D/W）: 王朝表型 {n_dyn_pool}/{n_all_pool}"
+              f"={100 * n_dyn_pool / max(n_all_pool, 1):.0f}%（全史基線 81%;命中罰 +2.0 降權）")
+
+    def _dynpen(c):
+        return 2.0 if c.get("dynst") else 0.0
+
     if getattr(args, "key", "oob") == "sel":
         #? R23 起價值軸主鍵:pred_sel=pred_oob+κ·(wm 缺口＋rad 缺口);rad 項僅 --rad-head 過門檻時生效
         #  R31b2 起 std 進鍵（校準過:三分桶 0.94/4.00/10.05 完美單調——LCB 保守變現,低信心折價;
@@ -3327,7 +3407,7 @@ def select_r22mix(args):
             pen = SEL_KAPPA * max(0.0, SEL_BUFFER - wm_lcb)
             if c.get("pred_rad") is not None and getattr(args, "rad_key", False):
                 pen += SEL_KAPPA * max(0.0, -c["pred_rad"])   # rad 項:--rad-key 才進鍵（門檻 ρ≥0.4）
-            return c["pred_oob"] + pen - _nbonus(c)           # B 新穎性紅利（--novelty）
+            return c["pred_oob"] + pen - _nbonus(c) + _dynpen(c)   # B 新穎性紅利＋R33 結構罰
         oi = _diverse(core, sorted(range(len(core)), key=_psel), args.o)
     else:
         trim = sorted(range(len(core)), key=lambda i: core[i]["pred_wm"], reverse=True)[:int(len(core) * .6)]
@@ -3342,7 +3422,7 @@ def select_r22mix(args):
         pen = SEL_KAPPA * max(0.0, SEL_BUFFER - c["pred_wm"])
         if c.get("pred_rad") is not None and getattr(args, "rad_key", False):
             pen += SEL_KAPPA * max(0.0, -c["pred_rad"])
-        return c["pred_oob"] + pen - _nbonus(c)
+        return c["pred_oob"] + pen - _nbonus(c) + _dynpen(c)
     di = _diverse(dn, sorted(range(len(dn)), key=lambda i: _pselc(dn[i])),
                   getattr(args, "d", 0)) if dn else []
     fi = _diverse(fragp, sorted(range(len(fragp)), key=lambda i: _pselc(fragp[i])),
@@ -3425,6 +3505,7 @@ def select_r22mix(args):
                                 source_id=c["parent"], ops=c["ops"], diff_px=c["d"],
                                 pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
                                 pred_rad=c.get("pred_rad"), pred_std=c.get("pred_std"),
+                                pred_wm_cnn=c.get("pred_wm_cnn"), dynst=c.get("dynst"),
                                 _pat=c["pat"]))
     dirs = []
     for suf in "abcdefgh"[:args.shards]:
@@ -4950,6 +5031,40 @@ def main():
     s.add_argument("--rad-head", default="rad_head42.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.set_defaults(fn=select_r22mix, round=32, key="sel")
+
+    s = sub.add_parser("select-r33", help="R33 反王朝結構輪：表型軟過濾（黑名單=底1大+上2中）+RADGATE 錨（rad 閘攻堅）+CNN 混合鍵記錄+B 泵續投（判準寫死於 round-33 檔）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260720)
+    s.add_argument("--sm", default="sm_reanchor45.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=60, help="G（free24/oobp12/B泵24=selfgen 錨帶集中）")
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=24, help="L rad 閘攻堅（RADGATE 六錨:lo 壓∧rad 半好交集帶）")
+    s.add_argument("--o", type=int, default=8)
+    s.add_argument("--m", type=int, default=14, help="前瞻統計母體(不動)")
+    s.add_argument("--c", type=int, default=4)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=16, help="D +4（反王朝結構自由帶）")
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=16, help="I 資訊臂 +4（連三批 3-4 三標穩定產線）")
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.12, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=8)
+    s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head45.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.set_defaults(fn=select_r22mix, round=33, key="sel")
 
     s = sub.add_parser("select-r20gen", help="R20 一代選批：GA(SM粗篩)+隨機對照+碎片探索,三夾三機並行;gen>1 自動接代")
     s.add_argument("--gen", type=int, required=True)

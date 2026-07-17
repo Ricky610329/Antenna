@@ -249,6 +249,11 @@ def gen(args):
                 p0, aname = [(lambda: (rng.random((25, 25)) > float(rng.uniform(0.35, 0.65)), "rand")),
                              (lambda: (_rand_blocks(rng), "randb")),
                              (lambda: (_rand_frag(rng), "randf"))][k_pl % 3]()
+                #? R33 反王朝結構（Ricky「只擋底1大+上2中,其他都值得試」）:free init 命中表型→重抽
+                #  （生成端黑名單;錨定帶豁免——親代有實測佐證）。
+                from script.dedust import dyn_struct as _dynst
+                if _dynst(p0):
+                    continue
                 base, anc = None, None
             else:
                 anc = ancs[k_pl % len(ancs)]
@@ -265,6 +270,12 @@ def gen(args):
             kb = qf.tobytes()
             if kb in seen or not (150 <= info["metal"] <= 560):
                 continue
+            #? R33 產出端結構過濾（free 帶限定）:梯度天然往王朝結構拉,init 過濾不夠——
+            #  invert 產出命中「底1大+上2中」也丟棄重抽（黑名單制;錨定帶豁免）。
+            if band_name == "free":
+                from script.dedust import dyn_struct as _dynst2
+                if _dynst2(qf):
+                    continue
             seen.add(kb)
             cands.append((qf, info, aname))
         if band_name == "oobp":

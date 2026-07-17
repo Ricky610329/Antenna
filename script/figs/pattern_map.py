@@ -25,7 +25,7 @@ _ap.add_argument("--out", default=os.path.join(REPO, "tmp", "pattern_map.png"))
 _args = _ap.parse_args()
 _rec = json.load(open(os.path.join(REPO, "docs", "records.json"), encoding="utf-8"))
 KING_ID, KING_WM = _rec["wm"]["id"], _rec["wm"]["value"]
-HITS = ("l31b2_005_lb_n09", "l31b3_019_lb_f3t07", "l32b1_023_lb_f3t07")   # 同框命中筆（換代手動更新）
+HITS = ("l32b3_018_lb_f3t07", "l31b2_005_lb_n09", "l31b3_019_lb_f3t07")   # 同框命中筆（l32b3_018=wm 首過 0;換代手動更新）
 DYN = ("c18", "vg0338", "vg0396", "g1_038", "g1_039", "r2_016", "r3_001")
 BRIDGE = ("n09", "t03", "t07", "t09", "p00", "lb_", "brc_", "brdg")
 
