@@ -1,0 +1,40 @@
+- [feedback_language.md](feedback_language.md) — 使用者要求所有對話與文件皆使用繁體中文
+- [project_design_audit_2026_07_01.md](project_design_audit_2026_07_01.md) — 2026-07-01 全系統設計+bug 稽核：無 high-sev bug、4 個低風險修復進 GAN；記「刻意非bug」清單防重複誤報
+- [project_discussion_memory.md](project_discussion_memory.md) — 專案內討論記憶兩層：docs/discuss/scratch(隨意,不報)+decisions(確定,要報)；流動=scratch→ONGOING候選(觸發條件)→round、round邊界掃scratch GC；接手先讀
+- [user_python_env.md](user_python_env.md) — 使用者用 miniforge 管理 Python 環境；conda env 名稱為 `ant`，執行測試前需先啟用
+- [project_fork.md](project_fork.md) — 使用者 fork：https://github.com/Ricky610329/Antenna（上游是 timmy90928/Antenna）
+- [project_pytest_worktree_gotcha.md](project_pytest_worktree_gotcha.md) — worktree 裡跑 pytest 會解析到主 repo 的 antenna/（pythonpath=["."] 陷阱）
+- [project_lab_real_goal.md](project_lab_real_goal.md) — 本 repo online 系統是 per-task「找一個最佳 pattern」；「任意 spec」=設計規範非 target response (2026-06-15 更正)
+- [reference_lab_pipeline_locations.md](reference_lab_pipeline_locations.md) — Lab 既有 pipeline component 位置 (trainer, generators, losses, configs, run dirs)
+- [project_R94_R156_scope.md](project_R94_R156_scope.md) — R94-R156 是 per-task GD methodology, sub-problem 補強, 不替代 lab 主路徑
+- [feedback_audit_existing_first.md](feedback_audit_existing_first.md) — 設計新系統前一律先 audit `antenna/` 既有 codebase, 不平行重建
+- [feedback_dont_oversell.md](feedback_dont_oversell.md) — 不要把工具當 production system, 報告先講 scope and limitations
+- [reference_paper_terminology.md](reference_paper_terminology.md) — 論文(docs/Paper.pdf)術語↔程式碼：ACP=排程器、論文GEN=代理SM(非生成器)、rollback獨立於ACP
+- [project_config_driven_validated.md](project_config_driven_validated.md) — config 驅動 train.py 已在正式機(真 HFSS)驗證可跑 (2026-06-10, commit 043e647)
+- [feedback_prefer_simplicity.md](feedback_prefer_simplicity.md) — 反 over-design：zoo 單檔註冊+名字指定、管線 default 元件；「AP」=ACP 非 AntennaPattern
+- [project_data_dual_track.md](project_data_dual_track.md) — 已收割學長資料到自己NAS(harvest_single 24189/dual 10023)、ROOTDIR遷出學長樹、legacy資料層隔離到antenna/legacy/；Record與size_converter是核心非legacy
+- [project_monitoring_tensorboard.md](project_monitoring_tensorboard.md) — 監控已改 TensorBoard (monitor.py + on_epoch hook)；app.py 只服務舊實驗，自然退役
+- [project_radiation_pattern.md](project_radiation_pattern.md) — 方向圖→loss：Stage 0-2 已實作(cosine基底rad head+beam_coverage_loss)；⚠ train_one_data_rad 實測沒擬合(凍trunk擬不到min_loss、撞max_epoch,下次改)；Stage 3冷啟動待做
+- [project_experiment_catalog.md](project_experiment_catalog.md) — 實驗 config 都記在 configs/README.md；新增/改 config 或訓練腳本要同步更新該表 (CLAUDE.md 硬規則)
+- [project_research_log.md](project_research_log.md) — 研究時間軸在 docs/log/；R1-R14 全歸檔(2026-07-08),現階段=論文寫作衝刺(算法+分數先行)+等實作量測;接手先讀 log/README+ONGOING+scratch
+- [feedback_tdd_quality_bar.md](feedback_tdd_quality_bar.md) — 每修一個 bug 補一條回歸測試；pytest 輸出的 warnings 清到零當收尾標準
+- [project_run_identity_machine_bound.md](project_run_identity_machine_bound.md) — 結果夾名含機器 IP 末段({device}) → 換機跑會重頭來、不能跨機接力（派工前置障礙）
+- [feedback_profile_on_prod_real_hfss.md](feedback_profile_on_prod_real_hfss.md) — 效能瓶頸要在正式機用真 HFSS 量；開發機 mock 估的數字使用者不信
+- [project_sm_training_redesign.md](project_sm_training_redesign.md) — SM 更新:單樣本擬到收斂=反模式;但我們 dlf 只訓 elite 1 epoch=under-trained(2026-06-27 修 dlf_fit/refit 訓到 fit);B1 確認 sm_harvest 對得上現在 HFSS(MSE 1.56)→訓練強度是輸 random 頭號嫌疑
+- [feedback_discuss_before_loss_change.md](feedback_discuss_before_loss_change.md) — 改動 loss 函式前一律先跟使用者討論、取得同意再動
+- [project_hfss_fault_tolerance.md](project_hfss_fault_tolerance.md) — HFSS 容錯兩層：pattern.py restart 重跑 + training.py 單筆 skip/連敗 reopen→中斷 (2026-06-25 Unite crash 後補)
+- [project_benchmark_vs_random.md](project_benchmark_vs_random.md) — 客觀 benchmark：worst-margin(dB)；學習式搜尋目前輸給 random best-of-N(同 HFSS 預算)
+- [project_generator_hyperfeature_pivot.md](project_generator_hyperfeature_pivot.md) — zbatch 砍掉;G=單一 pattern 超特徵;SM-only guided 搜尋已實作 (single_guided* 三 config:direct+ensemble+trust,golden-safe,待正式機 A/B)
+- [project_litreview_direction.md](project_litreview_direction.md) — 文獻定論:輸 random 屬預期;治本=不確定性/信任域門控 SM + active learning + harvest warm-start (docs/research_landscape.md)
+- [project_w17_champion.md](project_w17_champion.md) — 冠軍現況:margin王 o29b2_011 +0.56/rad王 +1.00/帶外王 8.61/可用帶外 9.0/帶內 0.61/真相源=docs/records.json;⚠血統口徑修正(2026-07-17):王遞迴追根=g1_038 王朝,王朝判定改表型(decisions「王朝重定義」)
+- [project_narrative_pivot.md](project_narrative_pivot.md) — 2026-07-08 敘事定調:線上學習=工具,agent+human-in-the-loop 共同優化;文獻背書 docs/reference/(Sengupta 組三篇,索引 README.md)
+- [feedback_check_clock.md](feedback_check_clock.md) — 寫時間戳記前先 date 查時間（跨午夜 session 教訓 2026-07-10）
+- [project_machine_profiles.md](project_machine_profiles.md) — 三台正式機個性:216穩快/218=timeout型/37=COM例外型慢;機器錯誤vs毒樣本分開歸因
+- [feedback_autonomous_rounds.md](feedback_autonomous_rounds.md) — Ricky授權自主續輪(R23,24,25…):收檔即開下輪,宣告制不等核准;護欄=判準寫死+公證鐵則+異常停
+- [feedback_round_naming.md](feedback_round_naming.md) — R23起round號貫穿所有命名(夾/id/填空池/公證),一輪一號;廢跨round全域批數(m5→m6反例)
+- [feedback_value_axis_oob.md](feedback_value_axis_oob.md) — 價值軸修正(2026-07-12):三標=硬閘門,過線後wm邊際≈0,收益軸=壓帶外;可用解留wm≥+0.15製造buffer
+- [project_strategy_data_flywheel.md](project_strategy_data_flywheel.md) — ★戰略換軸(2026-07-15):多樣性→SM準度→變現;五軸KPI面板;王系凍結(dyn-frac 0.2,R31);低側=中繼帶+鄰域變異非梯度;SM工具常駐(std LCB/rad鍵/漏斗/誤差錨)
+- [project_batch_runbook.md](project_batch_runbook.md) — 批次迴圈已弱模型化(2026-07-12):接手=/takeover,主入口=/batch-cycle,對帳=/reconcile(2026-07-13持久化事件教訓:關鍵操作後驗證落地再往上蓋);判讀=analyze batch;門檻=docs/records.json;重錨=train --add
+- [feedback_exploration_eval.md](feedback_exploration_eval.md) — Ricky 2026-07-13:①擴散型探索介入(根稅等)用效率over長baseline評,不做單批因果判決(gain-check L2,≥5round) ②每輪硬上限3批
+- [project_senior_showcase_vs_f2.md](project_senior_showcase_vs_f2.md) — 學長招牌=論文圖4-4=t07_top(合規+0.35但含粉塵不可製造);F2=我們對稱練習母本(非學長最好);design_priors「F2 −6.44」誤植;報告框架=學長可合規,我們補可製造+系統化
+- [project_ase_report_v2.md](project_ase_report_v2.md) — ASE 報告 v2 完成(2026-07-16,桌面進度報告_v2.md);逐節共筆流程+對外用語表+核心 framing(飽和拚初始化/最後一哩路/款式變體);圖產線 report_*.py commit 94c3fed
