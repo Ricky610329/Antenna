@@ -52,7 +52,7 @@ python -m script.dedust jobs-add --input dedust_r33bNa_input --store dedust_r33b
 ```
 | 批 | 狀態 |
 |---|---|
-| — | 待 v45 三件套落地即發 b1 |
+| 1（r33b1{a-f}） | 🔵 2026-07-17 20:34 發車（v45 三件套〔MLP 凍結 1.26/影子凍結 2.65,遠帶 CNN 連四版反超 2.48<2.88〕;**表型過濾首航**〔gen free 雙過濾;select 候選池王朝表型 55%<基線 81%,罰 +2.0〕;**CNN 記錄鍵首航**〔sm_shadow45→pred_wm_cnn〕;L-RADGATE 六錨/B 泵三錨;誤差錨 +8;錨點 847;查重 0×6） |
 
 ## 4. 分析 (Analyze)
 （待）
