@@ -6,9 +6,13 @@
 
 1. 流程：開發機 `select-*` 生輸入上 NAS → **`check-dup --input X_input` 必跑**（exit 1 就不發車）→
    正式機 `run --input X_input --store X`（可中斷續跑、error 條目重試）→ 任一機 `report`。
-   **收檔判讀＝`analyze batch --round R --batch N`**（臂別/前瞻/紀錄候選+公證指令/→行動）;
+   **收檔判讀＝`analyze batch --round R --batch N`**（臂別/前瞻/紀錄候選+公證指令/→行動;
+   含**影子 CNN 雙模盲測段**——必須在重錨前跑,重錨後本批進訓練集就不是盲測）;
    收檔偵測＝`dedust watch --stores ...`（Monitor 直接掛）;重錨＝`sm_reanchor train --add "..." --out vN.pth`
-   （自動 append `configs/clean_stores.txt`）。整鏈 runbook＝`/batch-cycle` skill。
+   （自動 append `configs/clean_stores.txt`;**自帶制度合訓**:rad_headNN+ens 2 顆+影子 sm_shadowNN
+   〔尺1 落 docs/kpi_shadow.csv;--no-rad/--no-ens/--no-shadow 可關〕）。
+   gen 戰術換錨＝`sm_invert gen --champ-anchors "id:tag,..."`（B 層泵等,免改 code）。
+   整鏈 runbook＝`/batch-cycle` skill。
 2. check-dup **自動掃描全部輸入夾**（2026-07-10 起免維護清單;舊 select 內建去重仍引用 HISTORY_INPUTS）；
    蓄意重複＝kind `notarize`/`repeat`（查重豁免，公證靠這個）。
 3. 新 select 函式的 docstring 寫死：臂別、筆數、判準（與 round 檔 §1 一致）。

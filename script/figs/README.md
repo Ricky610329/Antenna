@@ -30,3 +30,5 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 | `report_occlusion.py` | 報告 §7.3（對外版）：s05 承重單色溫度圖（dedust_occl 5×5 遮蔽掃描,白→紅=掉幅,格內標 Δwm） |
 | `report_champion.py` | 報告用：單一設計規格卡 [pattern\|S11\|Gain\|rad 極座標]（CLI:--id/--title/--sub;定位/響應沿用 champ_compare,餘裕讀 store results.json） |
 | `report_sprint48.py` | R28-R29 48hr 衝刺總覽（王座演進/多樣性換血/adversarial 閉環/低側誠實面板）→ docs/report/assets/sprint48.png |
+| `pattern_map.py` | **pattern 空間分布圖**（全史 PCA 2D:家族著色+低側 lo 著色;每輪重跑=大陸漂移追蹤;王讀 records.json,HITS 手動更新;R32 海峽診斷出處） |
+| `wm_terrain.py` | **wm 地形圖**（同 PCA 基底;高度=KNN8 局部潛力上限,海平面=三標線 wm=0,無資料區留白;★王=最高峰/▲同框筆/◇海峽臂;2026-07-17 Ricky 點名工具） |
