@@ -220,6 +220,9 @@ def gen(args):
     #  中繼帶家族（t03/n09 系:lo −4~−5∧wm 活∧oob_bad 6.7-8.6=天花板下實體）;R31 起。
     champ_anchors = [("y28b1_035_t03h", "brc_t03"), ("y28b2_010_n09h", "brc_n09"),
                      ("n27b1_017_n09", "brc_n09b"), ("f3_011_t07", "brc_t07")]
+    #? 戰術換錨免改 code（R32b3 B 層 wm 泵起）:--champ-anchors "id:tag,id:tag" 覆蓋上表。
+    if getattr(args, "champ_anchors", None):
+        champ_anchors = [tuple(x.split(":", 1)) for x in args.champ_anchors.split(",") if x.strip()]
     #? oobp 錨（R30b2 起=中繼帶:lo −4~−5∧wm≈0∧oob_bad 6.7-8.6 的 half/手術系——天花板 9.0
     #  下 2dB 的實體;梯度多目標把 rad 拉回=破天花板最短路徑。R29~R30b1 版=碎片原版+uoob）。
     oob_anchors = [("y28b1_035_t03h", "brdg_t03"), ("f3_011_t07", "brdg_t07"),
@@ -309,6 +312,8 @@ def main():
     g.add_argument("--n-surg", type=int, default=24, dest="n_surg")
     g.add_argument("--n-champ", type=int, default=12, dest="n_champ")
     g.add_argument("--n-oob", type=int, default=12, dest="n_oob")
+    g.add_argument("--champ-anchors", default=None, dest="champ_anchors",
+                   help='覆蓋 champ 帶錨,"id:tag,id:tag"（B 層泵等戰術換錨,免改 code）')
     g.add_argument("--oob-push", type=float, default=6.0, dest="oob_push",
                    help="oobp 帶的超規格帶外目標（低側資料泵）")
     g.add_argument("--oversample", type=int, default=3,
