@@ -3395,7 +3395,7 @@ def select_r22mix(args):
               f"={100 * n_dyn_pool / max(n_all_pool, 1):.0f}%（全史基線 81%;命中罰 +2.0 降權）")
 
     def _dynpen(c):
-        return 2.0 if c.get("dynst") else 0.0
+        return float(getattr(args, "struct_pen", 2.0)) if c.get("dynst") else 0.0
 
     if getattr(args, "key", "oob") == "sel":
         #? R23 起價值軸主鍵:pred_sel=pred_oob+κ·(wm 缺口＋rad 缺口);rad 項僅 --rad-head 過門檻時生效
@@ -3876,7 +3876,14 @@ def select_scope(args):
     with torch.no_grad():
         raw = smc.model(pats).reshape(len(variants), len(labels), n_pts)
     scores = [float(worst_margin(raw[k], labels, cfg.targets)[0]) for k in range(len(variants))]
-    order = sorted(range(len(variants)), key=lambda k: -scores[k])[:args.n]
+    rmix = int(getattr(args, "rand_mix", 0))
+    top = sorted(range(len(variants)), key=lambda k: -scores[k])[:args.n - rmix]
+    if rmix > 0:
+        rng_ = np.random.default_rng(20260718)
+        rest = [k for k in range(len(variants)) if k not in set(top)]
+        order = top + list(rng_.choice(rest, size=rmix, replace=False))
+    else:
+        order = top
     input_dir = _dir(args.input)
     input_dir.mkdir(parents=True, exist_ok=True)
     manifest = []
@@ -3885,7 +3892,8 @@ def select_scope(args):
         torch.save(torch.tensor(variants[k], dtype=torch.float32), str(input_dir.joinpath(f"{pid}.pt")))
         manifest.append(dict(id=pid, kind="scope", family=f"SCOPE_{args.anchor[:12]}", removed_px=0,
                              source_id=args.anchor, ops=[["scope_d1", idxs[k]]], diff_px=1,
-                             pred_wm_cnn=_r(scores[k]), **piece_stats(variants[k])))
+                             pred_wm_cnn=_r(scores[k]), sel_by=("cnn" if j < args.n - rmix else "rand"),
+                             **piece_stats(variants[k])))
     _save_manifest(manifest, input_dir)
     print(f"顯微鏡包 → {input_dir}: {args.anchor} d=1 全枚舉 {len(variants)} → CNN top {len(manifest)}"
           f"（分數 {scores[order[0]]:+.2f} ~ {scores[order[-1]]:+.2f};照常 check-dup → jobs-add）")
@@ -5120,6 +5128,8 @@ def main():
     s.add_argument("--shards", type=int, default=6)
     s.add_argument("--rad-head", default="rad_head45.pth", dest="rad_head")
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--struct-pen", type=float, default=2.0, dest="struct_pen",
+                   help="王朝表型罰分（b3 判準上調 4.0）")
     s.set_defaults(fn=select_r22mix, round=33, key="sel")
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
@@ -5128,6 +5138,8 @@ def main():
     s.add_argument("--cnn", default="sm_shadow45.pth")
     s.add_argument("--n", type=int, default=25)
     s.add_argument("--tag", default="1", help="包序號（入 id 前綴 s<tag>_）")
+    s.add_argument("--rand-mix", type=int, default=0, dest="rand_mix",
+                   help="混入隨機 k 筆當對照（CNN top n-k+隨機 k;驗證 CNN 微尺度選擇加值）")
     s.add_argument("--input", required=True)
     s.add_argument("--config", default=DEFAULT_CFG)
     s.set_defaults(fn=select_scope)
