@@ -2980,7 +2980,36 @@ def select_r22mix(args):
     #  鄰域變異找「lo 深∧wm 近活」中繼點;選拔鍵=r_feed 高者優先（analysis-05:feed 主件佔比
     #  =帶外最強旋鈕 ρ−0.48——結構先驗首次進 select）。kind=lobeach,id 前綴 l。
     lbp = []
-    if getattr(args, "lbeach", 0) and getattr(args, "round", 0) >= 33:
+    if getattr(args, "lbeach", 0) and getattr(args, "round", 0) >= 34:
+        #? R34 去王朝錨組（表型 40% 線的錨組解）:錨全換非王朝結構筆（爬山鏈+t03r 同框系）。
+        RADGATE = [("dd_s119", "dedust_r33s1_input", "s1_19_g32b3_034_"),
+                   ("dd_s218", "dedust_r33s2_input", "s2_18_s1_19_g32b"),
+                   ("dd_l005", "dedust_r33b2f_input", "l33b2_005_lb_t03r"),
+                   ("dd_l007", "dedust_r33b2b_input", "l33b2_007_lb_t03r")]
+        from scipy.ndimage import label as _lab4
+
+        def _rfeed4(q):
+            lab_, n_ = _lab4(q, structure=_CROSS)
+            g_ = lab_[FEED]
+            return float((lab_ == g_).sum() / max(q.sum(), 1)) if g_ > 0 else 0.0
+        target = getattr(args, "lbeach", 0)
+        cand_pool = []
+        for name, fol, pid in RADGATE:
+            p0 = loadp(fol, pid)
+            for j in range(target * 4 // len(RADGATE) + 2):
+                q = p0.copy()
+                d_ = int(rng.integers(1, 16)) if j % 5 < 3 else int(rng.integers(16, 41))
+                q.ravel()[rng.choice(625, size=d_, replace=False)] ^= True
+                q[FEED] = True
+                st_ = piece_stats(q)
+                if not (180 <= st_["metal_px"] <= 560) or q.tobytes() in hist:
+                    continue
+                hist.add(q.tobytes())
+                cand_pool.append(dict(pat=q, parent=name, ops=[["lb_flip", d_]],
+                                      d=int((q != p0).sum()), stats=st_, rfeed=_rfeed4(q)))
+        cand_pool.sort(key=lambda c: -c["rfeed"])
+        lbp = cand_pool[:target]
+    elif getattr(args, "lbeach", 0) and getattr(args, "round", 0) >= 33:
         #? R33 rad 閘攻堅錨組:同框系 rad 全負(六批)→錨換「lo 壓∧rad 半好」交集帶
         #  （g29b1_031=全史唯一 rad≥−1∧lo≤−2 筆;判準=同框∧rad≥−1 ≥1/批,round-33 §1）。
         RADGATE = [("lb_p00h31", "dedust_r29b1d_input", "g29b1_031_surg_p00h"),
@@ -5131,6 +5160,41 @@ def main():
     s.add_argument("--struct-pen", type=float, default=2.0, dest="struct_pen",
                    help="王朝表型罰分（b3 判準上調 4.0）")
     s.set_defaults(fn=select_r22mix, round=33, key="sel")
+
+    s = sub.add_parser("select-r34", help="R34 第二血脈輪：champ-I（I 系近王錨）+L 去王朝錨組+I 24 加碼（判準寫死於 round-34 檔）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260721)
+    s.add_argument("--sm", default="sm_reanchor48.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=60, help="G（free24/oobp12/champ-I 24）")
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=12, help="L 去王朝錨組（爬山鏈+t03r 四錨）")
+    s.add_argument("--o", type=int, default=8)
+    s.add_argument("--m", type=int, default=14, help="M 凍結對照臂(不動)")
+    s.add_argument("--c", type=int, default=4)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=16)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=24, help="I 加碼（連五批爬升+平王筆出自 I 系）")
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.12, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=12)
+    s.add_argument("--shards", type=int, default=6)
+    s.add_argument("--rad-head", default="rad_head48.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.set_defaults(fn=select_r22mix, round=34, key="sel")
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)
