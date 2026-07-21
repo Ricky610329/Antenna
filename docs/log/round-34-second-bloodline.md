@@ -76,6 +76,9 @@ python -m script.dedust select-scope --anchor s2_18_s1_19_g32b --source-input de
 
 ## 6. 後續決策 (Next)
 - 週末斷點（NAS 07-18 17:00 關/07-19 停電）;b2/b3 週一恢復後續。
+- ★ 修正（2026-07-22 02:xx）:「selfgen 端結構過濾=pull 生效」為**誤記**——當時未實作;
+  實測 auto 尾段自然降（95→51%/91→39%=王系親代過濾+全史多樣化的飛輪複利）;
+  真過濾 dc4319f 補實作,三台下次 pull 生效（收殘餘）。
 
 ## 7. 歸檔指向 (Archive)
 - 結果夾: `dataset/dedust_r34b*`+`dedust_r34s3`;公證 `r34n*`。
