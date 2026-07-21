@@ -1,0 +1,4 @@
+{"pack": 1, "n": 25, "anchor": "l33b2_005_lb_t03r", "best": "c2radp01_09", "best_score": -1.6, "anchor_score": -1.93, "win": true, "wm": -0.08, "rad": -1.6, "oob": 7.72}
+{"pack": 2, "n": 25, "anchor": "c2radp01_09", "best": "c2radp02_15", "best_score": -1.51, "anchor_score": -1.6, "win": true, "wm": -0.45, "rad": -1.51, "oob": 14.33}
+{"pack": 3, "n": 25, "anchor": "c2radp02_15", "best": "c2radp03_22", "best_score": -1.46, "anchor_score": -1.51, "win": true, "wm": -0.25, "rad": -1.46, "oob": 11.73}
+{"pack": 4, "n": 25, "anchor": "c2radp03_22", "best": "c2radp04_13", "best_score": -1.49, "anchor_score": -1.46, "win": false, "wm": -0.54, "rad": -1.49, "oob": 11.66}

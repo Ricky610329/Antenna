@@ -1,0 +1,3 @@
+{"pack": 1, "n": 25, "anchor": "s3_24_s2_18_s1_1", "best": "c1d2p01_10", "best_score": -0.11, "anchor_score": -0.13, "win": true, "wm": 0.09, "rad": 0.71, "oob": 9.36}
+{"pack": 2, "n": 25, "anchor": "c1d2p01_10", "best": "c1d2p02_03", "best_score": -0.1, "anchor_score": -0.11, "win": true, "wm": 0.06, "rad": 0.63, "oob": 9.32}
+{"pack": 3, "n": 25, "anchor": "c1d2p02_03", "best": "c1d2p03_12", "best_score": -0.09, "anchor_score": -0.1, "win": true, "wm": 0.06, "rad": 0.76, "oob": 9.24}
