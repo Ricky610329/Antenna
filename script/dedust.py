@@ -3993,9 +3993,18 @@ def chain(args):
         if cd.returncode != 0:
             print(f"⚠ {store} 查重撞歷史——重抽下一包（不發車）")
             continue
-        subprocess.run([sys.executable, "-m", "script.dedust", "jobs-add",
-                        "--input", store + "_input", "--store", store,
-                        "--prio", str(args.prio)], capture_output=True)
+        #? jobs.json 讀-改-寫無鎖——兩鏈同時 jobs-add 會互踩丟單（2026-07-22 實測:c2rad 首包
+        #  被 c1dual 覆蓋）。修=入列後驗證,丟了重試（隨機退避錯開）。
+        for _try in range(4):
+            subprocess.run([sys.executable, "-m", "script.dedust", "jobs-add",
+                            "--input", store + "_input", "--store", store,
+                            "--prio", str(args.prio)], capture_output=True)
+            time.sleep(2 + int(rng_master.integers(0, 6)))
+            jl = json.load(open(str(DATASET_PATH.joinpath("jobs.json")), encoding="utf-8"))
+            if any(j["store"] == store for j in jl):
+                break
+        else:
+            raise SystemExit(f"{store} 入列失敗 ×4——查 jobs.json")
         print(f"⛰ {args.name} p{pack:02d} 發包（錨 {anchor_id[:24]},prio {args.prio}）,等收檔…", flush=True)
         sd = DATASET_PATH.joinpath("jobs_state")
         while not sd.joinpath(store + ".done").exists():
