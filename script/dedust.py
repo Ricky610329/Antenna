@@ -4576,6 +4576,10 @@ def _selfgen_chunk(me, args):
         q = _fix_diag_bridges(q)                         # 可製造性:橋接型對角修復（2026-07-16）
         if not (200 <= int(q.sum()) <= 550) or q.tobytes() in hist:
             continue
+        #? 反王朝結構過濾（2026-07-22 補實作——round-34 曾誤記「已生效」,實際靠飛輪自然降;
+        #  Ricky「只擋底1大+上2中,其他都值得試」;文法帶命中率高=重抽由翻bit/碎片補）。
+        if dyn_struct(q):
+            continue
         hist.add(q.tobytes())
         cands.append((q, src, ops, dpx))
     if sm_scr is not None and len(cands) > args.selfgen:
