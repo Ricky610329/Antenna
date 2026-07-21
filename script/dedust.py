@@ -3968,14 +3968,19 @@ def chain(args):
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f"{args.name}.jsonl")
     dry, pack = 0, 0
+    used = set()          # 同錨已抽 px——跨包記憶（2026-07-22 修:包內 used 導致 p02 起狂撞
+                          #  p01 已測變體,19 連撞空轉收鏈）;換錨時重置。
     while dry < args.dry and pack < args.max_packs:
         pack += 1
         store = f"dedust_{args.name}_p{pack:02d}"
         ind = _dir(store + "_input")
         ind.mkdir(parents=True, exist_ok=True)
         manifest = []
-        used = set()
         while len(manifest) < args.n:
+            if len(used) >= 590:
+                print(f"⛰ {args.name} 錨鄰域枯竭（{len(used)}/624 已抽）——收鏈")
+                dry = args.dry
+                break
             px = int(rng_master.integers(0, 625))
             if px in used or (px // 25, px % 25) == FEED:
                 continue
@@ -3987,6 +3992,8 @@ def chain(args):
             manifest.append(dict(id=pid, kind="scope", family=f"CHAIN_{args.name}", removed_px=0,
                                  source_id=anchor_id, ops=[["chain_d1", px]], diff_px=1,
                                  **piece_stats(q)))
+        if len(manifest) < args.n:
+            break
         _save_manifest(manifest, ind)
         cd = subprocess.run([sys.executable, "-m", "script.dedust", "check-dup",
                              "--input", store + "_input"], capture_output=True)
@@ -4027,6 +4034,7 @@ def chain(args):
               + ("→ 換錨續爬" if win else f"→ 無勝錨（dry {dry + 1}/{args.dry}）"), flush=True)
         if win:
             dry = 0
+            used = set()                                  # 換錨=新鄰域,重置已抽集
             anchor_id, anchor_score = best_id, best_s
             anchor_pat = np.asarray(torch.load(str(ind.joinpath(best_id + ".pt")),
                                                weights_only=True)).reshape(25, 25) > 0.5
