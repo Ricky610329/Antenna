@@ -833,6 +833,61 @@ def cmd_data(args):
         print(f"    {i[:24]} [{fol[7:]}] wm{wm:+.2f} oob{oob} {star}")
 
 
+def cmd_tiers(args):
+    """tier 使用率/ROI 面板（Ricky 2026-07-21「統計一下每個 tier 的使用率」）:
+    近 --days 天各 tier 的筆數/機時估計/三標/貼線產出——分支多不多讓冷數字說話。
+    tier 判定:auto*=tier2(selfgen);chain 包/prio≤1=tier0;s 顯微鏡包=tier0;其餘=tier1(批次)。"""
+    import datetime as _dt
+    import json
+    import re
+    import time as _t
+    cut = _t.time() - args.days * 86400
+    prio_map = {}
+    jp = DATASET_PATH.joinpath("jobs.json")
+    if jp.exists():
+        for j in json.load(open(str(jp), encoding="utf-8")):
+            prio_map[j["store"]] = j.get("prio", 9)
+    tiers = {}
+    for fol in os.listdir(str(DATASET_PATH)):
+        d = DATASET_PATH.joinpath(fol)
+        rp = d.joinpath("results.json")
+        if not fol.startswith("dedust_") or fol.endswith("_input") or not rp.exists():
+            continue
+        if os.path.getmtime(str(rp)) < cut:
+            continue
+        if fol.startswith("dedust_auto"):
+            tier = "tier2 自產"
+        elif prio_map.get(fol, 9) <= 1 or re.search(r"_p\d\d$", fol) or re.search(r"r\d+s\d+$", fol):
+            tier = "tier0 插隊"
+        else:
+            tier = "tier1 批次"
+        try:
+            res = json.load(open(str(rp), encoding="utf-8"))
+        except Exception:
+            continue
+        t = tiers.setdefault(tier, dict(n=0, tri=0, near=0))
+        for k, v in res.items():
+            if "error" in v or "wm" not in v:
+                continue
+            t["n"] += 1
+            w = v["wm"][2]
+            r = v.get("rad_margin")
+            if w >= 0 and (r if r is not None else -9) >= 0:
+                t["tri"] += 1
+                if (v.get("oob_bad") or 99) < 9.5:
+                    t["near"] += 1
+    tot_n = sum(t["n"] for t in tiers.values()) or 1
+    print(f"== tier 使用率/ROI（近 {args.days} 天;機時=筆數×2.7 分估;{_dt.date.today()}）==")
+    print("| tier | 筆數 | 機時佔比 | 三標 | 三標率 | 貼線(oob<9.5) |")
+    print("|---|---|---|---|---|---|")
+    for tier in sorted(tiers):
+        t = tiers[tier]
+        print(f"| {tier} | {t['n']} | {100 * t['n'] / tot_n:.0f}% | {t['tri']} "
+              f"| {100 * t['tri'] / max(t['n'], 1):.1f}% | {t['near']} |")
+    print(f"合計 {tot_n} 筆 ≈ {tot_n * 2.7 / 60:.0f} 機時;⚠ tier2=整店累計（無筆級時間戳,增量看差分）;各 tier 職責不同"
+          f"（tier1=教材+多樣性/tier0=變現爬升/tier2=覆蓋）,三標率跨 tier 比較≠優劣。")
+
+
 def _records():
     """docs/records.json＝紀錄與門檻的機器真相源（換王先改它;analyze gain/batch 預設讀它）。"""
     import json
@@ -1269,6 +1324,9 @@ def main():
     bt.set_defaults(func=cmd_batch)
     dt = sub.add_parser("data", help="資料總帳+健檢（唯一樣本/分組/完整性/查重洩漏警報;每輪收檔跑）")
     dt.set_defaults(func=cmd_data)
+    tr = sub.add_parser("tiers", help="tier 使用率/ROI 面板（tier0 插隊/tier1 批次/tier2 自產;分支治理冷數字）")
+    tr.add_argument("--days", type=int, default=3)
+    tr.set_defaults(func=cmd_tiers)
     cr = sub.add_parser("credit", help="血統貢獻分（探索延遲報酬記帳;R24 配額股息計分輸入）")
     cr.add_argument("--ids", default="k23b1_021_m22g1_025_cc,o23b1_007_k8_042_k7_00,"
                     "o6_001_o4_035_o3_05,m5_054_m3_026_m1_01,h7_010_g16",

@@ -3317,7 +3317,8 @@ def select_r22mix(args):
             _smc.model.eval()
             with torch.no_grad():
                 cnn_raw = _smc.model(pats).reshape(len(allc), len(labels), n_pts)
-            print(f"影子 CNN（sm_shadow{_vn}）→ pred_wm_cnn 記錄（混合鍵審計,b1 不進鍵）")
+            print(f"影子 CNN（sm_shadow{_vn}）→ pred_wm_cnn 記錄"
+                  + ("（O 臂雙 rank 進鍵中）" if getattr(args, "batch", 1) >= 2 or getattr(args, "round", 0) >= 34 else "（混合鍵審計,b1 不進鍵）"))
     for k, c in enumerate(allc):
         w, _ = worst_margin(raw[k], labels, cfg.targets)
         c["pred_wm"] = _r(float(w))
@@ -3421,7 +3422,8 @@ def select_r22mix(args):
                 n_dyn_pool += int(c["dynst"])
         n_all_pool = sum(len(p_) for p_ in (core, coldp, dn, wildp))
         print(f"結構判（候選池 core/cold/D/W）: 王朝表型 {n_dyn_pool}/{n_all_pool}"
-              f"={100 * n_dyn_pool / max(n_all_pool, 1):.0f}%（全史基線 81%;命中罰 +2.0 降權）")
+              f"={100 * n_dyn_pool / max(n_all_pool, 1):.0f}%"
+              f"（全史基線 81%;命中罰 +{float(getattr(args, 'struct_pen', 2.0)):.1f} 降權）")
 
     def _dynpen(c):
         return float(getattr(args, "struct_pen", 2.0)) if c.get("dynst") else 0.0
@@ -3926,6 +3928,103 @@ def select_scope(args):
     _save_manifest(manifest, input_dir)
     print(f"顯微鏡包 → {input_dir}: {args.anchor} d=1 全枚舉 {len(variants)} → CNN top {len(manifest)}"
           f"（分數 {scores[order[0]]:+.2f} ~ {scores[order[-1]]:+.2f};照常 check-dup → jobs-add）")
+
+
+def _chain_score(v, goal):
+    """爬山鏈目標鍵（判準寫死;decisions「tier 架構」2026-07-21）:
+    wm=追高（rad 崩輕罰）;dual=雙線距離 min（wm−buffer 與 9.0−oob 縮放 0.3——都正=雙線破）;
+    rad=同框內爬 rad（掉出同框=大罰）。"""
+    w = v["wm"][2]
+    r = v.get("rad_margin")
+    r = -9.0 if r is None else r
+    ob = v.get("oob_bad")
+    ob = 99.0 if ob is None else ob
+    lo = v.get("oob_gain_max_lo")
+    if goal == "wm":
+        return w - (1.0 if r < -1 else 0.0)
+    if goal == "dual":
+        return min(w - 0.15, (9.0 - ob) * 0.3)
+    if goal == "rad":
+        return r if (w >= -2 and lo is not None and lo <= -2) else -99.0
+    raise SystemExit(f"未知 goal {goal}")
+
+
+def chain(args):
+    """爬山鏈 daemon（tier 0 插隊層;Ricky 2026-07-21「同時跑好幾個線上學習」）:
+    線上學習的閉環結構、訓練搬到批間——迴圈=發包（錨 d=1 純隨機 --n 筆,--prio 1 插隊）→
+    等收檔 → 目標鍵判讀 → 勝錨=新錨續爬 / 連 --dry 包無勝=收鏈。
+    判準寫死於 CLI（--goal;發鏈前定,鏈中不改）;機時=一鏈一包在飛（~25 筆/70 分=≤1/3 機隊）,
+    鏈數由人控制（≤2 條,decisions）。記帳=docs/chains/<name>.jsonl（append-only）。
+    用法: python -m script.dedust chain --name c1wm --anchor <id> --source-input <夾> --goal wm"""
+    import time
+    import subprocess
+    rng_master = np.random.default_rng(abs(hash(args.name)) % (2 ** 31))
+    src_pt = _dir(args.source_input).joinpath(f"{args.anchor}.pt")
+    if not src_pt.exists():
+        raise SystemExit(f"找不到 {src_pt}")
+    anchor_pat = np.asarray(torch.load(str(src_pt), weights_only=True)).reshape(25, 25) > 0.5
+    anchor_id, anchor_score = args.anchor, args.anchor_score
+    log_dir = os.path.join(REPO, "docs", "chains")
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, f"{args.name}.jsonl")
+    dry, pack = 0, 0
+    while dry < args.dry and pack < args.max_packs:
+        pack += 1
+        store = f"dedust_{args.name}_p{pack:02d}"
+        ind = _dir(store + "_input")
+        ind.mkdir(parents=True, exist_ok=True)
+        manifest = []
+        used = set()
+        while len(manifest) < args.n:
+            px = int(rng_master.integers(0, 625))
+            if px in used or (px // 25, px % 25) == FEED:
+                continue
+            used.add(px)
+            q = anchor_pat.copy()
+            q.ravel()[px] ^= True
+            pid = f"{args.name}p{pack:02d}_{len(manifest):02d}"
+            torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
+            manifest.append(dict(id=pid, kind="scope", family=f"CHAIN_{args.name}", removed_px=0,
+                                 source_id=anchor_id, ops=[["chain_d1", px]], diff_px=1,
+                                 **piece_stats(q)))
+        _save_manifest(manifest, ind)
+        cd = subprocess.run([sys.executable, "-m", "script.dedust", "check-dup",
+                             "--input", store + "_input"], capture_output=True)
+        if cd.returncode != 0:
+            print(f"⚠ {store} 查重撞歷史——重抽下一包（不發車）")
+            continue
+        subprocess.run([sys.executable, "-m", "script.dedust", "jobs-add",
+                        "--input", store + "_input", "--store", store,
+                        "--prio", str(args.prio)], capture_output=True)
+        print(f"⛰ {args.name} p{pack:02d} 發包（錨 {anchor_id[:24]},prio {args.prio}）,等收檔…", flush=True)
+        sd = DATASET_PATH.joinpath("jobs_state")
+        while not sd.joinpath(store + ".done").exists():
+            if sd.joinpath(store + ".fail").exists():
+                raise SystemExit(f"{store} .fail——人工介入")
+            time.sleep(120)
+        res = json.load(open(str(DATASET_PATH.joinpath(store, "results.json")), encoding="utf-8"))
+        scored = [(k, _chain_score(v, args.goal), v) for k, v in res.items()
+                  if "error" not in v and "wm" in v]
+        best_id, best_s, best_v = max(scored, key=lambda t: t[1])
+        win = anchor_score is None or best_s > anchor_score
+        rec = dict(pack=pack, n=len(scored), anchor=anchor_id, best=best_id,
+                   best_score=_r(best_s), anchor_score=(None if anchor_score is None else _r(anchor_score)),
+                   win=bool(win), wm=_r(best_v["wm"][2]), rad=_r(best_v.get("rad_margin")),
+                   oob=_r(best_v.get("oob_bad")))
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        print(f"⛰ {args.name} p{pack:02d} 收檔: best {best_id} score {best_s:+.3f}"
+              f"（wm{best_v['wm'][2]:+.2f}/oob{best_v.get('oob_bad', 99):.2f}）"
+              + ("→ 換錨續爬" if win else f"→ 無勝錨（dry {dry + 1}/{args.dry}）"), flush=True)
+        if win:
+            dry = 0
+            anchor_id, anchor_score = best_id, best_s
+            anchor_pat = np.asarray(torch.load(str(ind.joinpath(best_id + ".pt")),
+                                               weights_only=True)).reshape(25, 25) > 0.5
+        else:
+            dry += 1
+    print(f"⛰ {args.name} 收鏈: {pack} 包;終錨 {anchor_id} score "
+          f"{anchor_score if anchor_score is not None else float('nan'):+.3f};帳 {log_path}")
 
 
 # ---------------------------------------------------------------- sm-screen（開發機，零 HFSS）
@@ -5195,6 +5294,19 @@ def main():
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
     s.set_defaults(fn=select_r22mix, round=34, key="sel")
+
+    s = sub.add_parser("chain", help="爬山鏈 daemon（tier 0 插隊;錨 d=1 純隨機包→判讀→換錨迴圈;≤2 條並行=decisions）")
+    s.add_argument("--name", required=True, help="鏈名（夾名 dedust_<name>_pNN;帳 docs/chains/<name>.jsonl）")
+    s.add_argument("--anchor", required=True)
+    s.add_argument("--source-input", required=True, dest="source_input")
+    s.add_argument("--goal", required=True, choices=["wm", "dual", "rad"], help="目標鍵（發鏈前寫死）")
+    s.add_argument("--anchor-score", type=float, default=None, dest="anchor_score",
+                   help="錨的已知 score（首包 baseline;不給=首包必換錨）")
+    s.add_argument("--n", type=int, default=25)
+    s.add_argument("--prio", type=int, default=1, help="tier 0=1（插隊）")
+    s.add_argument("--dry", type=int, default=2, help="連 N 包無勝錨=收鏈")
+    s.add_argument("--max-packs", type=int, default=20, dest="max_packs")
+    s.set_defaults(fn=chain)
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)
