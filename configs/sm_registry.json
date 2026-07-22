@@ -1,0 +1,17 @@
+{
+ "_comment": "SM 註冊表（多軌 SM 治理,decisions 2026-07-22）——每顆模型:職責一句/量測尺/進鍵狀態/退役條件。新 SM 上線必先登記;analyze sms 面板讀此檔（待實作）。命名=NAS dataset/ 下檔名模式。",
+ "models": [
+  {"name": "sm_reanchor<N>.pth", "role": "全域回歸器（主 SM）:候選打分 pred_wm/pred_oob 絕對值與 LCB", "metric": "凍結基準 held-out |wm err| 中位（docs/kpi.csv frozen_med）", "status": "現役主鍵", "retire": "被異架構連兩批三尺全贏"},
+  {"name": "rad_head<N>.pth", "role": "rad 專門頭:pred_rad（K=16 cosine）", "metric": "M 臂前瞻 ρ（連兩批 ≥0.4 進鍵/連兩批 <0.3 退鍵）", "status": "退鍵中（復鍵帳跨批記錄）", "retire": "多版 ρ 貼零且無復鍵"},
+  {"name": "sm_ens<N>_{1,2}.pth", "role": "不確定性成員:pred_std→LCB 折價", "metric": "std 三分桶 |pred−real| 單調性", "status": "現役（R31 校準過;R35 起隔批訓）", "retire": "校準崩壞連兩批"},
+  {"name": "sm_shadow<N>.pth", "role": "影子 CNN 排序器:pred_wm_cnn→O 臂雙 rank;微尺度(d=1)禁用", "metric": "批盲測前瞻 ρ vs MLP（十讀全勝,平均 ~0.65 vs ~0.1）", "status": "排序進鍵（R33b2 起;R35 起隔批訓）", "retire": "ρ 連兩批輸 MLP"},
+  {"name": "sm_harvest.pth", "role": "底座/I 臂分歧對照（query-by-committee 的第二意見）", "metric": "—（凍結不更新）", "status": "凍結常駐", "retire": "不退役（歷史底座）"},
+  {"name": "sm_denovo<N>.pth", "role": "D 臂專屬導引（舊制）", "metric": "D held-out 對決 sm_harvest", "status": "半退役（對決未全勝,D 臂沿用 harvest 導引）", "retire": "D 臂退役時同退"},
+  {"name": "（chain --expert 動態微調,不落盤）", "role": "域專家:鏈密集鄰域微調→d=1 枚舉排序", "metric": "包內專家半 vs 隨機半勝錨率（連兩包勝→標配）", "status": "試點中（接棒鏈啟用）", "retire": "無加值→退純隨機,降級域內校正器"}
+ ],
+ "planned": [
+  {"name": "域專家三顆（中繼/selfgen/王朝對照）", "when": "R35-36", "gate": "域內 held-out ρ 贏全域 SM 才給該域臂用"},
+  {"name": "軸判別器（pattern→wm 標量 CNN）", "when": "R36+", "gate": "排序對決贏影子 CNN"},
+  {"name": "校正表（per-臂 bias 修正）", "when": "R35 記錄版→兩批數據後判進鍵", "gate": "bias 穩定且修正後誤差降"}
+ ]
+}

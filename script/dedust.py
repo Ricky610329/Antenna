@@ -3327,6 +3327,12 @@ def select_r22mix(args):
             c["pred_std"] = _r(float(np.std(_ws)))
         if cnn_raw is not None:
             c["pred_wm_cnn"] = _r(float(worst_margin(cnn_raw[k], labels, cfg.targets)[0]))
+        if getattr(args, "round", 0) >= 35:
+            #? asym 記錄鍵（2026-07-22 幾何分析:wm ρ−0.63/lo ρ−0.51=rad↔lo 連續座標;記錄版,R36 判進鍵）
+            _P = c["pat"].astype(float)
+            _S = (_P + _P[:, ::-1]) / 2
+            _A = (_P - _P[:, ::-1]) / 2
+            c["asym"] = _r(float(np.linalg.norm(_A) / (np.linalg.norm(_S) + 1e-9)))
         r = raw[k].numpy()
         c["pred_oob"] = oob_metrics(r)["oob_bad"]
         ml = 10 * np.log10(np.clip(1 - 10 ** (r[0][:4] / 10), 1e-6, 1))
@@ -3548,6 +3554,7 @@ def select_r22mix(args):
                                 pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
                                 pred_rad=c.get("pred_rad"), pred_std=c.get("pred_std"),
                                 pred_wm_cnn=c.get("pred_wm_cnn"), dynst=c.get("dynst"),
+                                asym=c.get("asym"),
                                 _pat=c["pat"]))
     dirs = []
     for suf in "abcdefgh"[:args.shards]:
@@ -5414,6 +5421,41 @@ def main():
     s.add_argument("--expert", action="store_true", help="域專家模式:鏈資料微調 SM→枚舉排序 top+隨機對照（dual/wm 鏈適用）")
     s.add_argument("--exp-rand", type=int, default=13, dest="exp_rand", help="對照隨機席（其餘=專家 top）")
     s.set_defaults(fn=chain)
+
+    s = sub.add_parser("select-r35", help="R35 新節奏：批 75（3 夾）高頻迭代;asym 記錄鍵（判準寫死於 round-35 檔）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260723)
+    s.add_argument("--sm", default="sm_reanchor51.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=30, help="G（free24/oobp6）")
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=12, help="L 爬山錨組")
+    s.add_argument("--o", type=int, default=4)
+    s.add_argument("--m", type=int, default=7, help="M 凍結對照（跨批合併讀）")
+    s.add_argument("--c", type=int, default=2)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=6)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=8)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.12, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=6)
+    s.add_argument("--shards", type=int, default=3)
+    s.add_argument("--rad-head", default="rad_head51.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.set_defaults(fn=select_r22mix, round=35, key="sel")
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)

@@ -1,0 +1,60 @@
+# Round 35 — 新節奏首輪：批 75 高頻迭代 × 多軌 SM 第一步 × 鏈制常駐
+
+- **狀態**: running（2026-07-22 午開輪;Ricky 拍板「收縮 round 讓結果更快更新模型」+
+  「多軌 SM=性能提升關鍵,循序漸進」）
+- **提出 / 開跑 / 結論**: 2026-07-22 / 2026-07-22 / —
+- **一句話問題**: 把 tier 1 也「鏈化」——批 150→**75**（重錨頻率×2）+重錨輕量化（隔批制）,
+  高頻小步閉環能不能把批次線的單位產出拉向鏈制水準？同時:多軌 SM 第一步（註冊表+校正表）落地。
+- **一句話結論 (TL;DR)**: 待跑
+- **指向**: [round-34](round-34-second-bloodline.md)（tier 架構元年/鏈制毫米線）· decisions
+  「多軌 SM 路線圖」「合作方法三修正」· chains/*.jsonl（c1d3 攻 0.04/c2rad 逼 rad 0）
+
+## 1. 假設 (Propose)
+- **證據**：①鏈制實證=小步高頻閉環有效（12hr 兩軸毫米線）vs 大批三輪零紀錄;②v50 凍結尺
+  1.21 新低=高頻教材直接餵準 SM;③重錨輕量化可行（ens/影子判定都是連兩批口徑,隔批訓不損判準）。
+- **判準（發車前寫死;Ricky 可隨時否決）**：
+  - **主判準（節奏紅利）**：R35 三批（225 筆）的三標率與帕累托前緣增量/百筆 ≥ R34 同口徑
+    （batch 75 沒有因統計變小而丟失產出效率）∧ 輪週期實測 ≤ R34 的 60%——兩者兼備=新節奏常駐;
+    產出效率顯著掉=回 150。
+  - **輕量重錨審計**：奇數版（v51/v53…）=主+rad 頭;偶數版=全訓（ens+影子）——影子對決/std 鍵
+    照連兩批口徑跨版判定;凍結尺不因輕量版系統性惡化（|Δ|<0.1）。
+  - **多軌第一步**：SM 註冊表（configs/sm_registry.json）上線+校正表記錄版（analyze batch 印
+    各臂 pred−real bias 表,兩批數據後判是否進鍵）。
+  - **asym 記錄鍵**：select 記 asym 值進 manifest（記錄版,照 std/CNN 先例;R36 判進鍵）。
+  - 鏈制常駐:c1d3（攻 wm 0.04）/c2rad（逼 rad 0）續跑;接棒鏈帶 --expert（判準=連兩包專家半勝）;
+    c1d3 若 wm≥0.15∧oob<9.0=**可用帶外紀錄候選→公證+推播**。
+  - 紀錄門檻引 records.json;紀錄級一律公證;批數 ≤3;五軸面板;修訂留註記。
+- **配額（每批 75=3 夾）**：G 30（free 24/oobp 6）／L 12（爬山錨組）／M 7（凍結對照,跨批合併讀）／
+  O 4／I 8／D 6／W 6／C 2。
+
+## 2. 實驗設計 (Design)
+| 項 | 設計 | 判準 |
+|---|---|---|
+| 批 75 | 各臂減半,重錨每批（輕量隔批制） | 產出效率不掉∧週期 ≤60% |
+| SM 註冊表 | configs/sm_registry.json（職責/量測/狀態/退役） | 上線即過 |
+| 校正表 | analyze batch 各臂 bias 表（記錄版） | 兩批後判進鍵 |
+| asym | select 記 manifest（記錄版） | R36 判進鍵 |
+
+## 3. 執行紀錄 (Run)
+```
+# 發車（開發機,conda ant;輕量重錨=奇數版 --no-ens --no-shadow）:
+python -m script.sm_invert gen --sm sm_reanchor<vN>.pth --rad-head rad_head<vN>.pth --out-dir tmp/invert_stage_r35bN --n-free 24 --n-surg 0 --n-champ 0 --n-oob 6 --seed <60+N>
+python -m script.dedust select-r35 --batch N --sm sm_reanchor<vN>.pth --gstage tmp/invert_stage_r35bN --rad-head rad_head<vN>.pth --novelty
+python -m script.dedust check-dup --input dedust_r35bNa_input   # a..c 分開跑
+python -m script.dedust jobs-add --input dedust_r35bNa_input --store dedust_r35bNa --prio 3   # ×3
+```
+| 批 | 狀態 |
+|---|---|
+| — | 待 v51（輕量首航）落地即發 b1 |
+
+## 4. 分析 (Analyze)
+（待）
+
+## 5. 結論 (Conclude)
+（待）
+
+## 6. 後續決策 (Next)
+- 域專家三顆試點（R35-36）;軸判別器（R36+）;asym 進鍵判定（R36）。
+
+## 7. 歸檔指向 (Archive)
+- 結果夾: `dataset/dedust_r35b*`;公證 `r35n*`;鏈帳 docs/chains/。
