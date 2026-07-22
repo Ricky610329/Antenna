@@ -1,0 +1,3 @@
+{"pack": 1, "n": 25, "anchor": "c2rad2p02_00", "best": "c2rad3p01_02", "best_score": -0.42, "anchor_score": -0.43, "win": true, "wm": -0.53, "rad": -0.42, "oob": 9.76}
+{"pack": 2, "n": 25, "anchor": "c2rad3p01_02", "best": "c2rad3p02_18", "best_score": -0.56, "anchor_score": -0.42, "win": false, "wm": -0.71, "rad": -0.56, "oob": 9.28}
+{"pack": 3, "n": 25, "anchor": "c2rad3p01_02", "best": "c2rad3p03_18", "best_score": -0.51, "anchor_score": -0.42, "win": false, "wm": -0.46, "rad": -0.51, "oob": 9.64}
