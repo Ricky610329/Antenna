@@ -562,5 +562,5 @@
 
 - 2026-07-22 **daemon 進程=舊 code 陷阱**：c2rad 假性收鏈（p13-p20 八連撞燒完 max_packs）真因=該 daemon 啟動早於 bug② 修復 commit,進程一直跑「包內 used」舊碼。SOP 化候選:凡改 dedust chain/worker 這類長駐程式,commit 後立刻盤點在跑進程並重啟（本次只重啟了 c1d4、漏了 c2rad）。→ 若再犯一次就寫進 /batch-cycle skill 異常分支表。
 - 2026-07-22 **expert 微調候選改良**：接棒鏈（c1d5 等）的專家微調只吃本鏈包資料——前任鏈同鄰域的 100 筆（c1d3 50+c1d4 50）沒利用。候選=chain 加 --warm-stores 逗號清單把前任 store 餵進微調教材。等 expert 試點先跑出首個有效對照（sizer bug 修後）再決定。
-- 2026-07-23 **expert 試點跨鏈 2/2（best 口徑）**：c1d5 p02 exp_best -0.11>rand -0.15;c1d6 p02 -0.04>-0.07;med 兩次皆小輸=專家排序「找頂尖準、拉整體不準」——爬山取 max,best 口徑即有效口徑。收輪判:dual/wm 鏈標配 --expert。
-- 2026-07-23 **dual 高原=oob 9.0 抗線**：三鏈（c1d4/5/6）150+px、錨群 wm 0.12-0.20 全過線,oob 全卡 9.08-9.14 不破 9.0。d=1 翻單 px 動不了 oob 的量級?候選機制:d=2 跳步/oobp 帶定向手術/低 oob 錨嫁接。R36 規劃。
+- ✅ 已升級→round-35 §4 判準5/§5（expert 標配定案） 2026-07-23 **expert 試點跨鏈 2/2（best 口徑）**：c1d5 p02 exp_best -0.11>rand -0.15;c1d6 p02 -0.04>-0.07;med 兩次皆小輸=專家排序「找頂尖準、拉整體不準」——爬山取 max,best 口徑即有效口徑。收輪判:dual/wm 鏈標配 --expert。
+- ✅ 已升級→round-35 §5-3/R36 主攻線 2026-07-23 **dual 高原=oob 9.0 抗線**：三鏈（c1d4/5/6）150+px、錨群 wm 0.12-0.20 全過線,oob 全卡 9.08-9.14 不破 9.0。d=1 翻單 px 動不了 oob 的量級?候選機制:d=2 跳步/oobp 帶定向手術/低 oob 錨嫁接。R36 規劃。
