@@ -383,3 +383,7 @@ dedust_c2rad_p06
 dedust_c2rad_p07
 dedust_c2rad_p08
 dedust_c2rad_p09
+# sm_reanchor52.pth 追加（2026-07-22）
+dedust_r35b1a
+dedust_r35b1b
+dedust_r35b1c
