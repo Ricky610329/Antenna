@@ -4,3 +4,6 @@
 {"pack": 4, "n": 25, "anchor": "c2radp03_22", "best": "c2radp04_13", "best_score": -1.49, "anchor_score": -1.46, "win": false, "wm": -0.54, "rad": -1.49, "oob": 11.66}
 {"pack": 5, "n": 25, "anchor": "c2radp03_22", "best": "c2radp05_17", "best_score": -1.44, "anchor_score": -1.46, "win": true, "wm": -0.48, "rad": -1.44, "oob": 10.07}
 {"pack": 6, "n": 25, "anchor": "c2radp05_17", "best": "c2radp06_00", "best_score": -1.16, "anchor_score": -1.44, "win": true, "wm": -0.09, "rad": -1.16, "oob": 11.74}
+{"pack": 7, "n": 25, "anchor": "c2radp06_00", "best": "c2radp07_08", "best_score": -0.89, "anchor_score": -1.16, "win": true, "wm": -0.26, "rad": -0.89, "oob": 11.77}
+{"pack": 8, "n": 25, "anchor": "c2radp07_08", "best": "c2radp08_00", "best_score": -0.76, "anchor_score": -0.89, "win": true, "wm": -0.28, "rad": -0.76, "oob": 11.16}
+{"pack": 9, "n": 25, "anchor": "c2radp08_00", "best": "c2radp09_16", "best_score": -0.53, "anchor_score": -0.76, "win": true, "wm": -0.1, "rad": -0.53, "oob": 10.89}

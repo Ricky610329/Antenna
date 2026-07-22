@@ -1,0 +1,2 @@
+{"pack": 1, "n": 25, "anchor": "c1d2p06_16", "best": "c1d3p01_18", "best_score": -0.04, "anchor_score": -0.08, "win": true, "wm": 0.11, "rad": 0.89, "oob": 8.95}
+{"pack": 2, "n": 25, "anchor": "c1d3p01_18", "best": "c1d3p02_24", "best_score": -0.09, "anchor_score": -0.04, "win": false, "wm": 0.09, "rad": 0.82, "oob": 9.29}
