@@ -559,3 +559,5 @@
 - **續作（觸發:閒時/R35 開輪前）**：subset 分層去混雜——族內 ρ（王朝內/中繼內/selfgen 內
   各算 asym×四軸,族內成立才是真結構訊號）;分臂/分時段;偏相關(控 d_dyn)。
 - 腳本:scratchpad geo_sym_fft.py/geo_topo_tol.py（快取可續);UMAP 待收。
+
+- 2026-07-22 **daemon 進程=舊 code 陷阱**：c2rad 假性收鏈（p13-p20 八連撞燒完 max_packs）真因=該 daemon 啟動早於 bug② 修復 commit,進程一直跑「包內 used」舊碼。SOP 化候選:凡改 dedust chain/worker 這類長駐程式,commit 後立刻盤點在跑進程並重啟（本次只重啟了 c1d4、漏了 c2rad）。→ 若再犯一次就寫進 /batch-cycle skill 異常分支表。

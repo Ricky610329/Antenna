@@ -53,6 +53,11 @@ python -m script.dedust jobs-add --input dedust_r35bNa_input --store dedust_r35b
 - **asym 首讀（記錄版）**：G 臂中位 **0.585** vs 其他臂 0.21-0.28（兩倍+）——與幾何分析 asym↔wm ρ−0.63 一致,G free 慘況同源;**R36 判進鍵**（候選用途:G free 預過濾）。缺口:denovo 臂 6 筆 asym=None（生成路徑沒算,待補）。
 - 前瞻:M 臂 wm ρ−0.14(弱)/oob+0.36/rad 頭 +0.357→**續鍵**（下批保留 --rad-key）。影子對決:CNN ρ0.754>MLP 0.715（CNN 續贏排序尺）。
 - 多樣性恆溫:近王 3%/王系血統根 **5%**/歷史最近鄰 38——**反王朝壓制持續生效**（R33 高峰期 40%+→5%）。
+- **c2rad 假性收鏈（chain 教訓④=進程管理）**：p12 首卡後 p13-p20 八連「查重撞歷史」燒完 max_packs
+  ——非鄰域枯竭,是 daemon 進程**還在跑 bug② 修復前的舊 code**（包內 used;前 11 包連勝每包換錨故無害,
+  首次同錨重抽即現形,每對包期望撞 25²/600≈1 筆與實測吻合）。教訓寫死:**修 daemon bug 後重啟所有在跑
+  的 daemon**。處置:刪 p13-p20 未派工草稿夾,**c2rad2** 從終錨 −0.45 修復版續爬（goal rad 不帶 --expert
+  ——expert 排序鍵只支援 wm/dual）。
 
 ## 5. 結論 (Conclude)
 （待）
