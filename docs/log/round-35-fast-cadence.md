@@ -73,6 +73,8 @@ python -m script.dedust jobs-add --input dedust_r35bNa_input --store dedust_r35b
 
 ## 6. 後續決策 (Next)
 - 域專家三顆試點（R35-36）;軸判別器（R36+）;asym 進鍵判定（R36）。
+- **收輪必判:tier 再平衡階梯**（decisions 2026-07-22,Ricky）——`analyze tiers` 產出率比 ≥2 連兩輪
+  （R34 首讀 2.03×,本輪=第二讀）→ R36 批 75→50;多樣性 KPI 塌縮則回退。
 
 ## 7. 歸檔指向 (Archive)
 - 結果夾: `dataset/dedust_r35b*`;公證 `r35n*`;鏈帳 docs/chains/。
