@@ -1,6 +1,6 @@
 {
  "_comment": "紀錄與門檻的機器真相源（2026-07-12 起）。換王/破紀錄=先改這裡、champions.md 散文跟上（/notarize skill 步驟）。analyze gain/batch 預設讀此檔。|history=紀錄推進事件(append-only,burn rate 資料源 2026-07-17 起)",
- "updated": "2026-07-17",
+ "updated": "2026-07-23",
  "buffer": 0.15,
  "kappa": 10,
  "near": 0.4,
@@ -20,9 +20,9 @@
   "certified": "2026-07-12 R22n2 3/3"
  },
  "usable_oob": {
-  "id": "m24b2_015_o1_029_vg033",
-  "value": 9.0,
-  "certified": "2026-07-13 R24n2 3/3;可用帶外=wm>=0.15且rad>=0 min oob;前 k7_038 9.09。★天花板定案(2026-07-16 R30 X 臂):9.04-9.16 未公證前緣 6 候選窮舉重測 6/6 全復現無一破 9.0——高側構造法到頂,突破=低側戰役(gap 區)唯一路徑"
+  "id": "c3g1p01_24",
+  "value": 8.97,
+  "certified": "2026-07-23 R36n1 3/3 bit級一致(wm 0.200/rad 0.430/oob 8.970 三次全同);嫁接鏈 c3g1 首包——selfgen 錨 a218_00010(wm+0.13/oob9.05)反向爬 wm 一步命中;血統=selfgen(a218,非王系親代鏈);⚠表型=王朝結構(dyn_struct True,「好錨天然王朝」一致);「另一側爬」破 R30 天花板定案(該定案限高側構造法,嫁接=第三路);前 m24b2_015 9.0 在位 10 天"
  },
  "inband": {
   "id": "m28b3_016_k26b1_010_s8",
@@ -65,6 +65,12 @@
    "axis": "inband",
    "value": 0.61,
    "round": "R28"
+  },
+  {
+   "date": "2026-07-23",
+   "axis": "usable_oob",
+   "value": 8.97,
+   "round": "R36"
   }
  ]
 }
