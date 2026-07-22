@@ -3453,8 +3453,11 @@ def select_r22mix(args):
             r_mlp = {i: rk for rk, i in enumerate(sorted(range(len(core)), key=_psel))}
             r_cnn = {i: rk for rk, i in enumerate(sorted(range(len(core)),
                      key=lambda i: -(core[i].get("pred_wm_cnn") or -99)))}
-            oi = _diverse(core, sorted(range(len(core)),
-                          key=lambda i: r_mlp[i] + r_cnn[i]), args.o)
+            #? R36 起 CNN 單 rank（R35 收輪:連兩批三尺全贏=排序主鍵;--cnn-solo;判準=O 三標率
+            #  掉過半回雙 rank）;絕對值門檻/LCB 仍 MLP。
+            _okey = (lambda i: r_cnn[i]) if getattr(args, "cnn_solo", False) \
+                else (lambda i: r_mlp[i] + r_cnn[i])
+            oi = _diverse(core, sorted(range(len(core)), key=_okey), args.o)
         else:
             oi = _diverse(core, sorted(range(len(core)), key=_psel), args.o)
     else:
@@ -5486,6 +5489,44 @@ def main():
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
     s.set_defaults(fn=select_r22mix, round=35, key="sel")
+
+    s = sub.add_parser("select-r36", help="R36 抗線輪：批 50（2 夾;tier 再平衡降格）;CNN 單 rank;free 減半;rad-key 退鍵（判準寫死於 round-36 檔）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260724)
+    s.add_argument("--sm", default="sm_reanchor54.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=18, help="G（free12/oobp6;free 減半=外推區止損）")
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=8)
+    s.add_argument("--o", type=int, default=3)
+    s.add_argument("--m", type=int, default=5, help="M 凍結對照（跨批合併讀）")
+    s.add_argument("--c", type=int, default=2)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=3)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=8, help="I 甜蜜點續持")
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.12, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=3)
+    s.add_argument("--shards", type=int, default=2)
+    s.add_argument("--rad-head", default="rad_head54.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key", help="R36 預設退鍵（連兩批 <0.3）;復鍵帳跨批記錄")
+    s.add_argument("--cnn-solo", action="store_true", default=True, dest="cnn_solo",
+                   help="O 臂 CNN 單 rank（R35 收輪轉正;--no-cnn-solo 回雙 rank）")
+    s.add_argument("--no-cnn-solo", action="store_false", dest="cnn_solo")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.set_defaults(fn=select_r22mix, round=36, key="sel")
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)
