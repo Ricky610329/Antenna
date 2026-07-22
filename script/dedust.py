@@ -4120,6 +4120,12 @@ def chain(args):
                 rec["rand_med"] = _r(float(np.median(rh)))
             #? 專家微調:鏈至今全部已收包的 (pattern,response) 低 lr 熱訓（域密集教材）
             try:
+                #? SampleStore 內容物=AntennaPattern/Response——座標與 spec 要先裝（同 sm_reanchor 口徑;
+                #  v1 漏裝→sizer 例外,expert 靜默退隨機跑了三包）
+                from antenna.pattern import AntennaPattern as _AP_E
+                _AP_E.setDefaultCoordinate((0, 25, 0, 25))
+                from antenna.training import setup_responses as _sr_e
+                _sr_e(_cfg_e)
                 from antenna.utils.store import SampleStore as _SS
                 from torch.utils.data import TensorDataset as _TD
                 xs_, ys_ = [], []

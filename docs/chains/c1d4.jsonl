@@ -1,1 +1,2 @@
 {"pack": 1, "n": 25, "anchor": "c1d3p01_18", "best": "c1d4p01_22", "best_score": -0.07, "anchor_score": -0.04, "win": false, "wm": 0.1, "rad": 0.58, "oob": 9.22}
+{"pack": 3, "n": 25, "anchor": "c1d3p01_18", "best": "c1d4p03_23", "best_score": -0.03, "anchor_score": -0.04, "win": true, "wm": 0.14, "rad": 0.76, "oob": 9.09, "note": "daemon死於進程中斷,手動代判;p02撞歷史廢包;expert微調sizer例外退隨機(已修)"}

@@ -561,3 +561,4 @@
 - 腳本:scratchpad geo_sym_fft.py/geo_topo_tol.py（快取可續);UMAP 待收。
 
 - 2026-07-22 **daemon 進程=舊 code 陷阱**：c2rad 假性收鏈（p13-p20 八連撞燒完 max_packs）真因=該 daemon 啟動早於 bug② 修復 commit,進程一直跑「包內 used」舊碼。SOP 化候選:凡改 dedust chain/worker 這類長駐程式,commit 後立刻盤點在跑進程並重啟（本次只重啟了 c1d4、漏了 c2rad）。→ 若再犯一次就寫進 /batch-cycle skill 異常分支表。
+- 2026-07-22 **expert 微調候選改良**：接棒鏈（c1d5 等）的專家微調只吃本鏈包資料——前任鏈同鄰域的 100 筆（c1d3 50+c1d4 50）沒利用。候選=chain 加 --warm-stores 逗號清單把前任 store 餵進微調教材。等 expert 試點先跑出首個有效對照（sizer bug 修後）再決定。
