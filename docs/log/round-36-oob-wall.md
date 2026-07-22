@@ -52,6 +52,7 @@ python -m script.dedust watch --stores dedust_r36bNa,dedust_r36bNb   # 背景掛
 | 批 | 狀態 |
 |---|---|
 | — | （開輪;v54 訓練中,出爐即發 b1） |
+| c3g1 p01 | ★ 04:4x **嫁接首包命中紀錄候選**（單次）:c3g1p01_24 **wm+0.200∧rad+0.430∧oob 8.970**（<紀錄 9.0;dual score +0.009 首正）——公證 r36n1 ×2 已發（prio 2）;鄰域肥（後四名 wm 0.14-0.21/oob 9.20-9.31）;鏈換錨續爬 p02 |
 
 ## 4. 分析 (Analyze)
 （待）
