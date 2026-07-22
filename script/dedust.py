@@ -3977,6 +3977,30 @@ def chain(args):
     dry, pack = 0, 0
     used = set()          # 同錨已抽 px——跨包記憶（2026-07-22 修:包內 used 導致 p02 起狂撞
                           #  p01 已測變體,19 連撞空轉收鏈）;換錨時重置。
+
+    def _preload_used(aid):
+        """接棒鏈預載:掃全史 manifest 找同錨已測的 d=1 px（chain_d1/scope_d1 ops）——
+        新 daemon 不知前任鏈測過哪些,不預載=95% 撞歷史（c1d4 實測第三 bug）。"""
+        out = set()
+        for fol2 in os.listdir(str(DATASET_PATH)):
+            if not fol2.endswith("_input"):
+                continue
+            mp2 = DATASET_PATH.joinpath(fol2, "manifest.json")
+            if not mp2.exists():
+                continue
+            try:
+                for m2 in json.load(open(str(mp2), encoding="utf-8")):
+                    if m2.get("source_id") == aid:
+                        for op2 in (m2.get("ops") or []):
+                            if isinstance(op2, list) and len(op2) == 2                                     and op2[0] in ("chain_d1", "scope_d1"):
+                                out.add(int(op2[1]))
+            except Exception:
+                continue
+        return out
+
+    used |= _preload_used(anchor_id)
+    if used:
+        print(f"⛰ {args.name} 預載同錨已測 px {len(used)} 個（接棒防撞）")
     #? 域專家模式（Ricky 2026-07-22「不同分布的 SM 做不同 tier 0」）:鏈資料微調全域 SM=域專家
     #  → 包生成改「d=1 全枚舉→專家排序 top n−k＋隨機 k 對照」（微尺度導航已敗兩次〔CNN ρ−0.39/
     #  無加值〕,第三試=密集鄰域特訓版;對照組鐵律,判準=連兩包專家半勝→標配,否則退純隨機）。
@@ -4125,7 +4149,7 @@ def chain(args):
               + ("→ 換錨續爬" if win else f"→ 無勝錨（dry {dry + 1}/{args.dry}）"), flush=True)
         if win:
             dry = 0
-            used = set()                                  # 換錨=新鄰域,重置已抽集
+            used = _preload_used(best_id)                 # 換錨=新鄰域,重置+預載（防撞）
             anchor_id, anchor_score = best_id, best_s
             anchor_pat = np.asarray(torch.load(str(ind.joinpath(best_id + ".pt")),
                                                weights_only=True)).reshape(25, 25) > 0.5
