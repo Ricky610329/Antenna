@@ -3970,28 +3970,78 @@ def chain(args):
     dry, pack = 0, 0
     used = set()          # 同錨已抽 px——跨包記憶（2026-07-22 修:包內 used 導致 p02 起狂撞
                           #  p01 已測變體,19 連撞空轉收鏈）;換錨時重置。
+    #? 域專家模式（Ricky 2026-07-22「不同分布的 SM 做不同 tier 0」）:鏈資料微調全域 SM=域專家
+    #  → 包生成改「d=1 全枚舉→專家排序 top n−k＋隨機 k 對照」（微尺度導航已敗兩次〔CNN ρ−0.39/
+    #  無加值〕,第三試=密集鄰域特訓版;對照組鐵律,判準=連兩包專家半勝→標配,否則退純隨機）。
+    expert = None
+    if getattr(args, "expert", False):
+        from antenna.zoo import SURROGATES as _SUR_E
+        from antenna.training import load_config as _lc, PORT_SPECS as _PS
+        _cfg_e = _lc(DEFAULT_CFG)
+        _lab_e = _PS[_cfg_e.port]["labels"]
+        _npts_e = sum(_cfg_e.targets[_lab_e[0]]["width"])
+        import glob as _ge
+        _base_sm = sorted(_ge.glob(str(DATASET_PATH.joinpath("sm_reanchor*.pth"))),
+                          key=lambda p: int("".join(c for c in os.path.basename(p) if c.isdigit()) or 0))[-1]
+        print(f"⛰ {args.name} 專家模式:底座 {os.path.basename(_base_sm)},鏈資料微調,top {args.n - args.exp_rand}+隨機 {args.exp_rand}")
     while dry < args.dry and pack < args.max_packs:
         pack += 1
         store = f"dedust_{args.name}_p{pack:02d}"
         ind = _dir(store + "_input")
         ind.mkdir(parents=True, exist_ok=True)
         manifest = []
-        while len(manifest) < args.n:
-            if len(used) >= 590:
-                print(f"⛰ {args.name} 錨鄰域枯竭（{len(used)}/624 已抽）——收鏈")
-                dry = args.dry
-                break
-            px = int(rng_master.integers(0, 625))
-            if px in used or (px // 25, px % 25) == FEED:
-                continue
-            used.add(px)
-            q = anchor_pat.copy()
-            q.ravel()[px] ^= True
-            pid = f"{args.name}p{pack:02d}_{len(manifest):02d}"
-            torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
-            manifest.append(dict(id=pid, kind="scope", family=f"CHAIN_{args.name}", removed_px=0,
-                                 source_id=anchor_id, ops=[["chain_d1", px]], diff_px=1,
-                                 **piece_stats(q)))
+        avail = [px for px in range(625) if px not in used and (px // 25, px % 25) != FEED]
+        if len(avail) < args.n:
+            print(f"⛰ {args.name} 錨鄰域枯竭（{len(used)}/624 已抽）——收鏈")
+            dry = args.dry
+        elif expert is not None:
+            #? 專家排序半＋隨機對照半（sel_by 記 manifest,判讀分半記帳）
+            vs = []
+            for px in avail:
+                q = anchor_pat.copy()
+                q.ravel()[px] ^= True
+                vs.append((px, q))
+            pats_e = torch.stack([torch.tensor(q, dtype=torch.float32).reshape(-1) for _, q in vs])
+            expert.model.eval()
+            with torch.no_grad():
+                raw_e = expert.model(pats_e).reshape(len(vs), len(_lab_e), _npts_e)
+            from antenna.losses import worst_margin as _wme
+            sc_e = []
+            for k2 in range(len(vs)):
+                w_, _ = _wme(raw_e[k2], _lab_e, _cfg_e.targets)
+                ob_ = oob_metrics(raw_e[k2].numpy())["oob_bad"]
+                sc_e.append(min(float(w_) - 0.15, (9.0 - ob_) * 0.3) if args.goal == "dual" else float(w_))
+            order_e = sorted(range(len(vs)), key=lambda k2: -sc_e[k2])
+            n_top = args.n - args.exp_rand
+            picks = order_e[:n_top]
+            rest = [k2 for k2 in order_e[n_top:]]
+            picks += list(rng_master.choice(rest, size=args.exp_rand, replace=False))
+            for j2, k2 in enumerate(picks):
+                px, q = vs[k2]
+                used.add(px)
+                pid = f"{args.name}p{pack:02d}_{j2:02d}"
+                torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
+                manifest.append(dict(id=pid, kind="scope", family=f"CHAIN_{args.name}", removed_px=0,
+                                     source_id=anchor_id, ops=[["chain_d1", px]], diff_px=1,
+                                     sel_by=("exp" if j2 < n_top else "rand"),
+                                     **piece_stats(q)))
+        else:
+            while len(manifest) < args.n:
+                if len(used) >= 590:
+                    print(f"⛰ {args.name} 錨鄰域枯竭（{len(used)}/624 已抽）——收鏈")
+                    dry = args.dry
+                    break
+                px = int(rng_master.integers(0, 625))
+                if px in used or (px // 25, px % 25) == FEED:
+                    continue
+                used.add(px)
+                q = anchor_pat.copy()
+                q.ravel()[px] ^= True
+                pid = f"{args.name}p{pack:02d}_{len(manifest):02d}"
+                torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
+                manifest.append(dict(id=pid, kind="scope", family=f"CHAIN_{args.name}", removed_px=0,
+                                     source_id=anchor_id, ops=[["chain_d1", px]], diff_px=1,
+                                     **piece_stats(q)))
         if len(manifest) < args.n:
             break
         _save_manifest(manifest, ind)
@@ -4027,6 +4077,40 @@ def chain(args):
                    best_score=_r(best_s), anchor_score=(None if anchor_score is None else _r(anchor_score)),
                    win=bool(win), wm=_r(best_v["wm"][2]), rad=_r(best_v.get("rad_margin")),
                    oob=_r(best_v.get("oob_bad")))
+        if getattr(args, "expert", False):
+            #? 分半記帳（專家 vs 隨機對照;判準=連兩包 exp 半勝→標配）
+            man_e = {m["id"]: m for m in _load_manifest(ind)}
+            eh = [sc for k3, sc, _ in scored if man_e.get(k3, {}).get("sel_by") == "exp"]
+            rh = [sc for k3, sc, _ in scored if man_e.get(k3, {}).get("sel_by") == "rand"]
+            if eh and rh:
+                rec["exp_best"] = _r(max(eh))
+                rec["rand_best"] = _r(max(rh))
+                rec["exp_med"] = _r(float(np.median(eh)))
+                rec["rand_med"] = _r(float(np.median(rh)))
+            #? 專家微調:鏈至今全部已收包的 (pattern,response) 低 lr 熱訓（域密集教材）
+            try:
+                from antenna.utils.store import SampleStore as _SS
+                from torch.utils.data import TensorDataset as _TD
+                xs_, ys_ = [], []
+                for pk2 in range(1, pack + 1):
+                    st2 = DATASET_PATH.joinpath(f"dedust_{args.name}_p{pk2:02d}")
+                    if not st2.is_dir():
+                        continue
+                    ss = _SS(st2, verbose=False)
+                    for i3 in range(len(ss)):
+                        x3, y3 = ss[i3]
+                        xs_.append(torch.as_tensor(x3, dtype=torch.float32).reshape(-1))
+                        ys_.append(torch.as_tensor(y3, dtype=torch.float32))
+                if len(xs_) >= 20:
+                    expert = _SUR_E["mlp"](os.path.join(REPO, "tmp", "chain_exp"), 25 * 25,
+                                           (len(_lab_e), _npts_e), lr=3e-4)
+                    expert.pre_load_model(_base_sm, strict=True)
+                    expert.train_by_datas(_TD(torch.stack(xs_), torch.stack(ys_)),
+                                          epochs=15, batch_size=32, verbose=False)
+                    print(f"⛰ {args.name} 專家微調完成（域資料 {len(xs_)} 筆,底座 {os.path.basename(_base_sm)}）")
+            except Exception as _ee:
+                print(f"⚠ 專家微調失敗（退純隨機續跑）: {_ee}")
+                expert = None
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         print(f"⛰ {args.name} p{pack:02d} 收檔: best {best_id} score {best_s:+.3f}"
@@ -5327,6 +5411,8 @@ def main():
     s.add_argument("--prio", type=int, default=1, help="tier 0=1（插隊）")
     s.add_argument("--dry", type=int, default=2, help="連 N 包無勝錨=收鏈")
     s.add_argument("--max-packs", type=int, default=20, dest="max_packs")
+    s.add_argument("--expert", action="store_true", help="域專家模式:鏈資料微調 SM→枚舉排序 top+隨機對照（dual/wm 鏈適用）")
+    s.add_argument("--exp-rand", type=int, default=13, dest="exp_rand", help="對照隨機席（其餘=專家 top）")
     s.set_defaults(fn=chain)
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
