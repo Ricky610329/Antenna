@@ -1,0 +1,3 @@
+{"pack": 1, "n": 25, "anchor": "a218_00010", "best": "c3g1p01_24", "best_score": 0.01, "anchor_score": -0.02, "win": true, "wm": 0.2, "rad": 0.43, "oob": 8.97}
+{"pack": 2, "n": 21, "anchor": "c3g1p01_24", "best": "c3g1p02_00", "best_score": -0.02, "anchor_score": 0.01, "win": false, "wm": 0.13, "rad": 0.48, "oob": 9.05, "exp_best": -0.02, "rand_best": -0.05, "exp_med": -0.11, "rand_med": -0.14}
+{"pack": 3, "n": 25, "anchor": "c3g1p01_24", "best": "c3g1p03_22", "best_score": -0.04, "anchor_score": 0.01, "win": false, "wm": 0.13, "rad": 0.49, "oob": 9.13, "exp_best": -0.05, "rand_best": -0.04, "exp_med": -0.17, "rand_med": -0.11}
