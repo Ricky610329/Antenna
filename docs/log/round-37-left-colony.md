@@ -59,7 +59,7 @@ python -m script.dedust watch --stores dedust_r37bNa,dedust_r37bNb
 ```
 | 批 | 狀態 |
 |---|---|
-| — | （開輪;v57 訓練中） |
+| 1（r37b1{a,b}） | 🔵 14:25 發車（v57 輕量凍結 **1.248**/near **0.997 首破 1.0**;L 臂新大陸錨組+ref/rej balance 首批;diagb 罰首批;查重 0×2。tier 0:c5tri/c6tri 首包在飛） |
 
 ## 4. 分析 (Analyze)
 （待）
