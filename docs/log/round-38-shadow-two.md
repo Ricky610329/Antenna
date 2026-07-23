@@ -47,6 +47,7 @@ python -m script.dedust select-r38 --batch N --sm sm_reanchor60.pth --gstage tmp
 ```
 | 批 | 狀態 |
 |---|---|
+| 1（r38b1{a,b}） | 🔵 04:31 發車（**sm_two60 尺1 凍結 0.853**〔vs MLP ~1.25=尺1 大勝,b2 開盲測考〕;**lo 判別器 ρ+0.778 上崗=pred_lo 首航**;候選池王朝表型 **56%**〔基線 81%——換種效果已現〕;查重 0×2;train-two 首跑 16× 有效訓練量教訓→實證配方 40ep flat 修正） |
 | — | 開輪紀事:v60 全訓落地（response 全訓首版）;**selfgen 換種生效**（07-24 02:1x Ricky 三台 pull+重啟——tier2 改產左側家族資料,王朝種子留 20%）;train-two（sm_two60+lo 判別器）補訓中;tri 三鏈過夜爬（c5tri3 wm+0.11 錨/c6tri4/c7tri 換錨） |
 
 ## 4. 分析 (Analyze)
