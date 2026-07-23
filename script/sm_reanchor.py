@@ -186,7 +186,8 @@ def _build_ds(tr, replay, over, mode="pattern"):
     dense_parts = []
     for i, r_ in enumerate(reps):
         dense_parts += [tr[i]] * int(r_)
-    return ConcatDataset([_tds(dense_parts), _tds(replay)]), reps
+    parts = [_tds(dense_parts)] + ([_tds(replay)] if replay else [])
+    return ConcatDataset(parts), reps
 
 
 def train(args):
