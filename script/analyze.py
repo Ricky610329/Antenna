@@ -920,8 +920,15 @@ def _shadow_duel(rows):
     n_pts = sum(_cfg.targets[LABELS[0]]["width"])
     cnn = SURROGATES["cnn"](str(DATASET_PATH.joinpath("..", "tmp")), 25 * 25, (len(LABELS), n_pts))
     cnn.pre_load_model(sh_p, strict=True)
-    print(f"\n-- 影子 CNN 對決（v{vnum} 雙模對本批盲測;連兩批三尺全贏→轉正,輸→ens 成員）--")
-    preds = {"mlp": [], "cnn": []}
+    #? R38 三模:影子二號（cnn2;analysis-06 臂A 投產）同場盲測——sm_two<vn> 在才加入
+    duel = [("mlp", mlp), ("cnn", cnn)]
+    two_p = DATASET_PATH.joinpath(f"sm_two{vnum}.pth")
+    if two_p.exists():
+        two = SURROGATES["cnn2"](str(DATASET_PATH.joinpath("..", "tmp")), 25 * 25, (len(LABELS), n_pts))
+        two.pre_load_model(two_p, strict=True)
+        duel.append(("two", two))
+    print(f"\n-- 影子對決（v{vnum} {'三' if len(duel) == 3 else '雙'}模對本批盲測;連兩批三尺全贏→轉正,輸→ens 成員）--")
+    preds = {tag: [] for tag, _ in duel}
     real = []
     with _th.no_grad():
         for s in rows:
@@ -930,7 +937,7 @@ def _shadow_duel(rows):
                 continue
             x = _th.as_tensor(np.asarray(_th.load(str(pf), weights_only=True)),
                               dtype=_th.float32).flatten()
-            for tag, mdl in (("mlp", mlp), ("cnn", cnn)):
+            for tag, mdl in duel:
                 w_p, _ = worst_margin(mdl.model(x), LABELS, _cfg.targets)
                 preds[tag].append(float(w_p))
             real.append(s["wm"])
@@ -939,7 +946,7 @@ def _shadow_duel(rows):
     print("| 模型 | |pred−real|中位 | 前瞻ρ | adv率(pred≥0∧real<−1) |")
     print("|---|---|---|---|")
     stats = {}
-    for tag in ("mlp", "cnn"):
+    for tag, _ in duel:
         pw = np.asarray(preds[tag])
         err = float(np.median(np.abs(pw - real)))
         rho = float(spearmanr(pw, real)[0])
@@ -949,13 +956,20 @@ def _shadow_duel(rows):
         print(f"| {tag} | {err:.2f} | {rho:+.3f} | {advr * 100:.0f}%（n={int(opt.sum())}） |"
               if opt.any() else f"| {tag} | {err:.2f} | {rho:+.3f} | n/a(0) |")
     for i, nm in enumerate(("誤差", "前瞻ρ", "adv率")):
-        m, c = stats["mlp"][i], stats["cnn"][i]
-        win = (c > m) if i == 1 else (c < m)          # ρ 高者勝;誤差/adv 低者勝
-        if np.isnan(c) or np.isnan(m):
+        vals = {t: stats[t][i] for t, _ in duel}
+        ok = {t: v for t, v in vals.items() if not np.isnan(v)}
+        if not ok:
             verdicts.append(f"{nm}=n/a")
         else:
-            verdicts.append(f"{nm}={'CNN' if win else 'MLP'}")
+            best = (max if i == 1 else min)(ok, key=ok.get)   # ρ 高者勝;誤差/adv 低者勝
+            verdicts.append(f"{nm}={best.upper()}")
     print("  → 尺2/尺3 判定: " + " ".join(verdicts) + "（尺1=凍結基準,見重錨輸出;帳記 round 檔）")
+    #? lo 判別器批前瞻（R38 記錄鍵;判準=lo ρ>=0.5 連兩批→R39 進鍵）
+    lo_pairs = [(s.get("plo"), s.get("lo")) for s in rows
+                if s.get("plo") is not None and s.get("lo") is not None]
+    if len(lo_pairs) > 5:
+        rho_lo = float(spearmanr([a for a, _ in lo_pairs], [b for _, b in lo_pairs])[0])
+        print(f"  lo 判別器批前瞻: ρ {rho_lo:+.3f}（n={len(lo_pairs)};判準 ≥0.5 連兩批→R39 進鍵）")
 
 
 def cmd_batch(args):
@@ -990,6 +1004,7 @@ def cmd_batch(args):
                              wm=r["wm"][2], rad=r.get("rad_margin"), oob=r.get("oob_bad"),
                              lo=r.get("oob_gain_max_lo"), hi=r.get("oob_gain_max_hi"),
                              pwm=m.get("pred_wm"), poob=m.get("pred_oob"), prad=m.get("pred_rad"),
+                             plo=m.get("pred_lo"),
                              d=m.get("diff_px")))
     print(f"== r{args.round} b{args.batch} 收檔判讀（{len(stores)} 夾 {len(rows)} 筆;門檻源 records.json {rec['updated']}）==")
     if incomplete:
