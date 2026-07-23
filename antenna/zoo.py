@@ -16,7 +16,7 @@ config 用名字指定：
 - 維度由訓練端推好傳入，模型不碰全域註冊狀態、不讀全域 config。
 """
 from antenna.models import (
-    MLPSurrogate, EnsembleMLPSurrogate, CNNSurrogate, SigmoidGenerator, LatentGenerator,
+    MLPSurrogate, EnsembleMLPSurrogate, CNNSurrogate, ResCNNSurrogate, SigmoidGenerator, LatentGenerator,
     MirrorGenerator, BatchLatentGenerator, MultiScaleGenerator, DirectPatternGenerator,
 )
 
@@ -33,4 +33,5 @@ SURROGATES = {
     "mlp": MLPSurrogate,               # HFSSNet 純 MLP + Ranger + MSE (預設 hidden=(2048,1024,512,128,64))
     "ensemble": EnsembleMLPSurrogate,  # K 個獨立 MLP 成員的集成；提供 uncertainty()(成員分歧)，攻 SM 品質
     "cnn": CNNSurrogate,               # Conv 骨幹影子挑戰者 (R32 影子對決；連兩批三尺全贏 MLP 才轉正為預設)
+    "cnn2": ResCNNSurrogate,           # 影子二號 (analysis-06 臂A：ResBlock+BN；R38 制度內對決中)
 }

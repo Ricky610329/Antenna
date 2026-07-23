@@ -3372,6 +3372,7 @@ def select_r22mix(args):
     #? R33 混合鍵（記錄版,照 std 進鍵先例）:影子 CNN 前瞻 ρ 三連勝（0.59/0.56/0.64=「CNN=排序器」）
     #  → pred_wm_cnn 記 manifest;b1 只記錄（判讀審計「CNN 排序假設檢定」）,過了才進鍵。
     cnn_raw = None
+    _lohead = None
     if getattr(args, "round", 0) >= 33:
         _fc = DATASET_PATH.joinpath(f"sm_shadow{_vn}.pth")
         if _fc.exists():
@@ -3380,6 +3381,20 @@ def select_r22mix(args):
             _smc.model.eval()
             with torch.no_grad():
                 cnn_raw = _smc.model(pats).reshape(len(allc), len(labels), n_pts)
+        if getattr(args, "round", 0) >= 38:
+            #? lo 判別器記錄鍵（R38;analysis-06 臂B;R39 判進鍵）——sm_lohead<vn> 在才記
+            _vn2 = "".join(ch for ch in str(args.sm) if ch.isdigit())
+            _fl = DATASET_PATH.joinpath(f"sm_lohead{_vn2}.pth")
+            if _fl.exists():
+                import torch.nn as _nnl
+                _lohead = _nnl.Sequential(_nnl.Conv2d(1, 32, 3, padding=1), _nnl.ReLU(), _nnl.MaxPool2d(2),
+                                          _nnl.Conv2d(32, 64, 3, padding=1), _nnl.ReLU(), _nnl.MaxPool2d(2),
+                                          _nnl.Flatten(), _nnl.Linear(64 * 6 * 6, 256), _nnl.ReLU(),
+                                          _nnl.Linear(256, 2))
+                _lohead.load_state_dict(torch.load(str(_fl), weights_only=True))
+                _lohead.eval()
+                print(f"lo 判別器（sm_lohead{_vn2}）→ pred_lo 記錄（R39 判進鍵）")
+        if cnn_raw is not None:
             print(f"影子 CNN（sm_shadow{_vn}）→ pred_wm_cnn 記錄"
                   + ("（O 臂雙 rank 進鍵中）" if getattr(args, "batch", 1) >= 2 or getattr(args, "round", 0) >= 34 else "（混合鍵審計,b1 不進鍵）"))
     for k, c in enumerate(allc):
@@ -3398,6 +3413,10 @@ def select_r22mix(args):
             c["asym"] = _r(float(np.linalg.norm(_A) / (np.linalg.norm(_S) + 1e-9)))
         if getattr(args, "round", 0) >= 36:
             c["diagb"] = diag_bridge(c["pat"])   # 對角橋記錄鍵（Ricky 2026-07-23;R37 進罰分）
+        if _lohead is not None:
+            with torch.no_grad():
+                c["pred_lo"] = _r(float(_lohead(torch.tensor(c["pat"], dtype=torch.float32)
+                                                .reshape(1, 1, 25, 25))[0, 1]))
         r = raw[k].numpy()
         c["pred_oob"] = oob_metrics(r)["oob_bad"]
         ml = 10 * np.log10(np.clip(1 - 10 ** (r[0][:4] / 10), 1e-6, 1))
@@ -5655,6 +5674,44 @@ def main():
     s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen",
                    help="對角橋罰/橋（上限 5 橋;Ricky 2026-07-23）")
     s.set_defaults(fn=select_r22mix, round=37, key="sel")
+
+    s = sub.add_parser("select-r38", help="R38 影子二號輪：批 54;lo 判別器記錄鍵;L 半ref半rej 常駐（判準寫死於 round-38 檔）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260726)
+    s.add_argument("--sm", default="sm_reanchor60.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=12)
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=12)
+    s.add_argument("--o", type=int, default=3)
+    s.add_argument("--m", type=int, default=5)
+    s.add_argument("--c", type=int, default=2)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=6)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=8)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.08, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=6)
+    s.add_argument("--shards", type=int, default=2)
+    s.add_argument("--rad-head", default="rad_head60.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--cnn-solo", action="store_true", default=False, dest="cnn_solo")
+    s.add_argument("--no-cnn-solo", action="store_false", dest="cnn_solo")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
+    s.set_defaults(fn=select_r22mix, round=38, key="sel")
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)

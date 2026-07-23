@@ -509,6 +509,56 @@ def CNNSurrogate(checkpoint, in_dim, response_shape, channels=(32, 64, 64), fc=2
     )
 
 
+class ResCNNNet(nn.Module):
+    """影子二號骨幹（analysis-06 臂A,2026-07-23）：ResBlock×2＋BN——bake-off 三尺全勝現任
+    （凍結 0.540 vs 1.214）;搭配訓練端鏡射增強（sm_reanchor 制度段,響應=頻域曲線鏡射不變）。"""
+
+    def __init__(self, num_pattern_pixel=625, num_response: tuple = (3, 17), fc=512):
+        super().__init__()
+        self.num_response = tuple(num_response)
+        self.side = int(round(num_pattern_pixel ** 0.5))
+
+        def res(c):
+            return nn.Sequential(nn.Conv2d(c, c, 3, padding=1), nn.BatchNorm2d(c), nn.ReLU(),
+                                 nn.Conv2d(c, c, 3, padding=1), nn.BatchNorm2d(c))
+
+        self.stem = nn.Sequential(nn.Conv2d(1, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU())
+        self.r1 = res(32)
+        self.mid = nn.Sequential(nn.MaxPool2d(2), nn.Conv2d(32, 64, 3, padding=1),
+                                 nn.BatchNorm2d(64), nn.ReLU())
+        self.r2 = res(64)
+        self.pool = nn.MaxPool2d(2)
+        flat = 64 * (self.side // 4) ** 2
+        self.head = nn.Sequential(nn.Flatten(), nn.Linear(flat, fc), nn.ReLU(),
+                                  nn.Linear(fc, num_response[0] * num_response[1]))
+        self.to(config.device)
+
+    def forward(self, input):
+        x = input.reshape(-1, 1, self.side, self.side)
+        x = self.stem(x)
+        x = torch.relu(x + self.r1(x))
+        x = self.mid(x)
+        x = torch.relu(x + self.r2(x))
+        x = self.head(self.pool(x))
+        if input.dim() == 1:
+            return x.reshape(self.num_response)
+        return x.reshape(input.shape[0], *self.num_response)
+
+
+def ResCNNSurrogate(checkpoint, in_dim, response_shape, fc=512,
+                    lr=0.001, min_loss=0.1, max_epoch=20000):
+    """影子二號工廠（外圍同 CNNSurrogate,骨幹換 ResCNNNet）。"""
+    model = ResCNNNet(in_dim, response_shape, fc=fc)
+    optimizer = Ranger(params=model.parameters(), lr=lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=10, min_lr=1e-6
+    )
+    return SurrogateModel(
+        model, nn.MSELoss(), optimizer, scheduler, rootdir=checkpoint,
+        min_loss=min_loss, max_epoch=max_epoch, response_shape=response_shape,
+    )
+
+
 ###* EnsembleSurrogate — K 個獨立 SM 成員的集成 (不確定性 = 成員分歧) ###
 #? 動機 (攻 SM 品質)：SM-guided 搜尋的命門是「SM 在它說好的地方準不準」。單一 SM 給不出
 #? 「我對這張 pattern 有多沒把握」；deep ensembles 用 K 個獨立成員的「預測分歧」當便宜的

@@ -353,6 +353,93 @@ def train_shadow_cmd(args):
     _train_shadow_core(ds, ho, hd, fmask, vnum, args.epochs, args.batch)
 
 
+def _augmirror(items):
+    """鏡射增強（analysis-06:響應=頻域曲線,左右鏡射不變;訓練資料 ×2）。"""
+    out = list(items)
+    for x, y in items:
+        xm = torch.flip(x.reshape(25, 25), dims=[1]).reshape(x.shape)
+        out.append((xm, y))
+    return out
+
+
+def _train_two_core(tr, replay, over, ho, fmask, vnum, epochs, batch):
+    """影子二號＋lo 判別器（R38 制度段;analysis-06 臂A/臂B 投產版）。
+    二號=cnn2（ResBlock+BN）鏡射增強同鍋;lo 頭=小 CNN 直接回歸 (wm,lo) 標量。
+    尺1 落 docs/kpi_two.csv;盲測（尺2/尺3）=analyze batch 三模段。"""
+    from antenna.zoo import SURROGATES
+    from script.dedust import oob_metrics as _om
+    import time as _t2
+    cache = os.path.join(REPO, "tmp", "sm_two")
+    os.makedirs(cache, exist_ok=True)
+    n_pts = sum(_cfg.targets[LABELS[0]]["width"])
+    tr_aug = _augmirror(tr) + replay
+    ds_aug, _ = _build_ds(tr_aug, [], over)          # 同權重法,增強後池
+    torch.manual_seed(7)
+    sm2 = SURROGATES["cnn2"](cache, 25 * 25, (len(LABELS), n_pts))
+    print(f"—— 影子二號: cnn2 從零訓 {epochs}ep（鏡射增強 ×2,同鍋）")
+    losses = sm2.train_by_datas(ds_aug, epochs=epochs, batch_size=batch, verbose=False)
+    out2 = f"sm_two{vnum}.pth" if vnum else "sm_two_auto.pth"
+    sm2.save_as(DATASET_PATH.joinpath(out2))
+    errs = _wm_errs(sm2, ho)
+    med, fz = float(np.median(errs)), float(np.median(errs[fmask])) if fmask.any() else float("nan")
+    print(f"二號 loss 首 {losses[0]:.3f} → 末 {losses[-1]:.3f} → {out2}")
+    print(f"二號尺1: |wm err| 中位 {med:.3f} | 凍結 {fz:.3f}（盲測=下批 analyze 三模段）")
+    #? lo 判別器（臂B）:標量 (wm,lo) 回歸——lo 軸=左側戰役導航;select 記 pred_lo（R39 判進鍵）
+    import torch.nn as _nn
+    scal = _nn.Sequential(_nn.Conv2d(1, 32, 3, padding=1), _nn.ReLU(), _nn.MaxPool2d(2),
+                          _nn.Conv2d(32, 64, 3, padding=1), _nn.ReLU(), _nn.MaxPool2d(2),
+                          _nn.Flatten(), _nn.Linear(64 * 6 * 6, 256), _nn.ReLU(), _nn.Linear(256, 2))
+    X, S = [], []
+    for x, y in tr_aug:
+        yy = y.reshape(len(LABELS), -1)
+        w_, _ = worst_margin(yy, LABELS, _cfg.targets)
+        X.append(x.reshape(1, 25, 25))
+        S.append((float(w_), float(_om(yy.numpy()).get("oob_gain_max_lo", 0.0))))
+    X = torch.stack(X); S = torch.tensor(S)
+    opt = torch.optim.Adam(scal.parameters(), lr=1e-3)
+    idx = np.arange(len(X))
+    for ep in range(max(epochs // 2, 30)):
+        np.random.shuffle(idx)
+        for i in range(0, len(idx), batch):
+            ii = idx[i:i + batch]
+            opt.zero_grad()
+            loss = _nn.functional.mse_loss(scal(X[ii]), S[ii])
+            loss.backward(); opt.step()
+    scal.eval()
+    outl = f"sm_lohead{vnum}.pth" if vnum else "sm_lohead_auto.pth"
+    torch.save(scal.state_dict(), str(DATASET_PATH.joinpath(outl)))
+    with torch.no_grad():
+        pl = torch.cat([scal(torch.stack([x.reshape(1, 25, 25) for x, _ in ho[i:i + 256]]))
+                        for i in range(0, len(ho), 256)])[:, 1].numpy()
+    real_lo = np.array([float(_om(y.reshape(len(LABELS), -1).numpy()).get("oob_gain_max_lo", 0.0))
+                        for _, y in ho])
+    from scipy.stats import spearmanr as _sp
+    rho_lo, _ = _sp(pl, real_lo)
+    print(f"lo 判別器: ho lo ρ {rho_lo:+.3f} / |err|med {np.median(np.abs(pl - real_lo)):.3f} → {outl}")
+    kp = os.path.join(REPO, "docs", "kpi_two.csv")
+    newf = not os.path.exists(kp)
+    with open(kp, "a", encoding="utf-8") as f:
+        if newf:
+            f.write("date,sm,ho_n,two_med,two_frozen,lohead_rho,lohead_mae\n")
+        f.write(f"{_t2.strftime('%Y-%m-%d %H:%M')},{out2},{len(ho)},{med:.3f},{fz:.3f},"
+                f"{rho_lo:.3f},{float(np.median(np.abs(pl - real_lo))):.3f}\n")
+
+
+def train_two_cmd(args):
+    """獨立補訓影子二號＋lo 判別器（同鍋;R38 起 train 制度段自動帶=TODO,先手動）。"""
+    import hashlib as _hl
+    import json as _js
+    tr, ho = _load_clean()
+    replay, _ = _load_harvest(args.replay, args.val)
+    fz_path = os.path.join(REPO, "configs", "heldout_frozen.json")
+    fzk = set(_js.load(open(fz_path, encoding="utf-8"))["keys"]) if os.path.exists(fz_path) else set()
+    fmask = np.array([_hl.md5((x.numpy().reshape(-1) > 0.5).tobytes()).hexdigest() in fzk
+                      for x, _ in ho])
+    vnum = "".join(ch for ch in os.path.basename(args.out) if ch.isdigit())
+    print(f"乾淨真值 train {len(tr)} / held-out {len(ho)} ＋ 重放 {len(replay)}（鏡射增強前）")
+    _train_two_core(tr, replay, args.over, ho, fmask, vnum, args.epochs, args.batch)
+
+
 def _load_denovo():
     """跨批萃取 kind=denovo 樣本（R24 §5 缺口落地,2026-07-13）：掃全部 *_input manifest,
     kind==denovo → input pattern 以 bool bytes 在同名 store 的 response 配對（sm_reanchor 只讀
@@ -611,6 +698,14 @@ def main():
     s.add_argument("--epochs", type=int, default=30)
     s.add_argument("--out", default="rad_head1.pth")
     s.set_defaults(fn=train_rad)
+    s = sub.add_parser("train-two", help="獨立補訓影子二號+lo 判別器（R38;cnn2 鏡射增強+標量 lo 頭;同鍋資料）")
+    s.add_argument("--epochs", type=int, default=80)
+    s.add_argument("--batch", type=int, default=64)
+    s.add_argument("--over", type=int, default=8)
+    s.add_argument("--replay", type=int, default=2000)
+    s.add_argument("--val", type=int, default=500)
+    s.add_argument("--out", default="sm_reanchor60.pth", help="版本號來源（sm_twoNN/sm_loheadNN 取此檔數字）")
+    s.set_defaults(fn=train_two_cmd)
     s = sub.add_parser("train-shadow", help="獨立補訓影子 CNN（給既有版補影子;制度段=train 自動帶;同鍋資料）")
     s.add_argument("--epochs", type=int, default=80)
     s.add_argument("--batch", type=int, default=64)
