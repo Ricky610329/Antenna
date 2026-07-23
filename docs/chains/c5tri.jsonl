@@ -1,3 +1,4 @@
 {"pack": 1, "n": 25, "anchor": "c2radp10_21", "best": "c5trip01_11", "best_score": -0.57, "anchor_score": -0.49, "win": false, "wm": -0.04, "rad": -0.57, "oob": 10.68, "lo": -3.46, "hi": 2.94}
 {"pack": 2, "n": 25, "anchor": "c2radp10_21", "best": "c5trip02_22", "best_score": -0.31, "anchor_score": -0.49, "win": true, "wm": -0.08, "rad": -0.31, "oob": 8.08, "lo": -3.02, "hi": 2.03}
 {"pack": 4, "n": 25, "anchor": "c5trip02_22", "best": "c5trip04_18", "best_score": -0.45, "anchor_score": -0.31, "win": false, "wm": -0.16, "rad": -0.45, "oob": 8.68, "lo": -3.34, "hi": 2.32}
+{"pack": 5, "n": 25, "anchor": "c5trip02_22", "best": "c5trip05_18", "best_score": -0.41, "anchor_score": -0.31, "win": false, "wm": -0.21, "rad": -0.41, "lo": -3.05, "oob": 12.64, "note": "daemon死於進程關閉,手動代判;dry2收鏈;終錨-0.31=tri新前緣;sideways接c5tri2(錨c5trip05_18)"}

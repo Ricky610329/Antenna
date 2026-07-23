@@ -1,1 +1,2 @@
 {"pack": 1, "n": 25, "anchor": "c2radp09_07", "best": "c6tri2p01_12", "best_score": -0.49, "anchor_score": -0.54, "win": true, "wm": -0.22, "rad": -0.49, "oob": 11.72, "lo": -3.96, "hi": 3.76}
+{"pack": 2, "n": 25, "anchor": "c6tri2p01_12", "best": "c6tri2p02_02", "best_score": -0.6, "anchor_score": -0.49, "win": false, "wm": -0.22, "rad": -0.6, "lo": -3.79, "oob": 10.78, "note": "手動代判;dry1;c6tri3同錨接棒"}
