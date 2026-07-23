@@ -374,7 +374,9 @@ def _train_two_core(tr, replay, over, ho, fmask, vnum, epochs, batch):
     os.makedirs(cache, exist_ok=True)
     n_pts = sum(_cfg.targets[LABELS[0]]["width"])
     tr_aug = _augmirror(tr) + replay
-    ds_aug, _ = _build_ds(tr_aug, [], over)          # 同權重法,增強後池
+    #? 配方=bake-off 實證版（原始池+鏡射,不疊密度過採樣——首跑教訓:8×reps 疊 2×aug=16× 有效
+    #  訓練量,CPU 3hr 未收;analysis-06 贏的就是 flat pot+40ep）
+    ds_aug = _tds(tr_aug)
     torch.manual_seed(7)
     sm2 = SURROGATES["cnn2"](cache, 25 * 25, (len(LABELS), n_pts))
     print(f"—— 影子二號: cnn2 從零訓 {epochs}ep（鏡射增強 ×2,同鍋）")
@@ -699,8 +701,8 @@ def main():
     s.add_argument("--epochs", type=int, default=30)
     s.add_argument("--out", default="rad_head1.pth")
     s.set_defaults(fn=train_rad)
-    s = sub.add_parser("train-two", help="獨立補訓影子二號+lo 判別器（R38;cnn2 鏡射增強+標量 lo 頭;同鍋資料）")
-    s.add_argument("--epochs", type=int, default=80)
+    s = sub.add_parser("train-two", help="獨立補訓影子二號+lo 判別器（R38;cnn2 鏡射增強+標量 lo 頭;bake-off 實證配方=flat pot+40ep）")
+    s.add_argument("--epochs", type=int, default=40)
     s.add_argument("--batch", type=int, default=64)
     s.add_argument("--over", type=int, default=8)
     s.add_argument("--replay", type=int, default=2000)
