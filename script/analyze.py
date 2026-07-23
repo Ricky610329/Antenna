@@ -988,6 +988,7 @@ def cmd_batch(args):
                 continue
             rows.append(dict(id=m["id"], st=st, kind=m.get("kind", "?"), src=m.get("source_id", ""),
                              wm=r["wm"][2], rad=r.get("rad_margin"), oob=r.get("oob_bad"),
+                             lo=r.get("oob_gain_max_lo"), hi=r.get("oob_gain_max_hi"),
                              pwm=m.get("pred_wm"), poob=m.get("pred_oob"), prad=m.get("pred_rad"),
                              d=m.get("diff_px")))
     print(f"== r{args.round} b{args.batch} 收檔判讀（{len(stores)} 夾 {len(rows)} 筆;門檻源 records.json {rec['updated']}）==")
@@ -1016,7 +1017,25 @@ def cmd_batch(args):
     adv = [s for s in us_all if (s["oob"] or 99) < rec["usable_oob"]["value"]]
     for s in us_all[:5]:
         print(f"  {s['oob']}  {s['id']} [{s['kind']}] wm{s['wm']:+.2f} rad{s['rad']:+.2f}"
+              + (f" lo{s['lo']:+.2f} hi{s['hi']:+.2f}" if s.get("lo") is not None else "")
               + ("  ★ 推進!" if s in adv else ""))
+
+    #? 左右側拆帳（2026-07-23 Ricky「單獨看左右側,持續往下壓」——oob_bad 總帳蓋牌左側,
+    #  紀錄鍵 usable_lo/usable_hi 進 records.json;推進照公證鐵則）
+    adv_side = []
+    for side in ("lo", "hi"):
+        key = f"usable_{side}"
+        if key not in rec:
+            continue
+        cand = [s for s in us_all if s.get(side) is not None]
+        if not cand:
+            continue
+        b = min(cand, key=lambda s: s[side])
+        hit = b[side] < rec[key]["value"]
+        if hit:
+            adv_side.append((key, b))
+        print(f"  {'左' if side == 'lo' else '右'}側前緣: {b[side]:+.2f}（紀錄 {rec[key]['value']:+.2f}＝{rec[key]['id']}）"
+              f" {b['id']}" + ("  ★ 側紀錄推進!" if hit else ""))
 
     print("\n-- 前瞻（M 臂 mlotto,pred × realized）--")
     mm = [s for s in rows if s["kind"] == "mlotto"]
@@ -1049,6 +1068,10 @@ def cmd_batch(args):
             tags.append(f"rad{s['rad']}>{rec['rad']['value']}")
         if usable(s) and (s["oob"] or 99) < rec["usable_oob"]["value"]:
             tags.append(f"可用oob{s['oob']}<{rec['usable_oob']['value']}")
+        for side in ("lo", "hi"):
+            key = f"usable_{side}"
+            if key in rec and usable(s) and s.get(side) is not None and s[side] < rec[key]["value"]:
+                tags.append(f"可用{side}{s[side]:+.2f}<{rec[key]['value']:+.2f}(側紀錄)")
         if tags:
             cands.append((s, tags))
     if cands:

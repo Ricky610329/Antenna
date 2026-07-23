@@ -3943,7 +3943,8 @@ def select_scope(args):
 def _chain_score(v, goal):
     """爬山鏈目標鍵（判準寫死;decisions「tier 架構」2026-07-21）:
     wm=追高（rad 崩輕罰）;dual=雙線距離 min（wm−buffer 與 9.0−oob 縮放 0.3——都正=雙線破）;
-    rad=同框內爬 rad（掉出同框=大罰）。"""
+    rad=同框內爬 rad（掉出同框=大罰）;lo/hi=合格門檻內壓單側帶外
+    （2026-07-23 Ricky「左右側單獨看,持續往下壓」——左右側拆帳紀錄制,decisions）。"""
     w = v["wm"][2]
     r = v.get("rad_margin")
     r = -9.0 if r is None else r
@@ -3954,6 +3955,9 @@ def _chain_score(v, goal):
         return w - (1.0 if r < -1 else 0.0)
     if goal == "dual":
         return min(w - 0.15, (9.0 - ob) * 0.3)
+    if goal in ("lo", "hi"):
+        s = v.get(f"oob_gain_max_{goal}")
+        return -float(s) if (s is not None and w >= 0.15 and r >= 0) else -99.0
     if goal == "rad":
         return r if (w >= -2 and lo is not None and lo <= -2) else -99.0
     raise SystemExit(f"未知 goal {goal}")
@@ -4110,7 +4114,8 @@ def chain(args):
         rec = dict(pack=pack, n=len(scored), anchor=anchor_id, best=best_id,
                    best_score=_r(best_s), anchor_score=(None if anchor_score is None else _r(anchor_score)),
                    win=bool(win), wm=_r(best_v["wm"][2]), rad=_r(best_v.get("rad_margin")),
-                   oob=_r(best_v.get("oob_bad")))
+                   oob=_r(best_v.get("oob_bad")),
+                   lo=_r(best_v.get("oob_gain_max_lo")), hi=_r(best_v.get("oob_gain_max_hi")))
         if getattr(args, "expert", False):
             #? 分半記帳（專家 vs 隨機對照;判準=連兩包 exp 半勝→標配）
             man_e = {m["id"]: m for m in _load_manifest(ind)}
@@ -5444,7 +5449,8 @@ def main():
     s.add_argument("--name", required=True, help="鏈名（夾名 dedust_<name>_pNN;帳 docs/chains/<name>.jsonl）")
     s.add_argument("--anchor", required=True)
     s.add_argument("--source-input", required=True, dest="source_input")
-    s.add_argument("--goal", required=True, choices=["wm", "dual", "rad"], help="目標鍵（發鏈前寫死）")
+    s.add_argument("--goal", required=True, choices=["wm", "dual", "rad", "lo", "hi"],
+                   help="目標鍵（發鏈前寫死;lo/hi=合格門檻內壓單側帶外,2026-07-23 左右側拆帳制）")
     s.add_argument("--anchor-score", type=float, default=None, dest="anchor_score",
                    help="錨的已知 score（首包 baseline;不給=首包必換錨）")
     s.add_argument("--n", type=int, default=25)
