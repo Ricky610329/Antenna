@@ -72,6 +72,9 @@ python -m script.dedust watch --stores dedust_r36bNa,dedust_r36bNb   # 背景掛
 （待）
 
 ## 6. 後續決策 (Next)
+- **★ 左右側拆帳制上線（07-23 午,Ricky 定軸,decisions 專節）**：8.97 被判同型邊際推進——
+  usable_lo/hi 獨立紀錄（基線 +3.68/−5.92）;c4lo 左側壓制鏈首航（錨 c1d6p02_10,goal lo）;
+  **R37=左側戰役輪**（lo 軸判別器+SM 配比議題接棒）;usable_oob 總帳型推進降級。
 - d=2 跳步（chain --d 支援,另案小改）=嫁接判死時的備援;域專家三顆/軸判別器（R36+ 原排程）;
   校正表 per-臂完整版。
 
