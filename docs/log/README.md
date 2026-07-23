@@ -2,6 +2,7 @@
 
 > 每個 round = 一個假設的完整生命週期(propose → run → analyze → conclude → archive)。
 > 一個 round 一檔(`round-NN-<slug>.md`,用 `_TEMPLATE.md`),這裡只放時間軸索引。
+> **章節級時間軸（時代/里程碑）→ [MILESTONES.md](MILESTONES.md)**（每 ~10 輪或戰略轉向收一章,聯合回顧制）。
 >
 > - **設計理由 / 為什麼**:看 `../*.md`(exploration_roadmap / research_landscape / guided_search_design / senior_method)。
 > - **config 全集**:看 `../../configs/README.md`。
