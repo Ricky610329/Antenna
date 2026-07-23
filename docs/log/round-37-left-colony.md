@@ -62,7 +62,19 @@ python -m script.dedust watch --stores dedust_r37bNa,dedust_r37bNb
 | 1（r37b1{a,b}） | 🔵 14:25 發車（v57 輕量凍結 **1.248**/near **0.997 首破 1.0**;L 臂新大陸錨組+ref/rej balance 首批;diagb 罰首批;查重 0×2。tier 0:c5tri/c6tri 首包在飛） |
 
 ## 4. 分析 (Analyze)
-（待）
+
+### §4a — b1 判讀（16:2x 收,週期 ~115 分〔tri 雙鏈插隊〕,零 error）
+- **L 臂新大陸首批**:0 合格但 **best wm −0.03**（nl_c2r09 變體,比錨 −0.10 好）;
+  **realized lo 中位 −2.39/−1.92=殖民開工證據③首批成立**（lo 分布左移,vs 王系 +3.7）。
+- **ref/rej 首讀（balance 儀表）**:ref 半勝——wm 中位 −1.45 vs −3.90/best −0.03 vs −0.35
+  ——SM 排序在新大陸首批**有增值**（判準連三批;rej best 出自 t07 系）。
+- **asym 進鍵判定（R35 欠帳結案）**:全臂 ρ −0.779（wm）/−0.649（lo）超線;**G 臂內 ρ −0.008=
+  臂內無區分力**（G free asym 全高無變異）——原用途（G free 預過濾）**否決**,保留記錄鍵。
+- M 60%/O 67% 老區照常（合格 3;最佳 10.08）;**denovo 首進帕累托**（d37b1_002 oob 1.21 極端點）;
+  影子對決 MLP 勝（雙 rank 維持正確）;G free 100% ×7;多樣性警報（歷史 NN 11——tri/L 挖已測
+  鄰域的殖民期預期效應,記帳觀察,b2 若 <10 動配額）。
+- tier 0 同期:c5tri p01 dry1（best −0.57 但 **wm −0.17→−0.04 單軸大動**=左側 wm 快軸驗證,
+  輸在 rad 同滑被 min 擋——會師目標的正確行為）;c6tri p01 dry1（−0.57）;雙鏈 p02 在飛。
 
 ## 5. 結論 (Conclude)
 （待）
