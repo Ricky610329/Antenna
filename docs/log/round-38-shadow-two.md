@@ -47,7 +47,7 @@ python -m script.dedust select-r38 --batch N --sm sm_reanchor60.pth --gstage tmp
 ```
 | 批 | 狀態 |
 |---|---|
-| — | （開輪;v60 訓練中） |
+| — | 開輪紀事:v60 全訓落地（response 全訓首版）;**selfgen 換種生效**（07-24 02:1x Ricky 三台 pull+重啟——tier2 改產左側家族資料,王朝種子留 20%）;train-two（sm_two60+lo 判別器）補訓中;tri 三鏈過夜爬（c5tri3 wm+0.11 錨/c6tri4/c7tri 換錨） |
 
 ## 4. 分析 (Analyze)
 （待）
