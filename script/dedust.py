@@ -83,6 +83,17 @@ def piece_stats(p) -> dict:
                 main_px=int(sizes.max()), metal_px=int(p.sum()))
 
 
+def diag_bridge(p) -> int:
+    """對角橋數=4-連通組數 − 8-連通組數（analysis-05 口徑;僅對角接觸的接點數）。
+    Ricky 2026-07-23:「不要對角線的那種比較重要」——對角黏著=壞徵兆（三標 14% vs 36%）,
+    R36b3 起 select 記錄鍵,R37 進罰分;粉塵軸同日起忽略（研究期不作否決）。"""
+    from scipy.ndimage import label
+    p = np.asarray(p).reshape(25, 25) > 0.5
+    _, k4 = label(p, structure=_CROSS)
+    _, k8 = label(p, structure=np.ones((3, 3), bool))
+    return int(k4 - k8)
+
+
 def dyn_struct(p) -> bool:
     """王朝表型結構判（Ricky 2026-07-17 定案,decisions「王朝重定義」）:黑名單制只擋一種——
     「底部 1 大件（≥60px∧質心 row≥12）＋上半 ≥2 中件（≥12px∧質心 row<10）」;小碎塊(<12px)
@@ -3333,6 +3344,8 @@ def select_r22mix(args):
             _S = (_P + _P[:, ::-1]) / 2
             _A = (_P - _P[:, ::-1]) / 2
             c["asym"] = _r(float(np.linalg.norm(_A) / (np.linalg.norm(_S) + 1e-9)))
+        if getattr(args, "round", 0) >= 36:
+            c["diagb"] = diag_bridge(c["pat"])   # 對角橋記錄鍵（Ricky 2026-07-23;R37 進罰分）
         r = raw[k].numpy()
         c["pred_oob"] = oob_metrics(r)["oob_bad"]
         ml = 10 * np.log10(np.clip(1 - 10 ** (r[0][:4] / 10), 1e-6, 1))
