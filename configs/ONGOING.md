@@ -13,7 +13,8 @@
 - ~~R34 tier 架構元年~~（✅ 07-22:兩軸毫米線 8.95・rad −0.53/champ 判死/+1,554 筆）
 - ~~R35 新節奏首輪~~（✅ 07-23:**新節奏常駐**〔批 75,產出 1.8×∧週期 <半〕/影子 CNN 轉正判準成立/
   tier 再平衡 2.37× 二連讀/expert best 口徑 2/2/兩堵牆=oob 9.0 抗線+G free 外推區）
-- 🔵 **R36（開輪中）**:批 50/free 12/rad-key 移除/CNN 單 rank/asym 進鍵判定/oob 9.0 抗線主攻。
+- ~~R36 抗線輪~~（✅ 07-23:嫁接 70 分破紀錄 8.97→左右拆帳制誕生;批 50 常駐;c4lo 定讞王系左側斜率零）
+- 🔵 **R37 左側大陸殖民輪**（[round-37](../docs/log/round-37-left-colony.md)）:tri 雙鏈（c5/c6,goal=lo≤−2 內 min(wm−0.15,rad)）攻**全史第一筆左側合格解**;L 臂新大陸錨組半 ref 半 rej（SM 過濾 balance）;response 反權重 A/B（v58）;selfgen 換種（⚠生效需三台 pull+重啟）。
 
 **全域變更（2026-06-28）**：① 驗證預算改為**跑到 500 epoch**（約 3 天；原 250）→ Round-2 config `epochs: 500`。② **回滾機制已移除**（對 generator-free + K 候選 + 線上 SM 不合身、且原實作有 off-by-one + 覆蓋最佳檔兩個 bug）→ Round 1 的「不收斂」有它一份；探索改靠 K 候選 + SM 引導 (+ trust)。最佳 pattern 仍安全存 `patterns/`。
 

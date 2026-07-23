@@ -2991,7 +2991,59 @@ def select_r22mix(args):
     #  鄰域變異找「lo 深∧wm 近活」中繼點;選拔鍵=r_feed 高者優先（analysis-05:feed 主件佔比
     #  =帶外最強旋鈕 ρ−0.48——結構先驗首次進 select）。kind=lobeach,id 前綴 l。
     lbp = []
-    if getattr(args, "lbeach", 0) and getattr(args, "round", 0) >= 34:
+    if getattr(args, "lbeach", 0) and getattr(args, "round", 0) >= 37:
+        #? R37 左側大陸錨組（換系統戰略,decisions 2026-07-23）:錨=tri 前緣（c2rad 系雙錨）+
+        #  t07/l31b2 家族多樣;SM 過濾 balance（Ricky:半 ref=SM top/半 rej=SM 判死下半區均勻抽,
+        #  sel_by 記帳→量測假陰性）;diagb 方向性過濾（變體不得比錨增對角橋——左側家族天生
+        #  diagb 14-16,絕對否決會殺整個大陸,保守解=世代往下壓）。
+        NEWLAND = [("nl_c2r10", "dedust_c2rad_p10_input", "c2radp10_21"),
+                   ("nl_c2r09", "dedust_c2rad_p09_input", "c2radp09_16"),
+                   ("nl_t07", "dedust_r9_input", "t07_top"),
+                   ("nl_l31b2", "dedust_r31b2f_input", "l31b2_005_lb_n09")]
+        target = getattr(args, "lbeach", 0)
+        cand_pool = []
+        for name, fol, pid in NEWLAND:
+            p0 = loadp(fol, pid)
+            db0 = diag_bridge(p0)
+            for j in range(target * 6 // len(NEWLAND) + 2):
+                q = p0.copy()
+                d_ = int(rng.integers(1, 16)) if j % 5 < 3 else int(rng.integers(16, 41))
+                q.ravel()[rng.choice(625, size=d_, replace=False)] ^= True
+                q[FEED] = True
+                st_ = piece_stats(q)
+                if not (180 <= st_["metal_px"] <= 560) or q.tobytes() in hist \
+                        or diag_bridge(q) > db0:
+                    continue
+                hist.add(q.tobytes())
+                cand_pool.append(dict(pat=q, parent=name, ops=[["nl_flip", d_]],
+                                      d=int((q != p0).sum()), stats=st_))
+        #? 池內 SM 打分（ref/rej 需要;局部載入,與後段全域打分同權重檔;cfg/labels 尚未定義=自備）
+        _cfgL = load_config(args.config)
+        _labL = PORT_SPECS[_cfgL.port]["labels"]
+        _nptsL = sum(_cfgL.targets[_labL[0]]["width"])
+        from antenna.zoo import SURROGATES as _SUR_L
+        _sml = _SUR_L["mlp"](os.path.join(REPO, "tmp", "dedust"), 25 * 25, (len(_labL), _nptsL))
+        _sml.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
+        _sml.model.eval()
+        with torch.no_grad():
+            _rawl = _sml.model(torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1)
+                                            for c in cand_pool])).reshape(len(cand_pool), len(_labL), _nptsL)
+        for k2, c in enumerate(cand_pool):
+            c["_pw"] = float(worst_margin(_rawl[k2], _labL, _cfgL.targets)[0])
+        order_l = sorted(range(len(cand_pool)), key=lambda i: -cand_pool[i]["_pw"])
+        n_ref = target // 2
+        refs = [cand_pool[i] for i in order_l[:n_ref]]
+        lower = order_l[len(order_l) // 2:]                      # SM 判死下半區
+        rejs = [cand_pool[i] for i in rng.choice(lower, size=min(target - n_ref, len(lower)),
+                                                 replace=False)]
+        for c in refs:
+            c["sel_by"] = "ref"
+        for c in rejs:
+            c["sel_by"] = "rej"
+        lbp = refs + rejs
+        for c in lbp:
+            c.pop("_pw", None)
+    elif getattr(args, "lbeach", 0) and getattr(args, "round", 0) >= 34:
         #? R34 去王朝錨組（表型 40% 線的錨組解）:錨全換非王朝結構筆（爬山鏈+t03r 同框系）。
         RADGATE = [("dd_s119", "dedust_r33s1_input", "s1_19_g32b3_034_"),
                    ("dd_s218", "dedust_r33s2_input", "s2_18_s1_19_g32b"),
@@ -3445,7 +3497,13 @@ def select_r22mix(args):
               f"（全史基線 81%;命中罰 +{float(getattr(args, 'struct_pen', 2.0)):.1f} 降權）")
 
     def _dynpen(c):
-        return float(getattr(args, "struct_pen", 2.0)) if c.get("dynst") else 0.0
+        pen_ = float(getattr(args, "struct_pen", 2.0)) if c.get("dynst") else 0.0
+        #? R37 對角橋罰（Ricky 2026-07-23「不要對角線的那種」;analysis-05:有對角橋三標 14% vs 36%）
+        if getattr(args, "diagb_pen", 0.0) and c.get("pat") is not None:
+            if "diagb" not in c:
+                c["diagb"] = diag_bridge(c["pat"])
+            pen_ += float(args.diagb_pen) * min(c["diagb"], 5)
+        return pen_
 
     if getattr(args, "key", "oob") == "sel":
         #? R23 起價值軸主鍵:pred_sel=pred_oob+κ·(wm 缺口＋rad 缺口);rad 項僅 --rad-head 過門檻時生效
@@ -3570,7 +3628,8 @@ def select_r22mix(args):
                                 pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
                                 pred_rad=c.get("pred_rad"), pred_std=c.get("pred_std"),
                                 pred_wm_cnn=c.get("pred_wm_cnn"), dynst=c.get("dynst"),
-                                asym=c.get("asym"),
+                                asym=c.get("asym"), diagb=c.get("diagb"),
+                                sel_by=c.get("sel_by"),
                                 _pat=c["pat"]))
     dirs = []
     for suf in "abcdefgh"[:args.shards]:
@@ -3971,6 +4030,10 @@ def _chain_score(v, goal):
     if goal in ("lo", "hi"):
         s = v.get(f"oob_gain_max_{goal}")
         return -float(s) if (s is not None and w >= 0.15 and r >= 0) else -99.0
+    if goal == "tri":
+        #? R37 左側大陸會師鍵（decisions 2026-07-23）:lo≤−2 門檻內爬 min(wm−buffer, rad)——
+        #  兩軸同正=左側合格解（全史 0 筆的里程碑,公證+推播）。
+        return min(w - 0.15, r) if (lo is not None and lo <= -2.0) else -99.0
     if goal == "rad":
         return r if (w >= -2 and lo is not None and lo <= -2) else -99.0
     raise SystemExit(f"未知 goal {goal}")
@@ -4667,8 +4730,15 @@ def _selfgen_chunk(me, args):
         for p, mid in bases:
             d_ = int(_pop[np.bitwise_xor(_pk, np.packbits(p.reshape(-1).astype(np.uint8)))]
                      .sum(axis=1).min())
-            if d_ >= 20:
-                keep.append(p)
+            if d_ < 20:
+                continue
+            #? R37 種子換系統（Ricky 2026-07-23「增加其他系統比例」）:王朝表型種子只留 ~20%
+            #  （決定性抽樣=md5 取模——python hash() 有進程鹽不可用,守生成決定性鐵則）;
+            #  左側家族種子全保。
+            import hashlib as _hl2
+            if dyn_struct(p) and (_hl2.md5(p.tobytes()).digest()[0] % 5) != 0:
+                continue
+            keep.append(p)
         #? SM 粗篩員（漏斗化:生成 3× 挑 top;權重=NAS 最新 sm_reanchor*）
         import glob as _gl
         import re as _re
@@ -5462,8 +5532,8 @@ def main():
     s.add_argument("--name", required=True, help="鏈名（夾名 dedust_<name>_pNN;帳 docs/chains/<name>.jsonl）")
     s.add_argument("--anchor", required=True)
     s.add_argument("--source-input", required=True, dest="source_input")
-    s.add_argument("--goal", required=True, choices=["wm", "dual", "rad", "lo", "hi"],
-                   help="目標鍵（發鏈前寫死;lo/hi=合格門檻內壓單側帶外,2026-07-23 左右側拆帳制）")
+    s.add_argument("--goal", required=True, choices=["wm", "dual", "rad", "lo", "hi", "tri"],
+                   help="目標鍵（發鏈前寫死;lo/hi=合格門檻內壓單側;tri=lo≤−2 內爬 min(wm−0.15,rad)=左側合格解會師鍵）")
     s.add_argument("--anchor-score", type=float, default=None, dest="anchor_score",
                    help="錨的已知 score（首包 baseline;不給=首包必換錨）")
     s.add_argument("--n", type=int, default=25)
@@ -5546,6 +5616,45 @@ def main():
     s.add_argument("--no-cnn-solo", action="store_false", dest="cnn_solo")
     s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
     s.set_defaults(fn=select_r22mix, round=36, key="sel")
+
+    s = sub.add_parser("select-r37", help="R37 左側大陸殖民輪：批 50;L 臂新大陸錨組+ref/rej balance;diagb 罰;rad-key/cnn-solo 皆退（判準寫死於 round-37 檔）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260725)
+    s.add_argument("--sm", default="sm_reanchor57.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=12, help="G（free6/oobp6;SM 盲區探測+誤差錨工廠定位）")
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=12, help="L 新大陸錨組（tri 前緣+t07/l31b2;半ref半rej）")
+    s.add_argument("--o", type=int, default=3)
+    s.add_argument("--m", type=int, default=5)
+    s.add_argument("--c", type=int, default=2)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=4)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=8)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.08, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=4)
+    s.add_argument("--shards", type=int, default=2)
+    s.add_argument("--rad-head", default="rad_head57.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--cnn-solo", action="store_true", default=False, dest="cnn_solo",
+                   help="R36 判定回退雙 rank——預設關（排序ρ≠top-k 選拔）")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen",
+                   help="對角橋罰/橋（上限 5 橋;Ricky 2026-07-23）")
+    s.set_defaults(fn=select_r22mix, round=37, key="sel")
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)

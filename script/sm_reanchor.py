@@ -157,13 +157,30 @@ def _wm_errs(sm, items):
     return np.asarray(errs)
 
 
-def _build_ds(tr, replay, over):
-    """密度反權重訓練集（反馬太②,2026-07-15）:權重 ∝ 1/局部密度（Hamming<30 鄰居數）,
+def _build_ds(tr, replay, over, mode="pattern"):
+    """密度反權重訓練集（反馬太②,2026-07-15）:權重 ∝ 1/局部密度,
     複製式實作（integer 重複,不動核心 train_by_datas）。train 與影子 CNN 共用**同一鍋**
-    ——對決公平性的前提。回 (ds, reps)。"""
-    trpk = np.packbits(np.stack([(x.numpy().reshape(-1) > 0.5) for x, _ in tr]).astype(np.uint8), axis=1)
-    nbrs = np.array([int((_POP8[np.bitwise_xor(trpk, trpk[i])].sum(axis=1) < 30).sum()) - 1
-                     for i in range(len(tr))])
+    ——對決公平性的前提。回 (ds, reps)。
+    mode="response"（R37 A/B,Ricky 2026-07-23「從 response 多樣性下手」）:密度改在 response
+    特徵空間算（wm/lo/hi/oob 四維 z-score,歐氏 <1.0 為鄰）——合格聚落自動降權、稀有 response
+    區（左側壓低族）自動加權=「SM 配比」自動版。"""
+    if mode == "response":
+        from script.dedust import oob_metrics
+        feats = []
+        for x, y in tr:
+            yy = y.reshape(len(LABELS), -1)
+            w_, _ = worst_margin(yy, LABELS, _cfg.targets)
+            m = oob_metrics(yy.numpy())
+            feats.append((float(w_), m.get("oob_gain_max_lo", 0.0),
+                          m.get("oob_gain_max_hi", 0.0), m.get("oob_bad", 0.0)))
+        F = np.asarray(feats, dtype=np.float32)
+        F = (F - F.mean(axis=0)) / (F.std(axis=0) + 1e-9)
+        nbrs = np.array([int((np.linalg.norm(F - F[i], axis=1) < 1.0).sum()) - 1
+                         for i in range(len(F))])
+    else:
+        trpk = np.packbits(np.stack([(x.numpy().reshape(-1) > 0.5) for x, _ in tr]).astype(np.uint8), axis=1)
+        nbrs = np.array([int((_POP8[np.bitwise_xor(trpk, trpk[i])].sum(axis=1) < 30).sum()) - 1
+                         for i in range(len(tr))])
     w = 1.0 / (1.0 + nbrs)
     reps = np.clip(np.round(over * w / w.mean()), 1, over * 3).astype(int)
     dense_parts = []
@@ -189,7 +206,7 @@ def train(args):
     print(f"乾淨真值 {len(tr) + len(ho)} 筆（train {len(tr)} / held-out {len(ho)}）＋ harvest 重放 {len(replay)}")
     sm = _make_sm()
     sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
-    ds, reps = _build_ds(tr, replay, args.over)
+    ds, reps = _build_ds(tr, replay, args.over, mode=getattr(args, "ds_mode", "pattern"))
     print(f"訓練集 {len(ds)} 筆（密度反權重:重複 中位×{int(np.median(reps))} 範圍"
           f" [{int(reps.min())},{int(reps.max())}],孤樣本重學/王朝密集降權 + 重放）,"
           f"epochs={args.epochs}, batch={args.batch}")
@@ -575,6 +592,8 @@ def main():
                        help="跳過影子 CNN 對決訓練（預設每版重錨平行訓 sm_shadowNN.pth）")
         s.add_argument("--shadow-epochs", type=int, default=None, dest="shadow_epochs",
                        help="影子 CNN epochs（預設 --epochs×2:從零訓補償,MLP 有 harvest 預訓）")
+        s.add_argument("--ds-mode", default="pattern", choices=["pattern", "response"], dest="ds_mode",
+                       help="密度反權重空間（R37 A/B:response=四維特徵鄰居,Ricky 2026-07-23）")
         s.add_argument("--grid-epochs", type=int, nargs="+", default=[40, 80])
         s.add_argument("--grid-over", type=int, nargs="+", default=[4, 8, 16])
         s.add_argument("--grid-replay", type=int, nargs="+", default=[1000, 2000])
