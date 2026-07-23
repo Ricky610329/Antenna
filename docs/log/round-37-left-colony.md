@@ -76,6 +76,16 @@ python -m script.dedust watch --stores dedust_r37bNa,dedust_r37bNb
 - tier 0 同期:c5tri p01 dry1（best −0.57 但 **wm −0.17→−0.04 單軸大動**=左側 wm 快軸驗證,
   輸在 rad 同滑被 min 擋——會師目標的正確行為）;c6tri p01 dry1（−0.57）;雙鏈 p02 在飛。
 
+### §4b — response 反權重 A/B 裁決（19:2x;判準三條全過→**轉正**）
+| 尺 | v58 pattern | v58r response | 判定 |
+|---|---|---|---|
+| 凍結尺 | **1.214（平史上低點）** | 1.227 | 持平 ✓ |
+| 全域 held-out 中位 | 1.305 | 1.314 | 持平 ✓ |
+| **左側域（lo≤−2,n=516）** | 3.132 | **2.304** | **贏 26%** ✓✓ |
+- **Ricky 的 response 多樣性提案 24hr 從想法到轉正**;左側導航儀升級。落地:b2 主模 v58r
+  （配件借 v58 同鍋系——v58r 輕量無配件,混版誠實記帳）;**R38 起重錨預設 --ds-mode response**;
+  registry 更新。附帶:v58r 遠域 2.413 反超 v58 2.532（補稀有區的預期效應）。
+
 ## 5. 結論 (Conclude)
 （待）
 
