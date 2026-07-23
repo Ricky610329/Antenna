@@ -49,6 +49,20 @@
    "metric": "包內專家半 vs 隨機半勝錨率（連兩包勝→標配）",
    "status": "試點中（接棒鏈啟用）",
    "retire": "無加值→退純隨機,降級域內校正器"
+  },
+  {
+   "name": "sm_two<N>.pth",
+   "role": "影子二號（ResCNN+鏡射增強;analysis-06 臂A 投產版）:回歸主鍵挑戰者",
+   "metric": "三模盲測三尺（analyze batch）+凍結尺（kpi_two.csv）",
+   "status": "R38 制度內對決中（連兩批三尺全勝 MLP→接主鍵）",
+   "retire": "對決輸→降 ens 成員"
+  },
+  {
+   "name": "sm_lohead<N>.pth",
+   "role": "lo 判別器（標量 wm,lo 回歸;analysis-06 臂B）:左側戰役導航",
+   "metric": "批前瞻 lo ρ（R39 判進鍵門檻 ≥0.5 連兩批）",
+   "status": "R38 記錄鍵 pred_lo",
+   "retire": "ρ 貼零連兩批"
   }
  ],
  "planned": [
@@ -63,9 +77,9 @@
    "gate": "排序對決贏影子 CNN"
   },
   {
-   "name": "架構復審 analysis-06（CNN現代化/標量軸判別器/拓撲hybrid/GNN元件圖）",
-   "when": "R38 前空檔",
-   "gate": "凍結尺+盲測ρ+左側域三尺贏現任才升級;GNN=第三排序視角定位"
+   "name": "標量 rad 判別器（radhead2,健檢反思④）",
+   "when": "R38-39",
+   "gate": "M 臂前瞻對決舊 rad 頭,輸者退役"
   }
  ]
 }
