@@ -60,6 +60,8 @@ python -m script.dedust watch --stores dedust_r37bNa,dedust_r37bNb
 | 批 | 狀態 |
 |---|---|
 | 1（r37b1{a,b}） | 🔵 14:25 發車（v57 輕量凍結 **1.248**/near **0.997 首破 1.0**;L 臂新大陸錨組+ref/rej balance 首批;diagb 罰首批;查重 0×2。tier 0:c5tri/c6tri 首包在飛） |
+| 2（r37b2{a,b}） | ✅ 20:3x 收（19:13 發車;v58r 導航首批;合格 4;ref/rej best 反轉;NN 8 警報） |
+| 3（r37b3{a,b}）末批 | 🔵 21:23 發車（**v59=response 首版**〔遠域 2.345/P90 4.87 佳績,凍結 1.296〕;D/W 各+2〔恆溫,54 筆〕;查重 0×2） |
 
 ## 4. 分析 (Analyze)
 
