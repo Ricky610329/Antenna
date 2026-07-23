@@ -86,6 +86,16 @@ python -m script.dedust watch --stores dedust_r37bNa,dedust_r37bNb
   （配件借 v58 同鍋系——v58r 輕量無配件,混版誠實記帳）;**R38 起重錨預設 --ds-mode response**;
   registry 更新。附帶:v58r 遠域 2.413 反超 v58 2.532（補稀有區的預期效應）。
 
+### §4c — b2 判讀（20:3x 收,零 error）
+- 合格 4（**K 臂 2/2 全中**〔k37b2_000 wm+0.28∧oob9.73〕+I 2〔i37b2_002 **wm+0.50**〕）;紀錄零推進。
+- **L 臂二讀**:best 衝到 **wm+0.29**（l31b2 錨系;b1 −0.03→b2 +0.29=新大陸 wm 上衝快）,仍 0 合格
+  （rad/lo 未同步）。**ref/rej 二讀=中位 ref 續勝（−0.31 vs −5.00）但 best 反轉——rej 半 l37b2_006
+  (+0.29) 是全批 L 最佳**:SM 判死區交出最好左側候選=balance 儀表首次抓到假陰性實體。
+- **多樣性警報升級**:歷史 NN 8（<10 微調批線,b1 11→b2 8 連降——殖民期鄰域挖掘+v58r 導引集中）
+  →b3 按恆溫規則 **D/W 各 +2**（G 不動,L 主戰臂不砍）。
+- tier 0 同期:c5tri 收鏈（dry2,終錨 −0.31=tri 新前緣）→c5tri2 sideways（−0.41）;c6tri2 p02 dry1
+  →c6tri3 同錨接棒。analysis-06 架構突破同晚（獨立事件,見該檔）。
+
 ## 5. 結論 (Conclude)
 （待）
 
