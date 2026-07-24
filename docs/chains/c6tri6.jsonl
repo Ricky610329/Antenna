@@ -1,1 +1,3 @@
 {"pack": 1, "n": 25, "anchor": "c6tri5p07_02", "best": "c6tri6p01_12", "best_score": -0.03, "anchor_score": -0.07, "win": true, "wm": 0.12, "rad": 0.02, "oob": 18.35, "lo": -3.31, "hi": 1.82}
+{"pack": 2, "n": 25, "anchor": "c6tri6p01_12", "best": "c6tri6p02_24", "best_score": -0.07, "anchor_score": -0.03, "win": false, "wm": 0.09, "rad": -0.07, "oob": 14.03, "lo": -2.45, "hi": 2.36}
+{"pack": 3, "n": 25, "anchor": "c6tri6p01_12", "best": "c6tri6p03_09", "best_score": 0.03, "anchor_score": -0.03, "win": true, "wm": 0.18, "rad": 0.07, "lo": -2.83, "oob": 14.68, "note": "★全史第二筆左側合格解(單次)+tri首正分;lo-2.83較紀錄深0.2(未滿0.5格不公證);家族帳1/5;手動代判,c6tri7接棒"}
