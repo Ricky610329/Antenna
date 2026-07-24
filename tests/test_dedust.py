@@ -262,3 +262,34 @@ def test_oob_metrics_contrast_sides():
     assert m["contrast_lo"] == round(4.2 - 4.5, 2) == -0.3
     assert m["contrast_hi"] == round(4.2 - (-2.0), 2) == 6.2
     assert m["oob_gain_max"] == 4.5
+
+
+def test_jobs_add_concurrent_lock(tmp_path, monkeypatch):
+    """jobs.json 並發壞檔回歸（2026-07-22/07-24 兩起實錘）：8 執行緒同時 jobs-add
+    → 鎖檔序列化讀-改-寫,不丟單、不壞檔、鎖釋放乾淨。"""
+    import json
+    import threading
+    from types import SimpleNamespace
+    import script.dedust as dd
+    monkeypatch.setattr(dd, "DATASET_PATH", tmp_path)
+    for i in range(8):
+        d = tmp_path / f"in{i}"
+        d.mkdir()
+        (d / "manifest.json").write_text("[]", encoding="utf-8")
+    errs = []
+
+    def add(i):
+        try:
+            dd.jobs_add(SimpleNamespace(input=f"in{i}", store=f"st{i}", prio=3))
+        except BaseException as e:                       # SystemExit 也算失敗
+            errs.append(e)
+
+    ts = [threading.Thread(target=add, args=(i,)) for i in range(8)]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join()
+    assert not errs
+    jobs = json.loads((tmp_path / "jobs.json").read_text(encoding="utf-8"))
+    assert sorted(j["store"] for j in jobs) == [f"st{i}" for i in range(8)]
+    assert not (tmp_path / "jobs_state" / "jobs.lock").exists()

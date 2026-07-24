@@ -3220,6 +3220,71 @@ def select_r22mix(args):
         cand_pool.sort(key=lambda c: -c["rfeed"])
         lbp = cand_pool[:target]
 
+    #? V 臂 response 空洞反演（R40 首航;decisions 2026-07-25「資料擴展主軸=response 空間」,
+    #  判準=round-40 §1）:同鍋 response PCA（2D）→格網找空洞（對既有雲 NN 距離最大)→K=4 質心
+    #  當目標;候選池=文法隨機+碎片隨機,SM（two 優先）預測 response 投影,每質心收最近 2 席。
+    #  不指望三標——資訊增益臂（實測投影 NN 距離>批中位=開新區;連兩批空=收案）。kind=voidhunt,前綴 v。
+    vh = []
+    if getattr(args, "v", 0) and getattr(args, "round", 0) >= 40:
+        from scipy.spatial import cKDTree as _KDT
+        from script.sm_reanchor import _load_clean as _lcv
+        _trv, _hov = _lcv()
+        _cfgV = load_config(args.config)
+        _labV = PORT_SPECS[_cfgV.port]["labels"]
+        _nptsV = sum(_cfgV.targets[_labV[0]]["width"])
+        Yv = np.stack([np.asarray(y_).ravel() for _, y_ in (_trv + _hov)]).astype(np.float64)
+        _mu = Yv.mean(axis=0, keepdims=True)
+        _, _, _vt = np.linalg.svd(Yv - _mu, full_matrices=False)
+        _pcd = (Yv - _mu) @ _vt[:2].T
+        _tree = _KDT(_pcd)
+        gx = np.linspace(_pcd[:, 0].min(), _pcd[:, 0].max(), 48)
+        gy = np.linspace(_pcd[:, 1].min(), _pcd[:, 1].max(), 48)
+        _grid = np.stack(np.meshgrid(gx, gy), -1).reshape(-1, 2)
+        _gd = _tree.query(_grid)[0]
+        _hot = _grid[np.argsort(-_gd)[:160]]                 # 最空的 160 格點
+        _cent = _hot[rng.choice(len(_hot), size=4, replace=False)]
+        for _ in range(12):                                   # 簡易 k-means（決定性:seeded rng 初始化）
+            _asg = np.argmin(((_hot[:, None] - _cent[None]) ** 2).sum(-1), axis=1)
+            for ci in range(4):
+                if (_asg == ci).any():
+                    _cent[ci] = _hot[_asg == ci].mean(axis=0)
+        print(f"V 臂空洞質心（PCA 座標）: {[tuple(np.round(c_, 1)) for c_ in _cent]}")
+        vpool, _tv = [], 0
+        while len(vpool) < 600 and _tv < 6000:
+            _tv += 1
+            q = _rand_blocks(rng) if rng.random() < 0.5 else _rand_frag(rng)
+            q = q.copy()
+            q[FEED] = True
+            st_ = piece_stats(q)
+            if not (140 <= st_["metal_px"] <= 560) or q.tobytes() in hist:
+                continue
+            vpool.append(dict(pat=q, parent="void", ops=[["voidrand", 0]], d=0, stats=st_))
+        from antenna.zoo import SURROGATES as _SUR_V
+        _vnV = "".join(ch for ch in str(args.sm) if ch.isdigit())
+        _ftV = DATASET_PATH.joinpath(f"sm_two{_vnV}.pth")
+        if _ftV.exists():
+            _smv = _SUR_V["cnn2"](os.path.join(REPO, "tmp", "dedust"), 25 * 25, (len(_labV), _nptsV))
+            _smv.pre_load_model(_ftV, strict=True)
+        else:
+            _smv = _SUR_V["mlp"](os.path.join(REPO, "tmp", "dedust"), 25 * 25, (len(_labV), _nptsV))
+            _smv.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
+        _smv.model.eval()
+        with torch.no_grad():
+            _rawv = torch.cat([_smv.model(torch.stack([torch.tensor(c["pat"], dtype=torch.float32)
+                                                       .reshape(-1) for c in vpool[i:i + 256]]))
+                               for i in range(0, len(vpool), 256)]).reshape(len(vpool), -1).numpy()
+        _pcv = (_rawv.astype(np.float64) - _mu) @ _vt[:2].T
+        per_c = max(1, getattr(args, "v", 0) // 4)
+        for ci in range(4):
+            dists = ((_pcv - _cent[ci]) ** 2).sum(-1)
+            for i in np.argsort(dists)[:per_c]:
+                if vpool[i].get("sel_by") is None and len(vh) < getattr(args, "v", 0):
+                    vpool[i]["sel_by"] = f"vc{ci}"
+                    vpool[i]["ops"] = [["void", int(ci), float(np.sqrt(dists[i]))]]
+                    hist.add(vpool[i]["pat"].tobytes())
+                    vh.append(vpool[i])
+        print(f"V 臂: 池 {len(vpool)} → 選 {len(vh)}（4 質心 × {per_c}）")
+
     #? X 海峽臂（R32;Ricky「海峽加進去,但要找 SM 有一定期望的,不是為了填而填」）:
     #  管線首個**雙親算子**——王朝簇（wm 好）×中繼/同框簇（lo 好）雜交（水平割線拼接/高斯遮罩混合）,
     #  oversample ×4 → SM 期望閘=LCB(pred_wm−std) top（線上學習精神:SM 在迴圈引導探索）;
@@ -3424,7 +3489,7 @@ def select_r22mix(args):
     os.makedirs(cache, exist_ok=True)
     sm = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
     sm.pre_load_model(DATASET_PATH.joinpath(args.sm), strict=True)
-    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp + bmapp + bmixp + gradp + lbp + xop
+    allc = core + coldp + specp + wildp + hs + sc + fragp + meshp + surgp + bmapp + bmixp + gradp + lbp + xop + vh
     pats = torch.stack([torch.tensor(c["pat"], dtype=torch.float32).reshape(-1) for c in allc])
     with torch.no_grad():
         raw = sm.model(pats).reshape(len(allc), len(labels), n_pts)
@@ -3508,6 +3573,15 @@ def select_r22mix(args):
         c["pred_oob"] = oob_metrics(r)["oob_bad"]
         ml = 10 * np.log10(np.clip(1 - 10 ** (r[0][:4] / 10), 1e-6, 1))
         c["pred_lor"] = _r(float((r[1][:4] + ml).max()))
+        if two_raw is not None and getattr(args, "round", 0) >= 40:
+            #? R40 換裝（round-40 §1;two 五批連勝誤差+ρ 判準）:主通道 pred_wm/oob/lor 全走 two,
+            #  下游一切鍵（sel/LCB/臂 rank）自動吃 two;MLP 降審計鍵 pred_wm_mlp（前瞻對照用）。
+            c["pred_wm_mlp"] = c["pred_wm"]
+            c["pred_wm"] = c["pred_wm_two"]
+            r2 = two_raw[k].numpy()
+            c["pred_oob"] = oob_metrics(r2)["oob_bad"]
+            ml2 = 10 * np.log10(np.clip(1 - 10 ** (r2[0][:4] / 10), 1e-6, 1))
+            c["pred_lor"] = _r(float((r2[1][:4] + ml2).max()))
     #? rad 頭（2026-07-12,Ricky「補 K=16」）:通過 held-out ρ≥0.4 門檻才傳 --rad-head 進鍵;
     #  pred_rad 一律記 manifest 供前瞻驗證。
     radnet = None
@@ -3692,6 +3766,7 @@ def select_r22mix(args):
     bxi = list(range(min(len(bmixp), getattr(args, "bmix", 0))))      # U 組合手術=生成即配額,全收
     gi2 = list(range(min(len(gradp), getattr(args, "g", 0))))         # G 梯度臂=staging 即配額,全收
     li2 = list(range(min(len(lbp), getattr(args, "lbeach", 0))))      # L 低側據點=r_feed 排序後全收
+    vi2 = list(range(min(len(vh), getattr(args, "v", 0))))            # V 空洞反演=質心配額即全收
     xvi = sorted(range(len(xop)), key=lambda i: -(xop[i]["pred_wm"] - xop[i].get("pred_std", 0.0)))[:getattr(args, "xover", 0)]                                          # X 海峽=SM 期望閘 LCB top
     #? A 資訊臂（R24 探索誘因包）:兩 SM（本版 vs harvest 底座）預測分歧最大=資訊量最高的量測點
     #  （query-by-committee 主動學習）;KPI=模型更新量非三標率。
@@ -3731,6 +3806,7 @@ def select_r22mix(args):
                                    ("surgery", "y", yi, surgp), ("blockmap", "b", bi, bmapp),
                                    ("bmix", "u", bxi, bmixp), ("grad", "g", gi2, gradp),
                                    ("lobeach", "l", li2, lbp), ("xover", "x", xvi, xop),
+                                   ("voidhunt", "v", vi2, vh),
                                    ("infogain", "i", ii, core), ("wild", "w", wi, wildp)):
         for j, i in enumerate(idxs):
             c = src[i]
@@ -3742,7 +3818,7 @@ def select_r22mix(args):
                                 pred_wm_cnn=c.get("pred_wm_cnn"), dynst=c.get("dynst"),
                                 asym=c.get("asym"), diagb=c.get("diagb"),
                                 sel_by=c.get("sel_by"), pred_wm_two=c.get("pred_wm_two"),
-                                pred_lo=c.get("pred_lo"),
+                                pred_lo=c.get("pred_lo"), pred_wm_mlp=c.get("pred_wm_mlp"),
                                 _pat=c["pat"]))
     dirs = []
     for suf in "abcdefgh"[:args.shards]:
@@ -3759,7 +3835,7 @@ def select_r22mix(args):
         _save_manifest(man, dd)
     print(f"r{rnd} b{args.batch}: G{len(gi2)}+L{len(li2)}+O{len(oi)}+M{len(mi)}+C{len(ki)}+Q{len(qi)}"
           f"+H{len(hs)}+S{len(si)}+D{len(di)}+F{len(fi)}+N{len(ni)}+Y{len(yi)}+B{len(bi)}+U{len(bxi)}"
-          f"+I{len(ii)}+W{len(wi)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
+          f"+I{len(ii)}+W{len(wi)}+V{len(vi2)} → {len(dirs)} 夾 {[len(m) for m in manifests]}")
 
 
 #! DEPRECATED（2026-07-10 起查重改 _all_input_folders() 自動掃描）——僅舊 select 內建去重仍引用,
@@ -4732,19 +4808,53 @@ def _jobs_paths():
     return DATASET_PATH.joinpath("jobs.json"), sd
 
 
+def _jobs_lock_acquire(timeout=90.0, stale=180.0):
+    """jobs.json 寫鎖（jobs_state/jobs.lock,O_EXCL;SMB 上近似原子）。
+    兩起並發壞檔（2026-07-22/07-24,多 daemon 同時 jobs-add 互踩）的治本——
+    讀-改-寫全程持鎖;陳鎖（mtime 超過 stale 秒=持鎖者已死）自動破鎖。回傳鎖路徑。"""
+    import time
+    _, sd = _jobs_paths()
+    sd.mkdir(exist_ok=True)
+    lk = str(sd.joinpath("jobs.lock"))
+    t0 = time.time()
+    while True:
+        try:
+            fd = os.open(lk, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, f"{os.getpid()}".encode())
+            os.close(fd)
+            return lk
+        except FileExistsError:
+            try:
+                if time.time() - os.path.getmtime(lk) > stale:
+                    os.remove(lk)
+                    continue
+            except OSError:
+                continue                                   # 鎖剛被釋放——立即重試
+            if time.time() - t0 > timeout:
+                raise SystemExit(f"jobs.lock 佔用 >{timeout:.0f}s——查殭屍鎖 {lk}")
+            time.sleep(0.4 + (os.getpid() % 7) * 0.15)     # 錯開重試（免 seed:非選樣路徑）
+
+
 def jobs_add(args):
     """把一個批次加進 NAS 派工佇列（round 檔照常開、check-dup 照常跑——佇列只管「誰去燒」）。"""
     qp, _ = _jobs_paths()
-    jobs = json.load(open(str(qp), encoding="utf-8")) if qp.exists() else []
-    if any(j["store"] == args.store for j in jobs):
-        raise SystemExit(f"{args.store} 已在佇列")
     if not DATASET_PATH.joinpath(args.input, "manifest.json").exists():
         raise SystemExit(f"{args.input} 無 manifest——先跑 select 與 check-dup")
-    jobs.append(dict(input=args.input, store=args.store, prio=args.prio))
-    tmp = str(qp) + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(jobs, f, ensure_ascii=False, indent=1)
-    os.replace(tmp, qp)
+    lk = _jobs_lock_acquire()
+    try:
+        jobs = json.load(open(str(qp), encoding="utf-8")) if qp.exists() else []
+        if any(j["store"] == args.store for j in jobs):
+            raise SystemExit(f"{args.store} 已在佇列")
+        jobs.append(dict(input=args.input, store=args.store, prio=args.prio))
+        tmp = str(qp) + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(jobs, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, qp)
+    finally:
+        try:
+            os.remove(lk)
+        except OSError:
+            pass
     print(f"已入佇列: {args.store} (prio {args.prio});目前 {len(jobs)} 個 job")
 
 
@@ -5844,6 +5954,45 @@ def main():
     s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
     s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
     s.set_defaults(fn=select_r22mix, round=39, key="sel")
+
+    s = sub.add_parser("select-r40", help="R40 換裝與空洞輪：two 主通道換裝（MLP 降審計鍵）;V 臂 response 空洞反演首航（G12/I12/V8/M5/O3/K2/D10/W10=62）;F 臂撤;判準寫死於 round-40 檔")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260728)
+    s.add_argument("--sm", default="sm_reanchor66.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=12)
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=0, help="F 臂撤（R39 孤點結論）")
+    s.add_argument("--v", type=int, default=8, help="V 臂 response 空洞反演（4 質心×2）")
+    s.add_argument("--o", type=int, default=3)
+    s.add_argument("--m", type=int, default=5)
+    s.add_argument("--c", type=int, default=2)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=10)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=12)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.08, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=10)
+    s.add_argument("--shards", type=int, default=2)
+    s.add_argument("--rad-head", default="rad_head66.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--cnn-solo", action="store_true", default=False, dest="cnn_solo")
+    s.add_argument("--no-cnn-solo", action="store_false", dest="cnn_solo")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
+    s.set_defaults(fn=select_r22mix, round=40, key="sel")
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)
