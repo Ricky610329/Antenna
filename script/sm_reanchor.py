@@ -611,6 +611,47 @@ def _rad_dataset():
     return np.stack(X), np.stack(C), np.asarray(M), keys, theta_sub
 
 
+def train_radhead2_cmd(args):
+    """標量 rad 判別器（健檢反思④,2026-07-24）:pattern→rad_margin 直接回歸——
+    rad=全系統綁定瓶頸∧曲線版 rad 頭 ρ 0.09↔0.46 震盪最弱儀器∧rad_margin 本來就是標量規格。
+    同 held-out 切分（md5%7）;判準=M 臂前瞻對決舊 rad 頭,輸者退役。"""
+    import hashlib
+    import torch.nn as nn
+    from scipy.stats import spearmanr
+    X, C, M, keys, th = _rad_dataset()
+    print(f"rad 資料 {len(X)} 筆;標量目標 rad_margin 中位 {np.median(M):+.2f}")
+    side = np.array([int(hashlib.md5(k).hexdigest(), 16) % 7 == 0 for k in keys])
+    Xt = torch.tensor(X[~side]).reshape(-1, 1, 25, 25)
+    Mt = torch.tensor(M[~side], dtype=torch.float32).reshape(-1, 1)
+    Xh = torch.tensor(X[side]).reshape(-1, 1, 25, 25)
+    Mh = M[side]
+    #? 鏡射增強:rad_margin=雙切面 min,左右鏡射下 phi0/phi90 各自鏡像,margin 不變 → ×2
+    Xt = torch.cat([Xt, torch.flip(Xt, dims=[3])]); Mt = torch.cat([Mt, Mt])
+    torch.manual_seed(0)
+    net = nn.Sequential(nn.Conv2d(1, 32, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
+                        nn.Conv2d(32, 64, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
+                        nn.Flatten(), nn.Linear(64 * 6 * 6, 256), nn.ReLU(), nn.Linear(256, 1))
+    opt = torch.optim.Adam(net.parameters(), lr=1e-3)
+    n = len(Xt)
+    for ep in range(args.epochs):
+        perm = torch.randperm(n); tot = 0.0
+        for i in range(0, n, 64):
+            idx = perm[i:i + 64]
+            loss = nn.functional.mse_loss(net(Xt[idx]), Mt[idx])
+            opt.zero_grad(); loss.backward(); opt.step(); tot += float(loss) * len(idx)
+        if ep % 10 == 9:
+            print(f"  ep {ep + 1}/{args.epochs} loss {tot / n:.4f}", flush=True)
+    net.eval()
+    with torch.no_grad():
+        pm = torch.cat([net(Xh[i:i + 256]) for i in range(0, len(Xh), 256)])[:, 0].numpy()
+    rho, pv = spearmanr(pm, Mh)
+    mae = float(np.abs(pm - Mh).mean())
+    print(f"held-out {int(side.sum())} 筆: ρ={rho:+.3f} (p={pv:.1e}) / MAE {mae:.3f} dB"
+          f"（舊 rad 頭震盪帶 0.09~0.46——首讀對照）")
+    torch.save(net.state_dict(), str(DATASET_PATH.joinpath(args.out)))
+    print(f"→ {args.out}（select 記 pred_rad2;判準=M 臂前瞻對決舊頭,輸者退役）")
+
+
 def _train_rad_core(epochs, out):
     """rad 頭訓練核心（train_rad 與 train 制度合訓共用;2026-07-16 Ricky 拍板 b 案——
     rad_head2 化石問題:訓後九版沒吃過新方向圖=前瞻蹺蹺板頭號嫌疑）。回 (ρ, MAE)。"""
@@ -709,6 +750,10 @@ def main():
     s.add_argument("--val", type=int, default=500)
     s.add_argument("--out", default="sm_reanchor60.pth", help="版本號來源（sm_twoNN/sm_loheadNN 取此檔數字）")
     s.set_defaults(fn=train_two_cmd)
+    s = sub.add_parser("train-radhead2", help="標量 rad 判別器（健檢④;pattern→rad_margin 直回歸+鏡射;對決舊 rad 頭）")
+    s.add_argument("--epochs", type=int, default=40)
+    s.add_argument("--out", default="sm_radhead2_60.pth")
+    s.set_defaults(fn=train_radhead2_cmd)
     s = sub.add_parser("train-shadow", help="獨立補訓影子 CNN（給既有版補影子;制度段=train 自動帶;同鍋資料）")
     s.add_argument("--epochs", type=int, default=80)
     s.add_argument("--batch", type=int, default=64)
