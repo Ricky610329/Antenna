@@ -571,3 +571,4 @@
 - 2026-07-24 **t07 R39 候選**：R37 三批實戰=lo 天賦確認（變體 lo −5.25 全批最深）∧rad 天坑不動（−3.7~−4.4,d≤23 擾動無效）;SM 品味偏王系（唯一 ref 挑的變體 lo 翻正=balance 抓到的偏見實體）。觸發條件:radhead2 上線後在 t07 鄰域讀到 rad 梯度 → R39 開 t07 rad 修復臂;讀不到=教材供應者定位收案。
 - 2026-07-24 **渲染偏好（Ricky）**：champ_compare 給 Ricky 看的一律 --plain（不用紅綠 diff 著色）。
 - 2026-07-24 **jobs.json 並發壞檔第二起**（17:0x）:三鏈 daemon+批發車同時 jobs-add 互踩→Extra data 壞檔→b1b 丟單+c6tri5 daemon 死。修復=raw_decode 前綴重寫(備份 .corrupt_bak)。健檢②「一 job 一檔原子化」優先級↑——第三起前做（R40 前）。
+- 2026-07-25 **資料擴展三提案（data_map 判讀,Ricky 已裁示）**：①pattern 島間橋接（王朝×左側混血）——Ricky:「pattern 空間探索一點點就好,pattern 空間感覺不是很連續」→**降級為試金石量級**（≤6 筆,一次性回答山脊 vs 孤峰,不成臂）;②**response 空洞反演**（拿 response PCA 空洞質心當反演目標,G 直接朝沒人去過的響應區生成）→主軸,R40 新臂候選;③雲內爬升（selfgen 閒時 SM 引導爬坡,馬太資料解）→便宜線,tier2 實作候選。物理依據=Ricky 直覺正確:二值 625 維 pattern 插值不保共振,response 空間才是連續可導航的軸。
