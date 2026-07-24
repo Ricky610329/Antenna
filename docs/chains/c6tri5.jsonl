@@ -2,3 +2,4 @@
 {"pack": 2, "n": 25, "anchor": "c6tri5p01_09", "best": "c6tri5p02_07", "best_score": -0.44, "anchor_score": -0.4, "win": false, "wm": -0.2, "rad": -0.44, "oob": 9.26, "lo": -3.76, "hi": 2.21}
 {"pack": 3, "n": 25, "anchor": "c6tri5p01_09", "best": "c6tri5p03_06", "best_score": -0.26, "anchor_score": -0.4, "win": true, "wm": -0.07, "rad": -0.26, "oob": 8.1, "lo": -3.5, "hi": 1.53}
 {"pack": 4, "n": 25, "anchor": "c6tri5p03_06", "best": "c6tri5p04_15", "best_score": -0.21, "anchor_score": -0.26, "win": true, "wm": -0.06, "rad": -0.12, "oob": 8.09, "lo": -3.68, "hi": 1.32}
+{"pack": 5, "n": 24, "anchor": "c6tri5p04_15", "best": "c6tri5p05_14", "best_score": -0.13, "anchor_score": -0.21, "win": true, "wm": 0.02, "rad": -0.03, "oob": 9.45, "lo": -3.68, "hi": 1.53}
