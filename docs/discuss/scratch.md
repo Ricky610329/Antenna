@@ -570,3 +570,4 @@
 - 2026-07-23 **SM 過濾 balance（Ricky 拍板,一個機制）**：R37 L 臂=一半 SM 排序 top（ref）+一半從 SM 判死下半區均勻抽（rej,反過濾採樣——比純隨機狠,直接探假陰性）;分半記帳 sel_by=ref/rej;判準=rej 半持續追平 ref 半=過濾在新大陸無增值實錘。背景=R33 顯微鏡 12% vs 44%（SM 過濾在稀薄區主動有害）+假陰性無儀表問題。只此一刀,trim 照舊,其餘護欄撤回。
 - 2026-07-24 **t07 R39 候選**：R37 三批實戰=lo 天賦確認（變體 lo −5.25 全批最深）∧rad 天坑不動（−3.7~−4.4,d≤23 擾動無效）;SM 品味偏王系（唯一 ref 挑的變體 lo 翻正=balance 抓到的偏見實體）。觸發條件:radhead2 上線後在 t07 鄰域讀到 rad 梯度 → R39 開 t07 rad 修復臂;讀不到=教材供應者定位收案。
 - 2026-07-24 **渲染偏好（Ricky）**：champ_compare 給 Ricky 看的一律 --plain（不用紅綠 diff 著色）。
+- 2026-07-24 **jobs.json 並發壞檔第二起**（17:0x）:三鏈 daemon+批發車同時 jobs-add 互踩→Extra data 壞檔→b1b 丟單+c6tri5 daemon 死。修復=raw_decode 前綴重寫(備份 .corrupt_bak)。健檢②「一 job 一檔原子化」優先級↑——第三起前做（R40 前）。
