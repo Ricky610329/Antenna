@@ -3381,6 +3381,17 @@ def select_r22mix(args):
             _smc.model.eval()
             with torch.no_grad():
                 cnn_raw = _smc.model(pats).reshape(len(allc), len(labels), n_pts)
+        #? R38b3 起:影子二號排序實權（轉正判定 §4b;pred_wm_two 記錄+O 臂 rank 移交）
+        two_raw = None
+        if getattr(args, "round", 0) >= 38:
+            _ft = DATASET_PATH.joinpath(f"sm_two{_vn}.pth")
+            if _ft.exists():
+                _smt = SURROGATES["cnn2"](cache, 25 * 25, (len(labels), n_pts))
+                _smt.pre_load_model(_ft, strict=True)
+                _smt.model.eval()
+                with torch.no_grad():
+                    two_raw = _smt.model(pats).reshape(len(allc), len(labels), n_pts)
+                print(f"影子二號（sm_two{_vn}）→ pred_wm_two 記錄+O 臂排序實權（轉正 R38b2）")
         if getattr(args, "round", 0) >= 38:
             #? lo 判別器記錄鍵（R38;analysis-06 臂B;R39 判進鍵）——sm_lohead<vn> 在才記
             _vn2 = "".join(ch for ch in str(args.sm) if ch.isdigit())
@@ -3413,6 +3424,8 @@ def select_r22mix(args):
             c["asym"] = _r(float(np.linalg.norm(_A) / (np.linalg.norm(_S) + 1e-9)))
         if getattr(args, "round", 0) >= 36:
             c["diagb"] = diag_bridge(c["pat"])   # 對角橋記錄鍵（Ricky 2026-07-23;R37 進罰分）
+        if two_raw is not None:
+            c["pred_wm_two"] = _r(float(worst_margin(two_raw[k], labels, cfg.targets)[0]))
         if _lohead is not None:
             with torch.no_grad():
                 c["pred_lo"] = _r(float(_lohead(torch.tensor(c["pat"], dtype=torch.float32)
@@ -3545,8 +3558,14 @@ def select_r22mix(args):
                      key=lambda i: -(core[i].get("pred_wm_cnn") or -99)))}
             #? R36 起 CNN 單 rank（R35 收輪:連兩批三尺全贏=排序主鍵;--cnn-solo;判準=O 三標率
             #  掉過半回雙 rank）;絕對值門檻/LCB 仍 MLP。
-            _okey = (lambda i: r_cnn[i]) if getattr(args, "cnn_solo", False) \
-                else (lambda i: r_mlp[i] + r_cnn[i])
+            #? R38b3 起:two 在場=O 排序實權歸 two（轉正判定 §4b）;否則沿舊制。
+            if any(c.get("pred_wm_two") is not None for c in core):
+                r_two = {i: rk for rk, i in enumerate(sorted(range(len(core)),
+                         key=lambda i: -(core[i].get("pred_wm_two") or -99)))}
+                _okey = lambda i: r_two[i]
+            else:
+                _okey = (lambda i: r_cnn[i]) if getattr(args, "cnn_solo", False) \
+                    else (lambda i: r_mlp[i] + r_cnn[i])
             oi = _diverse(core, sorted(range(len(core)), key=_okey), args.o)
         else:
             oi = _diverse(core, sorted(range(len(core)), key=_psel), args.o)
@@ -3648,7 +3667,8 @@ def select_r22mix(args):
                                 pred_rad=c.get("pred_rad"), pred_std=c.get("pred_std"),
                                 pred_wm_cnn=c.get("pred_wm_cnn"), dynst=c.get("dynst"),
                                 asym=c.get("asym"), diagb=c.get("diagb"),
-                                sel_by=c.get("sel_by"),
+                                sel_by=c.get("sel_by"), pred_wm_two=c.get("pred_wm_two"),
+                                pred_lo=c.get("pred_lo"),
                                 _pat=c["pat"]))
     dirs = []
     for suf in "abcdefgh"[:args.shards]:
