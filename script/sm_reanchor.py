@@ -50,13 +50,17 @@ def _load_clean_stores():
             line = line.split("#")[0].strip()
             if line and line not in out:
                 out.append(line)
-    #? 自產 tier-2（selfgen dedust_auto*）永遠是乾淨 HFSS 真值 → 自動納入,免手維護
-    #  （2026-07-13 修:之前 95 筆自產資料含 8 三標卻沒餵 SM=浪費,Ricky 指出）。
+    #? 自產 tier-2（selfgen dedust_auto*）與**鏈店（dedust_c*）**永遠是乾淨 HFSS 真值 → 自動納入
+    #  （2026-07-13 selfgen 修;2026-07-24 鏈店修:R34 後鏈資料 ~700 筆最密前緣教材兩頭落空——
+    #  重錨只 --add 批線店、auto 自動含、鏈店漏接=sm_two 在 tri 牆鄰域 wm 預測偏 −3.6 的真因）。
     import glob
-    for p in sorted(glob.glob(str(DATASET_PATH.joinpath("dedust_auto*")))):
-        name = os.path.basename(p)
-        if os.path.isdir(p) and DATASET_PATH.joinpath(name, "results.json").exists() and name not in out:
-            out.append(name)
+    for pat in ("dedust_auto*", "dedust_c*"):
+        for p in sorted(glob.glob(str(DATASET_PATH.joinpath(pat)))):
+            name = os.path.basename(p)
+            if name.endswith("_input"):
+                continue
+            if os.path.isdir(p) and DATASET_PATH.joinpath(name, "results.json").exists() and name not in out:
+                out.append(name)
     return tuple(out)
 
 
