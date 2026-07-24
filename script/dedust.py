@@ -3033,6 +3033,25 @@ def select_r22mix(args):
                                             for c in cand_pool])).reshape(len(cand_pool), len(_labL), _nptsL)
         for k2, c in enumerate(cand_pool):
             c["_pw"] = float(worst_margin(_rawl[k2], _labL, _cfgL.targets)[0])
+        #? lo 判別器進鍵（R39 判準達成:批前瞻 ρ 0.756/0.717 連兩批 ≥0.5）——F 臂 gate:
+        #  pred_lo>-1 者出池（軟門檻,錨群 lo −2~−3.6;守家族左側身分）
+        _flh = DATASET_PATH.joinpath(f"sm_lohead{_vnL}.pth")
+        if _flh.exists():
+            import torch.nn as _nnF
+            _lhF = _nnF.Sequential(_nnF.Conv2d(1, 32, 3, padding=1), _nnF.ReLU(), _nnF.MaxPool2d(2),
+                                   _nnF.Conv2d(32, 64, 3, padding=1), _nnF.ReLU(), _nnF.MaxPool2d(2),
+                                   _nnF.Flatten(), _nnF.Linear(64 * 6 * 6, 256), _nnF.ReLU(),
+                                   _nnF.Linear(256, 2))
+            _lhF.load_state_dict(torch.load(str(_flh), weights_only=True))
+            _lhF.eval()
+            with torch.no_grad():
+                _ploF = torch.cat([_lhF(torch.stack([torch.tensor(c["pat"], dtype=torch.float32)
+                                                     .reshape(1, 25, 25) for c in cand_pool[i:i + 256]]))
+                                   for i in range(0, len(cand_pool), 256)])[:, 1].numpy()
+            keepF = [i for i in range(len(cand_pool)) if _ploF[i] <= -1.0]
+            print(f"F 臂 lo gate（進鍵 R39）: {len(cand_pool)}→{len(keepF)}（pred_lo≤−1）")
+            if len(keepF) >= target:
+                cand_pool = [cand_pool[i] for i in keepF]
         order_l = sorted(range(len(cand_pool)), key=lambda i: -cand_pool[i]["_pw"])
         n_ref = target // 2
         refs = [cand_pool[i] for i in order_l[:n_ref]]
