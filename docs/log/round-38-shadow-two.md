@@ -71,6 +71,16 @@ python -m script.dedust select-r38 --batch N --sm sm_reanchor60.pth --gstage tmp
 - b2 其他:合格 5（I 臂 50% 連兩批;**nl_t07 wm+0.28**=t07 系 wm 上探）;G oobp 帶 100% adv 加入
   （v61 oobp 也失準——誤差錨供應）;多樣性 ⚠（批內 33)→b3 D/W 8/8;帕累托 +2;零推進。
 
+### §4c — ★★★ 左側合格解全史首例＋雙紀錄（07-24 14:2x 公證 R38n1 3/3 bit 級）
+- **c8trip03_01 = wm+0.150∧rad+0.030∧lo−2.630∧oob 7.780**（三次量測完全相同）——
+  旗艦里程碑達陣（左側戰役開打 **36 小時**）。
+- 換帳:`usable_oob` 8.97→**7.78**（一次深 1.19dB;前任在位 1 天）＋`usable_lo` +3.68→**−2.63**
+  （6.31dB=12 格）。血統=c2rad→c7→c8 tri 鏈系（中繼帶/碎片語言）——左右拆帳制+換系統戰略
+  +tri 會師鏈的直接產物（Ricky 定軸→機器跑）。對比圖 [milestone](assets/round-38/milestone_left_qualified.png)
+  （Gain 24-25GHz 壓到 −8 vs 歷代 +3.7）。
+- 同日鏈群:c10tri p02 勝（−0.08,rad 側爬 wm）/c6tri5 −0.21/s1 定向包 0 命中但 s38s1_18 oob 6.82
+  （rad −0.14,家族化素材）。
+
 ## 5. 結論 (Conclude)
 （待）
 

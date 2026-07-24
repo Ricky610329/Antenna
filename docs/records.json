@@ -1,6 +1,6 @@
 {
  "_comment": "紀錄與門檻的機器真相源（2026-07-12 起）。換王/破紀錄=先改這裡、champions.md 散文跟上（/notarize skill 步驟）。analyze gain/batch 預設讀此檔。|history=紀錄推進事件(append-only,burn rate 資料源 2026-07-17 起)",
- "updated": "2026-07-23",
+ "updated": "2026-07-24",
  "buffer": 0.15,
  "kappa": 10,
  "near": 0.4,
@@ -20,14 +20,14 @@
   "certified": "2026-07-12 R22n2 3/3"
  },
  "usable_oob": {
-  "id": "c3g1p01_24",
-  "value": 8.97,
-  "certified": "2026-07-23 R36n1 3/3 bit級一致(wm 0.200/rad 0.430/oob 8.970 三次全同);嫁接鏈 c3g1 首包——selfgen 錨 a218_00010(wm+0.13/oob9.05)反向爬 wm 一步命中;血統=selfgen(a218,非王系親代鏈);⚠表型=王朝結構(dyn_struct True,「好錨天然王朝」一致);「另一側爬」破 R30 天花板定案(該定案限高側構造法,嫁接=第三路);前 m24b2_015 9.0 在位 10 天"
+  "id": "c8trip03_01",
+  "value": 7.78,
+  "certified": "2026-07-24 R38n1 3/3 bit級一致(wm0.150/rad0.030/lo-2.630/oob7.780 三次全同);★左側合格解全史首例同筆(wm>=0.15∧rad>=0∧lo<=-2)——左側戰役36hr達陣;血統=c2rad→c7→c8 tri鏈系(中繼帶/碎片語言,非王朝表型);前 c3g1p01_24 8.97 在位1天,一次深1.19dB"
  },
  "usable_lo": {
-  "id": "c1d6p02_10",
-  "value": 3.68,
-  "certified": "2026-07-23 基線=全史掃描(14,232 條含側欄;單次量測,c1d6 鏈 expert 選);可用左側=wm>=0.15且rad>=0 下 min oob_gain_max_lo。★Ricky 定軸:oob_bad 總帳蓋牌左側(全史 882 合格解 lo 全擠 +3.68~+3.7=零壓制,三標且lo<=0 全史 0 筆),0.03 型同型推進無可比性——左右拆帳單獨壓;推進照公證鐵則"
+  "id": "c8trip03_01",
+  "value": -2.63,
+  "certified": "2026-07-24 R38n1 3/3 bit級;左側合格紀錄=合格門檻內 min lo——基線+3.68一次壓到-2.63(6.31dB,12格);左側合格解首例同筆"
  },
  "usable_hi": {
   "id": "m23b4_004_m23b1_004_mg",
@@ -81,6 +81,18 @@
    "axis": "usable_oob",
    "value": 8.97,
    "round": "R36"
+  },
+  {
+   "date": "2026-07-24",
+   "axis": "usable_oob",
+   "value": 7.78,
+   "round": "R38"
+  },
+  {
+   "date": "2026-07-24",
+   "axis": "usable_lo",
+   "value": -2.63,
+   "round": "R38"
   }
  ]
 }
