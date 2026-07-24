@@ -1,3 +1,5 @@
 {"pack": 1, "n": 25, "anchor": "c7trip05_22", "best": "c8trip01_24", "best_score": -0.1, "anchor_score": -0.11, "win": true, "wm": 0.21, "rad": -0.1, "oob": 7.53, "lo": -2.46, "hi": 1.32}
 {"pack": 2, "n": 25, "anchor": "c8trip01_24", "best": "c8trip02_01", "best_score": -0.23, "anchor_score": -0.1, "win": false, "wm": 0.23, "rad": -0.23, "oob": 8.1, "lo": -2.89, "hi": 1.36}
 {"pack": 3, "n": 25, "anchor": "c8trip01_24", "best": "c8trip03_01", "best_score": 0.0, "anchor_score": -0.1, "win": true, "wm": 0.15, "rad": 0.03, "oob": 7.78, "lo": -2.63, "hi": 0.86}
+{"pack": 4, "n": 25, "anchor": "c8trip03_01", "best": "c8trip04_06", "best_score": -0.22, "anchor_score": 0.0, "win": false, "wm": 0.02, "rad": -0.22, "oob": 7.66, "lo": -2.0, "hi": 1.23}
+{"pack": 5, "n": 25, "anchor": "c8trip03_01", "best": "c8trip05_00", "best_score": -0.07, "anchor_score": 0.0, "win": false, "wm": 0.08, "rad": 0.08, "oob": 9.33, "lo": -2.77, "hi": 1.41}
