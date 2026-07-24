@@ -3,3 +3,6 @@
 {"pack": 3, "n": 25, "anchor": "c6tri5p01_09", "best": "c6tri5p03_06", "best_score": -0.26, "anchor_score": -0.4, "win": true, "wm": -0.07, "rad": -0.26, "oob": 8.1, "lo": -3.5, "hi": 1.53}
 {"pack": 4, "n": 25, "anchor": "c6tri5p03_06", "best": "c6tri5p04_15", "best_score": -0.21, "anchor_score": -0.26, "win": true, "wm": -0.06, "rad": -0.12, "oob": 8.09, "lo": -3.68, "hi": 1.32}
 {"pack": 5, "n": 24, "anchor": "c6tri5p04_15", "best": "c6tri5p05_14", "best_score": -0.13, "anchor_score": -0.21, "win": true, "wm": 0.02, "rad": -0.03, "oob": 9.45, "lo": -3.68, "hi": 1.53}
+{"pack": 6, "n": 25, "anchor": "c6tri5p05_14", "best": "c6tri5p06_21", "best_score": -0.11, "anchor_score": -0.13, "win": true, "wm": 0.06, "rad": -0.11, "oob": 9.42, "lo": -2.84, "hi": 2.17}
+{"pack": 7, "n": 25, "anchor": "c6tri5p06_21", "best": "c6tri5p07_02", "best_score": -0.07, "anchor_score": -0.11, "win": true, "wm": 0.08, "rad": -0.04, "oob": 10.67, "lo": -3.6, "hi": 2.24}
+{"pack": 7, "n": 25, "anchor": "c6tri5p06_21", "best": "c6tri5p07_02", "best_score": -0.07, "anchor_score": -0.11, "win": true, "wm": 0.08, "rad": -0.04, "lo": -3.6, "oob": 10.67, "note": "daemon死於jobs.json並發壞檔,手動代判;c6tri6接棒"}
