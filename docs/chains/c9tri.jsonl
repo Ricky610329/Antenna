@@ -1,0 +1,2 @@
+{"pack": 1, "n": 25, "anchor": "c7trip08_10", "best": "c9trip01_14", "best_score": -0.17, "anchor_score": -0.15, "win": false, "wm": 0.15, "rad": -0.17, "oob": 9.65, "lo": -2.28, "hi": 2.0}
+{"pack": 2, "n": 25, "anchor": "c7trip08_10", "best": "c9trip02_18", "best_score": -0.16, "anchor_score": -0.15, "win": false, "wm": -0.01, "rad": 0.05, "oob": 7.14, "lo": -2.46, "hi": 0.52}
