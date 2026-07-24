@@ -42,7 +42,8 @@ python -m script.dedust select-r39 --batch N --sm sm_reanchor63.pth --gstage tmp
 ```
 | 批 | 狀態 |
 |---|---|
-| — | （開輪;v63 重錨中） |
+| b1 | ✅ 判讀完（07-24）:F 臂合格 0;lohead 批前瞻 ρ 0.756/0.717→**進鍵**（F 臂 gate pred_lo≤−1,commit 757a9df）;two 三尺勝;批內 NN 8 警報→b2 D/W 8/8 恆溫 |
+| b2 | ✅ 判讀完（07-25 01:27,62 筆 error 0）:F 臂合格 0（家族帳 1/5,孤點警訊逼近）;**two 四批連勝三尺**（誤差 1.52 vs mlp 2.01,ρ+0.786 vs +0.077,adv 0% vs mlp 73%）;lohead ρ+0.813（連三批）;lo gate 首航 36→22;多樣性連二警報（NN 32/10）→b3 --dyn-simcap 0.08;帕累托+1（w39b2_007）;紀錄零推進;**selfgen 換種首讀:換種後 132 筆王朝 0%**（判準<40%,✅ 換種生效） |
 
 ## 4. 分析 (Analyze)
 （待）
