@@ -1004,7 +1004,7 @@ def cmd_batch(args):
                              wm=r["wm"][2], rad=r.get("rad_margin"), oob=r.get("oob_bad"),
                              lo=r.get("oob_gain_max_lo"), hi=r.get("oob_gain_max_hi"),
                              pwm=m.get("pred_wm"), poob=m.get("pred_oob"), prad=m.get("pred_rad"),
-                             plo=m.get("pred_lo"),
+                             plo=m.get("pred_lo"), diagb=m.get("diagb"),
                              d=m.get("diff_px")))
     print(f"== r{args.round} b{args.batch} 收檔判讀（{len(stores)} 夾 {len(rows)} 筆;門檻源 records.json {rec['updated']}）==")
     if incomplete:
@@ -1161,6 +1161,26 @@ def cmd_batch(args):
           f" | d_dyn 中位 {int(np.median(dds))} | 無親新血 {fresh}/{nall}={fresh / max(nall, 1):.0%}")
     print(f"  批內最近鄰中位 {intra}（塌縮偵測;隨機基準 ~260）| 對全歷史最近鄰中位 {nn_h}"
           f"（重複偵測;<10=微調批）")
+
+    #? 可製造性軸:對角橋 diagb（Ricky 2026-07-26「追蹤對角線數當新指標」;罰分 2.0/橋 R37 進鍵
+    #  但九輪沒量過成效,此段補帳）。**母體=作戰區（wm≥−1）**——Ricky 2026-07-26「爛資料太多」:
+    #  全體口徑被探索臂垃圾主導,ρ 是混雜不是效應。作戰區基線（6,899 筆稽核）:
+    #   · diagb×組數 ρ**+0.784**=diagb 主要是碎片度代理;控制組數後 diagb×wm ρ−0.07~−0.04≈無關
+    #     （「對角本身傷帶內」不成立）;
+    #   · diagb×lo ρ**−0.706**=碎結構是壓左側的門票;
+    #   · 合格率 diagb 0:19.6% / 1-3:10.6% / 13+:**0.6%**——左側家族(diagb 13-16)活在 0.6% 裡,
+    #     清潔階梯兩次負結果（R41/R42）=家族對角已優化進共振,補實即崩。
+    #  用途:批的 diagb 分布=「探索往碎結構區去了多少」的儀表;合格解 diagb 高=左側系開採中。
+    dbv = [(s["diagb"], s) for s in rows if s.get("diagb") is not None and s["wm"] >= -1.0]
+    if dbv:
+        dba = np.asarray([x[0] for x in dbv], float)
+        usq = np.asarray([usable(s) for _, s in dbv])
+        print("-- 可製造性/對角橋（母體=作戰區 wm≥−1;基線 合格率 diagb0:19.6%→13+:0.6%）--")
+        print(f"  作戰區 n={len(dba)} diagb 中位 {np.median(dba):.0f} / P90 {np.percentile(dba, 90):.0f}"
+              f" | ≥13（碎結構區）佔 {(dba >= 13).mean():.0%}"
+              + (f" | 合格解 diagb 中位 {np.median(dba[usq]):.0f}"
+                 f"（{int((dba[usq] >= 13).sum())}/{int(usq.sum())} 在碎結構區=左側系）"
+                 if usq.any() else " | 本批作戰區無合格解"))
 
     wms = [s["wm"] for s in rows]
     hist = []

@@ -94,6 +94,65 @@ def diag_bridge(p) -> int:
     return int(k4 - k8)
 
 
+def _grp_counts(p):
+    """雙口徑組數 (4-連通, 8-連通)——組結構的指紋:合併會 −1、分裂會 +1、消滅會 −1。"""
+    from scipy.ndimage import label as _lab
+    p = np.asarray(p).reshape(25, 25) > 0.5
+    return int(_lab(p, structure=_CROSS)[1]), int(_lab(p, structure=np.ones((3, 3), bool))[1])
+
+
+def diag_clean(p0, k=99, mode="auto"):
+    """對角清潔（組保持版;Ricky 2026-07-26「補實或移除都要符合組的規範,該組還是要維持住」）。
+
+    背景=R41/R42 清潔階梯兩次全滅（fill2 即崩）:舊算子不分對角種類一律動,動到**橋接型**
+    （8-連通靠它連、4-連通分兩塊）——補實=兩諧振器併一個/斷開=一組拆兩半,兩者都在改電路。
+    本函式只做**雙口徑組數皆不變**的操作（4-conn 與 8-conn 組數同時守恆=無合併/分裂/消滅）:
+      · 冗餘對角（兩端在 4-連通下已另有路徑）→ 可 fill（補正交格）或 brk（刪尖角）;
+      · 橋接對角 → **一律不動**（結構性對角,是功能部件不是雜訊）。
+    每步套用後複驗組數,不合規就跳過。回傳 (q, 已清數, 記錄 list)。
+    mode: auto=優先 fill 失敗改 brk;fill/brk=只用該法。"""
+    from scipy.ndimage import label as _lab
+    p = (np.asarray(p0).reshape(25, 25) > 0.5).copy()
+    base = _grp_counts(p)
+    done, log = 0, []
+    for r in range(24):
+        if done >= k:
+            break
+        for c in range(24):
+            if done >= k:
+                break
+            a, b, cx, d = p[r, c], p[r, c + 1], p[r + 1, c], p[r + 1, c + 1]
+            if a and d and not b and not cx:
+                ends, fills = [(r, c), (r + 1, c + 1)], [(r, c + 1), (r + 1, c)]
+            elif b and cx and not a and not d:
+                ends, fills = [(r, c + 1), (r + 1, c)], [(r, c), (r + 1, c + 1)]
+            else:
+                continue
+            lab4 = _lab(p, structure=_CROSS)[0]
+            if lab4[ends[0]] != lab4[ends[1]]:
+                log.append((r, c, "bridge", "skip"))      # 橋接對角:動了必改組 → 保留
+                continue
+            cand = []
+            if mode in ("auto", "fill"):
+                cand += [("fill", f) for f in fills]
+            if mode in ("auto", "brk"):
+                cand += [("brk", e) for e in ends]
+            for how, (rr, cc) in cand:
+                if (rr, cc) == FEED:
+                    continue
+                q = p.copy()
+                q[rr, cc] = (how == "fill")
+                if _grp_counts(q) == base:                # 雙口徑組數守恆=組維持
+                    p = q
+                    done += 1
+                    log.append((r, c, "redundant", how))
+                    break
+            else:
+                log.append((r, c, "redundant", "nosafe"))
+    p[FEED] = True
+    return p, done, log
+
+
 def _group_mutate(p0, rng):
     """組級變異一式（R41 C 臂;Ricky 2026-07-25「組是變異單元」提案）:
     8-連通分組（9宮格含對角=一組）→ 骨架組(>25px)凍結;中件(5-25px)=修邊(長/縮)/平移;

@@ -324,3 +324,27 @@ def test_group_mutate_semantics():
         if op[0] != "grp_diag":
             assert not ((q != p0) & big_mask).any(), f"{op[0]} 動到骨架"
     assert {"grp_grow", "grp_shrink", "grp_move", "grp_del"} <= seen_ops
+
+
+def test_diag_clean_group_preserving():
+    """對角清潔組保持約束（Ricky 2026-07-26「補實或移除都要符合組的規範」）：
+    ①雙口徑組數守恆 ②橋接對角一律不動 ③FEED 不可清。"""
+    import numpy as np
+    from script.dedust import diag_clean, _grp_counts, FEED
+    p = np.zeros((25, 25), bool)
+    p[10:16, 4:12] = True                    # 主件
+    p[16, 12] = True                         # 橋接對角:只靠 (15,11)-(16,12) 對角連
+    p[5, 3] = p[6, 4] = True                 # 孤立橋接對角（兩端 4-conn 不連通）
+    p[12, 12] = p[11, 13] = p[12, 14] = True # 冗餘側:與主件另有路徑? 不必然,交給演算法判
+    p[FEED] = True
+    base = _grp_counts(p)
+    q, n, log = diag_clean(p)
+    assert _grp_counts(q) == base, "組數未守恆"
+    assert q[FEED], "FEED 被清"
+    kinds = {k for _, _, k, _ in log}
+    assert "bridge" in kinds, "測資應含橋接對角"
+    for r, c, kind, act in log:
+        if kind == "bridge":
+            assert act == "skip", "橋接對角被動了"
+    # 冗餘對角若有被清,前後 diff 僅限被清處
+    assert int((q != p).sum()) == n
