@@ -39,7 +39,8 @@ python -m script.dedust select-r42 --batch N --sm sm_reanchor71.pth --gstage tmp
 ```
 | 批/包 | 狀態 |
 |---|---|
-| — | （開輪;v71 重錨中） |
+| c41grp3 | ❌ 收鏈（07-26 04:0x,dry2）:清潔收復失敗——p01 best wm 0.00/p02 best −0.06（差 0.02 沒翻 fill4 錨 −0.04）;**「刀鋒」延伸到清潔版鄰域=展示級不是免費的（負結果記帳）**;fill4 錨 wm 缺口 0.04 兩包 50 席補不回 |
+| （讀數） | c41grp2p06_11（第四筆合格解）diagb 13/skew −2.72/餘裕厚（wm+0.18∧rad+0.28）——展示級最佳底子;grp2 收檔時照 §1 公證＋接清潔探針 |
 
 ## 4. 分析 (Analyze)
 （待）
