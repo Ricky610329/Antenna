@@ -1,6 +1,6 @@
 {
  "_comment": "紀錄與門檻的機器真相源（2026-07-12 起）。換王/破紀錄=先改這裡、champions.md 散文跟上（/notarize skill 步驟）。analyze gain/batch 預設讀此檔。|history=紀錄推進事件(append-only,burn rate 資料源 2026-07-17 起)",
- "updated": "2026-07-24",
+ "updated": "2026-07-25",
  "buffer": 0.15,
  "kappa": 10,
  "near": 0.4,
@@ -25,9 +25,9 @@
   "certified": "2026-07-24 R38n1 3/3 bit級一致(wm0.150/rad0.030/lo-2.630/oob7.780 三次全同);★左側合格解全史首例同筆(wm>=0.15∧rad>=0∧lo<=-2)——左側戰役36hr達陣;血統=c2rad→c7→c8 tri鏈系(中繼帶/碎片語言,非王朝表型);前 c3g1p01_24 8.97 在位1天,一次深1.19dB"
  },
  "usable_lo": {
-  "id": "c8trip03_01",
-  "value": -2.63,
-  "certified": "2026-07-24 R38n1 3/3 bit級;左側合格紀錄=合格門檻內 min lo——基線+3.68一次壓到-2.63(6.31dB,12格);左側合格解首例同筆"
+  "id": "c41grp2p02_02",
+  "value": -3.46,
+  "certified": "2026-07-25 r41n1 3/3 bit級;第三筆左側合格解;R41 C 臂組級算子(grp_grow d3)第二包產出——錨 c6tri8p01_18(−0.05)一步跨線"
  },
  "usable_hi": {
   "id": "m23b4_004_m23b1_004_mg",
@@ -93,6 +93,10 @@
    "axis": "usable_lo",
    "value": -2.63,
    "round": "R38"
+  },
+  {
+   "date": "2026-07-25",
+   "event": "usable_lo 易主 −2.63→−3.46（c41grp2p02_02,第三筆左側合格解;wm+0.15∧rad+0.06∧lo−3.46;R41 C 臂組級算子 grp_grow d3 產出——組半第二包破紀錄;公證 r41n1 3/3 bit 級一致）"
   }
  ]
 }

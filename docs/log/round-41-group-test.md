@@ -45,7 +45,7 @@ python -m script.dedust select-r41 --batch N --sm sm_reanchor69.pth --gstage tmp
 | c41grp | ❌ 夭折（07-25 19:5x）:**20 包全數 check-dup 撞歷史零發車**——bug=grp_diag/grp_shrink 常產 diff=1 單 px 變異（等價 d1）,used 集只擋 px 半,撞 c6tri8 p02/p03 已測 50 px。修復=chain 啟動載全史 hash 本地防撞+單 px 組變異記 used+rng 種子改 md5（commit b891250）;重發=c41grp2 |
 | c41grp2 | 🔵 發鏈（07-25 20:0x,含防撞修復;錨/判準同 §1）;**p01 A/B 首讀（21:4x）:best 平手 −0.11**,組半縱深優（top2-4 −0.12/−0.13/−0.17 vs px −0.17/−0.20/−0.21）,tri 有效率 grp 11/18 vs px 6/7;**組半登頂算子=grp_diag（d1 對角開關）——假說首個 HFSS 正面訊號**;dry 1/2,p02 自續 |
 | b1 | ✅ 判讀完（07-25 22:3x,61 筆）:two ρ+0.783/adv 0 續勝（**誤差尺 2.64 輸 mlp 2.17=七批首次**,觀察）;lohead ρ+0.797;**V 四讀 ✅**（0.16>0.15,top 0.72;累計 3/4）;多樣性正常（53/35）;**d41b1_000 oob −4.2 全負帶外新深**（wm −10.78,教材）;o41b1_000 合格 hi−4.73 右側深水;帕累托+1（g41b1_004 G-free 首筆）;紀錄零推進 |
-| c41grp2 p02 | ★（07-25 23:0x）**c41grp2p02_02 第三筆左側合格解（單次）**:wm+0.150∧rad+0.06∧**lo −3.46**（≤−3.13=usable_lo 0.5 格推進候選,現紀錄 −2.63）;**出自 grp 半 grp_grow d3——「grp 半產合格解=直接常駐」判準達成**;p02 分半 grp +0.000 勝 px −0.050;鏈換錨續爬（p03）;公證 r41n1 發車（repeat×2 prio 2,3/3 一致才換帳） |
+| c41grp2 p02 | ★★★（07-25 23:4x 公證過）**c41grp2p02_02＝第三筆左側合格解＋usable_lo 紀錄易主 −2.63→−3.46**（公證 r41n1 **3/3 bit 級一致**;wm+0.150∧rad+0.06∧lo−3.46∧hi+2.21）;**出自 grp 半 grp_grow d3（中件修邊+3px）——組級算子第二包破紀錄,「grp 半產合格解=直接常駐」判準達成**;p02 分半 grp +0.000 勝 px −0.050;鏈換錨 c41grp2p02_02 續爬（p03）;對比圖 assets/round-41/newking_usable_lo.png;records.json 已換帳 |
 
 ## 4. 分析 (Analyze)
 - **A 臂預跑（07-25,scratchpad r41_arm_a_grouping.txt）**：口徑敏感——8conn 左側家族 9 組
