@@ -34,3 +34,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 | `wm_terrain.py` | **wm 地形圖**（同 PCA 基底;高度=KNN8 局部潛力上限,海平面=三標線 wm=0,無資料區留白;★王=最高峰/▲同框筆/◇海峽臂;2026-07-17 Ricky 點名工具） |
 - `response_map.py` — response 空間 PCA 三面板（S11+Gain 攤平;wm/左側lo/右側hi 著色+合格圈;2026-07-23 左右側拆帳制配套）
 - `data_map.py` — pattern×response 雙空間 PCA 資料分布地圖（wm 著色+王朝表型;2026-07-25）
+- `sm_capability.py` — SM 能力四面板（held-out 軌跡/盲測對決/輸出多樣性/落點疊圖;2026-07-25）
