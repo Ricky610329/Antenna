@@ -61,7 +61,13 @@ python -m script.dedust select-r41 --batch N --sm sm_reanchor69.pth --gstage tmp
 - **B 臂預跑（07-25,sm_two68,scratchpad r41_arm_b_result.txt）**：對角 px 單翻效應 0.115 vs
   非對角 0.133（SM 看不見開關效應——平滑化嫌疑,裁決權交 C 臂）;高交互對 9/10 組內
   （幾何分組弱支持）;|I| 中位 0.008 vs 單翻 0.138（SM 眼中近可加=組級粒度安全）。
-- （批/包判讀待）
+- **r41s1 探針（07-26 00:4x 收,16 筆）**：①**刀鋒解實錘——16 微擾合格保持 0**（wm+0.150 貼線,
+  2px 擾動即掉線;critical coupling 讀法坐實）;②skew 舵=9-10px 中件（mv9dn Δskew+1.33/
+  mv9rt+0.66/mv10lt+0.55）,3px 小件非舵（±0.07）但動了照樣崩 wm;A 判準（|Δskew|≥0.5∧合格）
+  0 筆達標;③對角清潔:fill 溫和/brk 災難（brk8 wm−7.8）;**fill4=wm+0.11∧rad+0.07∧lo−2.93,
+  diagb 15→12,差 0.04 wm 臨門**→c41grp3 清潔收復鏈（錨 fill4,−0.04,group,判準=合格∧diagb≤12
+  =展示級候選）;B 判準 0 筆全達標;④**鏡射警訊:mir wm−0.14 vs 錨+0.15（Δ0.29,skew 正確翻號）**
+  ——響應不變性受疑（最可能網格數值不對稱）,train-two 增強標籤噪聲 ~0.3 記帳待驗（tier2 抽驗計畫）。
 
 ## 5. 結論 (Conclude)
 （待）
