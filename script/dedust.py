@@ -4320,11 +4320,30 @@ def chain(args):
     用法: python -m script.dedust chain --name c1wm --anchor <id> --source-input <夾> --goal wm"""
     import time
     import subprocess
-    rng_master = np.random.default_rng(abs(hash(args.name)) % (2 ** 31))
+    import hashlib
+    #? md5 種子（2026-07-25 修:hash() 有進程鹽=跨進程不可重現,違反生成決定性鐵則）
+    rng_master = np.random.default_rng(int(hashlib.md5(args.name.encode()).hexdigest()[:8], 16))
     src_pt = _dir(args.source_input).joinpath(f"{args.anchor}.pt")
     if not src_pt.exists():
         raise SystemExit(f"找不到 {src_pt}")
     anchor_pat = np.asarray(torch.load(str(src_pt), weights_only=True)).reshape(25, 25) > 0.5
+    #? 全史 hash 本地防撞（2026-07-25 c41grp 教訓:組級算子常產 diff=1 單 px 變異=等價 d1,
+    #  used 集只擋 px 半→20 包全數 check-dup 撞歷史零發車。啟動載一次,check-dup 仍是最後閘門）。
+    hist_keys = set()
+    for _fh in _all_input_folders():
+        _dh = DATASET_PATH.joinpath(_fh)
+        _mph = _dh.joinpath("manifest.json")
+        if not _mph.exists():
+            continue
+        try:
+            for _mh in json.load(open(str(_mph), encoding="utf-8")):
+                _fp = _dh.joinpath(f"{_mh['id']}.pt")
+                if _fp.exists():
+                    hist_keys.add(np.asarray(torch.load(str(_fp), weights_only=True))
+                                  .reshape(-1).__gt__(0.5).tobytes())
+        except Exception:
+            continue
+    print(f"⛰ {args.name} 全史 hash 載入 {len(hist_keys)} 筆（本地防撞）", flush=True)
     anchor_id, anchor_score = args.anchor, args.anchor_score
     log_dir = os.path.join(REPO, "docs", "chains")
     os.makedirs(log_dir, exist_ok=True)
@@ -4420,11 +4439,14 @@ def chain(args):
             while len(manifest) < args.n:
                 if len(manifest) < grp_n and gfails < 500:
                     res = _group_mutate(anchor_pat, rng_master)
-                    if res is None or res[0].tobytes() in seen_q:
+                    if res is None or res[0].tobytes() in seen_q or res[0].tobytes() in hist_keys:
                         gfails += 1
                         continue
                     q, opdesc, dpx = res
                     seen_q.add(q.tobytes())
+                    hist_keys.add(q.tobytes())
+                    if dpx == 1:                      # 單 px 組級變異=等價 d1,同步記 used
+                        used.add(int(np.argmax((q != anchor_pat).ravel())))
                     pid = f"{args.name}p{pack:02d}_{len(manifest):02d}"
                     torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
                     manifest.append(dict(id=pid, kind="scope", family=f"CHAIN_{args.name}",
@@ -4441,6 +4463,9 @@ def chain(args):
                 used.add(px)
                 q = anchor_pat.copy()
                 q.ravel()[px] ^= True
+                if q.tobytes() in hist_keys:          # 全史撞位（他鏈/scope 測過）——px 已記 used,跳
+                    continue
+                hist_keys.add(q.tobytes())
                 pid = f"{args.name}p{pack:02d}_{len(manifest):02d}"
                 torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
                 manifest.append(dict(id=pid, kind="scope", family=f"CHAIN_{args.name}", removed_px=0,
