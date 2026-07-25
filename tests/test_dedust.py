@@ -293,3 +293,34 @@ def test_jobs_add_concurrent_lock(tmp_path, monkeypatch):
     jobs = json.loads((tmp_path / "jobs.json").read_text(encoding="utf-8"))
     assert sorted(j["store"] for j in jobs) == [f"st{i}" for i in range(8)]
     assert not (tmp_path / "jobs_state" / "jobs.lock").exists()
+
+
+def test_group_mutate_semantics():
+    """組級變異（R41 C 臂）回歸：FEED 不可清、非 diag 算子不動骨架組（>25px 凍結）、
+    每次變異 diff>0 且 op 記帳完整。"""
+    import numpy as np
+    from scipy.ndimage import label
+    from script.dedust import _group_mutate, FEED
+    p0 = np.zeros((25, 25), bool)
+    p0[12:22, 2:22] = True                      # 骨架 200px
+    p0[2:5, 3:8] = True                         # 中件 15px
+    p0[5, 15] = p0[5, 16] = True                # 小件 2px
+    p0[8, 20] = True                            # 小件 1px
+    p0[FEED] = True
+    lab, _ = label(p0, structure=np.ones((3, 3), bool))
+    big = {i for i in range(1, lab.max() + 1) if (lab == i).sum() > 25}
+    big_mask = np.isin(lab, list(big))
+    rng = np.random.default_rng(7)
+    seen_ops = set()
+    for _ in range(300):
+        r = _group_mutate(p0, rng)
+        if r is None:
+            continue
+        q, op, d = r
+        assert q[FEED], "FEED 被清掉"
+        assert d == int((q != p0).sum()) > 0
+        assert op[0].startswith("grp_")
+        seen_ops.add(op[0])
+        if op[0] != "grp_diag":
+            assert not ((q != p0) & big_mask).any(), f"{op[0]} 動到骨架"
+    assert {"grp_grow", "grp_shrink", "grp_move", "grp_del"} <= seen_ops

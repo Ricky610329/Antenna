@@ -94,6 +94,89 @@ def diag_bridge(p) -> int:
     return int(k4 - k8)
 
 
+def _group_mutate(p0, rng):
+    """組級變異一式（R41 C 臂;Ricky 2026-07-25「組是變異單元」提案）:
+    8-連通分組（9宮格含對角=一組）→ 骨架組(>25px)凍結;中件(5-25px)=修邊(長/縮)/平移;
+    小件(≤4px)=平移/刪/複製/新增。另設「對角開關」——A 臂預跑發現 1px 對角接點=導通拓撲
+    開關（4-conn 下骨架裂 24-25 組且合格個體間拓撲不同）,此算子**不受骨架凍結限制**。
+    回傳 (q, op, diff_px) 或 None（該抽不可行,呼叫端重抽）。"""
+    from scipy.ndimage import label as _lab, binary_dilation as _bd, binary_erosion as _be
+    S8_ = np.ones((3, 3), bool)
+    p0 = np.asarray(p0).reshape(25, 25) > 0.5
+    lab, n = _lab(p0, structure=S8_)
+    if n == 0:
+        return None
+    sizes = {i: int((lab == i).sum()) for i in range(1, n + 1)}
+    mids = [i for i, s in sizes.items() if 5 <= s <= 25]
+    smalls = [i for i, s in sizes.items() if s <= 4]
+    q = p0.copy()
+
+    def _fin(qq, op):
+        qq[FEED] = True
+        d = int((qq != p0).sum())
+        return (qq, op + [d], d) if d else None
+
+    op = ["grow", "shrink", "move", "del", "dup", "spawn", "diag"][int(rng.integers(0, 7))]
+    if op in ("grow", "shrink") and mids:
+        gi = int(rng.choice(mids))
+        m = lab == gi
+        cand = np.argwhere((_bd(m, structure=S8_) & ~p0) if op == "grow" else (m & ~_be(m)))
+        if len(cand) == 0:
+            return None
+        k = int(rng.integers(1, min(3, len(cand)) + 1))
+        for r, c in cand[rng.choice(len(cand), size=k, replace=False)]:
+            q[r, c] = (op == "grow")
+        return _fin(q, ["grp_" + op, sizes[gi]])
+    if op == "move" and (smalls or mids):
+        pool = smalls if (smalls and rng.random() < 0.7) else (mids or smalls)
+        gi = int(rng.choice(pool))
+        m = lab == gi
+        dr, dc = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)][int(rng.integers(0, 8))]
+        rr, cc = np.argwhere(m).T
+        nr, nc = rr + dr, cc + dc
+        if nr.min() < 0 or nr.max() > 24 or nc.min() < 0 or nc.max() > 24 \
+                or (p0 & ~m)[nr, nc].any():
+            return None
+        q[rr, cc] = False
+        q[nr, nc] = True
+        return _fin(q, ["grp_move", sizes[gi]])
+    if op == "del" and smalls:
+        gi = int(rng.choice(smalls))
+        q[lab == gi] = False
+        return _fin(q, ["grp_del", sizes[gi]])
+    if op in ("dup", "spawn"):
+        if op == "dup" and smalls:
+            cells = np.argwhere(lab == int(rng.choice(smalls)))
+            cells = cells - cells.min(axis=0)
+        else:
+            cells = np.argwhere(np.ones((int(rng.integers(1, 3)), int(rng.integers(1, 4))), bool))
+        r0 = int(rng.integers(0, 25 - cells[:, 0].max()))
+        c0 = int(rng.integers(0, 25 - cells[:, 1].max()))
+        pad = np.zeros_like(p0)
+        pad[cells[:, 0] + r0, cells[:, 1] + c0] = True
+        if (_bd(pad, structure=S8_) & p0).any():       # 含 8 鄰淨空——保「獨立新組」語義
+            return None
+        return _fin(q | pad, ["grp_" + op, int(pad.sum())])
+    if op == "diag":
+        cand = []
+        for r in range(24):
+            for c in range(24):
+                a, b, cx, d = p0[r, c], p0[r, c + 1], p0[r + 1, c], p0[r + 1, c + 1]
+                if a and d and not b and not cx:
+                    cand.append((r, c, c + 1))         # 主對角:make=填(r,c+1) break=清(r,c)
+                elif b and cx and not a and not d:
+                    cand.append((r, c + 1, c))         # 反對角:make=填(r,c) break=清(r,c+1)
+        if not cand:
+            return None
+        r, c_br, c_mk = cand[int(rng.integers(0, len(cand)))]
+        if rng.random() < 0.5:
+            q[r, c_mk] = True                          # make:正交補橋=轉導通
+        else:
+            q[r, c_br] = False                         # break:斷對角一端
+        return _fin(q, ["grp_diag", r * 25 + c_br])
+    return None
+
+
 def dyn_struct(p) -> bool:
     """王朝表型結構判（Ricky 2026-07-17 定案,decisions「王朝重定義」）:黑名單制只擋一種——
     「底部 1 大件（≥60px∧質心 row≥12）＋上半 ≥2 中件（≥12px∧質心 row<10）」;小碎塊(<12px)
@@ -4329,7 +4412,25 @@ def chain(args):
                                      sel_by=("exp" if j2 < n_top else "rand"),
                                      **piece_stats(q)))
         else:
+            #? --mutator group（R41 C 臂）:包內 grp_frac 組級變異＋其餘 px 對照（sel_by=grp/px
+            #  分半記帳,判準=round-41 §1:同包配對比較勝率/合格產出）;純 px 模式=原行為。
+            grp_n = int(round(args.n * getattr(args, "grp_frac", 0.7))) \
+                if getattr(args, "mutator", "px") == "group" else 0
+            seen_q, gfails = {anchor_pat.tobytes()}, 0
             while len(manifest) < args.n:
+                if len(manifest) < grp_n and gfails < 500:
+                    res = _group_mutate(anchor_pat, rng_master)
+                    if res is None or res[0].tobytes() in seen_q:
+                        gfails += 1
+                        continue
+                    q, opdesc, dpx = res
+                    seen_q.add(q.tobytes())
+                    pid = f"{args.name}p{pack:02d}_{len(manifest):02d}"
+                    torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
+                    manifest.append(dict(id=pid, kind="scope", family=f"CHAIN_{args.name}",
+                                         removed_px=0, source_id=anchor_id, ops=[opdesc],
+                                         diff_px=dpx, sel_by="grp", **piece_stats(q)))
+                    continue
                 if len(used) >= 590:
                     print(f"⛰ {args.name} 錨鄰域枯竭（{len(used)}/624 已抽）——收鏈")
                     dry = args.dry
@@ -4344,6 +4445,7 @@ def chain(args):
                 torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
                 manifest.append(dict(id=pid, kind="scope", family=f"CHAIN_{args.name}", removed_px=0,
                                      source_id=anchor_id, ops=[["chain_d1", px]], diff_px=1,
+                                     sel_by=("px" if grp_n else None),
                                      **piece_stats(q)))
         if len(manifest) < args.n:
             break
@@ -5765,6 +5867,9 @@ def main():
     s.add_argument("--max-packs", type=int, default=20, dest="max_packs")
     s.add_argument("--expert", action="store_true", help="域專家模式:鏈資料微調 SM→枚舉排序 top+隨機對照（dual/wm 鏈適用）")
     s.add_argument("--exp-rand", type=int, default=13, dest="exp_rand", help="對照隨機席（其餘=專家 top）")
+    s.add_argument("--mutator", choices=["px", "group"], default="px",
+                   help="包生成算子:px=d1 翻轉（原行為）;group=組級變異 70/30 混 px 對照（R41 C 臂,判準=round-41 §1）")
+    s.add_argument("--grp-frac", type=float, default=0.7, dest="grp_frac", help="group 模式組級佔比")
     s.set_defaults(fn=chain)
 
     s = sub.add_parser("select-r35", help="R35 新節奏：批 75（3 夾）高頻迭代;asym 記錄鍵（判準寫死於 round-35 檔）")
