@@ -44,6 +44,7 @@ python -m script.dedust select-r41 --batch N --sm sm_reanchor69.pth --gstage tmp
 |---|---|
 | c41grp | ❌ 夭折（07-25 19:5x）:**20 包全數 check-dup 撞歷史零發車**——bug=grp_diag/grp_shrink 常產 diff=1 單 px 變異（等價 d1）,used 集只擋 px 半,撞 c6tri8 p02/p03 已測 50 px。修復=chain 啟動載全史 hash 本地防撞+單 px 組變異記 used+rng 種子改 md5（commit b891250）;重發=c41grp2 |
 | c41grp2 | 🔵 發鏈（07-25 20:0x,含防撞修復;錨/判準同 §1）;**p01 A/B 首讀（21:4x）:best 平手 −0.11**,組半縱深優（top2-4 −0.12/−0.13/−0.17 vs px −0.17/−0.20/−0.21）,tri 有效率 grp 11/18 vs px 6/7;**組半登頂算子=grp_diag（d1 對角開關）——假說首個 HFSS 正面訊號**;dry 1/2,p02 自續 |
+| b1 | ✅ 判讀完（07-25 22:3x,61 筆）:two ρ+0.783/adv 0 續勝（**誤差尺 2.64 輸 mlp 2.17=七批首次**,觀察）;lohead ρ+0.797;**V 四讀 ✅**（0.16>0.15,top 0.72;累計 3/4）;多樣性正常（53/35）;**d41b1_000 oob −4.2 全負帶外新深**（wm −10.78,教材）;o41b1_000 合格 hi−4.73 右側深水;帕累托+1（g41b1_004 G-free 首筆）;紀錄零推進 |
 
 ## 4. 分析 (Analyze)
 - **A 臂預跑（07-25,scratchpad r41_arm_a_grouping.txt）**：口徑敏感——8conn 左側家族 9 組
