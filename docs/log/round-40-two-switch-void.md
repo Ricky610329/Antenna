@@ -41,7 +41,7 @@ python -m script.dedust select-r40 --batch N --sm sm_reanchor66.pth --gstage tmp
 ```
 | 批 | 狀態 |
 |---|---|
-| — | （開輪;佇列原子化+select-r40/V 臂實作中） |
+| b1 | 🔵 跑批中（07-25 07:4x 發車,61 筆:G12/I12/V7/M5/O3/K2/D10/W10;V 臂 7/8=一席質心重疊去重;空洞質心 (3.4,30.9)/(23.9,27.0)/(−58.8,24.3)/(−2.0,−33.9);v66=held-out 1.400/far 1.891 新佳） |
 
 ## 4. 分析 (Analyze)
 （待）
