@@ -256,17 +256,31 @@ def train(args):
     #? ensemble 不確定性成員（2026-07-16 Ricky 拍板②）:2 顆異 seed 半程成員（+主 SM=3 成員）
     #  → select 打分記 pred_std;第一版不進選批鍵,判讀驗證 std 校準後再分流（變現/探索）。
     if not getattr(args, "no_ens", False):
+        #? ens 換代（Ricky 2026-07-26 核准三升級①,v75 起）:成員 MLP→cnn2=與主通道同口徑
+        #  （R40 換裝時的混口徑註記至此清償）;暖啟動=最新 sm_two*;無 two 檔退回舊 MLP 路。
+        #  判準=std 校準單調性維持（analyze 判讀）。
         vnum2 = "".join(ch for ch in os.path.basename(args.out) if ch.isdigit())
+        import glob as _g2
+        _twos = sorted(_g2.glob(str(DATASET_PATH.joinpath("sm_two*.pth"))),
+                       key=lambda p: int("".join(c for c in os.path.basename(p) if c.isdigit()) or 0))
         for j, sd_ in enumerate((17, 42), 1):
             torch.manual_seed(sd_)
-            sm_e = _make_sm()
-            sm_e.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
+            if _twos:
+                cache_e = os.path.join(REPO, "tmp", "sm_reanchor")
+                n_pts_e = sum(_cfg.targets[LABELS[0]]["width"])
+                sm_e = SURROGATES["cnn2"](cache_e, 25 * 25, (len(LABELS), n_pts_e))
+                sm_e.pre_load_model(_twos[-1], strict=True)
+                arch_e = f"cnn2←{os.path.basename(_twos[-1])}"
+            else:
+                sm_e = _make_sm()
+                sm_e.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
+                arch_e = "mlp←sm_harvest"
             sm_e.train_by_datas(ds, epochs=max(args.epochs // 2, 10), batch_size=args.batch,
                                 verbose=False)
             eo = f"sm_ens{vnum2}_{j}.pth" if vnum2 else f"sm_ens_auto_{j}.pth"
             sm_e.save_as(DATASET_PATH.joinpath(eo))
             e_med = float(np.median(_wm_errs(sm_e, ho)))
-            print(f"ensemble 成員 {j}（seed {sd_},{max(args.epochs // 2, 10)}ep）→ {eo}"
+            print(f"ensemble 成員 {j}（{arch_e},seed {sd_},{max(args.epochs // 2, 10)}ep）→ {eo}"
                   f"（held-out 中位 {e_med:.3f}）")
     kp = os.path.join(REPO, "docs", "kpi.csv")
     hdr = "date,sm,heldout_n,wm_err_med,wm_err_p90,err_near,err_mid,err_far,frozen_med,frozen_far,rad_rho,rad_mae\n"

@@ -355,7 +355,7 @@ def test_rand_grammar_contract():
     GD 主零對角 vs GDd 主帶對角（解耦對比）。"""
     import numpy as np
     from script.dedust import _rand_grammar, diag_bridge, FEED
-    for gs in ("GA", "GB", "GC", "GD", "GDd"):
+    for gs in ("GA", "GA2", "GB", "GC", "GD", "GDd"):
         rng = np.random.default_rng(7)
         outs = []
         fails = 0

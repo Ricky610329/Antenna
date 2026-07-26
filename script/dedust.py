@@ -159,6 +159,11 @@ def diag_clean(p0, k=99, mode="auto"):
 #  四候選:GA 忠實/GB 加溫/GC 可製造(零對角+碎片度旋鈕)/GD 左側仿生(骨架+星座,雙變體)。
 #  KPI=資訊增益四尺（response 新穎度/誤差錨/苗子率/lo 解耦）,不用三標率評;判準=round-43 §1。
 _GA_HOTSPOTS = [(3, 4), (4, 19), (6, 3), (18, 11), (13, 17), (14, 6)]   # qual 主件質心熱點（普查）
+_GA2_SLOTS = [  # 組義字典（scratch 2026-07-26「組義字典」;質心 r,c／面積中位／出現率;前 3=三位一體）
+    (18.4, 12.0, 241, 1.00), (3.9, 4.9, 79, 1.00), (4.0, 19.5, 73, 1.00),
+    (9.5, 12.0, 6, 0.50), (6.2, 12.0, 4, 0.43), (10.5, 22.9, 6, 0.33),
+    (10.5, 1.2, 6, 0.28), (10.1, 1.4, 3, 0.26), (10.5, 21.7, 4, 0.14),
+]
 
 
 def _place_rect(q, rng, h, w, r0=None, c0=None, gap=2, tries=60):
@@ -190,7 +195,25 @@ def _rand_grammar(rng, gset="GA"):
     GA=忠實（主件熱點+合格解邊際分布）;GB=加溫（位置均勻）;GC=可製造（零對角保證+
     碎片度旋鈕+件≥2px 無粉塵）;GD=左側仿生零對角/GDd=帶對角變體（小件貼骨架對角接觸）。"""
     q = np.zeros((25, 25), bool)
-    if gset in ("GA", "GB"):
+    if gset == "GA2":
+        #? GA v2 組義槽採樣（Ricky 2026-07-26 核准三升級③;R44 進槽）:字典逐槽——
+        #  三位一體必放+調諧件按出現率擲骰;位置=簇質心 ±2 抖動;面積 ×U(0.7,1.3)、長寬比 U(0.7,1.4)。
+        for (cr, cc0, area, pres) in _GA2_SLOTS:
+            if rng.random() > pres:
+                continue
+            a_ = area * float(rng.uniform(0.7, 1.3))
+            asp = float(rng.uniform(0.7, 1.4))
+            h = int(np.clip(round(np.sqrt(a_ * asp)), 1, 20))
+            w = int(np.clip(round(a_ / max(h, 1)), 1, 22))
+            pos = _place_rect(q, rng, h, w, cr, cc0)
+            if pos is None:
+                if area > 100:                                        # 三位一體主件放不下=整張作廢
+                    return None
+                continue
+            q[pos[0]:pos[0] + h, pos[1]:pos[1] + w] = True
+            if area > 25:
+                _bite(q, rng, pos[0], pos[1], h, w, int(rng.integers(0, 4)))
+    elif gset in ("GA", "GB"):
         # 主件 150-300px:由 12-16×12-20 矩形咬角逼近
         h, w = int(rng.integers(12, 17)), int(rng.integers(12, 21))
         if gset == "GA":
@@ -3814,8 +3837,17 @@ def select_r22mix(args):
     for _j in (1, 2):
         _fe = DATASET_PATH.joinpath(f"sm_ens{_vn}_{_j}.pth")
         if _fe.exists():
-            _sme = SURROGATES["mlp"](cache, 25 * 25, (len(labels), n_pts))
-            _sme.pre_load_model(_fe, strict=True)
+            #? ens 換代（v75 起成員=cnn2）:先試 cnn2,state_dict 不合退 mlp（舊版檔相容）
+            _sme = None
+            for _arch in ("cnn2", "mlp"):
+                try:
+                    _sme = SURROGATES[_arch](cache, 25 * 25, (len(labels), n_pts))
+                    _sme.pre_load_model(_fe, strict=True)
+                    break
+                except Exception:
+                    _sme = None
+            if _sme is None:
+                continue
             _sme.model.eval()
             with torch.no_grad():
                 ens_raws.append(_sme.model(pats).reshape(len(allc), len(labels), n_pts))
