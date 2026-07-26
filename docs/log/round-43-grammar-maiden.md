@@ -40,7 +40,7 @@ python -m script.dedust select-r43 --batch N --sm sm_reanchor74.pth --gstage tmp
 ```
 | 批/包 | 狀態 |
 |---|---|
-| — | （開輪;v74 重錨中） |
+| b1 | ✅ 判讀完（07-26 19:0x,62 筆 error 0）:two 2 尺勝（1.82/ρ+0.792;mlp adv 100%）;lohead ρ+0.750;K 臂 k43b1_001 wm+0.56 帕累托+1;多樣性正常（49/34）;紀錄零推進;**文法槽首讀（單批小樣本,不判決）**:苗子 0/10（全文法 wm −6~−24,de novo 預期）;誤差錨 GA/GB/GDd 各 1（餵教材 ✓）;**GD lo+1.83 vs GDd lo−4.58=解耦第一點,方向符合「對角=左側門票」假說**;GDd 首筆即全批 lo 最深 |
 
 ## 4. 分析 (Analyze)
 （待）
