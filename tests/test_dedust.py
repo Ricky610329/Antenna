@@ -348,3 +348,33 @@ def test_diag_clean_group_preserving():
             assert act == "skip", "橋接對角被動了"
     # 冗餘對角若有被清,前後 diff 僅限被清處
     assert int((q != p).sum()) == n
+
+
+def test_rand_grammar_contract():
+    """組文法採樣器契約（R43 前置）：五文法皆出合法 pattern（FEED/金屬界）、決定性、
+    GD 主零對角 vs GDd 主帶對角（解耦對比）。"""
+    import numpy as np
+    from script.dedust import _rand_grammar, diag_bridge, FEED
+    for gs in ("GA", "GB", "GC", "GD", "GDd"):
+        rng = np.random.default_rng(7)
+        outs = []
+        fails = 0
+        while len(outs) < 20 and fails < 400:
+            q = _rand_grammar(rng, gs)
+            if q is None:
+                fails += 1
+                continue
+            assert q[FEED] and 140 <= int(q.sum()) <= 560
+            outs.append(q)
+        assert len(outs) == 20, f"{gs} 產出不足"
+        # 決定性:同 seed 重抽第一張一致
+        rng2 = np.random.default_rng(7)
+        q2 = None
+        while q2 is None:
+            q2 = _rand_grammar(rng2, gs)
+        assert (q2 == outs[0]).all(), f"{gs} 非決定性"
+        dbs = [diag_bridge(q) for q in outs]
+        if gs == "GD":
+            assert np.mean(np.array(dbs) == 0) >= 0.7, "GD 應主零對角"
+        if gs == "GDd":
+            assert np.mean(np.array(dbs) > 0) >= 0.7, "GDd 應主帶對角"

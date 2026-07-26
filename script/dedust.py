@@ -153,6 +153,155 @@ def diag_clean(p0, k=99, mode="auto"):
     return p, done, log
 
 
+#? 組文法生成系統（Ricky 2026-07-26 拍板;decisions「組文法生成系統」）——資料驅動文法取代
+#  手寫隨機。普查基礎（作戰區 7,011/合格 1,261）:間距鐵律=99.5% 貼 1 格縫;合格解 84% 零對角;
+#  典型=主件~240px+中件1.4+小件1.2;質心熱圖離散（家族祖傳格點→G-A 用熱點,G-B 加溫脫格點）。
+#  四候選:GA 忠實/GB 加溫/GC 可製造(零對角+碎片度旋鈕)/GD 左側仿生(骨架+星座,雙變體)。
+#  KPI=資訊增益四尺（response 新穎度/誤差錨/苗子率/lo 解耦）,不用三標率評;判準=round-43 §1。
+_GA_HOTSPOTS = [(3, 4), (4, 19), (6, 3), (18, 11), (13, 17), (14, 6)]   # qual 主件質心熱點（普查）
+
+
+def _place_rect(q, rng, h, w, r0=None, c0=None, gap=2, tries=60):
+    """在 q 上找一個與既有金屬 Chebyshev 距離 ≥gap 的位置放 h×w 矩形;成功回 (r,c),失敗 None。
+    gap=2=貼 1 格縫（間距鐵律）;r0/c0 給定=以該質心為中心 ±2 抖動（熱點模式）。"""
+    from scipy.ndimage import binary_dilation
+    forb = binary_dilation(q, structure=np.ones((2 * gap - 1, 2 * gap - 1), bool)) if q.any() else np.zeros_like(q)
+    for _ in range(tries):
+        if r0 is not None:
+            rr = int(np.clip(r0 - h // 2 + rng.integers(-2, 3), 0, 25 - h))
+            cc = int(np.clip(c0 - w // 2 + rng.integers(-2, 3), 0, 25 - w))
+        else:
+            rr, cc = int(rng.integers(0, 26 - h)), int(rng.integers(0, 26 - w))
+        if not forb[rr:rr + h, cc:cc + w].any():
+            return rr, cc
+    return None
+
+
+def _bite(q, rng, rr, cc, h, w, k):
+    """矩形咬角 k 次（不破 4-連通:只咬角落格）——長出非矩形輪廓。"""
+    for _ in range(k):
+        corners = [(rr, cc), (rr, cc + w - 1), (rr + h - 1, cc), (rr + h - 1, cc + w - 1)]
+        r_, c_ = corners[int(rng.integers(0, 4))]
+        q[r_, c_] = False
+
+
+def _rand_grammar(rng, gset="GA"):
+    """組文法採樣一張（決定性=呼叫端給 seeded rng）。gset ∈ {GA, GB, GC, GD, GDd}。
+    GA=忠實（主件熱點+合格解邊際分布）;GB=加溫（位置均勻）;GC=可製造（零對角保證+
+    碎片度旋鈕+件≥2px 無粉塵）;GD=左側仿生零對角/GDd=帶對角變體（小件貼骨架對角接觸）。"""
+    q = np.zeros((25, 25), bool)
+    if gset in ("GA", "GB"):
+        # 主件 150-300px:由 12-16×12-20 矩形咬角逼近
+        h, w = int(rng.integers(12, 17)), int(rng.integers(12, 21))
+        if gset == "GA":
+            r0, c0 = _GA_HOTSPOTS[int(rng.integers(0, len(_GA_HOTSPOTS)))]
+            pos = _place_rect(q, rng, h, w, r0, c0)
+        else:
+            pos = _place_rect(q, rng, h, w)
+        if pos is None:
+            return None
+        q[pos[0]:pos[0] + h, pos[1]:pos[1] + w] = True
+        _bite(q, rng, pos[0], pos[1], h, w, int(rng.integers(0, 4)))
+        for _ in range(int(rng.integers(1, 3))):                      # 副大件 1-2（王朝 77/70 帶）
+            h1, w1 = int(rng.integers(6, 11)), int(rng.integers(6, 13))
+            p1 = _place_rect(q, rng, h1, w1)
+            if p1:
+                q[p1[0]:p1[0] + h1, p1[1]:p1[1] + w1] = True
+                _bite(q, rng, p1[0], p1[1], h1, w1, int(rng.integers(0, 3)))
+        for _ in range(int(rng.integers(1, 3))):                      # 中件 1-2
+            h2, w2 = int(rng.integers(2, 6)), int(rng.integers(2, 6))
+            p2 = _place_rect(q, rng, h2, w2)
+            if p2:
+                q[p2[0]:p2[0] + h2, p2[1]:p2[1] + w2] = True
+        for _ in range(int(rng.integers(1, 3))):                      # 小件 1-2
+            h3, w3 = int(rng.integers(1, 3)), int(rng.integers(1, 4))
+            p3 = _place_rect(q, rng, h3, w3)
+            if p3:
+                q[p3[0]:p3[0] + h3, p3[1]:p3[1] + w3] = True
+    elif gset == "GC":
+        n = int(rng.integers(3, 13))                                  # 碎片度旋鈕
+        budget = int(rng.integers(200, 420))
+        h, w = int(rng.integers(8, 15)), int(rng.integers(8, 17))     # 主件縮小讓位碎片
+        pos = _place_rect(q, rng, h, w)
+        if pos is None:
+            return None
+        q[pos[0]:pos[0] + h, pos[1]:pos[1] + w] = True
+        for _ in range(n - 1):
+            if q.sum() >= budget:
+                break
+            h2, w2 = int(rng.integers(1, 6)), int(rng.integers(2, 7))
+            if h2 * w2 < 2:
+                w2 = 2                                                # 件 ≥2px（無粉塵）
+            p2 = _place_rect(q, rng, h2, w2)
+            if p2:
+                q[p2[0]:p2[0] + h2, p2[1]:p2[1] + w2] = True
+    elif gset in ("GD", "GDd"):
+        # 骨架:主件 ~190+二件 ~80+三件 ~30。GD=實心矩形咬角（零對角）;
+        # GDd=**對角塊鏈**（家族真形態:大件=斜接子塊鏈,diagb 13-16 來自骨架內部）——
+        # 子塊 3-5×3-6 逐塊「角對角」斜接,一件 3-6 子塊 → 每件 2-5 個內部對角接點。
+        for (hl, hu, wl, wu, bites, nsub) in [(13, 16, 13, 16, 5, 6), (8, 11, 8, 11, 3, 4), (5, 7, 5, 7, 1, 3)]:
+            if gset == "GD":
+                h2, w2 = int(rng.integers(hl, hu)), int(rng.integers(wl, wu))
+                p2 = _place_rect(q, rng, h2, w2)
+                if p2 is None:
+                    return None
+                q[p2[0]:p2[0] + h2, p2[1]:p2[1] + w2] = True
+                _bite(q, rng, p2[0], p2[1], h2, w2, bites)
+            else:
+                hs, ws = int(rng.integers(4, 8)), int(rng.integers(4, 9))
+                p2 = _place_rect(q, rng, hs, ws)
+                if p2 is None:
+                    return None
+                r_, c_ = p2
+                q[r_:r_ + hs, c_:c_ + ws] = True
+                for _s in range(int(rng.integers(max(nsub - 2, 2), nsub + 1)) - 1):
+                    h4, w4 = int(rng.integers(3, 7)), int(rng.integers(3, 8))
+                    dr = 1 if rng.random() < 0.7 else -1              # 偏向下（家族住下半）
+                    dc = 1 if rng.random() < 0.5 else -1
+                    # 角對角斜接:新塊的角貼在現塊角的斜對面
+                    r4 = r_ + (hs if dr > 0 else -h4)
+                    c4 = c_ + (ws if dc > 0 else -w4)
+                    if not (0 <= r4 <= 25 - h4 and 0 <= c4 <= 25 - w4):
+                        break
+                    blk = q[max(r4 - 1, 0):r4 + h4 + 1, max(c4 - 1, 0):c4 + w4 + 1]
+                    if int(blk.sum()) != 1:                            # 只允許那顆斜接角
+                        break
+                    q[r4:r4 + h4, c4:c4 + w4] = True
+                    r_, c_, hs, ws = r4, c4, h4, w4
+        n_con = int(rng.integers(4, 7)) if gset == "GD" else int(rng.integers(7, 11))
+        for _ in range(n_con):                                        # 星座（GDd 補金屬多帶幾顆）
+            h3, w3 = int(rng.integers(1, 4)), int(rng.integers(2, 5))
+            if gset == "GDd" and rng.random() < 0.6:
+                # 帶對角變體:小件顯式「對角落位」——找金屬凸角,斜對角貼一件（正交鄰全空=真斜碰）
+                placed = False
+                for _t in range(40):
+                    r_ = int(rng.integers(0, 24))
+                    c_ = int(rng.integers(0, 24))
+                    dr, dc = (1, 1) if rng.random() < 0.5 else (1, -1)
+                    if not (0 <= c_ + dc * 1 <= 24 - (w3 - 1) * max(dc, 0)):
+                        continue
+                    r1, c1 = r_ + dr, c_ + dc
+                    if not (0 <= r1 <= 25 - h3 and 0 <= c1 <= 25 - w3) or not q[r_, c_]:
+                        continue
+                    blk = q[max(r1 - 1, 0):r1 + h3 + 1, max(c1 - 1, 0):c1 + w3 + 1]
+                    if int(blk.sum()) != 1:                            # 環域僅那顆凸角=純斜碰
+                        continue
+                    q[r1:r1 + h3, c1:c1 + w3] = True
+                    placed = True
+                    break
+                if placed:
+                    continue
+            p3 = _place_rect(q, rng, h3, w3)
+            if p3:
+                q[p3[0]:p3[0] + h3, p3[1]:p3[1] + w3] = True
+    else:
+        raise ValueError(f"未知文法 {gset}")
+    q[FEED] = True
+    if not (140 <= int(q.sum()) <= 560):
+        return None
+    return q
+
+
 def _group_mutate(p0, rng):
     """組級變異一式（R41 C 臂;Ricky 2026-07-25「組是變異單元」提案）:
     8-連通分組（9宮格含對角=一組）→ 骨架組(>25px)凍結;中件(5-25px)=修邊(長/縮)/平移;
