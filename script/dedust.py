@@ -3775,7 +3775,10 @@ def select_r22mix(args):
         #  舊文法 2 對照＋GA/GB/GC 各 2＋GD/GDd 各 1（args.d=10 基準,少於 10 依序截斷）;
         #  每槽自建 15× 候選池,d_sm 只在**槽內**排序（配額固定=A/B 公平,SM 不跨槽挑食）;
         #  sel_by=dn_<文法> 逐批記帳。製造閘放寬 140-560（GC 輕結構刻意;n_1px 仍擋粉塵）。
-        GRAM_SLOTS = [("old", 2), ("GA", 2), ("GB", 2), ("GC", 2), ("GD", 1), ("GDd", 1)]
+        #? R44 起 GC 汰、GA2（組義槽）進（round-43 §5 迭代;「多套候選慢慢定」）
+        GRAM_SLOTS = ([("old", 2), ("GA", 2), ("GB", 2), ("GA2", 2), ("GD", 1), ("GDd", 1)]
+                      if getattr(args, "round", 0) >= 44 else
+                      [("old", 2), ("GA", 2), ("GB", 2), ("GC", 2), ("GD", 1), ("GDd", 1)])
         slots = []
         for g_, k_ in GRAM_SLOTS:
             slots += [g_] * k_
@@ -6529,6 +6532,45 @@ def main():
     s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
     s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
     s.set_defaults(fn=select_r22mix, round=43, key="sel")
+
+    s = sub.add_parser("select-r44", help="R44 文法二輪：D 臂槽=舊2/GA2/GB2/GA2(組義槽)2/GD1/GDd1（GC 汰）;判準寫死於 round-44 檔")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260801)
+    s.add_argument("--sm", default="sm_reanchor77.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=12)
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=0)
+    s.add_argument("--v", type=int, default=8)
+    s.add_argument("--o", type=int, default=3)
+    s.add_argument("--m", type=int, default=5)
+    s.add_argument("--c", type=int, default=2)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=10)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=12)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.08, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=10)
+    s.add_argument("--shards", type=int, default=2)
+    s.add_argument("--rad-head", default="rad_head77.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--cnn-solo", action="store_true", default=False, dest="cnn_solo")
+    s.add_argument("--no-cnn-solo", action="store_false", dest="cnn_solo")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
+    s.set_defaults(fn=select_r22mix, round=44, key="sel")
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)
