@@ -35,3 +35,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 - `response_map.py` — response 空間 PCA 三面板（S11+Gain 攤平;wm/左側lo/右側hi 著色+合格圈;2026-07-23 左右側拆帳制配套）
 - `data_map.py` — pattern×response 雙空間 PCA 資料分布地圖（wm 著色+王朝表型;2026-07-25）
 - `sm_capability.py` — SM 能力四面板（held-out 軌跡/盲測對決/輸出多樣性/落點疊圖;2026-07-25）
+- `pareto_front.py` — 帕累托前緣雙面板（主戰場 wm×oob/左側 wm×lo;2026-07-26）
