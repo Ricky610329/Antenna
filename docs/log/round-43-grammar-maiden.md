@@ -1,0 +1,56 @@
+# Round 43 — 組文法首航：D 臂文法槽 A/B（舊/GA/GB/GC/GD/GDd）
+
+- **狀態**: running（2026-07-26 午後開輪;自主續輪宣告制;R42 收輪接棒;Ricky 拍板「組文法生成系統
+  +多套候選+多輪測試+其他隨機收編」）
+- **提出 / 開跑 / 結論**: 2026-07-26 / 2026-07-26 / —
+- **一句話問題**: 資料驅動的組文法（五式）能不能在探索價值四尺上贏過手寫舊隨機？
+  ＋「碎結構 vs 對角接觸」哪個才是壓左側的門票（GD vs GDd 解耦）？
+- **指向**: decisions「組文法生成系統」（普查四發現）· scratch「組義字典」（王朝三位一體 92%）·
+  commit f1818f0（採樣器）· [round-42](round-42-normal.md)（可製造化三連負→生成端唯一路）
+
+## 1. 假設 (Propose)
+- **判準（發車前寫死;Ricky 可隨時否決）**：
+  - **D 臂 10 席=文法槽**（舊 2 對照/GA 2/GB 2/GC 2/GD 1/GDd 1;槽內 d_sm 排序、配額跨槽固定;
+    sel_by=dn_<文法> 記帳）。
+  - **四尺（跨輪累積 ≥3 批再判,不做單批判決;KPI=資訊增益,不用三標率）**：
+    ①response 投影新穎度（對鍋 NN 距,V 臂同尺）②誤差錨產率（|pred−real| 進池筆數）
+    ③苗子率（wm≥−3）④**GD vs GDd 的 lo 分布對比**（解耦主判準;已知混雜=金屬量 326 vs 190,誠實註記）。
+  - 文法槽全輸舊文法（四尺皆劣,3 批累積）＝收案記負結果,D 臂回舊制。
+  - 批線其餘照 r42 配置（two 主通道/V 臂常駐/誤差錨）;紀錄照公證鐵則
+    （wm 王 +0.73/usable_lo −3.46/usable_oob 7.78）。
+  - 鏡射抽驗（tier2,R42 欠帳）:排入本輪閒時。
+- **配額**：批 61×≤3（G12/I12/V8/M5/O3/K2/D10〔文法槽〕/W10;seed 140+N）。
+
+## 2. 實驗設計 (Design)
+| 項 | 設計 | 判準 |
+|---|---|---|
+| 文法 A/B | D 臂 6 槽×15 倍池,槽內排序 | 四尺跨輪 ≥3 批;全輸=收案 |
+| GD/GDd 解耦 | 同構骨架,實心 vs 對角塊鏈 | lo 分布差=對角是否門票 |
+| 批線常態 | two+V+誤差錨 | 五軸面板 |
+
+## 3. 執行紀錄 (Run)
+```
+# v74 重錨:
+python -m script.sm_reanchor train --add "dedust_r42b3a,dedust_r42b3b" --out sm_reanchor74.pth --ds-mode response
+python -m script.sm_reanchor train-two --out sm_reanchor74.pth
+# 批線（seed 140+N）:
+python -m script.sm_invert gen --sm sm_reanchor74.pth --rad-head rad_head74.pth --out-dir tmp/invert_stage_r43bN --n-free 6 --n-surg 0 --n-champ 0 --n-oob 6 --seed <140+N>
+python -m script.dedust select-r43 --batch N --sm sm_reanchor74.pth --gstage tmp/invert_stage_r43bN --rad-head rad_head74.pth --novelty
+# check-dup ×2 → jobs-add ×2 prio 3 → watch
+```
+| 批/包 | 狀態 |
+|---|---|
+| — | （開輪;v74 重錨中） |
+
+## 4. 分析 (Analyze)
+（待）
+
+## 5. 結論 (Conclude)
+（待）
+
+## 6. 後續決策 (Next)
+- GA v2 組義槽採樣（三位一體必放+配件擲骰,等首批讀數）;V 臂池換文法（R44,一次一旋鈕）;
+  獨立艙凍結續;ens 換代候選。
+
+## 7. 歸檔指向 (Archive)
+- 結果夾 `dataset/dedust_r43b*`;公證 `r43n*`。

@@ -3747,22 +3747,44 @@ def select_r22mix(args):
     #  池外隨機塊構造（不繼承任何血統）;篩選用 sm_harvest（34k 底座=現存分布最廣「非王朝 SM」）,
     #  資料 ≥150 後訓 sm_denovo 接棒。判準:任一三標=池外礦脈開張;連兩批零三標=收臂回觸發制。
     dn = []
-    if getattr(args, "d", 0):
+    if getattr(args, "d", 0) and getattr(args, "round", 0) >= 43:
+        #? R43 組文法 A/B（decisions「組文法生成系統」;判準=round-43 §1）:D 臂席位改文法槽——
+        #  舊文法 2 對照＋GA/GB/GC 各 2＋GD/GDd 各 1（args.d=10 基準,少於 10 依序截斷）;
+        #  每槽自建 15× 候選池,d_sm 只在**槽內**排序（配額固定=A/B 公平,SM 不跨槽挑食）;
+        #  sel_by=dn_<文法> 逐批記帳。製造閘放寬 140-560（GC 輕結構刻意;n_1px 仍擋粉塵）。
+        GRAM_SLOTS = [("old", 2), ("GA", 2), ("GB", 2), ("GC", 2), ("GD", 1), ("GDd", 1)]
+        slots = []
+        for g_, k_ in GRAM_SLOTS:
+            slots += [g_] * k_
+        slots = slots[:args.d]
+        from collections import Counter as _Cnt
+        for gname, k_ in sorted(_Cnt(slots).items(), key=lambda t: GRAM_SLOTS.index((t[0], [k for g, k in GRAM_SLOTS if g == t[0]][0]))):
+            built, tries = 0, 0
+            while built < k_ * 15 and tries < k_ * 400:
+                tries += 1
+                if gname == "old":
+                    q = _rand_denovo_old(rng)
+                else:
+                    q = _rand_grammar(rng, gname)
+                if q is None:
+                    continue
+                st = piece_stats(q)
+                if st["n_1px"] > 0 or not (140 <= st["metal_px"] <= 560):
+                    continue
+                kb = q.tobytes()
+                if kb in hist:
+                    continue
+                hist.add(kb)
+                dn.append(dict(pat=q, parent="denovo", ops=[["gram", gname]], d=0, stats=st,
+                               sel_by=f"dn_{gname}", _gram=gname, _gquota=k_))
+                built += 1
+    elif getattr(args, "d", 0):
         tries = 0
         while len(dn) < args.d * 40 and tries < args.d * 400:
             tries += 1
-            q = np.zeros((25, 25), dtype=bool)
-            q[FEED[0] - 2:, FEED[1] - 2:FEED[1] + 3] = True         # 饋點墊
-            target = int(rng.integers(250, 500))                    # 金屬預算（製造閘 230-520 內）
-            for _ in range(24):                                      # 加塊到預算（首版 3-8 塊全死於 230 下限）
-                if int(q.sum()) >= target:
-                    break
-                r0, c0 = int(rng.integers(0, 20)), int(rng.integers(0, 20))
-                h, w0 = int(rng.integers(2, 8)), int(rng.integers(2, 8))
-                q[r0:r0 + h, c0:c0 + w0] = True
-            q[FEED] = True
-            q, _n = strip_small(q, 4)
-            q = _ensure_feed_pad(q, 4)
+            q = _rand_denovo_old(rng)
+            if q is None:
+                continue
             st = piece_stats(q)
             if st["n_1px"] > 0 or not (230 <= st["metal_px"] <= 520):
                 continue
@@ -4022,8 +4044,18 @@ def select_r22mix(args):
         if c.get("pred_rad") is not None and getattr(args, "rad_key", False):
             pen += SEL_KAPPA * max(0.0, -c["pred_rad"])
         return c["pred_oob"] + pen - _nbonus(c) + _dynpen(c)
-    di = _diverse(dn, sorted(range(len(dn)), key=lambda i: _pselc(dn[i])),
-                  getattr(args, "d", 0)) if dn else []
+    if dn and dn[0].get("_gram"):
+        #? R43 文法槽選拔:槽內 _pselc 排序取槽配額（SM 只在槽內挑,配額跨槽固定=A/B 公平）
+        di = []
+        for gname in dict.fromkeys(c["_gram"] for c in dn):
+            gi = [i for i in range(len(dn)) if dn[i]["_gram"] == gname]
+            gi.sort(key=lambda i: _pselc(dn[i]))
+            di += gi[:dn[gi[0]]["_gquota"]]
+    elif dn:
+        di = _diverse(dn, sorted(range(len(dn)), key=lambda i: _pselc(dn[i])),
+                      getattr(args, "d", 0))
+    else:
+        di = []
     fi = _diverse(fragp, sorted(range(len(fragp)), key=lambda i: _pselc(fragp[i])),
                   getattr(args, "f", 0)) if fragp else []
     #? N 臂選拔:按錨輪流、變體優先序 full→half→uniform→redust（H2 對照先進場,H1 隨配額擴大補齊）
@@ -5191,6 +5223,23 @@ def jobs_add(args):
         except OSError:
             pass
     print(f"已入佇列: {args.store} (prio {args.prio});目前 {len(jobs)} 個 job")
+
+
+def _rand_denovo_old(rng):
+    """D 臂舊生成器（R43 起降格為文法 A/B 對照席;原 select 內嵌碼抽出）:
+    饋點墊+隨機加塊到金屬預算+strip_small——回傳 q（呼叫端做製造閘/查重）。"""
+    q = np.zeros((25, 25), dtype=bool)
+    q[FEED[0] - 2:, FEED[1] - 2:FEED[1] + 3] = True
+    target = int(rng.integers(250, 500))
+    for _ in range(24):
+        if int(q.sum()) >= target:
+            break
+        r0, c0 = int(rng.integers(0, 20)), int(rng.integers(0, 20))
+        h, w0 = int(rng.integers(2, 8)), int(rng.integers(2, 8))
+        q[r0:r0 + h, c0:c0 + w0] = True
+    q[FEED] = True
+    q, _n = strip_small(q, 4)
+    return _ensure_feed_pad(q, 4)
 
 
 def _rand_blocks(rng):
@@ -6409,6 +6458,45 @@ def main():
     s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
     s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
     s.set_defaults(fn=select_r22mix, round=42, key="sel")
+
+    s = sub.add_parser("select-r43", help="R43 組文法首航：D 臂 10 席=文法槽（舊2/GA2/GB2/GC2/GD1/GDd1,槽內排序配額固定）;判準寫死於 round-43 檔")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260731)
+    s.add_argument("--sm", default="sm_reanchor74.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=12)
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=0)
+    s.add_argument("--v", type=int, default=8)
+    s.add_argument("--o", type=int, default=3)
+    s.add_argument("--m", type=int, default=5)
+    s.add_argument("--c", type=int, default=2)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=10)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=12)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.08, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=10)
+    s.add_argument("--shards", type=int, default=2)
+    s.add_argument("--rad-head", default="rad_head74.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--cnn-solo", action="store_true", default=False, dest="cnn_solo")
+    s.add_argument("--no-cnn-solo", action="store_false", dest="cnn_solo")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
+    s.set_defaults(fn=select_r22mix, round=43, key="sel")
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)
