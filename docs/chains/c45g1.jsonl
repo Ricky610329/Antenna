@@ -1,0 +1,3 @@
+{"pack": 1, "n": 25, "anchor": "g43b1_004_free_rand", "best": "c45g1p01_17", "best_score": -7.94, "anchor_score": -8.19, "win": true, "wm": -7.79, "rad": -0.15, "oob": 4.66, "lo": -5.05, "hi": -3.27}
+{"pack": 2, "n": 25, "anchor": "c45g1p01_17", "best": "c45g1p02_20", "best_score": -7.86, "anchor_score": -7.94, "win": true, "wm": -7.71, "rad": -0.21, "oob": 4.54, "lo": -5.33, "hi": -2.05}
+{"pack": 3, "n": 25, "anchor": "c45g1p02_20", "best": "c45g1p03_21", "best_score": -7.72, "anchor_score": -7.86, "win": true, "wm": -7.57, "rad": 0.0, "oob": 4.96, "lo": -4.49, "hi": null, "note": "手動代判(daemon 誤關,2026-07-27);c45g2 接棒"}
