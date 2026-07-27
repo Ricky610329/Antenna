@@ -1,0 +1,3 @@
+{"pack": 1, "n": 25, "anchor": "d44b2_001_denovo", "best": "c45d1p01_15", "best_score": -9.18, "anchor_score": -9.22, "win": true, "wm": -9.03, "rad": -3.98, "oob": -0.24, "lo": -4.6, "hi": -4.26}
+{"pack": 2, "n": 25, "anchor": "c45d1p01_15", "best": "c45d1p02_13", "best_score": -7.24, "anchor_score": -9.18, "win": true, "wm": -7.09, "rad": 0.79, "oob": 6.2, "lo": -2.14, "hi": 0.18}
+{"pack": 3, "n": 25, "anchor": "c45d1p02_13", "best": "c45d1p03_15", "best_score": -7.15, "anchor_score": -7.24, "win": true, "wm": -7.0, "rad": 0.49, "oob": 6.24, "lo": -2.16, "hi": null, "note": "手動代判(daemon 誤關,2026-07-27);c45d2 接棒"}
