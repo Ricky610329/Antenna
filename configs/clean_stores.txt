@@ -390,3 +390,78 @@ dedust_r35b1c
 # sm_reanchor59.pth 追加（2026-07-23）
 dedust_r37b2a
 dedust_r37b2b
+# sm_reanchor60.pth 追加（2026-07-23）
+dedust_r37b3a
+dedust_r37b3b
+# sm_reanchor61.pth 追加（2026-07-24）
+dedust_r38b1a
+dedust_r38b1b
+# sm_reanchor62.pth 追加（2026-07-24）
+dedust_r38b2a
+dedust_r38b2b
+# sm_reanchor63.pth 追加（2026-07-24）
+dedust_r38b3a
+dedust_r38b3b
+# sm_reanchor64.pth 追加（2026-07-24）
+dedust_r39b1a
+dedust_r39b1b
+# sm_reanchor65.pth 追加（2026-07-25）
+dedust_r39b2a
+dedust_r39b2b
+# sm_reanchor66.pth 追加（2026-07-25）
+dedust_r39b3a
+dedust_r39b3b
+# sm_reanchor67.pth 追加（2026-07-25）
+dedust_r40b1a
+dedust_r40b1b
+# sm_reanchor68.pth 追加（2026-07-25）
+dedust_r40b2a
+dedust_r40b2b
+# sm_reanchor69.pth 追加（2026-07-25）
+dedust_r40b3a
+dedust_r40b3b
+# sm_reanchor70.pth 追加（2026-07-25）
+dedust_r41b1a
+dedust_r41b1b
+# sm_reanchor71.pth 追加（2026-07-26）
+dedust_r41b2a
+dedust_r41b2b
+# sm_reanchor72.pth 追加（2026-07-26）
+dedust_r42b1a
+dedust_r42b1b
+# sm_reanchor73.pth 追加（2026-07-26）
+dedust_r42b2a
+dedust_r42b2b
+# sm_reanchor74.pth 追加（2026-07-26）
+dedust_r42b3a
+dedust_r42b3b
+# sm_reanchor75.pth 追加（2026-07-26）
+dedust_r43b1a
+dedust_r43b1b
+# sm_reanchor76.pth 追加（2026-07-26）
+dedust_r43b2a
+dedust_r43b2b
+# sm_reanchor77.pth 追加（2026-07-27）
+dedust_r43b3a
+dedust_r43b3b
+# sm_reanchor78.pth 追加（2026-07-27）
+dedust_r44b1a
+dedust_r44b1b
+# sm_reanchor79.pth 追加（2026-07-27）
+dedust_r44b2a
+dedust_r44b2b
+# sm_reanchor80.pth 追加（2026-07-27）
+dedust_r44b3a
+dedust_r44b3b
+# sm_reanchor81.pth 追加（2026-07-28）
+dedust_r45b1a
+dedust_r45b1b
+# sm_reanchor82.pth 追加（2026-07-28）
+dedust_r45b2a
+dedust_r45b2b
+# sm_reanchor83.pth 追加（2026-07-28）
+dedust_r45b3a
+dedust_r45b3b
+# sm_reanchor84.pth 追加（2026-07-28）
+dedust_r46b1a
+dedust_r46b1b

@@ -1,0 +1,4 @@
+{"pack": 1, "n": 25, "anchor": "c45g2p12_24", "best": "c45g3p01_03", "best_score": -2.93, "anchor_score": -2.99, "win": true, "wm": -2.78, "rad": -0.34, "oob": 8.66, "lo": -2.39, "hi": 1.1}
+{"pack": 2, "n": 25, "anchor": "c45g3p01_03", "best": "c45g3p02_06", "best_score": -2.87, "anchor_score": -2.93, "win": true, "wm": -2.72, "rad": -0.28, "oob": 8.93, "lo": -2.18, "hi": 0.99}
+{"pack": 3, "n": 25, "anchor": "c45g3p02_06", "best": "c45g3p03_10", "best_score": -3.17, "anchor_score": -2.87, "win": false, "wm": -3.02, "rad": -0.51, "oob": 9.08, "lo": -2.02, "hi": 1.05}
+{"pack": 4, "n": 25, "anchor": "c45g3p02_06", "best": "c45g3p04_15", "best_score": -2.88, "anchor_score": -2.87, "win": false, "wm": -2.73, "rad": -0.4, "oob": 8.67, "lo": -2.14, "hi": 1.02}

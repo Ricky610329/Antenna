@@ -1,0 +1,2 @@
+{"pack": 1, "n": 25, "anchor": "c12trip02_05", "best": "c12tri2p01_09", "best_score": -0.37, "anchor_score": -0.03, "win": false, "wm": -0.22, "rad": -0.13, "oob": 5.81, "lo": -2.75, "hi": 0.36}
+{"pack": 2, "n": 25, "anchor": "c12trip02_05", "best": "c12tri2p02_15", "best_score": -0.13, "anchor_score": -0.03, "win": false, "wm": 0.02, "rad": -0.05, "oob": 8.36, "lo": -2.82, "hi": 0.68}

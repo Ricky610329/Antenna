@@ -1,0 +1,6 @@
+{"pack": 1, "n": 25, "anchor": "c6tri8p01_18", "best": "c41grp2p01_09", "best_score": -0.11, "anchor_score": -0.05, "win": false, "wm": 0.04, "rad": 0.06, "oob": 16.52, "lo": -3.42, "hi": 2.34}
+{"pack": 2, "n": 25, "anchor": "c6tri8p01_18", "best": "c41grp2p02_02", "best_score": 0.0, "anchor_score": -0.05, "win": true, "wm": 0.15, "rad": 0.06, "oob": 15.11, "lo": -3.46, "hi": 2.21}
+{"pack": 3, "n": 25, "anchor": "c41grp2p02_02", "best": "c41grp2p03_00", "best_score": -0.13, "anchor_score": 0.0, "win": false, "wm": 0.02, "rad": 0.08, "oob": 16.25, "lo": -3.01, "hi": 2.96}
+{"pack": 6, "n": 25, "anchor": "c41grp2p02_02", "best": "c41grp2p06_11", "best_score": 0.03, "anchor_score": 0.0, "win": true, "wm": 0.18, "rad": 0.28, "oob": 20.18, "lo": -2.74, "hi": 1.58}
+{"pack": 7, "n": 25, "anchor": "c41grp2p06_11", "best": "c41grp2p07_19", "best_score": -0.01, "anchor_score": 0.03, "win": false, "wm": 0.14, "rad": 0.1, "oob": 12.49, "lo": -2.66, "hi": 1.94}
+{"pack": 8, "n": 25, "anchor": "c41grp2p06_11", "best": "c41grp2p08_22", "best_score": -0.08, "anchor_score": 0.03, "win": false, "wm": 0.07, "rad": -0.07, "oob": 19.81, "lo": -3.32, "hi": 2.39}
