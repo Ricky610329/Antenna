@@ -27,6 +27,10 @@
 python -m script.sm_reanchor train --add "dedust_r45b3a,dedust_r45b3b" --out sm_reanchor83.pth --ds-mode response
 python -m script.sm_reanchor train-two --out sm_reanchor83.pth
 # 批線（seed 170+N）: select-r46 照常;check-dup ×2 → jobs-add ×2 prio 3 → watch
+# ⚠ select-r46 之前必跑 G 臂 staging（b3 首發漏此步 FileNotFoundError 教訓,07-29）:
+#   python -m script.sm_invert gen --sm <vNN> --rad-head <rad_headNN> --n-free 6 --n-surg 0 \
+#     --n-champ 0 --n-oob 6 --seed 46<批號> --out-dir tmp/invert_stage_r46b<N>
+#   → select-r46 --gstage tmp/invert_stage_r46b<N>（不能用預設 tmp/invert_stage）
 ```
 | 批/包 | 狀態 |
 |---|---|
