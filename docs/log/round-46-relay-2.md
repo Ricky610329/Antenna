@@ -1,0 +1,45 @@
+# Round 46 — 接力二輪：c45g2 衝作戰區 × 批線常態
+
+- **狀態**: running（2026-07-28 午後開輪;自主續輪宣告制;R45 收輪接棒）
+- **提出 / 開跑 / 結論**: 2026-07-28 / 2026-07-28 / —
+- **一句話問題**: c45g2（wm −3.34∧lo −2.31,g 線 +4.70 續飛）能不能爬進作戰區（wm≥−1）
+  甚至合格——完成「深水右爬」全程首例？
+- **指向**: [round-45](round-45-relay.md)（接力大成立/d 線教訓=起點均衡度）· docs/chains/c45g2.jsonl
+
+## 1. 假設 (Propose)
+- **判準（發車前寫死;Ricky 可隨時否決）**：
+  - **c45g2 跨輪續爬**（tri,group,max 20 包內）:進作戰區（wm≥−1）=重大成果;
+    合格（wm≥0.15∧rad≥0∧lo≤−2）=**里程碑級,照公證鐵則**（第一個全程「隨機原礦→合格」
+    的非王朝非嫁接血統）;dry2=記終點。rad −0.81=綁束軸,tri 鍵自動逼修。
+  - 批線（≤3 批,select-r46=r45 配置）:V 臂常駐;紀錄照公證鐵則。
+  - 新原礦擇錨:R46 批產出中 lo≤−4∧rad≥−1（均衡型,d 線教訓）候選記名單,R47 用。
+- **配額**：批 60×≤3（seed 170+N）;鏈 25/包。
+
+## 2. 實驗設計 (Design)
+| 項 | 設計 | 判準 |
+|---|---|---|
+| c45g2 | 續爬（rad 綁束段） | 作戰區=重大;合格=里程碑公證;dry2 記終點 |
+| 批線 | 常態（old6/GDd4） | 五軸;均衡型原礦名單 |
+
+## 3. 執行紀錄 (Run)
+```
+# v83 重錨:
+python -m script.sm_reanchor train --add "dedust_r45b3a,dedust_r45b3b" --out sm_reanchor83.pth --ds-mode response
+python -m script.sm_reanchor train-two --out sm_reanchor83.pth
+# 批線（seed 170+N）: select-r46 照常;check-dup ×2 → jobs-add ×2 prio 3 → watch
+```
+| 批/包 | 狀態 |
+|---|---|
+| — | （開輪;v83 重錨中;c45g2 p11 錨 −3.49 續爬） |
+
+## 4. 分析 (Analyze)
+（待）
+
+## 5. 結論 (Conclude)
+（待）
+
+## 6. 後續決策 (Next)
+- GNN bakeoff 觸發線（pot ~30k,現 22.4k）;獨立艙凍結續;鏡射 rad 旋鈕候選。
+
+## 7. 歸檔指向 (Archive)
+- 結果夾 `dataset/dedust_r46b*`;鏈帳 docs/chains/c45g2.jsonl。
