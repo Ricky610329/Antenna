@@ -28,13 +28,18 @@ python -m script.analyze batch --round <R> --batch <N>
   （查現版：`ls T:\...\dataset\sm_reanchor*.pth` 或看 round 檔 §3 最後一批用的版號）：
 ```
 python -m script.sm_reanchor train --add "<六夾逗號清單>" --out sm_reanchor<NN+1>.pth
+python -m script.sm_reanchor train-two --out sm_reanchor<NN+1>.pth   # 影子家族(two/lohead)——缺此步 select 靜默停鍵
 ```
-- 約 7 分鐘；用 `run_in_background`。公證店（rNNnX）與收完的填空池也一併 `--add`。
+- 兩步都要跑（audit 2026-07-29:漏 train-two → 下批 select 按版號配對找不到 two/lohead,
+  pred_wm_two/pred_lo 靜默停用、O 臂 rank 退回）;資料量大時全程可 >1hr,用 `run_in_background`。
+  公證店（rNNnX）與收完的填空池也一併 `--add`。
 
 ### ④ 發下一批
-- 指令模板在**該 round 檔 §3 的 code block**（唯一真相；旗標開關也看 §1 判準）：
+- 指令模板在**該 round 檔 §3 的 code block**（唯一真相；旗標開關也看 §1 判準）；
+  **--rad-head 必顯式帶當版**（parser default 是硬編舊版,會版本錯配;audit 2026-07-29）；
+  select-rNN 若有 G 臂（--g>0）先跑 `sm_invert gen` staging（R46b3 教訓,round 檔 §3 有模板）：
 ```
-python -m script.dedust select-r<R> --batch <N+1> --sm sm_reanchor<NN+1>.pth [--rad-head rad_head2.pth --rad-key]
+python -m script.dedust select-r<R> --batch <N+1> --sm sm_reanchor<NN+1>.pth --rad-head rad_head<NN+1>.pth [--rad-key]
 ```
 - 旗標分支：「→ 行動③」說退鍵 → 去掉 `--rad-key`（--rad-head 保留，pred_rad 續記前瞻）。
 - **check-dup ×每夾，exit 1 ＝停**（絕不帶重複發車）：

@@ -141,7 +141,10 @@ class SurrogateModel(Models):
                     logger.warning(f"train_by_datas: loss 非有限 ({loss.item()})，跳過此 batch")
                     continue
                 loss.backward()
-                self.step(scheduler_param=loss)  #? optimizer.step() + scheduler.step(loss) (ReduceLROnPlateau 看 loss)
+                #? 只走 optimizer——scheduler 移到 epoch 尾（audit 2026-07-29:per-batch step 使
+                #  ReduceLROnPlateau〔patience=10〕在首 epoch 前 6% 就撞 1e-6 地板,後 39 epoch 空轉;
+                #  checkpoint 取證 6/6 卡地板,實跑對照 20ep 訓練 loss 差 5.3×）
+                self.optimizer.step()
 
                 self.record['loss'] = loss.item()  #? 記錄每個 batch 的 loss，供下方求 epoch 平均
 
@@ -150,6 +153,8 @@ class SurrogateModel(Models):
             avg_epoch_loss = self.record.average('loss')  #? 本 epoch 所有 batch 的平均 loss
             self.record.reset('loss', delete=True)        #? 清掉 batch 級暫存，下個 epoch 重新累積
             self.record['epoch_loss'] = avg_epoch_loss    #? 推進到 epoch 級曲線 (即最終回傳值)
+            if self.scheduler:
+                self.scheduler.step(avg_epoch_loss)       #? scheduler 以 epoch 平均 loss 為單位 (patience=10 epochs)
             if snapshot_epochs and (epoch + 1) in snapshot_epochs:   #? 自適應：快照此刻權重 (供下一輪 held-out 探測訓練量)
                 self._probe_snapshots[epoch + 1] = {k: v.detach().cpu().clone()
                                                     for k, v in self.model.state_dict().items()}

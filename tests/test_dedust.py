@@ -378,3 +378,71 @@ def test_rand_grammar_contract():
             assert np.mean(np.array(dbs) == 0) >= 0.7, "GD 應主零對角"
         if gs == "GDd":
             assert np.mean(np.array(dbs) > 0) >= 0.7, "GDd 應主帶對角"
+
+
+def test_tri_rad_zero_is_qualified():
+    """audit 2026-07-29: rad_margin 0.00/−0.0 是合法合格值,falsy `or -9` 會吃掉貼線解。"""
+    from script.dedust import _tri
+    assert _tri({"wm": [0, 0, 0.2], "rad_margin": 0.0})
+    assert _tri({"wm": [0, 0, 0.2], "rad_margin": -0.0})
+    assert _tri({"wm": [0, 0, 0.2], "rad_margin": 0.5})
+    assert not _tri({"wm": [0, 0, 0.2]})                       # 缺鍵=不合格
+    assert not _tri({"wm": [0, 0, 0.2], "rad_margin": None})   # None=缺件
+    assert not _tri({"wm": [0, 0, 0.2], "rad_margin": -0.01})
+    assert not _tri({"wm": [0, 0, -0.1], "rad_margin": 1.0})
+
+
+def test_group_mutate_contract_after_reweight():
+    """analysis-07 權重化後契約不變:回傳 (q,op,diff)、feed 恆真、決定性(同 seed 同輸出)。"""
+    import numpy as np
+    from script.dedust import _group_mutate, FEED
+    rng = np.random.default_rng(11)
+    base = np.zeros((25, 25), bool)
+    base[10:20, 8:18] = True      # 主件
+    base[2:5, 2:5] = True         # 中件
+    base[22, 22] = True           # 小件
+    base[FEED] = True
+    outs = []
+    fails = 0
+    while len(outs) < 15 and fails < 300:
+        r = _group_mutate(base, rng)
+        if r is None:
+            fails += 1
+            continue
+        q, op, d = r
+        assert q[FEED] and d >= 1 and isinstance(op, list) and op[0].startswith("grp_")
+        outs.append((q, tuple(op)))
+    assert len(outs) == 15, "組級變異產出不足"
+    rng2 = np.random.default_rng(11)
+    r2 = None
+    while r2 is None:
+        r2 = _group_mutate(base, rng2)
+    assert (r2[0] == outs[0][0]).all(), "組級變異非決定性"
+
+
+def test_cs_sort_key_notarize_first():
+    """audit 2026-07-29: 公證店(dedust_rNNn*)前移——「certified 先見先贏」去重不變式。"""
+    import importlib.util
+    import os
+    spec = importlib.util.spec_from_file_location(
+        "_smr_keyonly", os.path.join(os.path.dirname(__file__), "..", "script", "sm_reanchor.py"))
+    src = open(spec.origin, encoding="utf-8").read()
+    ns = {}
+    start = src.index("def _cs_sort_key")
+    end = src.index("def _load_clean_stores")
+    exec(src[start:end], ns)   # 只執行排序鍵函式,避免模組層 CLEAN_STORES 掃 NAS
+    key = ns["_cs_sort_key"]
+    names = ["dedust_r45b3a", "dedust_r23n1w", "dedust_auto37", "dedust_r42n2a", "dedust_c45g2_p01"]
+    assert sorted(names, key=key)[:2] == ["dedust_r23n1w", "dedust_r42n2a"]
+    assert key("dedust_r9n1") == 0 and key("dedust_r45b3a") == 1
+
+
+def test_scheduler_steps_per_epoch(tmp_path):
+    """audit 2026-07-29: scheduler 以 epoch 為單位(原 per-batch → 首 epoch 撞 1e-6 地板)。"""
+    import torch
+    from antenna.zoo import SURROGATES
+    sm = SURROGATES["mlp"](str(tmp_path), 25 * 25, (2, 17))
+    data = [(torch.rand(25, 25), torch.rand(2, 17)) for _ in range(8)]
+    sm.train_by_datas(data, epochs=3, batch_size=4, verbose=False, early_stop=False)
+    assert sm.scheduler.last_epoch == 3, f"scheduler 步數 {sm.scheduler.last_epoch}≠epochs(應 per-epoch)"
+    assert sm.optimizer.param_groups[0]["lr"] > 1e-5, "lr 不應在 3 epoch 內撞地板"

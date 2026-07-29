@@ -41,6 +41,12 @@ DEFAULT_CFG = os.path.join(REPO, "configs", "single_r5_explore.yaml")
 _CS_PATH = os.path.join(REPO, "configs", "clean_stores.txt")
 
 
+def _cs_sort_key(name):
+    """公證店排序鍵:dedust_rNNn*（notarize）排最前,讓 3/3 重測樣本在「首見即贏」去重中勝出。"""
+    import re
+    return 0 if re.match(r"dedust_r\d+n", name) else 1
+
+
 def _load_clean_stores():
     if not os.path.exists(_CS_PATH):
         raise SystemExit(f"{_CS_PATH} 不存在——CLEAN_STORES 已檔案化(2026-07-12),請自 git 還原該檔")
@@ -61,6 +67,9 @@ def _load_clean_stores():
                 continue
             if os.path.isdir(p) and DATASET_PATH.joinpath(name, "results.json").exists() and name not in out:
                 out.append(name)
+    #? 公證店（dedust_rNNn*）前移——「certified 先見先贏」去重不變式從註解變事實
+    #  （audit 2026-07-29:原順序公證店 0/23 勝出,3/3 均值標籤被首見單測值蓋掉;list.sort 穩定,其餘順序不動）
+    out.sort(key=_cs_sort_key)
     return tuple(out)
 
 

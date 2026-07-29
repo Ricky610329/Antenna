@@ -347,14 +347,28 @@ def _group_mutate(p0, rng):
         d = int((qq != p0).sum())
         return (qq, op + [d], d) if d else None
 
-    op = ["grow", "shrink", "move", "del", "dup", "spawn", "diag"][int(rng.integers(0, 7))]
+    #? 算子權重（analysis-07 2026-07-29:C/B 帶 E[Δwm⁺] 校準——shrink/del 安全但 best-of-N 下
+    #  只值 grow 的 1/10,席位讓給 grow/move;組級包已由 chain 發車閘限錨 wm≤−2,故單一分布即 C/B 帶）
+    op = str(rng.choice(["grow", "shrink", "move", "del", "dup", "spawn", "diag"],
+                        p=[0.32, 0.08, 0.22, 0.06, 0.08, 0.10, 0.14]))
     if op in ("grow", "shrink") and mids:
-        gi = int(rng.choice(mids))
+        #? gap≤2（貼主件一步可橋）中件加權 ×2（analysis-07 探索性:E[best-of-18] +1.22→+1.50,未顯著）
+        main_i = max(sizes, key=sizes.get)
+        _mb = _bd(lab == main_i, structure=S8_)
+        _wts = np.array([2.0 if gi != main_i and (_bd(lab == gi, structure=S8_) & _mb).any() else 1.0
+                         for gi in mids])
+        gi = int(rng.choice(mids, p=_wts / _wts.sum()))
         m = lab == gi
         cand = np.argwhere((_bd(m, structure=S8_) & ~p0) if op == "grow" else (m & ~_be(m)))
         if len(cand) == 0:
             return None
-        k = int(rng.integers(1, min(3, len(cand)) + 1))
+        if op == "grow":
+            #? grow k 偏 2-3（analysis-07:k=1 勝率 16%/u=0.024 → k=2 30%/0.187 → k=3 39%/0.180）
+            _km = min(3, len(cand))
+            _kw = np.array([0.2, 0.4, 0.4][:_km])
+            k = int(rng.choice(np.arange(1, _km + 1), p=_kw / _kw.sum()))
+        else:
+            k = int(rng.integers(1, min(3, len(cand)) + 1))
         for r, c in cand[rng.choice(len(cand), size=k, replace=False)]:
             q[r, c] = (op == "grow")
         return _fin(q, ["grp_" + op, sizes[gi]])
@@ -2463,7 +2477,7 @@ def select_r20gen(args):
                 if k in seen_k:
                     continue
                 seen_k.add(k)
-                tri = r["wm"][2] >= 0 and (r.get("rad_margin") or -9) >= 0
+                tri = _tri(r)
                 prev.append((tri, r["wm"][2], i, st + "_input"))
         prev.sort(reverse=True)
         PAR = ELITE + [(i, fol, i) for _, _, i, fol in prev[:9]]
@@ -2709,7 +2723,7 @@ def select_r21harvest(args):
             for i, r in res.items():
                 if "wm" not in r or any(px in i for px in POISON):
                     continue
-                tri = r["wm"][2] >= 0 and (r.get("rad_margin") or -9) >= 0
+                tri = _tri(r)
                 if tri and (r["wm"][2] >= 0.15 or (r.get("oob_bad") or 99) < 9.5):
                     ANCH.append((i, st + "_input", i))
     P = {}
@@ -2940,7 +2954,7 @@ def select_r22mix(args):
         for i, r in res.items():
             if "wm" not in r or any(px in i for px in POISON):
                 continue
-            tri = r["wm"][2] >= 0 and (r.get("rad_margin") or -9) >= 0
+            tri = _tri(r)
             if tri and (r["wm"][2] >= 0.15 or (r.get("oob_bad") or 99) < 9.5):
                 ANCH.append((i, st + "_input", i))
     #? Q 臂偏科生錨（深帶外/帶內爛;單次值,修復目標=把帶內拉回來）
@@ -3864,6 +3878,7 @@ def select_r22mix(args):
     #  → pred_wm_cnn 記 manifest;b1 只記錄（判讀審計「CNN 排序假設檢定」）,過了才進鍵。
     cnn_raw = None
     _lohead = None
+    two_raw = None
     if getattr(args, "round", 0) >= 33:
         _fc = DATASET_PATH.joinpath(f"sm_shadow{_vn}.pth")
         if _fc.exists():
@@ -3899,6 +3914,16 @@ def select_r22mix(args):
         if cnn_raw is not None:
             print(f"影子 CNN（sm_shadow{_vn}）→ pred_wm_cnn 記錄"
                   + ("（O 臂雙 rank 進鍵中）" if getattr(args, "batch", 1) >= 2 or getattr(args, "round", 0) >= 34 else "（混合鍵審計,b1 不進鍵）"))
+    #? 配套解析一行化+manifest 記帳（audit 2026-07-29:配套按 --sm 版號字串配對,缺件=靜默停鍵——
+    #  歷史 4 批輕量重錨 pred_std 缺件時 LCB 退化成裸預測從未入帳;成功/缺件都要顯性）
+    _heads_str = ",".join([
+        (f"ens{_vn}x{len(ens_raws)}" if ens_raws else "ens-"),
+        (f"cnn{_vn}" if cnn_raw is not None else "cnn-"),
+        (f"two{_vn}" if two_raw is not None else "two-"),
+        (f"lo{_vn}" if _lohead is not None else "lo-")])
+    _miss_h = [h for h in _heads_str.split(",") if h.endswith("-")]
+    print(f"配套解析: sm=v{_vn} [{_heads_str}]"
+          + (f" ⚠缺件停鍵:{'/'.join(_miss_h)}（ens 缺=LCB 退化裸預測）" if _miss_h else "（全載）"), flush=True)
     for k, c in enumerate(allc):
         w, _ = worst_margin(raw[k], labels, cfg.targets)
         c["pred_wm"] = _r(float(w))
@@ -4174,6 +4199,7 @@ def select_r22mix(args):
             c = src[i]
             entries.append(dict(id=f"{letter}{idt}_{j:03d}_{c['parent'][:12]}", kind=arm,
                                 family=f"{arm.upper()}_{fam}", removed_px=0, **c["stats"],
+                                sm=os.path.basename(args.sm), heads=_heads_str,
                                 source_id=c["parent"], ops=c["ops"], diff_px=c["d"],
                                 pred_wm=c["pred_wm"], pred_oob=c["pred_oob"], pred_lor=c["pred_lor"],
                                 pred_rad=c.get("pred_rad"), pred_std=c.get("pred_std"),
@@ -4220,6 +4246,14 @@ def _all_input_folders():
     return tuple(sorted(
         d for d in os.listdir(str(DATASET_PATH))
         if d.endswith("_input") and DATASET_PATH.joinpath(d, "manifest.json").exists()))
+
+
+def _tri(r):
+    """三標過（wm≥0 ∧ rad≥0）。rad_margin 走 _r() 兩位網格,0.00/−0.0 是合法合格值——
+    **不可用 `or -9`**（falsy 會把貼線解判成缺件;audit 2026-07-29:全史 99 筆 rad==0.00,
+    其中 −0.0 佔 12 筆〔round() 負零〕,錨池被稀釋 1.59%）。"""
+    rm = r.get("rad_margin")
+    return r["wm"][2] >= 0 and rm is not None and rm >= 0
 
 
 def check_dup(args):
@@ -4606,6 +4640,25 @@ def chain(args):
     if not src_pt.exists():
         raise SystemExit(f"找不到 {src_pt}")
     anchor_pat = np.asarray(torch.load(str(src_pt), weights_only=True)).reshape(25, 25) > 0.5
+    #? 發車驗錨（audit 2026-07-29:c47d1 教訓——錨在 goal 鍵盆地外→全包 −99 燒 50 筆;
+    #  analysis-07:近王錨組級包實證低效〔200 HFSS 僅 +0.09〕→ wm>−2 拒發組級包）
+    _ost = args.source_input[:-6] if args.source_input.endswith("_input") else args.source_input
+    _orp = DATASET_PATH.joinpath(_ost, "results.json")
+    if _orp.exists():
+        _ores = json.load(open(str(_orp), encoding="utf-8"))
+        if args.anchor in _ores and "wm" in _ores[args.anchor]:
+            _av = _ores[args.anchor]
+            _asc = _chain_score(_av, args.goal)
+            if _asc <= -98:
+                raise SystemExit(f"拒發車:錨 {args.anchor} 在 goal={args.goal} 鍵下 score={_asc:+.1f}"
+                                 f"（盆地外——c47d1 教訓;lo 門檻用 oob_gain_max_lo）")
+            if getattr(args, "mutator", "px") == "group" and _av["wm"][2] > -2:
+                raise SystemExit(f"拒發車:錨 wm {_av['wm'][2]:+.2f} > −2——近王帶組級變異包實證低效"
+                                 f"（analysis-07;確認局部極大請改 px 包）")
+        else:
+            print(f"⛰ {args.name} ⚠ 驗錨略過:{_ost}/results.json 查無 {args.anchor}", flush=True)
+    else:
+        print(f"⛰ {args.name} ⚠ 驗錨略過:{_ost} 無 results.json", flush=True)
     #? 全史 hash 本地防撞（2026-07-25 c41grp 教訓:組級算子常產 diff=1 單 px 變異=等價 d1,
     #  used 集只擋 px 半→20 包全數 check-dup 撞歷史零發車。啟動載一次,check-dup 仍是最後閘門）。
     hist_keys = set()
@@ -4757,6 +4810,11 @@ def chain(args):
         cd = subprocess.run([sys.executable, "-m", "script.dedust", "check-dup",
                              "--input", store + "_input"], capture_output=True)
         if cd.returncode != 0:
+            #? exit 1 語義判別（audit 2026-07-29:查重撞歷史與腳本崩潰共用 exit 1——check_dup 跑到底
+            #  必印 "<input>:" 摘要行,沒有=崩潰〔如 NAS 讀檔失敗〕,不可誤當撞歷史無聲空轉燒 max_packs）
+            _cdout = (cd.stdout or b"").decode("utf-8", "replace") + (cd.stderr or b"").decode("utf-8", "replace")
+            if f"{store}_input:" not in _cdout:
+                raise SystemExit(f"{store} check-dup 崩潰（非查重）:\n{_cdout[-800:]}")
             print(f"⚠ {store} 查重撞歷史——重抽下一包（不發車）")
             continue
         #? jobs.json 讀-改-寫無鎖——兩鏈同時 jobs-add 會互踩丟單（2026-07-22 實測:c2rad 首包
@@ -4781,12 +4839,16 @@ def chain(args):
         scored = [(k, _chain_score(v, args.goal), v) for k, v in res.items()
                   if "error" not in v and "wm" in v]
         best_id, best_s, best_v = max(scored, key=lambda t: t[1])
-        win = anchor_score is None or best_s > anchor_score
+        #? 全出局誠實記帳（audit 2026-07-29:c47d1 全包 −99 仍記假 best 且首包無錨分時會「勝」）
+        gated = sum(1 for _t in scored if _t[1] <= -98)
+        all_out = gated == len(scored)
+        win = (not all_out) and (anchor_score is None or best_s > anchor_score)
         rec = dict(pack=pack, n=len(scored), anchor=anchor_id, best=best_id,
                    best_score=_r(best_s), anchor_score=(None if anchor_score is None else _r(anchor_score)),
                    win=bool(win), wm=_r(best_v["wm"][2]), rad=_r(best_v.get("rad_margin")),
                    oob=_r(best_v.get("oob_bad")),
-                   lo=_r(best_v.get("oob_gain_max_lo")), hi=_r(best_v.get("oob_gain_max_hi")))
+                   lo=_r(best_v.get("oob_gain_max_lo")), hi=_r(best_v.get("oob_gain_max_hi")),
+                   gated=gated, all_out=bool(all_out))
         if getattr(args, "expert", False):
             #? 分半記帳（專家 vs 隨機對照;判準=連兩包 exp 半勝→標配）
             man_e = {m["id"]: m for m in _load_manifest(ind)}
@@ -4831,6 +4893,7 @@ def chain(args):
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         print(f"⛰ {args.name} p{pack:02d} 收檔: best {best_id} score {best_s:+.3f}"
               f"（wm{best_v['wm'][2]:+.2f}/oob{best_v.get('oob_bad', 99):.2f}）"
+              + (f"⚠ 全包出局（gated {gated}/{len(scored)}——查錨/goal 口徑）" if all_out else "")
               + ("→ 換錨續爬" if win else f"→ 無勝錨（dry {dry + 1}/{args.dry}）"), flush=True)
         if win:
             dry = 0

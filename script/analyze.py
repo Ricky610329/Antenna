@@ -951,10 +951,12 @@ def _shadow_duel(rows):
         err = float(np.median(np.abs(pw - real)))
         rho = float(spearmanr(pw, real)[0])
         opt = pw >= 0
-        advr = float(((pw >= 0) & (real < -1)).sum() / max(int(opt.sum()), 1)) if opt.any() else float("nan")
+        #? n=0（零樂觀預測）=零假陽性=最佳,計 0% 進判定（audit 2026-07-29:原 nan 被排除
+        #  → two 連兩批零假陽性反被判輸給 64-90% 的 MLP）
+        advr = float(((pw >= 0) & (real < -1)).sum() / max(int(opt.sum()), 1)) if opt.any() else 0.0
         stats[tag] = (err, rho, advr)
         print(f"| {tag} | {err:.2f} | {rho:+.3f} | {advr * 100:.0f}%（n={int(opt.sum())}） |"
-              if opt.any() else f"| {tag} | {err:.2f} | {rho:+.3f} | n/a(0) |")
+              if opt.any() else f"| {tag} | {err:.2f} | {rho:+.3f} | 0%（n=0,零樂觀預測=最佳） |")
     for i, nm in enumerate(("誤差", "前瞻ρ", "adv率")):
         vals = {t: stats[t][i] for t, _ in duel}
         ok = {t: v for t, v in vals.items() if not np.isnan(v)}
