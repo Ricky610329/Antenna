@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """methodology_figs.py — docs/methodology.md 的兩張示意圖（純 schematic,無外部資料,決定性可重跑）。
 
-  fig1 methodology_loop.png       §0.1 四角色一條環 ＋ §0.2 三層時間尺度
-  fig2 methodology_authority.png  §0.3 決策權分配 ＋ decisions.md 署名分布
+  fig1 methodology_loop.png       §3.1 三角色一制度的研究迴圈 ＋ §3.2 三層時間尺度
+  fig2 methodology_authority.png  §8.1 決策權分佈 ＋ 原則級定案的署名歸屬
 
 用法：python script/figs/methodology_figs.py   → docs/assets/
 署名分布的數字來自 docs/discuss/decisions.md 的現場統計（標題含 "Ricky" / "Claude|Opus"）,
@@ -54,30 +54,30 @@ def fig_loop():
     # ── 上：四角色一條環 ──────────────────────────────────────────
     ax = fig.add_subplot(gs[0])
     ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
-    ax.set_title("四個角色，一條環　—　每個角色只做一件事", fontsize=13.5, color=INK, pad=12)
+    ax.set_title("三個角色與一層制度", fontsize=13.5, color=INK, pad=12)
 
     W, H = 0.30, 0.20
-    _box(ax, 0.05, 0.62, W, H, "人（Ricky）", "定價值軸・給資源・隨時否決\n判定「這個推進有沒有意義」",
+    _box(ax, 0.05, 0.62, W, H, "研究者", "定價值軸・分配資源・行使否決權\n判定「這個推進有沒有意義」",
          "#eef4fc", DBLUE)
-    _box(ax, 0.63, 0.62, W, H, "Agent（Claude）", "起草假設與判準・判讀批次\n記帳・自主續輪（宣告制）",
+    _box(ax, 0.63, 0.62, W, H, "代理人（LLM agent）", "起草假設與判準・分析批次\n更新帳目・提出下一輪",
          "#fdf1ea", ORANGE)
-    _box(ax, 0.63, 0.14, W, H, "工具箱（script/）", "決定性生成・零成本初篩\n算指標・出圖",
+    _box(ax, 0.63, 0.14, W, H, "驗證機具", "決定性生成・零模擬成本預篩\n計算指標・產生圖表",
          "#eaf6f1", AQUA)
-    _box(ax, 0.05, 0.14, W, H, "HFSS（唯一真值）", "只產真值\n不參與任何決策",
+    _box(ax, 0.05, 0.14, W, H, "全波模擬（唯一真值）", "只產生真值\n不參與任何決策",
          "#f3eefa", PURPLE)
 
-    _arrow(ax, (0.355, 0.72), (0.625, 0.72), "定軸 / 資源 / 否決", DBLUE, ly=0.045)
-    _arrow(ax, (0.79, 0.615), (0.79, 0.345), "決定跑什麼", ORANGE, lx=0.075)
+    _arrow(ax, (0.355, 0.72), (0.625, 0.72), "價值軸 / 資源 / 否決", DBLUE, ly=0.045)
+    _arrow(ax, (0.79, 0.615), (0.79, 0.345), "決定測什麼", ORANGE, lx=0.075)
     _arrow(ax, (0.625, 0.21), (0.355, 0.21), "候選批次", AQUA, ly=-0.048)
     ax.annotate("", xy=(0.20, 0.615), xytext=(0.20, 0.345),
                 arrowprops=dict(arrowstyle="-|>", lw=1.5, color=PURPLE))
-    ax.text(0.20, 0.48, "五軸 KPI\n＋ records.json", ha="center", va="center",
+    ax.text(0.20, 0.48, "評估指標\n＋紀錄真相源", ha="center", va="center",
             fontsize=9.2, color=PURPLE, linespacing=1.4,
             bbox=dict(fc=SURF, ec="none", pad=2.0))
 
     ax.text(0.50, 0.505, "「什麼算數」＝制度", ha="center", va="center",
             fontsize=10.8, color=INK, fontweight="bold")
-    ax.text(0.50, 0.415, "公證 3/3・判準發車前寫死\nappend-only\n人與 agent 都不能繞過",
+    ax.text(0.50, 0.415, "判準預註冊・重複量測認證\n結論唯讀\n繞過會留下紀錄",
             ha="center", va="center", fontsize=9.0, color=INK2, linespacing=1.6)
     ax.add_patch(FancyBboxPatch((0.395, 0.355), 0.21, 0.21,
                                 boxstyle="round,pad=0.012,rounding_size=0.02",
@@ -89,9 +89,9 @@ def fig_loop():
     ax2.set_title("三層時間尺度", fontsize=13.5, color=INK, pad=8)
 
     rows = [
-        ("期 chapter", "1–2 週", "一個戰略段落（至今九期）", "MILESTONES.md ／ 聯合回顧", 0.70, 1, PURPLE, "#f3eefa"),
-        ("輪 round", "1–2 天", "一個假設　—　硬上限 3 批", "round-NN.md ／ /new-round → /close-round", 0.40, 3, DBLUE, "#eef4fc"),
-        ("批 batch", "4–6 小時", "一次對照（30–75 筆 HFSS）", "判讀→公證→重錨→發車 ／ /batch-cycle", 0.10, 9, ORANGE, "#fdf1ea"),
+        ("期", "1–2 週", "一個戰略段落", "里程碑紀錄", 0.70, 1, PURPLE, "#f3eefa"),
+        ("輪次", "1–2 天", "一個假設　—　上限 3 個批次", "一份輪次紀錄", 0.40, 3, DBLUE, "#eef4fc"),
+        ("批次", "數小時", "一次對照實驗（30–75 個候選）", "分析→認證→重錨→下一批發出", 0.10, 9, ORANGE, "#fdf1ea"),
     ]
     X0, BW = 0.235, 0.45
     for name, dur, span, art, y, nseg, col, face in rows:
@@ -107,8 +107,8 @@ def fig_loop():
         ax2.text(X0 + BW / 2, y + 0.152, span, ha="center", va="center", fontsize=9.2, color=INK)
         ax2.text(X0 + BW / 2, y + 0.072, art, ha="center", va="center", fontsize=8.2, color=MUTED)
 
-    ax2.text(0.72, 0.42, "實測節奏（2026-07-28 單日判讀）\n01:47・06:45・12:46・17:54・22:13\n"
-                         "→ 研究迴圈已與人的作息解耦",
+    ax2.text(0.72, 0.42, "觀察到的迭代節奏（單日五次判讀）\n01:47・06:45・12:46・17:54・22:13\n"
+                         "→ 迭代週期由模擬耗時決定，\n　 不由研究者的作息決定",
              ha="left", va="center", fontsize=9.4, color=INK2, linespacing=1.7,
              bbox=dict(boxstyle="round,pad=0.45", fc=SURF, ec=GRID, lw=1.2))
 
@@ -133,15 +133,15 @@ def fig_authority():
     # ── 左：六類決策歸屬 ──────────────────────────────────────────
     ax = fig.add_subplot(gs[0])
     ax.set_xlim(0, 1); ax.set_ylim(0, 1); ax.axis("off")
-    ax.set_title("決策權分配：誰決定什麼", fontsize=13, color=INK, pad=10)
+    ax.set_title("決策權的實際分佈", fontsize=13, color=INK, pad=10)
 
     items = [
-        ("價值軸／戰略方向", "人", DBLUE, "2026-07-23 判「同型邊際」→ 否決紀錄慶祝\n→ 催生左右側拆帳制"),
-        ("資源力度", "人", DBLUE, "每輪 ≤3 批；相似度稅同日兩次加壓"),
-        ("否決權（隨時）", "人", DBLUE, "round §1 固定寫「Ricky 可隨時否決」"),
-        ("開輪／續輪／建新臂", "Agent", ORANGE, "R22→R46 連續 25 輪自主開輪（宣告制）"),
-        ("判準草擬・判讀・記帳・收臂", "Agent", ORANGE, "/new-round §1 六條檢查表；連兩批 <6% 自動收臂"),
-        ("「什麼算數」", "制度", GOLD, "公證 3/3・判準寫死・append-only\n人與 agent 都不能繞過"),
+        ("價值軸／戰略方向", "研究者", DBLUE, "判定一項推進「有沒有意義」；\n一次此類判定直接催生了價值軸的拆分"),
+        ("資源力度", "研究者", DBLUE, "每輪批次上限；多樣性約束的強度"),
+        ("否決權（隨時）", "研究者", DBLUE, "每份輪次紀錄的判準欄均載明可被否決"),
+        ("提出／延續輪次、設計實驗分支", "代理人", ORANGE, "連續二十餘輪由代理人自主提出，不逐輪核准"),
+        ("判準草擬・分析・記帳・收分支", "代理人", ORANGE, "發車前檢查表；連兩批未達門檻即自動收掉該分支"),
+        ("「什麼算數」", "制度", GOLD, "判準預註冊・重複量測認證・結論唯讀\n繞過會留下紀錄"),
     ]
     y = 0.90
     for label, who, col, ev in items:
@@ -157,7 +157,7 @@ def fig_authority():
 
     # ── 右：decisions.md 署名分布 ────────────────────────────────
     ax2 = fig.add_subplot(gs[1])
-    labels = ["Ricky 署名", "Claude 署名", "未署名"]
+    labels = ["研究者署名", "代理人署名", "未署名"]
     vals = [ricky, claude, none]
     cols = [DBLUE, ORANGE, GRID]
     bars = ax2.barh(range(3)[::-1], vals, color=cols, height=0.55, ec="none")
@@ -166,8 +166,8 @@ def fig_authority():
                  va="center", fontsize=11, color=INK, fontweight="bold")
     ax2.set_yticks(range(3)[::-1]); ax2.set_yticklabels(labels, fontsize=10.5, color=INK)
     ax2.set_xlim(0, total * 1.15)
-    ax2.set_xlabel(f"decisions.md 原則級定案條目（共 {total} 條）", color=INK2, fontsize=9.6)
-    ax2.set_title("原則級決策的歸屬", fontsize=13, color=INK, pad=10)
+    ax2.set_xlabel(f"原則級定案條目（共 {total} 條）", color=INK2, fontsize=9.6)
+    ax2.set_title("原則級定案的歸屬", fontsize=13, color=INK, pad=10)
     ax2.grid(axis="x", color=GRID, lw=0.7, alpha=0.85)
     ax2.set_axisbelow(True)
     for s in ("top", "right", "left"):
@@ -175,7 +175,7 @@ def fig_authority():
     ax2.spines["bottom"].set_color(GRID)
     ax2.tick_params(colors=INK2, labelsize=9.5, left=False)
     ax2.text(total * 0.02, -0.72,
-             "⚠ 這是「原則級」決策的署名統計，\n不是總體控制權——agent 每天做的\n幾十個微決策不會進 decisions.md。",
+             "⚠ 這是「原則級」定案的署名統計，\n不是總體控制權——代理人每天做出的\n數十個戰術性判斷不進入該紀錄。",
              fontsize=8.6, color=MUTED, va="top", linespacing=1.6)
 
     _save(fig, "methodology_authority.png")
