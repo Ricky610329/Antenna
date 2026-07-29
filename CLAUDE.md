@@ -35,6 +35,12 @@
 - **config 驅動**：一個 `configs/*.yaml` = 一組實驗；模型用名字選（`antenna/zoo.py`）；不改 code 加實驗。
 - **型別註解＝輕量文件**：簡單註解歡迎；`TypeVar`/`Generic`/`ParamSpec`/`@overload` 一律不用。
 - **tau 歸 ACP**：二值化是訓練管線固定一步，模型不碰 tau。
+- **SM 線上更新＝模式分派，不是單一寫法**：`sm_train.mode` ∈ `single`（學長原始單筆過擬合，golden 基準）／
+  `replay`／`dlf`／`dlf_fit`（＝論文原版 DLF：全收＋累計均值重過濾 elite＋訓到收斂）／`refit`／
+  `adaptive`／`adaptive_window`（`antenna/training.py:467` `_update_surrogate`，白名單 `SM_MODES`）。
+- **回滾（rollback）已於 2026-06-28 移除**：三條理由（貪婪規則卡第一個山頭／退回舊 G 配當下變動的 SM
+  本質矛盾／原實作有 off-by-one＋覆蓋最佳檔兩個 bug 實際 ≈ no-op）記在 `antenna/training.py:813`。
+  探索改交給 K 候選＋SM 引導＋trust；最佳 pattern 仍在 `patterns/`（不可變）。
 
 ## 慣例
 
@@ -54,7 +60,8 @@
 - `antenna/utils/utils.py`（~630 行）仍偏雜，可續拆/瘦身。
 - 只服務實驗變體的死碼（無用的 GEN/SM 變體、`application/app.py` 的 `PathFixUnpickler` 等）可清。
 - HFSS 容錯 watchdog/run_forever（使用者標記「先不急」，穩定時再說）。
-- 論文版 DLF rollback filter（`filter(upper=平均loss)`）未移植，是已知架構落差，需要時另案補。
+- ~~論文版 DLF rollback filter 未移植~~ → **已解（2026-07-28 校正）**：DLF 本體已以 `sm_train.mode: dlf_fit`
+  移植（見上節）；原本綁在 rollback 上的 `filter(upper=平均loss)` 隨 rollback 一起退場，不是落差。
 - 方向圖（radiation pattern）→ loss 已接：`SinglePortRadSimulator` 萃取 + SM 平滑基底 rad head + `beam_coverage_loss`（Stage 1-2 完成、golden 零漂移）；Stage 3 冷啟動離線資料待做。規格＝窗 **±45°** / floor 3dB（學長後續討論定，原 ±55，可調），詳見 `docs/development.md` §4.6。
 - **SM 單筆擬合過於激進（待優化）**：`train_one_data`/`train_one_data_rad` 把「這一筆」訓到 `loss<min_loss(0.1)`、最多 `max_epoch(20000)` 步——就地過擬合單一資料點，易不穩（曾觸發梯度爆炸/NaN，已加防護網但沒治本）。可優化方向：梯度裁剪（clip_grad_norm）、調降 `max_epoch`、用相對收斂門檻、或加正則。改前先想清楚對線上學習收斂速度的影響、保 golden。
 

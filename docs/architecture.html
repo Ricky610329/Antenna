@@ -171,7 +171,7 @@
   <!-- 2 -->
   <h2><span class="num">2</span>每個 epoch 的流程（A–G）</h2>
   <div class="flow">
-    <div class="step"><b>早停 / 回滾判斷</b>：若 <code>sim_loss</code> 連續 <code>patience</code> 次沒進步 → 回滾 G 到歷史最佳 epoch，並重訓代理。<span class="pill gen">代理</span><span class="note" style="display:inline;padding:1px 7px;margin-left:6px">★ 這是<b>獨立於 ACP</b> 的機制，見第 3 節</span></div>
+    <div class="step" style="opacity:.6"><b><s>早停 / 回滾判斷</s>（已於 2026-06-28 移除）</b>：原本是「<code>sim_loss</code> 連續 <code>patience</code> 次沒進步 → 回滾 G 到歷史最佳 epoch 並重訓代理」。<span class="note" style="display:inline;padding:1px 7px;margin-left:6px">★ 它<b>獨立於 ACP</b>（兩套 patience）；移除理由見 <code>antenna/training.py:813</code>。探索改交給 K 候選＋SM 引導＋trust。</span></div>
     <div class="step"><b>生成 pattern</b>：G 依目標響應生成 pattern，疊上固定饋電金屬塊（single 疊 lower；dual 疊 upper+lower）。<span class="pill g">G</span></div>
     <div class="step"><b>去重</b>：若這張 pattern 先前模擬過 → 直接取快取結果（jump），省下昂貴的 HFSS。</div>
     <div class="step"><b>真實模擬</b>：跑 HFSS 得真實響應與 <code>sim_loss</code>，並用這筆真實資料線上訓練代理。<span class="pill sim">SIM</span><span class="pill gen">代理</span></div>
@@ -202,7 +202,7 @@
 
   <div class="note"><b>tau（溫度）的角色</b>：lr 與 tau 由 ACP 同步退火——暖身期高溫（輸出平滑、廣域探索）→ 退火期低溫（輸出趨近乾淨 0/1、可製造、收斂定形）。tau 控制 <code>AntennaPattern.binarization</code> 的 STE 軟硬程度。</div>
 
-  <div class="note" style="background:#fef2f2;border-color:#fecaca"><b>疑似落差（待確認）</b>：論文 <b>DLF</b> 是「每輪用累計平均<b>重新過濾整個 buffer</b>、汰除舊次佳樣本」；但 <code>run_training</code> 的單埠路徑目前只做「<code>sim_loss &lt; 平均才寫入</code>」——這是論文點名批判的<b>對照基準</b>，非 DLF 本體。（雙埠路徑的 rollback 有 <code>filter(upper=avg)</code>，較接近。）</div>
+  <div class="note"><b>DLF 落差已解（2026-07-28 校正）</b>：論文 <b>DLF</b> 是「每輪用累計平均<b>重新過濾整個 buffer</b>、汰除舊次佳樣本」。此本體已實作為 <code>sm_train.mode: dlf_fit</code>（全收 ＋ λ<sub>t</sub>＝累計真實 <code>sim_loss</code> 均值重過濾 elite ＋ 把 elite 訓到收斂；<code>antenna/training.py:485</code>）。<b>預設仍是 <code>single</code></b>（學長原始單筆過擬合，保 golden 基準）；<code>dlf</code> 模式是 elite 只訓 1 epoch 的 under-trained 版本。緩衝一律「全收」，寫入端不篩——論文點名批判的「寫入即保留」對照基準留在 <code>antenna/legacy/data.py</code> 的 <code>dynamic_loss_filter</code>，只服務舊 <code>.dataset</code>。</div>
 
   <!-- 4 模組地圖 -->
   <h2><span class="num">4</span>模組地圖（Tier A/B 精簡後現況）</h2>
@@ -265,7 +265,7 @@
     <tr><td>響應</td><td>S11 + Gain</td><td>S11 + S21 + S22（含互耦 S21）</td></tr>
     <tr><td>損失</td><td><code>custom_loss_minmax</code></td><td><code>interval_loss</code></td></tr>
     <tr><td>饋電塊</td><td>lower</td><td>upper + lower</td></tr>
-    <tr><td>回滾重訓代理</td><td colspan="2">兩者皆用整個 online 樣本庫（config 驅動版統一行為；舊 train_dual 的 <code>filter(upper=平均loss)</code>「未移植」——屬 DLF 落差議題，需要時另案補）</td></tr>
+    <tr><td>SM 線上更新</td><td colspan="2">兩者共用 <code>_update_surrogate</code> 的模式分派（<code>sm_train.mode</code>：single／replay／dlf／<b>dlf_fit</b>／refit／adaptive／adaptive_window）。回滾已於 2026-06-28 移除，舊 train_dual 綁在回滾上的 <code>filter(upper=平均loss)</code> 隨之退場；DLF 本體改由 <code>dlf_fit</code> 承擔。</td></tr>
   </table>
 
   <!-- 7 精簡歷程 -->

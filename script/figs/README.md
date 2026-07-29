@@ -36,3 +36,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 - `data_map.py` — pattern×response 雙空間 PCA 資料分布地圖（wm 著色+王朝表型;2026-07-25）
 - `sm_capability.py` — SM 能力四面板（held-out 軌跡/盲測對決/輸出多樣性/落點疊圖;2026-07-25）
 - `pareto_front.py` — 帕累托前緣雙面板（主戰場 wm×oob/左側 wm×lo;2026-07-26）
+- `methodology_figs.py` — `docs/methodology.md` 兩張示意圖（§0.1 四角色一條環＋三層時間尺度／§0.3 決策權分配＋decisions.md 署名分布）→ `docs/assets/`；純 schematic 無外部資料，署名數字現場統計 decisions.md 標題不寫死
