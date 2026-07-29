@@ -20,6 +20,10 @@
   - **批線**（≤3 批,select-r47=r46 配置）:V 臂常駐;紀錄照公證鐵則;
     G 臂 staging 前置步必跑（R46 b3 教訓,§3 模板）。
 - **配額**：批 60×≤3（seed 20260804）;鏈 25/包。
+- ★ 修正（2026-07-29 13:0x;**誠實聲明:c47d2 p01/p02 已回**〔−8.05/−7.57,距判定帶尚遠〕,本註=事實更正非門檻更動,判準門檻本體一字不動）：
+  ①背景訂正——g 線單一血統止於 −2.72;**d 線止於 wm −7.00（−7 帶,另一道牆,見 docs/chains/c45d1/d2.jsonl）**,「雙雙止步 −2.7~−3.0」為 R46 引入的誤植;
+  ②「第三血統」訂正為「**第二條**嘗試該段的血統」（c47d1 廢鏈不計）;
+  ③若 c47d2 停 −2.7~−3.0 帶,證據強度=n=2 案例級,**不足以單獨把 GNN bakeoff 優先級拉前——升優先與否併 Ricky 判**。
 
 ## 2. 實驗設計 (Design)
 | 項 | 設計 | 判準 |
@@ -41,6 +45,9 @@ python -m script.sm_invert gen --sm sm_reanchor86.pth --rad-head rad_head86.pth 
   --n-free 6 --n-surg 0 --n-champ 0 --n-oob 6 --seed 47<批號> --out-dir tmp/invert_stage_r47b<N>
 python -m script.dedust select-r47 --batch <N> --sm sm_reanchor86.pth --gstage tmp/invert_stage_r47b<N>
 # check-dup ×2 → jobs-add ×2 prio 3 → watch
+# ⚠ b1 發車前置（fanout 審視 07-29）:①等 train-two 完成（two86/lohead86/shadow86 落地）再 select——
+#   select_r22mix 按 --sm 版號字串配對配套模型,缺件=靜默停鍵（pred_wm_two/pred_lo/pred_wm_cnn）;
+#   ②select-r47 必顯式帶 --rad-head rad_head86.pth（parser default=rad_head85,與 sm 86 版本錯配）。
 ```
 | 批/包 | 狀態 |
 |---|---|

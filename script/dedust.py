@@ -605,10 +605,10 @@ def smooth_blob(seed: int, metal_frac: float = 0.5, sigma: float = 2.5, min_size
 def oob_metrics(resp, n_side: int = 4) -> dict:
     """帶外選擇性指標（帶外要與帶內**反向**:S11 貼 0=全反射、Gain 越負=不輻射;Ricky 定義 2026-07-07）。
     遠帶外=兩側各 n_side 點（預設 4=24-25.5/30.5-32GHz,排除緊貼帶緣的過渡點 26.0/30.0）。
-    判準仍只用 oob_bad（=gain_max−s11_min,綜合惡度越低越好）;其餘為壓帶外戰役的追蹤欄
-    （2026-07-07 加,Ricky:「壓低的也要加更多東西 track」）:
-      分側 _lo/_hi（哪側在漏——低頻裙擺=已知主破口）、rolloff_lo/hi（帶緣→遠帶外的 Gain 落差,
-      越大=滾降越陡）、oob_gain_argmax（最壞 Gain 的頻點 GHz,診斷用）。17 點 24-32GHz 尺專用。"""
+    下游契約（2026-07-29 補寫死;原「其餘皆追蹤欄」自左右側拆帳制〔2026-07-23〕起過時）:
+      oob_bad（=gain_max−s11_min）=總帳判準;**oob_gain_max_lo/hi（絕對 Gain,分側）=
+      紀錄鍵 usable_lo/hi 與鏈鍵 goal=lo/hi/tri 門檻所用**（見 decisions「左右側拆帳紀錄制」）;
+      contrast_*/rolloff_*/oob_gain_argmax=追蹤欄,不進任何鍵。17 點 24-32GHz 尺專用。"""
     r = np.asarray(resp, dtype=float).reshape(2, -1)
     n = r.shape[1]
     lo = list(range(n_side))
