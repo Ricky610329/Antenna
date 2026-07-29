@@ -52,6 +52,8 @@ python -m script.dedust select-r47 --batch <N> --sm sm_reanchor86.pth --gstage t
 | 批/包 | 狀態 |
 |---|---|
 | c47d1 | ★ 修正（07-29 10:1x,發生在 p02 結果前）:**廢鏈=擇錨口徑事故**——名單誤用 `contrast_lo`,tri 鍵實際門檻=`oob_gain_max_lo ≤ −2`;錨 g46b2_009 該欄位 **+3.49**（盆地外）→ p01 全包 −99。判準本體不變;鏈放任 dry2 自收（p01/p02 共 50 筆照入資料池）。教訓:凡「lo」口徑必寫明欄位 |
+| v86 | 重錨完成（07-29 15:0x 全家族）:held-out 中位 **1.202 續創新低**;**凍結尺 1.195→1.10 降**（條件③觀察窗 v87-90 開局向「有斜率」走）;凍結遠 3.01→2.78 回落;rad ρ+0.31;two86 凍結 0.819;lohead86 ρ+0.831;ens86×2 0.915 |
+| b1 | 發車（07-29 15:0x,審視防呆全帶:staging 前置+顯式 --rad-head rad_head86）:staging→select-r47→check-dup→prio 3→watch 一鏈 |
 | c47d2 | 正錨重發（07-29 10:1x）:**g46b3_000_free_randf（wm −8.10∧lo(gain_max) −3.43∧rad +0.44,G 臂反演無家譜）**——起點深度≈g 線（−8.04）只差 rad 正負=假說最乾淨對照;anchor-score −8.25;正格名單（lo≤−2∧rad≥−1）17 筆/≤−4 8 筆 |
 
 ## 4. 分析 (Analyze)
