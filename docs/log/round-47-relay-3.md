@@ -34,7 +34,7 @@ python -m script.sm_reanchor train --add "dedust_r46b3a,dedust_r46b3b" --out sm_
 python -m script.sm_reanchor train-two --out sm_reanchor86.pth
 # 鏈線:
 python -m script.dedust chain --name c47d1 --anchor g46b2_009_oobp_brdg_t0 \
-  --source-input dedust_r46b2a_input(或 b,以實際為準) --goal tri --anchor-score -6.93 \
+  --source-input dedust_r46b2b_input --goal tri --anchor-score -6.93 \
   --mutator group --n 25 --prio 1
 # 批線（seed 20260804;⚠ select 前必跑 G 臂 staging）:
 python -m script.sm_invert gen --sm sm_reanchor86.pth --rad-head rad_head86.pth \
@@ -44,7 +44,8 @@ python -m script.dedust select-r47 --batch <N> --sm sm_reanchor86.pth --gstage t
 ```
 | 批/包 | 狀態 |
 |---|---|
-| c47d1 | 發車（07-29 08:3x） |
+| c47d1 | ★ 修正（07-29 10:1x,發生在 p02 結果前）:**廢鏈=擇錨口徑事故**——名單誤用 `contrast_lo`,tri 鍵實際門檻=`oob_gain_max_lo ≤ −2`;錨 g46b2_009 該欄位 **+3.49**（盆地外）→ p01 全包 −99。判準本體不變;鏈放任 dry2 自收（p01/p02 共 50 筆照入資料池）。教訓:凡「lo」口徑必寫明欄位 |
+| c47d2 | 正錨重發（07-29 10:1x）:**g46b3_000_free_randf（wm −8.10∧lo(gain_max) −3.43∧rad +0.44,G 臂反演無家譜）**——起點深度≈g 線（−8.04）只差 rad 正負=假說最乾淨對照;anchor-score −8.25;正格名單（lo≤−2∧rad≥−1）17 筆/≤−4 8 筆 |
 
 ## 4. 分析 (Analyze)
 （待）
