@@ -783,7 +783,7 @@ def main():
                        help="跳過影子 CNN 對決訓練（預設每版重錨平行訓 sm_shadowNN.pth）")
         s.add_argument("--shadow-epochs", type=int, default=None, dest="shadow_epochs",
                        help="影子 CNN epochs（預設 --epochs×2:從零訓補償,MLP 有 harvest 預訓）")
-        s.add_argument("--ds-mode", default="pattern", choices=["pattern", "response"], dest="ds_mode",
+        s.add_argument("--ds-mode", default="response", choices=["pattern", "response"], dest="ds_mode",  # R37 轉正;v84-88 因未帶旗標退回 pattern(2026-07-30 抓漏,v89 矯正)
                        help="密度反權重空間（R37 A/B:response=四維特徵鄰居,Ricky 2026-07-23）")
         s.add_argument("--grid-epochs", type=int, nargs="+", default=[40, 80])
         s.add_argument("--grid-over", type=int, nargs="+", default=[4, 8, 16])
