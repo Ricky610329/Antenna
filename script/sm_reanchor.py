@@ -41,6 +41,36 @@ DEFAULT_CFG = os.path.join(REPO, "configs", "single_r5_explore.yaml")
 _CS_PATH = os.path.join(REPO, "configs", "clean_stores.txt")
 
 
+def _move_opt_state(sm, device):
+    for st in sm.optimizer.state.values():
+        for k, v in st.items():
+            if torch.is_tensor(v):
+                st[k] = v.to(device)
+
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def _train_device(sm):
+    """訓練段上 GPU（有卡才）、訓完搬回 CPU——存檔/eval/下游全維持 CPU 語義（2026-07-30 GPU 開關）。
+    load_torch 已 map 到 config.device,跨裝置載入天生安全;shell 的 device setter 只搬 model,
+    optimizer state 這裡自己搬。⚠ CUDA 訓練非 bit 級決定性（生成決定性鐵則只約束 select,不含 SM 訓練）。"""
+    if not torch.cuda.is_available():
+        yield
+        return
+    prev = _config.device
+    _config.device = "cuda:0"
+    sm.device = "cuda:0"
+    _move_opt_state(sm, "cuda:0")
+    try:
+        yield
+    finally:
+        sm.device = "cpu"
+        _move_opt_state(sm, "cpu")
+        _config.device = prev
+
+
 def _cs_sort_key(name):
     """公證店排序鍵:dedust_rNNn*（notarize）排最前,讓 3/3 重測樣本在「首見即贏」去重中勝出。"""
     import re
@@ -224,7 +254,7 @@ def train(args):
     print(f"訓練集 {len(ds)} 筆（密度反權重:重複 中位×{int(np.median(reps))} 範圍"
           f" [{int(reps.min())},{int(reps.max())}],孤樣本重學/王朝密集降權 + 重放）,"
           f"epochs={args.epochs}, batch={args.batch}")
-    losses = sm.train_by_datas(ds, epochs=args.epochs, batch_size=args.batch, verbose=True)
+    losses = sm.train_by_datas(ds, epochs=args.epochs, batch_size=args.batch, verbose=True)  # MLP 留 CPU(GPU 0.8x 實測)
     out = DATASET_PATH.joinpath(args.out)
     sm.save_as(out)
     print(f"loss: 首 {losses[0]:.3f} → 末 {losses[-1]:.3f}；權重 → {out}")
@@ -284,7 +314,8 @@ def train(args):
                 sm_e = _make_sm()
                 sm_e.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
                 arch_e = "mlp←sm_harvest"
-            sm_e.train_by_datas(ds, epochs=max(args.epochs // 2, 10), batch_size=args.batch,
+            with _train_device(sm_e):
+                sm_e.train_by_datas(ds, epochs=max(args.epochs // 2, 10), batch_size=args.batch,
                                 verbose=False)
             eo = f"sm_ens{vnum2}_{j}.pth" if vnum2 else f"sm_ens_auto_{j}.pth"
             sm_e.save_as(DATASET_PATH.joinpath(eo))
@@ -333,7 +364,8 @@ def _train_shadow_core(ds, ho, hd, fmask, vnum, epochs, batch, mlp_ref=None):
     torch.manual_seed(7)
     smc = SURROGATES["cnn"](cache, 25 * 25, (len(LABELS), n_pts))
     print(f"—— 影子 CNN 對決: 從零訓 {epochs}ep（同鍋 ds;尺2/尺3=下批 analyze batch 雙模盲測）")
-    losses = smc.train_by_datas(ds, epochs=epochs, batch_size=batch, verbose=False)
+    with _train_device(smc):
+        losses = smc.train_by_datas(ds, epochs=epochs, batch_size=batch, verbose=False)
     out = f"sm_shadow{vnum}.pth" if vnum else "sm_shadow_auto.pth"
     smc.save_as(DATASET_PATH.joinpath(out))
     errs = _wm_errs(smc, ho)
@@ -407,7 +439,8 @@ def _train_two_core(tr, replay, over, ho, fmask, vnum, epochs, batch):
     torch.manual_seed(7)
     sm2 = SURROGATES["cnn2"](cache, 25 * 25, (len(LABELS), n_pts))
     print(f"—— 影子二號: cnn2 從零訓 {epochs}ep（鏡射增強 ×2,同鍋）")
-    losses = sm2.train_by_datas(ds_aug, epochs=epochs, batch_size=batch, verbose=False)
+    with _train_device(sm2):
+        losses = sm2.train_by_datas(ds_aug, epochs=epochs, batch_size=batch, verbose=False)
     out2 = f"sm_two{vnum}.pth" if vnum else "sm_two_auto.pth"
     sm2.save_as(DATASET_PATH.joinpath(out2))
     errs = _wm_errs(sm2, ho)
@@ -518,7 +551,7 @@ def train_denovo(args):
     sm = _make_sm()
     sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
     ds = ConcatDataset([_tds(tr)] * args.over + [_tds(replay)])
-    losses = sm.train_by_datas(ds, epochs=args.epochs, batch_size=args.batch, verbose=True)
+    losses = sm.train_by_datas(ds, epochs=args.epochs, batch_size=args.batch, verbose=True)  # MLP 留 CPU(GPU 0.8x 實測)
     out = DATASET_PATH.joinpath(args.out)
     sm.save_as(out)
     print(f"loss: 首 {losses[0]:.3f} → 末 {losses[-1]:.3f}；權重 → {out}")
@@ -581,7 +614,7 @@ def tune(args):
         sm = _make_sm()
         sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
         ds = ConcatDataset([_tds(tr)] * over + [_tds(replay_all[:replay])])
-        sm.train_by_datas(ds, epochs=epochs, batch_size=batch, verbose=False)
+        sm.train_by_datas(ds, epochs=epochs, batch_size=batch, verbose=False)  # MLP 留 CPU
         e_ho, e_hv = _wm_errs(sm, ho), _wm_errs(sm, hval)
         med, p90, hv = float(np.median(e_ho)), float(np.percentile(e_ho, 90)), float(np.median(e_hv))
         rows.append((med, p90, hv, epochs, over, replay, batch))
