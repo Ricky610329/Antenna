@@ -1,0 +1,4 @@
+{"pack": 1, "n": 25, "anchor": "c47d2p12_21", "best": "c47d3p01_10", "best_score": -6.45, "anchor_score": -6.44, "win": false, "wm": -6.3, "rad": -2.38, "oob": 5.0, "lo": -3.32, "hi": 1.95, "gated": 4, "all_out": false}
+{"pack": 2, "n": 25, "anchor": "c47d2p12_21", "best": "c47d3p02_12", "best_score": -6.36, "anchor_score": -6.44, "win": true, "wm": -6.21, "rad": -2.34, "oob": 3.96, "lo": -3.17, "hi": 0.97, "gated": 1, "all_out": false}
+{"pack": 3, "n": 25, "anchor": "c47d3p02_12", "best": "c47d3p03_22", "best_score": -6.43, "anchor_score": -6.36, "win": false, "wm": -6.28, "rad": -2.21, "oob": 0.67, "lo": -3.33, "hi": -2.18, "gated": 4, "all_out": false}
+{"pack": 4, "n": 25, "anchor": "c47d3p02_12", "best": "c47d3p04_15", "best_score": -6.51, "anchor_score": -6.36, "win": false, "wm": -6.36, "rad": -2.22, "oob": 4.46, "lo": -3.22, "hi": 1.42, "gated": 3, "all_out": false}
