@@ -1,0 +1,2 @@
+{"pack": 1, "n": 25, "anchor": "c47d3p02_12", "best": "c47d4p01_24", "best_score": -6.4, "anchor_score": -6.36, "win": false, "wm": -6.25, "rad": -2.46, "oob": 4.43, "lo": -3.07, "hi": 1.38, "gated": 1, "all_out": false}
+{"pack": 2, "n": 25, "anchor": "c47d3p02_12", "best": "c47d4p02_22", "best_score": -6.36, "anchor_score": -6.36, "win": false, "wm": -6.21, "rad": -2.31, "oob": 3.92, "lo": -3.07, "hi": 0.85, "gated": 2, "all_out": false}
