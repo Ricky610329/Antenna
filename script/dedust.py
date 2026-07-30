@@ -4258,6 +4258,138 @@ def _tri(r):
     return r["wm"][2] >= 0 and rm is not None and rm >= 0
 
 
+def select_graft(args):
+    """R48 定向嫁接試點（判準寫死於 round-48 §1;Ricky 拍板方向②）:
+    骨架=王朝合格解（x00/margin 王）× 引擎=左側深 lo 個體（合格首例/usable_lo 王/g・d 線終錨）。
+    兩式:A 引擎替換（王朝主件 → 左側 XL 件,貼質心）/B 對角引擎加掛（左側對角密集件掛主件上緣 gap≥1）。
+    n 筆=16 base（2 骨架×4 引擎×2 式）+抖動;決定性 seed;全測不經 SM 排序。"""
+    from scipy.ndimage import label as _lab
+    S8g = np.ones((3, 3), bool)
+    SKELS = [("x00", "dedust_wide_input", "x00_c21k2"),
+             ("m42", "dedust_r42b1a_input", "m42b1_003_o26b3_022_o2")]
+    ENGS = [("c8t", "dedust_c8tri_p03_input", "c8trip03_01"),
+            ("c41", "dedust_c41grp2_p02_input", "c41grp2p02_02"),
+            ("g46", "dedust_c45g3_p02_input", "c45g3p02_06"),
+            ("d47", "dedust_c47d3_p02_input", "c47d3p02_12")]
+
+    def _ld(fol, pid):
+        return np.asarray(torch.load(str(DATASET_PATH.joinpath(fol, pid + ".pt")),
+                                     weights_only=True)).reshape(25, 25) > 0.5
+
+    def _comps(p8):
+        lab, n = _lab(p8, structure=S8g)
+        return lab, [(i, int((lab == i).sum())) for i in range(1, n + 1)]
+
+    def _diag_rich(p8):
+        #? 引擎件=對角最密集的 8-conn 組（內部 4-conn 裂件數-1 = 內部對角橋數）,尺寸 10-120
+        lab, cs = _comps(p8)
+        best, best_sc = None, -1
+        for i, s in cs:
+            if not (10 <= s <= 120):
+                continue
+            m = lab == i
+            _, n4 = _lab(m)
+            sc = n4 - 1
+            if sc > best_sc:
+                best, best_sc = m, sc
+        if best is None and cs:
+            i, _s = max(cs, key=lambda t: t[1])
+            best = lab == i
+        return best
+
+    def _shift(m, dr, dc):
+        out = np.zeros_like(m)
+        rr, cc = np.where(m)
+        nr, nc = rr + dr, cc + dc
+        ok = (nr >= 0) & (nr < 25) & (nc >= 0) & (nc < 25)
+        out[nr[ok], nc[ok]] = True
+        return out
+
+    def _graft(skel, eng, mode, jr, jc):
+        lab_s, cs_s = _comps(skel)
+        mi, _ = max(cs_s, key=lambda t: t[1])
+        main = lab_s == mi
+        lab_e, cs_e = _comps(eng)
+        if mode == "A":                                   # 引擎替換:主件 → 左側 XL 件
+            ei, _ = max(cs_e, key=lambda t: t[1])
+            piece = lab_e == ei
+            base = skel & ~main
+            tgt = np.argwhere(main).mean(0)
+            src_c = np.argwhere(piece).mean(0)
+            dr, dc = int(round(tgt[0] - src_c[0])) + jr, int(round(tgt[1] - src_c[1])) + jc
+            q = base | _shift(piece, dr, dc)
+        else:                                             # B 對角引擎加掛:主件上緣 gap≥1
+            piece = _diag_rich(eng)
+            if piece is None:
+                return None
+            top = int(np.argwhere(main)[:, 0].min())
+            pc = np.argwhere(piece)
+            ph = int(pc[:, 0].max() - pc[:, 0].min()) + 1
+            tgt_r = max(0, top - 2 - ph) + jr
+            tgt_c = int(np.argwhere(main).mean(0)[1]) + jc
+            src_c = pc.mean(0)
+            dr, dc = int(round(tgt_r - pc[:, 0].min())), int(round(tgt_c - src_c[1]))
+            placed = _shift(piece, dr, dc)
+            #? gap≥1:與既有金屬 8-鄰不重疊才收（間距鐵律;貼死=融合改天再說）
+            from scipy.ndimage import binary_dilation as _bdg
+            if (_bdg(placed, structure=S8g) & skel).any():
+                return None
+            q = skel | placed
+        q = q.copy()
+        q[FEED] = True
+        if not (140 <= int(q.sum()) <= 560):
+            return None
+        return q
+
+    rng = np.random.default_rng(args.seed)
+    skels = {k: _ld(f, i) for k, f, i in SKELS}
+    engs = {k: _ld(f, i) for k, f, i in ENGS}
+    sk_id = {k: i for k, _f, i in SKELS}
+    en_id = {k: i for k, _f, i in ENGS}
+    ind = _dir(args.out)
+    ind.mkdir(parents=True, exist_ok=True)
+    hist = set()
+    for _fh in _all_input_folders():
+        _mp = DATASET_PATH.joinpath(_fh, "manifest.json")
+        if _mp.exists():
+            try:
+                for _m in json.load(open(str(_mp), encoding="utf-8")):
+                    _fp = DATASET_PATH.joinpath(_fh, f"{_m['id']}.pt")
+                    if _fp.exists():
+                        hist.add(np.asarray(torch.load(str(_fp), weights_only=True))
+                                 .reshape(-1).__gt__(0.5).tobytes())
+            except Exception:
+                continue
+    manifest, tries = [], 0
+    combos = [(sk, en, md) for sk in skels for en in engs for md in ("A", "B")]
+    ci = 0
+    while len(manifest) < args.n and tries < args.n * 60:
+        tries += 1
+        if ci < len(combos):
+            sk, en, md = combos[ci]
+            jr = jc = 0
+            ci += 1
+        else:
+            sk, en, md = combos[int(rng.integers(0, len(combos)))]
+            jr, jc = int(rng.integers(-2, 3)), int(rng.integers(-2, 3))
+        q = _graft(skels[sk], engs[en], md, jr, jc)
+        if q is None or q.tobytes() in hist:
+            continue
+        hist.add(q.tobytes())
+        pid = f"gr48_{len(manifest):03d}_{sk}{md}_{en}"
+        torch.save(torch.tensor(q), str(ind.joinpath(pid + ".pt")))
+        manifest.append(dict(id=pid, kind="graft", family=f"GRAFT_{sk}{md}",
+                             removed_px=0, source_id=sk_id[sk],
+                             ops=[["graft_" + md, en_id[en], jr, jc]],
+                             diff_px=int((q != skels[sk]).sum()), sel_by=None,
+                             **piece_stats(q)))
+    _save_manifest(manifest, ind)
+    from collections import Counter
+    cnt = Counter(m["family"] for m in manifest)
+    print(f"graft 試點 {len(manifest)} 筆 → {args.out}  {dict(cnt)}")
+    print(f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr;判準=round-48 §1:lo 保留率 ≥20%）")
+
+
 def check_dup(args):
     """發車前查重（教訓 2026-07-07:ref3 出現 4/319 重複——掃位跨拓撲撞位、k=2 被再對稱化蓋回錨點）。
     查 --input 批內重複＋與全部歷史輸入夾（自動掃描,排除自身）的交叉重複。exit 1=有重複。"""
@@ -6796,6 +6928,12 @@ def main():
     s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
     s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
     s.set_defaults(fn=select_r22mix, round=48, key="sel")
+
+    s = sub.add_parser("select-graft", help="R48 嫁接試點:王朝骨架×左側引擎(A 替換/B 對角加掛);判準=round-48 §1")
+    s.add_argument("--out", default="dedust_g48graft1_input")
+    s.add_argument("--n", type=int, default=25)
+    s.add_argument("--seed", type=int, default=4810)
+    s.set_defaults(fn=select_graft)
 
     s = sub.add_parser("select-scope", help="顯微鏡包:錨 d=1 全枚舉→CNN 排序 top N（25 筆/輪封頂,錨輪換防陷;decisions 2026-07-17）")
     s.add_argument("--anchor", required=True)
