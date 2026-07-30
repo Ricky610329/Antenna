@@ -47,7 +47,8 @@ python -m script.sm_reanchor train-two --epochs 30 --out sm_reanchor89.pth
 ```
 | 批/包 | 狀態 |
 |---|---|
-| v89 | 訓練中（07-30 17:0x 發動） |
+| v89★ | ✅ **三新版全過（07-30 18:3x）**:凍結尺 **0.485**（vs v88 0.528 再 −8%,判準「劣化>10% 退回」反向大勝）;凍結遠 1.62;rad ρ 0.36 回升;two89 凍結 0.514=MLP 連兩版守主錨;**整鏈 ~1.5hr**（原 5-6hr,GPU+30ep+response 鍋全兌現）→ 30ep/response/GPU 定案常態 |
+| b1 | 發車（07-30 18:4x,**漏斗二次放大×3+V 池 2000+反演 oversample 6 首航**;select-r48+v89 全配套） |
 
 ## 4. 分析 (Analyze)
 （待）
