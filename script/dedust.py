@@ -3149,11 +3149,13 @@ def select_r22mix(args):
         return out
 
     #? 漏斗放大（2026-07-16 Ricky 拍板①:SM 打分免費,候選池 ×2——9k 資料的 SM 該篩更大的池）
-    core = _gen(P, pick_two_pool, (args.o + args.m) * 24)          # O+M 共池（12→24 倍候選）
-    coldp = _gen(P, pick_cold, args.c * 16)                         # C 冷支專屬（8→16 倍）
-    specp = _gen(PS, pick_spec, args.q * 12)                        # Q 修復池
-    wildp = _gen(P, pick_two_pool, args.wild * 30, dlo=26, dhi=60, wild=True)
-    fragp = _gen(PF, pick_frag, getattr(args, "f", 0) * 12, dhi=60) if PF else []   # F 修復池（粉塵錨 strip 後 d 大,放寬到 60）
+    #? 漏斗二次放大（2026-07-30 Ricky 拍板:「SM 推理遠快於 HFSS」——v87 儀器換代後遠區誤差
+    #  1.7→0.9,可信域擴張,虛擬預篩劑量 ×3;效率評 over ≥5 輪〔擴散型介入,decisions〕）
+    core = _gen(P, pick_two_pool, (args.o + args.m) * 72)          # O+M+I 共池（24→72 倍候選）
+    coldp = _gen(P, pick_cold, args.c * 48)                         # C 冷支專屬（16→48 倍）
+    specp = _gen(PS, pick_spec, args.q * 36)                        # Q 修復池
+    wildp = _gen(P, pick_two_pool, args.wild * 90, dlo=26, dhi=60, wild=True)
+    fragp = _gen(PF, pick_frag, getattr(args, "f", 0) * 36, dhi=60) if PF else []   # F 修復池（粉塵錨 strip 後 d 大,放寬到 60）
 
     def _skeleton(p0):
         """骨架萃取（與 analysis/mesh 同口徑:高斯 σ0.8×門檻 0.6,≥6px 質量塊）→ blk footprint 聯集。"""
@@ -3578,7 +3580,7 @@ def select_r22mix(args):
                     _cent[ci] = _hot[_asg == ci].mean(axis=0)
         print(f"V 臂空洞質心（PCA 座標）: {[tuple(np.round(c_, 1)) for c_ in _cent]}")
         vpool, _tv = [], 0
-        while len(vpool) < 600 and _tv < 6000:
+        while len(vpool) < 2000 and _tv < 20000:   # 漏斗二次放大(2026-07-30):600→2000
             _tv += 1
             q = _rand_blocks(rng) if rng.random() < 0.5 else _rand_frag(rng)
             q = q.copy()
