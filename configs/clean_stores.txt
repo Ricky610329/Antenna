@@ -477,3 +477,6 @@ dedust_r47b1b
 # sm_reanchor88.pth 追加（2026-07-30）
 dedust_r47b2a
 dedust_r47b2b
+# sm_reanchor89.pth 追加（2026-07-30）
+dedust_r47b3a
+dedust_r47b3b
