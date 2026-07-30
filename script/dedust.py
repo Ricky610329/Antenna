@@ -4394,7 +4394,7 @@ def select_graft(args):
             continue
         hist.add(q.tobytes())
         pid = f"gr48_{len(manifest):03d}_{sk}{md}_{en}"
-        torch.save(torch.tensor(q), str(ind.joinpath(pid + ".pt")))
+        torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))  # float32(store dtype 慣例)
         manifest.append(dict(id=pid, kind="graft", family=f"GRAFT_{sk}{md}",
                              removed_px=0, source_id=sk_id[sk],
                              ops=[["graft_" + md, en_id[en], jr, jc]],

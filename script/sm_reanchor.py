@@ -125,7 +125,7 @@ def _load_clean():
         store = SampleStore(DATASET_PATH.joinpath(name), verbose=False)
         for i in range(len(store)):
             x, y = store[i]
-            key = np.asarray(x).tobytes()
+            key = np.asarray(x, dtype=np.float32).tobytes()   # dtype 正規化(2026-07-31:graft 包 bool x 炸 frombuffer)
             if key not in seen:
                 seen[key] = (torch.as_tensor(x, dtype=torch.float32),
                              torch.as_tensor(y, dtype=torch.float32))
