@@ -808,6 +808,8 @@ def main():
     s.add_argument("--over", type=int, default=8)
     s.add_argument("--replay", type=int, default=2000)
     s.add_argument("--val", type=int, default=500)
+    s.add_argument("--ds-mode", default="response", choices=["pattern", "response"], dest="ds_mode",
+                   help="與 train 同鍋一致（v89 起 response;本版補齊,原 getattr fallback=pattern）")
     s.add_argument("--out", default="sm_reanchor60.pth", help="版本號來源（sm_twoNN/sm_loheadNN 取此檔數字）")
     s.set_defaults(fn=train_two_cmd)
     s = sub.add_parser("train-radhead2", help="標量 rad 判別器（健檢④;pattern→rad_margin 直回歸+鏡射;對決舊 rad 頭）")
