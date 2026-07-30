@@ -4318,23 +4318,40 @@ def select_graft(args):
             src_c = np.argwhere(piece).mean(0)
             dr, dc = int(round(tgt[0] - src_c[0])) + jr, int(round(tgt[1] - src_c[1])) + jc
             q = base | _shift(piece, dr, dc)
-        else:                                             # B 對角引擎加掛:主件上緣 gap≥1
-            piece = _diag_rich(eng)
-            if piece is None:
+        else:                                             # B 對角引擎換翼:翼槽=天然淨空位
+            #? v3（前兩版教訓:王朝密度 ~55%,全域掃不到 gap≥1 空位——盆地太滿）:
+            #  拆第二大件（翼）,對角引擎件放進翼槽（貼質心,掃 ±3 偏移求 gap≥1）=「共用配件換引擎」反向版
+            lab_e2, cs_e2 = _comps(eng)
+            pieces = sorted(((i, s) for i, s in cs_e2 if 8 <= s <= 90), key=lambda t: -t[1])
+            if not pieces:
                 return None
-            top = int(np.argwhere(main)[:, 0].min())
-            pc = np.argwhere(piece)
-            ph = int(pc[:, 0].max() - pc[:, 0].min()) + 1
-            tgt_r = max(0, top - 2 - ph) + jr
-            tgt_c = int(np.argwhere(main).mean(0)[1]) + jc
-            src_c = pc.mean(0)
-            dr, dc = int(round(tgt_r - pc[:, 0].min())), int(round(tgt_c - src_c[1]))
-            placed = _shift(piece, dr, dc)
-            #? gap≥1:與既有金屬 8-鄰不重疊才收（間距鐵律;貼死=融合改天再說）
+            if len(cs_s) < 2:
+                return None
+            wi, _ = sorted(cs_s, key=lambda t: -t[1])[1]
+            wing = lab_s == wi
+            base = skel & ~wing
+            tgt = np.argwhere(wing).mean(0)
             from scipy.ndimage import binary_dilation as _bdg
-            if (_bdg(placed, structure=S8g) & skel).any():
+            q = None
+            for ei, _s in pieces[:3]:
+                piece = lab_e2 == ei
+                pc = np.argwhere(piece)
+                for orr in (0, -1, 1, -2, 2, -3, 3):
+                    for occ in (0, -1, 1, -2, 2, -3, 3):
+                        dr = int(round(tgt[0] - pc.mean(0)[0])) + jr + orr
+                        dc = int(round(tgt[1] - pc.mean(0)[1])) + jc + occ
+                        cand = _shift(piece, dr, dc)
+                        if cand.sum() < pc.shape[0] * 0.9:
+                            continue
+                        if not (_bdg(cand, structure=S8g) & base).any():
+                            q = base | cand
+                            break
+                    if q is not None:
+                        break
+                if q is not None:
+                    break
+            if q is None:
                 return None
-            q = skel | placed
         q = q.copy()
         q[FEED] = True
         if not (140 <= int(q.sum()) <= 560):
