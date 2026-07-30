@@ -40,8 +40,9 @@
 python -m script.sm_reanchor train --add "dedust_r47b3a,dedust_r47b3b" --epochs 30 --out sm_reanchor89.pth
 python -m script.sm_reanchor train-two --epochs 30 --out sm_reanchor89.pth
 # 嫁接生成器待實作（_graft 槽組合+select-graft 命令;v89 收檔後實作發車,判準先寫死如 §1）
-# 批線（seed 20260805;staging 前置）: sm_invert gen --sm sm_reanchor89.pth --rad-head rad_head89.pth \
-#   --n-free 6 --n-surg 0 --n-champ 0 --n-oob 6 --seed 48<批號> --out-dir tmp/invert_stage_r48b<N>
+# 批線（seed 20260805;staging 前置;反演 oversample 3→6=速度紅利③）: sm_invert gen --sm sm_reanchor89.pth \
+#   --rad-head rad_head89.pth --n-free 6 --n-surg 0 --n-champ 0 --n-oob 6 --oversample 6 \
+#   --seed 48<批號> --out-dir tmp/invert_stage_r48b<N>
 # select-r48 --batch <N> --sm sm_reanchor89.pth --rad-head rad_head89.pth --gstage tmp/invert_stage_r48b<N>
 ```
 | 批/包 | 狀態 |
