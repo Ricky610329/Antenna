@@ -46,7 +46,8 @@ python -m script.dedust watch --stores dedust_r50b1a,dedust_r50b1b
 ```
 | 批/包 | 狀態 |
 |---|---|
-| （待） | |
+| 涓流池 | **prio4 常駐負片池點火（07-31 23:5x,Ricky 提議 216 轉負片→採已定案常駐池機制,優於固定 1:2=閒時 100% 負片）**:90 筆(z50b0_*,獨立店 dedust_r50b0b;臂分布 grf_lab 37/grf_inv 27/bool_keep 12/grf_neg 8/bool_cut 5/eng 1;查重 0);批單 prio 1-3 永遠優先;**凍結尺仍只從 b1 指定席切,涓流全入鍋** |
+| b1 | 上機中(07-31 23:2x;a=正片@37/b=負片@218;216 自產→轉涓流) |
 
 ## 4. 分析 (Analyze)
 （待）
