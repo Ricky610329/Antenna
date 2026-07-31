@@ -4258,6 +4258,34 @@ def _tri(r):
     return r["wm"][2] >= 0 and rm is not None and rm >= 0
 
 
+def select_neg(args):
+    """R50 負片臂（型態體系軸;判準=round-50 §1/decisions「型態體系軸」條）:
+    `script.neg_gen` 七臂池（決定性）→ farthest-point 覆蓋選席（**SM-blind**——影子 pred 收檔後
+    以當版凍結 SM 離線補算,版本記 round 檔;冷啟動曲線起點=n=0）。夾=dedust_r<NN>b<批>b_input。"""
+    from script.neg_gen import gen_pool, farthest_point
+    pool = gen_pool(args.seed + args.batch, args.pool, pad=args.pad)
+    idx = farthest_point(pool, args.n, seed=args.seed + args.batch)
+    input_dir = _dir(f"dedust_r{args.round}b{args.batch}b_input")
+    input_dir.mkdir(parents=True, exist_ok=True)
+    ARM_SHORT = {"eng": "eng", "grf_neg": "grfn", "grf_inv": "grfi", "grf_lab": "grfl",
+                 "bool_cut": "bcut", "bool_keep": "bkee", "sierp": "sier"}
+    manifest = []
+    for k, j in enumerate(idx):
+        pat, meta = pool[j]
+        pid = f"z{args.round}b{args.batch}_{k:03d}_{ARM_SHORT[meta['arm']]}"
+        torch.save(torch.tensor(pat.astype(np.float32)), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(dict(id=pid, kind="negreg", family=f"NEG_{args.round}b{args.batch}",
+                             arm=meta["arm"], gen_meta={k2: v for k2, v in meta.items() if k2 != "arm"},
+                             sm=None, heads="SM-blind(影子離線補)", **piece_stats(pat)))
+    json.dump(manifest, open(str(input_dir.joinpath("manifest.json")), "w", encoding="utf-8"),
+              ensure_ascii=False, indent=1)
+    arms = {}
+    for e in manifest:
+        arms[e["arm"]] = arms.get(e["arm"], 0) + 1
+    print(f"select-neg r{args.round}b{args.batch}: {len(manifest)} 筆 → {input_dir.name}"
+          f"（池 {len(pool)},farthest-point;臂分布 {arms};seed {args.seed}+{args.batch}）")
+
+
 def select_graft(args):
     """R48 定向嫁接試點（判準寫死於 round-48 §1;Ricky 拍板方向②）:
     骨架=王朝合格解（x00/margin 王）× 引擎=左側深 lo 個體（合格首例/usable_lo 王/g・d 線終錨）。
@@ -6984,6 +7012,54 @@ def main():
     s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
     s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
     s.set_defaults(fn=select_r22mix, round=49, key="sel")
+
+    s = sub.add_parser("select-r50", help="R50 型態體系軸:正片保底 30(=r49 配置縮編半);負片臂另走 select-neg;判準=round-50 檔")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260807)
+    s.add_argument("--sm", default="sm_reanchor95.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=6)
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=0)
+    s.add_argument("--v", type=int, default=2)
+    s.add_argument("--o", type=int, default=2)
+    s.add_argument("--m", type=int, default=3)
+    s.add_argument("--c", type=int, default=1)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=5)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=6)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.08, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=5)
+    s.add_argument("--shards", type=int, default=1)
+    s.add_argument("--rad-head", default="rad_head95.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--cnn-solo", action="store_true", default=False, dest="cnn_solo")
+    s.add_argument("--no-cnn-solo", action="store_false", dest="cnn_solo")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
+    s.set_defaults(fn=select_r22mix, round=50, key="sel")
+
+    s = sub.add_parser("select-neg", help="R50 負片臂:neg_gen 七臂池→farthest-point 覆蓋選席(SM-blind;判準=round-50/decisions 型態體系軸)")
+    s.add_argument("--round", type=int, default=50)
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--n", type=int, default=30)
+    s.add_argument("--pool", type=int, default=600)
+    s.add_argument("--pad", type=int, default=5)
+    s.add_argument("--seed", type=int, default=20260808)
+    s.set_defaults(fn=select_neg)
 
     s = sub.add_parser("select-graft", help="R48 嫁接試點:王朝骨架×左側引擎(A 替換/B 對角加掛);判準=round-48 §1")
     s.add_argument("--out", default="dedust_g48graft1_input")
