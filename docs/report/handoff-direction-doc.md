@@ -64,3 +64,12 @@
 - 寫作 session 的地盤＝`docs/report/` 新 stem（＋`assets/`）；只新增檔案、不改既有檔；commit 前綴 `docs(report):`；commit 前先 `git pull --rebase`。
 - 要新數字：跑唯讀命令（`script.status`／`script.analyze`／figs 腳本）可以；**不跑** select／jobs-add／sm_reanchor／chain（會踩批次線佇列與模型）。
 - 兩邊都在 GAN branch；發現對方剛 commit 就先 rebase 再動，衝突時以批次 session 的帳為準。
+
+## 6. 敘事 caveat 增補（2026-07-31,批次 session 代記;Ricky 定調）
+
+- **多山頭能力的誠實帳**（詳 `docs/discuss/decisions.md`「系統能力邊界」節,數字圖=
+  `docs/log/assets/round-49/senior_pool_diversity.png`）:學長池 top-300=73 族 vs 我們 64 族
+  （同尺 d≤20）,且兩庫 96% 不相交——**32 款家族是移植+擴散帳,不是「系統會開山」的證據**。
+  兩代對比的正確講法=學長「多次重跑天然多山頭、山頭內淺耕（池頂 10 帳實為 1-2 設計）」vs
+  我們「深耕+系統化移植+可製造化,山頭廣度靠外部種子」。寫作引用系統能力時照此口徑,
+  勿寫成「批次系統自主建立多家族」。驗證行動=R50 雙外軸（負片×學長族）已排。
