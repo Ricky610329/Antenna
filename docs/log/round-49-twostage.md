@@ -16,6 +16,11 @@
   2. **c49nq1 攻堅鏈**（第二條兩段式）:goal=wm、px d1、25 席/包 prio 1、dry2 終點;
      **三包內 best 推進 ≥+0.3=兩段式可複製**;dry2 快死=「c48nq1 是個案」警訊記負結果;
      合格照公證鐵則;紀錄門檻引 `docs/records.json`（不抄死數字）。
+     ★ 修訂（2026-07-31 10:2x,**c49nq1 零結果回收前**）:雙閘重掃出的首名錨=**c41grp2p07_19
+     （wm+0.14∧rad+0.10∧lo−2.66,雙閘最遠 corr 0.71/0.73,c41grp2=usable_lo 王族）**——左側個體,
+     goal 由 wm 改 **tri**（lo≤−2 內爬 min(wm−0.15,rad)=左側合格解會師鍵的原設計用途;wm 鍵會把 lo 換掉）。
+     可複製判準等價改述:三包內 tri score 推進 ≥+0.15（錨 −0.01 起跳;過 0=左側第 5 筆合格解,照公證）。
+     副產:此錨同時兌現「左側兩段式」（原不發車項的合規版——它過發車閘）。
   3. **批線 ≤3 批**（select-r49=r48 配置,v92 配套顯式當版,seed 20260806）:五軸照常;
      停止線=可用帶外連三批零推進→/stall-protocol。**≤3 批必收輪**。
   4. **lo 進鍵首航**（先決已成立:lohead ρ 0.710/0.797/0.779 三連 >0.5）:補池線
@@ -49,7 +54,9 @@ python -m script.dedust watch --stores dedust_r49b1a,dedust_r49b1b
 ```
 | 批/包 | 狀態 |
 |---|---|
-| （待） | |
+| c49nq1 | **發鏈（07-31 10:2x）**:錨 c41grp2p07_19、goal tri、25 席 prio 1、dry2;`chain --name c49nq1 --anchor c41grp2p07_19 --source-input dedust_c41grp2_p07_input --goal tri --anchor-score -0.01` |
+| 雙閘重掃 | ✅（07-31 10:1x）:近標帶 6,190 筆過 pattern 閘,top40 進 response 閘,8 筆全過;首名=c41grp2p07_19（左側王族,雙閘最遠）;次名 a005_x00r10c0s2（x00 製造系,rad+0.21）記候補;c12trip02_07（oob 7.46 破紀錄帶但 rad −0.15）記 scratch |
+| v92→b1 | 鏈跑動中（v92 主訓練完,two/staging/select 段;b3+c48nq1 125 筆入鍋） |
 
 ## 4. 分析 (Analyze)
 （待）
