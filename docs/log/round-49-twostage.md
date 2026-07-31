@@ -59,7 +59,7 @@ python -m script.dedust watch --stores dedust_r49b1a,dedust_r49b1b
 ```
 | 批/包 | 狀態 |
 |---|---|
-| c49nq2 | **發鏈（07-31 14:0x,裁決鏈）**:同錨換組級算子（§1 追加項⑥） |
+| c49nq2 | **拒發車（07-31 14:0x,護欄攔截）**:「近王帶(錨 wm+0.14>−2)組級變異包實證低效」= analysis-07 發車閘照設計工作——裁決鏈取消,不硬闖;兩解釋(個案 vs 算子不對症)的實驗分離**懸置**,c49nq1 負結果維持原判;R41 grp_grow 近帶成功例 vs analysis-07 統計的張力記 scratch |
 | c49nq1★ | **收鏈（07-31 13:5x,dry 2/2 快死）**:2 包 50 筆,終錨未被超越（tri −0.01;p01 best −0.16/p02 −0.16）→ **判準②負結果分支成立（此錨此算子未複製）**;副產=深左苗子 4 筆（lo −3.89/−3.52/−3.47,皆 wm/rad 微負=「lo 換 wm/rad」蹺蹺板實錘）入鍋+記錨銀行;帳 `docs/chains/c49nq1.jsonl` |
 | c48nq1★ | **收鏈（07-31 12:5x,dry 2/2）**:7 包 175 筆,終錨=margin 王 c48nq1p05_16 +0.79（r48n2 已公證）;p06/p07 best +0.75/+0.73=王鄰域高原無人再勝,單軸天花板乾淨;全鏈帳 −0.15→+0.79(+0.94),`docs/chains/c48nq1.jsonl` |
 | c49nq1 | **發鏈（07-31 10:2x）**:錨 c41grp2p07_19、goal tri、25 席 prio 1、dry2;`chain --name c49nq1 --anchor c41grp2p07_19 --source-input dedust_c41grp2_p07_input --goal tri --anchor-score -0.01` |
