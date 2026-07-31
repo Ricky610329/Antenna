@@ -54,6 +54,7 @@ python -m script.dedust watch --stores dedust_r49b1a,dedust_r49b1b
 ```
 | 批/包 | 狀態 |
 |---|---|
+| c48nq1★ | **收鏈（07-31 12:5x,dry 2/2）**:7 包 175 筆,終錨=margin 王 c48nq1p05_16 +0.79（r48n2 已公證）;p06/p07 best +0.75/+0.73=王鄰域高原無人再勝,單軸天花板乾淨;全鏈帳 −0.15→+0.79(+0.94),`docs/chains/c48nq1.jsonl` |
 | c49nq1 | **發鏈（07-31 10:2x）**:錨 c41grp2p07_19、goal tri、25 席 prio 1、dry2;`chain --name c49nq1 --anchor c41grp2p07_19 --source-input dedust_c41grp2_p07_input --goal tri --anchor-score -0.01` |
 | 雙閘重掃 | ✅（07-31 10:1x）:近標帶 6,190 筆過 pattern 閘,top40 進 response 閘,8 筆全過;首名=c41grp2p07_19（左側王族,雙閘最遠）;次名 a005_x00r10c0s2（x00 製造系,rad+0.21）記候補;c12trip02_07（oob 7.46 破紀錄帶但 rad −0.15）記 scratch |
 | v92→b1 | 鏈跑動中（v92 主訓練完,two/staging/select 段;b3+c48nq1 125 筆入鍋） |

@@ -1,0 +1,7 @@
+{"pack": 1, "n": 25, "anchor": "gr48_021_m42B_c41", "best": "c48nq1p01_22", "best_score": 0.09, "anchor_score": -0.15, "win": true, "wm": 0.09, "rad": 0.63, "oob": 23.71, "lo": 4.03, "hi": 4.07, "gated": 0, "all_out": false}
+{"pack": 2, "n": 24, "anchor": "c48nq1p01_22", "best": "c48nq1p02_15", "best_score": 0.06, "anchor_score": 0.09, "win": false, "wm": 0.06, "rad": 0.81, "oob": 24.17, "lo": 4.0, "hi": 4.08, "gated": 0, "all_out": false}
+{"pack": 3, "n": 25, "anchor": "c48nq1p01_22", "best": "c48nq1p03_21", "best_score": 0.17, "anchor_score": 0.09, "win": true, "wm": 0.17, "rad": 0.35, "oob": 25.48, "lo": 4.18, "hi": 4.08, "gated": 0, "all_out": false}
+{"pack": 4, "n": 25, "anchor": "c48nq1p03_21", "best": "c48nq1p04_16", "best_score": 0.54, "anchor_score": 0.17, "win": true, "wm": 0.54, "rad": 0.59, "oob": 18.6, "lo": 4.2, "hi": 4.08, "gated": 0, "all_out": false}
+{"pack": 5, "n": 25, "anchor": "c48nq1p04_16", "best": "c48nq1p05_16", "best_score": 0.79, "anchor_score": 0.54, "win": true, "wm": 0.79, "rad": 0.2, "oob": 22.79, "lo": 4.36, "hi": 4.34, "gated": 0, "all_out": false}
+{"pack": 6, "n": 25, "anchor": "c48nq1p05_16", "best": "c48nq1p06_23", "best_score": 0.75, "anchor_score": 0.79, "win": false, "wm": 0.75, "rad": 0.2, "oob": 19.99, "lo": 4.34, "hi": 4.21, "gated": 0, "all_out": false}
+{"pack": 7, "n": 25, "anchor": "c48nq1p05_16", "best": "c48nq1p07_12", "best_score": 0.73, "anchor_score": 0.79, "win": false, "wm": 0.73, "rad": 0.12, "oob": 20.31, "lo": 4.21, "hi": 4.16, "gated": 0, "all_out": false}
