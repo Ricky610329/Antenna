@@ -480,3 +480,25 @@ dedust_r47b2b
 # sm_reanchor89.pth 追加（2026-07-30）
 dedust_r47b3a
 dedust_r47b3b
+# sm_reanchor90.pth 追加（2026-07-31）
+dedust_r48b1a
+dedust_r48b1b
+dedust_g48graft1
+# sm_reanchor91.pth 追加（2026-07-31）
+dedust_r48b2a
+dedust_r48b2b
+# sm_reanchor92.pth 追加（2026-07-31）
+dedust_r48b3a
+dedust_r48b3b
+# sm_reanchor93.pth 追加（2026-07-31）
+dedust_r49b1a
+dedust_r49b1b
+# sm_reanchor94.pth 追加（2026-07-31）
+dedust_r49b2a
+dedust_r49b2b
+# sm_reanchor95.pth 追加（2026-07-31）
+dedust_r49b3a
+dedust_r49b3b
+# sm_reanchor96.pth 追加（2026-08-01）
+dedust_r50b1a
+dedust_r50b1b

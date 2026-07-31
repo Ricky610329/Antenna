@@ -93,8 +93,8 @@ def _load_clean_stores():
     for pat in ("dedust_auto*", "dedust_c*"):
         for p in sorted(glob.glob(str(DATASET_PATH.joinpath(pat)))):
             name = os.path.basename(p)
-            if name.endswith("_input"):
-                continue
+            if name.endswith("_input") or name.endswith("_frozen"):
+                continue   # _frozen=OOD 凍結尺隔離夾,永不入鍋(R50 協議;稽核 F8 升不變式)
             if os.path.isdir(p) and DATASET_PATH.joinpath(name, "results.json").exists() and name not in out:
                 out.append(name)
     #? 公證店（dedust_rNNn*）前移——「certified 先見先贏」去重不變式從註解變事實
