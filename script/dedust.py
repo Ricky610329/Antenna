@@ -4263,9 +4263,13 @@ def select_neg(args):
     `script.neg_gen` 七臂池（決定性）→ farthest-point 覆蓋選席（**SM-blind**——影子 pred 收檔後
     以當版凍結 SM 離線補算,版本記 round 檔;冷啟動曲線起點=n=0）。夾=dedust_r<NN>b<批>b_input。"""
     from script.neg_gen import gen_pool, farthest_point
+    if args.pad < 1:
+        raise SystemExit("--pad 最小 1(0=feed 無保護;稽核 L2)")
     pool = gen_pool(args.seed + args.batch, args.pool, pad=args.pad)
     idx = farthest_point(pool, args.n, seed=args.seed + args.batch)
     input_dir = _dir(f"dedust_r{args.round}b{args.batch}b_input")
+    if input_dir.is_dir() and any(input_dir.glob("*.pt")):
+        raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫防跨輪覆寫/正片 shards 撞夾(稽核 H1/H2)")
     input_dir.mkdir(parents=True, exist_ok=True)
     ARM_SHORT = {"eng": "eng", "grf_neg": "grfn", "grf_inv": "grfi", "grf_lab": "grfl",
                  "bool_cut": "bcut", "bool_keep": "bkee", "sierp": "sier"}
@@ -4276,9 +4280,11 @@ def select_neg(args):
         torch.save(torch.tensor(pat.astype(np.float32)), str(input_dir.joinpath(f"{pid}.pt")))
         manifest.append(dict(id=pid, kind="negreg", family=f"NEG_{args.round}b{args.batch}",
                              arm=meta["arm"], gen_meta={k2: v for k2, v in meta.items() if k2 != "arm"},
+                             pad=args.pad, seed=args.seed,
                              sm=None, heads="SM-blind(影子離線補)", **piece_stats(pat)))
-    json.dump(manifest, open(str(input_dir.joinpath("manifest.json")), "w", encoding="utf-8"),
-              ensure_ascii=False, indent=1)
+    tmp = input_dir.joinpath("manifest.json.tmp")
+    json.dump(manifest, open(str(tmp), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    os.replace(str(tmp), str(input_dir.joinpath("manifest.json")))
     arms = {}
     for e in manifest:
         arms[e["arm"]] = arms.get(e["arm"], 0) + 1
@@ -7052,8 +7058,8 @@ def main():
     s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
     s.set_defaults(fn=select_r22mix, round=50, key="sel")
 
-    s = sub.add_parser("select-neg", help="R50 負片臂:neg_gen 七臂池→farthest-point 覆蓋選席(SM-blind;判準=round-50/decisions 型態體系軸)")
-    s.add_argument("--round", type=int, default=50)
+    s = sub.add_parser("select-neg", help="R50 負片臂:neg_gen 七臂池→farthest-point 覆蓋選席(SM-blind;判準=round-50/decisions 型態體系軸;每輪必換 --seed)")
+    s.add_argument("--round", type=int, required=True, help="必填防跨輪覆寫(稽核 H1)")
     s.add_argument("--batch", type=int, required=True)
     s.add_argument("--n", type=int, default=30)
     s.add_argument("--pool", type=int, default=600)
