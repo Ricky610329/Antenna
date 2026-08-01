@@ -1008,7 +1008,14 @@ def cmd_batch(args):
                              pwm=m.get("pred_wm"), poob=m.get("pred_oob"), prad=m.get("pred_rad"),
                              plo=m.get("pred_lo"), diagb=m.get("diagb"),
                              d=m.get("diff_px")))
-    print(f"== r{args.round} b{args.batch} 收檔判讀（{len(stores)} 夾 {len(rows)} 筆;門檻源 records.json {rec['updated']}）==")
+    #? 正負分池（稽核 H3,2026-08-01）:OOD 臂（negreg=負片/senior=學長族）混入 rows 會弄壞
+    #  KPI②③/影子對決/多樣性恆溫器的跨輪可比性（實測 intra 55→218=恆溫器失效+樂觀誤報）——
+    #  主表只吃正片;OOD 臂另出簡表（判準=round-50:三標免疫,KPI=冷啟動曲線,不在此評）
+    ood_rows = [r for r in rows if r["kind"] in ("negreg", "senior")]
+    rows = [r for r in rows if r["kind"] not in ("negreg", "senior")]
+    print(f"== r{args.round} b{args.batch} 收檔判讀（{len(stores)} 夾 正片 {len(rows)} 筆"
+          + (f"+OOD 臂 {len(ood_rows)} 筆(分池,見尾表)" if ood_rows else "")
+          + f";門檻源 records.json {rec['updated']}）==")
     if incomplete:
         print("⚠ 未收全（先決定等/補跑,別急著下結論）: " + "; ".join(incomplete))
 
@@ -1256,7 +1263,10 @@ def cmd_batch(args):
     if rad_rho is not None:
         print(f"  ③ rad 頭前瞻 {rad_rho:+.3f}: " + ("≥0.3 續鍵（下批保留 --rad-key）" if rad_rho >= 0.3
                                                   else "<0.3——若連兩批<0.3 → 下批移除 --rad-key"))
-    print("  ④ 重錨: python -m script.sm_reanchor train --add \"" + ",".join(stores) + "\" --out sm_reanchorNN.pth")
+    _ood_sts = {r["st"] for r in ood_rows}
+    _pos_sts = [s for s in stores if s not in _ood_sts]
+    print("  ④ 重錨: python -m script.sm_reanchor train --add \"" + ",".join(_pos_sts) + "\" --out sm_reanchorNN.pth"
+          + ("（OOD 店已排除——雙頭制:負片/學長店走 configs/neg_stores.txt 只餵 two;稽核 H4 護欄）" if _ood_sts else ""))
     print("  ⑤ 下批 select → check-dup（exit 1 停）→ jobs-add → 池存量<48 補 → dedust watch 掛偵測")
     #? 反馬太①恆溫器:同質度掉水位→自動印下批調整建議（半自動負回饋,照抄執行）
     if intra < 40 or nn_h < 15:
@@ -1264,6 +1274,17 @@ def cmd_batch(args):
               " 或 --dyn-simcap 再壓一級（0.12→0.08）;判讀後記 round 檔")
     else:
         print(f"  ⑥ 多樣性恆溫: 正常（批內 {intra}/歷史 {nn_h}）")
+    if ood_rows:
+        print("\n== OOD 臂分池簡表（三標免疫,KPI=冷啟動曲線=kpi_ood.csv;判準=round-50 §1）==")
+        by_arm = {}
+        for r in ood_rows:
+            by_arm.setdefault((r["kind"], r["st"]), []).append(r)
+        for (kd, st), g in sorted(by_arm.items()):
+            ws = sorted((r["wm"] for r in g), reverse=True)
+            best = max(g, key=lambda r: r["wm"])
+            print(f"  {kd} [{st}]: n={len(g)} wm 中位 {ws[len(ws)//2]:+.2f} / best {best['wm']:+.2f}"
+                  f"（{best['id']},rad {best['rad']} lo {best['lo']}）")
+        print("  → 記帳: 負片入 neg_stores.txt(只餵 two);學長店=池值漂移校準另記;不入 train --add")
 
 
 def cmd_credit(args):
