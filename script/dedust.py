@@ -4262,10 +4262,11 @@ def select_neg(args):
     """R50 負片臂（型態體系軸;判準=round-50 §1/decisions「型態體系軸」條）:
     `script.neg_gen` 七臂池（決定性）→ farthest-point 覆蓋選席（**SM-blind**——影子 pred 收檔後
     以當版凍結 SM 離線補算,版本記 round 檔;冷啟動曲線起點=n=0）。夾=dedust_r<NN>b<批>b_input。"""
-    from script.neg_gen import gen_pool, farthest_point
+    from script.neg_gen import gen_pool, farthest_point, ARMS as _NEG_ARMS
     if args.pad < 1:
         raise SystemExit("--pad 最小 1(0=feed 無保護;稽核 L2)")
-    pool = gen_pool(args.seed + args.batch, args.pool, pad=args.pad)
+    arms = tuple(a.strip() for a in args.arms.split(",")) if args.arms else _NEG_ARMS
+    pool = gen_pool(args.seed + args.batch, args.pool, arms=arms, pad=args.pad)
     if args.stratify:
         #? 分層選席(稽核 M1,b2 起判準修訂:FPS 全域版餓死工程臂 eng1/sierp0 於 120 席)——
         #  每臂配額=均分+餘數給前臂;臂內仍用 FPS 保覆蓋
@@ -7159,6 +7160,7 @@ def main():
     s.add_argument("--pool", type=int, default=600)
     s.add_argument("--pad", type=int, default=5)
     s.add_argument("--stratify", action="store_true", help="每臂配額分層(b2 起;稽核 M1 判準修訂)")
+    s.add_argument("--arms", default=None, help="逗號臂單(如排除 sierp——全臂僅 2 圖已於 b9 覆蓋;稽核 M2)")
     s.add_argument("--seed", type=int, default=20260808)
     s.set_defaults(fn=select_neg)
 
