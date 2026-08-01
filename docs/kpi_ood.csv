@@ -1,0 +1,3 @@
+date,sm,model,neg_pot_n,ood_err_med,n_ruler
+2026-08-01 11:30,sm_reanchor97.pth,mlp,105,4.296,15
+2026-08-01 11:49,sm_two97.pth,two,107,2.423,15
