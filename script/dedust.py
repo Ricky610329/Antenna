@@ -4266,7 +4266,22 @@ def select_neg(args):
     if args.pad < 1:
         raise SystemExit("--pad 最小 1(0=feed 無保護;稽核 L2)")
     pool = gen_pool(args.seed + args.batch, args.pool, pad=args.pad)
-    idx = farthest_point(pool, args.n, seed=args.seed + args.batch)
+    if args.stratify:
+        #? 分層選席(稽核 M1,b2 起判準修訂:FPS 全域版餓死工程臂 eng1/sierp0 於 120 席)——
+        #  每臂配額=均分+餘數給前臂;臂內仍用 FPS 保覆蓋
+        by_arm = {}
+        for j, (p_, m_) in enumerate(pool):
+            by_arm.setdefault(m_["arm"], []).append(j)
+        arms_sorted = sorted(by_arm)
+        base, extra = divmod(args.n, len(arms_sorted))
+        idx = []
+        for k, a in enumerate(arms_sorted):
+            q = base + (1 if k < extra else 0)
+            sub = [pool[j] for j in by_arm[a]]
+            picked = farthest_point(sub, min(q, len(sub)), seed=args.seed + args.batch + k)
+            idx.extend(by_arm[a][t] for t in picked)
+    else:
+        idx = farthest_point(pool, args.n, seed=args.seed + args.batch)
     input_dir = _dir(f"dedust_r{args.round}b{args.batch}b_input")
     if input_dir.is_dir() and any(input_dir.glob("*.pt")):
         raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫防跨輪覆寫/正片 shards 撞夾(稽核 H1/H2)")
@@ -4290,6 +4305,46 @@ def select_neg(args):
         arms[e["arm"]] = arms.get(e["arm"], 0) + 1
     print(f"select-neg r{args.round}b{args.batch}: {len(manifest)} 筆 → {input_dir.name}"
           f"（池 {len(pool)},farthest-point;臂分布 {arms};seed {args.seed}+{args.batch}）")
+
+
+def select_senior(args):
+    """R50 學長未殖民族驗證臂（b2 起 10 席;判準=round-50 §1②/decisions 雙外軸——出血統的外）。
+    學長池 pool.npz(24,189)→top-300(池值)→greedy 家族(d≤20)領袖→池值降冪逐批驗;
+    kind=senior、id 前綴 e;夾=dedust_r<NN>b<批>c_input。決定性（純 numpy,無隱藏隨機源）。"""
+    pz = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tmp", "pattern_anatomy", "pool.npz")
+    z = np.load(pz, allow_pickle=True)
+    wm = z["wm"][:, 2].astype(float)
+    pats = np.unpackbits(z["packed"], axis=1)[:, :625].astype(bool)
+    order = np.argsort(-wm)[:300]
+    leaders = []                                          # (pool_idx, size)
+    for i in order:
+        for k, (li, _s) in enumerate(leaders):
+            if int(np.sum(pats[i] != pats[li])) <= 20:
+                leaders[k] = (li, leaders[k][1] + 1)
+                break
+        else:
+            leaders.append((int(i), 1))
+    start = (args.batch - 2) * args.n
+    sel = leaders[start:start + args.n]
+    if not sel:
+        raise SystemExit(f"學長領袖名單耗盡（{len(leaders)} 名,batch {args.batch} 起點 {start}）")
+    input_dir = _dir(f"dedust_r{args.round}b{args.batch}c_input")
+    if input_dir.is_dir() and any(input_dir.glob("*.pt")):
+        raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫（防覆寫）")
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    for k, (li, size) in enumerate(sel):
+        pat = pats[li].reshape(25, 25).astype(np.float32)
+        pid = f"e{args.round}b{args.batch}_{k:03d}_F{li}"
+        torch.save(torch.tensor(pat), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(dict(id=pid, kind="senior", family=f"SENIOR_{args.round}b{args.batch}",
+                             pool_idx=int(li), pool_wm=round(float(wm[li]), 3), family_size=int(size),
+                             sm=None, heads="SM-blind(帳面池值=學長模擬器口徑)", **piece_stats(pat > 0.5)))
+    tmp = input_dir.joinpath("manifest.json.tmp")
+    json.dump(manifest, open(str(tmp), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    os.replace(str(tmp), str(input_dir.joinpath("manifest.json")))
+    print(f"select-senior r{args.round}b{args.batch}: {len(manifest)} 領袖 → {input_dir.name}"
+          f"（全名單 {len(leaders)} 名,本批池值範圍 {manifest[0]['pool_wm']:+.2f}~{manifest[-1]['pool_wm']:+.2f}）")
 
 
 def select_graft(args):
@@ -7064,8 +7119,15 @@ def main():
     s.add_argument("--n", type=int, default=30)
     s.add_argument("--pool", type=int, default=600)
     s.add_argument("--pad", type=int, default=5)
+    s.add_argument("--stratify", action="store_true", help="每臂配額分層(b2 起;稽核 M1 判準修訂)")
     s.add_argument("--seed", type=int, default=20260808)
     s.set_defaults(fn=select_neg)
+
+    s = sub.add_parser("select-senior", help="R50 學長未殖民族臂:pool top-300 家族領袖池值降冪逐批驗(kind=senior;判準=round-50 §1②)")
+    s.add_argument("--round", type=int, required=True)
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--n", type=int, default=10)
+    s.set_defaults(fn=select_senior)
 
     s = sub.add_parser("select-graft", help="R48 嫁接試點:王朝骨架×左側引擎(A 替換/B 對角加掛);判準=round-48 §1")
     s.add_argument("--out", default="dedust_g48graft1_input")
