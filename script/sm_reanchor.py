@@ -188,6 +188,49 @@ def _dyn_pack():
     return np.packbits(np.stack(pats).astype(np.uint8), axis=1)
 
 
+_NEG_PATH = os.path.join(REPO, "configs", "neg_stores.txt")
+
+
+def _load_neg_samples():
+    """雙頭制（2026-08-01 Ricky 拍板,負片 5k-10k 前維持）:負片店清單=configs/neg_stores.txt,
+    只餵 two（跨域學習者）,主錨/ens/影子不吃（v96 消融定案:密度反權重孤點放大傷主錨)。"""
+    if not os.path.exists(_NEG_PATH):
+        return []
+    out = []
+    with open(_NEG_PATH, encoding="utf-8") as f:
+        names = [L.split("#")[0].strip() for L in f]
+    for name in names:
+        if not name:
+            continue
+        p = DATASET_PATH.joinpath(name)
+        if p.is_dir():
+            st = SampleStore(p, verbose=False)
+            out.extend(st[i] for i in range(len(st)))
+    return out
+
+
+def _ood_ruler(sm, tag, out_name):
+    """OOD 尺（round-50 §1③ 冷啟動曲線）:dedust_r50b1b_frozen 永凍 15 筆 |wm err| 中位
+    → docs/kpi_ood.csv（x 軸=鍋內負片 n 含涓流,y=誤差;主錨=外推基線對照,two=升級考卷）。"""
+    p = DATASET_PATH.joinpath("dedust_r50b1b_frozen")
+    if not p.is_dir():
+        return
+    st = SampleStore(p, verbose=False)
+    items = [st[i] for i in range(len(st))]
+    if not items:
+        return
+    med = float(np.median(_wm_errs(sm, items)))
+    neg_n = len(_load_neg_samples())
+    kp = os.path.join(REPO, "docs", "kpi_ood.csv")
+    new = not os.path.exists(kp)
+    import time as _tt
+    with open(kp, "a", encoding="utf-8") as f:
+        if new:
+            f.write("date,sm,model,neg_pot_n,ood_err_med,n_ruler\n")
+        f.write(f"{_tt.strftime('%Y-%m-%d %H:%M')},{out_name},{tag},{neg_n},{med:.3f},{len(items)}\n")
+    print(f"OOD 尺({tag}): |wm err| 中位 {med:.3f}（尺 n={len(items)},鍋內負片 n={neg_n}）→ docs/kpi_ood.csv")
+
+
 def _wm_errs(sm, items):
     errs = []
     sm.model.eval()
@@ -342,6 +385,7 @@ def train(args):
           f" | 分層 近{e_near:.2f}/中{e_mid:.2f}/遠{e_far:.2f}"
           f" | 凍結基準 {fz_med:.2f}/遠 {fz_far:.2f}（n={int(fmask.sum())}）"
           f" | rad ρ{rad_rho:+.2f} → docs/kpi.csv")
+    _ood_ruler(sm, "mlp", args.out)
     #? 影子 CNN 對決（R32 判準;2026-07-17）:每版重錨平行訓一顆 CNN 挑戰者,吃**同一鍋** ds。
     #  尺1（凍結基準分層）即訓即評;尺2 前瞻/尺3 adv 率=下批 analyze batch 雙模盲測。
     #  連兩批三尺全贏→轉正（zoo "cnn" 成預設+全鏈換錨）;輸→降級異架構 ensemble 成員。
@@ -447,6 +491,7 @@ def _train_two_core(tr, replay, over, ho, fmask, vnum, epochs, batch):
     med, fz = float(np.median(errs)), float(np.median(errs[fmask])) if fmask.any() else float("nan")
     print(f"二號 loss 首 {losses[0]:.3f} → 末 {losses[-1]:.3f} → {out2}")
     print(f"二號尺1: |wm err| 中位 {med:.3f} | 凍結 {fz:.3f}（盲測=下批 analyze 三模段）")
+    _ood_ruler(sm2, "two", out2)
     #? lo 判別器（臂B）:標量 (wm,lo) 回歸——lo 軸=左側戰役導航;select 記 pred_lo（R39 判進鍵）
     import torch.nn as _nn
     scal = _nn.Sequential(_nn.Conv2d(1, 32, 3, padding=1), _nn.ReLU(), _nn.MaxPool2d(2),
@@ -500,6 +545,10 @@ def train_two_cmd(args):
                       for x, _ in ho])
     vnum = "".join(ch for ch in os.path.basename(args.out) if ch.isdigit())
     print(f"乾淨真值 train {len(tr)} / held-out {len(ho)} ＋ 重放 {len(replay)}（鏡射增強前）")
+    neg = _load_neg_samples()
+    if neg:
+        print(f"雙頭制: two 加吃負片 {len(neg)} 筆（主錨不吃;清單=configs/neg_stores.txt）")
+        tr = tr + neg
     _train_two_core(tr, replay, args.over, ho, fmask, vnum, args.epochs, args.batch)
 
 

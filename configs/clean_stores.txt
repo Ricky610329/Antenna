@@ -501,7 +501,5 @@ dedust_r49b3a
 dedust_r49b3b
 # sm_reanchor96.pth 追加（2026-08-01）
 dedust_r50b1a
-dedust_r50b1b
 
 # v97 預追加(2026-08-01 稽核 F4:r50b0b 不匹配 auto-glob,涓流入鍋靠此行)
-dedust_r50b0b

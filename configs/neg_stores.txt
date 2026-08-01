@@ -1,0 +1,4 @@
+# 負片店清單(雙頭制 2026-08-01 Ricky 拍板:只餵 two,主錨不吃;負片 5k-10k 前維持)
+# 真相=docs/discuss/decisions.md「負片入鍋策略:雙頭制」;OOD 凍結尺夾(_frozen)永不列入
+dedust_r50b1b
+dedust_r50b0b
