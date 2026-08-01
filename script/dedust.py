@@ -4364,10 +4364,20 @@ def select_senior(args):
                 break
         else:
             leaders.append((int(i), 1))
-    start = (args.batch - 2) * args.n
-    sel = leaders[start:start + args.n]
+    #? 已量測領袖跳過（2026-08-01 b2 教訓:top10 有 6 個=R7/R9 早期已驗的池頂 p0x_orig 等——
+    #  全史 hash 過濾,每批自動取「未測」前 n 名（消耗制,前批測過自動前進））
+    hist = set()
+    for fol in _all_input_folders():
+        for f in fol.glob("*.pt"):
+            try:
+                hist.add((np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5).tobytes())
+            except Exception:
+                pass
+    fresh = [(li, sz) for li, sz in leaders if pats[li].tobytes() not in hist]
+    print(f"領袖 {len(leaders)} 名,已量測跳過 {len(leaders) - len(fresh)},未測 {len(fresh)}")
+    sel = fresh[:args.n]
     if not sel:
-        raise SystemExit(f"學長領袖名單耗盡（{len(leaders)} 名,batch {args.batch} 起點 {start}）")
+        raise SystemExit(f"學長未測領袖耗盡（{len(leaders)} 名全數已驗）")
     input_dir = _dir(f"dedust_r{args.round}b{args.batch}c_input")
     if input_dir.is_dir() and any(input_dir.glob("*.pt")):
         raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫（防覆寫）")
