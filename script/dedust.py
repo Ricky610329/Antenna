@@ -4307,6 +4307,45 @@ def select_neg(args):
           f"（池 {len(pool)},farthest-point;臂分布 {arms};seed {args.seed}+{args.batch}）")
 
 
+def select_bridge(args):
+    """R50 橋接臂(Ricky 2026-08-01「正負片中間平滑過渡」):bri_dil/bri_ero/bri_mix 三式輪抽,
+    母本=近期正片輸入夾(真實量測個體);kind=bridge、id 前綴 j;夾=dedust_r<NN>b<批>b_input(批號 30+
+    保留橋接池)。SM-blind;店入 neg_stores(two 的課程學習教材)。"""
+    from script.neg_gen import bridge_pool
+    parents = []
+    for fol in args.parent_inputs.split(","):
+        pp = _dir(fol.strip())
+        if not pp.is_dir():
+            continue
+        for f in sorted(pp.glob("*.pt")):
+            try:
+                parents.append(np.asarray(torch.load(str(f), weights_only=True)).reshape(25, 25) > 0.5)
+            except Exception:
+                pass
+    if len(parents) < 20:
+        raise SystemExit(f"母本不足({len(parents)})——檢查 --parent-inputs")
+    pool = bridge_pool(args.seed + args.batch, args.n, parents, pad=args.pad)
+    input_dir = _dir(f"dedust_r{args.round}b{args.batch}b_input")
+    if input_dir.is_dir() and any(input_dir.glob("*.pt")):
+        raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫(防覆寫)")
+    input_dir.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    for k, (pat, meta) in enumerate(pool):
+        pid = f"j{args.round}b{args.batch}_{k:03d}_{meta['arm']}"
+        torch.save(torch.tensor(pat.astype(np.float32)), str(input_dir.joinpath(f"{pid}.pt")))
+        manifest.append(dict(id=pid, kind="bridge", family=f"BRI_{args.round}b{args.batch}",
+                             arm=meta["arm"], gen_meta={k2: v for k2, v in meta.items() if k2 != "arm"},
+                             pad=args.pad, seed=args.seed, sm=None, heads="SM-blind", **piece_stats(pat)))
+    tmp = input_dir.joinpath("manifest.json.tmp")
+    json.dump(manifest, open(str(tmp), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    os.replace(str(tmp), str(input_dir.joinpath("manifest.json")))
+    arms = {}
+    for e in manifest:
+        arms[e["arm"]] = arms.get(e["arm"], 0) + 1
+    print(f"select-bridge r{args.round}b{args.batch}: {len(manifest)} 筆 → {input_dir.name}"
+          f"(母本 {len(parents)};臂分布 {arms})")
+
+
 def select_senior(args):
     """R50 學長未殖民族驗證臂（b2 起 10 席;判準=round-50 §1②/decisions 雙外軸——出血統的外）。
     學長池 pool.npz(24,189)→top-300(池值)→greedy 家族(d≤20)領袖→池值降冪逐批驗;
@@ -7128,6 +7167,16 @@ def main():
     s.add_argument("--batch", type=int, required=True)
     s.add_argument("--n", type=int, default=10)
     s.set_defaults(fn=select_senior)
+
+    s = sub.add_parser("select-bridge", help="R50 橋接臂:正負片中間過渡(dil/ero/mix;kind=bridge;批號 30+)")
+    s.add_argument("--round", type=int, required=True)
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--n", type=int, default=280)
+    s.add_argument("--pad", type=int, default=5)
+    s.add_argument("--seed", type=int, default=20260811)
+    s.add_argument("--parent-inputs", dest="parent_inputs",
+                   default="dedust_r49b1a_input,dedust_r49b2a_input,dedust_r49b3a_input,dedust_r48b1a_input")
+    s.set_defaults(fn=select_bridge)
 
     s = sub.add_parser("select-graft", help="R48 嫁接試點:王朝骨架×左側引擎(A 替換/B 對角加掛);判準=round-48 §1")
     s.add_argument("--out", default="dedust_g48graft1_input")

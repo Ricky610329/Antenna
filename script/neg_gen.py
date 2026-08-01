@@ -306,3 +306,43 @@ def main():
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     main()
+
+
+def bridge_pool(seed, n, pos_pats, pad=FEED_PAD_DEFAULT):
+    """橋接池（Ricky 2026-08-01「正負片中間平滑過渡」;R50 §3 追記/R51 判準候選）:三式輪抽——
+    bri_dil=正片母本膨脹路徑（碎片增厚連板,iters 1-3）/bri_ero=負片蝕刻路徑（洞加寬碎化）/
+    bri_mix=GRF 空間遮罩嵌合（正片區×負片區,t∈{0.3,0.5,0.7} 金屬率內插）。
+    pos_pats=真實量測正片母本 list[bool(25,25)];決定性+池內去重;postprocess 同負片鏈。"""
+    from scipy.ndimage import binary_erosion
+    out, seen = [], set()
+    k = 0
+    while len(out) < n and k < n * 20:
+        rng = np.random.default_rng(seed * 1_000_003 + 777 + k)
+        mode = ("dil", "ero", "mix")[k % 3]
+        k += 1
+        if mode == "dil":
+            P = pos_pats[int(rng.integers(0, len(pos_pats)))]
+            it = int(rng.integers(1, 4))
+            raw = binary_dilation(P, CHEB, iterations=it)
+            meta = {"arm": "bri_dil", "iters": it}
+        elif mode == "ero":
+            raw0, m0 = gen_grf(rng, (0.65, 0.82))
+            it = int(rng.integers(1, 3))
+            raw = binary_erosion(raw0, CHEB, iterations=it)
+            meta = {"arm": "bri_ero", "iters": it, "f0": m0["f"]}
+        else:
+            P = pos_pats[int(rng.integers(0, len(pos_pats)))]
+            Nn, _mn = gen_grf(rng, (0.65, 0.82))
+            t = float(rng.choice([0.3, 0.5, 0.7]))
+            fld = gaussian_filter(rng.normal(size=(N, N)), 2.0)
+            mask = fld >= np.quantile(fld, 1 - t)
+            raw = np.where(mask, Nn, P)
+            meta = {"arm": "bri_mix", "t": t}
+        m = postprocess(np.asarray(raw, dtype=bool), pad)
+        key = m.tobytes()
+        if key in seen:
+            continue
+        seen.add(key)
+        meta["f_final"] = round(float(m.mean()), 3)
+        out.append((m, meta))
+    return out

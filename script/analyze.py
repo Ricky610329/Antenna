@@ -1011,8 +1011,8 @@ def cmd_batch(args):
     #? 正負分池（稽核 H3,2026-08-01）:OOD 臂（negreg=負片/senior=學長族）混入 rows 會弄壞
     #  KPI②③/影子對決/多樣性恆溫器的跨輪可比性（實測 intra 55→218=恆溫器失效+樂觀誤報）——
     #  主表只吃正片;OOD 臂另出簡表（判準=round-50:三標免疫,KPI=冷啟動曲線,不在此評）
-    ood_rows = [r for r in rows if r["kind"] in ("negreg", "senior")]
-    rows = [r for r in rows if r["kind"] not in ("negreg", "senior")]
+    ood_rows = [r for r in rows if r["kind"] in ("negreg", "senior", "bridge")]
+    rows = [r for r in rows if r["kind"] not in ("negreg", "senior", "bridge")]
     print(f"== r{args.round} b{args.batch} 收檔判讀（{len(stores)} 夾 正片 {len(rows)} 筆"
           + (f"+OOD 臂 {len(ood_rows)} 筆(分池,見尾表)" if ood_rows else "")
           + f";門檻源 records.json {rec['updated']}）==")
