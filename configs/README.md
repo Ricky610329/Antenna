@@ -151,5 +151,7 @@ NAS（`DATASET_PATH = T:\碩一_鄒穎麒's\antenna\dataset`）上的離線資�
 | `script/round_report.py` | ❌ 分析 | **round 結果歸檔**(reuse benchmark):吃一個 round 的 runs → 每臂「最佳 pattern + S11/Gain vs spec」圖 + worst-margin vs HFSS-call 疊圖(可加 random)+ 可貼進 `docs/log/round-NN` §4 的 markdown 數字。圖落 `docs/log/assets/round-NN/`。開發機可跑 |
 | `script/status.py` | ❌ 監控 | **掃 NAS result/ 各 run 即時狀態**(取代手動猜、減 ONGOING churn):機器/epoch/每epoch耗時/**alive或卡住**/最佳 worst_margin/skip。`--match` 篩、`--md` 出可貼 ONGOING 的表。純讀、開發機可跑 |
 | `script/analyze.py` | ❌ 分析 | **可重現診斷工具**(把散在對話的一次性分析收成子命令):`volatility`(每 epoch 像素翻轉+波動=探索量)/`rad-repr`(方向圖 K 個 cosine mode 最佳擬合殘差=表達力上限)/`rad-error`(已訓 rad head 窗內 pred-vs-real 誤差)。純讀、開發機可跑 |
+| `script/neg_gen.py` | ⚙ 資料 | **R50 負片(slot/aperture 體系)生成器**(型態體系軸的生成端,2026-07-31):七家族決定性生成——eng 工程語彙／GRF level-cut 三式(neg/inv/lab)／Boolean 切片兩式／Sierpinski 探針;硬約束＝**feed 下 5×5 承重塊**＋除塵/針孔縫合後處理(可製造性寫死在生成端)。CLI `sheet`(樣張)/`pool`(池);接線＝`dedust select-neg`(farthest-point 覆蓋選席,SM-blind)。開發機可跑 |
+| `script/gnn_bakeoff.py` | ❌ 分析 | **GNN bakeoff**(金屬像素圖 SM,規格 v3;2026-07-30,現 **封存待命**——重啟＝Ricky 點名):節點=金屬像素、四型邊(面/對角/跨縫 gap1-2 LOS)+虛擬全域節點,GINE/GATv2;子命令 `build-cache`/`train`/`grid`(12 組合)/`exam`(142 鏈包 d=1 考卷,拓撲/幾何分層 ρ);過線才進影子制度、不裸換。開發機可跑(有 GPU 自動用) |
 | `script/convert_dataset.py` | ⚙ 資料 | 舊 `.dataset` 格式轉換 |
 | `script/img2video.py`、`check_gpu.py`、`get_local_ip.py`、`kill.py`、`process_files.py` | ❌ 雜項 | 視覺化／環境／程序管理工具，與訓練無關 |
