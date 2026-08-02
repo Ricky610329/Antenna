@@ -4354,6 +4354,51 @@ def select_bridge(args):
           f"(母本 {len(parents)};臂分布 {arms})")
 
 
+def select_meshconv(args):
+    """網格收斂實驗(docs/discuss/proposal-mesh-convergence.md,diffsim session 提案 2026-08-03):
+    同一批**已量測** pattern × 三組自適應網格設定重測,估 HFSS 真值自身抖動=rank ρ 天花板。
+    ids 檔一行=`來源輸入夾:id 組別`(組別 A=高爭議/B=對照;S2 只收 A 組)。
+    產出 dedust_r<NN>ms{0,1,2}_input 三夾:kind=meshconv(查重豁免)、各夾寫 hfss_setup.json。
+    發車鐵則=**三夾 jobs-add 全帶同一個 --machine 釘選**(提案 §3.2 同機約束);
+    且需三台 worker 都已更新(machine 欄位+hfss_setup.json 支援)才可入佇列。"""
+    SETUPS = {0: dict(max_delta_s=0.02, max_passes=6, min_passes=5, min_converged=5),
+              1: dict(max_delta_s=0.005, max_passes=20, min_passes=5, min_converged=3),
+              2: dict(max_delta_s=0.002, max_passes=30, min_passes=5, min_converged=3)}
+    rows = []
+    for ln in open(args.ids_file, encoding="utf-8"):
+        ln = ln.strip()
+        if not ln or ln.startswith("#"):
+            continue
+        src, grp = ln.split()
+        fol, pid = src.split(":")
+        rows.append((fol, pid, grp.upper()))
+    if not rows:
+        raise SystemExit("ids 檔空的")
+    pats = {}
+    for fol, pid, _ in rows:
+        f = DATASET_PATH.joinpath(fol, f"{pid}.pt")
+        if not f.exists():
+            raise SystemExit(f"找不到 {fol}:{pid}")
+        pats[pid] = torch.load(str(f), weights_only=True)
+    for s_idx, setup in SETUPS.items():
+        sel = [(fol, pid, g) for fol, pid, g in rows if s_idx < 2 or g == "A"]
+        input_dir = _dir(f"dedust_r{args.round}ms{s_idx}_input")
+        if input_dir.is_dir() and any(input_dir.glob("*.pt")):
+            raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫(防覆寫)")
+        input_dir.mkdir(parents=True, exist_ok=True)
+        manifest = []
+        for fol, pid, g in sel:
+            torch.save(pats[pid], str(input_dir.joinpath(f"{pid}.pt")))
+            manifest.append(dict(id=pid, kind="meshconv", family=f"MESH_S{s_idx}",
+                                 group=g, src=fol, sm=None, heads="meshconv"))
+        json.dump(setup, open(str(input_dir.joinpath("hfss_setup.json")), "w", encoding="utf-8"), indent=1)
+        tmp = input_dir.joinpath("manifest.json.tmp")
+        json.dump(manifest, open(str(tmp), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        os.replace(str(tmp), str(input_dir.joinpath("manifest.json")))
+        print(f"select-meshconv S{s_idx}: {len(manifest)} 筆 → {input_dir.name}（setup={setup}）")
+    print("⚠ 發車前確認:三台 worker 已更新(釘選+hfss_setup 支援);三夾 jobs-add 同一個 --machine。")
+
+
 def select_senior(args):
     """R50 學長未殖民族驗證臂（b2 起 10 席;判準=round-50 §1②/decisions 雙外軸——出血統的外）。
     學長池 pool.npz(24,189)→top-300(池值)→greedy 家族(d≤20)領袖→池值降冪逐批驗;
@@ -4567,7 +4612,7 @@ def check_dup(args):
     man_kind = {m["id"]: m.get("kind", "") for m in json.load(
         open(str(DATASET_PATH.joinpath(args.input, "manifest.json")), encoding="utf-8"))}
     new = {k: v for k, v in load_folder(args.input).items()
-           if man_kind.get(k) not in ("repeat", "notarize")}     # 蓄意重複(公證)不算違規
+           if man_kind.get(k) not in ("repeat", "notarize", "meshconv")}  # 蓄意重複(公證/網格收斂重測)不算違規
     seen, bad = {}, 0
     for k, v in new.items():
         if v in seen:
@@ -5269,6 +5314,22 @@ def run(args):
             json.dump(results, f, ensure_ascii=False, indent=1)
         os.replace(tmp, results_path)
 
+    #? 求解設定覆蓋(2026-08-03 網格收斂實驗,proposal-mesh-convergence):輸入夾放 hfss_setup.json
+    #  (鍵=max_delta_s/max_passes/min_passes/min_converged)即整夾生效;無檔=歷來預設(0.02/6/5/5)。
+    #  存證:複製一份進 store_dir——結果夾自帶「這批用什麼設定量的」,不靠人記。
+    hfss_setup = {}
+    _setup_f = input_dir.joinpath("hfss_setup.json")
+    if _setup_f.exists():
+        with open(str(_setup_f), encoding="utf-8") as f:
+            hfss_setup = json.load(f)
+        allowed = {"max_delta_s", "max_passes", "min_passes", "min_converged"}
+        bad = set(hfss_setup) - allowed
+        if bad:
+            raise SystemExit(f"hfss_setup.json 不明鍵 {bad}（合法鍵={sorted(allowed)}）")
+        with open(str(store_dir.joinpath("hfss_setup.json")), "w", encoding="utf-8") as f:
+            json.dump(hfss_setup, f, ensure_ascii=False, indent=1)
+        print(f"⚠ 非預設求解設定生效: {hfss_setup}（來源 {_setup_f.name};已存證進 store）")
+
     store = SampleStore(store_dir)
     #? 續跑規則：成功的跳過、error 的重試（COM 偶發例外佔比 ~15%,R8 實測）
     todo = [(n, m) for n, m in enumerate(manifest)
@@ -5308,7 +5369,7 @@ def run(args):
         last = None
         for attempt in range(3):
             def _mk():
-                s = SinglePortRadSimulator(record_path=str(out), sweep_type=args.sweep)
+                s = SinglePortRadSimulator(record_path=str(out), sweep_type=args.sweep, **hfss_setup)
                 s.open()
                 return s
             try:
@@ -5612,7 +5673,10 @@ def jobs_add(args):
         jobs = json.load(open(str(qp), encoding="utf-8")) if qp.exists() else []
         if any(j["store"] == args.store for j in jobs):
             raise SystemExit(f"{args.store} 已在佇列")
-        jobs.append(dict(input=args.input, store=args.store, prio=args.prio))
+        job = dict(input=args.input, store=args.store, prio=args.prio)
+        if getattr(args, "machine", None):
+            job["machine"] = args.machine                # 釘選:只有這台認領(同機三組對照等)
+        jobs.append(job)
         tmp = str(qp) + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(jobs, f, ensure_ascii=False, indent=1)
@@ -5871,6 +5935,8 @@ def worker(args):
         picked = None
         for j in jobs:
             st = j["store"]
+            if j.get("machine") and j["machine"] != me:
+                continue                                  # 釘選批(網格收斂等):只給指定機器認領
             if sd.joinpath(st + ".done").exists():
                 continue
             cp = sd.joinpath(st + ".claim")
@@ -7227,6 +7293,11 @@ def main():
     s.add_argument("--n", type=int, default=10)
     s.set_defaults(fn=select_senior)
 
+    s = sub.add_parser("select-meshconv", help="網格收斂實驗:已量測 pattern×三組求解設定重測(kind=meshconv;判準=proposal-mesh-convergence §3;發車=同機釘選)")
+    s.add_argument("--round", type=int, required=True)
+    s.add_argument("--ids-file", required=True, help="一行=`來源輸入夾:id 組別(A/B)`;S2 只收 A")
+    s.set_defaults(fn=select_meshconv)
+
     s = sub.add_parser("select-bridge", help="R50 橋接臂:正負片中間過渡(dil/ero/mix;kind=bridge;批號 30+)")
     s.add_argument("--round", type=int, required=True)
     s.add_argument("--batch", type=int, required=True)
@@ -7411,6 +7482,7 @@ def main():
     s.add_argument("--input", required=True)
     s.add_argument("--store", required=True)
     s.add_argument("--prio", type=int, default=5, help="小=先跑")
+    s.add_argument("--machine", default=None, help="釘選 IP 末段(216/218/37)——只有這台認領;同機對照實驗用")
     s.set_defaults(fn=jobs_add)
 
     s = sub.add_parser("jobs-ls", help="看派工佇列現況（預設隱藏 done 歷史;--all 列全部）")

@@ -43,10 +43,18 @@ class SinglePortSimulator(PatchSimulator):
     回傳的響應字典含 'S11' (反射係數, dB) 與 'Gain' (正向 Realized Gain, dB)。
     """
     def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'single_port.sab'), pixel_count:int = 25,
-                 sweep_type: str = "Interpolating"):
+                 sweep_type: str = "Interpolating",
+                 max_delta_s: float = 0.02, max_passes: int = 6, min_passes: int = 5, min_converged: int = 5):
         #? sweep_type: HFSS 掃頻演算法 {"Interpolating"(預設,快;自選頻點+有理擬合) / "Discrete"(17 點逐點硬解,
         #  慢但每點真解) / "Fast"}。Discrete 用於「掃頻法交叉驗證」——量化 Interpolating 擬合誤差 (round-10)。
         self.sweep_type = str(sweep_type)
+        #? 自適應網格收斂設定(2026-08-03 網格收斂實驗需求,proposal-mesh-convergence)。
+        #  預設值=歷來寫死的值(0.02/6/5/5)——不帶參數的行為與所有既有真值同設定;
+        #  覆蓋來源=dedust run 讀輸入夾 hfss_setup.json(批次線),不進 config 不進訓練管線。
+        self.max_delta_s = float(max_delta_s)
+        self.max_passes = int(max_passes)
+        self.min_passes = int(min_passes)
+        self.min_converged = int(min_converged)
         #? HFSS_sab_path 預設指向本套件 sab/single_port.sab：一塊已預先繪製好的「底板」幾何，
         #? 內含基板 (Sub)、地平面 (GND)、單一饋線 (feed_line) 與激勵面 (Rectangle1)。
         #? 像素貼片只需畫在這塊底板上方即可，省去每次重建固定結構的時間。
@@ -421,11 +429,11 @@ class SinglePortSimulator(PatchSimulator):
                 "NAME:Setup1",
                 "SolveType:=", "Single",
                 "Frequency:=", "28GHz",         # 自適應細化所用的求解頻率 (設計中心頻)
-                "MaxDeltaS:=", 0.02,            # 收斂門檻：相鄰兩次細化的 S 參數最大變化 < 0.02 即視為收斂
+                "MaxDeltaS:=", self.max_delta_s,      # 收斂門檻：相鄰兩次細化的 S 參數最大變化 < 此值即視為收斂
                 "UseMatrixConv:=", False,
-                "MaximumPasses:=", 6,           # 最多細化 6 次 (上限，防止無止盡細化)
-                "MinimumPasses:=", 5,           # 至少細化 5 次 (確保網格足夠)
-                "MinimumConvergedPasses:=", 5,  # 至少連續 5 次都收斂才算真收斂 (避免假性收斂)
+                "MaximumPasses:=", self.max_passes,   # 最多細化次數 (上限，防止無止盡細化)
+                "MinimumPasses:=", self.min_passes,   # 至少細化次數 (確保網格足夠)
+                "MinimumConvergedPasses:=", self.min_converged,  # 至少連續 N 次都收斂才算真收斂 (避免假性收斂)
                 "PercentRefinement:=", 30,      # 每次細化新增約 30% 網格元素
                 "IsEnabled:=", True,
                 [
