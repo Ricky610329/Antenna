@@ -57,8 +57,12 @@
   why:物理結構天生無 OOD 問題=資料飛輪正攻的洞;鏈可微→做不出的節點可 Model 置換/STE。
 - 指導書=`docs/diffsim.md`;研究日誌=[`docs/log/analysis-08-diffsim.md`](../docs/log/analysis-08-diffsim.md)
   (判準/分割鐵則/階段進度都在那)。code=`script/diffsim/`,物理測試 `tests/test_diffsim.py`(13 條)。
-- 進度:**階段 0 幾何確認完成**(.sab 二進位直解 → 板 35×20mm、饋線寬 1.1mm/長 22.5mm、
-  Z₀≈51Ω ⇒ 饋線長度不影響 |S11|、不必建模);L1 腔模型跑通、gates 未報。
+- 進度(2026-08-03):**階段 0 ✅**(.sab 二進位直解 → 板 35×20mm、饋線寬 1.1mm/長 22.5mm、
+  Z₀≈51Ω ⇒ 饋線長度不影響 |S11|、不必建模)／**GATE 1 ✅ 通過**(val pooled ρ **+0.508**;
+  clean +0.756/senior +0.352;負片域 +0.05 懸而未決)／L2 MoM 已建+物理驗證過
+  (共振對閉式解 1.6%),擬核進行中。
+- ⚠ **第一次 gate 1 報數作廢**:獨立 agent 對抗式驗證抓到 Q_rad 歸一化 bug 壓在判準上
+  (Gain 低估 2.5-6.4dB),修完重跑 +0.434→+0.508。「驗證不過報數無效」的紀律有效。
 - gates 寫死:L1 pooled ρ≥0.4 → L2;L2 裸 ρ≥0.6 → 投資源;單向門,不到就停+誠實記錄。
 - ⚠ **只讀 NAS**：讀樣本 `.pt`/`results.json`，不碰 jobs/sm_reanchor/kpi/records。
 

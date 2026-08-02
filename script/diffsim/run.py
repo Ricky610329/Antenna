@@ -296,6 +296,59 @@ def cmd_l2fit(args):
     print(f"核參數落地 {L2_PARAMS}")
 
 
+def _phys_pred(idx, sel, model, args, tag):
+    """diffsim 對一組樣本的預測（帶檔案快取——L2 每筆 ~370ms，重算很貴）。"""
+    path = _cache_path(f"phys_{model}_{tag}_{len(sel)}")
+    if os.path.exists(path):
+        z = np.load(path)
+        if len(z["sel"]) == len(sel) and (z["sel"] == sel).all():
+            return z["pred"]
+    if model == "l1":
+        import json
+        pf = os.path.join(D.CACHE_DIR, "l1_params.json")
+        cfg = json.load(open(pf, encoding="utf-8"))["best"]
+        pred, _ = run_l1(idx, sel, batch=24, **cfg)
+    else:
+        m, _ = build_l2()
+        pred = m.predict(idx["x"][sel].astype(np.float64), batch=8)
+    np.savez_compressed(path, pred=pred, sel=sel)
+    return pred
+
+
+def cmd_head(args):
+    """殘差頭 A/B：**同資料同架構**，唯一差別是有沒有吃 diffsim → 隔離出物理錨的加值。"""
+    from .head import train_head, predict_head
+    idx = D.load()
+    split, _ = D.assign_split(idx)
+    tr = pick(idx, split, "fit", args.n)
+    va = pick(idx, split, "val")
+    print(f"殘差頭（錨 = {args.model}）：訓練 {len(tr)} 筆（fit）、驗證 {len(va)} 筆（val）")
+    t = time.time()
+    p_tr = _phys_pred(idx, tr, args.model, args, "tr")
+    p_va = _phys_pred(idx, va, args.model, args, "va")
+    print(f"  diffsim 預測 {time.time() - t:.0f}s")
+    x_tr, y_tr = idx["x"][tr].astype(np.float32), idx["y"][tr].astype(np.float32)
+    x_va, y_va = idx["x"][va].astype(np.float32), idx["y"][va].astype(np.float32)
+    wm_t, _, _ = margins(y_va)
+    out = {}
+    for use in (True, False):
+        name = f"{args.model}+殘差頭" if use else "純資料對照組（同架構）"
+        print(f"\n-- {name}")
+        m, err = train_head(x_tr, p_tr, y_tr, use_phys=use, epochs=args.epochs, seed=args.seed)
+        pv = predict_head(m, x_va, p_va)
+        wm_p, _, _ = margins(pv)
+        rho = report_rho(wm_p, wm_t, idx["stratum"][va], tag=name)
+        out[name] = (rho, float(np.median(np.abs(wm_p - wm_t))), err)
+    print("\n== GATE 3 對照（val）==")
+    print("| 模型 | pooled ρ | clean | neg | senior | frozen | \\|Δwm\\| 中位 |")
+    print("|---|---|---|---|---|---|---|")
+    for k, (rho, e, _) in out.items():
+        print(f"| {k} | {rho.get('ALL', float('nan')):+.3f} | "
+              + " | ".join(f"{rho.get(s, float('nan')):+.3f}"
+                           for s in ("clean", "neg", "senior", "frozen"))
+              + f" | {e:.2f} |")
+
+
 def cmd_gate2(args):
     """L2 gate：判準＝**裸** pooled ρ ≥ 0.60（`docs/diffsim.md` §5，發車前寫死）。"""
     idx = D.load()
@@ -337,6 +390,11 @@ def main():
     g1.add_argument("--batch", type=int, default=24)
     g1.add_argument("--device", default="cpu")
     g1.add_argument("--calib", type=int, default=300, help="仿射校準用的 fit 筆數/stratum")
+    hd = sub.add_parser("head")
+    hd.add_argument("--model", default="l1", choices=("l1", "l2"))
+    hd.add_argument("--n", type=int, default=1200, help="每 stratum 取幾筆（fit 分割）")
+    hd.add_argument("--epochs", type=int, default=60)
+    hd.add_argument("--seed", type=int, default=0)
     lf = sub.add_parser("l2fit")
     lf.add_argument("--n", type=int, default=400, help="每 stratum 取幾筆（fit 分割）")
     lf.add_argument("--batch", type=int, default=24)
@@ -367,7 +425,7 @@ def main():
             p.add_argument("--qs", default="8,20,50")
     a = ap.parse_args()
     {"predict": cmd_predict, "scan": cmd_scan, "fitscan": cmd_fitscan, "gate1": cmd_gate1,
-     "l2cal": cmd_l2cal, "l2eval": cmd_l2eval, "l2fit": cmd_l2fit,
+     "l2cal": cmd_l2cal, "l2eval": cmd_l2eval, "l2fit": cmd_l2fit, "head": cmd_head,
      "gate2": cmd_gate2}[a.cmd](a)
 
 
