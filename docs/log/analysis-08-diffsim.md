@@ -144,7 +144,7 @@ GPU float64 在本機 `cusolverDnXsyevd` 直接 INTERNAL_ERROR。成本 ≈ 84 m
 
 ## 4. 結果
 
-### 4.1 GATE 1（2026-08-02 23:20；`val` 只跑這一次）
+### 4.1 GATE 1（2026-08-02 21:24；`val` 只跑這一次）
 
 參數在 `fit` 分割上選（600 筆 × 27 組）：`er=3.55, Q=8, γ_gap=γ_diag=1, rad_eff=True`，
 fit 上 pooled ρ = +0.514。指令 `python -m script.diffsim.run gate1`。
@@ -161,7 +161,7 @@ fit 上 pooled ρ = +0.514。指令 `python -m script.diffsim.run gate1`。
 ③ 負片域 ρ = +0.052；凍結尺 ρ = −0.032
 ```
 
-### ❌ **這一次報數作廢**（2026-08-03 00:10）
+### ❌ **這一次報數作廢**（2026-08-02 21:41）
 
 發車前寫死的紀律是「每個 gate 報數之前派獨立 agent 對抗式驗證求解器，**驗證不過報數無效**」。
 獨立驗證（唯讀稽核 + 突變測試）在報數後回來，**抓到一個實質 bug 壓在判準上**：
@@ -179,7 +179,7 @@ fit 上 pooled ρ = +0.514。指令 `python -m script.diffsim.run gate1`。
 靜電容極限 5 位數、座標方位三重確認無轉置、饋線 Z₀ 51.03Ω）——問題只在輻射／Gain 半邊。
 完整報告見 §4.3。
 
-### 4.2 GATE 1 v2（2026-08-03 01:50，修完 6 個問題後重跑；`fit` 重新選參）
+### 4.2 GATE 1 v2（2026-08-02 21:52，修完 6 個問題後重跑；`fit` 重新選參）
 
 參數重新在 `fit` 上選（27 組 × 600 筆）：`er=3.0, Q=15, γ_gap=γ_diag=2, rad_eff=True`，
 fit pooled ρ = +0.511。
@@ -230,7 +230,7 @@ clean +0.690 → **+0.756**、senior **−0.140 → +0.352**（Gain 那一路修
 ｜ ![](assets/analysis-08/l1_perfreq.png) ｜ ![](assets/analysis-08/l1_curves.png)
 （`python script/figs/diffsim_l1.py --split val --er 3.55 --q 8 --gap 1`）
 
-### 4.3 對抗式驗證的完整清單（2026-08-03，獨立 agent，唯讀稽核 + 突變測試）
+### 4.3 對抗式驗證的完整清單（2026-08-02 21:3x，獨立 agent，唯讀稽核 + 突變測試）
 
 **通過**（三條互不相干的路徑對過帳）：腔模特徵譜（gap=0 時對離散 Neumann 閉式解到**機器精度**，
 離散 vs 連續的落差全部符合 −(1/6)(mπ/2M)² 的離散化誤差量級）、模態展開 Zin

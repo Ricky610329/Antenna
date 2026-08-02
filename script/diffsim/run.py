@@ -205,7 +205,7 @@ L2_PARAMS = os.path.join(D.CACHE_DIR, "l2_params.json")
 def build_l2(scale=None, raw=False):
     """依存檔建 L2 求解器：有擬合過的核就載入，否則用解析校準的初值。
 
-    #! 2026-08-03 教訓：本函式原本**漏掉載入 `kernel` 的那段**（用字串替換改 code、
+    #! 2026-08-02 教訓：本函式原本**漏掉載入 `kernel` 的那段**（用字串替換改 code、
     #  替換靜默失敗而我沒驗證）。後果是 `l2eval`/`gate2` 全部跑在解析初值上，
     #  「擬核後 ρ 一模一樣」看起來像「模型不敏感」，其實是根本沒載入。
     #  現在載入完會印出實際生效的核，讓這種錯不可能再靜默發生。
@@ -225,7 +225,7 @@ def build_l2(scale=None, raw=False):
     m = MoML2(kernel=LearnedKernel(base=base) if learned else base)
     if ker:
         #! 一定要用 load_state_dict 的嚴格模式：舊版這裡是逐 key copy_，
-        #  key 對不上就靜默跳過 → 整個擬合結果沒生效卻看不出來（2026-08-03 踩過）。
+        #  key 對不上就靜默跳過 → 整個擬合結果沒生效卻看不出來（2026-08-02 踩過）。
         m.kernel.load_state_dict({k: torch.as_tensor(v, dtype=torch.float64)
                                   for k, v in ker.items()}, strict=True)
     print(f"  L2 核來源：{'黑盒核（DCIM 骨架 + MLP 修正）' if learned else ('擬合核' if ker else '解析校準初值')}"
@@ -343,7 +343,7 @@ def cmd_l2fit(args):
         raise SystemExit("擬核全程沒有有效步——降 lr 或檢查核參數範圍")
     m.kernel.load_state_dict(best[1])                # 取最佳而非最後一步
     print(f"最佳 loss {best[0]:.3f}（{len(hist)} 有效步 / {bad} 跳過）")
-    #! 常駐輸出「參數到底動了多少」——2026-08-03 教訓：第一次擬核 loss 看起來有降，
+    #! 常駐輸出「參數到底動了多少」——2026-08-02 教訓：第一次擬核 loss 看起來有降，
     #  其實參數只動了 0.4%（Adam 每步位移上界＝lr，lr 被 NaN 嚇到設太小），
     #  ρ 與初值一模一樣。少了這三行，「沒收斂」與「根本沒在擬」分不出來。
     for k, v in m.kernel.state_dict().items():
@@ -358,9 +358,23 @@ def cmd_l2fit(args):
     print(f"核參數落地 {L2_PARAMS}")
 
 
+def _model_stamp(model: str) -> str:
+    """模型參數檔的內容指紋。
+
+    #! 快取 key 一定要含這個：核/參數換了但檔名沒變 → 靜默回傳舊模型的預測，
+    #  而且看起來完全正常。同一類「靜默用到舊東西」我在本輪已經踩過兩次
+    #  （build_l2 沒載入、字串替換失敗），這裡直接堵死。
+    """
+    import hashlib as _h
+    f = os.path.join(D.CACHE_DIR, "l2_params.json" if model == "l2" else "l1_params.json")
+    if not os.path.exists(f):
+        return "none"
+    return _h.sha1(open(f, "rb").read()).hexdigest()[:8]
+
+
 def _phys_pred(idx, sel, model, args, tag):
-    """diffsim 對一組樣本的預測（帶檔案快取——L2 每筆 ~370ms，重算很貴）。"""
-    path = _cache_path(f"phys_{model}_{tag}_{len(sel)}")
+    """diffsim 對一組樣本的預測（帶檔案快取——L2 每筆 ~310ms，重算很貴）。"""
+    path = _cache_path(f"phys_{model}_{tag}_{len(sel)}_{_model_stamp(model)}")
     if os.path.exists(path):
         z = np.load(path)
         if len(z["sel"]) == len(sel) and (z["sel"] == sel).all():
@@ -386,8 +400,12 @@ def cmd_head(args):
     va = pick(idx, split, "val")
     print(f"殘差頭（錨 = {args.model}）：訓練 {len(tr)} 筆（fit）、驗證 {len(va)} 筆（val）")
     t = time.time()
-    p_tr = _phys_pred(idx, tr, args.model, args, "tr")
-    p_va = _phys_pred(idx, va, args.model, args, "va")
+    #? --model both ＝ 把 L1 與 L2 的輸出**一起**餵給殘差頭。理由是實測到的「域互補」
+    #  （L1 強 clean/senior、L2 強 neg/frozen）——讓網路自己學「什麼時候該信誰」，
+    #  比人工按域分派更省事，也是最務實的一種黑盒化。
+    mods = ["l1", "l2"] if args.model == "both" else [args.model]
+    p_tr = np.concatenate([_phys_pred(idx, tr, k, args, "tr") for k in mods], 1)
+    p_va = np.concatenate([_phys_pred(idx, va, k, args, "va") for k in mods], 1)
     print(f"  diffsim 預測 {time.time() - t:.0f}s")
     x_tr, y_tr = idx["x"][tr].astype(np.float32), idx["y"][tr].astype(np.float32)
     x_va, y_va = idx["x"][va].astype(np.float32), idx["y"][va].astype(np.float32)
@@ -396,7 +414,8 @@ def cmd_head(args):
     for use in (True, False):
         name = f"{args.model}+殘差頭" if use else "純資料對照組（同架構）"
         print(f"\n-- {name}")
-        m, err = train_head(x_tr, p_tr, y_tr, use_phys=use, epochs=args.epochs, seed=args.seed)
+        m, err = train_head(x_tr, p_tr, y_tr, use_phys=use, epochs=args.epochs,
+                            seed=args.seed, device=args.device)
         pv = predict_head(m, x_va, p_va)
         wm_p, _, _ = margins(pv)
         rho = report_rho(wm_p, wm_t, idx["stratum"][va], tag=name)
@@ -453,10 +472,12 @@ def main():
     g1.add_argument("--device", default="cpu")
     g1.add_argument("--calib", type=int, default=300, help="仿射校準用的 fit 筆數/stratum")
     hd = sub.add_parser("head")
-    hd.add_argument("--model", default="l1", choices=("l1", "l2"))
+    hd.add_argument("--model", default="l1", choices=("l1", "l2", "both"))
     hd.add_argument("--n", type=int, default=1200, help="每 stratum 取幾筆（fit 分割）")
     hd.add_argument("--epochs", type=int, default=60)
     hd.add_argument("--seed", type=int, default=0)
+    #? 預設 cpu：GPU 讓給批次線（SESSION_COORDINATION §2）；要用先查 nvidia-smi
+    hd.add_argument("--device", default="cpu")
     lf = sub.add_parser("l2fit")
     lf.add_argument("--n", type=int, default=400, help="每 stratum 取幾筆（fit 分割）")
     lf.add_argument("--batch", type=int, default=24)
