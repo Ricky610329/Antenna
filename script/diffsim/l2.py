@@ -31,7 +31,8 @@ n=(√εr, √εr)。b_reg 同時扮演自項的正則化（rooftop 自耦合不
 import numpy as np
 import torch
 
-from .geom import N, DX, H, EPS_R, Z0, C0, MU0, EPS0, FREQS, FEED_ROW, feed_weights  # noqa: F401
+from .geom import (N, DX, H, EPS_R, Z0, C0, MU0, EPS0, ETA0, FREQS, FEED_ROW,  # noqa: F401
+                   feed_weights)
 
 NSTUB = 1                     # 饋線樁列數（讓 x=5.0mm 接面上的屋頂有立足點）
 NR = N + NSTUB                # 延伸格列數（x 方向）
@@ -48,30 +49,41 @@ def stub_mask() -> np.ndarray:
 class DCIMKernel(torch.nn.Module):
     """G_A / G_V 各一組複數鏡像。參數是 log 空間的 b（保正）與自由複數 a、n。"""
 
-    def __init__(self, n_img: int = 3, dtype=torch.float64):
+    def __init__(self, n_img: int = 3, v_scale: float = 1.0, dtype=torch.float64):
+        """
+        :param v_scale: 相速校準——**除在 G_V 上**（不是乘在 G_A 上）。
+
+        ★ 2026-08-03 修正（fan-out 稽核，兩支 agent 獨立量到）。舊版把 n=√εr 放進
+        **兩支鏡像的指數**，那描述的不是「接地薄板 + 上方空氣」，而是
+        **「浸在無限大 εr=3.55 介質裡的 PEC 地板」**——會往介質裡狂輻射。
+        相消殘項 ∝ n·[1 − sinc(n·k₀·2h)]，n=1.884 對 n=1 是 6.4×（≈n³）；
+        再乘上舊校準為了對共振頻率而把 a_A 放大的 2.9× → **偽損耗 ≈ 19×**。
+        實測能量守恆 η = P_rad/P_in（無耗 MoM 應 ≈1）：舊版 **0.066**、n=1 版 **0.9999**
+        ——93% 的輸入功率被 Z 矩陣吃掉、從沒進遠場。
+
+        修法是同一個相速縮放**換一邊放**：v = 1/√(L'C')，把 s 除在 C'（G_V）上與
+        乘在 L'（G_A）上給**完全相同的相速**，但不放大 A 項的偽輻射。
+        """
         super().__init__()
         self.n_img = n_img
-        er = float(np.sqrt(EPS_R))
         a = torch.zeros(2, n_img, 2, dtype=dtype)      # [kernel, image, (re, im)]
         b = torch.zeros(2, n_img, dtype=dtype)
         n = torch.zeros(2, n_img, 2, dtype=dtype)
+        amp = (1.0, 1.0 / max(v_scale, 1e-6))          # (G_A, G_V)：相速校準除在 G_V
         for k in range(2):
-            a[k, 0, 0] = 1.0                            # 直接項（介質內近場）
-            n[k, 0, 0] = er
+            a[k, 0, 0] = amp[k]                         # 直接項
             if n_img > 1:
-                a[k, 1, 0] = -1.0                       # 地鏡像（反號）
+                a[k, 1, 0] = -amp[k]                    # 地鏡像（反號）→ 相消殘項＝輻射
                 b[k, 1] = np.log(2 * H)
-                n[k, 1, 0] = er
-            b[k, 0] = np.log(0.4 * DX)                  # 自項正則化半徑
-            #? 第三支刻意用 **n = 1（自由空間）**：輻射是以 k₀ 在空氣中傳的，
-            #  兩支都用 n=√εr 的話整個頻譜都壓在介質內 → 輻射電阻系統性偏低 ~10×、
-            #  S11 谷深不夠（實測 dev 中位 −2.7dB vs 真值 −12.4dB）。
-            #  初值取 0（保住解析校準的共振頻率不被動到）——這一項對 loss 是線性的，
-            #  a=0 處梯度仍非零，擬核照樣長得出來。
+            #? 相消一律在 **k₀（空氣）** 評估——這是能量守恆成立的前提（見上）。
+            n[k, :, 0] = 1.0
+            b[k, 0] = np.log(0.4 * DX)                  # ⚠ 是自由參數，不是「正則化」
+            #? 額外支預設惰性（a=0）。⚠ 舊註解宣稱「第三支用 n=1 能救輻射電阻」，
+            #  **兩支 agent 各自實測否證**（a₃ 加大 → S11 反而更淺、η 更低）：
+            #  加一支未相消的單極比正確的相消殘項大 ~20×，增加的是**輸入功率**不是遠場功率
+            #  ——等於往漏水的桶子再鑽一個洞。
             for i in range(2, n_img):
-                a[k, i, 0] = 0.0
                 b[k, i] = np.log(2 * H * i)
-                n[k, i, 0] = 1.0 if i == 2 else er
         self.a = torch.nn.Parameter(a)
         self.b = torch.nn.Parameter(b)
         self.n = torch.nn.Parameter(n)
@@ -208,6 +220,11 @@ class MoML2:
                                               v.expand(wgt.shape[0], self.nb)))
         cur = torch.stack(cur, 1)                               # (B, nf, nb)
         itot = (cur[:, :, self.drive].sum(-1) * DX)
+        #! 饋線接觸格全 void → itot 恆為 0 → 1/0 → 整筆 NaN。這是**確定性的除以零**，
+        #  不是「矩陣接近奇異」（實測 cond 最大只有 3e3）。val 120 筆踩到 1 筆。
+        #  跟 L1 一樣回「開路＝全反射」，別讓 NaN 傳出去。
+        open_ckt = itot.abs() < 1e-30
+        itot = torch.where(open_ckt, torch.full_like(itot, 1e-30), itot)
         zin = 1.0 / itot
         gam = (zin - Z0) / (zin + Z0)
         #? dB 地板 −50/−40：HFSS 實務範圍就這麼大，不設地板時 |Γ|→0 會產生 −120dB
@@ -215,9 +232,23 @@ class MoML2:
         s11 = 20 * torch.log10(gam.abs().clamp(3.2e-3, 1.0))
         u0, prad = self.farfield(cur, f)
         d0 = (4 * np.pi * u0 / prad.clamp_min(1e-300)).clamp_min(1e-4)
+        #? **能量守恆 η = P_rad / P_in** —— 無耗 MoM 裡兩者必須相等，η 應 ≈ 1。
+        #  這是唯一低成本、能抓到「核在偷偷吃功率」的診斷：舊核（n=√εr）實測 η = 0.066，
+        #  也就是 93% 的輸入功率被 Z 矩陣吃掉、從沒進遠場——而 S11 曲線看起來完全正常。
+        #  以後換核一律先看它，別再靠 ρ 好不好倒推物理對不對。
+        #! 前因子：L2 的源是**電流**（E_far ∝ ωμ₀/4πr = k₀η₀/4πr）→ U = k₀²η₀/(32π²)·|S|²，
+        #  η₀ 在**分子**。L1 的源是磁流（E_far ∝ k₀/4πr）→ η₀ 在分母。
+        #  我一度把 L1 的前因子複製過來，η 差了 η₀² = 1.4e5 倍（算出 6e-6 而非 0.85）。
+        #  S = Σ I_m·dx²·e^{jk·r} ⇒ |S|² 帶 dx⁴（`farfield` 回的 prad 沒有面積權重）。
+        k0 = 2 * np.pi * f / C0
+        p_rad = (k0 ** 2 * ETA0 / (32 * np.pi ** 2))[None, :] * (DX ** 4) * prad
+        p_in = 0.5 * zin.real / zin.abs() ** 2
+        eta = p_rad / p_in.clamp_min(1e-300)
         mism = (1 - gam.abs() ** 2).clamp_min(1e-6)
         gain = (10 * torch.log10(d0 * mism)).clamp_min(-40.0)
-        return dict(S11=s11, Gain=gain, Zin=zin, D0=d0, Prad=prad, J=cur)
+        s11 = torch.where(open_ckt, torch.zeros_like(s11), s11)      # 開路＝全反射 0dB
+        gain = torch.where(open_ckt, torch.full_like(gain, -40.0), gain)
+        return dict(S11=s11, Gain=gain, Zin=zin, D0=d0, Prad=prad, eta=eta, J=cur)
 
     # ----------------------------------------------------------------- 遠場
     def _setup_farfield(self, n_theta, n_phi):
@@ -288,8 +319,10 @@ def patch_fr(L: float, W: float) -> float:
     return C0 / (2 * (L + 2 * dl) * np.sqrt(ee))
 
 
-CAL_RECTS = [(25 - n, 25, (N - w) // 2, (N - w) // 2 + w)
-             for n, w in ((25, 25), (25, 17), (17, 17), (17, 13), (14, 14), (14, 10), (11, 11))]
+#! 校準集**不能含全高（n=25）的矩形**：那種貼片會與饋線樁（第 26 列）連成一體，
+#  有效長度不是 25 格，Hammerstad 閉式解不適用（實測 log 誤差 0.74 vs 其餘 0.01–0.03）。
+CAL_SHAPES = ((21, 21), (21, 15), (17, 17), (17, 13), (14, 14), (14, 10), (11, 11))
+CAL_RECTS = [(25 - n, 25, (N - w) // 2, (N - w) // 2 + w) for n, w in CAL_SHAPES]
 
 
 def calibrate_analytic(scales=None, n_img: int = 3, verbose: bool = True):
@@ -298,13 +331,12 @@ def calibrate_analytic(scales=None, n_img: int = 3, verbose: bool = True):
     只有一個純量——初值的 (源 − 地鏡像) 結構本來就對，缺的是 A 項與 V 項的相對權重
     （＝相速度）。`docs/diffsim.md` §3 說的「擬核」從這裡起步，不是從亂數起步。
     """
-    tgt = np.array([patch_fr(n * DX, w * DX) for n, w in
-                    ((25, 25), (25, 17), (17, 17), (17, 13), (14, 14), (14, 10), (11, 11))])
+    tgt = np.array([patch_fr(n * DX, w * DX) for n, w in CAL_SHAPES])
     best = None
     for s in (scales if scales is not None else np.geomspace(1.0, 8.0, 17)):
-        m = MoML2(kernel=DCIMKernel(n_img=n_img))
-        with torch.no_grad():
-            m.kernel.a.data[0, :, 0] *= s
+        #? 校準的是**相速**（A/V 的相對權重）。除在 G_V 上與乘在 G_A 上相速相同，
+        #  但不放大 A 項的偽輻射——這正是 2026-08-03 修掉的病灶。
+        m = MoML2(kernel=DCIMKernel(n_img=n_img, v_scale=float(s)))
         got = m.resonances(CAL_RECTS)
         err = float(np.sqrt(np.mean((np.log(got / tgt)) ** 2)))
         if verbose:

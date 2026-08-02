@@ -243,10 +243,7 @@ def test_gradient_flows(sim):
 @pytest.fixture(scope="module")
 def mom():
     from script.diffsim.l2 import MoML2, DCIMKernel
-    m = MoML2(kernel=DCIMKernel())
-    with torch.no_grad():
-        m.kernel.a.data[0, :, 0] *= 2.48        # 解析校準值（見 l2.calibrate_analytic）
-    return m
+    return MoML2(kernel=DCIMKernel(v_scale=2.48))   # 解析校準（見 l2.calibrate_analytic）
 
 
 def _rect(i0, i1, j0, j1, nb=1):
@@ -288,10 +285,9 @@ def test_l2_resonances_match_closed_form(mom):
     L1 的硬磁牆理想化在 0.2mm 像素 / 0.508mm 基板上是破的；MoM 沒有這個假設，
     所以它「應該」對得上——對不上就代表核或組裝有問題，不是可接受的近似誤差。
     """
-    from script.diffsim.l2 import patch_fr, CAL_RECTS
+    from script.diffsim.l2 import patch_fr, CAL_RECTS, CAL_SHAPES
     got = mom.resonances(CAL_RECTS[:5], fmin=10e9, fmax=40e9, nf=61)
-    want = np.array([patch_fr(n * DX, w * DX) for n, w in
-                     ((25, 25), (25, 17), (17, 17), (17, 13), (14, 14))])
+    want = np.array([patch_fr(n * DX, w * DX) for n, w in CAL_SHAPES[:5]])
     err = np.abs(np.log(got / want))
     assert err.max() < 0.06, list(zip((got / 1e9).round(1), (want / 1e9).round(1)))
 
@@ -311,3 +307,39 @@ def test_l2_farfield_horizontal_dipole_over_ground(mom):
     u0, prad = m.farfield(cur, f)
     d0 = float(4 * np.pi * u0[0, 0] / prad[0, 0])
     assert abs(d0 - 7.5) < 0.15, d0
+
+
+def test_l2_energy_conservation(mom):
+    """**能量守恆 η = P_rad/P_in ≈ 1** —— 無耗 MoM 的硬約束，也是唯一抓得到
+    「核在偷吃功率」的低成本診斷。
+
+    #! 2026-08-03：舊核把 n=√εr 放進兩支鏡像的指數（＝描述「浸在無限介質裡的地板」
+    #  而非「接地薄板+空氣」），實測 **η = 0.085** ——91.5% 的輸入功率被 Z 矩陣吃掉、
+    #  從沒進遠場，而 S11 曲線看起來完全正常、共振頻率還對閉式解 1.6%。
+    #  沒有這條測試，這種 bug 只會表現成「rank ρ 就是上不去」，永遠查不到根因。
+    """
+    f = np.array([26e9, 28e9, 30e9])
+    for rect in ((12, 25, 6, 19), (9, 25, 4, 21)):
+        p = _rect(*rect)
+        with torch.no_grad():
+            out = mom.solve(p, freqs=f)
+        eta = out["eta"][0].numpy()
+        assert (eta < 1.15).all(), f"η > 1 違反能量守恆：{eta}"
+        assert (eta > 0.5).all(), f"η 太低＝核在偷吃功率（舊核是 0.085）：{eta}"
+
+
+def test_l2_disconnected_feed_no_nan(mom):
+    """饋線接觸格全 void → 驅動邊全死 → itot = 0。必須回「開路」而不是 NaN。
+
+    #! 這是**確定性的除以零**，不是「矩陣接近奇異」（實測 cond 最大只有 3e3）。
+    #  val 120 筆踩到 1 筆、被 `rank_rho` 靜默濾掉。L1 早就有對應測試，L2 沒有——
+    #  而 `test_l2_passivity` 用隨機圖，全 void 的機率 0.78%，它綠是靠 seed 沒抽中。
+    """
+    p = torch.zeros(1, N, N, dtype=torch.float64)
+    p[0, 5:15, 8:18] = 1.0                       # 不碰 row 24
+    with torch.no_grad():
+        out = mom.solve(p, freqs=np.array([28e9]))
+    assert torch.isfinite(out["S11"]).all() and torch.isfinite(out["Gain"]).all()
+    assert abs(float(out["S11"][0, 0])) < 1e-9   # 全反射
+    assert float(out["Gain"][0, 0]) <= -40.0 + 1e-9
+
