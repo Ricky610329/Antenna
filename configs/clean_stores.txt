@@ -506,3 +506,8 @@ dedust_r50b1a
 # sm_reanchor98.pth 追加（2026-08-01）
 dedust_r50b2a
 dedust_r50b2c
+# sm_reanchor99.pth 追加（2026-08-02）
+dedust_r50b3a
+dedust_r50b3c
+# sm_reanchor100.pth 追加（2026-08-02）
+dedust_r51b1a
