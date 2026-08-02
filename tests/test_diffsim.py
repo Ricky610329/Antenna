@@ -539,3 +539,47 @@ def test_l1_grad_eps_does_not_change_forward():
         a = CavityL1(q=15.0, gap=2, diag=2, rad_eff=True, grad_eps=1e-6).forward(p)["S11"]
         b = CavityL1(q=15.0, gap=2, diag=2, rad_eff=True, grad_eps=0.0).forward(p)["S11"]
     assert torch.equal(a, b)
+
+
+def test_mkl_single_thread_guard_restores_state():
+    """`_mkl_single_thread` 進去必須是 1、出來必須還原（含例外路徑）。"""
+    from script.diffsim.l2 import _mkl_single_thread
+    n0 = torch.get_num_threads()
+    try:
+        torch.set_num_threads(4)
+        with _mkl_single_thread():
+            assert torch.get_num_threads() == 1
+        assert torch.get_num_threads() == 4
+        try:                                          # 例外也要還原
+            with _mkl_single_thread():
+                raise ValueError("boom")
+        except ValueError:
+            pass
+        assert torch.get_num_threads() == 4
+    finally:
+        torch.set_num_threads(n0)
+
+
+def test_l2_solve_survives_multithreaded_mkl(mom):
+    """多執行緒下 `solve` 不可以炸。
+
+    #! 2026-08-03：**本機 MKL 的 batched complex128 LU 在 `num_threads > 1` 時會壞**——
+    #  底層 `oneMKL ERROR: Parameter 6 was incorrect on entry to ZLASWP`，
+    #  torch 再拋 `Pivots given to lu_solve must all be >= 1`。同一批資料 threads=1 正常、=6 必炸。
+    #  ⚠ 我一度誤判成「遮罩子矩陣奇異」（環流零空間/孤島），寫了 `solve_ex`+`pinv` fallback
+    #  ——**那攔不住**，因為例外是在 `lu_solve` 的輸入檢查階段就拋的，根本沒回傳 info。
+    #  真因由 delta-gap 稽核 agent 在完全不同的實驗裡獨立撞到，才對上。
+    #  ⚠ 這條測試在**沒有這個 MKL bug 的機器上會自動變成 no-op**（照樣綠）——
+    #  它守的是「保護還在」，真正的行為驗證在 `test_mkl_single_thread_guard_restores_state`。
+    """
+    n0 = torch.get_num_threads()
+    try:
+        torch.set_num_threads(max(2, min(6, (os.cpu_count() or 2))))
+        rng = np.random.default_rng(0)
+        p = (rng.random((16, N, N)) < 0.5).astype(np.float64)
+        p[:, 24, 9:16] = 1.0                          # 保證饋電接得上
+        with torch.no_grad():
+            out = mom.solve(torch.as_tensor(p, dtype=torch.float64), freqs=np.array([28e9]))
+        assert torch.isfinite(out["S11"]).all()
+    finally:
+        torch.set_num_threads(n0)

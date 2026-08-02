@@ -31,11 +31,36 @@ x = 5.0mm 的接面上——**參考面放這裡是合法的**，因為饋線是
 b_reg ⚠ **是自由參數不是「正則化」**——實測 Im(Zin) 隨它變 4.6 倍。
 之後 (a_i, b_i, n_i) 全部當複數參數，用可微鏈在 `fit` 分割上端到端擬。
 """
+import contextlib
+
 import numpy as np
 import torch
 
 from .geom import (N, DX, H, EPS_R, Z0, C0, MU0, EPS0, ETA0, FREQS, FEED_ROW,  # noqa: F401
                    feed_weights)
+
+@contextlib.contextmanager
+def _mkl_single_thread():
+    """把 `torch.linalg.solve` 圈在單執行緒裡跑。
+
+    #! 2026-08-03 實測：**本機 MKL 的 batched complex128 LU 在 `num_threads > 1` 時會壞**——
+    #  底層印 `oneMKL ERROR: Parameter 6 was incorrect on entry to ZLASWP`，
+    #  然後 torch 拋 `Pivots given to lu_solve must all be >= 1`。同一批資料
+    #  `num_threads=1` 完全正常、`=6` 必炸（`scratchpad/` 有最小重現）。
+    #  **這不是奇異矩陣**（我一度誤判成環流零空間/孤島，`solve_ex`+`pinv` 也攔不住，
+    #  因為例外是在 `lu_solve` 的輸入檢查階段就拋的，根本沒回傳 info）。
+    #  獨立確認：delta-gap 稽核 agent 在完全不同的實驗裡撞到同一件事。
+    #  只圈 solve 不動全域，其餘運算照樣多執行緒；`set_num_threads` 本身極輕量。
+    """
+    n = torch.get_num_threads()
+    if n > 1:
+        torch.set_num_threads(1)
+    try:
+        yield
+    finally:
+        if n > 1:
+            torch.set_num_threads(n)
+
 
 NSTUB = 1                     # 饋線樁列數（讓 x=5.0mm 接面上的屋頂有立足點）
 NR = N + NSTUB                # 延伸格列數（x 方向）
@@ -197,7 +222,11 @@ class MoML2:
         Zs = torch.where(alive[:, :, None] & alive[:, None, :], Zs, eye.expand_as(Zs))
         vs = torch.gather(v.expand(nb_batch, -1), 1, order) * alive
         cur = torch.zeros(nb_batch, self.nb, dtype=self.cdtype, device=Z.device)
-        return cur.scatter(1, order, torch.linalg.solve(Zs, vs) * alive)
+        if nmax == 0:                       # 整批都沒有金屬 → 電流恆為 0
+            return cur
+        with _mkl_single_thread():
+            sol = torch.linalg.solve(Zs, vs)
+        return cur.scatter(1, order, sol * alive)
 
     def solve(self, rho: torch.Tensor, freqs=None, r_open: float = None) -> dict:
         """(B,25,25) → {'S11','Gain'}（dB, 17 點）。
@@ -219,8 +248,9 @@ class MoML2:
                 cur.append(self._solve_masked(Z, wgt, v))
             else:
                 load = (r_open * (1.0 - wgt) / wgt.clamp_min(1e-6)).to(self.cdtype)
-                cur.append(torch.linalg.solve(Z[None] + torch.diag_embed(load),
-                                              v.expand(wgt.shape[0], self.nb)))
+                with _mkl_single_thread():           # 同 `_solve_masked`：MKL 多執行緒複數 LU 會壞
+                    cur.append(torch.linalg.solve(Z[None] + torch.diag_embed(load),
+                                                  v.expand(wgt.shape[0], self.nb)))
         cur = torch.stack(cur, 1)                               # (B, nf, nb)
         itot = (cur[:, :, self.drive].sum(-1) * DX)
         #! 饋線接觸格全 void → itot 恆為 0 → 1/0 → 整筆 NaN。這是**確定性的除以零**，
