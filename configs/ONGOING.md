@@ -52,15 +52,17 @@
 - worker 三機常駐（2026-07-11 起;個性見 memory）;**自產 tier-2（--selfgen 預設開）=佇列全空自動翻
   歷史 bit 產資料,任何 job 入佇列即讓位——HFSS 制度上不停**。
 
-### 🔵 diffsim — 可微模擬器（**重啟中** 2026-08-03；零 HFSS，與批次線並行）
-- 08-02 晚曾收檔（L1 過 gate／L2 未過），**Ricky 08-03 指示重啟**：修 bug → 黑盒化 → 前進 L3。
-- **狀態**：L2 物理修正完成（能量守恆 η 0.085→**0.872**、S11 −2→−11dB、
-  負片域 ρ **+0.615**〔純物理零擬合，CI +0.386~+0.772〕）；下一步＝**L3 正統分層 Green's function**
-  （只換 `DCIMKernel.table()` 一個函式，MoM 骨架稽核通過不重寫；**鏈路要保持可微**）。
-- ⚠ **兩個已報 gate 的判讀被推翻**（數字有效）：GATE 1 的 pooled ρ 主要在量「層間排序」
-  （純分層 oracle 就有 +0.521 > L1 的 +0.508），同口徑層內 ρ 只有 **+0.309 < 0.40**；
-  「負片域物理錨勝 3/3 seed」在 paired bootstrap over 樣本下 CI 跨 0，**已撤回**。
-- 完整脈絡與所有數字 → [analysis-08](../docs/log/analysis-08-diffsim.md)；code `script/diffsim/`（23 條物理測試）。
+### ~~diffsim — 可微模擬器~~（✅ **2026-08-03 收檔，MoM 路線收線**）
+- **L1 腔模型是唯一有實用價值的產物**（clean 層內 ρ **+0.418**、**84ms/筆**）；
+  L2/L3 的 MoM 路線**依發車前寫死的判準收線**——G-L3a 未過（clean +0.194 < +0.40）。
+- ★★ **「停」的理由不是 bug**：四條獨立證據排除核錯／自項錯／精度不夠／沒做完
+  （empymod 四管道 1e−12＋鑑別力測試、真積分 b_eff=0.3363 對上實測最佳 0.30、
+  G_V 擾動 Δρ≈0.005、S1 上界兩路徑都估 +0.04）⇒ 是**離散化的天花板**。
+- ⚠ **真正的瓶頸可能在真值端**：→ [proposal-mesh-convergence](../docs/discuss/proposal-mesh-convergence.md)
+  （HFSS 網格收斂實驗，~1 小時機時，已在下方 🔜 候選區）。**優先於任何模型改良。**
+- 未答：與現役 SM 的比較（`sm_reanchor*.pth` 屬授權禁區，未解除）。
+- 完整脈絡 → [analysis-08](../docs/log/analysis-08-diffsim.md)＋[analysis-09](../docs/log/analysis-09-diffsim-l3.md)；
+  code `script/diffsim/`（32 條物理測試）。
 
 ### ~~Round 13 — 組數階梯~~（✅ **2026-07-08 收檔**）→ [round-13](../docs/log/round-13-block-ladder.md)
 - 組數=真設計軸但報酬有取捨:4-5 塊甜蜜點(5 塊買 rad/4 塊買選擇性)、6 塊遞減;margin 天花板僅微升。
