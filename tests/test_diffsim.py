@@ -609,3 +609,36 @@ def test_selection_audit_calibration():
     assert 80.0 < win_p < 95.0, f"完美預測器應在 ~86%（平手算輸的上限），得到 {win_p:.0f}%"
     assert win_n < 10.0
     assert 25.0 < win_r < 75.0, f"隨機預測器的 P(勝隨機) 應在 50% 附近，得到 {win_r:.0f}%"
+
+
+def test_l2_half_port_kernel_dependency():
+    """`half_port` 的**被動性依賴於核** —— 這條測試釘住那個依賴，不是假裝它到處安全。
+
+    #! 2026-08-03 實測（隨機 50% 圖 ×6，28 GHz）：
+    #    DCIM 核 + half_port : min Re **−0.289**、η 中位 **1.369**、η>1 佔 **100%**  ← 非物理
+    #    L3   核 + half_port : min Re **+2.064**、η>1 佔 **0%**                      ← 正常
+    #  稽核 agent 當初的警告（會破 passivity/能量守恆）**在 DCIM 上是對的**，
+    #  它只是沒測 L3。⇒ `half_port` **只在 L3 核上開**，預設 False 就是為此。
+    #  互易性（Z 對稱）則是**兩個核都必須成立**的硬不變式，先守住它。
+    """
+    from script.diffsim.l2 import MoML2, DCIMKernel
+    for hp in (False, True):
+        z = MoML2(kernel=DCIMKernel(v_scale=2.48), half_port=hp).impedance_at(28e9)
+        assert torch.allclose(z, z.T, atol=1e-12), f"half_port={hp} 破壞了互易性（Z 必須對稱）"
+
+    #? L3 表要另外建（`python -m script.diffsim.l3 build`），CI 上不一定有 → 沒有就跳過
+    import os
+    from script.diffsim import data as D
+    tab = os.path.join(D.CACHE_DIR, "l3_table.npz")
+    if not os.path.exists(tab):
+        pytest.skip("沒有 l3_table.npz（跑 `python -m script.diffsim.l3 build` 產生）")
+    from script.diffsim.l3 import L3Kernel
+    m = MoML2(kernel=L3Kernel(), half_port=True)
+    rng = np.random.default_rng(0)
+    p = (rng.random((4, N, N)) < 0.5).astype(np.float64)
+    p[:, 24, 9:16] = 1.0
+    with torch.no_grad():
+        out = m.solve(torch.as_tensor(p, dtype=torch.float64), freqs=np.array([28e9]))
+    assert torch.isfinite(out["S11"]).all()
+    assert float(out["Zin"].real.min()) > 0.0, "L3 核 + half_port 必須維持被動性"
+    assert float((out["eta"] > 1.0).to(torch.float64).mean()) == 0.0, "L3 核 + half_port 不可有 η>1"

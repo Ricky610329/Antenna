@@ -76,9 +76,9 @@ def stub_mask() -> np.ndarray:
     #  延伸列的唯一作用是讓 x=5.0mm 接面上的驅動屋頂有立足點（見 `edge_density`）。
     #  實測（稽核 agent，dev n=240，配對 bootstrap）：Δρ(m_s11) = **+0.051**，
     #  95% CI [+0.014, +0.089]，P(>0)=**99.6%**；且**快 5%**（141 vs 148 ms/筆）。
-    #  ⚠ 消融顯示增益主要來自「移除寄生金屬」本身，不是來自電荷拓樸——
-    #  真正的半屋頂電荷（Stage 2）另有 +0.02 但會打破 passivity/能量守恆兩條測試，
-    #  根因是核的 η≈0.86 漏功率被暴露 → 不做，記在 analysis-10。
+    #  ⚠ 消融顯示增益主要來自「移除寄生金屬」本身，不是來自電荷拓樸。
+    #  ★ 電荷拓樸（半屋頂埠）**另外實作為 `half_port` 選項**——稽核 agent 曾說它會打破
+    #  passivity/能量守恆，**那是在 DCIM 核上量的；L3 核上完全沒有**（見 `impedance_at`）。
     """
     return np.zeros((NSTUB, NC), dtype=np.float64)
 
@@ -141,7 +141,8 @@ class MoML2:
     """L2 MoM 求解器。核可擬（`kernel` 的參數），對 Z 與電流全程可微。"""
 
     def __init__(self, kernel: DCIMKernel = None, device="cpu", dtype=torch.float64,
-                 n_theta: int = 13, n_phi: int = 24):
+                 n_theta: int = 13, n_phi: int = 24, half_port: bool = False):
+        self.half_port = half_port          # 半屋頂埠，見 `impedance_at`；用 L3 核時建議開
         self.device = torch.device(device)
         self.dtype = dtype
         self.cdtype = torch.complex128 if dtype == torch.float64 else torch.complex64
@@ -180,6 +181,7 @@ class MoML2:
         fw = feed_weights() > 0
         drive[: self.nx] = (row_of_x == FEED_ROW) & fw[col_of_x]
         self.drive = torch.as_tensor(drive, device=self.device)
+        self.sb = (~self.drive).to(self.dtype)      # 電荷偶極的 b 側權重（半屋頂埠時驅動屋頂為 0）
         self.cell_a, self.cell_b = self.cell_a.to(self.device), self.cell_b.to(self.device)
         self.is_x = self.is_x.to(self.device)
 
@@ -217,7 +219,23 @@ class MoML2:
         #  故 A 項 ∫∫f_m f_n G_A ≈ dx⁴·G_A；而 ∫∇·f_m over cell = ±dx，故 V 項是 dx²。
         #  兩項都是 Ω·m²；比值 zv/za = 1/(k²dx²·G_A/G_VV) ≈ 99 → 格尺度上電容主導 ✓ 準靜態。
         za = (1j * w * MU0 * DX ** 4) * ga[a][:, a] * same      # A 項：同向才有（G_A^xy = 0）
-        gvv = gv[a][:, a] - gv[a][:, b] - gv[b][:, a] + gv[b][:, b]   # 電荷偶極（面兩側 ±1）
+        if self.half_port:
+            #? 半屋頂埠：驅動屋頂跨 x=5.0mm 接面，外側是**連續饋線**——電荷流走、不在那裡累積，
+            #  所以它的電荷偶極只保留貼片側（s_b = 0）；其餘屋頂照常（s_b = 1）。
+            #  平面 MoM 的標準埠模型。實測（L3 核，`clean_OOS` 817 筆，2026-08-03）：
+            #    谷位置 ρ **+0.052 → +0.188**（×3.6）、同格比例 5%→15%、|Δ格| 中位 4.0→3.0
+            #    Im(Zin) 中位 **−50.9 → −8.9 Ω**、Re(Zin) p90 28.2 → 96.5 Ω
+            #    （min-S11 = −12.4 dB 反推的純電阻解是 30.7 或 81.6 Ω ⇒ 量級變合理）
+            #  ⚠⚠ **只在 L3 核上開**（`half_port` 預設 False 就是為此）。實測：
+            #    DCIM 核 + half_port : min Re **−0.289**、η 中位 **1.369**、η>1 佔 **100%** ← 非物理
+            #    L3   核 + half_port : min Re **+2.064**、η>1 佔 **0%**                     ← 正常
+            #  稽核 agent 當初警告它會破 passivity/能量守恆，**在 DCIM 上是對的**，它只是沒測 L3。
+            #  依賴關係由 `test_l2_half_port_kernel_dependency` 釘住。
+            sb = self.sb.to(g.dtype)
+            gvv = (gv[a][:, a] - sb[None, :] * gv[a][:, b]
+                   - sb[:, None] * gv[b][:, a] + (sb[:, None] * sb[None, :]) * gv[b][:, b])
+        else:
+            gvv = gv[a][:, a] - gv[a][:, b] - gv[b][:, a] + gv[b][:, b]   # 電荷偶極（面兩側 ±1）
         return za + (DX * DX / (1j * w * EPS0)) * gvv
 
     # ----------------------------------------------------------------- 求解
