@@ -43,7 +43,7 @@ python -m script.sm_reanchor train-two --epochs 30 --out sm_reanchor99.pth
 | 尺擴容 | ✅(08-02 12:2x,§1③):b9-b17 均勻抽 15 搬 `_frozen`(名單續記 FROZEN_LIST.txt);**凍結尺 n=30**;v99 起讀數=新尺口徑(與舊 15 尺讀數不可直接比,曲線圖分段標註) |
 | 發車 | ✅ v99 鏈完成(train→two→lo 首航 r51g1→b1 三夾→橋接 b30-54 共 25 池×100 prio 4 全上架) |
 | b1 收檔 | ✅ 08-02 19:3x:a 30/30(218 機)+b 20/20(216;中途保險絲 .fail 一次被跨機接管)+c 10/10(218),error 0 |
-| v100+b2 發車 | 08-02 21:0x 鏈啟動(train --add r51b1a→two→staging seed 512→select-r51 b2→neg b2→senior b2→check-dup×3→prio 3→watch) |
+| v100+b2 發車 | 08-02 21:0x 鏈啟動→**兩度被跨 session 誤殺**(diffsim session TaskStop 波及,公約 tmp/SESSION_COORDINATION.md 立約)→小步續跑;**b2b 撞池事故**:select-neg 舊 seed 推導無 round,r51b2=r50b2 全批 20/20 重複,check-dup 攔截(M6 稽核應驗)→修根 `_pool_seed`(round*1000 參與,bcc482d+回歸測試)→重生成(有效 seed 20311810)→三夾查重 0/0/0→**08-03 00:0x jobs-add prio 3 發車**(佇列 655) |
 
 ## 4. 分析 (Analyze)
 
