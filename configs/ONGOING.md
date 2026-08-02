@@ -195,6 +195,14 @@
 ---
 
 ## 🔜 候選 / 待排
+- **HFSS 自適應網格收斂性實驗（~1 小時機時，20 筆 × 3 組設定）**：現行 `MaxDeltaS 0.02`＋
+  `MaximumPasses 6`／`MinimumPasses 5` **幾乎必然撞上限才停**；跨產線稽核發現 harvest 與我們的
+  S11 **共振頻率位移 |Δf| 中位 0.55 GHz 且方向隨機**（p=1.5e-10, n=90），領先假說就是網格未收斂。
+  值錢在兩處：①`ρ(wm_S0, wm_S1)` **就是任何模型 rank ρ 的天花板**——目前所有停止規則都是
+  「修到可以忍受」，沒有地板估計就**分不出「還沒修」與「修不動」**；②決定 harvest 那 24,189 筆
+  （全庫 43.3%、`sm_harvest` 預訓來源、每次重錨摻 2,000 筆重放）能不能信。
+  規格＋判準已寫死 → [proposal-mesh-convergence](../docs/discuss/proposal-mesh-convergence.md)。
+  **觸發：批次線任一輪的批間閒時（不搶正片席次）**。
 - ~~R24 降根計畫（預開檔）~~（✅ 已執行並收輪 2026-07-13 → [round-24](../docs/log/round-24-root-diversity.md)）
 - ~~sm_denovo 萃取路徑~~（✅ 2026-07-13 落地=`sm_reanchor train-denovo`;sm_denovo1 已訓、D 臂 b2 復航）
 - ~~圖 4-4「骨架+網布」塊級 variation~~（✅ **確定進 R27**——Ricky 2026-07-14:「27 可以做厚一點,
