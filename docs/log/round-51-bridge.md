@@ -40,7 +40,8 @@ python -m script.sm_reanchor train-two --epochs 30 --out sm_reanchor99.pth
 ```
 | 批/包 | 狀態 |
 |---|---|
-| （待） | |
+| 尺擴容 | ✅(08-02 12:2x,§1③):b9-b17 均勻抽 15 搬 `_frozen`(名單續記 FROZEN_LIST.txt);**凍結尺 n=30**;v99 起讀數=新尺口徑(與舊 15 尺讀數不可直接比,曲線圖分段標註) |
+| 發車 | v99 鏈跑動中(train→two→lo 首航→b1 三夾→橋接 25 池→watch) |
 
 ## 4. 分析 (Analyze)
 （待）
