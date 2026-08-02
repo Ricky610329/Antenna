@@ -199,13 +199,151 @@ def cmd_gate1(args):
     return ok
 
 
+L2_PARAMS = os.path.join(D.CACHE_DIR, "l2_params.json")
+
+
+def build_l2(scale=None):
+    """依存下來的解析校準結果建 L2 求解器。"""
+    import json
+    from .l2 import MoML2, DCIMKernel
+    import torch
+    if scale is None:
+        scale = json.load(open(L2_PARAMS, encoding="utf-8"))["a_scale"] \
+            if os.path.exists(L2_PARAMS) else 2.48
+    m = MoML2(kernel=DCIMKernel())
+    with torch.no_grad():
+        m.kernel.a.data[0, :, 0] *= scale
+    return m, scale
+
+
+def cmd_l2cal(args):
+    """L2 核的解析校準：**不用 HFSS 資料**，只對閉式微帶物理。"""
+    import json
+    from .l2 import calibrate_analytic
+    scale, err = calibrate_analytic()
+    os.makedirs(D.CACHE_DIR, exist_ok=True)
+    with open(L2_PARAMS, "w", encoding="utf-8") as fh:
+        json.dump(dict(a_scale=scale, rms_log_err=err), fh)
+
+
+def cmd_l2eval(args):
+    """L2 在指定分割上的 ρ（迭代看 dev；gate 走 `gate2`）。"""
+    idx = D.load()
+    split, _ = D.assign_split(idx)
+    sel = pick(idx, split, args.split, args.n)
+    m, scale = build_l2(args.scale)
+    print(f"L2（a_A 縮放 {scale:.3f}）在 {args.split}：{len(sel)} 筆")
+    t = time.time()
+    pred = m.predict(idx["x"][sel].astype(np.float64), batch=args.batch)
+    print(f"  {time.time() - t:.0f}s（{(time.time() - t) / len(sel) * 1000:.0f} ms/筆）")
+    np.savez_compressed(_cache_path(f"l2_{args.split}"), pred=pred, sel=sel, scale=scale)
+    wm_p, ms, mg = margins(pred)
+    wm_t, mst, mgt = margins(idx["y"][sel])
+    report_rho(wm_p, wm_t, idx["stratum"][sel], tag=f"L2 裸（{args.split}）")
+    print(f"  通道：pooled ρ(mS11)={rank_rho(ms, mst)[0]:+.3f}  ρ(mGain)={rank_rho(mg, mgt)[0]:+.3f}")
+
+
+def cmd_l2fit(args):
+    """擬核（`docs/diffsim.md` §3 L2 方案 b）：**對解算器反傳**，不另寫擬合器。
+
+    只用 `fit` 分割。解析校準已經把共振頻率調對（<6%），這裡要修的是**輻射電阻**——
+    初值的兩項鏡像都用 n=√εr，但輻射本身是以 k₀ 在空氣中傳的，所以 Re(Zin) 系統性偏低
+    ~10×、S11 谷深不夠（dev 中位 −2.7dB vs 真值 −12.4dB）。
+    """
+    import json
+    import torch
+    idx = D.load()
+    split, _ = D.assign_split(idx)
+    sel = pick(idx, split, "fit", args.n)
+    m, scale = build_l2(args.scale)
+    x = torch.as_tensor(idx["x"][sel].astype(np.float64)).reshape(-1, 25, 25)
+    y = torch.as_tensor(idx["y"][sel].astype(np.float64))
+    f = np.linspace(24e9, 32e9, args.nfreq)
+    jf = np.round(np.linspace(0, 16, args.nfreq)).astype(int)          # 對齊資料集頻點
+    opt = torch.optim.Adam(m.kernel.parameters(), lr=args.lr)
+    g = torch.Generator().manual_seed(0)
+    hub = torch.nn.HuberLoss(delta=3.0)
+    bad, hist, best = 0, [], (float("inf"), None)
+    print(f"擬核：fit {len(sel)} 筆、{args.nfreq} 頻點、{args.steps} 步、lr={args.lr}")
+    for step in range(args.steps):
+        ix = torch.randperm(len(sel), generator=g)[:args.batch]
+        out = m.solve(x[ix], freqs=f)
+        loss = hub(out["S11"], y[ix][:, :17][:, jf]) + hub(out["Gain"], y[ix][:, 17:][:, jf])
+        opt.zero_grad()
+        if not torch.isfinite(loss):                 # 奇異矩陣/離群 dB → 跳過，別讓 NaN 汙染參數
+            bad += 1
+            print(f"  step {step:3d}  loss 非有限，跳過（累計 {bad}）", flush=True)
+            continue
+        loss.backward()
+        gn = torch.nn.utils.clip_grad_norm_(m.kernel.parameters(), 0.5)
+        if not torch.isfinite(gn):
+            bad += 1
+            continue
+        opt.step()
+        hist.append(float(loss))
+        if float(loss) < best[0]:
+            best = (float(loss), {k: v.detach().clone() for k, v in m.kernel.state_dict().items()})
+        if step % max(1, args.steps // 20) == 0 or step == args.steps - 1:
+            print(f"  step {step:3d}  loss {float(loss):.3f}（最佳 {best[0]:.3f}）", flush=True)
+    if best[1] is None:
+        raise SystemExit("擬核全程沒有有效步——降 lr 或檢查核參數範圍")
+    m.kernel.load_state_dict(best[1])                # 取最佳而非最後一步
+    print(f"最佳 loss {best[0]:.3f}（{len(hist)} 有效步 / {bad} 跳過）")
+    st = {k: v.detach().tolist() for k, v in m.kernel.state_dict().items()}
+    with open(L2_PARAMS, "w", encoding="utf-8") as fh:
+        json.dump(dict(a_scale=scale, kernel=st, fitted=True, n=len(sel),
+                       steps=args.steps, nfreq=args.nfreq), fh)
+    print(f"核參數落地 {L2_PARAMS}")
+
+
+def cmd_gate2(args):
+    """L2 gate：判準＝**裸** pooled ρ ≥ 0.60（`docs/diffsim.md` §5，發車前寫死）。"""
+    idx = D.load()
+    split, _ = D.assign_split(idx)
+    sel = pick(idx, split, "val")
+    m, scale = build_l2(args.scale)
+    print(f"L2 參數（解析校準，未看過 val）：a_A 縮放 = {scale:.3f}")
+    pred = m.predict(idx["x"][sel].astype(np.float64), batch=args.batch)
+    y, st = idx["y"][sel], idx["stratum"][sel]
+    wm_p, _, _ = margins(pred)
+    wm_t, _, _ = margins(y)
+    rhos = report_rho(wm_p, wm_t, st, tag="L2 裸（val，主 KPI ①）")
+    selc = pick(idx, split, "fit", args.calib)
+    pc = m.predict(idx["x"][selc].astype(np.float64), batch=args.batch)
+    a, b = affine_fit(pc, idx["y"][selc])
+    mae = np.abs(affine_apply(pred, a, b)[:, :17] - y[:, :17]).mean(0)
+    print(f"\n② 仿射後 S11 每頻點 MAE：中位 {np.median(mae):.2f}，帶內 {mae[5:12].mean():.2f} dB")
+    print(f"③ 負片域 ρ = {rhos.get('neg', float('nan')):+.3f}；"
+          f"凍結尺 ρ = {rhos.get('frozen', float('nan')):+.3f}")
+    ok = rhos.get("ALL", 0) >= 0.60
+    print(f"\n===== GATE 2：pooled ρ = {rhos.get('ALL', float('nan')):+.3f} vs 判準 0.60 → "
+          f"{'通過' if ok else '**不通過**'} =====")
+
+
 def main():
     ap = argparse.ArgumentParser(description="diffsim 驅動")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("l2cal")
+    le = sub.add_parser("l2eval")
+    le.add_argument("--split", default="dev")
+    le.add_argument("--n", type=int, default=None)
+    le.add_argument("--batch", type=int, default=8)
+    le.add_argument("--scale", type=float, default=None)
+    g2 = sub.add_parser("gate2")
+    g2.add_argument("--batch", type=int, default=8)
+    g2.add_argument("--calib", type=int, default=150)
+    g2.add_argument("--scale", type=float, default=None)
     g1 = sub.add_parser("gate1")
     g1.add_argument("--batch", type=int, default=24)
     g1.add_argument("--device", default="cpu")
     g1.add_argument("--calib", type=int, default=300, help="仿射校準用的 fit 筆數/stratum")
+    lf = sub.add_parser("l2fit")
+    lf.add_argument("--n", type=int, default=400, help="每 stratum 取幾筆（fit 分割）")
+    lf.add_argument("--batch", type=int, default=24)
+    lf.add_argument("--nfreq", type=int, default=9)
+    lf.add_argument("--steps", type=int, default=120)
+    lf.add_argument("--lr", type=float, default=0.02)
+    lf.add_argument("--scale", type=float, default=None)
     fs = sub.add_parser("fitscan")
     fs.add_argument("--n", type=int, default=200, help="每 stratum 取幾筆（fit 分割）")
     fs.add_argument("--batch", type=int, default=24)
@@ -228,7 +366,9 @@ def main():
             p.add_argument("--ers", default="2.8,3.1,3.55")
             p.add_argument("--qs", default="8,20,50")
     a = ap.parse_args()
-    {"predict": cmd_predict, "scan": cmd_scan, "fitscan": cmd_fitscan, "gate1": cmd_gate1}[a.cmd](a)
+    {"predict": cmd_predict, "scan": cmd_scan, "fitscan": cmd_fitscan, "gate1": cmd_gate1,
+     "l2cal": cmd_l2cal, "l2eval": cmd_l2eval, "l2fit": cmd_l2fit,
+     "gate2": cmd_gate2}[a.cmd](a)
 
 
 if __name__ == "__main__":

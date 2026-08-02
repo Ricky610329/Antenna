@@ -31,7 +31,7 @@ n=(√εr, √εr)。b_reg 同時扮演自項的正則化（rooftop 自耦合不
 import numpy as np
 import torch
 
-from .geom import N, DX, H, EPS_R, Z0, C0, MU0, EPS0, FREQS, FEED_ROW, feed_weights
+from .geom import N, DX, H, EPS_R, Z0, C0, MU0, EPS0, FREQS, FEED_ROW, feed_weights  # noqa: F401
 
 NSTUB = 1                     # 饋線樁列數（讓 x=5.0mm 接面上的屋頂有立足點）
 NR = N + NSTUB                # 延伸格列數（x 方向）
@@ -73,7 +73,8 @@ class DCIMKernel(torch.nn.Module):
         """r (…,) 距離表、k0 (nf,) → (2, nf, …) 的 G_A / G_V 值。"""
         a = torch.complex(self.a[..., 0], self.a[..., 1])          # (2, n_img)
         n = torch.complex(self.n[..., 0], self.n[..., 1])
-        b = self.b.exp()
+        #? b 夾在 [0.05dx, 40h]：b 太小 → 自項 1/(4πb) 發散、Z 奇異 → 擬核當場 NaN。
+        b = self.b.clamp(np.log(0.05 * DX), np.log(40 * H)).exp()
         rr = torch.sqrt(r[None, None, ...] ** 2 + (b ** 2)[:, :, None])          # (2,ni,…)
         ph = torch.exp(-1j * k0[None, None, :, None] * n[:, :, None, None]
                        * rr[:, :, None, :])                                      # (2,ni,nf,…)
@@ -202,11 +203,14 @@ class MoML2:
         itot = (cur[:, :, self.drive].sum(-1) * DX)
         zin = 1.0 / itot
         gam = (zin - Z0) / (zin + Z0)
-        s11 = 20 * torch.log10(gam.abs().clamp(1e-6, 1.0))
+        #? dB 地板 −50/−40：HFSS 實務範圍就這麼大，不設地板時 |Γ|→0 會產生 −120dB
+        #  離群值，擬核時直接把梯度炸成 NaN（實測踩到）。
+        s11 = 20 * torch.log10(gam.abs().clamp(3.2e-3, 1.0))
         u0, prad = self.farfield(cur, f)
         d0 = (4 * np.pi * u0 / prad.clamp_min(1e-300)).clamp_min(1e-4)
         mism = (1 - gam.abs() ** 2).clamp_min(1e-6)
-        return dict(S11=s11, Gain=10 * torch.log10(d0 * mism), Zin=zin, D0=d0, Prad=prad, J=cur)
+        gain = (10 * torch.log10(d0 * mism)).clamp_min(-40.0)
+        return dict(S11=s11, Gain=gain, Zin=zin, D0=d0, Prad=prad, J=cur)
 
     # ----------------------------------------------------------------- 遠場
     def _setup_farfield(self, n_theta, n_phi):
