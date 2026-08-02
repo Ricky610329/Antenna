@@ -47,17 +47,33 @@ def rank_rho(a, b):
     return float(r.statistic), float(r.pvalue)
 
 
+def boot_ci(a, b, n_boot: int = 2000, seed: int = 0, alpha: float = 0.05):
+    """ρ 的 bootstrap 信賴區間。驗證集只有 120 筆，SE(ρ) ≈ 0.09——
+    只報點估計會把精度講得比實際好，判準在門檻附近時尤其誤導。"""
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    rng = np.random.default_rng(seed)
+    n = len(a)
+    vals = np.empty(n_boot)
+    for i in range(n_boot):
+        ix = rng.integers(0, n, n)
+        vals[i] = rank_rho(a[ix], b[ix])[0]
+    vals = vals[np.isfinite(vals)]
+    return float(np.quantile(vals, alpha / 2)), float(np.quantile(vals, 1 - alpha / 2))
+
+
 def report_rho(pred_wm, true_wm, strat, tag="") -> dict:
-    """分層 rank ρ 表（主 KPI）。回 {stratum: rho}，同時印表。"""
+    """分層 rank ρ 表（主 KPI）。回 {stratum: rho}，同時印表（含 95% bootstrap CI）。"""
     out = {}
     print(f"\n== rank ρ(diffsim wm, HFSS wm){(' — ' + tag) if tag else ''} ==")
-    print("| 分層 | n | ρ | p |")
-    print("|---|---|---|---|")
+    print("| 分層 | n | ρ | 95% CI | p |")
+    print("|---|---|---|---|---|")
     for s in ["ALL"] + sorted(set(np.asarray(strat).tolist())):
         m = np.ones(len(true_wm), bool) if s == "ALL" else (np.asarray(strat) == s)
         if m.sum() < 3:
             continue
-        rho, p = rank_rho(np.asarray(pred_wm)[m], np.asarray(true_wm)[m])
+        pw, tw = np.asarray(pred_wm)[m], np.asarray(true_wm)[m]
+        rho, p = rank_rho(pw, tw)
+        lo, hi = boot_ci(pw, tw)
         out[s] = rho
-        print(f"| {s} | {int(m.sum())} | {rho:+.3f} | {p:.2g} |")
+        print(f"| {s} | {int(m.sum())} | {rho:+.3f} | [{lo:+.3f}, {hi:+.3f}] | {p:.2g} |")
     return out
