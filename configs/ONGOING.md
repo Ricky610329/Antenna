@@ -60,7 +60,12 @@
   G_V 擾動 Δρ≈0.005、S1 上界兩路徑都估 +0.04）⇒ 是**離散化的天花板**。
 - ⚠ **真正的瓶頸可能在真值端**：→ [proposal-mesh-convergence](../docs/discuss/proposal-mesh-convergence.md)
   （HFSS 網格收斂實驗，~1 小時機時，已在下方 🔜 候選區）。**優先於任何模型改良。**
-- 未答：與現役 SM 的比較（`sm_reanchor*.pth` 屬授權禁區，未解除）。
+- ✅ **與現役 SM 的比較已做**（Ricky 08-03 授權唯讀口）→ [analysis-10](../docs/log/analysis-10-sm-vs-physics.md)：
+  **不接主管線**（正片域 SM 領先 **+0.61**），但 **L3 可當新域的冷啟動排序器**
+  （負片域 mlp/cnn 只有 ρ≈0.07＝幾乎無排序能力，L3 零訓練 +0.43）——**可直接接 R50 雙外軸產線**。
+- ⚠ **給批次線的方法論警告**：`sm_reanchor._load_clean_stores()` 自動納入 `dedust_auto*`/`dedust_c*`
+  ⇒ SM 訓練集是 **587 店**而非 `clean_stores.txt` 的 513 行。任何「SM vs 其他方法」的比較
+  若沒扣掉這層，都會**系統性高估 SM**（我們量到 clean 層 97% 是 SM 見過的）。
 - 完整脈絡 → [analysis-08](../docs/log/analysis-08-diffsim.md)＋[analysis-09](../docs/log/analysis-09-diffsim-l3.md)；
   code `script/diffsim/`（32 條物理測試）。
 

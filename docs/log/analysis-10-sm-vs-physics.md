@@ -1,6 +1,6 @@
 # analysis-10｜物理模擬器 vs 現役 SM：在**三方都沒見過**的樣本上比 rank
 
-- 狀態：concluded（2026-08-03 05:0x）
+- 狀態：concluded（2026-08-03 04:57）
 - 開檔：2026-08-03 04:2x
 - 零 HFSS。**Ricky 04:1x 授權對 `sm_reanchor*.pth` 開唯讀口**（只 `torch.load` 推論，
   不寫任何 NAS 檔、不佔 GPU、不碰 jobs/records/kpi）。
@@ -78,7 +78,7 @@ diffsim 側：L3 **零參數**（到處乾淨）；L1 的 4 個離散參數（`e
 
 ---
 
-## 3. 結果（2026-08-03 04:5x；`val`/`frozen` 全程未碰）
+## 3. 結果（2026-08-03 04:55；`val`/`frozen` 全程未碰）
 
 樣本＝`fit` 分割，L2/L3 已含 [Stage 1 饋線修正](../../script/diffsim/l2.py)（`stub_mask` 移除死端）。
 
