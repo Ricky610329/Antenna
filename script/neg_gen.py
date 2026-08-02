@@ -321,14 +321,19 @@ def bridge_pool(seed, n, pos_pats, pad=FEED_PAD_DEFAULT):
         mode = ("dil", "ero", "mix")[k % 3]
         k += 1
         if mode == "dil":
+            #? 遮罩膨脹(2026-08-02 修:全域膨脹只有 母本×3 檔變異,25 池撞池)——隨機區域內增厚
             P = pos_pats[int(rng.integers(0, len(pos_pats)))]
             it = int(rng.integers(1, 4))
-            raw = binary_dilation(P, CHEB, iterations=it)
+            fldm = gaussian_filter(rng.normal(size=(N, N)), 2.0)
+            region = fldm >= np.quantile(fldm, rng.uniform(0.3, 0.6))
+            raw = np.where(region, binary_dilation(P, CHEB, iterations=it), P)
             meta = {"arm": "bri_dil", "iters": it}
         elif mode == "ero":
             raw0, m0 = gen_grf(rng, (0.65, 0.82))
             it = int(rng.integers(1, 3))
-            raw = binary_erosion(raw0, CHEB, iterations=it)
+            fldm = gaussian_filter(rng.normal(size=(N, N)), 2.0)
+            region = fldm >= np.quantile(fldm, rng.uniform(0.3, 0.6))
+            raw = np.where(region, binary_erosion(raw0, CHEB, iterations=it), raw0)
             meta = {"arm": "bri_ero", "iters": it, "f0": m0["f"]}
         else:
             P = pos_pats[int(rng.integers(0, len(pos_pats)))]
