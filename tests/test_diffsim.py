@@ -583,3 +583,29 @@ def test_l2_solve_survives_multithreaded_mkl(mom):
         assert torch.isfinite(out["S11"]).all()
     finally:
         torch.set_num_threads(n0)
+
+
+# ---------------------------------------------------------------- 選批稽核工具
+def test_selection_audit_calibration():
+    """`sm_selection_audit.audit` 的兩個指標必須對「完美／隨機／反向」預測器給出正確的刻度。
+
+    這條守的是**刻度本身**（不碰 NAS）：如果哪天改了 bootstrap 或命中率的定義，
+    完美預測器不再是 ~100%、隨機不再是 ~10%，這裡會紅。
+    """
+    from script.sm_selection_audit import audit
+    rng = np.random.default_rng(0)
+    y = rng.normal(size=800)
+    k, nb = 60, 400
+    win_p, hit_p, _, rho_p, _ = audit(y.copy(), y, k, nb, seed=1)              # 完美
+    win_r, hit_r, _, _, _ = audit(rng.normal(size=800), y, k, nb, seed=1)      # 隨機
+    win_n, hit_n, _, rho_n, _ = audit(-y, y, k, nb, seed=1)                    # 反向
+    assert rho_p > 0.99 and rho_n < -0.99
+    assert hit_p > 90.0, f"完美預測器的 top10% 命中率應接近 100%，得到 {hit_p:.0f}%"
+    assert 5.0 < hit_r < 18.0, f"隨機預測器應落在 10% 附近，得到 {hit_r:.0f}%"
+    assert hit_n < 2.0, f"反向預測器應接近 0%，得到 {hit_n:.0f}%"
+    #! `P(勝隨機)` 用嚴格 `>`（平手算輸）⇒ **完美預測器的上限不是 100%**：
+    #  它必定選到最大值，但隨機挑 K 筆也有 ~K/n 機率選到同一筆＝平手＝算輸。
+    #  n=800/K=60 實測 ~86%。這條測試就是釘住這個刻度，別把 86% 誤讀成「還有 14% 沒挑到」。
+    assert 80.0 < win_p < 95.0, f"完美預測器應在 ~86%（平手算輸的上限），得到 {win_p:.0f}%"
+    assert win_n < 10.0
+    assert 25.0 < win_r < 75.0, f"隨機預測器的 P(勝隨機) 應在 50% 附近，得到 {win_r:.0f}%"
