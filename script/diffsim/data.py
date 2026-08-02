@@ -135,7 +135,7 @@ def hash_u01(x_row: np.ndarray) -> float:
     return int.from_bytes(h[:8], "big") / float(1 << 64)
 
 
-def assign_split(idx: dict, val_per_stratum: int = 30, dev_per_stratum: int = 40,
+def assign_split(idx: dict, val_per_stratum: int = 30, dev_per_stratum: int = 150,
                  seed_tag: str = "diffsim-v1"):
     """回傳 (split (N,) of 'val'/'dev'/'fit', u01 (N,))。
 
