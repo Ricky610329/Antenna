@@ -19,6 +19,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
+from loguru import logger
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -150,10 +151,37 @@ def assign_split(idx: dict, val_per_stratum: int = 30, dev_per_stratum: int = 15
     strat = idx["stratum"]
     tag = seed_tag.encode()
     u = np.empty(len(x), dtype=np.float64)
+    keys = []
     for i in range(len(x)):
-        h = hashlib.sha1(tag + np.ascontiguousarray(x[i]).tobytes()).digest()
+        raw = np.ascontiguousarray(x[i]).tobytes()
+        keys.append(hashlib.sha1(raw).hexdigest()[:16])          # 內容 id（與 seed_tag 無關）
+        h = hashlib.sha1(tag + raw).digest()
         u[i] = int.from_bytes(h[:8], "big") / float(1 << 64)
+    keys = np.asarray(keys)
     split = np.full(len(x), "fit", dtype=object)
+
+    #! val 成員一旦報過 gate 就**凍成檔案**，之後一律照檔案認人。
+    #  原本只靠「該層 u 最小的 30 筆」是會漂的：新資料只要有一筆 u 落進前 30 名，
+    #  就會擠掉現有 val 成員 → 「val 只看一次」的帳悄悄失效、已報的 gate 數字不再可重現
+    #  （實測：移除 u 最小的 10 筆 clean 後，val 換掉 20 筆）。
+    frozen_list = _load_val_freeze()
+    if frozen_list is not None:
+        known = set(frozen_list)
+        hit = np.isin(keys, list(known))
+        #! 凍結名單**不取代**「凍結尺永不進擬合」那條紅線——名單對不上時（索引重建、
+        #  凍結尺擴充）frozen 會整層掉進 dev/fit。測試 `test_frozen_ruler_never_leaves_val`
+        #  在我第一版就抓到這個洞：兩條規則要**同時**成立，不是二選一。
+        hit |= (strat == "frozen")
+        split[hit] = "val"
+        miss = known - set(keys[hit].tolist())
+        if miss:
+            logger.warning(f"凍結的 val 有 {len(miss)} 筆在目前索引中找不到（索引被縮減過？）")
+        for s in np.unique(strat):
+            m = np.where((strat == s) & ~hit)[0]
+            order = m[np.argsort(u[m])]
+            split[order[:dev_per_stratum]] = "dev"
+        return np.asarray(split), u
+
     for s in np.unique(strat):
         m = np.where(strat == s)[0]
         if s == "frozen":
@@ -163,6 +191,39 @@ def assign_split(idx: dict, val_per_stratum: int = 30, dev_per_stratum: int = 15
         split[order[:val_per_stratum]] = "val"
         split[order[val_per_stratum:val_per_stratum + dev_per_stratum]] = "dev"
     return np.asarray(split), u
+
+
+VAL_FREEZE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), "configs", "diffsim_val_freeze.txt")
+
+
+def _load_val_freeze():
+    if not os.path.exists(VAL_FREEZE):
+        return None
+    out = []
+    with open(VAL_FREEZE, encoding="utf-8") as f:
+        for line in f:
+            line = line.split("#")[0].strip()
+            if line:
+                out.append(line)
+    return out or None
+
+
+def freeze_val():
+    """把目前的 val 成員（內容 hash）寫進 `configs/diffsim_val_freeze.txt`，之後永久固定。"""
+    idx = load()
+    split, _ = assign_split(idx)
+    if _load_val_freeze() is not None:
+        raise SystemExit(f"{VAL_FREEZE} 已存在——val 已凍結，不可重凍（要改請人工刪檔並記錄理由）")
+    sel = np.where(split == "val")[0]
+    with open(VAL_FREEZE, "w", encoding="utf-8", newline="\n") as f:
+        f.write("# diffsim 驗證集凍結名單（內容 SHA-1 前 16 碼）——gate 報數的可重現性基礎。\n")
+        f.write("# 一旦寫入就不再重算：新資料進索引也不會擠掉這 120 筆。\n")
+        f.write(f"# 凍結於 {len(idx['x'])} 筆索引；每層 30 筆（clean/neg/senior/frozen）。\n")
+        for i in sel:
+            f.write(f"{hashlib.sha1(np.ascontiguousarray(idx['x'][i]).tobytes()).hexdigest()[:16]}"
+                    f"  # {idx['stratum'][i]}\n")
+    print(f"已凍結 {len(sel)} 筆 val → {VAL_FREEZE}")
 
 
 def summary():
@@ -188,10 +249,13 @@ def main():
     b.add_argument("--force", action="store_true")
     b.add_argument("--workers", type=int, default=24)
     sub.add_parser("summary")
+    sub.add_parser("freeze-val")
     a = ap.parse_args()
     if a.cmd == "build":
         build(force=a.force, workers=a.workers)
         summary()
+    elif a.cmd == "freeze-val":
+        freeze_val()
     else:
         summary()
 

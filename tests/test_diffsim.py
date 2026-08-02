@@ -343,3 +343,87 @@ def test_l2_disconnected_feed_no_nan(mom):
     assert abs(float(out["S11"][0, 0])) < 1e-9   # 全反射
     assert float(out["Gain"][0, 0]) <= -40.0 + 1e-9
 
+
+
+# ---------------------------------------------------------------- 資料分割鐵則
+# 這一組守 `docs/diffsim.md` §5 的分割鐵則。稽核指出它先前**零測試覆蓋**——
+# 被稱為「鐵則」的東西沒有任何一條測試守著，而 gate 的可信度全靠它。
+def _fake_idx(n_clean=400, n_neg=120, n_senior=300, n_frozen=30, seed=0):
+    rng = np.random.default_rng(seed)
+    parts, strat = [], []
+    for tag, k in (("clean", n_clean), ("neg", n_neg), ("senior", n_senior), ("frozen", n_frozen)):
+        parts.append((rng.random((k, 625)) > 0.5).astype(np.uint8))
+        strat += [tag] * k
+    x = np.concatenate(parts)
+    return dict(x=x, y=rng.normal(-6, 4, (len(x), 34)).astype(np.float32),
+                stratum=np.asarray(strat), store=np.asarray(["s"] * len(x)),
+                name=np.asarray([f"n{i}" for i in range(len(x))]))
+
+
+def test_split_is_disjoint_and_covers():
+    """val / dev / fit 三者互斥且覆蓋全體——這是「不相交鐵則」的最低要求。"""
+    from script.diffsim import data as D
+    idx = _fake_idx()
+    sp, _ = D.assign_split(idx, val_per_stratum=30, dev_per_stratum=50)
+    counts = {k: int((sp == k).sum()) for k in ("val", "dev", "fit")}
+    assert sum(counts.values()) == len(idx["x"])
+    assert set(np.unique(sp)) <= {"val", "dev", "fit"}
+
+
+def test_frozen_ruler_never_leaves_val():
+    """凍結尺（OOD 30 筆）**全部進 val、永不進擬合**——指導書 §5 的紅線。"""
+    from script.diffsim import data as D
+    idx = _fake_idx()
+    sp, _ = D.assign_split(idx, val_per_stratum=30, dev_per_stratum=50)
+    fr = idx["stratum"] == "frozen"
+    assert (sp[fr] == "val").all(), "凍結尺外流到 dev/fit"
+
+
+def test_split_is_content_deterministic():
+    """切分只是內容的函數：打亂列序、換 dtype 都不能改變任何一筆的歸屬。"""
+    from script.diffsim import data as D
+    idx = _fake_idx()
+    sp1, u1 = D.assign_split(idx, val_per_stratum=30, dev_per_stratum=50)
+    perm = np.random.default_rng(7).permutation(len(idx["x"]))
+    idx2 = {k: v[perm] for k, v in idx.items()}
+    sp2, u2 = D.assign_split(idx2, val_per_stratum=30, dev_per_stratum=50)
+    assert (sp2 == sp1[perm]).all()
+    assert np.allclose(u2, u1[perm])
+
+
+def test_val_freeze_pins_membership(tmp_path, monkeypatch):
+    """★ val 凍結後**不因索引擴充而漂**。
+
+    #! 沒有這條的話：新資料只要有一筆 hash-u01 落進該層前 30 名，就會擠掉現有 val 成員
+    #  → 「val 只看一次」的帳悄悄失效、已報的 gate 數字不再可重現
+    #  （實測未凍結時，索引縮減 10 筆就換掉 20 筆 val）。
+    """
+    from script.diffsim import data as D
+    import hashlib as _h
+    idx = _fake_idx()
+    monkeypatch.setattr(D, "VAL_FREEZE", str(tmp_path / "freeze.txt"))
+    sp, _ = D.assign_split(idx, val_per_stratum=30, dev_per_stratum=50)
+    keys = [_h.sha1(np.ascontiguousarray(idx["x"][i]).tobytes()).hexdigest()[:16]
+            for i in np.where(sp == "val")[0]]
+    (tmp_path / "freeze.txt").write_text("\n".join(keys) + "\n", encoding="utf-8")
+
+    #? 擴充批**不含 frozen**：凍結尺是固定的 30 筆；真有新凍結尺時它本來就該進 val
+    #  （那條紅線優先於凍結名單，見 `assign_split` 的 `hit |= strat=='frozen'`）。
+    big = _fake_idx(n_clean=900, n_neg=400, n_senior=700, n_frozen=0, seed=1)
+    grown = {k: np.concatenate([idx[k], big[k]]) for k in idx}
+    sp2, _ = D.assign_split(grown, val_per_stratum=30, dev_per_stratum=50)
+    keys2 = {_h.sha1(np.ascontiguousarray(grown["x"][i]).tobytes()).hexdigest()[:16]
+             for i in np.where(sp2 == "val")[0]}
+    assert keys2 == set(keys), f"val 漂了：{len(keys2 ^ set(keys))} 筆不同"
+
+
+def test_pick_is_process_stable():
+    """`pick()` 的抽樣不可依賴 Python 的 `hash()`（每個 process 都不同）。"""
+    from script.diffsim import data as D
+    from script.diffsim.run import pick
+    idx = _fake_idx()
+    sp, _ = D.assign_split(idx, val_per_stratum=30, dev_per_stratum=50)
+    a = pick(idx, sp, "fit", 20)
+    b = pick(idx, sp, "fit", 20)
+    assert (a == b).all()
+    assert not (a == pick(idx, sp, "fit", 20, seed=1)).all()
