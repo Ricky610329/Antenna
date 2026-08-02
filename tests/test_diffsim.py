@@ -427,3 +427,38 @@ def test_pick_is_process_stable():
     b = pick(idx, sp, "fit", 20)
     assert (a == b).all()
     assert not (a == pick(idx, sp, "fit", 20, seed=1)).all()
+
+
+def test_l2_gradient_check_vs_finite_difference(mom):
+    """★ **對設計變數 ρ 的 adjoint 梯度 vs 中央有限差分**——ceviche / Meep 的標準驗收流程。
+
+    為什麼非有不可：文獻明講可微模擬器的梯度**可能方向就是錯的**，而這種 bias
+    **無法從 loss 曲線或梯度變異數看出來**（Suh et al., ICML 2022）。本鏈裡尤其危險——
+    到處是 `clamp`（dB 地板、`lam.clamp_min(0)`），撞到邊界的分量梯度會被砍成**恰好 0**。
+
+    注意：可微的是 `r_open`（電阻加載）那條路徑；遮罩解對 ρ 不可微（是硬遮罩），
+    只給擬核與排序用。
+    """
+    base = torch.zeros(N, N, dtype=torch.float64)
+    base[12:25, 6:19] = 1.0
+    rho = base * 0.9 + 0.05                       # 鬆弛到 (0,1) 內部，避開 clamp 邊界
+    f = np.array([28e9])
+    r_open = 1e-4
+
+    def J(p):
+        return mom.solve(p.reshape(1, N, N), freqs=f, r_open=r_open)["S11"][0, 0]
+
+    p = rho.clone().requires_grad_(True)
+    J(p).backward()
+    g = p.grad.detach()
+    assert torch.isfinite(g).all()
+    assert int((g.abs() > 1e-12).sum()) > 600, "大量像素梯度為零＝疑似被 clamp 砍掉"
+
+    for (i, j) in ((21, 10), (18, 23), (11, 12)):   # 挑梯度量級夠大的，避開差分雜訊地板
+        h = 1e-5
+        pp, pm = rho.clone(), rho.clone()
+        pp[i, j] += h
+        pm[i, j] -= h
+        with torch.no_grad():
+            fd = float((J(pp) - J(pm)) / (2 * h))
+        assert abs(float(g[i, j]) - fd) <= 0.02 * abs(fd), (i, j, float(g[i, j]), fd)
