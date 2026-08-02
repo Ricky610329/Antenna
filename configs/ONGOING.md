@@ -93,6 +93,10 @@
   ② ⚠ **`_load_clean_stores()` 自動納入 `dedust_auto*`/`dedust_c*`** ⇒ SM 訓練集是 **587 店**
      而非 `clean_stores.txt` 的 513 行。任何「SM vs 其他方法」的比較沒扣這層都會
      **系統性高估 SM**（我們量到 clean 層 97% 是 SM 見過的）。
+- ✅ **`docs/diffsim.md` 的鏈已全部走完**（含原計劃最後一步「殘差 head ＋最終 SM 比較」）：
+  學習曲線 A/B/C ⇒ **物理當特徵也沒價值**（物理特徵沒讓曲線左移，小樣本反而更差）。
+  ⭐ 但同一個 L3 輸出「直讀 8% → 學習節重讀 22%」（×2.75）⇒ 問題是**響應到真值的映射不是恆等**，
+  不是「什麼都沒算對」。執行結果摘要已補在 `docs/diffsim.md` 頂端。
 - 完整脈絡 → [analysis-08](../docs/log/analysis-08-diffsim.md)＋[analysis-09](../docs/log/analysis-09-diffsim-l3.md)；
   code `script/diffsim/`（32 條物理測試）。
 
