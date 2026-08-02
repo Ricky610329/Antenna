@@ -27,6 +27,7 @@
 | `expected_best.py` | R6 期望基準尺（每 round 收檔可重跑疊圖） |
 | `pattern_anatomy.py` | 池結構特徵快取（`collect-pool` → `tmp/pattern_anatomy/pool.npz`,多個 select 依賴） |
 | `round_report.py` / `analyze.py` / `benchmark_vs_random.py` | 線上 run 的歸檔圖表 / 重現診斷 / worst-margin 對標 |
+| `diffsim/` | **可微模擬器**（`docs/diffsim.md`／`docs/log/analysis-08`）：`data`(NAS 索引+val/dev/fit 決定性切分)／`geom`(SAB 直解的幾何真相)／`l1`(腔模型)／`l2`(rooftop MoM + DCIM 核)／`eval`(同一把尺+ρ)／`run`(fitscan 選參・gate1・l2cal・gate2)。零 HFSS、只讀 NAS |
 | `gnn_bakeoff.py` | 金屬像素圖 GNN bakeoff（規格 v3;build-cache/train/grid/exam=d=1 考卷;方向③） |
 
 接手導覽：先讀 `docs/log/README.md`（時間軸）→ `configs/ONGOING.md`（live）→ 該 round 檔。

@@ -237,3 +237,77 @@ def test_gradient_flows(sim):
     out["S11"][0, 8].backward()
     assert p.grad is not None and torch.isfinite(p.grad).all()
     assert float(p.grad.abs().max()) > 0
+
+
+# ---------------------------------------------------------------- L2（MoM）
+@pytest.fixture(scope="module")
+def mom():
+    from script.diffsim.l2 import MoML2, DCIMKernel
+    m = MoML2(kernel=DCIMKernel())
+    with torch.no_grad():
+        m.kernel.a.data[0, :, 0] *= 2.48        # 解析校準值（見 l2.calibrate_analytic）
+    return m
+
+
+def _rect(i0, i1, j0, j1, nb=1):
+    p = torch.zeros(nb, N, N, dtype=torch.float64)
+    p[:, i0:i1, j0:j1] = 1.0
+    return p
+
+
+def test_l2_matrix_is_symmetric(mom):
+    """MoM 阻抗矩陣必須對稱（互易介質的 EFIE）——組裝寫錯順序就會破。"""
+    Z = mom.impedance_at(28e9)
+    assert float((Z - Z.T).abs().max() / Z.abs().max()) < 1e-12
+
+
+def test_l2_passivity(mom):
+    """被動性：Re(Zin) ≥ 0、|S11| ≤ 1（隨機圖，含斷路情形）。"""
+    rng = np.random.default_rng(5)
+    p = torch.as_tensor((rng.random((3, N, N)) > 0.5).astype(np.float64))
+    with torch.no_grad():
+        out = mom.solve(p, freqs=np.array([26e9, 28e9, 30e9]))
+    assert (out["Zin"].real >= -1e-9).all(), float(out["Zin"].real.min())
+    assert (out["S11"] <= 1e-6).all(), float(out["S11"].max())
+
+
+def test_l2_masked_equals_resistive_loading(mom):
+    """遮罩解（快）與電阻加載（可微）在二值 pattern 上必須給同一個答案。"""
+    p = _rect(10, 25, 5, 20, nb=2)
+    p[1, 12:15, 8:12] = 0.0
+    f = np.array([28e9])
+    with torch.no_grad():
+        a = mom.solve(p, freqs=f)["S11"]
+        b = mom.solve(p, freqs=f, r_open=1e6)["S11"]
+    assert torch.allclose(a, b, atol=1e-6), float((a - b).abs().max())
+
+
+def test_l2_resonances_match_closed_form(mom):
+    """校準後的 MoM 共振頻率要對上 Hammerstad 閉式解（這是 L2 物理正確性的主證據）。
+
+    L1 的硬磁牆理想化在 0.2mm 像素 / 0.508mm 基板上是破的；MoM 沒有這個假設，
+    所以它「應該」對得上——對不上就代表核或組裝有問題，不是可接受的近似誤差。
+    """
+    from script.diffsim.l2 import patch_fr, CAL_RECTS
+    got = mom.resonances(CAL_RECTS[:5], fmin=10e9, fmax=40e9, nf=61)
+    want = np.array([patch_fr(n * DX, w * DX) for n, w in
+                     ((25, 25), (25, 17), (17, 17), (17, 13), (14, 14))])
+    err = np.abs(np.log(got / want))
+    assert err.max() < 0.06, list(zip((got / 1e9).round(1), (want / 1e9).round(1)))
+
+
+def test_l2_farfield_horizontal_dipole_over_ground(mom):
+    """遠場解析標的：地平面上方 h≪λ 的水平電流元 → D₀ = 7.5（解析積分）。
+
+    U ∝ (cos²θcos²φ + sin²φ)·4sin²(k₀h cosθ)；h≪λ 展開後
+    P_rad ∝ 4π(k₀h)²·(1/5 + 1/3)、U(0) ∝ 4(k₀h)² → D₀ = 4/(8/15) = 7.5。
+    抓的是極化投影與地平面鏡像因子——兩者在 L1 的突變測試裡都曾整段沒人守。
+    """
+    from script.diffsim.l2 import MoML2, DCIMKernel
+    m = MoML2(kernel=DCIMKernel(), n_theta=97, n_phi=48)
+    cur = torch.zeros(1, 1, m.nb, dtype=torch.complex128)
+    cur[0, 0, 0] = 1.0                                    # 單一 x 向屋頂
+    f = torch.tensor([2e9], dtype=torch.float64)          # 低頻 → k₀h ≪ 1
+    u0, prad = m.farfield(cur, f)
+    d0 = float(4 * np.pi * u0[0, 0] / prad[0, 0])
+    assert abs(d0 - 7.5) < 0.15, d0
