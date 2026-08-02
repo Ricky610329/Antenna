@@ -62,7 +62,7 @@ class CavityL1:
     """
 
     def __init__(self, n_modes: int = None, er_eff: float = EPS_R, q: float = 20.0,
-                 gap: float = 0.0, diag: float = 0.0, q_modes: int = 16,
+                 gap: float = 0.0, diag: float = 0.0, q_modes: int = 16, rad_eff: bool = False,
                  alpha: float = 1.0, eps_mass: float = 1e-2, self_q: bool = False,
                  n_theta: int = 13, n_phi: int = 24, device: str = "cpu", dtype=torch.float64):
         #? n_modes=None＝**全模態**（eigh 本來就把 625 個都算出來了，截斷只會製造假象：
@@ -74,6 +74,7 @@ class CavityL1:
         self.gap = gap
         self.diag = diag
         self.q_modes = q_modes
+        self.rad_eff = rad_eff
         self.alpha = alpha
         self.eps_mass = eps_mass
         self.self_q = self_q
@@ -209,8 +210,10 @@ class CavityL1:
         ph, (cu, cv) = self._ph_exp(f)
         edges = (gpx, gmx, gpy, gmy)
 
+        q_rad = pick_ix = None
+        if self.self_q or self.rad_eff:
+            qn, q_rad, pick_ix = self._mode_q(psi_p, kn2, edges)
         if self.self_q:
-            qn = self._mode_q(psi_p, kn2, edges, f)                    # (B,m) 逐模自洽 Q
             den = (kn2[:, None, :] - k2[None, :, None]).to(self.cdtype) \
                 + 1j * (kn2 / qn)[:, None, :].to(self.cdtype)
         else:
@@ -228,10 +231,17 @@ class CavityL1:
         d0 = (4 * np.pi * u0 / prad.clamp_min(1e-300)).clamp_min(1e-4)  # 地板 −40dBi＝HFSS 懲罰值口徑
         mism = (1 - gam.abs() ** 2).clamp_min(1e-6)
 
-        if self.self_q:
-            #? Q 自洽時 Re(Zin) 才真的代表「被消耗掉的功率」，功率平衡才有意義：
-            #  場是 I=1A 驅動算的 → P_in = ½Re(Zin)；遠場積分 ×k₀²/(32π²η₀) ＝ 絕對 P_rad。
-            #  e_r 抓的是「會共振但不輻射」（能量困在結構裡的粉塵型）與「真的會輻射」的差別。
+        if self.rad_eff:
+            #? 輻射效率 e_r = Q_mat/(Q_rad + Q_mat)：抓「會共振但不輻射」（能量困在結構裡的
+            #  粉塵型）vs「真的會輻射」的差別——D₀ 只管方向性，抓不到這件事。
+            #  只用 Q_rad（形狀的函數），**不走 P_rad/½Re(Zin) 的功率平衡**：Q 固定時 Re(Zin)
+            #  反映的是「對饋點的耦合強度」不是真實損耗，那條路實測會把 Gain 弄壞（見 §3.1）。
+            ix = pick_ix[:, None, :].expand(-1, den.shape[1], -1)
+            wgt = (num.expand_as(den).gather(2, ix) / den.gather(2, ix)).abs()   # 各模當下的貢獻
+            qr = (wgt * q_rad[:, None, :]).sum(-1) / wgt.sum(-1).clamp_min(1e-30)
+            qm = q_material()
+            e_r = (qm / (qr + qm)).clamp(1e-4, 1.0)
+        elif self.self_q:
             cpw = ((2 * np.pi * f / C0) ** 2 / (32 * np.pi ** 2 * ETA0))[None, :]
             e_r = ((cpw * prad) / (0.5 * zin.real.clamp_min(1e-30))).clamp(1e-4, 1.0)
         else:
@@ -257,7 +267,7 @@ class CavityL1:
         prad = (cross2 * self.sinT).sum((-1, -2)) * self.dth * self.dph
         return u0, prad
 
-    def _mode_q(self, psi_p, kn2, edges, f):
+    def _mode_q(self, psi_p, kn2, edges):
         """逐模自洽 Q：Q_rad,n = ω_n·W_n / P_rad,n（W_n = εh/2，模態歸一 ∫|ψ|²dA = 1）。
 
         固定經驗 Q 的問題：諧振深度（S11 谷深）與輻射效率其實是**形狀的函數**——同樣共振，
@@ -279,7 +289,7 @@ class CavityL1:
         wn = k0n * C0                                                         # ω_n
         q_rad = (wn * (self.er_eff * EPS0 * H / 2) / p_rad.clamp_min(1e-300)).clamp(0.5, 1e5)
         q_sel = 1.0 / (1.0 / q_rad + 1.0 / q_material())
-        return torch.full_like(kn2, float(self.q)).scatter(1, pick, q_sel)
+        return torch.full_like(kn2, float(self.q)).scatter(1, pick, q_sel), q_rad, pick
 
     def _edge_weights(self, r):
         """各格四面的「金屬→空氣」權重 g = ρ_i(1−ρ_j)（外界 ρ=0）。回 (+x, −x, +y, −y)。"""

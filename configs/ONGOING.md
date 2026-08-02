@@ -52,11 +52,15 @@
 - worker 三機常駐（2026-07-11 起;個性見 memory）;**自產 tier-2（--selfgen 預設開）=佇列全空自動翻
   歷史 bit 產資料,任何 job 入佇列即讓位——HFSS 制度上不停**。
 
-### 🔜 diffsim — 可微模擬器（觸發:Ricky 另開 session 照 `docs/diffsim.md` 動工;2026-08-02 討論定案）
+### 🔵 diffsim — 可微模擬器（**動工中** 2026-08-02;零 HFSS,與批次線並行不互相干擾）
 - what:排名器+梯度產生器級的可微 EM 鏈(L1 腔模型 spike → L2 擬合核 MoM;要輪廓不復現);
   why:物理結構天生無 OOD 問題=資料飛輪正攻的洞;鏈可微→做不出的節點可 Model 置換/STE。
-- 指導書=`docs/diffsim.md`(幾何已考證:25×25/RO4003 0.508mm/微帶 edge-feed/零 via);
-  gates 寫死:L1 ρ≥0.4 → L2;L2 裸 ρ≥0.6 → 投資源。本 session 不動工(Ricky 分工裁定)。
+- 指導書=`docs/diffsim.md`;研究日誌=[`docs/log/analysis-08-diffsim.md`](../docs/log/analysis-08-diffsim.md)
+  (判準/分割鐵則/階段進度都在那)。code=`script/diffsim/`,物理測試 `tests/test_diffsim.py`(13 條)。
+- 進度:**階段 0 幾何確認完成**(.sab 二進位直解 → 板 35×20mm、饋線寬 1.1mm/長 22.5mm、
+  Z₀≈51Ω ⇒ 饋線長度不影響 |S11|、不必建模);L1 腔模型跑通、gates 未報。
+- gates 寫死:L1 pooled ρ≥0.4 → L2;L2 裸 ρ≥0.6 → 投資源;單向門,不到就停+誠實記錄。
+- ⚠ **只讀 NAS**：讀樣本 `.pt`/`results.json`，不碰 jobs/sm_reanchor/kpi/records。
 
 ### ~~Round 13 — 組數階梯~~（✅ **2026-07-08 收檔**）→ [round-13](../docs/log/round-13-block-ladder.md)
 - 組數=真設計軸但報酬有取捨:4-5 塊甜蜜點(5 塊買 rad/4 塊買選擇性)、6 塊遞減;margin 天花板僅微升。

@@ -120,10 +120,15 @@ def cmd_scan(args):
     print(f"\n最佳（dev）: er={best[0]} Q={best[1]} ρ={best[2]:+.3f}")
 
 
-L1_GRID = [dict(er=er, q=q, gap=g, diag=d)
-           for er in (3.0, 3.3, 3.55, 3.9)
+#? 網格刻意小（27 組 × 600 筆）——參數多、樣本少就變成對 fit 分割過擬合。
+#  rad_eff（輻射效率）是**先驗的物理選擇**不是超參數：D₀ 只管方向性，抓不到
+#  「會共振但不輻射」；dev 上量到 pooled ρ +0.363→+0.413，主要修的正是 Gain 那一路。
+#  精度：一律 CPU float64——float32 下 ρ 掉 0.07（Cholesky+eigh 對 B 的條件數敏感），
+#  GPU float64 的 cusolverDnXsyevd 在本機直接報 INTERNAL_ERROR。
+L1_GRID = [dict(er=er, q=q, gap=g, diag=g, rad_eff=True)
+           for er in (3.0, 3.3, 3.55)
            for q in (8.0, 15.0, 30.0)
-           for g, d in ((0, 0), (1, 1), (2, 2), (3, 3))]
+           for g in (1, 2, 3)]
 
 
 def cmd_fitscan(args):
@@ -153,9 +158,54 @@ def cmd_fitscan(args):
         json.dump(dict(best=rows[0][1], rho_fit=rows[0][0], n=len(sel)), fh, ensure_ascii=False)
 
 
+def cmd_gate1(args):
+    """L1 gate：**val 只跑這一次**。判準寫死在 `docs/log/analysis-08-diffsim.md` §1。
+
+    ① 主 KPI = 裸 diffsim-wm 對 HFSS-wm 的 pooled Spearman ρ（判準 ≥0.40）
+    ② 仿射校準（係數只在 fit 上擬）後的 S11 每頻點 MAE
+    ③ 負片域 ρ 單獨報；凍結尺 30 單獨報
+    """
+    import json
+    idx = D.load()
+    split, _ = D.assign_split(idx)
+    pf = os.path.join(D.CACHE_DIR, "l1_params.json")
+    cfg = json.load(open(pf, encoding="utf-8"))["best"] if os.path.exists(pf) else \
+        dict(er=3.55, q=15.0, gap=2, diag=2)
+    print(f"L1 參數（fit 分割選出，未看過 val）：{cfg}")
+
+    sel = pick(idx, split, "val")
+    pred, dt = run_l1(idx, sel, batch=args.batch, device=args.device, **cfg)
+    st, y = idx["stratum"][sel], idx["y"][sel]
+    wm_p, _, _ = margins(pred)
+    wm_t, _, _ = margins(y)
+    print(f"val {len(sel)} 筆，{dt:.0f}s")
+    rhos = report_rho(wm_p, wm_t, st, tag="L1 裸（val，主 KPI ①）")
+
+    selc = pick(idx, split, "fit", args.calib)
+    pc, _ = run_l1(idx, selc, batch=args.batch, device=args.device, **cfg)
+    a, b = affine_fit(pc, idx["y"][selc])
+    pa = affine_apply(pred, a, b)
+    mae = np.abs(pa[:, :17] - y[:, :17]).mean(0)
+    print(f"\n② 仿射校準（fit {len(selc)} 筆擬）後 S11 每頻點 MAE(dB)：中位 {np.median(mae):.2f}，"
+          f"帶內 5:12 {mae[5:12].mean():.2f}，全帶 {mae.mean():.2f}")
+    wm_a, _, _ = margins(pa)
+    print(f"   （校準後 wm 的 pooled ρ = {rank_rho(wm_a, wm_t)[0]:+.3f}，僅供對照，非判準）")
+
+    print(f"\n③ 負片域 ρ = {rhos.get('neg', float('nan')):+.3f}；"
+          f"凍結尺 ρ = {rhos.get('frozen', float('nan')):+.3f}")
+    ok = rhos.get("ALL", 0) >= 0.40
+    print(f"\n===== GATE 1：pooled ρ = {rhos.get('ALL', float('nan')):+.3f} vs 判準 0.40 → "
+          f"{'通過' if ok else '**不通過**'} =====")
+    return ok
+
+
 def main():
     ap = argparse.ArgumentParser(description="diffsim 驅動")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    g1 = sub.add_parser("gate1")
+    g1.add_argument("--batch", type=int, default=24)
+    g1.add_argument("--device", default="cpu")
+    g1.add_argument("--calib", type=int, default=300, help="仿射校準用的 fit 筆數/stratum")
     fs = sub.add_parser("fitscan")
     fs.add_argument("--n", type=int, default=200, help="每 stratum 取幾筆（fit 分割）")
     fs.add_argument("--batch", type=int, default=24)
@@ -175,7 +225,7 @@ def main():
             p.add_argument("--ers", default="2.8,3.1,3.55")
             p.add_argument("--qs", default="8,20,50")
     a = ap.parse_args()
-    {"predict": cmd_predict, "scan": cmd_scan, "fitscan": cmd_fitscan}[a.cmd](a)
+    {"predict": cmd_predict, "scan": cmd_scan, "fitscan": cmd_fitscan, "gate1": cmd_gate1}[a.cmd](a)
 
 
 if __name__ == "__main__":
