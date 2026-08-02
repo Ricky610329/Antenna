@@ -22,9 +22,10 @@ class ResidualHead(nn.Module):
     """
 
     def __init__(self, use_phys: bool = True, width: int = 64, phys_dim: int = 34,
-                 dtype=torch.float32):
+                 use_pattern: bool = True, dtype=torch.float32):
         super().__init__()
         self.use_phys = use_phys
+        self.use_pattern = use_pattern
         self.phys_dim = phys_dim
         self.conv = nn.Sequential(
             nn.Conv2d(1, 32, 3, padding=1), nn.ReLU(),
@@ -32,24 +33,31 @@ class ResidualHead(nn.Module):
             nn.Conv2d(32, 64, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),   # 6
             nn.Conv2d(64, 64, 3, padding=1), nn.ReLU(), nn.AdaptiveAvgPool2d(2),
         )
-        nin = 64 * 4 + (phys_dim if use_phys else 0)
+        nin = (64 * 4 if use_pattern else 0) + (phys_dim if use_phys else 0)
         self.mlp = nn.Sequential(nn.Linear(nin, 4 * width), nn.ReLU(),
                                  nn.Linear(4 * width, 4 * width), nn.ReLU(),
                                  nn.Linear(4 * width, 34))
         self.to(dtype)
 
     def forward(self, x, phys=None):
-        h = self.conv(x.reshape(-1, 1, 25, 25)).flatten(1)
+        #? phys-only（use_pattern=False）是**可辨識性對照**：殘差頭同時吃 pattern 與 phys、
+        #  又直接加回 phys 時，MLP 完全有能力學出「−phys + 自己從 pattern 算的答案」，
+        #  把物理錨徹底抵銷（Kennedy & O'Hagan 2001 的 model discrepancy 不可辨識性）。
+        #  少了這一組，「pooled 打平」分不出是「物理沒資訊」還是「架構讓物理沒地位」。
+        parts = []
+        if self.use_pattern:
+            parts.append(self.conv(x.reshape(-1, 1, 25, 25)).flatten(1))
         if self.use_phys:
-            h = torch.cat([h, phys], 1)
+            parts.append(phys)
+        h = torch.cat(parts, 1)
         out = self.mlp(h)
         #? 有物理錨時輸出的是**殘差**（加回 diffsim）；餵多個錨時用**前 34 維**當殘差基準
         #  （其餘錨純粹當額外特徵）——這樣「多錨」是嚴格的加法擴充，不改殘差語義。
         return out + phys[:, :34] if self.use_phys else out
 
 
-def train_head(x, phys, y, *, use_phys=True, epochs=60, batch=128, lr=1e-3,
-               seed=0, val_frac=0.1, verbose=True, device="cpu"):
+def train_head(x, phys, y, *, use_phys=True, use_pattern=True, epochs=60, batch=128,
+               lr=1e-3, seed=0, val_frac=0.1, verbose=True, device="cpu"):
     """回 (model, 內部 held-out 的 |Δwm| 中位)。x (n,625) / phys (n,34) / y (n,34)。
 
     #! `device` 預設 **cpu**，不是 `cuda if available`（`tmp/SESSION_COORDINATION.md` §2：
@@ -71,7 +79,8 @@ def train_head(x, phys, y, *, use_phys=True, epochs=60, batch=128, lr=1e-3,
     #? 物理輸入標準化（S11 與 Gain 的動態範圍差很多，不標準化會讓 MLP 只看得到一邊）
     mu, sd = P[ti].mean(0), P[ti].std(0).clamp_min(1e-3)
     Pn = (P - mu) / sd
-    m = ResidualHead(use_phys=use_phys, phys_dim=P.shape[1]).to(dev)
+    m = ResidualHead(use_phys=use_phys, use_pattern=use_pattern,
+                     phys_dim=P.shape[1]).to(dev)
     opt = torch.optim.AdamW(m.parameters(), lr=lr, weight_decay=1e-4)
     sch = torch.optim.lr_scheduler.CosineAnnealingLR(opt, epochs)
     lossf = nn.HuberLoss(delta=3.0)

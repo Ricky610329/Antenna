@@ -392,42 +392,74 @@ def _phys_pred(idx, sel, model, args, tag):
 
 
 def cmd_head(args):
-    """殘差頭 A/B：**同資料同架構**，唯一差別是有沒有吃 diffsim → 隔離出物理錨的加值。"""
+    """殘差頭三臂 A/B/C + **paired bootstrap over samples**。
+
+    三臂（同資料、同架構、同超參，只差輸入）：
+      (P+Φ) pattern + 物理錨   (Φ) **只有物理錨**   (P) 只有 pattern（純資料對照）
+    第二臂是可辨識性對照：少了它，「(P+Φ) ≈ (P)」分不出「物理沒資訊」還是
+    「架構讓 MLP 有能力把物理錨抵銷掉」（Kennedy & O'Hagan 的 model discrepancy）。
+
+    ⚠ 統計：多個 seed 只反映**訓練隨機性**；「換一批驗證樣本結論還在不在」要靠
+    **重抽樣本**的 paired bootstrap（n=30 時這才是主要不確定性來源）。
+    """
     from .head import train_head, predict_head
+    from .eval import boot_delta_rho
     idx = D.load()
     split, _ = D.assign_split(idx)
     tr = pick(idx, split, "fit", args.n)
     va = pick(idx, split, "val")
-    print(f"殘差頭（錨 = {args.model}）：訓練 {len(tr)} 筆（fit）、驗證 {len(va)} 筆（val）")
-    t = time.time()
-    #? --model both ＝ 把 L1 與 L2 的輸出**一起**餵給殘差頭。理由是實測到的「域互補」
-    #  （L1 強 clean/senior、L2 強 neg/frozen）——讓網路自己學「什麼時候該信誰」，
-    #  比人工按域分派更省事，也是最務實的一種黑盒化。
     mods = ["l1", "l2"] if args.model == "both" else [args.model]
+    print(f"殘差頭三臂（錨 = {args.model}）：訓練 {len(tr)}（fit）、驗證 {len(va)}（val）、"
+          f"seeds {args.seeds}、device {args.device}")
+    t = time.time()
     p_tr = np.concatenate([_phys_pred(idx, tr, k, args, "tr") for k in mods], 1)
     p_va = np.concatenate([_phys_pred(idx, va, k, args, "va") for k in mods], 1)
     print(f"  diffsim 預測 {time.time() - t:.0f}s")
     x_tr, y_tr = idx["x"][tr].astype(np.float32), idx["y"][tr].astype(np.float32)
     x_va, y_va = idx["x"][va].astype(np.float32), idx["y"][va].astype(np.float32)
     wm_t, _, _ = margins(y_va)
-    out = {}
-    for use in (True, False):
-        name = f"{args.model}+殘差頭" if use else "純資料對照組（同架構）"
-        print(f"\n-- {name}")
-        m, err = train_head(x_tr, p_tr, y_tr, use_phys=use, epochs=args.epochs,
-                            seed=args.seed, device=args.device)
-        pv = predict_head(m, x_va, p_va)
-        wm_p, _, _ = margins(pv)
-        rho = report_rho(wm_p, wm_t, idx["stratum"][va], tag=name)
-        out[name] = (rho, float(np.median(np.abs(wm_p - wm_t))), err)
-    print("\n== GATE 3 對照（val）==")
-    print("| 模型 | pooled ρ | clean | neg | senior | frozen | \\|Δwm\\| 中位 |")
-    print("|---|---|---|---|---|---|---|")
-    for k, (rho, e, _) in out.items():
-        print(f"| {k} | {rho.get('ALL', float('nan')):+.3f} | "
-              + " | ".join(f"{rho.get(s, float('nan')):+.3f}"
-                           for s in ("clean", "neg", "senior", "frozen"))
-              + f" | {e:.2f} |")
+    st = idx["stratum"][va]
+    ARMS = [("P+Φ", True, True), ("Φ(只有物理錨)", True, False), ("P(純資料對照)", False, True)]
+
+    preds = {k: [] for k, _, _ in ARMS}
+    for sd in range(args.seeds):
+        for name, up, upat in ARMS:
+            m, _ = train_head(x_tr, p_tr, y_tr, use_phys=up, use_pattern=upat,
+                              epochs=args.epochs, seed=sd, device=args.device, verbose=False)
+            preds[name].append(margins(predict_head(m, x_va, p_va))[0])
+        print(f"  seed {sd} 完成（{time.time() - t:.0f}s）", flush=True)
+
+    strata = ["ALL"] + sorted(set(st.tolist()))
+    print("\n== 三臂 ρ（seed 平均）==")
+    print("| 臂 | " + " | ".join(strata) + " |")
+    print("|" + "---|" * (len(strata) + 1))
+    mean_rho = {}
+    for name, _, _ in ARMS:
+        row = []
+        for g in strata:
+            msk = np.ones(len(va), bool) if g == "ALL" else (st == g)
+            row.append(float(np.mean([rank_rho(w[msk], wm_t[msk])[0] for w in preds[name]])))
+        mean_rho[name] = row
+        print(f"| {name} | " + " | ".join(f"{v:+.3f}" for v in row) + " |")
+
+    #? 用 seed 平均後的預測做 paired bootstrap：先平均掉訓練隨機性，再量樣本隨機性
+    avg = {k: np.mean(v, 0) for k, v in preds.items()}
+    print("\n== Δρ = (P+Φ) − (P)：paired bootstrap over **樣本**（4000 次重抽）==")
+    print("| 分層 | n | Δρ | 95% CI | P(Δ>0) | 判讀 |")
+    print("|---|---|---|---|---|---|")
+    for g in strata:
+        msk = np.ones(len(va), bool) if g == "ALL" else (st == g)
+        d, lo, hi, pg = boot_delta_rho(avg["P+Φ"][msk], avg["P(純資料對照)"][msk], wm_t[msk])
+        verdict = "**物理錨勝**" if lo > 0 else ("**對照組勝**" if hi < 0 else "CI 跨 0 → 分不出")
+        print(f"| {g} | {int(msk.sum())} | {d:+.3f} | [{lo:+.3f}, {hi:+.3f}] | {pg:.2f} | {verdict} |")
+    print("\n== 可辨識性檢查：Φ(只有物理錨) 是否 ≫ 隨機？==")
+    for g in strata:
+        msk = np.ones(len(va), bool) if g == "ALL" else (st == g)
+        r = mean_rho["Φ(只有物理錨)"][strata.index(g)]
+        print(f"  {g:8s} ρ(Φ only) = {r:+.3f}"
+              + ("   → 物理有資訊，但在 P+Φ 裡沒轉成加值 ⇒ 疑似被 discrepancy 吸收"
+                 if r > 0.25 and mean_rho["P+Φ"][strata.index(g)] <=
+                 mean_rho["P(純資料對照)"][strata.index(g)] + 0.02 else ""))
 
 
 def cmd_gate2(args):
@@ -475,7 +507,7 @@ def main():
     hd.add_argument("--model", default="l1", choices=("l1", "l2", "both"))
     hd.add_argument("--n", type=int, default=1200, help="每 stratum 取幾筆（fit 分割）")
     hd.add_argument("--epochs", type=int, default=60)
-    hd.add_argument("--seed", type=int, default=0)
+    hd.add_argument("--seeds", type=int, default=3, help="訓練 seed 數（平均掉訓練隨機性）")
     #? 預設 cpu：GPU 讓給批次線（SESSION_COORDINATION §2）；要用先查 nvidia-smi
     hd.add_argument("--device", default="cpu")
     lf = sub.add_parser("l2fit")

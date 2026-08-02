@@ -61,6 +61,30 @@ def boot_ci(a, b, n_boot: int = 2000, seed: int = 0, alpha: float = 0.05):
     return float(np.quantile(vals, alpha / 2)), float(np.quantile(vals, 1 - alpha / 2))
 
 
+def boot_delta_rho(pred_a, pred_b, true, n_boot: int = 4000, seed: int = 0, alpha=0.05):
+    """兩個模型 ρ 差的 **paired bootstrap over samples**。回 (Δρ, lo, hi, P(Δ>0))。
+
+    #! 重抽的是**驗證樣本**，不是模型 seed。多個訓練 seed 只反映訓練隨機性，
+    #  完全不告訴你「換一批驗證樣本結論還在不在」——n=30 時後者才是主要不確定性來源
+    #  （Spearman @ n=30 的可偵測下限約 0.5，而我們常在比 0.2~0.4 的差距）。
+    #  兩個模型用**同一組**重抽索引（paired），比的才是同樣樣本下的差。
+    """
+    a, b, t = (np.asarray(v, float) for v in (pred_a, pred_b, true))
+    rng = np.random.default_rng(seed)
+    n = len(t)
+    d = np.full(n_boot, np.nan)
+    for i in range(n_boot):
+        ix = rng.integers(0, n, n)
+        if len(np.unique(t[ix])) < 3:
+            continue
+        d[i] = rank_rho(a[ix], t[ix])[0] - rank_rho(b[ix], t[ix])[0]
+    d = d[np.isfinite(d)]
+    if not len(d):
+        return float("nan"), float("nan"), float("nan"), float("nan")
+    return (float(np.mean(d)), float(np.quantile(d, alpha / 2)),
+            float(np.quantile(d, 1 - alpha / 2)), float((d > 0).mean()))
+
+
 def report_rho(pred_wm, true_wm, strat, tag="") -> dict:
     """分層 rank ρ 表（主 KPI）。回 {stratum: rho}，同時印表（含 95% bootstrap CI）。"""
     out = {}
