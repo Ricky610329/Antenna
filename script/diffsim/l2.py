@@ -56,15 +56,22 @@ class DCIMKernel(torch.nn.Module):
         b = torch.zeros(2, n_img, dtype=dtype)
         n = torch.zeros(2, n_img, 2, dtype=dtype)
         for k in range(2):
-            a[k, 0, 0] = 1.0                            # 直接項
-            a[k, 1, 0] = -1.0 if n_img > 1 else 0.0     # 地鏡像（反號）
-            b[k, 0] = np.log(0.4 * DX)                  # 自項正則化半徑
+            a[k, 0, 0] = 1.0                            # 直接項（介質內近場）
+            n[k, 0, 0] = er
             if n_img > 1:
+                a[k, 1, 0] = -1.0                       # 地鏡像（反號）
                 b[k, 1] = np.log(2 * H)
+                n[k, 1, 0] = er
+            b[k, 0] = np.log(0.4 * DX)                  # 自項正則化半徑
+            #? 第三支刻意用 **n = 1（自由空間）**：輻射是以 k₀ 在空氣中傳的，
+            #  兩支都用 n=√εr 的話整個頻譜都壓在介質內 → 輻射電阻系統性偏低 ~10×、
+            #  S11 谷深不夠（實測 dev 中位 −2.7dB vs 真值 −12.4dB）。
+            #  初值取 0（保住解析校準的共振頻率不被動到）——這一項對 loss 是線性的，
+            #  a=0 處梯度仍非零，擬核照樣長得出來。
             for i in range(2, n_img):
                 a[k, i, 0] = 0.0
-                b[k, i] = np.log(4 * H * (i - 1))
-            n[k, :, 0] = er
+                b[k, i] = np.log(2 * H * i)
+                n[k, i, 0] = 1.0 if i == 2 else er
         self.a = torch.nn.Parameter(a)
         self.b = torch.nn.Parameter(b)
         self.n = torch.nn.Parameter(n)
