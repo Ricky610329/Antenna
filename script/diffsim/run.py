@@ -202,17 +202,34 @@ def cmd_gate1(args):
 L2_PARAMS = os.path.join(D.CACHE_DIR, "l2_params.json")
 
 
-def build_l2(scale=None):
-    """依存下來的解析校準結果建 L2 求解器。"""
+def build_l2(scale=None, raw=False):
+    """依存檔建 L2 求解器：有擬合過的核就載入，否則用解析校準的初值。
+
+    #! 2026-08-03 教訓：本函式原本**漏掉載入 `kernel` 的那段**（用字串替換改 code、
+    #  替換靜默失敗而我沒驗證）。後果是 `l2eval`/`gate2` 全部跑在解析初值上，
+    #  「擬核後 ρ 一模一樣」看起來像「模型不敏感」，其實是根本沒載入。
+    #  現在載入完會印出實際生效的核，讓這種錯不可能再靜默發生。
+    """
     import json
-    from .l2 import MoML2, DCIMKernel
+    from .l2 import MoML2, DCIMKernel, LearnedKernel
     import torch
+    saved = json.load(open(L2_PARAMS, encoding="utf-8")) if os.path.exists(L2_PARAMS) else {}
     if scale is None:
-        scale = json.load(open(L2_PARAMS, encoding="utf-8"))["a_scale"] \
-            if os.path.exists(L2_PARAMS) else 2.48
-    m = MoML2(kernel=DCIMKernel())
+        scale = saved.get("a_scale", 2.48)
+    ker = None if raw else saved.get("kernel")
+    learned = bool(ker) and any(k.startswith("net.") for k in ker)      # 黑盒核的 state_dict
+    n_img = len(ker["base.b" if learned else "b"][0]) if ker else 3
+    base = DCIMKernel(n_img=n_img)
     with torch.no_grad():
-        m.kernel.a.data[0, :, 0] *= scale
+        base.a.data[0, :2, 0] *= scale
+    m = MoML2(kernel=LearnedKernel(base=base) if learned else base)
+    if ker:
+        #! 一定要用 load_state_dict 的嚴格模式：舊版這裡是逐 key copy_，
+        #  key 對不上就靜默跳過 → 整個擬合結果沒生效卻看不出來（2026-08-03 踩過）。
+        m.kernel.load_state_dict({k: torch.as_tensor(v, dtype=torch.float64)
+                                  for k, v in ker.items()}, strict=True)
+    print(f"  L2 核來源：{'黑盒核（DCIM 骨架 + MLP 修正）' if learned else ('擬合核' if ker else '解析校準初值')}"
+          f"（n_img={n_img}, {saved.get('steps', '?')} 步, a_A×{scale:.3f}）")
     return m, scale
 
 
@@ -243,6 +260,27 @@ def cmd_l2eval(args):
     print(f"  通道：pooled ρ(mS11)={rank_rho(ms, mst)[0]:+.3f}  ρ(mGain)={rank_rho(mg, mgt)[0]:+.3f}")
 
 
+
+def _wm_torch(s11, gain):
+    """可微的 worst_margin（與 eval.margins 同定義；擬合時要走梯度所以另寫一份）。"""
+    import torch
+    n = s11.shape[-1]
+    lo, hi = (5, 12) if n == 17 else (int(round(5 / 17 * n)), int(round(12 / 17 * n)))
+    return torch.minimum(-10.0 - s11[:, lo:hi].max(1).values,
+                         gain[:, lo:hi].min(1).values - 4.0)
+
+
+def _pair_rank_loss(pred, true, tau: float = 1.0, dead: float = 0.2):
+    """batch 內兩兩順序的 logistic loss；真值差距 < `dead` dB 的配對不計（雜訊不當監督）。"""
+    import torch
+    dp = pred[:, None] - pred[None, :]
+    dt = true[:, None] - true[None, :]
+    m = dt.abs() > dead
+    if not m.any():
+        return pred.sum() * 0.0
+    return torch.nn.functional.softplus(-dp * torch.sign(dt) / tau)[m].mean()
+
+
 def cmd_l2fit(args):
     """擬核（`docs/diffsim.md` §3 L2 方案 b）：**對解算器反傳**，不另寫擬合器。
 
@@ -255,12 +293,22 @@ def cmd_l2fit(args):
     idx = D.load()
     split, _ = D.assign_split(idx)
     sel = pick(idx, split, "fit", args.n)
-    m, scale = build_l2(args.scale)
+    from .l2 import MoML2, DCIMKernel, LearnedKernel
+    base = DCIMKernel(n_img=args.n_img)
+    scale = args.scale if args.scale is not None else 2.48
+    with torch.no_grad():
+        base.a.data[0, :2, 0] *= scale              # 解析校準只作用在前兩支（源−鏡像）
+    m = MoML2(kernel=LearnedKernel(base=base) if args.learned else base)
+    init = {k: v.detach().clone() for k, v in m.kernel.state_dict().items()}
     x = torch.as_tensor(idx["x"][sel].astype(np.float64)).reshape(-1, 25, 25)
     y = torch.as_tensor(idx["y"][sel].astype(np.float64))
     f = np.linspace(24e9, 32e9, args.nfreq)
     jf = np.round(np.linspace(0, 16, args.nfreq)).astype(int)          # 對齊資料集頻點
-    opt = torch.optim.Adam(m.kernel.parameters(), lr=args.lr)
+    if args.learned:      # 學習節用大 lr、物理節用小 lr（骨架已經對，不該被大步打壞）
+        opt = torch.optim.Adam([{"params": m.kernel.net.parameters(), "lr": args.lr},
+                                {"params": m.kernel.base.parameters(), "lr": args.lr * 0.1}])
+    else:
+        opt = torch.optim.Adam(m.kernel.parameters(), lr=args.lr)
     g = torch.Generator().manual_seed(0)
     hub = torch.nn.HuberLoss(delta=3.0)
     bad, hist, best = 0, [], (float("inf"), None)
@@ -268,7 +316,13 @@ def cmd_l2fit(args):
     for step in range(args.steps):
         ix = torch.randperm(len(sel), generator=g)[:args.batch]
         out = m.solve(x[ix], freqs=f)
-        loss = hub(out["S11"], y[ix][:, :17][:, jf]) + hub(out["Gain"], y[ix][:, 17:][:, jf])
+        yb = y[ix]
+        loss = hub(out["S11"], yb[:, :17][:, jf]) + hub(out["Gain"], yb[:, 17:][:, jf])
+        if args.rank_w > 0:
+            #? KPI 是 rank ρ，曲線 MSE 只是代理——實測 loss 減半（24.5→12.7）但 ρ 幾乎不動。
+            #  這一項直接優化「batch 內兩兩順序」：真值差距 >0.2dB 的配對才算（避免拿雜訊當監督）。
+            loss = loss + args.rank_w * _pair_rank_loss(
+                _wm_torch(out["S11"], out["Gain"]), _wm_torch(yb[:, :17], yb[:, 17:]))
         opt.zero_grad()
         if not torch.isfinite(loss):                 # 奇異矩陣/離群 dB → 跳過，別讓 NaN 汙染參數
             bad += 1
@@ -289,6 +343,14 @@ def cmd_l2fit(args):
         raise SystemExit("擬核全程沒有有效步——降 lr 或檢查核參數範圍")
     m.kernel.load_state_dict(best[1])                # 取最佳而非最後一步
     print(f"最佳 loss {best[0]:.3f}（{len(hist)} 有效步 / {bad} 跳過）")
+    #! 常駐輸出「參數到底動了多少」——2026-08-03 教訓：第一次擬核 loss 看起來有降，
+    #  其實參數只動了 0.4%（Adam 每步位移上界＝lr，lr 被 NaN 嚇到設太小），
+    #  ρ 與初值一模一樣。少了這三行，「沒收斂」與「根本沒在擬」分不出來。
+    for k, v in m.kernel.state_dict().items():
+        d = (v - init[k]).abs()
+        rel = (d / init[k].abs().clamp_min(1e-9))[init[k].abs() > 1e-9]
+        print(f"  參數 {k}: |Δ|max={float(d.max()):.3e}"
+              + (f"  相對Δmax={float(rel.max()):.2%}" if rel.numel() else ""))
     st = {k: v.detach().tolist() for k, v in m.kernel.state_dict().items()}
     with open(L2_PARAMS, "w", encoding="utf-8") as fh:
         json.dump(dict(a_scale=scale, kernel=st, fitted=True, n=len(sel),
@@ -402,6 +464,9 @@ def main():
     lf.add_argument("--steps", type=int, default=120)
     lf.add_argument("--lr", type=float, default=0.02)
     lf.add_argument("--scale", type=float, default=None)
+    lf.add_argument("--n-img", type=int, default=3, dest="n_img")
+    lf.add_argument("--learned", action="store_true", help="核 K 黑盒化（殘差式 MLP 修正）")
+    lf.add_argument("--rank-w", type=float, default=0.0, dest="rank_w")
     fs = sub.add_parser("fitscan")
     fs.add_argument("--n", type=int, default=200, help="每 stratum 取幾筆（fit 分割）")
     fs.add_argument("--batch", type=int, default=24)

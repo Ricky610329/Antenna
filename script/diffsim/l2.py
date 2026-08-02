@@ -316,3 +316,46 @@ def calibrate_analytic(scales=None, n_img: int = 3, verbose: bool = True):
         print(f"  目標 f_analytic = {np.round(tgt / 1e9, 1)} GHz")
         print(f"**最佳 a_A 縮放 = {best[0]:.3f}（RMS log 誤差 {best[1]:.4f} ~ {best[1] * 100:.1f}%）**")
     return best
+
+
+class LearnedKernel(torch.nn.Module):
+    """**核 K 黑盒化**（`docs/diffsim.md` §3 方案 c／§4 可置換節點表第一項）。
+
+    設計是**殘差式**，不是整個丟掉物理：
+
+        G(r, k) = G_DCIM(r, k) · (1 + net(feat)) + net_add(feat) / (4π√(r²+b²))
+
+    - 保留 DCIM 骨架 → 1/r 奇異性、e^{−jkr} 相位、源−鏡像相消結構全部免學。
+    - `net` 最後一層權重初始化為 **0** → 初始輸出恆等於 DCIM，**擬合從現況起步**、
+      梯度天然流動，不會一開始就把已經對的共振頻率打壞。
+    - 特徵只用 (k₀r, log r, k₀h) 三個**無因次量** → 天然對 r/頻率平滑，
+      而且與樣本無關 → 每個 batch 只算一次表，成本可忽略。
+
+    記帳（指導書 §4 要求「哪一節是學的要記帳」）：物理節＝DCIM 骨架與相消結構；
+    學習節＝距離相依的複數修正。這一節換掉之後，「共振頻率對閉式解 1.6%」這條
+    保證就**不再自動成立**，要重新量。
+    """
+
+    def __init__(self, base: DCIMKernel = None, width: int = 64, dtype=torch.float64):
+        super().__init__()
+        self.base = base or DCIMKernel(dtype=dtype)
+        self.net = torch.nn.Sequential(
+            torch.nn.Linear(3, width), torch.nn.SiLU(),
+            torch.nn.Linear(width, width), torch.nn.SiLU(),
+            torch.nn.Linear(width, 8),          # 2 核 × (乘性 re,im) + 2 核 × (加性 re,im)
+        )
+        torch.nn.init.zeros_(self.net[-1].weight)
+        torch.nn.init.zeros_(self.net[-1].bias)
+        self.to(dtype)
+
+    def table(self, r: torch.Tensor, k0: torch.Tensor) -> torch.Tensor:
+        g = self.base.table(r, k0)                                  # (2, nf, ntab)
+        kr = k0[:, None] * r[None, :]                               # (nf, ntab)
+        feat = torch.stack([kr,
+                            torch.log(r[None, :].expand_as(kr) / DX + 1e-3),
+                            (k0[:, None] * H).expand_as(kr)], -1)
+        o = self.net(feat)                                          # (nf, ntab, 8)
+        mul = 1.0 + torch.complex(o[..., 0:2], o[..., 2:4]).permute(2, 0, 1)
+        add = torch.complex(o[..., 4:6], o[..., 6:8]).permute(2, 0, 1)
+        reg = (r ** 2 + (0.4 * DX) ** 2).sqrt()[None, None, :]
+        return g * mul + add / (4 * np.pi * reg)
