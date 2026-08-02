@@ -4258,6 +4258,13 @@ def _tri(r):
     return r["wm"][2] >= 0 and rm is not None and rm >= 0
 
 
+def _pool_seed(seed, rnd, batch):
+    """OOD 池有效 seed=base+round*1000+batch——round 必須參與推導。
+    r51b2 撞 r50b2 事故(2026-08-02,20/20 全重複被 check-dup 攔):舊式 seed+batch 跨輪同批號
+    同池,稽核 M6「每輪必換 seed」靠人記=必忘。round*1000 與舊有效 seed 空間(base+1..54)不相交。"""
+    return seed + rnd * 1000 + batch
+
+
 def select_neg(args):
     """R50 負片臂（型態體系軸;判準=round-50 §1/decisions「型態體系軸」條）:
     `script.neg_gen` 七臂池（決定性）→ farthest-point 覆蓋選席（**SM-blind**——影子 pred 收檔後
@@ -4266,7 +4273,7 @@ def select_neg(args):
     if args.pad < 1:
         raise SystemExit("--pad 最小 1(0=feed 無保護;稽核 L2)")
     arms = tuple(a.strip() for a in args.arms.split(",")) if args.arms else _NEG_ARMS
-    pool = gen_pool(args.seed + args.batch, args.pool, arms=arms, pad=args.pad)
+    pool = gen_pool(_pool_seed(args.seed, args.round, args.batch), args.pool, arms=arms, pad=args.pad)
     if args.stratify:
         #? 分層選席(稽核 M1,b2 起判準修訂:FPS 全域版餓死工程臂 eng1/sierp0 於 120 席)——
         #  每臂配額=均分+餘數給前臂;臂內仍用 FPS 保覆蓋
@@ -4279,10 +4286,10 @@ def select_neg(args):
         for k, a in enumerate(arms_sorted):
             q = base + (1 if k < extra else 0)
             sub = [pool[j] for j in by_arm[a]]
-            picked = farthest_point(sub, min(q, len(sub)), seed=args.seed + args.batch + k)
+            picked = farthest_point(sub, min(q, len(sub)), seed=_pool_seed(args.seed, args.round, args.batch) + k)
             idx.extend(by_arm[a][t] for t in picked)
     else:
-        idx = farthest_point(pool, args.n, seed=args.seed + args.batch)
+        idx = farthest_point(pool, args.n, seed=_pool_seed(args.seed, args.round, args.batch))
     input_dir = _dir(f"dedust_r{args.round}b{args.batch}b_input")
     if input_dir.is_dir() and any(input_dir.glob("*.pt")):
         raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫防跨輪覆寫/正片 shards 撞夾(稽核 H1/H2)")
@@ -4305,7 +4312,7 @@ def select_neg(args):
     for e in manifest:
         arms[e["arm"]] = arms.get(e["arm"], 0) + 1
     print(f"select-neg r{args.round}b{args.batch}: {len(manifest)} 筆 → {input_dir.name}"
-          f"（池 {len(pool)},farthest-point;臂分布 {arms};seed {args.seed}+{args.batch}）")
+          f"（池 {len(pool)},farthest-point;臂分布 {arms};有效 seed {_pool_seed(args.seed, args.round, args.batch)}）")
 
 
 def select_bridge(args):
@@ -4325,7 +4332,7 @@ def select_bridge(args):
                 pass
     if len(parents) < 20:
         raise SystemExit(f"母本不足({len(parents)})——檢查 --parent-inputs")
-    pool = bridge_pool(args.seed + args.batch, args.n, parents, pad=args.pad)
+    pool = bridge_pool(_pool_seed(args.seed, args.round, args.batch), args.n, parents, pad=args.pad)
     input_dir = _dir(f"dedust_r{args.round}b{args.batch}b_input")
     if input_dir.is_dir() and any(input_dir.glob("*.pt")):
         raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫(防覆寫)")

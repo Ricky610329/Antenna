@@ -42,3 +42,14 @@ def test_farthest_point():
     pool = gen_pool(5, 20)
     idx = farthest_point(pool, 6, seed=1)
     assert len(idx) == len(set(idx)) == 6
+
+
+def test_pool_seed_round_disjoint():
+    # r51b2 撞 r50b2 事故回歸(2026-08-02):round 必須參與 OOD 池 seed 推導,
+    # 跨輪同批號不得同池;舊有效空間(base+batch, batch≤54)也不得被新式撞上。
+    from script.dedust import _pool_seed
+    base = 20260808
+    assert _pool_seed(base, 51, 2) != _pool_seed(base, 50, 2)
+    news = {_pool_seed(base, r, b) for r in range(50, 60) for b in range(1, 55)}
+    olds = {base + b for b in range(1, 55)}
+    assert not news & olds
