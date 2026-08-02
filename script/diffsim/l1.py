@@ -107,6 +107,9 @@ class CavityL1:
         self._shift_cache = {}
         self.sinT, self.cosT = torch.sin(T), torch.cos(T)
         self.cosP, self.sinP = torch.cos(P), torch.sin(P)
+        w = torch.ones(n_theta, dtype=self.dtype, device=self.device)
+        w[0] = w[-1] = 0.5                                     # θ 梯形權重
+        self._wth = w[:, None]
 
     def _ph_exp(self, f):
         """(nf, nt, np, 625) 的 e^{jk₀(uX+vY)}（格心相位）＋ 半格位移因子 (cu, cv)。
@@ -166,7 +169,15 @@ class CavityL1:
             if self.gap:                       # 隔一格且中間是 void ＝ 0.2mm 實體縫
                 wg = self.gap * r[:, self.gp[0]] * r[:, self.gp[1]] * (1 - r[:, self.gmid])
                 self._laplacian(wg, self.gp, Bm, degB)
-            if self.diag:                      # 對角相接：只有角碰角，走電容不走電流
+            if self.diag:
+                #! 誠實記帳（2026-08-03 對抗式驗證更正）：這一項**不是**「角碰角的電容」。
+                #  ① 它對**所有**金屬對角對生效（實心 25×25 有 1152 條，真正只有角碰角的是 0 條）；
+                #  ② 物理方向還相反——HFSS 端每個像素盒是 `pixel + 0.01mm`
+                #     （`single_port.py:301,305`），對角相鄰的兩格 Unite 後是**導通**的，
+                #     該進電感項不是電容項。
+                #  平滑模下 Lap_diag ≈ 2A → λ → λ/(1+2γλ)，即一個**模態相依的人工色散旋鈕**
+                #  （實心貼片實測 −2.9%(0,1) ~ −11.9%(1,2)），與 er_eff 部分簡併。
+                #  保留是因為它在 fit 分割上確實有增益，但「L1 = 純腔模型」在 diag>0 時不再嚴格成立。
                 wd = self.diag * r[:, self.dg[0]] * r[:, self.dg[1]]
                 self._laplacian(wd, self.dg, Bm, degB)
             Bm.view(nb, -1).scatter_add_(1, (eye * n2 + eye).expand(nb, -1), degB + mass)
@@ -197,7 +208,10 @@ class CavityL1:
         r = rho.reshape(B, -1).to(self.dtype)
         lam, psi = self.modes(rho)
         kn2 = lam / (DX * DX)                                          # (B,m) 1/m²
-        psi_p = psi / DX                                               # 物理歸一 ∫|ψ|²dA = 1
+        #? psi 是 **B**-正交歸一（ψᵀBψ=I），γ>0 時 ∫|ψ|²dA ≠ 1——但 Zin 用的 resolvent
+        #  展開 (A−λB)⁻¹ = Σψψᵀ/(λₙ−λ) 要的正是 B-正交，所以阻抗鏈不受影響。
+        #  真正需要面積歸一的地方只有 _mode_q 的儲能項，那裡另外乘實際 ∫|ψ|²dA。
+        psi_p = psi / DX
         #? 饋線只接得到「真的是金屬」的格：權重先乘 ρ 再重新歸一（總注入電流 I 固定）。
         #  漏掉這一步，void 格的高階假模（質量 ε → ψ 放大 10×）會從饋點灌進阻抗。
         fw = self.fw_full[None, :] * r
@@ -264,7 +278,10 @@ class CavityL1:
         cross2 = (self.cosT ** 2) * (sx.abs() ** 2 + sy.abs() ** 2) \
             + (self.sinT * (self.cosP * sy - self.sinP * sx).abs()) ** 2
         u0 = cross2[:, :, 0, :].mean(-1)                               # θ=0（各 φ 同值，取平均穩定）
-        prad = (cross2 * self.sinT).sum((-1, -2)) * self.dth * self.dph
+        #? θ 用梯形（不是矩形）：θ=π/2 端點權重寫 1 會系統性高估 P_rad 2.9–7.4%
+        #  → D₀ 偏 −0.12~−0.31dB **且形狀相依**（全距 0.19dB＝真的傷 rank）。
+        #  φ 方向是週期梯形＝譜精度，24 點已收斂（vs 192 點差 <0.001dB），維持矩形和即可。
+        prad = (cross2 * (self.sinT * self._wth)).sum((-1, -2)) * self.dth * self.dph
         return u0, prad
 
     def _mode_q(self, psi_p, kn2, edges):
@@ -287,7 +304,14 @@ class CavityL1:
         k0n = kn / np.sqrt(self.er_eff)
         p_rad = (k0n ** 2 / (32 * np.pi ** 2 * ETA0)) * prad                  # ∝k₀² 解析縮放
         wn = k0n * C0                                                         # ω_n
-        q_rad = (wn * (self.er_eff * EPS0 * H / 2) / p_rad.clamp_min(1e-300)).clamp(0.5, 1e5)
+        #! W_n 必須用**實際的** ∫|ψ_n|²dA，不能寫死 1（2026-08-03 對抗式驗證抓到）：
+        #  ψ 是 **B**-正交歸一（ψᵀBψ=I），B = M + γ·Lap；γ>0 時 ∫|ψ|²dA 不是 1
+        #  （gap=diag=2 實測中位 0.235）。分母 p_rad 用的是實際 ψ，分子寫死 1 就讓
+        #  Q_rad 高估 4.25×、Gain 被系統性壓低 2.5–6.4dB 且形狀相依（全距 3.9dB）。
+        #  γ=0 時 Σψ²dx²≡1，這行是精確 no-op。
+        norm = (psi_sel ** 2).sum(1) * DX * DX                                # (B,M) ∫|ψ|²dA
+        q_rad = (wn * (self.er_eff * EPS0 * H / 2) * norm
+                 / p_rad.clamp_min(1e-300)).clamp(0.5, 1e5)
         q_sel = 1.0 / (1.0 / q_rad + 1.0 / q_material())
         return torch.full_like(kn2, float(self.q)).scatter(1, pick, q_sel), q_rad, pick
 

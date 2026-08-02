@@ -214,7 +214,10 @@ def main():
         p = sub.add_parser(name)
         p.add_argument("--split", default="dev")
         p.add_argument("--n", type=int, default=None, help="每 stratum 取幾筆")
-        p.add_argument("--modes", type=int, default=30)
+        #! 預設必須是 None(全模)——與 fitscan/gate1 同一個模型。
+        #  截斷 30 模對全模的 |ΔS11| 中位 4.1dB/最大 23.6dB（模態和以 1/kₙ² 收斂，要 ~300 模），
+        #  舊的 30 讓「調參看的模型」與「gate 報數的模型」不是同一個。
+        p.add_argument("--modes", type=int, default=None)
         p.add_argument("--device", default="cpu")
         p.add_argument("--batch", type=int, default=16)
         p.add_argument("--tag", default=None)

@@ -158,23 +158,47 @@ class MoML2:
         return za + (DX * DX / (1j * w * EPS0)) * gvv
 
     # ----------------------------------------------------------------- 求解
-    def solve(self, rho: torch.Tensor, freqs=None, r_open: float = 1e6) -> dict:
+    def _solve_masked(self, Z, wgt, v, thr=0.5):
+        """只在金屬屋頂上解（把它們排到前面、取左上子矩陣）。
+
+        二值 pattern 下這與電阻加載等價，但快 ~6×（解算成本 ∝ n³，1249 → ~700）。
+        代價：對 ρ 不可微 → 擬核（ρ 固定）與排序用這條；設計優化用 `r_open` 那條。
+        """
+        nb_batch = wgt.shape[0]
+        keep = wgt > thr
+        nmax = int(keep.sum(1).max().item())
+        order = torch.argsort((~keep).to(self.dtype), dim=1, stable=True)[:, :nmax]   # 金屬在前
+        Zs = Z[order[:, :, None], order[:, None, :]]                                  # (B,nmax,nmax)
+        alive = torch.gather(keep, 1, order)                                          # (B,nmax)
+        eye = torch.eye(nmax, dtype=self.cdtype, device=Z.device)[None]
+        Zs = torch.where(alive[:, :, None] & alive[:, None, :], Zs, eye.expand_as(Zs))
+        vs = torch.gather(v.expand(nb_batch, -1), 1, order) * alive
+        cur = torch.zeros(nb_batch, self.nb, dtype=self.cdtype, device=Z.device)
+        return cur.scatter(1, order, torch.linalg.solve(Zs, vs) * alive)
+
+    def solve(self, rho: torch.Tensor, freqs=None, r_open: float = None) -> dict:
         """(B,25,25) → {'S11','Gain'}（dB, 17 點）。
 
-        void 屋頂用「電阻加載」關掉（R = r_open·(1−ρ)/max(ρ,ε)）——SIMP for conductors 的
-        標準做法，二值時等價於只在金屬邊上解，但保持固定維度、可批次、對 ρ 可微。
+        `r_open` 給值時走「電阻加載」（R = r_open·(1−ρ)/max(ρ,ε)）＝SIMP for conductors，
+        對 ρ 可微、給設計優化用；預設 None 走遮罩解，快 ~6×、給擬核與排序用。
         """
         if freqs is None:
             freqs = FREQS
         f = torch.as_tensor(np.asarray(freqs), dtype=self.dtype, device=self.device)
         rho_e = self.extend(rho.to(self.dtype))
         wgt = self.edge_density(rho_e)                          # (B, nb)
-        load = (r_open * (1.0 - wgt) / wgt.clamp_min(1e-6)).to(self.cdtype)   # (B, nb)
         v = torch.zeros(self.nb, dtype=self.cdtype, device=self.device)
         v[self.drive] = DX                                      # delta-gap，V = 1
-        cur = torch.stack([torch.linalg.solve(
-            self.impedance_at(float(fk))[None] + torch.diag_embed(load),
-            v.expand(rho.shape[0], self.nb)) for fk in f], 1)   # (B, nf, nb)
+        cur = []
+        for fk in f:
+            Z = self.impedance_at(float(fk))
+            if r_open is None:
+                cur.append(self._solve_masked(Z, wgt, v))
+            else:
+                load = (r_open * (1.0 - wgt) / wgt.clamp_min(1e-6)).to(self.cdtype)
+                cur.append(torch.linalg.solve(Z[None] + torch.diag_embed(load),
+                                              v.expand(wgt.shape[0], self.nb)))
+        cur = torch.stack(cur, 1)                               # (B, nf, nb)
         itot = (cur[:, :, self.drive].sum(-1) * DX)
         zin = 1.0 / itot
         gam = (zin - Z0) / (zin + Z0)
@@ -219,6 +243,16 @@ class MoML2:
         prad = (pw * self.sinT).sum((-1, -2)) * self.dth * self.dph
         return u0, prad
 
+    def resonances(self, rects, fmin=8e9, fmax=44e9, nf=73) -> np.ndarray:
+        """一組矩形貼片 → 各自 Re(Zin) 峰值頻率（Hz）。校準用的觀測量。"""
+        f = np.linspace(fmin, fmax, nf)
+        p = torch.zeros(len(rects), N, N, dtype=self.dtype, device=self.device)
+        for b, (i0, i1, j0, j1) in enumerate(rects):
+            p[b, i0:i1, j0:j1] = 1.0
+        with torch.no_grad():
+            z = self.solve(p, freqs=f)["Zin"].real.cpu().numpy()
+        return f[z.argmax(1)]
+
     def predict(self, patterns, batch: int = 4) -> np.ndarray:
         p = np.asarray(patterns, dtype=np.float64).reshape(-1, N, N)
         out = np.empty((len(p), 34))
@@ -228,3 +262,46 @@ class MoML2:
             out[i:i + batch, :17] = r["S11"].cpu().numpy()
             out[i:i + batch, 17:] = r["Gain"].cpu().numpy()
         return out
+
+
+# ---------------------------------------------------------------- 解析校準（不用 HFSS 資料）
+def patch_fr(L: float, W: float) -> float:
+    """矩形微帶貼片的閉式共振頻率（Hammerstad εeff + 邊緣延伸 ΔL）。單位 m → Hz。
+
+    校準第一步刻意**不用 HFSS 資料**：先讓求解器的相速度對上已知的微帶物理，
+    才輪到用資料擬細節。這樣「擬合」不會變成把物理錯誤藏進參數裡。
+    """
+    wh = W / H
+    ee = (EPS_R + 1) / 2 + (EPS_R - 1) / 2 / np.sqrt(1 + 12 / wh)
+    dl = H * 0.412 * (ee + 0.3) * (wh + 0.264) / ((ee - 0.258) * (wh + 0.8))
+    return C0 / (2 * (L + 2 * dl) * np.sqrt(ee))
+
+
+CAL_RECTS = [(25 - n, 25, (N - w) // 2, (N - w) // 2 + w)
+             for n, w in ((25, 25), (25, 17), (17, 17), (17, 13), (14, 14), (14, 10), (11, 11))]
+
+
+def calibrate_analytic(scales=None, n_img: int = 3, verbose: bool = True):
+    """掃 G_A 振幅的整體縮放，讓模型共振頻率對上閉式解。回 (最佳 scale, 相對誤差)。
+
+    只有一個純量——初值的 (源 − 地鏡像) 結構本來就對，缺的是 A 項與 V 項的相對權重
+    （＝相速度）。`docs/diffsim.md` §3 說的「擬核」從這裡起步，不是從亂數起步。
+    """
+    tgt = np.array([patch_fr(n * DX, w * DX) for n, w in
+                    ((25, 25), (25, 17), (17, 17), (17, 13), (14, 14), (14, 10), (11, 11))])
+    best = None
+    for s in (scales if scales is not None else np.geomspace(1.0, 8.0, 17)):
+        m = MoML2(kernel=DCIMKernel(n_img=n_img))
+        with torch.no_grad():
+            m.kernel.a.data[0, :, 0] *= s
+        got = m.resonances(CAL_RECTS)
+        err = float(np.sqrt(np.mean((np.log(got / tgt)) ** 2)))
+        if verbose:
+            print(f"  a_A×{s:5.2f}: RMS log 誤差 {err:.4f}  f_model={np.round(got / 1e9, 1)}",
+                  flush=True)
+        if best is None or err < best[1]:
+            best = (float(s), err)
+    if verbose:
+        print(f"  目標 f_analytic = {np.round(tgt / 1e9, 1)} GHz")
+        print(f"**最佳 a_A 縮放 = {best[0]:.3f}（RMS log 誤差 {best[1]:.4f} ~ {best[1] * 100:.1f}%）**")
+    return best

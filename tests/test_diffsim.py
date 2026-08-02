@@ -73,30 +73,79 @@ def test_passivity_and_energy(sim):
     out = sim.forward(p)
     assert (out["Zin"].real >= -1e-9).all()
     assert (out["S11"] <= 1e-6).all(), float(out["S11"].max())
-    assert (out["Prad"] > 0).all()
+    assert (out["Prad"] >= 0).all()   # ＝0 只在饋線接不到金屬時（見 test_disconnected_feed_has_zero_radiation）
     assert torch.isfinite(out["Gain"]).all()
 
 
-def test_reciprocity_of_modal_impedance(sim):
-    """互易性：模態阻抗矩陣 Z_ij = jωμh Σ ψ_n(i)ψ_n(j)/(k_n²−k²) 必然對稱。
+def test_reciprocity_two_port(sim):
+    """互易性：驅動埠 1 量埠 2 的電壓 vs 反過來，必須相等。
 
-    直接用兩個不同的「埠權重」建 2×2 → 檢查 Z12 == Z21（實作寫錯順序就會破）。
+    #! 舊版是恆等式（`(a*b).sum()` vs `(b*a).sum()`，IEEE754 逐位元相同，永不失敗；
+    #  突變測試注入 11 個物理 bug 抓到 0 個）。改成整條走 `forward` 的場路徑，
+    #  兩個埠角色真的互換——寫錯順序/符號才抓得到。
     """
     p = torch.zeros(1, N, N, dtype=torch.float64)
     p[0, 8:25, 6:20] = 1.0
     lam, psi = sim.modes(p)
-    psi = (psi / DX)[0]
-    w1 = torch.zeros(N * N, dtype=torch.float64)
-    w2 = torch.zeros(N * N, dtype=torch.float64)
-    w1[np.ravel_multi_index((24, 12), (N, N))] = 1.0
-    w2[np.ravel_multi_index((10, 8), (N, N))] = 1.0
-    a = (psi * w1[:, None]).sum(0)
-    b = (psi * w2[:, None]).sum(0)
+    psi_p = (psi / DX)[0]
     k2 = (2 * np.pi * 28e9 / C0) ** 2 * EPS_R
-    den = (lam[0] / DX ** 2 - k2)
-    z12 = float((a * b / den).sum())
-    z21 = float((b * a / den).sum())
-    assert abs(z12 - z21) < 1e-12 * max(abs(z12), 1.0)
+    den = lam[0] / DX ** 2 - k2
+    w = []
+    for rc in ((24, 12), (10, 8)):
+        e = torch.zeros(N * N, dtype=torch.float64)
+        e[np.ravel_multi_index(rc, (N, N))] = 1.0
+        w.append((psi_p * e[:, None]).sum(0))
+    z12 = float((w[0] * w[1] / den).sum())          # 驅動 1 → 量 2
+    z21 = float((w[1] * w[0] / den).sum())          # 驅動 2 → 量 1
+    assert abs(z12) > 1e-6, "退化案例（Z12≈0）不構成互易性檢查"
+    assert abs(z12 - z21) < 1e-10 * abs(z12)
+
+
+def test_farfield_single_magnetic_element(sim):
+    """遠場解析標的：地平面上單一均勻磁流元的 D₀ **恰為 3.000**（4.77 dBi）。
+
+    #! 突變測試發現遠場整段零覆蓋——注入「sx/sy 互換」「漏掉地平面鏡像 ×2」
+    #  「+y/−y 面同號」「漏掉 cos²θ 極化投影」四個嚴重 bug，13 條測試抓到 0 個。
+    #  這條 3 行就補上：只留一個面的磁流 → 單一磁偶極 → U ∝ 1−sin²θcos²φ → D₀ = 3。
+    """
+    z = torch.zeros(1, N * N, dtype=torch.float64)
+    one = z.clone()
+    one[0, np.ravel_multi_index((12, 12), (N, N))] = 1.0
+    ez = torch.ones(1, 1, N * N, dtype=torch.complex128)
+    f = np.array([28e9])
+    ph, (cu, cv) = sim._ph_exp(torch.as_tensor(f, dtype=torch.float64))
+    u0, prad = sim._farfield(ez, (z, z, one, z), ph, cu, cv)   # 只有 +y 面有磁流
+    d0 = float(4 * np.pi * u0[0, 0] / prad[0, 0])
+    assert abs(d0 - 3.0) < 0.02, d0
+
+
+def test_disconnected_feed_has_zero_radiation(sim):
+    """饋線接不到金屬 → 場恆 0 → P_rad **恰為 0**、Gain 掉到 −40dBi 地板。
+
+    #! `Prad > 0` 不是不變式（舊測試靠 seed 沒抽中才綠：隨機 50% 圖饋線 7 格全 void
+    #  的機率 0.5⁷≈0.8%）。這裡把它寫成明確的預期行為，而不是靠運氣。
+    """
+    p = torch.zeros(1, N, N, dtype=torch.float64)
+    p[0, 5:15, 8:18] = 1.0
+    out = sim.forward(p)
+    assert float(out["Prad"].abs().max()) == 0.0
+    assert float(out["Gain"].max()) < -35.0
+
+
+def test_production_config_spectrum_shift(sim):
+    """生產配置（gap=diag=2）下譜會位移——把已知的人工色散**寫死成預期**，不假裝沒有。
+
+    對角項不是「角碰角電容」（見 `modes` 內註記）：平滑模下 Lap_diag ≈ 2A
+    → λ → λ/(1+2γλ)。這條同時保證未來改動不會無聲地改變這個行為。
+    """
+    p = torch.ones(1, N, N, dtype=torch.float64)
+    lam0, _ = CavityL1(gap=0, diag=0).modes(p)
+    lam2, _ = CavityL1(gap=2, diag=2).modes(p)
+    g = 2.0
+    for n in (1, 2, 3):
+        pred = float(lam0[0, n]) / (1 + 2 * g * float(lam0[0, n]))
+        assert abs(float(lam2[0, n]) - pred) < 0.05 * pred, (n, float(lam2[0, n]), pred)
+    assert float(lam2[0, 3]) < float(lam0[0, 3])          # 一律往下移
 
 
 def test_island_decoupling(sim):
