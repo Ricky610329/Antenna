@@ -52,6 +52,12 @@
 - worker 三機常駐（2026-07-11 起;個性見 memory）;**自產 tier-2（--selfgen 預設開）=佇列全空自動翻
   歷史 bit 產資料,任何 job 入佇列即讓位——HFSS 制度上不停**。
 
+### 🔜 diffsim — 可微模擬器（觸發:Ricky 另開 session 照 `docs/diffsim.md` 動工;2026-08-02 討論定案）
+- what:排名器+梯度產生器級的可微 EM 鏈(L1 腔模型 spike → L2 擬合核 MoM;要輪廓不復現);
+  why:物理結構天生無 OOD 問題=資料飛輪正攻的洞;鏈可微→做不出的節點可 Model 置換/STE。
+- 指導書=`docs/diffsim.md`(幾何已考證:25×25/RO4003 0.508mm/微帶 edge-feed/零 via);
+  gates 寫死:L1 ρ≥0.4 → L2;L2 裸 ρ≥0.6 → 投資源。本 session 不動工(Ricky 分工裁定)。
+
 ### ~~Round 13 — 組數階梯~~（✅ **2026-07-08 收檔**）→ [round-13](../docs/log/round-13-block-ladder.md)
 - 組數=真設計軸但報酬有取捨:4-5 塊甜蜜點(5 塊買 rad/4 塊買選擇性)、6 塊遞減;margin 天花板僅微升。
 
