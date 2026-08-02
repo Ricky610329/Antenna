@@ -6,6 +6,8 @@
   - 互易性、被動性（Re Zin ≥ 0、|S11| ≤ 1）、能量（P_rad > 0）
   - 尺一致性：本鏈的向量化 worst_margin 必須與 `antenna.losses.worst_margin` 逐筆相同
 """
+import os
+
 import numpy as np
 import pytest
 import torch
@@ -318,11 +320,16 @@ def test_l2_energy_conservation(mom):
     #  從沒進遠場，而 S11 曲線看起來完全正常、共振頻率還對閉式解 1.6%。
     #  沒有這條測試，這種 bug 只會表現成「rank ρ 就是上不去」，永遠查不到根因。
     """
+    #! 守的必須是**出貨核**（`build_l2()` 實際載入的那顆），不是測試自己造的。
+    #  2026-08-03 稽核抓到：`DCIMKernel` 修好了但 `build_l2` 沒跟著改，
+    #  出貨核 η=0.372 而測試守的那條路 η=0.876 —— 測試綠但產品壞。
+    from script.diffsim.run import build_l2
+    ship, _ = build_l2()
     f = np.array([26e9, 28e9, 30e9])
     for rect in ((12, 25, 6, 19), (9, 25, 4, 21)):
         p = _rect(*rect)
         with torch.no_grad():
-            out = mom.solve(p, freqs=f)
+            out = ship.solve(p, freqs=f)
         eta = out["eta"][0].numpy()
         assert (eta < 1.15).all(), f"η > 1 違反能量守恆：{eta}"
         assert (eta > 0.5).all(), f"η 太低＝核在偷吃功率（舊核是 0.085）：{eta}"
@@ -365,9 +372,17 @@ def test_split_is_disjoint_and_covers():
     from script.diffsim import data as D
     idx = _fake_idx()
     sp, _ = D.assign_split(idx, val_per_stratum=30, dev_per_stratum=50)
-    counts = {k: int((sp == k).sum()) for k in ("val", "dev", "fit")}
-    assert sum(counts.values()) == len(idx["x"])
     assert set(np.unique(sp)) <= {"val", "dev", "fit"}
+    #! 「總和 == N」是恆等式（split 由 full("fit") 起手），抓不到東西。
+    #  真正的鐵則是**內容層級不相交**：擬合用的 pattern 不可以出現在 val。
+    import hashlib as _h
+    key = lambda i: _h.sha1(np.ascontiguousarray(idx["x"][i]).tobytes()).hexdigest()  # noqa: E731
+    kv = {key(i) for i in np.where(sp == "val")[0]}
+    kf = {key(i) for i in np.where(sp == "fit")[0]}
+    kd = {key(i) for i in np.where(sp == "dev")[0]}
+    assert not (kv & kf), f"val 的 pattern 出現在 fit：{len(kv & kf)} 筆"
+    assert not (kv & kd), f"val 的 pattern 出現在 dev：{len(kv & kd)} 筆"
+    assert len(kv) == int((sp == "val").sum()), "val 內有重複 pattern"
 
 
 def test_frozen_ruler_never_leaves_val():
@@ -423,10 +438,24 @@ def test_pick_is_process_stable():
     from script.diffsim.run import pick
     idx = _fake_idx()
     sp, _ = D.assign_split(idx, val_per_stratum=30, dev_per_stratum=50)
-    a = pick(idx, sp, "fit", 20)
-    b = pick(idx, sp, "fit", 20)
-    assert (a == b).all()
-    assert not (a == pick(idx, sp, "fit", 20, seed=1)).all()
+    #! 必須跨 **process** 驗——同一個 process 內 `hash("clean")` 是常數，
+    #  就算退回用 `hash()` 這條測試照樣綠（稽核抓到我第一版就是這樣）。
+    import subprocess
+    import sys as _sys
+    code = ("import numpy as np;from script.diffsim import data as D;"
+            "from script.diffsim.run import pick;"
+            "import tests.test_diffsim as T;idx=T._fake_idx();"
+            "sp,_=D.assign_split(idx,val_per_stratum=30,dev_per_stratum=50);"
+            "print(','.join(map(str,pick(idx,sp,'fit',20))))")
+    outs = set()
+    for seed in ("0", "12345"):
+        env = {**os.environ, "PYTHONHASHSEED": seed}
+        r = subprocess.run([_sys.executable, "-c", code], capture_output=True,
+                           text=True, env=env, cwd=os.getcwd())
+        assert r.returncode == 0, r.stderr[-800:]
+        outs.add(r.stdout.strip().splitlines()[-1])
+    assert len(outs) == 1, f"pick 依賴了 PYTHONHASHSEED：{outs}"
+    assert not (pick(idx, sp, "fit", 20) == pick(idx, sp, "fit", 20, seed=1)).all()
 
 
 def test_l2_gradient_check_vs_finite_difference(mom):
@@ -462,3 +491,51 @@ def test_l2_gradient_check_vs_finite_difference(mom):
         with torch.no_grad():
             fd = float((J(pp) - J(pm)) / (2 * h))
         assert abs(float(g[i, j]) - fd) <= 0.02 * abs(fd), (i, j, float(g[i, j]), fd)
+
+
+def test_wm_torch_matches_margins():
+    """可微版 `_wm_torch` 必須與 `eval.margins` 逐筆相同——**兩把尺不可以漂**。
+
+    #! 稽核指出本 repo 有兩份 worst_margin 實作，而只有 `margins` 被把關
+    #  （`test_ruler_matches_worst_margin` 對 `antenna.losses.worst_margin`）。
+    #  `_wm_torch` 是 rank loss 的監督訊號來源，一旦漂掉就會靜默優化另一把尺。
+    """
+    from script.diffsim.run import _wm_torch
+    rng = np.random.default_rng(5)
+    y = rng.normal(-6, 5, size=(16, 34))
+    got = _wm_torch(torch.as_tensor(y[:, :17]), torch.as_tensor(y[:, 17:])).numpy()
+    assert np.allclose(got, dse.margins(y)[0], atol=1e-9)
+
+
+
+def test_l1_gradient_on_strictly_binary(sim):
+    """★ **嚴格二值** pattern 的梯度必須有限——資料集餵的全是二值，鬆弛值抓不到這個。
+
+    #! 2026-08-03 L1 複審實測：修這條之前 val 全 120 筆梯度非有限率 **100%**。
+    #  `torch.linalg.eigh` 的反傳含 1/(λi−λj)，而二值 pattern 必然大量嚴格重根
+    #  （孤立 void 格 λ 全同、每個連通分量一個嚴格 λ=0、方形貼片 TM₁₀/TM₀₁ 簡併）。
+    #  舊的 `test_gradient_flows` 用 `p*0.9+0.05` 把重根抬開了，所以綠得毫無意義——
+    #  這正是「測試沒碰到真正的輸入域」的同型盲區。
+    """
+    for gap in (0.0, 2.0):
+        m = CavityL1(q=15.0, gap=gap, diag=gap, rad_eff=(gap > 0))
+        p = torch.zeros(1, N, N, dtype=torch.float64)
+        p[0, 11:25, 6:20] = 1.0                       # 嚴格 0/1，不做任何鬆弛
+        p[0, 2:5, 2:5] = 1.0                          # 加一顆孤島 → 製造嚴格 λ=0 重根
+        p.requires_grad_(True)
+        m.forward(p)["S11"][0, 8].backward()
+        assert torch.isfinite(p.grad).all(), f"gap={gap} 嚴格二值梯度出現非有限值"
+        assert float(p.grad.abs().max()) > 0
+
+
+def test_l1_grad_eps_does_not_change_forward():
+    """梯度護欄只在 `requires_grad` 時生效——no_grad 的 forward 必須**逐位元**不變。
+
+    否則「為了讓梯度活下來」就會偷偷改掉已報 gate 的數值。
+    """
+    p = torch.zeros(1, N, N, dtype=torch.float64)
+    p[0, 11:25, 6:20] = 1.0
+    with torch.no_grad():
+        a = CavityL1(q=15.0, gap=2, diag=2, rad_eff=True, grad_eps=1e-6).forward(p)["S11"]
+        b = CavityL1(q=15.0, gap=2, diag=2, rad_eff=True, grad_eps=0.0).forward(p)["S11"]
+    assert torch.equal(a, b)

@@ -63,6 +63,7 @@ class CavityL1:
 
     def __init__(self, n_modes: int = None, er_eff: float = EPS_R, q: float = 20.0,
                  gap: float = 0.0, diag: float = 0.0, q_modes: int = 16, rad_eff: bool = False,
+                 grad_eps: float = 1e-6,
                  alpha: float = 1.0, eps_mass: float = 1e-2, self_q: bool = False,
                  n_theta: int = 13, n_phi: int = 24, device: str = "cpu", dtype=torch.float64):
         #? n_modes=None＝**全模態**（eigh 本來就把 625 個都算出來了，截斷只會製造假象：
@@ -75,6 +76,7 @@ class CavityL1:
         self.diag = diag
         self.q_modes = q_modes
         self.rad_eff = rad_eff
+        self.grad_eps = grad_eps
         self.alpha = alpha
         self.eps_mass = eps_mass
         self.self_q = self_q
@@ -154,6 +156,14 @@ class CavityL1:
         nb = rho.shape[0]
         n2 = N * N
         r = rho.reshape(nb, -1).to(self.dtype)
+        #! **嚴格二值輸入的 eigh 反傳必 NaN**（2026-08-03 L1 複審實測：val 全 120 筆
+        #  梯度非有限率 100%）。`torch.linalg.eigh` 的反傳含 1/(λi−λj)，而二值 pattern
+        #  必然大量嚴格重根：孤立 void 格全部 λ=α/ε（完全相同）、每個連通分量給一個
+        #  嚴格 λ=0（實測一筆 2–36 個）、方形貼片的 TM₁₀/TM₀₁ 對稱簡併。
+        #  只在**需要梯度時**把 ρ 推離 {0,1}（1e-6 就足以把重根抬開，實測有限），
+        #  `predict()` 走 no_grad → 數值逐位元不變，已報的 gate 數字不受影響。
+        if r.requires_grad and self.grad_eps > 0:
+            r = r.clamp(self.grad_eps, 1.0 - self.grad_eps)
         A = torch.zeros(nb, n2, n2, dtype=self.dtype, device=self.device)
         degA = torch.zeros(nb, n2, dtype=self.dtype, device=self.device)
         for pair in (self.ax, self.ay):

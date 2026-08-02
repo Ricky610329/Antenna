@@ -76,6 +76,20 @@ def _cache_path(tag):
     return os.path.join(CACHE, f"{tag}.npz")
 
 
+
+def _save_report(tag, pred, sel, idx, **meta):
+    """把「只跑一次」的報數預測落地。
+
+    #! 沒有這個，要換口徑重算（例如稽核建議的「層內 ρ 平均」）就得**再看一次 val**
+    #  ——而那正是 Goodhart 護欄禁止的事。gate1/gate2/head 先前一筆都沒存。
+    """
+    import json
+    path = _cache_path(f"report_{tag}")
+    np.savez_compressed(path, pred=pred, sel=sel, y=idx["y"][sel],
+                        stratum=idx["stratum"][sel], meta=json.dumps(meta, ensure_ascii=False))
+    print(f"  報數預測已落地：{path}")
+
+
 def cmd_predict(args):
     idx = D.load()
     split, _ = D.assign_split(idx)
@@ -179,6 +193,7 @@ def cmd_gate1(args):
     wm_p, _, _ = margins(pred)
     wm_t, _, _ = margins(y)
     print(f"val {len(sel)} 筆，{dt:.0f}s")
+    _save_report("gate1", pred, sel, idx, model="l1", cfg=cfg, stamp=_model_stamp("l1"))
     rhos = report_rho(wm_p, wm_t, st, tag="L1 裸（val，主 KPI ①）")
 
     selc = pick(idx, split, "fit", args.calib)
@@ -215,13 +230,18 @@ def build_l2(scale=None, raw=False):
     import torch
     saved = json.load(open(L2_PARAMS, encoding="utf-8")) if os.path.exists(L2_PARAMS) else {}
     if scale is None:
-        scale = saved.get("a_scale", 2.48)
+        #! `a_scale` 是舊 key（那時縮放乘在 G_A 上）。2026-08-03 修正後縮放改除在 G_V，
+        #  語義不同但**數值相同**（同一個相速），所以舊檔可直接沿用。
+        scale = saved.get("v_scale", saved.get("a_scale", 2.356))
     ker = None if raw else saved.get("kernel")
     learned = bool(ker) and any(k.startswith("net.") for k in ker)      # 黑盒核的 state_dict
     n_img = len(ker["base.b" if learned else "b"][0]) if ker else 3
-    base = DCIMKernel(n_img=n_img)
-    with torch.no_grad():
-        base.a.data[0, :2, 0] *= scale
+    #! **一定要走 `v_scale=`，不可以在外面 `a.data[0,:2,0] *= scale`。**
+    #  後者就是 §10 修掉的病灶（把相速縮放乘在 A 項 → 偽輻射跟著放大 ~n³）。
+    #  2026-08-03 稽核抓到：`DCIMKernel` 改好了但這裡沒跟著改 → 出貨核 η = 0.372
+    #  而不是宣稱的 0.872，且常駐能量守恆測試守的是**沒人走的那條路**。
+    #  這是「宣稱修好但只落地一半」在本輪的第三次，別再犯。
+    base = DCIMKernel(n_img=n_img, v_scale=scale)
     m = MoML2(kernel=LearnedKernel(base=base) if learned else base)
     if ker:
         #! 一定要用 load_state_dict 的嚴格模式：舊版這裡是逐 key copy_，
@@ -229,7 +249,7 @@ def build_l2(scale=None, raw=False):
         m.kernel.load_state_dict({k: torch.as_tensor(v, dtype=torch.float64)
                                   for k, v in ker.items()}, strict=True)
     print(f"  L2 核來源：{'黑盒核（DCIM 骨架 + MLP 修正）' if learned else ('擬合核' if ker else '解析校準初值')}"
-          f"（n_img={n_img}, {saved.get('steps', '?')} 步, a_A×{scale:.3f}）")
+          f"（n_img={n_img}, {saved.get('steps', '?')} 步, v_scale={scale:.3f}）")
     return m, scale
 
 
@@ -240,7 +260,7 @@ def cmd_l2cal(args):
     scale, err = calibrate_analytic()
     os.makedirs(D.CACHE_DIR, exist_ok=True)
     with open(L2_PARAMS, "w", encoding="utf-8") as fh:
-        json.dump(dict(a_scale=scale, rms_log_err=err), fh)
+        json.dump(dict(v_scale=scale, rms_log_err=err), fh)
 
 
 def cmd_l2eval(args):
@@ -249,7 +269,7 @@ def cmd_l2eval(args):
     split, _ = D.assign_split(idx)
     sel = pick(idx, split, args.split, args.n)
     m, scale = build_l2(args.scale)
-    print(f"L2（a_A 縮放 {scale:.3f}）在 {args.split}：{len(sel)} 筆")
+    print(f"L2（v_scale {scale:.3f}）在 {args.split}：{len(sel)} 筆")
     t = time.time()
     pred = m.predict(idx["x"][sel].astype(np.float64), batch=args.batch)
     print(f"  {time.time() - t:.0f}s（{(time.time() - t) / len(sel) * 1000:.0f} ms/筆）")
@@ -294,10 +314,8 @@ def cmd_l2fit(args):
     split, _ = D.assign_split(idx)
     sel = pick(idx, split, "fit", args.n)
     from .l2 import MoML2, DCIMKernel, LearnedKernel
-    base = DCIMKernel(n_img=args.n_img)
-    scale = args.scale if args.scale is not None else 2.48
-    with torch.no_grad():
-        base.a.data[0, :2, 0] *= scale              # 解析校準只作用在前兩支（源−鏡像）
+    scale = args.scale if args.scale is not None else 2.356
+    base = DCIMKernel(n_img=args.n_img, v_scale=scale)   # ← 必須走 v_scale，見 build_l2 的註記
     m = MoML2(kernel=LearnedKernel(base=base) if args.learned else base)
     init = {k: v.detach().clone() for k, v in m.kernel.state_dict().items()}
     x = torch.as_tensor(idx["x"][sel].astype(np.float64)).reshape(-1, 25, 25)
@@ -353,7 +371,7 @@ def cmd_l2fit(args):
               + (f"  相對Δmax={float(rel.max()):.2%}" if rel.numel() else ""))
     st = {k: v.detach().tolist() for k, v in m.kernel.state_dict().items()}
     with open(L2_PARAMS, "w", encoding="utf-8") as fh:
-        json.dump(dict(a_scale=scale, kernel=st, fitted=True, n=len(sel),
+        json.dump(dict(v_scale=scale, kernel=st, fitted=True, n=len(sel),
                        steps=args.steps, nfreq=args.nfreq), fh)
     print(f"核參數落地 {L2_PARAMS}")
 
@@ -366,10 +384,16 @@ def _model_stamp(model: str) -> str:
     #  （build_l2 沒載入、字串替換失敗），這裡直接堵死。
     """
     import hashlib as _h
+    h = _h.sha1()
     f = os.path.join(D.CACHE_DIR, "l2_params.json" if model == "l2" else "l1_params.json")
-    if not os.path.exists(f):
-        return "none"
-    return _h.sha1(open(f, "rb").read()).hexdigest()[:8]
+    if os.path.exists(f):
+        h.update(open(f, "rb").read())
+    #! 也要指紋**原始碼**：本輪的修正全在 code 裡（`_mode_q` 歸一化、半格相位、
+    #  v_scale 換邊），這些**不會改動 json** → 只指紋 json 的話換了物理還是重用舊預測。
+    here = os.path.dirname(os.path.abspath(__file__))
+    for fn in ("l1.py", "l2.py", "geom.py"):
+        h.update(open(os.path.join(here, fn), "rb").read())
+    return h.hexdigest()[:8]
 
 
 def _phys_pred(idx, sel, model, args, tag):
@@ -468,11 +492,12 @@ def cmd_gate2(args):
     split, _ = D.assign_split(idx)
     sel = pick(idx, split, "val")
     m, scale = build_l2(args.scale)
-    print(f"L2 參數（解析校準，未看過 val）：a_A 縮放 = {scale:.3f}")
+    print(f"L2 參數（解析校準，未看過 val）：v_scale（除在 G_V）= {scale:.3f}")
     pred = m.predict(idx["x"][sel].astype(np.float64), batch=args.batch)
     y, st = idx["y"][sel], idx["stratum"][sel]
     wm_p, _, _ = margins(pred)
     wm_t, _, _ = margins(y)
+    _save_report("gate2", pred, sel, idx, model="l2", v_scale=scale, stamp=_model_stamp("l2"))
     rhos = report_rho(wm_p, wm_t, st, tag="L2 裸（val，主 KPI ①）")
     selc = pick(idx, split, "fit", args.calib)
     pc = m.predict(idx["x"][selc].astype(np.float64), batch=args.batch)

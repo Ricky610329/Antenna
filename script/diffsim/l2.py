@@ -14,7 +14,7 @@ x = 5.0mm 的接面上——**參考面放這裡是合法的**，因為饋線是
 
 混合位（MPIE，Michalski–Mosig formulation C，G_A^xy = 0）：
 
-    Z_mn = jωμ·dx²·G_A(Δ)·δ_同向  +  (dx²/jωε)·Σ_{p,q} s_p s_q G_V(c_p − c_q)
+    Z_mn = jωμ·dx⁴·G_A(Δ)·δ_同向  +  (dx²/jωε)·Σ_{p,q} s_p s_q G_V(c_p − c_q)
 
 兩項都只查「格心偏移」的表 → 平移不變 → 一張 (2·NR−1)×(2·NC−1) 的小表就夠。
 
@@ -25,7 +25,10 @@ x = 5.0mm 的接面上——**參考面放這裡是合法的**，因為饋線是
     G(r) = Σ_i a_i · exp(−j k₀ n_i √(r² + b_i²)) / (4π √(r² + b_i²))
 
 物理初值（接地介質板的古典近似）＝「源 − 地鏡像」兩項：a=(+1, −1)、b=(b_reg, 2h)、
-n=(√εr, √εr)。b_reg 同時扮演自項的正則化（rooftop 自耦合不會發散）。
+**n=(1, 1)＝空氣波數**（★ 2026-08-03 修正：舊版用 √εr，等於在描述「浸在無限介質裡的地板」，
+造成 ~15× 偽損耗、能量守恆 η 只有 0.066，詳見 `DCIMKernel.__init__`）。
+介質的效果改由 **v_scale 除在 G_V** 上表達（相速相同、不放大偽輻射）。
+b_reg ⚠ **是自由參數不是「正則化」**——實測 Im(Zin) 隨它變 4.6 倍。
 之後 (a_i, b_i, n_i) 全部當複數參數，用可微鏈在 `fit` 分割上端到端擬。
 """
 import numpy as np
@@ -326,10 +329,14 @@ CAL_RECTS = [(25 - n, 25, (N - w) // 2, (N - w) // 2 + w) for n, w in CAL_SHAPES
 
 
 def calibrate_analytic(scales=None, n_img: int = 3, verbose: bool = True):
-    """掃 G_A 振幅的整體縮放，讓模型共振頻率對上閉式解。回 (最佳 scale, 相對誤差)。
+    """掃 **v_scale（除在 G_V）**，讓模型共振頻率對上閉式解。回 (最佳 v_scale, 相對誤差)。
 
     只有一個純量——初值的 (源 − 地鏡像) 結構本來就對，缺的是 A 項與 V 項的相對權重
-    （＝相速度）。`docs/diffsim.md` §3 說的「擬核」從這裡起步，不是從亂數起步。
+    （＝相速度 v = 1/√(L'C')）。`docs/diffsim.md` §3 說的「擬核」從這裡起步，不是從亂數起步。
+
+    ⚠ 命名很要緊：舊版把這個縮放**乘在 G_A** 上（存檔 key `a_scale`），相速一樣但
+    **偽輻射跟著放大 ~n³** —— 那正是 §10 修掉的病灶。讀到 `a_scale` 的人很容易照字面
+    乘回 a_A，本輪就真的發生過（`build_l2` 沒跟著改，出貨核 η=0.372 而非 0.872）。
     """
     tgt = np.array([patch_fr(n * DX, w * DX) for n, w in CAL_SHAPES])
     best = None
@@ -340,13 +347,13 @@ def calibrate_analytic(scales=None, n_img: int = 3, verbose: bool = True):
         got = m.resonances(CAL_RECTS)
         err = float(np.sqrt(np.mean((np.log(got / tgt)) ** 2)))
         if verbose:
-            print(f"  a_A×{s:5.2f}: RMS log 誤差 {err:.4f}  f_model={np.round(got / 1e9, 1)}",
+            print(f"  v_scale×{s:5.2f}: RMS log 誤差 {err:.4f}  f_model={np.round(got / 1e9, 1)}",
                   flush=True)
         if best is None or err < best[1]:
             best = (float(s), err)
     if verbose:
         print(f"  目標 f_analytic = {np.round(tgt / 1e9, 1)} GHz")
-        print(f"**最佳 a_A 縮放 = {best[0]:.3f}（RMS log 誤差 {best[1]:.4f} ~ {best[1] * 100:.1f}%）**")
+        print(f"**最佳 v_scale = {best[0]:.3f}（RMS log 誤差 {best[1]:.4f} ~ {best[1] * 100:.1f}%）**")
     return best
 
 
