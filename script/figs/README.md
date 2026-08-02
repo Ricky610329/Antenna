@@ -38,3 +38,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 - `pareto_front.py` — 帕累托前緣雙面板（主戰場 wm×oob/左側 wm×lo;2026-07-26）
 - `methodology_figs.py` — `docs/methodology.md` 兩張示意圖（§0.1 四角色一條環＋三層時間尺度／§0.3 決策權分配＋decisions.md 署名分布）→ `docs/assets/`；純 schematic 無外部資料，署名數字現場統計 decisions.md 標題不寫死
 - `diffsim_l1.py` — analysis-08 的 L1 診斷四圖（diffsim wm vs HFSS wm 分層散點／曲線實例／每頻點 ρ／通道歸因）→ `docs/log/assets/analysis-08/`；`--split val` 才是 gate 報數用的那張
+- `diffsim_final.py` — analysis-08 最終對比圖（5 個模型 × 5 個分層的 ρ 全景，含 gate 線）；數字寫死在檔內（gate 是「只跑一次」的讀數，不該每次畫圖重跑 val）
