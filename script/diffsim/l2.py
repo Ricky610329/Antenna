@@ -68,10 +68,19 @@ NC = N                        # 行數（y 方向）
 
 
 def stub_mask() -> np.ndarray:
-    """饋線樁：延伸列在饋線寬度（col 9–15，`geom.feed_weights` 的支撐）上永遠是金屬。"""
-    m = np.zeros((NSTUB, NC), dtype=np.float64)
-    m[:, feed_weights() > 0] = 1.0
-    return m
+    """延伸列**不放金屬**。
+
+    #! 2026-08-03 修正（原本在 col 9–15 放金屬）。那 0.2mm 的死端 stub 是
+    #  22.5mm 連續饋線（HFSS `feed_line` x∈[5.0, 27.5]）的**壞近似**——它憑空多一條
+    #  寄生邊緣，而真實饋線那一側是延續下去的傳輸線、不是開路端。
+    #  延伸列的唯一作用是讓 x=5.0mm 接面上的驅動屋頂有立足點（見 `edge_density`）。
+    #  實測（稽核 agent，dev n=240，配對 bootstrap）：Δρ(m_s11) = **+0.051**，
+    #  95% CI [+0.014, +0.089]，P(>0)=**99.6%**；且**快 5%**（141 vs 148 ms/筆）。
+    #  ⚠ 消融顯示增益主要來自「移除寄生金屬」本身，不是來自電荷拓樸——
+    #  真正的半屋頂電荷（Stage 2）另有 +0.02 但會打破 passivity/能量守恆兩條測試，
+    #  根因是核的 η≈0.86 漏功率被暴露 → 不做，記在 analysis-10。
+    """
+    return np.zeros((NSTUB, NC), dtype=np.float64)
 
 
 class DCIMKernel(torch.nn.Module):
@@ -175,9 +184,15 @@ class MoML2:
         self.is_x = self.is_x.to(self.device)
 
     def edge_density(self, rho_ext: torch.Tensor) -> torch.Tensor:
-        """(B, NR, NC) → (B, nb)：屋頂存在權重 ρ_a·ρ_b（連續鬆弛天然可微）。"""
+        """(B, NR, NC) → (B, nb)：屋頂存在權重 ρ_a·ρ_b（連續鬆弛天然可微）。
+
+        #? 驅動屋頂跨 x=5.0mm 接面，`cell_a` 在列 24（貼片側）、`cell_b` 在列 25（延伸列）。
+        #  外側是**未建模的饋線本體**、永遠是金屬 → 存在權重只看貼片側那一格。
+        #  `stub_mask` 改全 0 之後這行是必要的，否則驅動屋頂 wgt ≡ 0 → 全開路。
+        """
         r = rho_ext.reshape(rho_ext.shape[0], -1)
-        return r[:, self.cell_a] * r[:, self.cell_b]
+        w = r[:, self.cell_a] * r[:, self.cell_b]
+        return torch.where(self.drive[None, :], r[:, self.cell_a], w)
 
     def extend(self, rho: torch.Tensor) -> torch.Tensor:
         """(B,25,25) 貼片 → (B,NR,NC) 含饋線樁。"""
