@@ -642,3 +642,66 @@ def test_l2_half_port_kernel_dependency():
     assert torch.isfinite(out["S11"]).all()
     assert float(out["Zin"].real.min()) > 0.0, "L3 核 + half_port 必須維持被動性"
     assert float((out["eta"] > 1.0).to(torch.float64).mean()) == 0.0, "L3 核 + half_port 不可有 η>1"
+
+
+def test_ff_factors_energy_identity():
+    """`kρ<k₀` 的譜域功率 **必須逐位等於** 遠場方向圖積分 —— 遠場與 Z 自洽的硬檢驗。
+
+    #! 2026-08-03。推導（獨立 agent）給出的恆等式：`kρ<k₀` 時 `Re[Ṽ^p] = |Ṽ^p|²/Z₀^p`
+    #  ⇒ `P_in` 的輻射段**恆等於**用同一套 `Ṽ` 算的空間波功率。
+    #  舊版 `farfield` 對 TM/TE 乘同一個 `2j·sin(k₀h·cosθ)`（自由空間＋PEC 鏡像，**不含 εr**），
+    #  與 Z 的分層核不一致 ⇒ 同一份功率被兩套方向圖算了兩次，
+    #  能量守恆 η 在 εr=1 完美、εr=3.55 掉到 0.44。
+    #  這條測試不經過 MoM／基底／遠場模組，**純檢驗 `Ṽ` 本身**，所以壞掉時指向明確。
+    """
+    import numpy as _np
+    from script.diffsim.geom import MU0, EPS0, ETA0, H as _H, C0 as _C0
+    from script.diffsim.l3 import _kz
+    f = 20.8e9
+    k0 = 2 * _np.pi * f / _C0
+    w = 2 * _np.pi * f
+    a = 2e-3                                        # 高斯電流的寬度
+
+    def V(krho, er):
+        kz0, kz1 = _kz(k0, krho), _kz(k0 * _np.sqrt(er), krho)
+        z0h, z1h = w * MU0 / kz0, w * MU0 / kz1
+        z0e, z1e = kz0 / (w * EPS0), kz1 / (w * EPS0 * er)
+        t = _np.tan(kz1 * _H)
+        return (z0e * (1j * z1e * t) / (z0e + 1j * z1e * t),
+                z0h * (1j * z1h * t) / (z0h + 1j * z1h * t))
+
+    for er in (1.0, 2.0, 3.55, 10.0):
+        kr = _np.linspace(1e-6, k0 * (1 - 1e-9), 20000)
+        ve, vh = V(kr, er)
+        jt = 2 * _np.pi * a ** 2 * _np.exp(-kr ** 2 * a ** 2 / 2)
+        p_band = _np.trapz((ve.real + vh.real) * jt ** 2 * kr, kr) / (8 * _np.pi)
+        th = _np.linspace(0, _np.pi / 2, 20000)
+        ve2, vh2 = V(k0 * _np.sin(th) + 1e-12, er)
+        jt2 = 2 * _np.pi * a ** 2 * _np.exp(-(k0 * _np.sin(th)) ** 2 * a ** 2 / 2)
+        p_sp = k0 ** 2 * _np.trapz(
+            (_np.abs(ve2) ** 2 + _np.cos(th) ** 2 * _np.abs(vh2) ** 2) * jt2 ** 2 * _np.sin(th),
+            th) / (8 * _np.pi * ETA0)
+        assert abs(p_band / p_sp - 1) < 2e-3, \
+            f"εr={er}: 譜域輻射段 {p_band:.6e} vs 遠場積分 {p_sp:.6e}（比 {p_band / p_sp:.6f}）"
+
+
+def test_layered_ff_responds_to_epsilon(mom):
+    """`layered_ff=True` 時遠場**必須看得到介質**；`False`（舊版）則不會。
+
+    #! 一分鐘定位測試（獨立 agent 建議）：固定電流只掃 εr。
+    #  舊版 `P_rad` 對 εr **五位數不動**（3.7320/3.7320/3.7318）——那就是 bug 的指紋。
+    """
+    from script.diffsim.l2 import MoML2, DCIMKernel
+    rng = np.random.default_rng(0)
+    p = torch.as_tensor((rng.random((1, N, N)) < 0.5).astype(np.float64))
+    p[:, 24, 9:16] = 1.0
+    got = {}
+    for tag, kw in (("off", dict(layered_ff=False)), ("on", dict(layered_ff=True))):
+        vals = []
+        for er in (1.5, 3.55):
+            m = MoML2(kernel=DCIMKernel(v_scale=2.48), n_theta=45, n_phi=48, ff_er=er, **kw)
+            with torch.no_grad():
+                vals.append(float(m.solve(p, freqs=np.array([28e9]))["Prad"][0, 0]))
+        got[tag] = vals
+    assert abs(got["off"][0] / got["off"][1] - 1) < 1e-9, "layered_ff=False 不該看到 εr（舊行為）"
+    assert abs(got["on"][0] / got["on"][1] - 1) > 0.05, "layered_ff=True 必須看到 εr"

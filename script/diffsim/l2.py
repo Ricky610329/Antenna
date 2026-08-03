@@ -141,8 +141,13 @@ class MoML2:
     """L2 MoM 求解器。核可擬（`kernel` 的參數），對 Z 與電流全程可微。"""
 
     def __init__(self, kernel: DCIMKernel = None, device="cpu", dtype=torch.float64,
-                 n_theta: int = 13, n_phi: int = 24, half_port: bool = False):
+                 n_theta: int = 13, n_phi: int = 24, half_port: bool = False,
+                 layered_ff: bool = False, ff_er: float = None):
         self.half_port = half_port          # 半屋頂埠，見 `impedance_at`；用 L3 核時建議開
+        self.layered_ff = layered_ff        # 分層遠場因子，見 `_ff_factors`；用 L3 核時**必開**
+        #! 遠場的 εr **必須與核的 εr 一致**，否則能量守恆會壞（實測不匹配時 η 可 >1）。
+        #  預設 `geom.EPS_R`＝真實板材；只有掃 εr 的驗證實驗需要覆寫。
+        self.ff_er = EPS_R if ff_er is None else ff_er
         self.device = torch.device(device)
         self.dtype = dtype
         self.cdtype = torch.complex128 if dtype == torch.float64 else torch.complex64
@@ -333,23 +338,68 @@ class MoML2:
 
     def farfield(self, cur, f):
         """電流片遠場：水平電流 + 地平面鏡像 → 因子 2j·sin(k₀h·cosθ)（薄基板≈2j k₀h cosθ）。"""
-        key = (float(f[0]), float(f[-1]), len(f))
+        key = (float(f[0]), float(f[-1]), len(f), self.layered_ff, self.ff_er)
         if key not in self._ffc:
             k0 = (2 * np.pi * f / C0).to(self.dtype)
-            self._ffc[key] = (torch.exp(1j * (k0[:, None, None, None] * self._geo).to(self.cdtype)),
-                              (2j * torch.sin(k0[:, None, None] * H * self.cosT[None])).to(self.cdtype))
-        ph, img = self._ffc[key]
+            ph = torch.exp(1j * (k0[:, None, None, None] * self._geo).to(self.cdtype))
+            self._ffc[key] = (ph,) + self._ff_factors(k0)
+        ph, f_tm, f_te = self._ffc[key]
         jx = cur * self.is_x
         jy = cur * (~self.is_x)
-        sx = torch.einsum("bfp,ftup->bftu", jx, ph) * img[None]
-        sy = torch.einsum("bfp,ftup->bftu", jy, ph) * img[None]
-        # 遠場 ∝ r̂ ×(r̂ × J) 的橫向分量
-        et = self.cosT * (self.cosP * sx + self.sinP * sy)
-        ep = -self.sinP * sx + self.cosP * sy
+        sx = torch.einsum("bfp,ftup->bftu", jx, ph)
+        sy = torch.einsum("bfp,ftup->bftu", jy, ph)
+        #! TM（θ 分量）與 TE（φ 分量）的介質因子**不同** —— 舊版對兩者乘同一個
+        #  `2j·sin(k₀h·cosθ)`（＝自由空間＋PEC 鏡像，**不含 εr**），與 Z 的分層核不一致。
+        et = f_tm * self.cosT * (self.cosP * sx + self.sinP * sy)
+        ep = f_te * (-self.sinP * sx + self.cosP * sy)
         pw = et.abs() ** 2 + ep.abs() ** 2
         u0 = pw[:, :, 0, :].mean(-1)
         prad = (pw * self.sinT).sum((-1, -2)) * self.dth * self.dph
         return u0, prad
+
+    def _ff_factors(self, k0):
+        """遠場的 TM / TE 介質因子，(nf, n_theta, n_phi)。
+
+        #! 2026-08-03 修正。舊版對 TM 與 TE **乘同一個** `2j·sin(k₀h·cosθ)`
+        #  ——那是「PEC 地平面上方 h 的**自由空間**電流」的鏡像因子，**完全不含 εr**，
+        #  而 `impedance_at` 的核（L3）是含介質的分層 Green's function ⇒ **兩者物理不一致**。
+        #  症狀：能量守恆 η = P_rad/P_in 在 εr=1 時完美（1.0000，因為那時公式正好對），
+        #  εr>1 時掉到 0.44，且假損耗 ∝ (εr−1)¹；而 `P_rad` 對所有 εr **完全不變**。
+        #
+        #  正確的因子＝譜域的 `Ṽ^e`／`Ṽ^h` 在 `k_ρ = k₀sinθ` 的取樣（與 Z 同核 ⇒ 自洽）。
+        #  歸一化由「εr=1 必須退化回 `2j·sin(k₀h·cosθ)`」定死。
+        #  ⚠ **TM 與 TE 不對稱**：`Ṽ^e` 的 `Z₀^e = k_z0/(ωε₀)` 已含一個 cosθ，`Ṽ^h` 沒有。
+        #
+        #  驗證（解析電流、17×17 貼片、f=20.8GHz，對 Mosig/Jackson–Alexopoulos 的
+        #  `P_sw/P_sp = (3π/4)·k₀h·(1−1/εr)³/c₁`，`c₁ = 1−1/εr+0.4/εr²`）：
+        #    εr    1.00    1.20    2.00    3.00    3.55
+        #    修正  1.0000  0.9951  0.9052  0.8157  0.7830
+        #    理論  1.0000  0.9946  0.9020  0.8214  0.7950   ← 最大差 1.2%
+        #  （舊版同一組是 1.0000 / 0.8964 / 0.6267 / 0.4872 / 0.4441。）
+        """
+        if not self.layered_ff:
+            img = (2j * torch.sin(k0[:, None, None] * H * self.cosT[None])).to(self.cdtype)
+            return img, img
+        w = (k0 * C0).to(self.dtype)
+        krho = (k0[:, None, None] * self.sinT[None]).to(self.cdtype)
+        kz0 = torch.sqrt((k0[:, None, None].to(self.cdtype)) ** 2 - krho ** 2)
+        kz1 = torch.sqrt((k0[:, None, None].to(self.cdtype)) ** 2 * self.ff_er - krho ** 2)
+        kz0 = torch.where(kz0.imag > 0, -kz0, kz0)          # principal sqrt（Im ≤ 0）
+        kz1 = torch.where(kz1.imag > 0, -kz1, kz1)
+        ww = w[:, None, None].to(self.cdtype)
+        z1h = ww * MU0 / kz1
+        z0e, z1e = kz0 / (ww * EPS0), kz1 / (ww * EPS0 * self.ff_er)
+        t = torch.tan(kz1 * H)
+        #! `z0h = ωμ₀/kz0` 在 θ=π/2（kz0=0）是**複數除零 → NaN**（不是 inf）。
+        #  把 kz0 乘進 TE 的分子分母就避開：F_TE = 2(j·z1h·t)·kz0/(ωμ₀ + j·z1h·t·kz0)，
+        #  在掠射角自然給 0（該處確實沒有 TE 輻射）。TM 那支的 z0e ∝ kz0，天生不用除。
+        #! 化簡掉 kz0：`F_TM = 2·Ṽ^e·ωε₀/kz0` 裡的 `Ṽ^e ∝ z0e = kz0/(ωε₀)`，
+        #  約分後**完全不用除以 kz0** —— 否則 θ=π/2（kz0=0）會 0/0 給 NaN。同理 TE。
+        #  εr=1 的退化：`F_TE = 2j·tan(x)/(1+j·tan(x)) = 2j·sin(x)·e^{−jx}`，
+        #  **模長與舊版的 `2j·sin(x)` 相同** ⇒ 功率意義下精確退化（相位差不影響 |E|²）。
+        num_h = 1j * z1h * t * kz0
+        return (2 * (1j * z1e * t) / (z0e + 1j * z1e * t),
+                2 * num_h / (ww * MU0 + num_h))
 
     def resonances(self, rects, fmin=8e9, fmax=44e9, nf=73) -> np.ndarray:
         """一組矩形貼片 → 各自 Re(Zin) 峰值頻率（Hz）。校準用的觀測量。"""
