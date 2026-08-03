@@ -824,3 +824,26 @@ def test_tm0_neff_handles_no_surface_wave():
     assert l3.tm0_neff(28e9, 0.5) == 1.0
     n = l3.tm0_neff(28e9, 3.55)
     assert 1.0 < n < np.sqrt(3.55), n
+
+
+def test_ff_line_excludes_feed_current():
+    """`ff_line=False` 必須真的把饋線電流擋在遠場外，且**只動 Gain 不動 S11**。
+
+    #! 出貨值是 False（analysis-10 §43）。理由不是調參：模型的線 9mm、真實 22.5mm
+    #  ⇒ 它在遠場的干涉結構本來就是虛構的，而且它不隨貼片面積變、
+    #  正好稀釋掉真值裡最強的機制（`ρ(高頻懸崖, 金屬面積)` 真值 +0.31、含線 −0.06、排除後 +0.22）。
+    """
+    from script.diffsim.l2 import build, SOLVERS
+    from script.diffsim.geom import FREQS
+    assert SOLVERS["l3fl"]["ff_line"] is False, "出貨組態應排除饋線遠場"
+    p = torch.zeros(1, N, N, dtype=torch.float64)
+    p[0, 12:, 6:19] = 1.0
+    got = {}
+    for flag in (True, False):
+        m = build("l3fl", ff_line=flag)
+        assert int(m.is_patch.sum()) < m.nb, "貼片/饋線基底沒分開"
+        with torch.no_grad():
+            got[flag] = m.solve(p, freqs=FREQS)
+    assert torch.allclose(got[True]["S11"], got[False]["S11"], atol=1e-12), "遠場不該碰 S11"
+    d = (got[True]["Gain"] - got[False]["Gain"]).abs().max()
+    assert d > 1.0, f"饋線佔 boresight 的 36%，排除它應該明顯改變 Gain（實得 {d:.3f} dB）"

@@ -135,7 +135,7 @@ class MoML2:
     def __init__(self, kernel: DCIMKernel = None, device="cpu", dtype=torch.float64,
                  n_theta: int = 13, n_phi: int = 24, half_port: bool = False,
                  layered_ff: bool = False, ff_er: float = None, feed_len: int = 0,
-                 zc_ref: float = None):
+                 zc_ref: float = None, ff_line: bool = True):
         """
         :param feed_len: **饋線列數**（0 = 集總埠，舊行為）。>0 就把真實微帶饋線建進格網、
             delta-gap 移到饋線遠端、`S11` 改用**駐波法**萃取（見 `gamma_from_line`）。
@@ -147,8 +147,10 @@ class MoML2:
 
         ★ 為什麼要建饋線（analysis-10 §37，2026-08-03）：把 delta-gap 直接壓在貼片邊
         0.2mm 的一格上，對**同一個模態振幅注入 2.2 倍電流** ⇒ `Re(Zin)` 低 ~2 倍。
-        無因次證據：`I_feed/I_max` 對腔模理論，打邊 2.22×、接 9mm 線 1.30×，
-        相除 **1.71 = 埠代價的硬下界**；剩下的 1.30 ≈ 1/η = 1.33（表面波）⇒ 帳平了。
+        無因次證據：`I_feed/I_max` 打邊 ÷ 接線 = **埠因子 1.30–1.60**
+        （⚠ §41.1 修正——原寫 1.71 是對兩邊用了不同的頻率準則；方向保留、「硬下界」撤回）。
+        ⭐ **更硬的一條是共振頻率**（外部錨、與 Balanis 無關）：對閉式解 `l3` −7~−8%、
+        `l3fl` **−1.5~−3%**，而且 fit 分割上的谷位置 ρ 也跟著漲（clean +0.234 → +0.345）。
         而 HFSS 那邊埠在 22.5mm 饋線的遠端（`single_port.py:374-407`）—— 貼片被真實
         TEM 行進波餵，`DoDeembed` 只搬參考面（相位），不會把它變回集總源。
         ⚠ 舊的「1/√N 離散化天花板」結論（§19）是統計假象，已撤回：真網格收斂
@@ -156,6 +158,14 @@ class MoML2:
         """
         self.feed_len = int(feed_len)
         self.zc_ref = zc_ref
+        #! `ff_line=False`：**饋線電流不進遠場**。理由不是調參，是我們的線長度是假的——
+        #  模型 9mm、真實 22.5mm ⇒ 它在遠場的干涉結構**本來就是虛構的**；
+        #  而且它的電流**不隨貼片面積變**，正好稀釋掉真值裡最強的那個機制。
+        #  實測（analysis-10 §43，fit 分割 n=400、判準先宣告）：
+        #    `ρ(高頻懸崖, 金屬面積)` **−0.056 → +0.218**（真值 +0.313）＝機制朝真值走；
+        #    top-60 命中率 13.3% → 21.7%，**Δ+8.28%、P(>0)=99.2%、P(<0)=0.0%**。
+        #  ⇒ **機制與用途一起動**，與本輪五次「指標漲用途沒漲」不同。
+        self.ff_line = ff_line
         self.nc = NC
         self.nr = N + (self.feed_len if self.feed_len > 0 else NSTUB)
         self.half_port = half_port          # 半屋頂埠，見 `impedance_at`；用 L3 核時建議開
@@ -218,6 +228,8 @@ class MoML2:
         self.rtab = torch.as_tensor(DX * np.sqrt(gi ** 2 + gj ** 2).ravel(),
                                     dtype=self.dtype, device=self.device)
         self.drive = torch.as_tensor(drv, device=self.device)
+        #? 貼片基底＝兩端點都在貼片列的；接面屋頂（列 N−1|N）算貼片側，它帶的是貼片電流。
+        self.is_patch = torch.as_tensor(row_a[keep] < N, device=self.device)
         self.sb = (~self.drive).to(self.dtype)      # 電荷偶極的 b 側權重（半屋頂埠時驅動屋頂為 0）
         if self.feed_len > 0:
             self._build_line_probe(ca, isx, row_a[keep])
@@ -460,6 +472,12 @@ class MoML2:
         #  離群值，擬核時直接把梯度炸成 NaN（實測踩到）。
         s11 = 20 * torch.log10(gam.abs().clamp(3.2e-3, 1.0))
         u0, prad = self.farfield(cur, f)
+        #! **η 與 Gain 用的遠場必須分開**（2026-08-03）：
+        #  η = P_rad/P_in 是**物理不變式**（唯一能抓到「核在偷吃功率」的低成本診斷）
+        #  ⇒ 它必須用**全電流**，否則排除饋線會讓它憑空掉下去、不變式就失效了。
+        #  Gain 用哪一組電流是**建模選擇**（`ff_line`），兩者不該混：
+        #  混用會讓 `D₀·η` ≠ `4π·U₀/P_in`，數字沒有物理意義。
+        prad_all = prad if (self.ff_line or self.feed_len == 0) else self.farfield(cur, f, True)[1]
         d0 = (4 * np.pi * u0 / prad.clamp_min(1e-300)).clamp_min(1e-4)
         #? **能量守恆 η = P_rad / P_in** —— 無耗 MoM 裡兩者必須相等，η 應 ≈ 1。
         #  這是唯一低成本、能抓到「核在偷偷吃功率」的診斷：舊核（n=√εr）實測 η = 0.066，
@@ -470,7 +488,9 @@ class MoML2:
         #  我一度把 L1 的前因子複製過來，η 差了 η₀² = 1.4e5 倍（算出 6e-6 而非 0.85）。
         #  S = Σ I_m·dx²·e^{jk·r} ⇒ |S|² 帶 dx⁴（`farfield` 回的 prad 沒有面積權重）。
         k0 = 2 * np.pi * f / C0
-        p_rad = (k0 ** 2 * ETA0 / (32 * np.pi ** 2))[None, :] * (DX ** 4) * prad
+        pre = (k0 ** 2 * ETA0 / (32 * np.pi ** 2))[None, :] * (DX ** 4)
+        p_rad = pre * prad_all                   # 不變式用全電流
+        p_rad_ff = pre * prad                    # Gain 用選定的那組
         #! η 的 P_in 一定要用**源點**阻抗（V=1 的 delta-gap ⇒ P_in = ½Re(Zdrv)/|Zdrv|²）。
         #  饋線模式的 `zin` 是「參考面上、50Ω 歸一的等效阻抗」，拿它算功率會錯。
         p_in = 0.5 * zin_drv.real / zin_drv.abs() ** 2
@@ -490,7 +510,9 @@ class MoML2:
         #  `l3fl` **完全不動**（26.7%）——因為它把決定權**正確地**交給 Gain 通道，
         #  而那個通道自己只有 ρ≈+0.08 ⇒ **判對了誰卡、卻卡不準**。修它是為了公式正確，
         #  不是為了指標；用途上的空間在 `D₀`（見 analysis-10 §39）。
-        gain = (10 * torch.log10(d0 * eta.clamp(1e-6, 1.0) * mism)).clamp_min(-40.0)
+        #? `D₀·η_ff = 4π·U₀/P_in` —— 用同一組電流的 η，Gain 才等於「該組電流的實現增益」。
+        eta_ff = eta if prad_all is prad else (p_rad_ff / p_in.clamp_min(1e-300))
+        gain = (10 * torch.log10(d0 * eta_ff.clamp(1e-6, 1.0) * mism)).clamp_min(-40.0)
         s11 = torch.where(open_ckt, torch.zeros_like(s11), s11)      # 開路＝全反射 0dB
         gain = torch.where(open_ckt, torch.full_like(gain, -40.0), gain)
         return dict(S11=s11, Gain=gain, Zin=zin, D0=d0, Prad=prad, eta=eta, J=cur, **extra)
@@ -510,14 +532,19 @@ class MoML2:
         self.cosP, self.sinP = torch.cos(P), torch.sin(P)
         self._ffc = {}
 
-    def farfield(self, cur, f):
-        """電流片遠場：水平電流 + 地平面鏡像 → 因子 2j·sin(k₀h·cosθ)（薄基板≈2j k₀h cosθ）。"""
+    def farfield(self, cur, f, all_current: bool = False):
+        """電流片遠場：水平電流 + 地平面鏡像 → 因子 2j·sin(k₀h·cosθ)（薄基板≈2j k₀h cosθ）。
+
+        `all_current=True` 強制含饋線（給能量守恆不變式用；見 `solve`）。
+        """
         key = (float(f[0]), float(f[-1]), len(f), self.layered_ff, self.ff_er)
         if key not in self._ffc:
             k0 = (2 * np.pi * f / C0).to(self.dtype)
             ph = torch.exp(1j * (k0[:, None, None, None] * self._geo).to(self.cdtype))
             self._ffc[key] = (ph,) + self._ff_factors(k0)
         ph, f_tm, f_te = self._ffc[key]
+        if not all_current and not self.ff_line and self.feed_len > 0:
+            cur = cur * self.is_patch          # 饋線電流不進遠場（見 `__init__`）
         jx = cur * self.is_x
         jy = cur * (~self.is_x)
         sx = torch.einsum("bfp,ftup->bftu", jx, ph)
@@ -657,7 +684,8 @@ SOLVERS = {
     "l3": dict(kernel="l3", layered_ff=True, half_port=True),
     #? ★ 真饋線 + 駐波 wave port（analysis-10 §37）。`half_port` 不再需要——
     #  它本來就是「沒有饋線」的補償。
-    "l3fl": dict(kernel="l3", layered_ff=True, feed_len=45),
+    #  ⚠ §38/§42 報的數字是 `ff_line=True` 量的（那時還沒驗出來）；出貨值改 False 見 §43。
+    "l3fl": dict(kernel="l3", layered_ff=True, feed_len=45, ff_line=False),
 }
 
 
