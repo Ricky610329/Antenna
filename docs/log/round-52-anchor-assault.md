@@ -64,8 +64,18 @@ python -m script.dedust chain --name c52lo1  --anchor e50b2_000_F18644 --source-
 |---|---|
 | 開輪 | 2026-08-03 17:0x;v102 ✅(凍結 0.47 平低/two 0.564/OOD 尺 two 3.046/lohead ρ+0.826) |
 | 發車 | 18:4x:b1 鏈(staging 514→select-r52→neg→senior→查重→prio 3)+c52rad1(radq)+c52lo1(tri)兩 daemon 同時上線 |
+| 事故 | 21:0x-22:1x:216/37 worker 雙死(selfgen 空池 stack 崩+壞 claim;三重修+三台重啟);session 重啟帶走兩 daemon→chain --start-pack 斷點接力 |
+| 首包 | ✅ 23:0x 雙收(50 筆零 error):lo 存活(−3.78)/rad 字面未過待裁決(§4) |
+| 對角探針 | ✅ 23:3x dedust_r52dx 15 筆發車(prio 4;t07×6+t03/t05×2+F6161×3+F18644×2;100% 式 diagb 全歸零,Δpx 6-38) |
 
 ## 4. 分析 (Analyze)
+
+### c52rad1 首包判定(2026-08-03 23:3x;§1① 判準)
+- 25/25 零 error。**字面判=未過**(rad≥+0.5∧wm≥−0.3 命中 0)——但最佳 c52rad1p01_13
+  **wm −0.36∧rad +1.35**(wm 差門檻 0.06;rad 自錨 +1.20 續升;前 8 名 rad 全 >+0.6,
+  wm 整包上行 −0.55→−0.36)。
+- **radq 鍵口徑=勝錨**(−0.70→−0.51)——鏈機制 vs 手訂門檻两個發車前規則指向相反;
+  **裁決交 Ricky**(建議=續爬 p01_13;換錨=照字面消耗 F15032)。判定前 daemon 暫停(不發 p02)。
 
 ### c52lo1 首包判定(2026-08-03 23:0x;§1① 判準)
 - 25/25 零 error。**存活=過**:c52lo1p01_13 **lo −3.78∧wm −0.49**(判準 lo≤−3∧wm≥−0.5,1/25 命中)
