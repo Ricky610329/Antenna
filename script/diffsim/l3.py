@@ -100,16 +100,34 @@ def _static_space(rho, er, nimg: int = 80):
     return a, v / (2 * np.pi * (er + 1))
 
 
-def sommerfeld(rho, f, er=ERC, *, nmax=4.0, delta=0.10, ktail=200.0, n=400, er_static=None):
+def sommerfeld(rho, f, er=ERC, *, nmax=4.0, delta=0.10, ktail=200.0, n=400, er_static=None,
+               osc_per_seg=6.0):
     """(G_A, G_V) at 距離 `rho`（m）、頻率 `f`（Hz）。路徑往**上**偏折（見坑 ①）。
 
     偏折深度上限 δ < 2/(k₀·ρ_max)（SMUTHI 規則，因為 J₀ 在複平面指數成長）。
-    本專案 ρ_max = 6.93mm = 0.65λ₀ ⇒ 上限 ~0.4，而 TM₀ 極點離分支點只有 0.018–0.034·k₀
-    ⇒ **路徑離奇異點遠一個數量級以上，不需要 residue 抽取或極點追蹤。**
+    TM₀ 極點離分支點只有 0.018–0.034·k₀ ⇒ **路徑離奇異點遠一個數量級以上**，
+    不需要 residue 抽取或極點追蹤。
+
+    #! ★ 2026-08-04 兩修（bug 獵捕 agent 標的 B3）。原本的積分參數是為
+    #  **舊的 ρ_max = 6.93mm** 定的；表改 d² 索引（`TAB_NR=80`）之後 ρ_max 變 **16.5mm**，
+    #  兩個假設同時失效，遠端相對誤差最大 **9.6%**（而 `l3fl` 用到的最大距離 14.61mm
+    #  正好落在誤差最大的那一格）：
+    #
+    #  ① **尾段取樣不足**：`nmax·k₀ → ktail·k₀`（4→200 k₀）原本用**單段 400 點 GL**，
+    #     而 ρ=16.5mm 時那一段有 **302 個 J₀ 振盪** ⇒ 1.3 點/振盪。
+    #     改成依 ρ_max **自動分段**（每段 ≤ `osc_per_seg` 個振盪）。
+    #  ② **扣除項與被扣的東西 εr 不一致**：`gtilde` 用複數 `ERC`（含 tanδ），
+    #     而 `_static_spec` 原本強制取**實部** ⇒ 殘差 **2.1e-3** 且只以 1/k_ρ 衰減、
+    #     被 `ktail` 截斷。改成兩邊同用複數（`_static_space` 的鏡像級數對複數 er 仍解析）。
+    #
+    #  ⚠ 影響已量化且**不改任何結論**（agent 用獨立高精度參考實作對帳）：
+    #  S11 |Δ| 中位 0.010 dB、max 0.642；wm |Δ| 中位 0.023；ρ(wm) +0.5443 → +0.5420。
+    #  修它是因為它是真的數值缺陷，不是因為指標。
     """
     rho = np.atleast_1d(np.asarray(rho, dtype=float))
     k0 = 2 * np.pi * f / C0
-    ers = float(np.real(er)) if er_static is None else er_static
+    #? 扣除項的 εr **必須與 `gtilde` 的一致**（見上 ②）；`er_static` 只留給消融。
+    ers = er if er_static is None else er_static
     if n not in _GL:
         _GL[n] = np.polynomial.legendre.leggauss(n)
     x, w = _GL[n]
@@ -121,7 +139,11 @@ def sommerfeld(rho, f, er=ERC, *, nmax=4.0, delta=0.10, ktail=200.0, n=400, er_s
         b = jv(0, k * rho[None, :]) * k / (2 * np.pi)
         return np.stack([(ga - qa) * b, (gv - qv) * b])
 
-    pts = [0.0 + 0j, 1j * delta * k0, (nmax + 1j * delta) * k0, nmax * k0, ktail * k0]
+    #? 尾段分段數：該段的 J₀ 振盪數 ≈ Δk·ρ_max/(2π)，每段控制在 `osc_per_seg` 個以內。
+    span = (ktail - nmax) * k0
+    nseg = max(1, int(np.ceil(span * float(rho.max()) / (2 * np.pi * osc_per_seg))))
+    edges = nmax * k0 + span * np.arange(nseg + 1) / nseg
+    pts = [0.0 + 0j, 1j * delta * k0, (nmax + 1j * delta) * k0] + [complex(e) for e in edges]
     tot = np.zeros((2, rho.size), dtype=complex)
     for a, b in zip(pts[:-1], pts[1:]):
         t = 0.5 * (b - a) * x + 0.5 * (b + a)
