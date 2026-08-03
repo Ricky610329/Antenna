@@ -767,7 +767,7 @@ def test_gamma_from_line_recovers_synthetic_wave():
         cur = torch.zeros(1, 1, m.nb, dtype=m.cdtype)
         #? `line_sel` 每欄挑一個橫截面上的 5 個 x 屋頂；`gamma_from_line` 會乘 dx 再加總
         cur[0, 0] = (m.line_sel.to(m.cdtype) * (im / (m.line_sel.sum(0) * DX))[None, :]).sum(1)
-        gam, bet = m.gamma_from_line(cur, f)
+        gam, bet, _, _ = m.gamma_from_line(cur, f)
         assert abs(complex(gam[0, 0]) - want) < 1e-6, f"Γ 還原失敗：{complex(gam[0, 0])} vs {want}"
         assert abs(float(bet[0, 0]) / beta - 1) < 1e-6, "β 還原失敗"
 

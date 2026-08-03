@@ -9,8 +9,15 @@ MoM 直接解真實表面電流，這個假設整個不存在。
 ## 未知數與矩陣
 
 均勻格 rooftop：x 向屋頂在 (i,j)-(i+1,j) 面上、y 向在 (i,j)-(i,j+1) 面上。
-延伸格多兩列饋線樁（永遠金屬，只在饋線寬度 col 9–15），delta-gap 電壓源就打在
-x = 5.0mm 的接面上——**參考面放這裡是合法的**，因為饋線是 51Ω 匹配線（`geom.py`）。
+
+## 埠（★ 2026-08-03 改，analysis-10 §37）
+
+舊做法把 delta-gap 直接壓在貼片 x = 5.0mm 的邊上，理由是「饋線是 51Ω 匹配線、
+只轉相位不改 |S11|」。**那句話對，但推論錯**：饋線同時定義了**埠的場結構**，
+壓在 0.2mm 一格上的集總源不是 TEM 入射波，對同一個模態振幅注入 **2.2 倍**電流。
+現在 `feed_len > 0` 把真饋線建進格網、源移到遠端，`S11` 由**駐波法**萃取
+（`gamma_from_line`）——就是 HFSS wave port 的做法，不需要 `Z_c` 也不需要 de-embed。
+設定組合登記在 `SOLVERS`，別散在呼叫端（本輪為此踩過四次）。
 
 混合位（MPIE，Michalski–Mosig formulation C，G_A^xy = 0）：
 
@@ -346,7 +353,8 @@ class MoML2:
            （`β·dx` 只有 0.19 rad，一步遞迴的誤差會被 `c/√(1−c²)` 放大 ~5×）。
         2. **振幅**：在 `(w^m, w^−m)` 基底上解 2×2 正規方程。
 
-        :return: (Γ, β)。模型自己的 `Z_c` 不在這裡量——見 `calibrate_zc`。
+        :return: (Γ, β, a, b)。`a`/`b` 是入射/反射的**電流波振幅（安培）**，
+            `solve()` 用它們算模型自己的 `Z_c`（見那裡的功率恆等式）。
         """
         eps = torch.finfo(self.dtype).tiny
         im = torch.einsum("bfp,pm->bfm", cur, self.line_sel.to(cur.dtype)) * DX
@@ -380,7 +388,7 @@ class MoML2:
         gam = -b / (a + eps)
         #? |Γ|>1 是非物理（被動負載）。會發生在整批無金屬等退化情形；夾住而不是丟 NaN。
         gam = torch.where(gam.abs() > 1.0, gam / gam.abs().clamp_min(eps), gam)
-        return gam, ang / DX
+        return gam, ang / DX, a, b
 
     def solve(self, rho: torch.Tensor, freqs=None, r_open: float = None) -> dict:
         """(B,25,25) → {'S11','Gain'}（dB, 17 點）。
@@ -416,14 +424,21 @@ class MoML2:
         zin_drv = 1.0 / itot                     # 源點阻抗（V=1 的 delta-gap）
         extra = {}
         if self.feed_len > 0:
-            gam, beta = self.gamma_from_line(cur, f)
+            gam, beta, wa, wb = self.gamma_from_line(cur, f)
             #? Γ 是對**線自己的 Z_c** 定義的。`zc_ref` 給值就重歸一化到 Z₀=50Ω
             #  （＝ HFSS `RenormImp:="50ohm"` 做的事）。不給就當線是 50Ω。
             if self.zc_ref is not None:
                 zl = self.zc_ref * (1 + gam) / (1 - gam + 1e-300)
                 gam = (zl - Z0) / (zl + Z0)
             zin = Z0 * (1 + gam) / (1 - gam + 1e-300)   # 50Ω 參考的等效輸入阻抗
-            extra = dict(Zdrive=zin_drv, beta=beta)
+            #? ★ 模型自己的 `Z_c`，由**功率恆等式**得到——完全繞開源端的阻抗結構：
+            #  線上淨流向貼片的功率 = ½·Z_c·(|a|²−|b|²)，而它必須等於源送進去的實功率
+            #  `P_in = ½Re(Zdrv)/|Zdrv|²`（V=1 的 delta-gap，精確）。
+            #  delta-gap 的間隙電抗會儲能但**不耗能** ⇒ 不進這條帳。
+            #  ⚠ 唯一偏差來源＝饋線自己沿途漏掉的表面波（9mm，小但不為零）⇒ Z_c 會**略低估**。
+            #  （試過而放棄的另一條：多線長擬合，要同時解未知的源端不連續 Z_gap，實測殘差 10%、
+            #   解出來的 Z_c 散布 −6~28 Ω 完全不可用。功率恆等式不必引入那個未知數。）
+            extra = dict(Zdrive=zin_drv, beta=beta, _wamp=(wa, wb))
         else:
             zin = zin_drv
             gam = (zin - Z0) / (zin + Z0)
@@ -446,6 +461,9 @@ class MoML2:
         #  饋線模式的 `zin` 是「參考面上、50Ω 歸一的等效阻抗」，拿它算功率會錯。
         p_in = 0.5 * zin_drv.real / zin_drv.abs() ** 2
         eta = p_rad / p_in.clamp_min(1e-300)
+        if self.feed_len > 0:
+            wa, wb = extra.pop("_wamp")
+            extra["Zc"] = 2.0 * p_in / (wa.abs() ** 2 - wb.abs() ** 2).clamp_min(1e-300)
         mism = (1 - gam.abs() ** 2).clamp_min(1e-6)
         gain = (10 * torch.log10(d0 * mism)).clamp_min(-40.0)
         s11 = torch.where(open_ckt, torch.zeros_like(s11), s11)      # 開路＝全反射 0dB
@@ -632,68 +650,6 @@ def build(name: str = "l3", kernel=None, **over):
         else:
             kernel = DCIMKernel()
     return MoML2(kernel=kernel, **cfg)
-
-
-def calibrate_zc(kernel=None, lengths=(30, 36, 42, 48), rects=None, freqs=None, verbose=True):
-    """量**模型自己的饋線特徵阻抗 `Z_c`** —— 多線長擬合，不用 HFSS、不用閉式解。
-
-    駐波法給的 Γ 是對「線自己的 `Z_c`」定義的，而 HFSS 的 S11 歸一到 50Ω
-    （`RenormImp:="50ohm"`）。兩者差多少**在深谷處很要緊**（見 `MoML2.__init__` 的 `zc_ref`），
-    所以得把 `Z_c` 量出來，而不是假設它等於 50。
-
-    做法：源端的 delta-gap 有一個**固定但未知**的不連續 `Z_gap`（0.2mm 開路殘段 + 間隙電容），
-    它與線長無關。傳輸線關係
-
-        Z_drive(L) = Z_gap + Z_c · (1 + T_L)/(1 − T_L),   T_L = Γ·e^{−2jβ·(L−1)·dx}
-
-    對 `(Z_gap, Z_c)` 是**線性**的 ⇒ 掃幾個線長就能同時解出來，而且**過定**（≥3 個長度）
-    ⇒ 殘差本身就是「這個 TL 模型對不對」的自檢。Γ 與 β 每個長度各自獨立擬，
-    它們彼此吻合是第二個自檢。
-
-    ⚠ 這解掉的正是 agent 在 analysis-10 §37.7 標為「軟」的那一塊：
-    它用開路殘段共振量到模型的線 40–47 Ω（vs Hammerstad 54.35），但那個方法自帶偏差。
-
-    :return: dict(freqs, zc (nf,) 複數, zgap (nf,), resid 相對殘差, gamma_spread 各長度 Γ 的離散度)
-    """
-    freqs = FREQS if freqs is None else np.asarray(freqs)
-    rects = [(25 - 17, 25, 4, 21), (25 - 21, 25, 2, 23)] if rects is None else rects
-    ft = torch.as_tensor(freqs, dtype=torch.float64)
-    p = torch.zeros(len(rects), N, N, dtype=torch.float64)
-    for b, (i0, i1, j0, j1) in enumerate(rects):
-        p[b, i0:i1, j0:j1] = 1.0
-    gam, zdr, u = [], [], []
-    for L in lengths:
-        m = MoML2(kernel=kernel, layered_ff=True, feed_len=int(L))
-        with torch.no_grad():
-            r = m.solve(p, freqs=ft)
-        gm, beta = m.gamma_from_line(r["J"], ft)
-        t = gm * torch.polar(torch.ones_like(beta), -2.0 * beta * DX * (m.n_face - 1))
-        gam.append(gm)
-        u.append((1 + t) / (1 - t))
-        zdr.append(r["Zdrive"])
-        if verbose:
-            print(f"  L={L:3d} 格（{L * DX * 1e3:.1f}mm）ok", flush=True)
-    gam = torch.stack(gam)                          # (nL, B, nf)
-    U = torch.stack(u)
-    Y = torch.stack(zdr)
-    #? 每個 (樣本, 頻率) 一組最小平方：[1, u_L] · [Z_gap, Z_c]ᵀ = Z_drive
-    nl = len(lengths)
-    s_u = U.sum(0)
-    s_uu = (U.conj() * U).sum(0)
-    s_y = Y.sum(0)
-    s_uy = (U.conj() * Y).sum(0)
-    det = nl * s_uu - s_u.conj() * s_u
-    zc = (nl * s_uy - s_u.conj() * s_y) / det
-    zgap = (s_y - zc * s_u) / nl
-    resid = (Y - zgap[None] - zc[None] * U).abs().mean(0) / Y.abs().mean(0)
-    out = dict(freqs=freqs, zc=zc.numpy(), zgap=zgap.numpy(), resid=resid.numpy(),
-               gamma_spread=(gam.abs().std(0) / gam.abs().mean(0).clamp_min(1e-12)).numpy())
-    if verbose:
-        zr = out["zc"].real
-        print(f"**Z_c = {np.median(zr):.1f} Ω**（各頻率 {zr.min():.1f}–{zr.max():.1f}）"
-              f"  Hammerstad {50.0:.0f}Ω 級；TL 擬合相對殘差中位 {np.median(out['resid']):.3f}"
-              f"；各線長 |Γ| 離散度中位 {np.median(out['gamma_spread']):.4f}")
-    return out
 
 
 class LearnedKernel(torch.nn.Module):

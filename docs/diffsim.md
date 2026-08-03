@@ -92,10 +92,10 @@ delta-gap 直接打在貼片邊上，沒有饋線。
 | 頻帶 | 24–32GHz,17 點(0.5GHz 步);自適應細化 @28GHz,MaxDeltaS 0.02 | :415-469 |
 | 輸出 | S11(dB) 17 點 + boresight RealizedGainTotal(dB) 17 點 | :500-597 |
 
-**待確認**(非阻塞;`.sab` 是二進位 ACIS 29.0.1,文字讀不了):板總尺寸、feed_line 寬度/
-走線幾何、GND 大小。取法:正式機跑 `SinglePortSimulator(..., only_create_project=True)`
-開專案直接量(:56 旗標),或 HFSS 匯入 `sab/single_port.sab` 看。L1 不需要這些;
-L2 只把饋線當固定「常開」格,長度誤差被 de-embed+校準吃掉。
+~~**待確認**:板總尺寸、feed_line 寬度/走線幾何、GND 大小~~ → **2026-08-02 用 SAB 二進位解析清零**(`geom.sab_probe`,結果在 `geom.py` 開頭的表)。
+⚠ 原本這裡寫「L2 只把饋線當固定『常開』格,長度誤差被 de-embed+校準吃掉」——**那是錯的**,
+見上面的根因段與 analysis-10 §37:饋線定義的是**埠的場結構**,不是只有長度/相位。
+L2 現在有 `feed_len` 把線建進格網(`SOLVERS['l3fl']`)。
 
 ## 2. 輸出契約(先定介面,一切可置換)
 
@@ -137,7 +137,9 @@ diffsim(pattern) -> {'S11': (17,), 'Gain': (17,)}   # dB;頻點 np.linspace(24, 
     優雅之處:求解器本身可微,擬核=對解算器反傳,不用另寫擬合器。
   - (a) 解析分層 Green(Michalski–Mosig MPIE + Sommerfeld 積分表格化)= L3 退路,正統但工程重。
   - (c) 整個 K 換 learned 卷積 = Model 置換的極端(§4)。
-- 饋線:常開 cells + delta-gap 電壓源;de-embed 差異交給校準。
+- 饋線:**建進格網**(`feed_len` 列 × `LINE_COLS` 欄,恆金屬),delta-gap 移到線的遠端,
+  `S11` 用**駐波法**萃取(= HFSS wave port);不需要 `Z_c`、不需要 de-embed 距離。
+  ~~常開 cells + delta-gap 打貼片邊;de-embed 差異交給校準~~ ❌ 2026-08-03 撤(§37)。
 - 遠場:電流片的遠場積分(解析、便宜)→ Gain;Realized = Gain × (1−|S11|²)。
 - 頻率:17 點各解一次(batch 維度平行);之後可加有理擬合省點。
 - 校準:獨立校準切片(從全史另抽,與驗證集不相交)上做每頻點仿射(a·x+b)吃掉系統偏移
