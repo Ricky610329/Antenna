@@ -71,7 +71,9 @@ python -m script.dedust chain --name c52lo1  --anchor e50b2_000_F18644 --source-
 | 首包 | ✅ 23:0x 雙收(50 筆零 error):lo 存活(−3.78)/rad 字面未過待裁決(§4) |
 | 對角探針 | ✅ 23:3x dedust_r52dx 15 筆發車(prio 4;t07×6+t03/t05×2+F6161×3+F18644×2;100% 式 diagb 全歸零,Δpx 6-38) |
 | b1 收檔 | ✅ 08-04 00:4x 三夾全零 error(b1a 批尾補測 2 筆歸零) |
-| v103+b2 發車 | 08-04 01:2x 鏈啟動(train --add r52b1a→two→staging 515→select-r52 b2 **--diagb-pen 6.0**→neg/senior(5,名單收尾)→查重→prio 3) |
+| v103+b2 發車 | 08-04 01:2x 鏈啟動(train --add r52b1a→two→staging 515→select-r52 b2 **--diagb-pen 6.0**→neg/senior(5,名單收尾)→查重→prio 3)→✅ 04:2x 三夾零重複發車(佇列 675);**學長 73 領袖名單枯竭**(b2c=最後 5 席,池值 −1.47~−1.52) |
+| S1 收檔 | ✅ 08-04 04:0x:20/20(17 淨+3 筆 A 組 >2400s 認損;timeout 修救回 5 筆);S2 接棒 216 |
+| lo 鏈 | p02 勝錨(c52lo1p02_13,tri −1.12→−0.80,wm/rad 雙升)→p03(學費末包)量測中 |
 
 ## 4. 分析 (Analyze)
 
