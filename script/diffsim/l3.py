@@ -24,8 +24,9 @@
 （已用 `test_l2_gradient_check_vs_finite_difference` 對中央差分實測確認）。
 ⇒ 用 scipy 離線算、存成 buffer、執行期純查表，對 ∂L/∂ρ **零損失**。
 
-而且 25×25 的格心偏移 `r² = gi²+gj²` 是整數 → **只有 ~293 個相異距離**，
-全表 2×17×2499 complex128 = 156 KiB、離線 ~6 秒 → **精確查表，連內插都不需要**。
+而且格心偏移 `d² = gi²+gj²` 是**整數** → 相異距離很少（建到 80×25 也只有 **1409 個**）
+→ **精確查表，連內插都不需要**。表就以 `d²` 為索引（`grid_d2`），所以**與格網無關**：
+加饋線、改貼片尺寸都共用同一張表，只要 `d²` 在覆蓋內。全表 749 KiB、離線 ~1 分鐘。
 
 ## 公式（Michalski–Mosig formulation C，e^{+jωt} 慣例）
 
@@ -130,8 +131,14 @@ def sommerfeld(rho, f, er=ERC, *, nmax=4.0, delta=0.10, ktail=200.0, n=400, er_s
 
 
 def tm0_neff(f, er=EPS_R):
-    """TM₀ 表面波的有效折射率（解 k_z1·tan(k_z1 h) = εr·α₀）。診斷/驗證用。"""
+    """TM₀ 表面波的有效折射率（解 k_z1·tan(k_z1 h) = εr·α₀）。診斷/驗證用。
+
+    #! εr ≤ 1 時**沒有束縛表面波**（n_eff 的區間 [1, √εr] 是空的）——直接回 1.0，
+    #  不要讓 brentq 去解一個上下界顛倒的區間（原本會拋 ValueError，掃 εr 的驗證實驗踩過）。
+    """
     from scipy.optimize import brentq
+    if er <= 1.0 + 1e-12:
+        return 1.0
     k0 = 2 * np.pi * f / C0
 
     def res(nf):

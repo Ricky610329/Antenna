@@ -815,3 +815,12 @@ def test_l3_table_is_grid_agnostic():
     too_far = torch.as_tensor([DX * np.sqrt(float(ker.d2[-1]) + 100.0)], dtype=torch.float64)
     with pytest.raises(ValueError, match="超出"):
         ker.table(too_far, k0)
+
+
+def test_tm0_neff_handles_no_surface_wave():
+    """εr ≤ 1 沒有束縛表面波 → 回 n_eff = 1，而不是讓 brentq 撞到顛倒的區間。"""
+    l3 = pytest.importorskip("script.diffsim.l3")
+    assert l3.tm0_neff(28e9, 1.0) == 1.0
+    assert l3.tm0_neff(28e9, 0.5) == 1.0
+    n = l3.tm0_neff(28e9, 3.55)
+    assert 1.0 < n < np.sqrt(3.55), n
