@@ -135,7 +135,8 @@ class MoML2:
     def __init__(self, kernel: DCIMKernel = None, device="cpu", dtype=torch.float64,
                  n_theta: int = 13, n_phi: int = 24, half_port: bool = False,
                  layered_ff: bool = False, ff_er: float = None, feed_len: int = 0,
-                 zc_ref: float = None, ff_line: bool = True, diag: bool = False):
+                 zc_ref: float = None, ff_line: bool = True, diag: bool = False,
+                 a_quad: int = 4):
         """
         :param feed_len: **饋線列數**（0 = 集總埠，舊行為）。>0 就把真實微帶饋線建進格網、
             delta-gap 移到饋線遠端、`S11` 改用**駐波法**萃取（見 `gamma_from_line`）。
@@ -158,6 +159,7 @@ class MoML2:
         """
         self.feed_len = int(feed_len)
         self.diag = bool(diag)
+        self.a_quad = int(a_quad)
         self.zc_ref = zc_ref
         #! `ff_line=False`：**饋線電流不進遠場**。理由不是調參，是我們的線長度是假的——
         #  模型 9mm、真實 22.5mm ⇒ 它在遠場的干涉結構**本來就是虛構的**；
@@ -357,7 +359,11 @@ class MoML2:
         #  `l3fld` 是 **18.55 dB**（對抗式複核 agent 用這條**不依賴真值的硬不變式**定位）。
         #  修法：四點平均 `¼[G(a,a)+G(a,b)+G(b,a)+G(b,b)]` —— 它以形心為中心、
         #  且對 a↔b 對調**協變** ⇒ 鏡像對稱自動成立。V 項本來就是四點，形式一致。
-        gaa = 0.25 * (ga[a][:, a] + ga[a][:, b] + ga[b][:, a] + ga[b][:, b])
+        #! ⚠ `a_quad` 是**消融旗標**：四點平均把**自項**從 `G(0)` 變成 `¼[2G(0)+2G(dx)]`
+        #  ——那不是小修正，是換了一種離散化（自感會明顯變小）。2026-08-04 實測它讓
+        #  ρ 暴漲而**選批命中率崩掉**，所以它與「修反對角」必須分開歸因。
+        gaa = (0.25 * (ga[a][:, a] + ga[a][:, b] + ga[b][:, a] + ga[b][:, b])
+               if self.a_quad == 4 else ga[a][:, a])
         za = (1j * w * MU0 * DX ** 4) * gaa * same              # A 項：方向因子 M_m·M_n
         if self.half_port:
             #? 半屋頂埠：驅動屋頂跨 x=5.0mm 接面，外側是**連續饋線**——電荷流走、不在那裡累積，
