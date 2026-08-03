@@ -744,6 +744,24 @@ def test_diffsim_characterization_snapshot():
     for tag, got, want in (("L1", y1, snap["l1"]), ("L2", y2, snap["l2"])):
         d = np.abs(got - want).max()
         assert d < 1e-10, f"{tag} 對快照漂移 {d:.3e}（若是刻意改動，請一併更新快照並記帳）"
+    #! ★ 2026-08-03 補：上面守的是 `CavityL1()` 與 `DCIMKernel` 預設，**都不是出貨組態**。
+    #  bug 獵捕 agent 實測：把 L1 的地平面鏡像 ×2 拿掉（`amp = -2·H·DX·ez` → `-1·…`），
+    #  **45/45 全綠**——因為 `rad_eff=False` 時那個常數縮放在 `D₀ = 4πu₀/P_rad` 裡完全約掉；
+    #  而**出貨組態**（`l1_params.json` 的 best，`rad_eff=True`）Gain 差 max **0.313 dB**。
+    #  ⇒ 整條 `_mode_q`/`rad_eff`/質量矩陣路徑先前**零漂移保護**。
+    #  這正是 `test_l2_energy_conservation` 註解裡「守的必須是出貨組態」的教訓沒套到 L1。
+    #  ⚠ 這裡**寫死**組態而不是讀 json——快照必須可重現，不能隨快取檔變動。
+    with torch.no_grad():
+        y1s = CavityL1(er_eff=3.0, q=15.0, gap=2, diag=2, rad_eff=True).predict(x, batch=8)
+    if "l1_ship" in snap.files:
+        d = np.abs(y1s - snap["l1_ship"]).max()
+        assert d < 1e-10, f"L1 出貨組態對快照漂移 {d:.3e}"
+    if "l2_ship" in snap.files:
+        from script.diffsim.l2 import build
+        with torch.no_grad():
+            y2s = build("l3fl").predict(x, batch=8)
+        d = np.abs(y2s - snap["l2_ship"]).max()
+        assert d < 1e-10, f"L2 出貨組態（l3fl）對快照漂移 {d:.3e}"
 
 
 # ---------------------------------------------------------------- 饋線埠（駐波 wave port）
@@ -847,3 +865,85 @@ def test_ff_line_excludes_feed_current():
     assert torch.allclose(got[True]["S11"], got[False]["S11"], atol=1e-12), "遠場不該碰 S11"
     d = (got[True]["Gain"] - got[False]["Gain"]).abs().max()
     assert d > 1.0, f"饋線佔 boresight 的 36%，排除它應該明顯改變 Gain（實得 {d:.3f} dB）"
+
+
+def test_ff_factors_no_nan_at_epsr_one():
+    """`ff_er = 1` 在 θ=π/2 有 kz0 = kz1 = 0 ⇒ 兩支都是 0/0 → 曾經整條 NaN。
+
+    #! bug 獵捕 agent 2026-08-03 抓到。諷刺點在於 `_ff_factors` 的**歸一化就是用
+    #  「εr=1 要退化回 2j·sin(k₀h·cosθ)」定死的**，而那個組態正好是唯一會炸的。
+    #  同一類 εr≤1 邊界坑在 `l3.tm0_neff` 才剛特判過（這是第二次）。
+    #  這條同時守「不 NaN」與「εr=1 真的退化回 PEC 鏡像因子（模長）」。
+    """
+    from script.diffsim.l2 import MoML2, DCIMKernel
+    from script.diffsim.geom import H as _H, C0 as _C0
+    p = _rect(12, 25, 6, 19)
+    for er in (1.0, 1.0 + 1e-9, 3.55):
+        m = MoML2(kernel=DCIMKernel(v_scale=2.356), layered_ff=True, ff_er=er)
+        with torch.no_grad():
+            out = m.solve(p, freqs=np.array([28e9]))
+        for k in ("Prad", "eta", "Gain", "S11", "D0"):
+            assert torch.isfinite(out[k]).all(), f"ff_er={er} 的 {k} 有 NaN/inf"
+    #? εr=1 必須退化回 `2j·sin(k₀h·cosθ)`（模長；相位差不影響 |E|²）——那是歸一化的定義
+    m1 = MoML2(kernel=DCIMKernel(), layered_ff=True, ff_er=1.0, n_theta=9, n_phi=8)
+    k0 = torch.as_tensor([2 * np.pi * 28e9 / _C0], dtype=torch.float64)
+    f_tm, f_te = m1._ff_factors(k0)
+    want = (2j * torch.sin(k0[:, None, None] * _H * m1.cosT[None])).abs()
+    for nm, got in (("TM", f_tm), ("TE", f_te)):
+        d = (got.abs() - want).abs().max()
+        assert d < 1e-9, f"εr=1 的 {nm} 沒退化回 PEC 鏡像因子（最大差 {d:.3e}）"
+
+
+# ---------------------------------------------------------------- L3 產核鏈（原本零覆蓋）
+def test_l3_static_extraction_pair_depends_on_epsr():
+    """`_static_spec` 的大 k_ρ 漸近**必須帶 (εr+1)**——docstring 的「坑 ②」。
+
+    #! bug 獵捕 agent 2026-08-03：`sommerfeld`/`gtilde`/`_static_spec`/`_static_space`
+    #  ——**產生出貨核的整條鏈**——先前 **零 pytest 覆蓋**（`L3Kernel` 只從磁碟讀表）。
+    #  它注入 docstring 自己列的坑 ②（`1/(2k_ρ)` 而非 `1/((εr+1)k_ρ)`）：
+    #  45/45 全綠，而且唯一的手動自證 `python -m script.diffsim.l3 check` **印出一模一樣的
+    #  1.35e-06** —— 因為 `check` 只跑 εr=1，而 εr=1 時 `(εr+th) ≡ (1+th)`，兩式重合。
+    #  ⇒ 任何只在 εr=1 驗證的東西，對「εr 放錯位置」這類錯誤**結構性失明**。
+    """
+    l3 = pytest.importorskip("script.diffsim.l3")
+    k = np.array([1e5, 1e6, 1e7])                    # k_ρ·H ≫ 1 ⇒ tanh → 1
+    for er in (1.0, 2.0, 3.55):
+        qa, qv = l3._static_spec(k, er)
+        got = qv * k * (er + 1.0)
+        assert np.allclose(got, 1.0, atol=2e-6), \
+            f"εr={er} 的 G_V 大 k_ρ 漸近應是 1/((εr+1)k_ρ)，實得係數 {got}"
+        #? G_A 那條的漸近是 (1−e^{−2k_ρH})/(2k_ρ) → 1/(2k_ρ)，**不帶 εr**（兩核不同）
+        assert np.allclose(qa * k * 2.0, 1.0, atol=2e-6), qa * k * 2.0
+
+
+def test_l3_sommerfeld_low_frequency_limit():
+    """f→0 時 `sommerfeld` 必須收斂到 `_static_space` 的靜態解 —— 端到端、且**對 εr 敏感**。
+
+    這條同時覆蓋 `gtilde`（譜域核）、扣除項配對、與積分路徑：三者任一寫錯，
+    低頻極限就對不上。εr=3.55 與 εr=1 都測，因為 εr=1 對「εr 放錯位置」失明（見上一條）。
+    """
+    l3 = pytest.importorskip("script.diffsim.l3")
+    rho = np.array([0.2e-3, 1.0e-3, 4.0e-3])
+    for er in (1.0, 3.55):
+        ga, gv = l3.sommerfeld(rho, 1e6, er)                 # 1 MHz ⇒ k₀ρ ~ 1e-7，準靜態
+        sa, sv = l3._static_space(rho, er)
+        for nm, got, want in (("G_A", ga, sa), ("G_V", gv, sv)):
+            r = np.abs(got.real - want) / np.abs(want)
+            assert r.max() < 2e-3, f"εr={er} 的 {nm} 低頻極限對不上靜態解：相對差 {r}"
+
+
+def test_l3_sommerfeld_epsr_one_matches_image_closed_form():
+    """εr=1 ⇒ 核必須退化回「源 − 地鏡像」的精確閉式（把 `l3 check` 搬進 pytest）。
+
+    #! 這是唯一的**外部**錨（不依賴任何自家實作），先前只存在於手動指令裡。
+    """
+    l3 = pytest.importorskip("script.diffsim.l3")
+    rho = np.array([0.2e-3, 1.0e-3, 3.0e-3, 6.93e-3])
+    f = 28e9
+    k0 = 2 * np.pi * f / C0
+    ga, gv = l3.sommerfeld(rho, f, 1.0)
+    r1 = np.sqrt(rho ** 2 + (2 * H) ** 2)
+    ref = np.exp(-1j * k0 * rho) / (4 * np.pi * rho) - np.exp(-1j * k0 * r1) / (4 * np.pi * r1)
+    for nm, got in (("G_A", ga), ("G_V", gv)):
+        d = np.abs(got - ref).max() / np.abs(ref).max()
+        assert d < 1e-4, f"εr=1 的 {nm} 沒退化回源−鏡像閉式（相對差 {d:.2e}）"

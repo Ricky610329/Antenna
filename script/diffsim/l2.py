@@ -391,6 +391,14 @@ class MoML2:
         d = torch.sqrt(c * c - 1)
         wp = torch.where((c + d).imag < 0, c - d, c + d)        # 取 Im>0 那支＝往源傳的方向
         ang = (torch.angle(wp) / p).clamp(1e-9, np.pi - 1e-9)
+        #! 步距 `p` 是用 **Hammerstad 估的 β** 挑的。若真實 β 與估計差太多，
+        #  `p·β·dx` 會越過 π ⇒ `arccos` 繞圈 ⇒ **β 與 Γ 靜默錯掉**（實測估計差 2.5× 時
+        #  Γ 誤差 0.46）。目前實測比值 1.046–1.068，安全——但「目前安全」不是不變式。
+        #  （bug 獵捕 agent 2026-08-03 標的 S2。）
+        ratio = float((ang.max() / (beta0 * DX)).item())
+        if not 0.5 < ratio < 1.9:
+            raise ValueError(f"駐波萃取的 β 與 Hammerstad 估計差 {ratio:.2f}×——"
+                             f"步距 p={p} 已失效，Γ 不可信（改小 p 或檢查饋線幾何）")
         mv = torch.arange(m0, m1, dtype=self.dtype, device=cur.device)
         ph = ang[..., None] * mv
         one = torch.ones_like(ph)
@@ -515,7 +523,11 @@ class MoML2:
         gain = (10 * torch.log10(d0 * eta_ff.clamp(1e-6, 1.0) * mism)).clamp_min(-40.0)
         s11 = torch.where(open_ckt, torch.zeros_like(s11), s11)      # 開路＝全反射 0dB
         gain = torch.where(open_ckt, torch.full_like(gain, -40.0), gain)
-        return dict(S11=s11, Gain=gain, Zin=zin, D0=d0, Prad=prad, eta=eta, J=cur, **extra)
+        #! `Prad`/`D0`/`Gain` 用的是 `ff_line` 選定的電流；`eta`/`Prad_all` 用**全電流**
+        #  （不變式必須看全部，見上）。⇒ `ff_line=False` 時 `pre*Prad/p_in ≠ eta`，
+        #  **這是刻意的，不是 bug**——但兩者不可混用（bug 獵捕 agent 標的 S3）。
+        return dict(S11=s11, Gain=gain, Zin=zin, D0=d0, Prad=prad, Prad_all=prad_all,
+                    eta=eta, J=cur, **extra)
 
     # ----------------------------------------------------------------- 遠場
     def _setup_farfield(self, n_theta, n_phi):
@@ -588,8 +600,6 @@ class MoML2:
         kz0 = torch.where(kz0.imag > 0, -kz0, kz0)          # principal sqrt（Im ≤ 0）
         kz1 = torch.where(kz1.imag > 0, -kz1, kz1)
         ww = w[:, None, None].to(self.cdtype)
-        z1h = ww * MU0 / kz1
-        z0e, z1e = kz0 / (ww * EPS0), kz1 / (ww * EPS0 * self.ff_er)
         t = torch.tan(kz1 * H)
         #! `z0h = ωμ₀/kz0` 在 θ=π/2（kz0=0）是**複數除零 → NaN**（不是 inf）。
         #  把 kz0 乘進 TE 的分子分母就避開：F_TE = 2(j·z1h·t)·kz0/(ωμ₀ + j·z1h·t·kz0)，
@@ -598,8 +608,22 @@ class MoML2:
         #  約分後**完全不用除以 kz0** —— 否則 θ=π/2（kz0=0）會 0/0 給 NaN。同理 TE。
         #  εr=1 的退化：`F_TE = 2j·tan(x)/(1+j·tan(x)) = 2j·sin(x)·e^{−jx}`，
         #  **模長與舊版的 `2j·sin(x)` 相同** ⇒ 功率意義下精確退化（相位差不影響 |E|²）。
-        num_h = 1j * z1h * t * kz0
-        return (2 * (1j * z1e * t) / (z0e + 1j * z1e * t),
+        #! 2026-08-03 二修（bug 獵捕 agent）：上面那兩條註解**只處理了 kz0=0，沒處理 kz1=0**。
+        #  `ff_er = 1` 時 θ=π/2 有 kz0 = kz1 = 0 ⇒ `z1h = ωμ/kz1 = inf`、`t = tan(0) = 0`
+        #  ⇒ `num_h = j·inf·0·0` = **NaN**；TM 那支則是 `0/0` ⇒ `Prad`/`eta`/`Gain` 全 NaN。
+        #  ⚠ 諷刺的是本函式的**歸一化就是用「εr=1 要退化回 2j·sin(k₀h·cosθ)」定死的**，
+        #  而那個組態正好是唯一會炸的。同一類 εr≤1 邊界坑在 `l3.tm0_neff` 才剛特判過（第二次）。
+        #  修法：把 `tan(kz1·H)/kz1` 當一個整體（極限是 H），除法全部消掉。
+        tiny = torch.finfo(self.dtype).eps
+        safe1 = torch.where(kz1.abs() < tiny, torch.ones_like(kz1), kz1)
+        tanc = torch.where(kz1.abs() < tiny, torch.full_like(kz1, H), t / safe1)   # → H
+        num_e = 1j * (kz1 ** 2) * tanc / self.ff_er          # ＝ j·z1e·t·(ωε₀)
+        den_e = kz0 + num_e                                  # ＝ (z0e + j·z1e·t)·(ωε₀)
+        num_h = 1j * ww * MU0 * kz0 * tanc                   # ＝ j·z1h·t·kz0
+        #? 兩者在 kz0 = kz1 = 0 都是**可去的** 0/0，極限是 0（掠射角沒有輻射）⇒ 直接給 0。
+        z = torch.zeros_like(num_e)
+        return (torch.where(den_e.abs() < tiny, z, 2 * num_e / torch.where(
+                    den_e.abs() < tiny, torch.ones_like(den_e), den_e)),
                 2 * num_h / (ww * MU0 + num_h))
 
     def resonances(self, rects, fmin=8e9, fmax=44e9, nf=73) -> np.ndarray:

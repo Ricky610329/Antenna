@@ -228,7 +228,7 @@ def cmd_gate1(args):
 L2_PARAMS = os.path.join(D.CACHE_DIR, "l2_params.json")
 
 
-def build_l2(scale=None, raw=False, solver="l3"):
+def build_l2(scale=None, raw=False, solver="l3fl"):
     """依名字＋存檔建 L2 求解器。**`solver` 決定物理設定，存檔只決定 DCIM 核的參數。**
 
     #! 2026-08-02 教訓：本函式原本**漏掉載入 `kernel` 的那段**（用字串替換改 code、
@@ -294,7 +294,8 @@ def cmd_l2eval(args):
     t = time.time()
     pred = m.predict(idx["x"][sel].astype(np.float64), batch=args.batch)
     print(f"  {time.time() - t:.0f}s（{(time.time() - t) / len(sel) * 1000:.0f} ms/筆）")
-    np.savez_compressed(_cache_path(f"l2_{args.split}"), pred=pred, sel=sel, scale=scale)
+    np.savez_compressed(_cache_path(f"l2_{args.split}_{args.solver}"), pred=pred, sel=sel,
+                        scale=scale, solver=args.solver)
     wm_p, ms, mg = margins(pred)
     wm_t, mst, mgt = margins(idx["y"][sel])
     report_rho(wm_p, wm_t, idx["stratum"][sel], tag=f"L2 裸（{args.split}）")
@@ -397,29 +398,43 @@ def cmd_l2fit(args):
     print(f"核參數落地 {L2_PARAMS}")
 
 
-def _model_stamp(model: str) -> str:
-    """模型參數檔的內容指紋。
+def _model_stamp(model: str, solver: str = None) -> str:
+    """模型的完整內容指紋（參數檔 + 原始碼 + solver 設定 + L3 表）。
 
     #! 快取 key 一定要含這個：核/參數換了但檔名沒變 → 靜默回傳舊模型的預測，
-    #  而且看起來完全正常。同一類「靜默用到舊東西」我在本輪已經踩過兩次
-    #  （build_l2 沒載入、字串替換失敗），這裡直接堵死。
+    #  而且看起來完全正常。同一類「靜默用到舊東西」在本輪踩過**三次**：
+    #  ① `build_l2` 沒載入擬合核 ② 字串替換靜默失敗
+    #  ③ **本函式自己**——它漏了 `solver`、`l3.py`、L3 表（2026-08-03 bug 獵捕 agent 抓到）。
+    #  第三次特別值得記：這個函式的存在理由就是防這件事，它自己還是犯了，
+    #  因為「模型」的定義在本輪擴大了（solver ＝ 核 + 埠 + 遠場一整組），而指紋沒跟著擴大。
+    #  ⇒ **指紋的涵蓋範圍必須跟著「什麼算模型」一起長。**
+    #  實測：漏 solver 時 `l3` 與 `l3fl` 的 `_cache_path` 完全相同，而同一貼片
+    #  `S11@res` 是 −5.19 vs −2.00 dB ⇒ `head` 的 A/B 直接失效。
     """
     import hashlib as _h
     h = _h.sha1()
+    h.update((solver or "").encode())
     f = os.path.join(D.CACHE_DIR, "l2_params.json" if model == "l2" else "l1_params.json")
     if os.path.exists(f):
         h.update(open(f, "rb").read())
     #! 也要指紋**原始碼**：本輪的修正全在 code 裡（`_mode_q` 歸一化、半格相位、
     #  v_scale 換邊），這些**不會改動 json** → 只指紋 json 的話換了物理還是重用舊預測。
     here = os.path.dirname(os.path.abspath(__file__))
-    for fn in ("l1.py", "l2.py", "geom.py"):
+    for fn in ("l1.py", "l2.py", "l3.py", "geom.py"):
         h.update(open(os.path.join(here, fn), "rb").read())
+    #? L3 表是**離線算的物理常數**，不在原始碼裡 ⇒ 重建表（換 b_reg、換積分參數）
+    #  必須讓快取失效。用 size+mtime 而不是內容（749 KiB，每次呼叫都讀太浪費）。
+    tab = os.path.join(D.CACHE_DIR, "l3_table.npz")
+    if os.path.exists(tab):
+        st = os.stat(tab)
+        h.update(f"{st.st_size}:{int(st.st_mtime)}".encode())
     return h.hexdigest()[:8]
 
 
 def _phys_pred(idx, sel, model, args, tag):
     """diffsim 對一組樣本的預測（帶檔案快取——L2 每筆 ~310ms，重算很貴）。"""
-    path = _cache_path(f"phys_{model}_{tag}_{len(sel)}_{_model_stamp(model)}")
+    sv = getattr(args, "solver", "l3fl")
+    path = _cache_path(f"phys_{model}_{tag}_{len(sel)}_{_model_stamp(model, sv)}")
     if os.path.exists(path):
         z = np.load(path)
         if len(z["sel"]) == len(sel) and (z["sel"] == sel).all():
@@ -430,7 +445,7 @@ def _phys_pred(idx, sel, model, args, tag):
         cfg = json.load(open(pf, encoding="utf-8"))["best"]
         pred, _ = run_l1(idx, sel, batch=24, **cfg)
     else:
-        m, _ = build_l2(solver=getattr(args, "solver", "l3"))
+        m, _ = build_l2(solver=sv)
         pred = m.predict(idx["x"][sel].astype(np.float64), batch=8)
     np.savez_compressed(path, pred=pred, sel=sel)
     return pred
@@ -517,7 +532,8 @@ def cmd_gate2(args):
     y, st = idx["y"][sel], idx["stratum"][sel]
     wm_p, _, _ = margins(pred)
     wm_t, _, _ = margins(y)
-    _save_report("gate2", pred, sel, idx, model="l2", v_scale=scale, stamp=_model_stamp("l2"))
+    _save_report("gate2", pred, sel, idx, model="l2", solver=args.solver, v_scale=scale,
+                 stamp=_model_stamp("l2", args.solver))
     rhos = report_rho(wm_p, wm_t, st, tag="L2 裸（val，主 KPI ①）")
     selc = pick(idx, split, "fit", args.calib)
     pc = m.predict(idx["x"][selc].astype(np.float64), batch=args.batch)
@@ -540,12 +556,12 @@ def main():
     le.add_argument("--n", type=int, default=None)
     le.add_argument("--batch", type=int, default=8)
     le.add_argument("--scale", type=float, default=None)
-    le.add_argument("--solver", default="l3", choices=tuple(SOLVERS))
+    le.add_argument("--solver", default="l3fl", choices=tuple(SOLVERS))
     g2 = sub.add_parser("gate2")
     g2.add_argument("--batch", type=int, default=8)
     g2.add_argument("--calib", type=int, default=150)
     g2.add_argument("--scale", type=float, default=None)
-    g2.add_argument("--solver", default="l3", choices=tuple(SOLVERS))
+    g2.add_argument("--solver", default="l3fl", choices=tuple(SOLVERS))
     g1 = sub.add_parser("gate1")
     g1.add_argument("--batch", type=int, default=24)
     g1.add_argument("--device", default="cpu")
@@ -557,7 +573,7 @@ def main():
     hd.add_argument("--seeds", type=int, default=3, help="訓練 seed 數（平均掉訓練隨機性）")
     #? 預設 cpu：GPU 讓給批次線（SESSION_COORDINATION §2）；要用先查 nvidia-smi
     hd.add_argument("--device", default="cpu")
-    hd.add_argument("--solver", default="l3", choices=tuple(SOLVERS))
+    hd.add_argument("--solver", default="l3fl", choices=tuple(SOLVERS))
     lf = sub.add_parser("l2fit")
     lf.add_argument("--n", type=int, default=400, help="每 stratum 取幾筆（fit 分割）")
     lf.add_argument("--batch", type=int, default=24)
@@ -572,7 +588,6 @@ def main():
     fs.add_argument("--n", type=int, default=200, help="每 stratum 取幾筆（fit 分割）")
     fs.add_argument("--batch", type=int, default=24)
     fs.add_argument("--device", default="cpu")
-    fs.add_argument("--solver", default="l3", choices=tuple(SOLVERS))
     for name in ("predict", "scan"):
         p = sub.add_parser(name)
         p.add_argument("--split", default="dev")
