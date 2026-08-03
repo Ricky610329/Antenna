@@ -332,7 +332,7 @@ class MoML2:
 
     # ------------------------------------------------------------- 駐波埠（wave port）
     def gamma_from_line(self, cur: torch.Tensor, f: torch.Tensor,
-                        skip_src: int = 5, skip_ref: int = 3):
+                        skip_src: int = 5, skip_ref: int = 3, lossless: bool = True):
         """沿饋線的駐波 → 反射係數 Γ。這是 **HFSS wave port 的做法**，不是 de-embed。
 
         兩行進波模型（`u = m·dx`，`m=0` 在貼片/饋線接面＝參考面，u 往源為正）：
@@ -354,8 +354,15 @@ class MoML2:
            （`β·dx` 只有 0.19 rad，一步遞迴的誤差會被 `c/√(1−c²)` 放大 ~5×）。
         2. **振幅**：在 `(w^m, w^−m)` 基底上解 2×2 正規方程。
 
-        :return: (Γ, β, a, b)。`a`/`b` 是入射/反射的**電流波振幅（安培）**，
-            `solve()` 用它們算模型自己的 `Z_c`（見那裡的功率恆等式）。
+        :param lossless: 強制 `|w| = 1`（把線當無耗）。
+            ⚠⚠ **這是本萃取器最大的一個未定案敏感度**（analysis-10 §41.2 A，對抗式複核找到，
+            而 §38.2 的五條自證**沒有一條測到它**）。把 `|w|` 解出來：線確實幾乎無耗
+            （0.02–0.43 dB / 9mm），但不是零 ⇒ **強制會讓 `|Γ|` 偏 0.2–4.6%、`Re(Zin)` 偏 ~19%**。
+            但**放開也不對**：抽出來的衰減**隨負載變 24 倍** ⇒ 它吃到的不只是線衰減，
+            放開等於把一個負載相依的假影灌進 Γ。
+            ⇒ **兩個選項都不明顯正確**；預設維持 `True`（§38 的所有數字都是這個），
+            要換必須在 `fit` 分割上比、判準先寫死。
+        :return: (Γ, β, a, b)。`a`/`b` 是入射/反射的**電流波振幅（安培）**。
         """
         eps = torch.finfo(self.dtype).tiny
         im = torch.einsum("bfp,pm->bfm", cur, self.line_sel.to(cur.dtype)) * DX
@@ -371,12 +378,16 @@ class MoML2:
         c = num / (den + eps)
         d = torch.sqrt(c * c - 1)
         wp = torch.where((c + d).imag < 0, c - d, c + d)        # 取 Im>0 那支＝往源傳的方向
-        #? 強制 |w| = 1（線在模型裡是無耗的；讓 |w|≠1 只會在 ~40 步的冪次上放大數值噪音）。
         ang = (torch.angle(wp) / p).clamp(1e-9, np.pi - 1e-9)
         mv = torch.arange(m0, m1, dtype=self.dtype, device=cur.device)
         ph = ang[..., None] * mv
         one = torch.ones_like(ph)
-        wpos, wneg = torch.polar(one, ph), torch.polar(one, -ph)
+        if lossless:
+            wpos, wneg = torch.polar(one, ph), torch.polar(one, -ph)
+        else:
+            #? 放開 |w|：把每格衰減也解出來。⚠ 見 `lossless` 的說明——它不只吃到線衰減。
+            lg = (torch.log(wp.abs().clamp_min(1e-12)) / p)[..., None] * mv
+            wpos, wneg = torch.polar(lg.exp(), ph), torch.polar((-lg).exp(), -ph)
         y = im[..., m0:m1]
         g11 = (wpos.conj() * wpos).sum(-1)
         g12 = (wpos.conj() * wneg).sum(-1)
