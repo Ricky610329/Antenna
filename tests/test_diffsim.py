@@ -705,3 +705,31 @@ def test_layered_ff_responds_to_epsilon(mom):
         got[tag] = vals
     assert abs(got["off"][0] / got["off"][1] - 1) < 1e-9, "layered_ff=False 不該看到 εr（舊行為）"
     assert abs(got["on"][0] / got["on"][1] - 1) > 0.05, "layered_ff=True 必須看到 εr"
+
+
+# ---------------------------------------------------------------- 特徵化快照（重構安全網）
+def test_diffsim_characterization_snapshot():
+    """L1／L2 對五個固定 pattern 的輸出**逐位元**不得漂移。
+
+    #! 2026-08-03 加。diffsim **完全不在 golden 的覆蓋範圍內**，`pytest tests/ -q` 全綠
+    #  只證明「沒 crash、不變式沒破」，**證明不了數字沒漂**——而本輪三個 bug 都是
+    #  「數字悄悄變了」（饋線 stub／MKL 多執行緒／遠場漏介質）。
+    #  ⚠ **刻意改變數值時**（例如換核、改預設旗標），必須在**同一個 commit** 更新快照
+    #  並在 message 說明為什麼——與 `docs/development.md` 的 golden 重生紀律同一把尺。
+    #  沒有這條，快照就變成阻力而不是安全網。
+    """
+    from script.diffsim.l1 import CavityL1
+    from script.diffsim.l2 import MoML2, DCIMKernel
+    snap = np.load(os.path.join(os.path.dirname(__file__), "data", "diffsim_snapshot.npz"))
+    x = snap["x"].astype(np.float64)
+    with torch.no_grad():
+        y1 = CavityL1().predict(x, batch=8)
+        y2 = MoML2(kernel=DCIMKernel(v_scale=2.356)).predict(x, batch=8)
+    names = [str(v) for v in snap["names"]]
+    #? `nofeed`（饋線接觸格全 void）本來就該是全 0＝全反射，不當作「有內容」的證據
+    live = [i for i, nm in enumerate(names) if nm != "nofeed"]
+    assert np.abs(snap["l1"][live]).max() > 1.0, "快照本身是空的 → 它守不住任何東西"
+    assert np.abs(snap["l2"][live]).max() > 1.0
+    for tag, got, want in (("L1", y1, snap["l1"]), ("L2", y2, snap["l2"])):
+        d = np.abs(got - want).max()
+        assert d < 1e-10, f"{tag} 對快照漂移 {d:.3e}（若是刻意改動，請一併更新快照並記帳）"
