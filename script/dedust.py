@@ -5027,7 +5027,7 @@ def chain(args):
     log_dir = os.path.join(REPO, "docs", "chains")
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f"{args.name}.jsonl")
-    dry, pack = 0, 0
+    dry, pack = 0, max(0, getattr(args, "start_pack", 1) - 1)   # --start-pack N=斷點接力(pNN-1 前的包已存在,daemon 死後續跑)
     used = set()          # 同錨已抽 px——跨包記憶（2026-07-22 修:包內 used 導致 p02 起狂撞
                           #  p01 已測變體,19 連撞空轉收鏈）;換錨時重置。
 
@@ -6646,6 +6646,8 @@ def main():
     s.add_argument("--prio", type=int, default=1, help="tier 0=1（插隊）")
     s.add_argument("--dry", type=int, default=2, help="連 N 包無勝錨=收鏈")
     s.add_argument("--max-packs", type=int, default=20, dest="max_packs")
+    s.add_argument("--start-pack", type=int, default=1, dest="start_pack",
+                   help="斷點接力:從第 N 包開始發(前包已收檔且判讀過;daemon 被殺後續跑用,2026-08-03)")
     s.add_argument("--expert", action="store_true", help="域專家模式:鏈資料微調 SM→枚舉排序 top+隨機對照（dual/wm 鏈適用）")
     s.add_argument("--exp-rand", type=int, default=13, dest="exp_rand", help="對照隨機席（其餘=專家 top）")
     s.add_argument("--mutator", choices=["px", "group"], default="px",
