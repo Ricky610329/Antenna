@@ -5074,6 +5074,9 @@ def chain(args):
         ind = _dir(store + "_input")
         ind.mkdir(parents=True, exist_ok=True)
         manifest = []
+        #? 不增對角(Ricky 指示 2026-08-03「之後的探索盡可能減少對角」):變異不得比當前錨
+        #  增加 diagb——存量不動只擋新增(絕對否決會殺左側家族,R37 教訓;世代趨勢交 select 罰分)。
+        _anchor_diagb = diag_bridge(anchor_pat)
         avail = [px for px in range(625) if px not in used and (px // 25, px % 25) != FEED]
         if len(avail) < args.n:
             print(f"⛰ {args.name} 錨鄰域枯竭（{len(used)}/624 已抽）——收鏈")
@@ -5084,6 +5087,8 @@ def chain(args):
             for px in avail:
                 q = anchor_pat.copy()
                 q.ravel()[px] ^= True
+                if diag_bridge(q) > _anchor_diagb:    # 不增對角(Ricky 2026-08-03)
+                    continue
                 vs.append((px, q))
             pats_e = torch.stack([torch.tensor(q, dtype=torch.float32).reshape(-1) for _, q in vs])
             expert.model.eval()
@@ -5142,6 +5147,8 @@ def chain(args):
                 used.add(px)
                 q = anchor_pat.copy()
                 q.ravel()[px] ^= True
+                if diag_bridge(q) > _anchor_diagb:    # 不增對角(Ricky 2026-08-03)
+                    continue
                 if q.tobytes() in hist_keys:          # 全史撞位（他鏈/scope 測過）——px 已記 used,跳
                     continue
                 hist_keys.add(q.tobytes())
