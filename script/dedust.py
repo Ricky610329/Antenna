@@ -5935,7 +5935,10 @@ def worker(args):
         picked = None
         for j in jobs:
             st = j["store"]
-            if j.get("machine") and j["machine"] != me:
+            _pin = str(j.get("machine") or "")
+            #! 釘選比對:me=完整 IP(2026-08-03 實戰 bug:jobs-add 寫末段「216」等值比較永不匹配
+            #  =全機跳過;修=末段/完整 IP 都吃。當日以改 jobs.json 為完整 IP 熱修,此處為治本)
+            if _pin and me != _pin and not me.endswith("." + _pin):
                 continue                                  # 釘選批(網格收斂等):只給指定機器認領
             if sd.joinpath(st + ".done").exists():
                 continue
