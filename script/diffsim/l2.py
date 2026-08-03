@@ -465,7 +465,18 @@ class MoML2:
             wa, wb = extra.pop("_wamp")
             extra["Zc"] = 2.0 * p_in / (wa.abs() ** 2 - wb.abs() ** 2).clamp_min(1e-300)
         mism = (1 - gam.abs() ** 2).clamp_min(1e-6)
-        gain = (10 * torch.log10(d0 * mism)).clamp_min(-40.0)
+        #! 2026-08-03 修：**漏乘輻射效率 `eta`**。`RealizedGain ≡ D₀·e_r·(1−|Γ|²)` 是定義，
+        #  而 `e_r = P_rad/P_accepted` 就是這裡的 `eta`——它早就算好、放在回傳 dict 裡、
+        #  **從來沒被乘進去**。同 repo 的 `l1.py:273` 寫的是 `d0 * e_r * mism`，一直是對的。
+        #  零自由參數的公式缺陷，不是可調空間。
+        #  ⚠ 這會改變數字，所以 `tests/data/diffsim_snapshot.npz` 同 commit 更新。
+        #  實測（fan-out agent，正片 clean_OOS）：`l3` 高頻誤差 +6.07 → +0.04 dB；
+        #  「誰在當 min」的判斷準確率 0.468 → 0.627（隨機 0.43）、Gain 主宰率 26% → 80%
+        #  （真值 65%）。⚠ 但選批命中率只有 `l3` 10.0 → 16.7%（P(Δ>0)=0.93，**未達 0.95**）、
+        #  `l3fl` **完全不動**（26.7%）——因為它把決定權**正確地**交給 Gain 通道，
+        #  而那個通道自己只有 ρ≈+0.08 ⇒ **判對了誰卡、卻卡不準**。修它是為了公式正確，
+        #  不是為了指標；用途上的空間在 `D₀`（見 analysis-10 §39）。
+        gain = (10 * torch.log10(d0 * eta.clamp(1e-6, 1.0) * mism)).clamp_min(-40.0)
         s11 = torch.where(open_ckt, torch.zeros_like(s11), s11)      # 開路＝全反射 0dB
         gain = torch.where(open_ckt, torch.full_like(gain, -40.0), gain)
         return dict(S11=s11, Gain=gain, Zin=zin, D0=d0, Prad=prad, eta=eta, J=cur, **extra)
