@@ -5326,13 +5326,18 @@ def run(args):
     if _setup_f.exists():
         with open(str(_setup_f), encoding="utf-8") as f:
             hfss_setup = json.load(f)
-        allowed = {"max_delta_s", "max_passes", "min_passes", "min_converged"}
+        allowed = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout"}
         bad = set(hfss_setup) - allowed
         if bad:
             raise SystemExit(f"hfss_setup.json 不明鍵 {bad}（合法鍵={sorted(allowed)}）")
         with open(str(store_dir.joinpath("hfss_setup.json")), "w", encoding="utf-8") as f:
             json.dump(hfss_setup, f, ensure_ascii=False, indent=1)
         print(f"⚠ 非預設求解設定生效: {hfss_setup}（來源 {_setup_f.name};已存證進 store）")
+        if "timeout" in hfss_setup:
+            #? per-store 看門狗放寬(2026-08-03 網格 S1 實戰:20 pass 加密單筆 >900s 被殺,A 組 7 筆
+            #  watchdog_timeout——加密網格是「合法地慢」,不是卡死;timeout 鍵只進看門狗不進模擬器)
+            args.timeout = int(hfss_setup.pop("timeout"))
+            print(f"⚠ 單筆看門狗放寬 → {args.timeout}s")
 
     store = SampleStore(store_dir)
     #? 續跑規則：成功的跳過、error 的重試（COM 偶發例外佔比 ~15%,R8 實測）
