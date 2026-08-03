@@ -1,6 +1,6 @@
 # Round 52 — 錨銀行攻堅輪:學長錨×兩軸攻堅鏈 × two 轉正裁決 × 網格判讀
 
-- **狀態**: proposed（2026-08-03 17:0x 開輪;自主續輪宣告制;R51 收輪接棒）
+- **狀態**: running（2026-08-03 18:4x 發車;v102 凍結 0.47 平低/two 凍結 0.564/lohead ho ρ+0.826）
 - **提出 / 開跑 / 結論**: 2026-08-03 / — / —
 - **一句話問題**: 學長錨銀行的同尺複測值(rad +1.20/lo −3.66 兩張天賦牌)能不能用攻堅鏈變現——
   同時裁決 two 轉正(1/2)與 HFSS 網格收斂(真值天花板)。
@@ -49,9 +49,10 @@
 #     → select-neg --round 52 --batch 1 --n 20 --stratify --arms eng,grf_neg,grf_inv,grf_lab,bool_cut,bool_keep
 #     → select-senior --round 52 --batch 1 --n 10 → check-dup ×3 → jobs-add prio 3 ×3
 #     → echo dedust_r52b1b >> configs/neg_stores.txt → Monitor watch
-# 攻堅鏈(發車時查 chain parser 現況;錨源=dedust_r50b2c):
-#   python -m script.dedust chain --name c52rad1 --anchor e50b2_007_F6161 --source-input dedust_r50b2c_input --goal rad
-#   python -m script.dedust chain --name c52lo1  --anchor e50b2_000_F18644 --source-input dedust_r50b2c_input --goal lo
+# 攻堅鏈(goal 鍵發鏈前定案 08-03 18:3x:rad 鍵要求 lo≤−2/lo 鍵要求已合格,皆不合身——
+#   F18644 用 tri〔左側會師,錨分 −1.12〕;F6161 註冊新鍵 radq=min(wm−0.15,rad−0.5)〔畢業判準化身,錨分 −0.70〕):
+python -m script.dedust chain --name c52rad1 --anchor e50b2_007_F6161 --source-input dedust_r50b2c_input --goal radq --anchor-score -0.70
+python -m script.dedust chain --name c52lo1  --anchor e50b2_000_F18644 --source-input dedust_r50b2c_input --goal tri --anchor-score -1.12
 # 網格:S1/S2 由 216 釘選續跑(Monitor bx0kmllqe 盯);收檔→判讀腳本(f_res 拋物線內插)
 ```
 

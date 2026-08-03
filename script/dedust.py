@@ -4964,6 +4964,10 @@ def _chain_score(v, goal):
         return min(w - 0.15, r) if (lo is not None and lo <= -2.0) else -99.0
     if goal == "rad":
         return r if (w >= -2 and lo is not None and lo <= -2) else -99.0
+    if goal == "radq":
+        #? R52 錨銀行 rad 軸(round-52 §1①,發鏈前註冊):min(wm−buffer, rad−0.5)——
+        #  兩項同正=「合格∧rad>+0.5」=rad 高身合格畢業判準的化身(tri 的右側鏡像,無 lo 框)。
+        return min(w - 0.15, r - 0.5)
     raise SystemExit(f"未知 goal {goal}")
 
 
@@ -6608,8 +6612,8 @@ def main():
     s.add_argument("--name", required=True, help="鏈名（夾名 dedust_<name>_pNN;帳 docs/chains/<name>.jsonl）")
     s.add_argument("--anchor", required=True)
     s.add_argument("--source-input", required=True, dest="source_input")
-    s.add_argument("--goal", required=True, choices=["wm", "dual", "rad", "lo", "hi", "tri"],
-                   help="目標鍵（發鏈前寫死;lo/hi=合格門檻內壓單側;tri=lo≤−2 內爬 min(wm−0.15,rad)=左側合格解會師鍵）")
+    s.add_argument("--goal", required=True, choices=["wm", "dual", "rad", "lo", "hi", "tri", "radq"],
+                   help="目標鍵（發鏈前寫死;lo/hi=合格門檻內壓單側;tri=lo≤−2 內爬 min(wm−0.15,rad)=左側合格解會師鍵;radq=min(wm−0.15,rad−0.5)=rad 高身合格會師鍵〔R52〕）")
     s.add_argument("--anchor-score", type=float, default=None, dest="anchor_score",
                    help="錨的已知 score（首包 baseline;不給=首包必換錨）")
     s.add_argument("--n", type=int, default=25)
