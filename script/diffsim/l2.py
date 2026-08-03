@@ -135,7 +135,7 @@ class MoML2:
     def __init__(self, kernel: DCIMKernel = None, device="cpu", dtype=torch.float64,
                  n_theta: int = 13, n_phi: int = 24, half_port: bool = False,
                  layered_ff: bool = False, ff_er: float = None, feed_len: int = 0,
-                 zc_ref: float = None, ff_line: bool = True):
+                 zc_ref: float = None, ff_line: bool = True, diag: bool = False):
         """
         :param feed_len: **饋線列數**（0 = 集總埠，舊行為）。>0 就把真實微帶饋線建進格網、
             delta-gap 移到饋線遠端、`S11` 改用**駐波法**萃取（見 `gamma_from_line`）。
@@ -157,6 +157,7 @@ class MoML2:
         （固定貼片改 dx、未知數 ×8.7）比值只 0.369 → 0.387。
         """
         self.feed_len = int(feed_len)
+        self.diag = bool(diag)
         self.zc_ref = zc_ref
         #! `ff_line=False`：**饋線電流不進遠場**。理由不是調參，是我們的線長度是假的——
         #  模型 9mm、真實 22.5mm ⇒ 它在遠場的干涉結構**本來就是虛構的**；
@@ -193,7 +194,29 @@ class MoML2:
         ya, yb = cell[:, :-1].ravel(), cell[:, 1:].ravel()
         ca = np.concatenate([xa, ya])
         cb = np.concatenate([xb, yb])
-        isx = np.concatenate([np.ones(len(xa), bool), np.zeros(len(ya), bool)])
+        #? **電流矩向量** M = 電荷 × 分離向量（單位 dx²）。軸向屋頂是 (1,0)/(0,1)；
+        #  對角是 (1,±1)。A 項因此從「同向才有」推廣成 `M_m · M_n`（見 `impedance_at`）。
+        mx = np.concatenate([np.ones(len(xa)), np.zeros(len(ya))])
+        my = np.concatenate([np.zeros(len(xa)), np.ones(len(ya))])
+        cc1 = np.full(len(ca), -1, dtype=np.int64)     # 對角的兩個「角落格」（見 `edge_density`）
+        cc2 = cc1.copy()
+        if self.diag:
+            #! 對角基底（analysis-10 §45）：HFSS 的像素盒是 `pixel + 0.01mm`
+            #  ⇒ **對角相鄰的像素在角落重疊 0.01×0.01mm、Unite 後是同一塊導體**，
+            #  而 rooftop 基底只有邊相鄰 ⇒ 全史 57.1% 的樣本幾何與 HFSS 不符。
+            #  主對角 (i,j)-(i+1,j+1) 與反對角 (i,j+1)-(i+1,j) **都連通**（兩者重疊都是 0.01×0.01）。
+            d1a, d1b = cell[:-1, :-1].ravel(), cell[1:, 1:].ravel()     # 主對角 M=(1,+1)
+            d2a, d2b = cell[:-1, 1:].ravel(), cell[1:, :-1].ravel()     # 反對角 M=(1,−1)
+            #? 角落格＝該對角的兩個「繞路」鄰居；兩者都是 void 時對角才是唯一通路（見 `edge_density`）
+            c1a, c1b = cell[1:, :-1].ravel(), cell[:-1, 1:].ravel()
+            ca = np.concatenate([ca, d1a, d2a])
+            cb = np.concatenate([cb, d1b, d2b])
+            nd = len(d1a)
+            mx = np.concatenate([mx, np.ones(2 * nd)])
+            my = np.concatenate([my, np.ones(nd), -np.ones(nd)])
+            cc1 = np.concatenate([cc1, c1a, c1a])
+            cc2 = np.concatenate([cc2, c1b, c1b])
+        isx = mx.astype(bool) & (my == 0)             # 純 x 向（線探針與舊行為用）
         #? 延伸區只有饋線那幾欄可能是金屬 → 其餘的屋頂**永遠**被遮罩掉，直接不要生成。
         #  （集總埠模式 live 全 True ⇒ 與舊版逐位相同，golden 不動。）
         live = np.ones((nr, nc), bool)
@@ -211,12 +234,18 @@ class MoML2:
         else:
             drv = isx & (row_a == FEED_ROW) & (feed_weights() > 0)[col_a]
         ca, cb, isx, drv = ca[keep], cb[keep], isx[keep], drv[keep]
+        mx, my, cc1, cc2 = mx[keep], my[keep], cc1[keep], cc2[keep]
         self.nx = int(isx.sum())
         self.ny = int((~isx).sum())
         self.nb = len(ca)
         self.cell_a = torch.as_tensor(ca, dtype=torch.long, device=self.device)
         self.cell_b = torch.as_tensor(cb, dtype=torch.long, device=self.device)
         self.is_x = torch.as_tensor(isx, dtype=torch.bool, device=self.device)
+        self.mx = torch.as_tensor(mx, dtype=self.dtype, device=self.device)
+        self.my = torch.as_tensor(my, dtype=self.dtype, device=self.device)
+        self.is_diag = torch.as_tensor(cc1 >= 0, device=self.device)
+        self.corner1 = torch.as_tensor(np.maximum(cc1, 0), dtype=torch.long, device=self.device)
+        self.corner2 = torch.as_tensor(np.maximum(cc2, 0), dtype=torch.long, device=self.device)
         ci, cj = np.divmod(np.arange(nr * nc), nc)
         self.ci = torch.as_tensor(ci, dtype=torch.long)
         self.cj = torch.as_tensor(cj, dtype=torch.long)
@@ -243,8 +272,12 @@ class MoML2:
         nface = self.nr - N          # m = 0 … nr-1-N（最後一個是驅動面）
         sel = np.zeros((self.nb, nface), dtype=np.float64)
         rel = row_a - (N - 1)
-        ok = isx & (rel >= 0) & (rel < nface)
-        sel[np.nonzero(ok)[0], rel[ok]] = 1.0
+        #? 跨越該截面的**全部** x 向電流＝x 屋頂 + 對角（對角的 mx 也是 1）。
+        #  舊版只挑 x 屋頂；開 `diag` 後不含對角會低估截面電流 ⇒ Γ 偏掉。
+        mxv = self.mx.cpu().numpy()
+        ok = (mxv != 0) & (rel >= 0) & (rel < nface)
+        sel[np.nonzero(ok)[0], rel[ok]] = mxv[ok]
+        del isx
         self.line_sel = torch.as_tensor(sel, dtype=self.dtype, device=self.device)
         self.n_face = nface
         #? 線的相位常數初估（Hammerstad）：用來挑駐波遞迴的步距 p，讓 p·β·dx ≈ π/2
@@ -256,6 +289,13 @@ class MoML2:
         """(B, nr, nc) → (B, nb)：屋頂存在權重 ρ_a·ρ_b（連續鬆弛天然可微）。"""
         r = rho_ext.reshape(rho_ext.shape[0], -1)
         w = r[:, self.cell_a] * r[:, self.cell_b]
+        if self.diag:
+            #! ★ 對角**只在它是唯一通路時**啟用：兩個「角落格」都是 void 才算。
+            #  若角落有金屬，電流走那條 200µm 寬的路，10µm 的角落橋是並聯的高阻抗支路
+            #  ⇒ 可忽略。這讓對角基底在實心區**完全不活化**，成本幾乎為零，
+            #  而在真正需要它的破碎區才進來。（基底集合仍是**樣本無關**的 ⇒ Z 矩陣照樣共用。）
+            gate = (1.0 - r[:, self.corner1]) * (1.0 - r[:, self.corner2])
+            w = torch.where(self.is_diag[None, :], w * gate, w)
         if self.feed_len > 0:
             return w                       # 饋線是真金屬 ⇒ 接面屋頂照一般規則，不用特例
         #? 集總埠模式：驅動屋頂跨 x=5.0mm 接面，`cell_b` 在延伸列（永遠 void）。
@@ -293,7 +333,9 @@ class MoML2:
         g = self.kernel.table(self.rtab, k0)[:, 0]              # (2, ntab)
         ga, gv = g[0][self.off], g[1][self.off]                 # (ncell, ncell)
         w = 2 * np.pi * fk
-        same = (self.is_x[:, None] == self.is_x[None, :])
+        #? A 項的方向因子＝**電流矩向量的內積** `M_m·M_n`（單位 dx²）。
+        #  軸向對軸向退化回舊的 `same`（同向 1、異向 0）；對角自然帶 √2 的長度與 ±45° 的方向。
+        same = (self.mx[:, None] * self.mx[None, :] + self.my[:, None] * self.my[None, :])
         a, b = self.cell_a, self.cell_b
         #! 兩項的 dx 冪次不同，寫錯就整條物理翻掉（實測踩過：A 項誤用 dx² 讓電感項比電容項
         #  大 2.5e5 倍 → 完全不是準靜態，Zin 直接 4e7Ω）。∫f_m dS = dx²（屋頂：三角×脈衝），
@@ -557,8 +599,8 @@ class MoML2:
         ph, f_tm, f_te = self._ffc[key]
         if not all_current and not self.ff_line and self.feed_len > 0:
             cur = cur * self.is_patch          # 饋線電流不進遠場（見 `__init__`）
-        jx = cur * self.is_x
-        jy = cur * (~self.is_x)
+        jx = cur * self.mx          # 電流矩向量（軸向 1/0，對角 1/±1）
+        jy = cur * self.my
         sx = torch.einsum("bfp,ftup->bftu", jx, ph)
         sy = torch.einsum("bfp,ftup->bftu", jy, ph)
         #! TM（θ 分量）與 TE（φ 分量）的介質因子**不同** —— 舊版對兩者乘同一個
@@ -714,6 +756,10 @@ SOLVERS = {
     #  它本來就是「沒有饋線」的補償。
     #  ⚠ §38/§42 報的數字是 `ff_line=True` 量的（那時還沒驗出來）；出貨值改 False 見 §43。
     "l3fl": dict(kernel="l3", layered_ff=True, feed_len=45, ff_line=False),
+    #? ★ 再加**對角連通**（analysis-10 §45/§47）：HFSS 的像素盒 `pixel+0.01mm`
+    #  ⇒ 對角相鄰在角落重疊 0.01×0.01mm、Unite 後導通，而 rooftop 只有邊相鄰。
+    #  對角**只在它是唯一通路時**啟用（兩個角落格都 void）⇒ 實心區逐位不變、成本近乎零。
+    "l3fld": dict(kernel="l3", layered_ff=True, feed_len=45, ff_line=False, diag=True),
 }
 
 

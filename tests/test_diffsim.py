@@ -947,3 +947,80 @@ def test_l3_sommerfeld_epsr_one_matches_image_closed_form():
     for nm, got in (("G_A", ga), ("G_V", gv)):
         d = np.abs(got - ref).max() / np.abs(ref).max()
         assert d < 1e-4, f"εr=1 的 {nm} 沒退化回源−鏡像閉式（相對差 {d:.2e}）"
+
+
+# ---------------------------------------------------------------- 對角連通（規格不符 §45）
+def test_diag_basis_is_inert_where_redundant():
+    """★ 對角基底在**實心區必須完全不活化** —— 逐位元相同，不是「差不多」。
+
+    #! 設計要點（analysis-10 §45/§47）：HFSS 的像素盒是 `pixel + 0.01mm`
+    #  ⇒ 對角相鄰在角落重疊 0.01×0.01mm、Unite 後導通；rooftop 只有邊相鄰
+    #  ⇒ 全史 57.1% 的樣本幾何與 HFSS 不符。
+    #  但**對角只在它是唯一通路時才該進來**：角落有金屬時，電流走那條 200µm 寬的路，
+    #  10µm 的角落橋是並聯的高阻抗支路 ⇒ 可忽略。這個閘門讓成本近乎零。
+    #  沒有這條測試，`diag=True` 會在實心區憑空加一堆並聯支路、把已經對的東西弄壞。
+    """
+    from script.diffsim.l2 import build
+    from script.diffsim.geom import FREQS
+    p = torch.zeros(1, N, N, dtype=torch.float64)
+    p[0, 10:, 5:20] = 1.0                                  # 實心：每個對角的角落都是金屬
+    with torch.no_grad():
+        a = build("l3fl").solve(p, freqs=FREQS)
+        b = build("l3fld").solve(p, freqs=FREQS)
+    for k in ("S11", "Gain"):
+        d = (a[k] - b[k]).abs().max()
+        assert d < 1e-12, f"實心 pattern 上 diag 不該改變 {k}（實得 {d:.3e} dB）"
+
+
+def test_diag_basis_bridges_diagonal_only_connection():
+    """對角**唯一通路**時必須真的導通 —— 否則加了等於沒加。
+
+    造一個「只靠對角相接」的啞鈴：兩塊金屬在一個角碰角，中間兩個角落格是 void。
+    HFSS 那邊它是同一塊導體；沒有對角基底時我們是隔空耦合。
+    """
+    from script.diffsim.l2 import build
+    from script.diffsim.geom import FREQS
+    p = torch.zeros(1, N, N, dtype=torch.float64)
+    p[0, 18:25, 9:16] = 1.0                                # 接饋線那塊
+    p[0, 11:18, 2:9] = 1.0                                 # 另一塊，只在 (18,9)/(17,8) 角碰角
+    assert p[0, 17, 9] == 0 and p[0, 18, 8] == 0, "兩個角落格必須是 void，否則不是對角唯一通路"
+    m0, m1 = build("l3fl"), build("l3fld")
+    with torch.no_grad():
+        r0, r1 = m0.solve(p, freqs=FREQS), m1.solve(p, freqs=FREQS)
+    #? ★ 判準用**參照組**而不是「有沒有變」：把角落補成金屬 ⇒ 那是**真的邊相鄰**、
+    #  不需要任何對角基底。對角基底若做對了，角碰角的答案應該**逼近那個參照**。
+    ref = p.clone()
+    ref[0, 17, 9] = 1.0                                    # 補角落 ⇒ 邊相鄰
+    with torch.no_grad():
+        rr = m0.solve(ref, freqs=FREQS)
+
+    def far_frac(m, r):
+        """遠端那塊（列<18 且欄<9）佔全體電流的比例 ＝『它有沒有被餵到』。"""
+        ra, ka = m.cell_a.numpy() // m.nc, m.cell_a.numpy() % m.nc
+        sel = (ra < 18) & (ka < 9)
+        return float(r["J"][0, 8, sel].abs().sum() / r["J"][0, 8].abs().sum())
+
+    f0, f1, fr = far_frac(m0, r0), far_frac(m1, r1), far_frac(m0, rr)
+    assert fr > 0.05, f"參照組本身要有明顯的遠端電流（實得 {fr:.4f}）"
+    assert abs(f1 - fr) / fr < 0.05,         f"對角基底沒重現 galvanic 連通：角碰角 {f1:.4f} vs 補金屬參照 {fr:.4f}"
+    assert f1 > 3 * f0, f"沒有對角時該只剩隔空耦合（實得 {f0:.4f} → {f1:.4f}）"
+    #? ⚠ 這個幾何的 S11 只變 0.08 dB —— **那是真的物理**（兩塊都在 |Γ|≈0.9 的極度失配區，
+    #  遠端那塊接不接上對輸入阻抗影響本來就小）。所以判準用電流不用 S11。
+
+
+def test_diag_moment_reduces_to_axis_case():
+    """A 項的方向因子 `M_m·M_n` 對純軸向必須**恰好**退化回舊的 `same`（同向 1／異向 0）。"""
+    from script.diffsim.l2 import build
+    m = build("l3fld")
+    dot = (m.mx[:, None] * m.mx[None, :] + m.my[:, None] * m.my[None, :])
+    ax = ~m.is_diag
+    want = (m.is_x[ax][:, None] == m.is_x[ax][None, :]).to(m.dtype)
+    assert torch.equal(dot[ax][:, ax], want), "純軸向的方向因子沒退化回 same"
+    #? 對角自項＝|M|²＝2（分離向量長 √2·dx）；主對角×反對角＝1·1+1·(−1)=0（正交）
+    dg = torch.nonzero(m.is_diag).flatten()
+    assert float(dot[dg[0], dg[0]]) == 2.0
+    main = dg[m.my[dg] > 0]
+    anti = dg[m.my[dg] < 0]
+    assert len(main) == len(anti) > 0
+    assert float(m.mx[main[0]]) == 1.0 and float(m.my[main[0]]) == 1.0
+    assert float(m.mx[anti[0]]) == 1.0 and float(m.my[anti[0]]) == -1.0
