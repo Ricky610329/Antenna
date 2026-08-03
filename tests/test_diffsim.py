@@ -1024,3 +1024,54 @@ def test_diag_moment_reduces_to_axis_case():
     assert len(main) == len(anti) > 0
     assert float(m.mx[main[0]]) == 1.0 and float(m.my[main[0]]) == 1.0
     assert float(m.mx[anti[0]]) == 1.0 and float(m.my[anti[0]]) == -1.0
+
+
+def test_mirror_symmetry_invariant():
+    """★★ **不依賴真值的硬不變式**：整個幾何對 `j → 24−j` 精確對稱 ⇒ 響應必須逐位相同。
+
+    #! 對抗式複核 agent 2026-08-04 用這條抓到**兩個**我的 bug，而我原本的三條對角測試
+    #  一條都沒抓到（啞鈴只造了主對角；`test_diag_moment_reduces_to_axis_case`
+    #  只查反對角**存在**、不查它**能不能活化**）：
+    #  ① 反對角的「角落格」被指派成它自己的端點 ⇒ `wgt ≡ 0` ⇒ **757 條反對角基底全史零活化**
+    #     （而真實角落橋裡反對角佔 **47.5%**）
+    #  ② A 項對每條基底都拿 `cell_a` 當求積點，但對角的形心偏移是 (0.5,0.5)dx、
+    #     軸向是 (0.5,0)dx ⇒ 在 `l3fl` 裡剛好抵銷、`M_m·M_n` 才曝露
+    #  修前 `l3fld` 的鏡像誤差是 **18.55 dB**（`l3fl` 一直是 0.0000）。
+    #  ⇒ **這種「與真值無關、只靠對稱性」的不變式，鑑別力遠高於統計比較。**
+    #  幾何前提：`LINE_COLS` 與 `feed_weights` 都對 col 12 對稱（下面一併驗）。
+    """
+    from script.diffsim.l2 import build, LINE_COLS
+    from script.diffsim.geom import FREQS
+    assert list(LINE_COLS) == [N - 1 - c for c in LINE_COLS][::-1], "饋線欄本身要對稱"
+    fw = feed_weights()
+    assert np.allclose(fw, fw[::-1]), "饋線接觸權重本身要對稱"
+    rng = np.random.default_rng(3)
+    x = torch.as_tensor((rng.random((4, N, N)) > 0.5).astype(np.float64))
+    x[:, 24, 10:15] = 1.0                                  # 保證接得到饋線
+    xm = torch.flip(x, dims=[2])
+    for name in ("l3fl", "l3fld"):
+        m = build(name)
+        with torch.no_grad():
+            a, b = m.solve(x, freqs=FREQS), m.solve(xm, freqs=FREQS)
+        for k in ("S11", "Gain"):
+            d = (a[k] - b[k]).abs().max()
+            assert d < 1e-9, f"[{name}] {k} 的鏡像不變式被打破（{d:.4f} dB）"
+
+
+def test_antidiag_basis_actually_activates():
+    """反對角基底**必須真的會活化** —— 它曾經因為角落格指派錯而全史零活化。"""
+    from script.diffsim.l2 import build
+    m = build("l3fld")
+    anti = m.is_diag & (m.my < 0)
+    main = m.is_diag & (m.my > 0)
+    assert int(anti.sum()) > 0 and int(anti.sum()) == int(main.sum())
+    p = torch.zeros(1, N, N, dtype=torch.float64)
+    p[0, 18:25, 9:16] = 1.0
+    p[0, 11:18, 16:23] = 1.0                               # 反對角角碰角（(18,16)/(17,15) 角落全 void）
+    w = m.edge_density(m.extend(p))[0] > 0.5
+    assert int((w & anti).sum()) > 0, "反對角啞鈴上反對角基底沒有活化"
+    q = torch.zeros(1, N, N, dtype=torch.float64)
+    q[0, 18:25, 9:16] = 1.0
+    q[0, 11:18, 2:9] = 1.0                                 # 主對角角碰角
+    w2 = m.edge_density(m.extend(q))[0] > 0.5
+    assert int((w2 & main).sum()) > 0, "主對角啞鈴上主對角基底沒有活化"
