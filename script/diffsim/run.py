@@ -18,7 +18,7 @@
     python -m script.diffsim.run head    --model l2                     # 殘差頭
 **`--solver` 選的是一整組物理設定**（核 + 埠 + 遠場），登記表在 `l2.SOLVERS`：
 `dcim`（可擬核，特徵化快照守的那條）／`l3`（精確分層核 + 分層遠場 + 半屋頂埠）／
-`l3fl`（★ 真饋線 + 駐波 wave port，analysis-10 §37）。
+`l3fl`（真饋線 + 駐波 wave port，§37）／`l3fld`（★ **出貨**：再加對角連通，§45/§47）。
 """
 import argparse
 import hashlib
@@ -228,7 +228,7 @@ def cmd_gate1(args):
 L2_PARAMS = os.path.join(D.CACHE_DIR, "l2_params.json")
 
 
-def build_l2(scale=None, raw=False, solver="l3fl"):
+def build_l2(scale=None, raw=False, solver="l3fld"):
     """依名字＋存檔建 L2 求解器。**`solver` 決定物理設定，存檔只決定 DCIM 核的參數。**
 
     #! 2026-08-02 教訓：本函式原本**漏掉載入 `kernel` 的那段**（用字串替換改 code、
@@ -433,7 +433,7 @@ def _model_stamp(model: str, solver: str = None) -> str:
 
 def _phys_pred(idx, sel, model, args, tag):
     """diffsim 對一組樣本的預測（帶檔案快取——L2 每筆 ~310ms，重算很貴）。"""
-    sv = getattr(args, "solver", "l3fl")
+    sv = getattr(args, "solver", "l3fld")
     path = _cache_path(f"phys_{model}_{tag}_{len(sel)}_{_model_stamp(model, sv)}")
     if os.path.exists(path):
         z = np.load(path)
@@ -556,12 +556,12 @@ def main():
     le.add_argument("--n", type=int, default=None)
     le.add_argument("--batch", type=int, default=8)
     le.add_argument("--scale", type=float, default=None)
-    le.add_argument("--solver", default="l3fl", choices=tuple(SOLVERS))
+    le.add_argument("--solver", default="l3fld", choices=tuple(SOLVERS))
     g2 = sub.add_parser("gate2")
     g2.add_argument("--batch", type=int, default=8)
     g2.add_argument("--calib", type=int, default=150)
     g2.add_argument("--scale", type=float, default=None)
-    g2.add_argument("--solver", default="l3fl", choices=tuple(SOLVERS))
+    g2.add_argument("--solver", default="l3fld", choices=tuple(SOLVERS))
     g1 = sub.add_parser("gate1")
     g1.add_argument("--batch", type=int, default=24)
     g1.add_argument("--device", default="cpu")
@@ -573,7 +573,7 @@ def main():
     hd.add_argument("--seeds", type=int, default=3, help="訓練 seed 數（平均掉訓練隨機性）")
     #? 預設 cpu：GPU 讓給批次線（SESSION_COORDINATION §2）；要用先查 nvidia-smi
     hd.add_argument("--device", default="cpu")
-    hd.add_argument("--solver", default="l3fl", choices=tuple(SOLVERS))
+    hd.add_argument("--solver", default="l3fld", choices=tuple(SOLVERS))
     lf = sub.add_parser("l2fit")
     lf.add_argument("--n", type=int, default=400, help="每 stratum 取幾筆（fit 分割）")
     lf.add_argument("--batch", type=int, default=24)
