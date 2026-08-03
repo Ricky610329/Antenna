@@ -58,7 +58,8 @@ python -m script.dedust chain --name c52lo1  --anchor e50b2_000_F18644 --source-
 
 | 批/包 | 狀態 |
 |---|---|
-| 開輪 | 2026-08-03 17:0x(v102 訓練中,完成即發 b1) |
+| 開輪 | 2026-08-03 17:0x;v102 ✅(凍結 0.47 平低/two 0.564/OOD 尺 two 3.046/lohead ρ+0.826) |
+| 發車 | 18:4x:b1 鏈(staging 514→select-r52→neg→senior→查重→prio 3)+c52rad1(radq)+c52lo1(tri)兩 daemon 同時上線 |
 
 ## 4. 分析 (Analyze)
 （待）
