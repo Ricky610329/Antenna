@@ -67,8 +67,19 @@ python -m script.dedust chain --name c52lo1  --anchor e50b2_000_F18644 --source-
 | 事故 | 21:0x-22:1x:216/37 worker 雙死(selfgen 空池 stack 崩+壞 claim;三重修+三台重啟);session 重啟帶走兩 daemon→chain --start-pack 斷點接力 |
 | 首包 | ✅ 23:0x 雙收(50 筆零 error):lo 存活(−3.78)/rad 字面未過待裁決(§4) |
 | 對角探針 | ✅ 23:3x dedust_r52dx 15 筆發車(prio 4;t07×6+t03/t05×2+F6161×3+F18644×2;100% 式 diagb 全歸零,Δpx 6-38) |
+| b1 收檔 | ✅ 08-04 00:4x 三夾全零 error(b1a 批尾補測 2 筆歸零) |
+| v103+b2 發車 | 08-04 01:2x 鏈啟動(train --add r52b1a→two→staging 515→select-r52 b2 **--diagb-pen 6.0**→neg/senior(5,名單收尾)→查重→prio 3) |
 
 ## 4. 分析 (Analyze)
+
+### b1 判讀(2026-08-04 01:0x;analyze batch,單次)
+- **正片 30:三標 5/合格 5**(infogain 4/6=67% 四批連莊+mlotto 1);best i52b1_000 wm+0.42∧oob 11.23。
+  公證 0;可用帶外零推進(本輪連零 1)。帕累托 +0;wm P90 +0.23,作戰區 7/30。
+- **影子對決 v102:cnn 三尺全贏**(誤差 1.04/前瞻 ρ+0.913/adv 0%)——**two 轉正計數斷**
+  (§1③ 裁決:two 未轉正;cnn 反起算 1/2,b2=cnn 裁決批)。mlp 本批前瞻 ρ+0.153/adv 54% 弱勢。
+- denovo 意外:d52b1_000 rad +2.77(wm −10.58 深水 rad 天賦,誤差錨自動吸收)。
+- OOD:negreg best −5.31;senior b1 best −1.20(e52b1_001_F3898)——名單尾段(池值 −1.3x)如預期走弱。
+- G 臂 free 帶誤差爆表(pred −9.3/real −22.3,|Δ| 15.4)——外推幻覺區再證,誤差錨已收。
 
 ### c52rad1 首包判定(2026-08-03 23:3x;§1① 判準)
 - 25/25 零 error。**字面判=未過**(rad≥+0.5∧wm≥−0.3 命中 0)——但最佳 c52rad1p01_13
