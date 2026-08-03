@@ -1049,13 +1049,16 @@ def test_mirror_symmetry_invariant():
     x = torch.as_tensor((rng.random((4, N, N)) > 0.5).astype(np.float64))
     x[:, 24, 10:15] = 1.0                                  # 保證接得到饋線
     xm = torch.flip(x, dims=[2])
-    for name in ("l3fl", "l3fld"):
-        m = build(name)
+    #! ⚠ `l3fld` 需要 `a_quad=4`（四點求積）鏡像才守得住——而 `a_quad` 目前預設是 1（舊行為），
+    #  因為四點版與「修反對角」一起下時選批崩掉、尚未歸因（§49.5）。
+    #  ⇒ 這條測試把「哪個組態該守住鏡像」寫死，等歸因完再決定預設。
+    for name, kw in (("l3fl", {}), ("l3fld", dict(a_quad=4))):
+        m = build(name, **kw)
         with torch.no_grad():
             a, b = m.solve(x, freqs=FREQS), m.solve(xm, freqs=FREQS)
         for k in ("S11", "Gain"):
             d = (a[k] - b[k]).abs().max()
-            assert d < 1e-9, f"[{name}] {k} 的鏡像不變式被打破（{d:.4f} dB）"
+            assert d < 1e-9, f"[{name} {kw}] {k} 的鏡像不變式被打破（{d:.4f} dB）"
 
 
 def test_antidiag_basis_actually_activates():

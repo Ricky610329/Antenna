@@ -136,7 +136,7 @@ class MoML2:
                  n_theta: int = 13, n_phi: int = 24, half_port: bool = False,
                  layered_ff: bool = False, ff_er: float = None, feed_len: int = 0,
                  zc_ref: float = None, ff_line: bool = True, diag: bool = False,
-                 a_quad: int = 4):
+                 a_quad: int = 1):
         """
         :param feed_len: **饋線列數**（0 = 集總埠，舊行為）。>0 就把真實微帶饋線建進格網、
             delta-gap 移到饋線遠端、`S11` 改用**駐波法**萃取（見 `gamma_from_line`）。
@@ -359,9 +359,14 @@ class MoML2:
         #  `l3fld` 是 **18.55 dB**（對抗式複核 agent 用這條**不依賴真值的硬不變式**定位）。
         #  修法：四點平均 `¼[G(a,a)+G(a,b)+G(b,a)+G(b,b)]` —— 它以形心為中心、
         #  且對 a↔b 對調**協變** ⇒ 鏡像對稱自動成立。V 項本來就是四點，形式一致。
-        #! ⚠ `a_quad` 是**消融旗標**：四點平均把**自項**從 `G(0)` 變成 `¼[2G(0)+2G(dx)]`
-        #  ——那不是小修正，是換了一種離散化（自感會明顯變小）。2026-08-04 實測它讓
-        #  ρ 暴漲而**選批命中率崩掉**，所以它與「修反對角」必須分開歸因。
+        #! ⚠⚠ `a_quad` 預設 **1（舊行為）**。四點平均在**理論上更對**
+        #  （以形心為中心、對 a↔b 協變 ⇒ 鏡像不變式自動成立，見 `test_mirror_symmetry_invariant`），
+        #  但它把**自項**從 `G(0)` 變成 `¼[2G(0)+2G(dx)]` —— **那不是小修正，是換了一種離散化**
+        #  （自感明顯變小），而且它**連 `l3fl` 都動到**。
+        #  2026-08-04 我把它與「修反對角」**一起下**，結果 ρ 暴漲而選批命中率崩掉，
+        #  **無法歸因**（analysis-10 §49.5）⇒ 預設退回舊行為，四點版留作消融（2×2 進行中）。
+        #  ⚠ 代價：`a_quad=1` 時 `l3fld` 的**鏡像不變式守不住**（18.55 dB）
+        #  ⇒ `test_mirror_symmetry_invariant` 只對 `l3fl` 與 `a_quad=4` 的 `l3fld` 成立。
         gaa = (0.25 * (ga[a][:, a] + ga[a][:, b] + ga[b][:, a] + ga[b][:, b])
                if self.a_quad == 4 else ga[a][:, a])
         za = (1j * w * MU0 * DX ** 4) * gaa * same              # A 項：方向因子 M_m·M_n
