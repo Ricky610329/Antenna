@@ -115,6 +115,13 @@
 - 完整脈絡 → [analysis-08](../docs/log/analysis-08-diffsim.md)＋[analysis-09](../docs/log/analysis-09-diffsim-l3.md)；
   code `script/diffsim/`（32 條物理測試）。
 
+### 🔜 網格收斂實驗（觸發:**Ricky 三台 pull+重啟 worker 後**發車;2026-08-03 基建已落地）
+- what:20 筆已測 pattern×S0/S1/S2 三組自適應網格設定重測=量 HFSS 真值自身抖動(rank ρ 天花板)+
+  裁決 harvest 24k 重放政策;規格/判準=`docs/discuss/proposal-mesh-convergence.md`(發車前已寫死)。
+- 就緒:模擬器參數化+hfss_setup.json+`jobs-add --machine` 釘選+`select-meshconv`+B 組清單
+  (`tmp/meshconv_ids_B.txt`);缺=A 組 10 筆(diffsim 出或自算)+機台更新(舊 worker 會偷釘選批)。
+- 發車:`select-meshconv --round 51 --ids-file <A+B 合併>` → 三夾 jobs-add **同 --machine 216** prio 3。
+
 ### ~~Round 13 — 組數階梯~~（✅ **2026-07-08 收檔**）→ [round-13](../docs/log/round-13-block-ladder.md)
 - 組數=真設計軸但報酬有取捨:4-5 塊甜蜜點(5 塊買 rad/4 塊買選擇性)、6 塊遞減;margin 天花板僅微升。
 
