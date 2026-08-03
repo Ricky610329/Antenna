@@ -8,3 +8,5 @@ date,sm,model,neg_pot_n,ood_err_med,n_ruler
 2026-08-02 21:42,sm_reanchor100.pth,mlp,2515,3.918,30
 2026-08-02 22:13,sm_two100.pth,two,2550,3.233,30
 2026-08-02 22:27,sm_two100.pth,two,2565,2.449,30
+2026-08-03 11:24,sm_reanchor101.pth,mlp,3534,4.635,30
+2026-08-03 11:57,sm_two101.pth,two,3570,2.553,30
