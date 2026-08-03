@@ -130,12 +130,6 @@ def load() -> dict:
 
 
 # ---------------------------------------------------------------- 決定性分割
-def hash_u01(x_row: np.ndarray) -> float:
-    """內容 → [0,1) 決定性亂數（分割用；同一筆樣本永遠同值）。"""
-    h = hashlib.sha1(np.ascontiguousarray(x_row, dtype=np.uint8).tobytes()).digest()
-    return int.from_bytes(h[:8], "big") / float(1 << 64)
-
-
 def assign_split(idx: dict, val_per_stratum: int = 30, dev_per_stratum: int = 150,
                  seed_tag: str = "diffsim-v1"):
     """回傳 (split (N,) of 'val'/'dev'/'fit', u01 (N,))。

@@ -143,31 +143,36 @@ def tm0_neff(f, er=EPS_R):
 
 
 # ---------------------------------------------------------------- 查表核
-def _rtab_and_offsets():
-    """與 `l2.MoML2._build_topology` **完全相同**的距離表與偏移索引（介面必須對齊）。"""
-    from .l2 import NR, NC
-    gi, gj = np.meshgrid(np.arange(-(NR - 1), NR), np.arange(-(NC - 1), NC), indexing="ij")
-    return DX * np.sqrt(gi ** 2 + gj ** 2).ravel()
+#! 表覆蓋到 (nr, nc) = (80, 25)：25×25 貼片 + 最長 55 列（11mm）饋線。
+#  ★ 2026-08-03 改成**以整數平方距離 d² = (r/dx)² 為索引**（原本綁死 l2 的 (NR, NC)）。
+#  格點距離一律是 `dx·√整數`，所以 d² 是**精確的整數鍵**，查表零容差問題；
+#  而且換格網（加饋線、改貼片尺寸）只要 d² 在覆蓋範圍內就能**共用同一張表**。
+TAB_NR, TAB_NC = 80, 25
 
 
-def build_table(freqs=FREQS, b_reg: float = B_REG, path: str = None, verbose: bool = True):
-    """離線算全表 → npz。**只有 ~293 個相異距離**，所以先去重再算，快 8 倍。"""
+def grid_d2(nr: int, nc: int) -> np.ndarray:
+    """(nr, nc) 格網會用到的所有整數平方距離，去重排序。`l2` 的 `rtab` 是它的 `dx·√d²`。"""
+    gi, gj = np.meshgrid(np.arange(nr), np.arange(nc), indexing="ij")
+    return np.unique((gi ** 2 + gj ** 2).ravel())
+
+
+def build_table(freqs=FREQS, b_reg: float = B_REG, path: str = None, verbose: bool = True,
+                nr: int = TAB_NR, nc: int = TAB_NC):
+    """離線算全表 → npz。索引 = 整數平方距離 d²（見上）。"""
     from . import data as D
     path = path or os.path.join(D.CACHE_DIR, "l3_table.npz")
-    rtab = _rtab_and_offsets()
+    d2 = grid_d2(nr, nc)
     #? 自項/近格：統一用 r_eff = √(r²+b_reg²) 正則化（沿用 L2 的 b_reg，階段 A 不做真積分）。
     #  對 r=0 給有限值；對 r=6.93mm 只差 0.007%，遠端不受影響。
-    reff = np.sqrt(rtab ** 2 + b_reg ** 2)
-    uniq, inv = np.unique(np.round(reff, 12), return_inverse=True)
+    reff = np.sqrt((DX ** 2) * d2 + b_reg ** 2)
     if verbose:
-        print(f"距離表 {len(rtab)} 個偏移 → {len(uniq)} 個相異距離；{len(freqs)} 個頻率")
-    out = np.empty((2, len(freqs), len(rtab)), dtype=np.complex128)
+        print(f"格網 {nr}×{nc} → {len(d2)} 個相異距離；{len(freqs)} 個頻率")
+    out = np.empty((2, len(freqs), len(d2)), dtype=np.complex128)
     for i, f in enumerate(freqs):
-        ga, gv = sommerfeld(uniq, float(f))
-        out[0, i], out[1, i] = ga[inv], gv[inv]
+        out[0, i], out[1, i] = sommerfeld(reff, float(f))
         if verbose:
             print(f"  {f / 1e9:5.1f} GHz  ok", flush=True)
-    np.savez_compressed(path, table=out, freqs=np.asarray(freqs), b_reg=b_reg)
+    np.savez_compressed(path, table=out, d2=d2, freqs=np.asarray(freqs), b_reg=b_reg)
     if verbose:
         print(f"落地 {path}（{out.nbytes / 1024:.0f} KiB）")
     return path
@@ -188,21 +193,36 @@ class L3Kernel(torch.nn.Module):
         if not os.path.exists(path):
             raise SystemExit(f"找不到 {path}——先跑 python -m script.diffsim.l3 build")
         z = np.load(path)
+        if "d2" not in z:
+            raise SystemExit(f"{path} 是舊格式（綁死 l2 格網）——重建：python -m script.diffsim.l3 build")
         cd = torch.complex128 if dtype == torch.float64 else torch.complex64
         self.register_buffer("tab", torch.as_tensor(z["table"], dtype=cd))
+        self.register_buffer("d2", torch.as_tensor(z["d2"], dtype=torch.int64))
         self.register_buffer("k0s", torch.as_tensor(2 * np.pi * z["freqs"] / C0, dtype=dtype))
         self.b_reg = float(z["b_reg"])
+        self._icache = {}
+
+    def _dist_index(self, r: torch.Tensor) -> torch.Tensor:
+        """距離表 → 表內索引。鍵是**整數** d² = (r/dx)²，所以是精確比對、不是容差比對。"""
+        key = (int(r.shape[0]), float(r[-1]))
+        idx = self._icache.get(key)
+        if idx is None:
+            d2 = torch.round((r.double() / DX) ** 2).to(torch.int64)
+            idx = torch.searchsorted(self.d2, d2).clamp_(max=self.d2.numel() - 1)
+            if not torch.equal(self.d2[idx], d2):
+                bad = int(d2[self.d2[idx] != d2].max())
+                raise ValueError(f"距離 d²={bad} 超出 L3 表覆蓋（建到 d²={int(self.d2[-1])}）"
+                                 f"——用更大的格網要重建：python -m script.diffsim.l3 build")
+            self._icache[key] = idx
+        return idx
 
     def table(self, r: torch.Tensor, k0: torch.Tensor) -> torch.Tensor:
-        """(2, nf, ntab)。`r` 只用來核對長度——表是照 `l2` 的 `rtab` 順序建的。"""
-        if r.shape[0] != self.tab.shape[-1]:
-            raise ValueError(f"距離表長度不符：{r.shape[0]} vs 建表時的 {self.tab.shape[-1]}"
-                             f"（L3 表綁定 l2 的格點拓樸，改 NSTUB/N 要重建表）")
-        idx = (k0.reshape(-1, 1) - self.k0s.reshape(1, -1)).abs().argmin(-1)
+        """(2, nf, ntab)。`r` 任意順序、任意長度，只要每個距離都在表的 d² 覆蓋內。"""
+        fi = (k0.reshape(-1, 1) - self.k0s.reshape(1, -1)).abs().argmin(-1)
         #! 頻率必須落在建表的格上——查最近鄰若偏太多代表叫方在用沒建過的頻率。
-        if float((self.k0s[idx] - k0.reshape(-1)).abs().max() / self.k0s.mean()) > 1e-3:
+        if float((self.k0s[fi] - k0.reshape(-1)).abs().max() / self.k0s.mean()) > 1e-3:
             raise ValueError("要求的頻率不在 L3 表上（表只建了資料集的 17 點）")
-        return self.tab[:, idx, :]
+        return self.tab[:, fi, :][..., self._dist_index(r)]
 
 
 def main():

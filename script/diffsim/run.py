@@ -5,10 +5,20 @@
   - 調參/診斷 **只看 `dev`**；`val` 只在 gate 報數時看一次。
   - 仿射校準的係數只能在 `fit` 上擬（與 val/dev 不相交）；凍結尺永不進擬合。
 
-用法：
+用法（L1 腔模型）：
     python -m script.diffsim.run predict --split dev --n 200            # 跑 L1 存快取
-    python -m script.diffsim.run scan --split dev --n 200               # (er, Q) 網格掃 ρ
+    python -m script.diffsim.run scan    --split dev --n 200            # (er, Q) 網格掃 ρ
+    python -m script.diffsim.run fitscan --n 200                        # 在 fit 分割選純量
     python -m script.diffsim.run gate1                                  # L1 gate：val 報數
+用法（L2 MoM）：
+    python -m script.diffsim.run l2cal                                  # 核的解析校準（不用 HFSS）
+    python -m script.diffsim.run l2eval  --split dev --solver l3fl      # 跑 L2 報 ρ
+    python -m script.diffsim.run l2fit   --steps 120                    # 擬核（只能 dcim）
+    python -m script.diffsim.run gate2   --solver l3fl                  # L2 gate：val 報數
+    python -m script.diffsim.run head    --model l2                     # 殘差頭
+**`--solver` 選的是一整組物理設定**（核 + 埠 + 遠場），登記表在 `l2.SOLVERS`：
+`dcim`（可擬核，特徵化快照守的那條）／`l3`（精確分層核 + 分層遠場 + 半屋頂埠）／
+`l3fl`（★ 真饋線 + 駐波 wave port，analysis-10 §37）。
 """
 import argparse
 import hashlib
@@ -22,6 +32,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from . import data as D                        # noqa: E402
 from .eval import margins, rank_rho, report_rho  # noqa: E402
+from .l2 import SOLVERS                        # noqa: E402
 
 CACHE = os.path.join(D.CACHE_DIR, "pred")
 
@@ -217,40 +228,50 @@ def cmd_gate1(args):
 L2_PARAMS = os.path.join(D.CACHE_DIR, "l2_params.json")
 
 
-def build_l2(scale=None, raw=False):
-    """依存檔建 L2 求解器：有擬合過的核就載入，否則用解析校準的初值。
+def build_l2(scale=None, raw=False, solver="l3"):
+    """依名字＋存檔建 L2 求解器。**`solver` 決定物理設定，存檔只決定 DCIM 核的參數。**
 
     #! 2026-08-02 教訓：本函式原本**漏掉載入 `kernel` 的那段**（用字串替換改 code、
     #  替換靜默失敗而我沒驗證）。後果是 `l2eval`/`gate2` 全部跑在解析初值上，
     #  「擬核後 ρ 一模一樣」看起來像「模型不敏感」，其實是根本沒載入。
     #  現在載入完會印出實際生效的核，讓這種錯不可能再靜默發生。
+    #! 2026-08-03：同一個病的**第四次**——本函式當時只生得出 `dcim`，而 analysis-10
+    #  §31 之後所有報出去的數字都跑在 L3 核 + 分層遠場 + 半屋頂埠上，
+    #  也就是**出貨路徑生不出研究路徑用的那個模型**。設定改住 `l2.SOLVERS`。
     """
     import json
-    from .l2 import MoML2, DCIMKernel, LearnedKernel
+    from . import l2 as L2
     import torch
     saved = json.load(open(L2_PARAMS, encoding="utf-8")) if os.path.exists(L2_PARAMS) else {}
-    if scale is None:
-        #! `a_scale` 是舊 key（那時縮放乘在 G_A 上）。2026-08-03 修正後縮放改除在 G_V，
-        #  語義不同但**數值相同**（同一個相速），所以舊檔可直接沿用。
-        scale = saved.get("v_scale", saved.get("a_scale", 2.356))
-    ker = None if raw else saved.get("kernel")
-    learned = bool(ker) and any(k.startswith("net.") for k in ker)      # 黑盒核的 state_dict
-    n_img = len(ker["base.b" if learned else "b"][0]) if ker else 3
-    #! **一定要走 `v_scale=`，不可以在外面 `a.data[0,:2,0] *= scale`。**
-    #  後者就是 §10 修掉的病灶（把相速縮放乘在 A 項 → 偽輻射跟著放大 ~n³）。
-    #  2026-08-03 稽核抓到：`DCIMKernel` 改好了但這裡沒跟著改 → 出貨核 η = 0.372
-    #  而不是宣稱的 0.872，且常駐能量守恆測試守的是**沒人走的那條路**。
-    #  這是「宣稱修好但只落地一半」在本輪的第三次，別再犯。
-    base = DCIMKernel(n_img=n_img, v_scale=scale)
-    m = MoML2(kernel=LearnedKernel(base=base) if learned else base)
-    if ker:
-        #! 一定要用 load_state_dict 的嚴格模式：舊版這裡是逐 key copy_，
-        #  key 對不上就靜默跳過 → 整個擬合結果沒生效卻看不出來（2026-08-02 踩過）。
-        m.kernel.load_state_dict({k: torch.as_tensor(v, dtype=torch.float64)
-                                  for k, v in ker.items()}, strict=True)
-    print(f"  L2 核來源：{'黑盒核（DCIM 骨架 + MLP 修正）' if learned else ('擬合核' if ker else '解析校準初值')}"
-          f"（n_img={n_img}, {saved.get('steps', '?')} 步, v_scale={scale:.3f}）")
-    return m, scale
+    ker = None
+    if L2.SOLVERS[solver]["kernel"] == "dcim":
+        if scale is None:
+            #! `a_scale` 是舊 key（那時縮放乘在 G_A 上）。2026-08-03 修正後縮放改除在 G_V，
+            #  語義不同但**數值相同**（同一個相速），所以舊檔可直接沿用。
+            scale = saved.get("v_scale", saved.get("a_scale", 2.356))
+        sd = None if raw else saved.get("kernel")
+        learned = bool(sd) and any(k.startswith("net.") for k in sd)     # 黑盒核的 state_dict
+        n_img = len(sd["base.b" if learned else "b"][0]) if sd else 3
+        #! **一定要走 `v_scale=`，不可以在外面 `a.data[0,:2,0] *= scale`。**
+        #  後者就是 §10 修掉的病灶（把相速縮放乘在 A 項 → 偽輻射跟著放大 ~n³）。
+        #  2026-08-03 稽核抓到：`DCIMKernel` 改好了但這裡沒跟著改 → 出貨核 η = 0.372
+        #  而不是宣稱的 0.872，且常駐能量守恆測試守的是**沒人走的那條路**。
+        base = L2.DCIMKernel(n_img=n_img, v_scale=scale)
+        ker = L2.LearnedKernel(base=base) if learned else base
+        if sd:
+            #! 一定要用 load_state_dict 的嚴格模式：舊版這裡是逐 key copy_，
+            #  key 對不上就靜默跳過 → 整個擬合結果沒生效卻看不出來（2026-08-02 踩過）。
+            ker.load_state_dict({k: torch.as_tensor(v, dtype=torch.float64)
+                                 for k, v in sd.items()}, strict=True)
+        src = "黑盒核（DCIM 骨架 + MLP 修正）" if learned else ("擬合核" if sd else "解析校準初值")
+        src += f"（n_img={n_img}, {saved.get('steps', '?')} 步, v_scale={scale:.3f}）"
+    else:
+        #? L3 表是**物理常數**、不可擬 ⇒ 存檔的 v_scale/kernel 與它無關，刻意不套用。
+        src = "L3 精確 Sommerfeld 表（物理常數，不吃存檔參數）"
+    m = L2.build(solver, kernel=ker)
+    print(f"  L2 solver＝`{solver}`：{L2.SOLVERS[solver]}")
+    print(f"  L2 核來源：{src}")
+    return m, (scale if scale is not None else float("nan"))
 
 
 def cmd_l2cal(args):
@@ -268,8 +289,8 @@ def cmd_l2eval(args):
     idx = D.load()
     split, _ = D.assign_split(idx)
     sel = pick(idx, split, args.split, args.n)
-    m, scale = build_l2(args.scale)
-    print(f"L2（v_scale {scale:.3f}）在 {args.split}：{len(sel)} 筆")
+    m, scale = build_l2(args.scale, solver=args.solver)
+    print(f"L2 在 {args.split}：{len(sel)} 筆")
     t = time.time()
     pred = m.predict(idx["x"][sel].astype(np.float64), batch=args.batch)
     print(f"  {time.time() - t:.0f}s（{(time.time() - t) / len(sel) * 1000:.0f} ms/筆）")
@@ -409,7 +430,7 @@ def _phys_pred(idx, sel, model, args, tag):
         cfg = json.load(open(pf, encoding="utf-8"))["best"]
         pred, _ = run_l1(idx, sel, batch=24, **cfg)
     else:
-        m, _ = build_l2()
+        m, _ = build_l2(solver=getattr(args, "solver", "l3"))
         pred = m.predict(idx["x"][sel].astype(np.float64), batch=8)
     np.savez_compressed(path, pred=pred, sel=sel)
     return pred
@@ -491,8 +512,7 @@ def cmd_gate2(args):
     idx = D.load()
     split, _ = D.assign_split(idx)
     sel = pick(idx, split, "val")
-    m, scale = build_l2(args.scale)
-    print(f"L2 參數（解析校準，未看過 val）：v_scale（除在 G_V）= {scale:.3f}")
+    m, scale = build_l2(args.scale, solver=args.solver)
     pred = m.predict(idx["x"][sel].astype(np.float64), batch=args.batch)
     y, st = idx["y"][sel], idx["stratum"][sel]
     wm_p, _, _ = margins(pred)
@@ -520,10 +540,12 @@ def main():
     le.add_argument("--n", type=int, default=None)
     le.add_argument("--batch", type=int, default=8)
     le.add_argument("--scale", type=float, default=None)
+    le.add_argument("--solver", default="l3", choices=tuple(SOLVERS))
     g2 = sub.add_parser("gate2")
     g2.add_argument("--batch", type=int, default=8)
     g2.add_argument("--calib", type=int, default=150)
     g2.add_argument("--scale", type=float, default=None)
+    g2.add_argument("--solver", default="l3", choices=tuple(SOLVERS))
     g1 = sub.add_parser("gate1")
     g1.add_argument("--batch", type=int, default=24)
     g1.add_argument("--device", default="cpu")
@@ -535,6 +557,7 @@ def main():
     hd.add_argument("--seeds", type=int, default=3, help="訓練 seed 數（平均掉訓練隨機性）")
     #? 預設 cpu：GPU 讓給批次線（SESSION_COORDINATION §2）；要用先查 nvidia-smi
     hd.add_argument("--device", default="cpu")
+    hd.add_argument("--solver", default="l3", choices=tuple(SOLVERS))
     lf = sub.add_parser("l2fit")
     lf.add_argument("--n", type=int, default=400, help="每 stratum 取幾筆（fit 分割）")
     lf.add_argument("--batch", type=int, default=24)
@@ -549,6 +572,7 @@ def main():
     fs.add_argument("--n", type=int, default=200, help="每 stratum 取幾筆（fit 分割）")
     fs.add_argument("--batch", type=int, default=24)
     fs.add_argument("--device", default="cpu")
+    fs.add_argument("--solver", default="l3", choices=tuple(SOLVERS))
     for name in ("predict", "scan"):
         p = sub.add_parser(name)
         p.add_argument("--split", default="dev")

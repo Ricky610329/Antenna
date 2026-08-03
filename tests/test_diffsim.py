@@ -323,16 +323,27 @@ def test_l2_energy_conservation(mom):
     #! 守的必須是**出貨核**（`build_l2()` 實際載入的那顆），不是測試自己造的。
     #  2026-08-03 稽核抓到：`DCIMKernel` 修好了但 `build_l2` 沒跟著改，
     #  出貨核 η=0.372 而測試守的那條路 η=0.876 —— 測試綠但產品壞。
+    #! 2026-08-03 二修：改成**掃過 `SOLVERS` 全部登記的設定**。只守一個預設值，
+    #  等於再犯一次同樣的病（換預設就換了受測對象，而換預設是一行的事）。
+    #  ⚠ 門檻分兩條，因為 **η 只有在共振點才該接近輻射效率**：
+    #  離共振時輸入的實功率大半進表面波（L3 核有真的表面波極點），η 掉到 0.12 是物理不是 bug。
+    #  所以下限只在 **Re(Zin) 峰值**那一點守，全帶只守上限。
+    #  2026-08-03 實測（供漂移比對）：共振點 η —— dcim 0.876／l3 0.40–0.69／l3fl 0.59–0.73；
+    #  Jackson–Alexopoulos 對 εr=3.55、k₀h≈0.3 的理論值是 **0.795**（analysis-10 §31.6）。
     from script.diffsim.run import build_l2
-    ship, _ = build_l2()
-    f = np.array([26e9, 28e9, 30e9])
-    for rect in ((12, 25, 6, 19), (9, 25, 4, 21)):
-        p = _rect(*rect)
-        with torch.no_grad():
-            out = ship.solve(p, freqs=f)
-        eta = out["eta"][0].numpy()
-        assert (eta < 1.15).all(), f"η > 1 違反能量守恆：{eta}"
-        assert (eta > 0.5).all(), f"η 太低＝核在偷吃功率（舊核是 0.085）：{eta}"
+    from script.diffsim.l2 import SOLVERS
+    from script.diffsim.geom import FREQS
+    for name in SOLVERS:
+        ship, _ = build_l2(solver=name)
+        for rect in ((12, 25, 6, 19), (9, 25, 4, 21)):
+            with torch.no_grad():
+                out = ship.solve(_rect(*rect), freqs=FREQS)
+            eta = out["eta"][0].numpy()
+            res = int(out["Zin"][0].real.numpy().argmax())          # 帶內共振點
+            assert (eta < 1.15).all(), \
+                f"[{name}] η > 1 違反能量守恆（遠場與核的 εr 不一致會給 1.76）：{eta}"
+            assert eta[res] > 0.30, \
+                f"[{name}] 共振點 η={eta[res]:.3f} 太低＝核在偷吃功率（舊核是 0.085）"
 
 
 def test_l2_disconnected_feed_no_nan(mom):
@@ -733,3 +744,74 @@ def test_diffsim_characterization_snapshot():
     for tag, got, want in (("L1", y1, snap["l1"]), ("L2", y2, snap["l2"])):
         d = np.abs(got - want).max()
         assert d < 1e-10, f"{tag} 對快照漂移 {d:.3e}（若是刻意改動，請一併更新快照並記帳）"
+
+
+# ---------------------------------------------------------------- 饋線埠（駐波 wave port）
+def test_gamma_from_line_recovers_synthetic_wave():
+    """★ 把**駐波萃取器單獨釘住**：餵人工合成的兩行進波，要能把 Γ 與 β 都算回來。
+
+    #! 這條刻意**不經過 MoM／基底／Green's function**——就像
+    #  `test_ff_factors_energy_identity` 之於遠場因子。萃取器是新的物理量測儀器，
+    #  它自己的正確性必須與「被量的東西對不對」分開驗證。
+    #  （analysis-10 §37.8：改用駐波法就是為了不依賴 Z_c 與 de-embed 距離。）
+    """
+    from script.diffsim.l2 import MoML2, DCIMKernel
+    from script.diffsim.geom import DX, C0
+    m = MoML2(kernel=DCIMKernel(), feed_len=40)
+    f = torch.as_tensor([28e9], dtype=torch.float64)
+    beta = float(2 * np.pi * 28e9 * np.sqrt(m.line_eeff) / C0)
+    mv = torch.arange(m.n_face, dtype=torch.float64)
+    for want in (0.9 + 0.0j, 0.35 - 0.5j, 0.05 + 0.02j):
+        w = torch.polar(torch.ones_like(mv), beta * DX * mv)
+        im = w - torch.as_tensor(want) * w.conj()               # a=1, b=−Γ ⇒ Γ = −b/a
+        cur = torch.zeros(1, 1, m.nb, dtype=m.cdtype)
+        #? `line_sel` 每欄挑一個橫截面上的 5 個 x 屋頂；`gamma_from_line` 會乘 dx 再加總
+        cur[0, 0] = (m.line_sel.to(m.cdtype) * (im / (m.line_sel.sum(0) * DX))[None, :]).sum(1)
+        gam, bet = m.gamma_from_line(cur, f)
+        assert abs(complex(gam[0, 0]) - want) < 1e-6, f"Γ 還原失敗：{complex(gam[0, 0])} vs {want}"
+        assert abs(float(bet[0, 0]) / beta - 1) < 1e-6, "β 還原失敗"
+
+
+def test_feed_line_topology_and_pruning():
+    """饋線建進格網：延伸區只有饋線那幾欄有基底、驅動屋頂在遠端、集總埠模式逐位不變。"""
+    from script.diffsim.l2 import MoML2, DCIMKernel, LINE_COLS, NR
+    k = DCIMKernel()
+    a, b = MoML2(kernel=k), MoML2(kernel=k, feed_len=30)
+    assert (a.nr, a.nb) == (NR, 1249), "集總埠模式的拓樸不該被饋線改動"
+    assert b.nr == N + 30
+    # 若不剪枝，(N+30)×25 的滿格網會有 (N+29)*25 + (N+30)*24 = 2670 個基底
+    assert b.nb < 1900, f"延伸區不可能是金屬的基底沒剪掉（nb={b.nb}）"
+    ra, ca = np.divmod(b.cell_a.numpy(), b.nc)
+    rb = b.cell_b.numpy() // b.nc
+    ext = (ra >= N) | (rb >= N)
+    assert set(ca[ext]).issubset(set(LINE_COLS.tolist())), "延伸區出現饋線以外的欄"
+    d = b.drive.numpy()
+    assert d.sum() == len(LINE_COLS) and set(ra[d]) == {b.nr - 2}, "delta-gap 不在饋線遠端"
+    assert b.ext_mask()[:, LINE_COLS].all() and b.ext_mask().sum() == 30 * len(LINE_COLS)
+
+
+def test_feed_line_and_half_port_are_exclusive():
+    """`half_port` 是「沒有饋線」的補償；線建進來還扣一側電荷偶極＝憑空少算電荷。"""
+    from script.diffsim.l2 import MoML2, DCIMKernel
+    with pytest.raises(ValueError, match="互斥"):
+        MoML2(kernel=DCIMKernel(), feed_len=30, half_port=True)
+
+
+def test_l3_table_is_grid_agnostic():
+    """L3 表以整數 d² 為索引 ⇒ 同一張表要能同時服務兩種格網；超出覆蓋要**明確報錯**。"""
+    l3 = pytest.importorskip("script.diffsim.l3")
+    import os
+    from script.diffsim import data as D
+    if not os.path.exists(os.path.join(D.CACHE_DIR, "l3_table.npz")):
+        pytest.skip("沒有 L3 表")
+    from script.diffsim.l2 import MoML2
+    ker = l3.L3Kernel()
+    k0 = torch.as_tensor([2 * np.pi * 28e9 / 299792458.0], dtype=torch.float64)
+    for fl in (0, 30):
+        m = MoML2(kernel=ker, feed_len=fl)
+        g = ker.table(m.rtab, k0)
+        assert g.shape[-1] == m.rtab.shape[0] and torch.isfinite(g.abs()).all()
+    from script.diffsim.geom import DX
+    too_far = torch.as_tensor([DX * np.sqrt(float(ker.d2[-1]) + 100.0)], dtype=torch.float64)
+    with pytest.raises(ValueError, match="超出"):
+        ker.table(too_far, k0)

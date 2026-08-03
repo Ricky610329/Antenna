@@ -37,7 +37,7 @@ import numpy as np
 import torch
 
 from .geom import (N, DX, H, EPS_R, Z0, C0, MU0, EPS0, ETA0, FREQS, FEED_ROW,  # noqa: F401
-                   feed_weights)
+                   feed_weights, line_cols, microstrip_eeff)
 
 @contextlib.contextmanager
 def _mkl_single_thread():
@@ -62,25 +62,10 @@ def _mkl_single_thread():
             torch.set_num_threads(n)
 
 
-NSTUB = 1                     # 饋線樁列數（讓 x=5.0mm 接面上的屋頂有立足點）
-NR = N + NSTUB                # 延伸格列數（x 方向）
+NSTUB = 1                     # 集總埠模式的延伸列數（讓 x=5.0mm 接面上的屋頂有立足點）
+NR = N + NSTUB                # 延伸格列數（x 方向）——**集總埠模式**的預設值
 NC = N                        # 行數（y 方向）
-
-
-def stub_mask() -> np.ndarray:
-    """延伸列**不放金屬**。
-
-    #! 2026-08-03 修正（原本在 col 9–15 放金屬）。那 0.2mm 的死端 stub 是
-    #  22.5mm 連續饋線（HFSS `feed_line` x∈[5.0, 27.5]）的**壞近似**——它憑空多一條
-    #  寄生邊緣，而真實饋線那一側是延續下去的傳輸線、不是開路端。
-    #  延伸列的唯一作用是讓 x=5.0mm 接面上的驅動屋頂有立足點（見 `edge_density`）。
-    #  實測（稽核 agent，dev n=240，配對 bootstrap）：Δρ(m_s11) = **+0.051**，
-    #  95% CI [+0.014, +0.089]，P(>0)=**99.6%**；且**快 5%**（141 vs 148 ms/筆）。
-    #  ⚠ 消融顯示增益主要來自「移除寄生金屬」本身，不是來自電荷拓樸。
-    #  ★ 電荷拓樸（半屋頂埠）**另外實作為 `half_port` 選項**——稽核 agent 曾說它會打破
-    #  passivity/能量守恆，**那是在 DCIM 核上量的；L3 核上完全沒有**（見 `impedance_at`）。
-    """
-    return np.zeros((NSTUB, NC), dtype=np.float64)
+LINE_COLS = line_cols()       # 饋線本體佔的格欄（幾何唯一真相在 `geom.line_cols`）
 
 
 class DCIMKernel(torch.nn.Module):
@@ -142,8 +127,34 @@ class MoML2:
 
     def __init__(self, kernel: DCIMKernel = None, device="cpu", dtype=torch.float64,
                  n_theta: int = 13, n_phi: int = 24, half_port: bool = False,
-                 layered_ff: bool = False, ff_er: float = None):
+                 layered_ff: bool = False, ff_er: float = None, feed_len: int = 0,
+                 zc_ref: float = None):
+        """
+        :param feed_len: **饋線列數**（0 = 集總埠，舊行為）。>0 就把真實微帶饋線建進格網、
+            delta-gap 移到饋線遠端、`S11` 改用**駐波法**萃取（見 `gamma_from_line`）。
+        :param zc_ref: 饋線模式下把 Γ 從「線自己的 Z_c」重歸一化到 50Ω 用的 Z_c（Ω）。
+            None = 當線就是 50Ω。⚠ 這件事**在深谷處很要緊**：Z_c 44 vs 50 對 Z_L=60Ω 的負載
+            差 4.6 dB（−16.2 vs −20.8），對 Z_L=400Ω 只差 0.26 dB ——
+            也就是**恰好在 −10dB 判準與深谷處最大**。模型自己的 Z_c 由 `solve()['Zc']` 量得到。
+
+        ★ 為什麼要建饋線（analysis-10 §37，2026-08-03）：把 delta-gap 直接壓在貼片邊
+        0.2mm 的一格上，對**同一個模態振幅注入 2.2 倍電流** ⇒ `Re(Zin)` 低 ~2 倍。
+        無因次證據：`I_feed/I_max` 對腔模理論，打邊 2.22×、接 9mm 線 1.30×，
+        相除 **1.71 = 埠代價的硬下界**；剩下的 1.30 ≈ 1/η = 1.33（表面波）⇒ 帳平了。
+        而 HFSS 那邊埠在 22.5mm 饋線的遠端（`single_port.py:374-407`）—— 貼片被真實
+        TEM 行進波餵，`DoDeembed` 只搬參考面（相位），不會把它變回集總源。
+        ⚠ 舊的「1/√N 離散化天花板」結論（§19）是統計假象，已撤回：真網格收斂
+        （固定貼片改 dx、未知數 ×8.7）比值只 0.369 → 0.387。
+        """
+        self.feed_len = int(feed_len)
+        self.zc_ref = zc_ref
+        self.nc = NC
+        self.nr = N + (self.feed_len if self.feed_len > 0 else NSTUB)
         self.half_port = half_port          # 半屋頂埠，見 `impedance_at`；用 L3 核時建議開
+        if self.feed_len > 0 and half_port:
+            #! 半屋頂埠是「沒有饋線」的補償（假設電荷流進未建模的線）。線建進來之後
+            #  驅動屋頂兩側都是真金屬，再扣掉一側的電荷偶極就是**憑空少算電荷**。
+            raise ValueError("feed_len > 0 與 half_port 互斥——半屋頂埠是沒有饋線時的補償")
         self.layered_ff = layered_ff        # 分層遠場因子，見 `_ff_factors`；用 L3 核時**必開**
         #! 遠場的 εr **必須與核的 εr 一致**，否則能量守恆會壞（實測不匹配時 η 可 >1）。
         #  預設 `geom.EPS_R`＝真實板材；只有掃 εr 的驗證實驗需要覆寫。
@@ -157,53 +168,98 @@ class MoML2:
 
     # ----------------------------------------------------------------- 拓樸
     def _build_topology(self):
-        cell = np.arange(NR * NC).reshape(NR, NC)
+        nr, nc = self.nr, self.nc
+        cell = np.arange(nr * nc).reshape(nr, nc)
         # x 屋頂：面在 (i,j)-(i+1,j)；y 屋頂：面在 (i,j)-(i,j+1)
         xa, xb = cell[:-1, :].ravel(), cell[1:, :].ravel()
         ya, yb = cell[:, :-1].ravel(), cell[:, 1:].ravel()
-        self.nx, self.ny = len(xa), len(ya)
-        self.nb = self.nx + self.ny
-        self.cell_a = torch.as_tensor(np.concatenate([xa, ya]), dtype=torch.long)
-        self.cell_b = torch.as_tensor(np.concatenate([xb, yb]), dtype=torch.long)
-        self.is_x = torch.as_tensor(np.concatenate([np.ones(self.nx), np.zeros(self.ny)]),
-                                    dtype=torch.bool)
-        ci, cj = np.divmod(np.arange(NR * NC), NC)
+        ca = np.concatenate([xa, ya])
+        cb = np.concatenate([xb, yb])
+        isx = np.concatenate([np.ones(len(xa), bool), np.zeros(len(ya), bool)])
+        #? 延伸區只有饋線那幾欄可能是金屬 → 其餘的屋頂**永遠**被遮罩掉，直接不要生成。
+        #  （集總埠模式 live 全 True ⇒ 與舊版逐位相同，golden 不動。）
+        live = np.ones((nr, nc), bool)
+        if self.feed_len > 0:
+            live[N:, :] = False
+            live[N:, LINE_COLS] = True
+        lv = live.ravel()
+        keep = lv[ca] & lv[cb]
+        row_a, col_a = np.divmod(ca, nc)
+        if self.feed_len > 0:
+            #? delta-gap 打在**饋線遠端**最外側的 x 屋頂（列 nr-2 | nr-1）。
+            #  末端那一格金屬 = 0.2mm 開路殘段，它的假影全留在源附近，
+            #  而 Γ 是在遠離源的窗裡從駐波萃取的 ⇒ 影響為零。
+            drv = isx & (row_a == nr - 2) & np.isin(col_a, LINE_COLS)
+        else:
+            drv = isx & (row_a == FEED_ROW) & (feed_weights() > 0)[col_a]
+        ca, cb, isx, drv = ca[keep], cb[keep], isx[keep], drv[keep]
+        self.nx = int(isx.sum())
+        self.ny = int((~isx).sum())
+        self.nb = len(ca)
+        self.cell_a = torch.as_tensor(ca, dtype=torch.long, device=self.device)
+        self.cell_b = torch.as_tensor(cb, dtype=torch.long, device=self.device)
+        self.is_x = torch.as_tensor(isx, dtype=torch.bool, device=self.device)
+        ci, cj = np.divmod(np.arange(nr * nc), nc)
         self.ci = torch.as_tensor(ci, dtype=torch.long)
         self.cj = torch.as_tensor(cj, dtype=torch.long)
-        # 格心偏移表索引（平移不變 → 只查 (di+NR-1, dj+NC-1)）
-        di = ci[:, None] - ci[None, :] + (NR - 1)
-        dj = cj[:, None] - cj[None, :] + (NC - 1)
-        self.off = torch.as_tensor(di * (2 * NC - 1) + dj, dtype=torch.long).to(self.device)
-        gi, gj = np.meshgrid(np.arange(-(NR - 1), NR), np.arange(-(NC - 1), NC), indexing="ij")
+        # 格心偏移表索引（平移不變 → 只查 (di+nr-1, dj+nc-1)）
+        di = ci[:, None] - ci[None, :] + (nr - 1)
+        dj = cj[:, None] - cj[None, :] + (nc - 1)
+        self.off = torch.as_tensor(di * (2 * nc - 1) + dj, dtype=torch.long).to(self.device)
+        gi, gj = np.meshgrid(np.arange(-(nr - 1), nr), np.arange(-(nc - 1), nc), indexing="ij")
         self.rtab = torch.as_tensor(DX * np.sqrt(gi ** 2 + gj ** 2).ravel(),
                                     dtype=self.dtype, device=self.device)
-        # 饋電：x=5.0mm 接面上的 x 屋頂（i=N-1 與 i=N 之間）
-        drive = np.zeros(self.nb, dtype=bool)
-        drive[: self.nx] = (cell[:-1, :].ravel() // NC == FEED_ROW) & \
-                           (np.tile(np.arange(NC), NR - 1) >= 0)
-        row_of_x = np.repeat(np.arange(NR - 1), NC)
-        col_of_x = np.tile(np.arange(NC), NR - 1)
-        fw = feed_weights() > 0
-        drive[: self.nx] = (row_of_x == FEED_ROW) & fw[col_of_x]
-        self.drive = torch.as_tensor(drive, device=self.device)
+        self.drive = torch.as_tensor(drv, device=self.device)
         self.sb = (~self.drive).to(self.dtype)      # 電荷偶極的 b 側權重（半屋頂埠時驅動屋頂為 0）
-        self.cell_a, self.cell_b = self.cell_a.to(self.device), self.cell_b.to(self.device)
-        self.is_x = self.is_x.to(self.device)
+        if self.feed_len > 0:
+            self._build_line_probe(ca, isx, row_a[keep])
+
+    def _build_line_probe(self, ca, isx, row_a):
+        """駐波量測的取樣矩陣 (nb, n_face)：第 m 欄挑出「饋線第 m 個橫截面」的所有 x 屋頂。
+
+        面 m 位於列 (N−1+m) 與 (N+m) 之間，m = 0 就是**貼片/饋線接面**（參考面）。
+        該截面的總 x 電流 `I_m = dx·Σ_j J_x` —— 這就是傳輸線上的電流波。
+        """
+        nface = self.nr - N          # m = 0 … nr-1-N（最後一個是驅動面）
+        sel = np.zeros((self.nb, nface), dtype=np.float64)
+        rel = row_a - (N - 1)
+        ok = isx & (rel >= 0) & (rel < nface)
+        sel[np.nonzero(ok)[0], rel[ok]] = 1.0
+        self.line_sel = torch.as_tensor(sel, dtype=self.dtype, device=self.device)
+        self.n_face = nface
+        #? 線的相位常數初估（Hammerstad）：用來挑駐波遞迴的步距 p，讓 p·β·dx ≈ π/2
+        #  ——差分在 π/2 附近條件數最好（β·dx 只有 0.19 rad，一步遞迴會被放大 ~5×）。
+        self.line_eeff = microstrip_eeff(len(LINE_COLS) * DX)
+        del ca
 
     def edge_density(self, rho_ext: torch.Tensor) -> torch.Tensor:
-        """(B, NR, NC) → (B, nb)：屋頂存在權重 ρ_a·ρ_b（連續鬆弛天然可微）。
-
-        #? 驅動屋頂跨 x=5.0mm 接面，`cell_a` 在列 24（貼片側）、`cell_b` 在列 25（延伸列）。
-        #  外側是**未建模的饋線本體**、永遠是金屬 → 存在權重只看貼片側那一格。
-        #  `stub_mask` 改全 0 之後這行是必要的，否則驅動屋頂 wgt ≡ 0 → 全開路。
-        """
+        """(B, nr, nc) → (B, nb)：屋頂存在權重 ρ_a·ρ_b（連續鬆弛天然可微）。"""
         r = rho_ext.reshape(rho_ext.shape[0], -1)
         w = r[:, self.cell_a] * r[:, self.cell_b]
+        if self.feed_len > 0:
+            return w                       # 饋線是真金屬 ⇒ 接面屋頂照一般規則，不用特例
+        #? 集總埠模式：驅動屋頂跨 x=5.0mm 接面，`cell_b` 在延伸列（永遠 void）。
+        #  外側是**未建模的饋線本體**、永遠是金屬 → 存在權重只看貼片側那一格，
+        #  否則驅動屋頂 wgt ≡ 0 → 全開路。
         return torch.where(self.drive[None, :], r[:, self.cell_a], w)
 
+    def ext_mask(self) -> np.ndarray:
+        """延伸列的金屬遮罩 (nr−N, nc)。集總埠模式全 0；饋線模式在 `LINE_COLS` 放金屬。
+
+        #! 集總埠模式**不放金屬**（2026-08-03 修正，原本在 col 9–15 放 0.2mm 死端 stub）。
+        #  那是 22.5mm 連續饋線的**壞近似**——憑空多一條寄生邊緣，而真實饋線那一側是
+        #  延續下去的傳輸線、不是開路端。實測（稽核 agent，dev n=240，配對 bootstrap）：
+        #  Δρ(m_s11) = **+0.051**，95% CI [+0.014, +0.089]，P(>0)=**99.6%**，且快 5%。
+        #  ⇒ 這條教訓的正解就是 `feed_len > 0`：與其近似饋線，不如把它建出來。
+        """
+        m = np.zeros((self.nr - N, self.nc), dtype=np.float64)
+        if self.feed_len > 0:
+            m[:, LINE_COLS] = 1.0
+        return m
+
     def extend(self, rho: torch.Tensor) -> torch.Tensor:
-        """(B,25,25) 貼片 → (B,NR,NC) 含饋線樁。"""
-        st = torch.as_tensor(stub_mask(), dtype=rho.dtype, device=rho.device)
+        """(B,25,25) 貼片 → (B,nr,nc) 含延伸列。"""
+        st = torch.as_tensor(self.ext_mask(), dtype=rho.dtype, device=rho.device)
         return torch.cat([rho, st[None].expand(rho.shape[0], -1, -1)], 1)
 
     # ----------------------------------------------------------------- 矩陣
@@ -266,6 +322,66 @@ class MoML2:
             sol = torch.linalg.solve(Zs, vs)
         return cur.scatter(1, order, sol * alive)
 
+    # ------------------------------------------------------------- 駐波埠（wave port）
+    def gamma_from_line(self, cur: torch.Tensor, f: torch.Tensor,
+                        skip_src: int = 5, skip_ref: int = 3):
+        """沿饋線的駐波 → 反射係數 Γ。這是 **HFSS wave port 的做法**，不是 de-embed。
+
+        兩行進波模型（`u = m·dx`，`m=0` 在貼片/饋線接面＝參考面，u 往源為正）：
+
+            I(u) = a·w^m + b·w^(−m),    w = e^{+jβ·dx}
+
+        入射波由源（大 m）往貼片走，它在 +u 方向的電流是 `−V_i/Z_c`；反射波是 `+V_r/Z_c`
+        ⇒ **Γ = V_r/V_i = −b/a**。
+
+        為什麼**不**用 de-embed（analysis-10 §37.7/§37.8）：de-embed 需要模型自己的 `Z_c`
+        （實測比 Hammerstad 低 13–26%），而且 `|Γ|≈0.8` 時 `(1+Γ)/(1−Γ)` 極敏感
+        —— agent 量到 ±20% 的線長散佈（3/4/6/9/12mm → 297/359/385/529/451 Ω）。
+        駐波法**不需要 `Z_c`、不需要參考面距離**，且 `|Γ|` 與參考面無關（只有相位會轉），
+        而資料集只用 `dB(S11)`。
+
+        兩段都是線性最小平方、全程可微：
+        1. **相位常數**：兩行進波滿足 `I_{m+p} + I_{m−p} = 2cos(pβΔ)·I_m`
+           ⇒ 對 `cos(pβΔ)` 的最小平方解。步距 `p` 取 `p·β·dx ≈ π/2`
+           （`β·dx` 只有 0.19 rad，一步遞迴的誤差會被 `c/√(1−c²)` 放大 ~5×）。
+        2. **振幅**：在 `(w^m, w^−m)` 基底上解 2×2 正規方程。
+
+        :return: (Γ, β)。模型自己的 `Z_c` 不在這裡量——見 `calibrate_zc`。
+        """
+        eps = torch.finfo(self.dtype).tiny
+        im = torch.einsum("bfp,pm->bfm", cur, self.line_sel.to(cur.dtype)) * DX
+        m0, m1 = skip_ref, self.n_face - skip_src        # 擬合窗 [m0, m1)：兩端都讓開
+        beta0 = float((2 * np.pi * f.mean() / C0) * np.sqrt(self.line_eeff))
+        p = max(1, min(int(round((np.pi / 2) / (beta0 * DX))), (m1 - m0 - 1) // 2))
+        if m1 - m0 < 2 * p + 2:
+            raise ValueError(f"饋線太短：擬合窗 {m1 - m0} 個面 < 遞迴步距 2p+2 = {2 * p + 2}"
+                             f"（feed_len={self.feed_len}，至少要 ~{2 * p + 2 + skip_src + skip_ref + N - N}）")
+        ic = im[..., m0 + p:m1 - p]
+        num = (ic.conj() * (im[..., m0 + 2 * p:m1] + im[..., m0:m1 - 2 * p])).sum(-1)
+        den = 2 * (ic.abs() ** 2).sum(-1)
+        c = num / (den + eps)
+        d = torch.sqrt(c * c - 1)
+        wp = torch.where((c + d).imag < 0, c - d, c + d)        # 取 Im>0 那支＝往源傳的方向
+        #? 強制 |w| = 1（線在模型裡是無耗的；讓 |w|≠1 只會在 ~40 步的冪次上放大數值噪音）。
+        ang = (torch.angle(wp) / p).clamp(1e-9, np.pi - 1e-9)
+        mv = torch.arange(m0, m1, dtype=self.dtype, device=cur.device)
+        ph = ang[..., None] * mv
+        one = torch.ones_like(ph)
+        wpos, wneg = torch.polar(one, ph), torch.polar(one, -ph)
+        y = im[..., m0:m1]
+        g11 = (wpos.conj() * wpos).sum(-1)
+        g12 = (wpos.conj() * wneg).sum(-1)
+        g22 = (wneg.conj() * wneg).sum(-1)
+        r1 = (wpos.conj() * y).sum(-1)
+        r2 = (wneg.conj() * y).sum(-1)
+        det = g11 * g22 - g12 * g12.conj()
+        a = (g22 * r1 - g12 * r2) / (det + eps)
+        b = (g11 * r2 - g12.conj() * r1) / (det + eps)
+        gam = -b / (a + eps)
+        #? |Γ|>1 是非物理（被動負載）。會發生在整批無金屬等退化情形；夾住而不是丟 NaN。
+        gam = torch.where(gam.abs() > 1.0, gam / gam.abs().clamp_min(eps), gam)
+        return gam, ang / DX
+
     def solve(self, rho: torch.Tensor, freqs=None, r_open: float = None) -> dict:
         """(B,25,25) → {'S11','Gain'}（dB, 17 點）。
 
@@ -294,10 +410,23 @@ class MoML2:
         #! 饋線接觸格全 void → itot 恆為 0 → 1/0 → 整筆 NaN。這是**確定性的除以零**，
         #  不是「矩陣接近奇異」（實測 cond 最大只有 3e3）。val 120 筆踩到 1 筆。
         #  跟 L1 一樣回「開路＝全反射」，別讓 NaN 傳出去。
+        #  （饋線模式下不會發生：線本身永遠是金屬，源永遠有電流。）
         open_ckt = itot.abs() < 1e-30
         itot = torch.where(open_ckt, torch.full_like(itot, 1e-30), itot)
-        zin = 1.0 / itot
-        gam = (zin - Z0) / (zin + Z0)
+        zin_drv = 1.0 / itot                     # 源點阻抗（V=1 的 delta-gap）
+        extra = {}
+        if self.feed_len > 0:
+            gam, beta = self.gamma_from_line(cur, f)
+            #? Γ 是對**線自己的 Z_c** 定義的。`zc_ref` 給值就重歸一化到 Z₀=50Ω
+            #  （＝ HFSS `RenormImp:="50ohm"` 做的事）。不給就當線是 50Ω。
+            if self.zc_ref is not None:
+                zl = self.zc_ref * (1 + gam) / (1 - gam + 1e-300)
+                gam = (zl - Z0) / (zl + Z0)
+            zin = Z0 * (1 + gam) / (1 - gam + 1e-300)   # 50Ω 參考的等效輸入阻抗
+            extra = dict(Zdrive=zin_drv, beta=beta)
+        else:
+            zin = zin_drv
+            gam = (zin - Z0) / (zin + Z0)
         #? dB 地板 −50/−40：HFSS 實務範圍就這麼大，不設地板時 |Γ|→0 會產生 −120dB
         #  離群值，擬核時直接把梯度炸成 NaN（實測踩到）。
         s11 = 20 * torch.log10(gam.abs().clamp(3.2e-3, 1.0))
@@ -313,13 +442,15 @@ class MoML2:
         #  S = Σ I_m·dx²·e^{jk·r} ⇒ |S|² 帶 dx⁴（`farfield` 回的 prad 沒有面積權重）。
         k0 = 2 * np.pi * f / C0
         p_rad = (k0 ** 2 * ETA0 / (32 * np.pi ** 2))[None, :] * (DX ** 4) * prad
-        p_in = 0.5 * zin.real / zin.abs() ** 2
+        #! η 的 P_in 一定要用**源點**阻抗（V=1 的 delta-gap ⇒ P_in = ½Re(Zdrv)/|Zdrv|²）。
+        #  饋線模式的 `zin` 是「參考面上、50Ω 歸一的等效阻抗」，拿它算功率會錯。
+        p_in = 0.5 * zin_drv.real / zin_drv.abs() ** 2
         eta = p_rad / p_in.clamp_min(1e-300)
         mism = (1 - gam.abs() ** 2).clamp_min(1e-6)
         gain = (10 * torch.log10(d0 * mism)).clamp_min(-40.0)
         s11 = torch.where(open_ckt, torch.zeros_like(s11), s11)      # 開路＝全反射 0dB
         gain = torch.where(open_ckt, torch.full_like(gain, -40.0), gain)
-        return dict(S11=s11, Gain=gain, Zin=zin, D0=d0, Prad=prad, eta=eta, J=cur)
+        return dict(S11=s11, Gain=gain, Zin=zin, D0=d0, Prad=prad, eta=eta, J=cur, **extra)
 
     # ----------------------------------------------------------------- 遠場
     def _setup_farfield(self, n_theta, n_phi):
@@ -438,7 +569,7 @@ def patch_fr(L: float, W: float) -> float:
 #! 校準集**不能含全高（n=25）的矩形**：那種貼片會與饋線樁（第 26 列）連成一體，
 #  有效長度不是 25 格，Hammerstad 閉式解不適用（實測 log 誤差 0.74 vs 其餘 0.01–0.03）。
 CAL_SHAPES = ((21, 21), (21, 15), (17, 17), (17, 13), (14, 14), (14, 10), (11, 11))
-CAL_RECTS = [(25 - n, 25, (N - w) // 2, (N - w) // 2 + w) for n, w in CAL_SHAPES]
+CAL_RECTS = [(N - n, N, (N - w) // 2, (N - w) // 2 + w) for n, w in CAL_SHAPES]
 
 
 def calibrate_analytic(scales=None, n_img: int = 3, verbose: bool = True):
@@ -468,6 +599,101 @@ def calibrate_analytic(scales=None, n_img: int = 3, verbose: bool = True):
         print(f"  目標 f_analytic = {np.round(tgt / 1e9, 1)} GHz")
         print(f"**最佳 v_scale = {best[0]:.3f}（RMS log 誤差 {best[1]:.4f} ~ {best[1] * 100:.1f}%）**")
     return best
+
+
+#! ---------------------------------------------------------------- 求解器登記表
+#  ★ 一個名字 = 一組**完整**的物理設定（核 + 埠 + 遠場）。這張表存在的理由是本輪
+#  踩過**四次**「宣稱修好但只落地一半」：`v_scale` 改了 `build_l2` 沒跟著改（出貨核
+#  η=0.372 而非 0.872）、擬合核根本沒載入、遠場旗標只有實驗腳本開、埠模型同理。
+#  共同結構都是「**設定散在呼叫端**，於是研究腳本與出貨路徑悄悄分岔」。
+#  ⇒ 設定只准住在這裡；`run.py`、測試、實驗腳本一律用名字取。
+SOLVERS = {
+    #? 舊行為（特徵化快照守的那條、擬核唯一能走的那條——L3 表是物理常數不可擬）
+    "dcim": dict(kernel="dcim"),
+    #? 精確分層核 + 分層遠場 + 半屋頂埠（analysis-10 §31–§32 的組態）
+    "l3": dict(kernel="l3", layered_ff=True, half_port=True),
+    #? ★ 真饋線 + 駐波 wave port（analysis-10 §37）。`half_port` 不再需要——
+    #  它本來就是「沒有饋線」的補償。
+    "l3fl": dict(kernel="l3", layered_ff=True, feed_len=45),
+}
+
+
+def build(name: str = "l3", kernel=None, **over):
+    """依名字建 L2 求解器。`over` 覆寫個別欄位（消融實驗用，正常路徑別用）。"""
+    if name not in SOLVERS:
+        raise ValueError(f"未知 solver {name!r}；有 {sorted(SOLVERS)}")
+    cfg = dict(SOLVERS[name])
+    cfg.update(over)
+    kind = cfg.pop("kernel")
+    if kernel is None:
+        if kind == "l3":
+            from .l3 import L3Kernel
+            kernel = L3Kernel()
+        else:
+            kernel = DCIMKernel()
+    return MoML2(kernel=kernel, **cfg)
+
+
+def calibrate_zc(kernel=None, lengths=(30, 36, 42, 48), rects=None, freqs=None, verbose=True):
+    """量**模型自己的饋線特徵阻抗 `Z_c`** —— 多線長擬合，不用 HFSS、不用閉式解。
+
+    駐波法給的 Γ 是對「線自己的 `Z_c`」定義的，而 HFSS 的 S11 歸一到 50Ω
+    （`RenormImp:="50ohm"`）。兩者差多少**在深谷處很要緊**（見 `MoML2.__init__` 的 `zc_ref`），
+    所以得把 `Z_c` 量出來，而不是假設它等於 50。
+
+    做法：源端的 delta-gap 有一個**固定但未知**的不連續 `Z_gap`（0.2mm 開路殘段 + 間隙電容），
+    它與線長無關。傳輸線關係
+
+        Z_drive(L) = Z_gap + Z_c · (1 + T_L)/(1 − T_L),   T_L = Γ·e^{−2jβ·(L−1)·dx}
+
+    對 `(Z_gap, Z_c)` 是**線性**的 ⇒ 掃幾個線長就能同時解出來，而且**過定**（≥3 個長度）
+    ⇒ 殘差本身就是「這個 TL 模型對不對」的自檢。Γ 與 β 每個長度各自獨立擬，
+    它們彼此吻合是第二個自檢。
+
+    ⚠ 這解掉的正是 agent 在 analysis-10 §37.7 標為「軟」的那一塊：
+    它用開路殘段共振量到模型的線 40–47 Ω（vs Hammerstad 54.35），但那個方法自帶偏差。
+
+    :return: dict(freqs, zc (nf,) 複數, zgap (nf,), resid 相對殘差, gamma_spread 各長度 Γ 的離散度)
+    """
+    freqs = FREQS if freqs is None else np.asarray(freqs)
+    rects = [(25 - 17, 25, 4, 21), (25 - 21, 25, 2, 23)] if rects is None else rects
+    ft = torch.as_tensor(freqs, dtype=torch.float64)
+    p = torch.zeros(len(rects), N, N, dtype=torch.float64)
+    for b, (i0, i1, j0, j1) in enumerate(rects):
+        p[b, i0:i1, j0:j1] = 1.0
+    gam, zdr, u = [], [], []
+    for L in lengths:
+        m = MoML2(kernel=kernel, layered_ff=True, feed_len=int(L))
+        with torch.no_grad():
+            r = m.solve(p, freqs=ft)
+        gm, beta = m.gamma_from_line(r["J"], ft)
+        t = gm * torch.polar(torch.ones_like(beta), -2.0 * beta * DX * (m.n_face - 1))
+        gam.append(gm)
+        u.append((1 + t) / (1 - t))
+        zdr.append(r["Zdrive"])
+        if verbose:
+            print(f"  L={L:3d} 格（{L * DX * 1e3:.1f}mm）ok", flush=True)
+    gam = torch.stack(gam)                          # (nL, B, nf)
+    U = torch.stack(u)
+    Y = torch.stack(zdr)
+    #? 每個 (樣本, 頻率) 一組最小平方：[1, u_L] · [Z_gap, Z_c]ᵀ = Z_drive
+    nl = len(lengths)
+    s_u = U.sum(0)
+    s_uu = (U.conj() * U).sum(0)
+    s_y = Y.sum(0)
+    s_uy = (U.conj() * Y).sum(0)
+    det = nl * s_uu - s_u.conj() * s_u
+    zc = (nl * s_uy - s_u.conj() * s_y) / det
+    zgap = (s_y - zc * s_u) / nl
+    resid = (Y - zgap[None] - zc[None] * U).abs().mean(0) / Y.abs().mean(0)
+    out = dict(freqs=freqs, zc=zc.numpy(), zgap=zgap.numpy(), resid=resid.numpy(),
+               gamma_spread=(gam.abs().std(0) / gam.abs().mean(0).clamp_min(1e-12)).numpy())
+    if verbose:
+        zr = out["zc"].real
+        print(f"**Z_c = {np.median(zr):.1f} Ω**（各頻率 {zr.min():.1f}–{zr.max():.1f}）"
+              f"  Hammerstad {50.0:.0f}Ω 級；TL 擬合相對殘差中位 {np.median(out['resid']):.3f}"
+              f"；各線長 |Γ| 離散度中位 {np.median(out['gamma_spread']):.4f}")
+    return out
 
 
 class LearnedKernel(torch.nn.Module):

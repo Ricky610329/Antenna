@@ -64,6 +64,25 @@ def feed_weights() -> np.ndarray:
     return ov / ov.sum()
 
 
+def line_cols(thresh: float = 0.5) -> np.ndarray:
+    """饋線本體佔哪幾個整數格欄（覆蓋率 ≥ `thresh` 才算）→ **cols 10–14（1.0mm）**。
+
+    `feed_weights` 回的是「接觸權重」（給集總埠用的加權），這裡回的是**線本體的格**
+    ——建饋線幾何時用這個。1.1mm 落在 0.2mm 格上是 5 整格 + 兩側各 1/4 格；
+    取 1.0mm 比取 1.4mm 近（W/h = 1.97 vs 2.76，真值 2.17）。
+    """
+    y0, y1 = FEED_Y
+    lo = np.arange(N) * DX
+    ov = np.clip(np.minimum(lo + DX, y1) - np.maximum(lo, y0), 0.0, None) / DX
+    return np.nonzero(ov >= thresh)[0]
+
+
+def microstrip_eeff(w: float) -> float:
+    """微帶線的 Hammerstad 有效介電常數（w = 線寬 m）。駐波法的 β 初估用。"""
+    wh = w / H
+    return (EPS_R + 1) / 2 + (EPS_R - 1) / 2 / np.sqrt(1 + 12 / wh)
+
+
 def sab_probe(path=None) -> dict:
     """解析 ACIS SAB（tag 0x13 = position，3×float64）→ 各 z 層的 xy 外框。階段 0 的量測工具。"""
     import struct
