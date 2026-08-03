@@ -5804,12 +5804,17 @@ def _selfgen_chunk(me, args):
                     bases.append((p, m["id"]))
                     if any(t in m["id"] for t in DYN_):
                         dynp.append(p.reshape(-1))
-        _pk = np.packbits(np.stack(dynp).astype(np.uint8), axis=1)
+        if not bases:
+            #! 2026-08-03 實戰:NAS 短暫讀不到→bases/dynp 空→np.stack 炸死整個 worker(216/37 雙停)。
+            #  空=環境瞬態,不快取、下輪重掃。
+            print("⚠ selfgen: 親代池空(NAS 瞬態?)——本輪跳過自產")
+            return False
+        _pk = (np.packbits(np.stack(dynp).astype(np.uint8), axis=1) if dynp else None)
         _pop = np.array([bin(i).count("1") for i in range(256)], dtype=np.uint16)
         keep = []
         for p, mid in bases:
             d_ = int(_pop[np.bitwise_xor(_pk, np.packbits(p.reshape(-1).astype(np.uint8)))]
-                     .sum(axis=1).min())
+                     .sum(axis=1).min()) if _pk is not None else 99
             if d_ < 20:
                 continue
             #? R37 種子換系統（Ricky 2026-07-23「增加其他系統比例」）:王朝表型種子只留 ~20%
@@ -5979,20 +5984,30 @@ def worker(args):
                     owner = json.load(open(str(cp), encoding="utf-8")).get("machine")
                 except Exception:
                     owner = None
-                if owner == me:                       # 自己的 claim=worker 重啟場景 → 直接續跑
+                if not owner and (time.time() - os.path.getmtime(str(cp))) > 60:
+                    #! 壞 claim(無主;2026-08-03:重啟打斷寫入→空檔→run() 誤判「被接管」棄跑+
+                    #  45 分 stale 才歸位):建檔逾 60s 仍無主=沒人合法持有,立即清掉重搶
+                    #  (60s 緩衝=避開別台 O_EXCL 建檔到寫完 json 之間的窗口)。
+                    print(f"清壞 claim(無主): {st}")
+                    try:
+                        os.remove(str(cp))
+                    except OSError:
+                        continue
+                elif owner == me:                     # 自己的 claim=worker 重啟場景 → 直接續跑
                     print(f"↻ 續跑自己的 claim: {st}")
                     picked = j
                     break
-                rp = DATASET_PATH.joinpath(st, "results.json")
-                progressed = rp.exists() and (time.time() - os.path.getmtime(str(rp))) < args.stale * 60
-                claim_fresh = (time.time() - os.path.getmtime(str(cp))) < args.stale * 60
-                if progressed or claim_fresh:
-                    continue
-                print(f"接管 stale job {st}（無進度＞{args.stale} 分）")
-                try:
-                    os.remove(str(cp))
-                except OSError:
-                    continue
+                else:
+                    rp = DATASET_PATH.joinpath(st, "results.json")
+                    progressed = rp.exists() and (time.time() - os.path.getmtime(str(rp))) < args.stale * 60
+                    claim_fresh = (time.time() - os.path.getmtime(str(cp))) < args.stale * 60
+                    if progressed or claim_fresh:
+                        continue
+                    print(f"接管 stale job {st}（無進度＞{args.stale} 分）")
+                    try:
+                        os.remove(str(cp))
+                    except OSError:
+                        continue
             try:
                 fd = os.open(str(cp), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             except FileExistsError:
@@ -6007,8 +6022,14 @@ def worker(args):
                 print("佇列空/無可認領,--once 收工")
                 break
             if getattr(args, "selfgen", 0):              # 佇列空 → 自產 tier-2,HFSS 不停(Ricky 2026-07-12)
-                if _selfgen_chunk(me, args):
-                    continue
+                try:
+                    if _selfgen_chunk(me, args):
+                        continue
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except Exception as _sg_e:
+                    #! selfgen 是輔助功能,任何例外都不准殺 worker(2026-08-03:空 stack 炸死 216/37 雙機)
+                    print(f"⚠ selfgen 例外(跳過本輪自產): {_sg_e}")
             print(f"({time.strftime('%H:%M:%S')}) 佇列無可認領,{args.poll}s 後再掃")   # 心跳:睡眠不裝死
             time.sleep(args.poll)
             continue
