@@ -521,3 +521,5 @@ dedust_r52b1a
 dedust_r52b2a
 # sm_reanchor105.pth 追加（2026-08-04）
 dedust_r52b3a
+# sm_reanchor106.pth 追加（2026-08-04）
+dedust_r53b1a
