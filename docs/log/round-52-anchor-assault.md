@@ -76,7 +76,9 @@ python -m script.dedust chain --name c52lo1  --anchor e50b2_000_F18644 --source-
 | c52lo1 收鏈 | ✅ 08-04 05:2x:**學費 3 包盡,零畢業→收鏈回報**(p01 lo −3.78 存活→p02 勝錨 wm−0.32→p03 dry;p03 顯示 lo≤−2 框對 d1 變異脆弱=鄰域多數翻出框);daemon 停於 p04 發包前,孤兒夾已清 |
 | lo 鏈 | p02 勝錨(c52lo1p02_13,tri −1.12→−0.80,wm/rad 雙升)→p03(學費末包)量測中 |
 | b2 收檔 | ✅ 08-04 07:0x 三夾全零 error;判讀=two 搶回 2/3 尺(cnn 轉正斷) |
-| v104+b3 發車 | 08-04 07:3x 鏈啟動(train --add r52b2a→two→staging 516→select b3 --diagb-pen 6.0→neg;**學長臂枯竭無 c 夾**) |
+| v104+b3 發車 | 08-04 07:3x 鏈啟動(train --add r52b2a→two→staging 516→select b3 --diagb-pen 6.0→neg;**學長臂枯竭無 c 夾**)→✅ 09:4x 雙夾發車(佇列 677) |
+| rad 鏈裁決 | ✅ 08-04 10:5x Ricky 定向時默許「續爬」——daemon 接力(錨=c52rad1p01_13,radq −0.51,--start-pack 2,不增對角過濾;學費餘 2 包) |
+| 定向 | ✅ 08-04 10:5x **「低對角左側軸」入 decisions**(R53+ 主軸;兩閘本週裁路徑);每日晨報 cron 08:52 |
 
 ## 4. 分析 (Analyze)
 
