@@ -18,3 +18,7 @@ date,sm,model,neg_pot_n,ood_err_med,n_ruler
 2026-08-04 08:35,sm_two104.pth,two,4202,3.682,30
 2026-08-04 19:19,sm_reanchor105.pth,mlp,4580,4.840,30
 2026-08-04 19:44,sm_two105.pth,two,4594,2.600,30
+2026-08-04 23:53,sm_reanchor106.pth,mlp,4648,2.930,30
+2026-08-04 23:55,sm_reanchor106.pth,mlp,4649,3.406,30
+2026-08-05 00:18,sm_two106.pth,two,4659,2.044,30
+2026-08-05 00:18,sm_two106.pth,two,4659,3.071,30
