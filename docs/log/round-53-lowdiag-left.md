@@ -1,0 +1,63 @@
+# Round 53 — 低對角左側軸首輪:探針錨起鏈 × two 轉正裁決 × 負片 5k 門檻
+
+- **狀態**: proposed（2026-08-04 18:5x 開輪;自主續輪宣告制;R52 收輪接棒;主軸=decisions「低對角左側軸」）
+- **提出 / 開跑 / 結論**: 2026-08-04 / — / —
+- **一句話問題**: 從探針意外產出的零/低對角深 lo 錨(x52t03_add100/x52t07_add25)能不能爬出
+  **可製造左側解**(合格∧lo≤−3.46∧diagb≤4)——軸定義的第一次實戰。
+- **指向**: decisions「低對角左側軸」(2026-08-04,兩閘已裁:生成路+手術窄門)·
+  [round-52](round-52-anchor-assault.md)(網格定讞/探針/錨銀行一勝一敗)
+
+## 1. 假設 (Propose)
+
+**核心假設**:補角手術產出的 t 系變體(lo 深水保留、對角歸零)是「低對角左側」的可行起點——
+lo 天賦已被 S1 驗票證真(反被 S0 低估),缺口只在 wm/rad,而這兩軸正是鏈爬山的強項。
+
+- **判準(發車前寫死;Ricky 可隨時否決)**:
+  1. **主軸鏈 `c53lot1`** 錨=x52t03_add100(diagb 0∧lo −4.06∧wm −0.63∧rad −2.34;源 dedust_r52dx):
+     goal=tri(lo≤−2 框),錨分 −2.34,25 筆/包,dry2,學費 ≤3 包,**「不增對角」過濾常駐**。
+     - 首包存活=≥1 筆 tri>−2.34(改善)∧diagb≤4;畢業=**合格∧lo≤−3.46∧diagb≤4**(軸定義;紀錄級照公證)。
+     - 候補錨=x52t07_add25(diagb 8∧wm+0.19∧lo−3.56);**鏈位 cap 2**:c52rad1_p03(跨輪寄宿)收檔後
+       才開第二條(radq 畢業與否都按其 §1 帳結)。
+  2. **批線 ≤3 批**(select-r53=r52 配置,seed 20260817,--diagb-pen 6.0 常駐;學長臂退役無 c 夾;
+     負片 20 分層 6 臂)。
+  3. **two 轉正裁決**(計數 1/2):b1 影子對決三尺全贏→轉正換裝(R40 先例);再斷→R53 收輪議判準鬆綁。
+  4. **負片 5k 門檻**(鍋 ~4.4k):過線即跑 v96 式消融(主錨摻/不摻,凍結尺判),數字呈 Ricky 裁合併/續分。
+  5. **軸 KPI**:中繼帶(lo≤−2∧diagb≤4)個體數/批;**連 3 批零新增=回報線**。
+  6. 紀錄級一律公證;3 批必收輪;修訂=結果前+日期註記。**絕對值宣稱一律標「S0 尺」**(網格定讞後
+     的語義紀律);雙尺制/王 S1 復驗=等 Ricky 裁,未裁前公證照 S0。
+
+## 2. 實驗設計 (Design)
+
+| 項 | 設計 | 判準 |
+|---|---|---|
+| c53lot1 鏈 | t03_add100 錨×px(tri 鍵,不增對角) | 首包 tri>−2.34∧diagb≤4;畢業=合格∧lo≤−3.46∧diagb≤4 |
+| 批線 ×3 | =r52 配置(正30/負20;diagb-pen 6.0) | 五軸+軸 KPI(中繼帶計數) |
+| two 轉正 | b1 三尺(1/2) | 全贏=轉正;斷=收輪議鬆綁 |
+| 負片消融 | 5k 過線觸發 | 凍結尺判「負片是否仍有罪」 |
+
+## 3. 執行紀錄 (Run)
+
+```
+# v105(R52 b3 入鍋)收輪時已發動;b1 用 v105 配套。
+# b1: staging seed 517 → select-r53 --batch 1 --sm sm_reanchor105.pth --rad-head rad_head105.pth
+#     → select-neg --round 53 --batch 1 --n 20 --stratify --arms eng,grf_neg,grf_inv,grf_lab,bool_cut,bool_keep
+#     → check-dup ×2 → jobs-add prio 3 ×2 → echo dedust_r53b1b >> configs/neg_stores.txt → Monitor watch
+# 主軸鏈:
+python -m script.dedust chain --name c53lot1 --anchor x52t03_add100 --source-input dedust_r52dx_input --goal tri --anchor-score -2.34
+```
+
+| 批/包 | 狀態 |
+|---|---|
+| 開輪 | 2026-08-04 18:5x(v105 訓練中;c53lot1 即發;c52rad1_p03 跨輪寄宿中) |
+
+## 4. 分析 (Analyze)
+（待）
+
+## 5. 結論 (Conclude)
+（待）
+
+## 6. 後續決策 (Next)
+（待）
+
+## 7. 歸檔指向 (Archive)
+- 結果夾 `dedust_r53b*`/鏈夾 `dedust_c53lot1_p*`;kpi*.csv 續帳;寄宿=c52rad1_p03。
