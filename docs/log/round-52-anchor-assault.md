@@ -79,6 +79,8 @@ python -m script.dedust chain --name c52lo1  --anchor e50b2_000_F18644 --source-
 | v104+b3 發車 | 08-04 07:3x 鏈啟動(train --add r52b2a→two→staging 516→select b3 --diagb-pen 6.0→neg;**學長臂枯竭無 c 夾**)→✅ 09:4x 雙夾發車(佇列 677) |
 | rad 鏈裁決 | ✅ 08-04 10:5x Ricky 定向時默許「續爬」——daemon 接力(錨=c52rad1p01_13,radq −0.51,--start-pack 2,不增對角過濾;學費餘 2 包) |
 | 定向 | ✅ 08-04 10:5x **「低對角左側軸」入 decisions**(R53+ 主軸;兩閘本週裁路徑);每日晨報 cron 08:52 |
+| NAS 改名 | ✅ 08-04 15:0x-16:0x:碩一→碩二_鄒穎麒's(STOP 排空→Ricky 手關→改名→ROOTDIR 單點+8 檔→389 綠→三台重啟續跑;殭屍 rad daemon 清+接力) |
+| rad 鏈 p02 | ✅ 16:5x 25/25:**勝錨 p02_00(radq −0.51→−0.23,wm −0.08∧rad +1.35)**——兩包 −0.55→−0.08,距畢業差 wm 0.23;p03(學費末包)已發 |
 
 ## 4. 分析 (Analyze)
 
