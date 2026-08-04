@@ -188,7 +188,7 @@ mixed-potential integral equation;分層介質 Green's function 表格化。stac
 
 ## 6. 資料資源
 
-- ~31k 筆真值:NAS `T:\碩一_鄒穎麒's\antenna\dataset\dedust_*`(SampleStore 一筆一檔 `.pt`,
+- ~31k 筆真值:NAS `T:\碩二_鄒穎麒's\antenna\dataset\dedust_*`(SampleStore 一筆一檔 `.pt`,
   `(x, y)`:x=625 二值,y=34=S11 17+Gain 17);讀法 `antenna/utils/store.py`。
 - rad pattern 子集:含 rad 的 store(SinglePortRadSimulator 萃取);凍結尺 30 筆含 rad。
 - 評分函式:`from script.dedust import ...`(sel_score/worst_margin/rad_window_margin)。

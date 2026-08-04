@@ -10,7 +10,7 @@ import argparse
 import os
 import sys
 
-NAS_DEFAULT = r"T:\碩一_鄒穎麒's\antenna"
+NAS_DEFAULT = r"T:\碩二_鄒穎麒's\antenna"
 LOCAL_DEFAULT = r"C:\Users\Ricky\antenna_nas_backup"
 
 

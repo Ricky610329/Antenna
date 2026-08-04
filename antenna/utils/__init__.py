@@ -66,7 +66,7 @@ from .torch_utils import cTensor
 #!               使用前請確認 connect_network_drive() 已成功掛載 T:\。
 #!  ◆ 已自學長樹 (碩二_吳維文's) 遷出，改用自己的工作區。學長過往真實模擬樣本
 #!    已收割進 dataset/harvest_single|dual (見 script/harvest_legacy.py)。
-ROOTDIR = Path(r"T:\碩一_鄒穎麒's\antenna")
+ROOTDIR = Path(r"T:\碩二_鄒穎麒's\antenna")
 
 #! DATASET_PATH : 天線資料集目錄，位於 ROOTDIR/dataset；
 #!               訓練腳本以此為基礎路徑載入 .csv / .json 天線參數資料。

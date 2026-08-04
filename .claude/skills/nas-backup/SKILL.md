@@ -33,7 +33,7 @@ description: NAS → 本機備份量測資料（HFSS 模擬很慢、重跑不回
 
 ```powershell
 $dst = "C:\Users\Ricky\antenna_nas_backup"
-$src = "T:\碩一_鄒穎麒's\antenna"
+$src = "T:\碩二_鄒穎麒's\antenna"
 $log = "$dst\_backup_log.txt"
 robocopy "$src\dataset" "$dst\dataset" /E /XO /MT:16 /R:2 /W:5 /NFL /NDL /NP /LOG+:$log
 robocopy "$src\result"  "$dst\result"  /E /XO /MT:16 /R:2 /W:5 /NFL /NDL /NP /LOG+:$log

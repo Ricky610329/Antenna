@@ -38,7 +38,7 @@ from antenna.utils.store import SampleStore
 
 # 預設路徑：學長 result/ (讀) → 使用者自己的 NAS (寫)
 DEFAULT_SRC = Path(r"T:\碩二_吳維文's\Patch Antenna\Experiment\result")
-DEFAULT_DST = Path(r"T:\碩一_鄒穎麒's\antenna\dataset")
+DEFAULT_DST = Path(r"T:\碩二_鄒穎麒's\antenna\dataset")
 
 FORBIDDEN = "碩二"  # 目的地若含此字串 → 拒絕寫入 (保護學長資料)
 

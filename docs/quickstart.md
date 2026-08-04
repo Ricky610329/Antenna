@@ -43,7 +43,7 @@ python train.py configs/dual_sc.yaml           # 雙埠 + SC 連通性損失
 
 ```bash
 # 任一台機器（含自己電腦，需 pip install tensorboard）：
-tensorboard --logdir "T:\碩一_鄒穎麒's\antenna\result"
+tensorboard --logdir "T:\碩二_鄒穎麒's\antenna\result"
 # 瀏覽器開 http://localhost:6006 → 所有實驗並排/疊圖比較
 ```
 

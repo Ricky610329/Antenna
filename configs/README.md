@@ -118,7 +118,7 @@ python train.py configs/single_base.yaml
 
 ## 資料集標記（before rad / *_rad）
 
-NAS（`DATASET_PATH = T:\碩一_鄒穎麒's\antenna\dataset`）上的離線資料集分兩代，**勿混疊**：
+NAS（`DATASET_PATH = T:\碩二_鄒穎麒's\antenna\dataset`）上的離線資料集分兩代，**勿混疊**：
 
 | 資料集 | 標籤 | 說明 |
 | --- | --- | --- |

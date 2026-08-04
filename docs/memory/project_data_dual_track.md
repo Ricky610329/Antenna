@@ -10,11 +10,11 @@ metadata:
 **2026-06-11 完成「資料自有化 + legacy 隔離」**（接續 2026-06-10 起的資料層雙軌 commit `3d9ef59`）：
 
 **1. 收割 done**：`script/harvest_legacy.py` 掃學長 `result/` 55 個夾的 `online.dataset`（裸 `pickle.load` 唯讀，不用 DataManager 以免它在學長夾寫 .log），依響應通道數分流（y=(2,17)→single、y=(3,17)→dual），去重寫入自己 NAS：
-  - `T:\碩一_鄒穎麒's\antenna\dataset\harvest_single`（**24189** 筆）
-  - `T:\碩一_鄒穎麒's\antenna\dataset\harvest_dual`（**10023** 筆）
+  - `T:\碩二_鄒穎麒's\antenna\dataset\harvest_single`（**24189** 筆）
+  - `T:\碩二_鄒穎麒's\antenna\dataset\harvest_dual`（**10023** 筆）
   - 0 去重（fingerprint 同時吃 pattern+response，跨 run 重模擬有 float 微差）。磁碟檔數/筆數/形狀/dB 值域全驗證通過。
 
-**2. 工作區遷移**：`antenna/utils/__init__.py` 的 `ROOTDIR` 從 `碩二_吳維文's\...` 改成 `T:\碩一_鄒穎麒's\antenna`（脫離學長樹）。warm-start 資產（`old_sm.pth`/`patch_dual.pth`/`KuoHung Pattern/`）已複製到工作區 dataset/。11 個 configs 的 `offline_dataset` → `harvest_single`/`harvest_dual`（`pretrained` 維持 warm-start）。
+**2. 工作區遷移**：`antenna/utils/__init__.py` 的 `ROOTDIR` 從 `碩二_吳維文's\...` 改成 `T:\碩二_鄒穎麒's\antenna`（脫離學長樹）。warm-start 資產（`old_sm.pth`/`patch_dual.pth`/`KuoHung Pattern/`）已複製到工作區 dataset/。11 個 configs 的 `offline_dataset` → `harvest_single`/`harvest_dual`（`pretrained` 維持 warm-start）。
 
 **3. legacy 隔離**（使用者選「搬進 antenna/legacy/」）：
   - `antenna/legacy/data.py` = `Data`/`DataManager`/`make_hashable`/`dynamic_loss_filter`（舊單檔 pickle 容器）。importers 改指：`kuohung.py`/`app.py`/`convert_dataset.py`/`train.py`(lazy fallback)。
