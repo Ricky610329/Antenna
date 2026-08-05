@@ -291,6 +291,12 @@ def train(args):
     tr, ho = _load_clean()
     replay, _ = _load_harvest(args.replay, args.val)
     print(f"乾淨真值 {len(tr) + len(ho)} 筆（train {len(tr)} / held-out {len(ho)}）＋ harvest 重放 {len(replay)}")
+    if getattr(args, "with_neg", False):
+        #? 5k 消融(decisions 雙頭制門檻;R53 §1④):主錨摻負片 vs 現行不摻,凍結尺對照——
+        #  side 實驗,不動 clean_stores/雙頭制現制;判「負片在 5k 量級是否仍有罪」(v96 案=有罪)。
+        _neg = _load_neg_samples()
+        tr = tr + _neg
+        print(f"⚠ 消融模式 --with-neg:主錨加吃負片 {len(_neg)} 筆(僅本次,雙頭制不變)")
     sm = _make_sm()
     sm.pre_load_model(DATASET_PATH.joinpath("sm_harvest.pth"), strict=True)
     ds, reps = _build_ds(tr, replay, args.over, mode=getattr(args, "ds_mode", "pattern"))
@@ -824,6 +830,8 @@ def main():
         s.add_argument("--val", type=int, default=500, help="harvest 驗證筆數 (不進訓練)")
         s.add_argument("--out", default="sm_reanchor.pth", help="輸出權重名 (DATASET_PATH 下;v2 建議 sm_reanchor2.pth)")
         s.add_argument("--add", default=None, help='逗號分隔新 store,先 append configs/clean_stores.txt 再訓（重錨一鍵化）')
+        s.add_argument("--with-neg", action="store_true", dest="with_neg",
+                       help="消融:主錨加吃 neg_stores 全集(僅本次,不動 clean_stores;5k 門檻判「負片是否仍有罪」)")
         s.add_argument("--no-rad", action="store_true", dest="no_rad",
                        help="跳過制度合訓 rad 頭（預設每版重錨配訓同期 rad_headNN.pth）")
         s.add_argument("--no-ens", action="store_true", dest="no_ens",
