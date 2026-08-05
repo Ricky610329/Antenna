@@ -85,10 +85,14 @@ class SinglePortSimulator(PatchSimulator):
         self.max_passes = int(max_passes)
         self.min_passes = int(min_passes)
         self.min_converged = int(min_converged)
-        #? 45° 菱形對角橋(2026-08-05 R54,Ricky 核准計畫「45° 對角橋」):對角接點的 0.01mm
-        #  意外角落重疊(diffsim §45)換成可設計橋寬 w_d(mm)。None=現行幾何(bit 級不變);
-        #  覆蓋來源同上=hfss_setup.json 的 diag_bridge_w 鍵。偵測/放置見 _diag_bridge_sites。
+        #? 45° 菱形對角橋/挖空槽(2026-08-05 R54,Ricky 核准計畫「45° 對角橋」+斷開態消融):
+        #  對角接點的 0.01mm 意外角落重疊(diffsim §45)變成可設計參數 w(mm)——
+        #  正值=補菱形橋(Unite 加料,橋寬 w)、負值=挖 45° 槽切斷點接觸(Subtract,實體淨距=|w|)、
+        #  None=現行幾何(bit 級不變)。0 拒絕:斷開請用負值——挖空也有尺寸維度,「0=斷開」表達不了。
+        #  覆蓋來源同上=hfss_setup.json 的 diag_bridge_w 鍵。偵測/放置見 diag_bridge_sites。
         self.diag_bridge_w = None if diag_bridge_w is None else float(diag_bridge_w)
+        if self.diag_bridge_w == 0.0:
+            raise ValueError("diag_bridge_w=0 語義含糊:菱形橋用正值,挖空(斷開)用負值(淨距=|w|)")
         #? HFSS_sab_path 預設指向本套件 sab/single_port.sab：一塊已預先繪製好的「底板」幾何，
         #? 內含基板 (Sub)、地平面 (GND)、單一饋線 (feed_line) 與激勵面 (Rectangle1)。
         #? 像素貼片只需畫在這塊底板上方即可，省去每次重建固定結構的時間。
@@ -367,14 +371,17 @@ class SinglePortSimulator(PatchSimulator):
                     patch_names.append(actual_patch_name)  # 收集實際名稱，供分批聯集使用
                     patch_count += 1
 
-        ###* 45° 菱形對角橋(R54;self.diag_bridge_w=None 時整段不執行=歷史幾何 bit 級不變) ###
+        ###* 45° 菱形對角橋/挖空槽(R54;self.diag_bridge_w=None 時整段不執行=歷史幾何 bit 級不變) ###
+        slot_names = []                                   # 挖空模式(w<0):45° 槽,貼片合體後 Subtract
         if self.diag_bridge_w is not None:
+            _slot = self.diag_bridge_w < 0
             _pmm = 5.0 / pixel_row                        # 像素邊長 mm(25→0.2)
             _mat = (pixel_matrix.numpy() > 0.5)
-            _sites, _skipped = diag_bridge_sites(_mat, self.diag_bridge_w, _pmm)
-            logger.info(f"菱形對角橋: {len(_sites)} 座(w={self.diag_bridge_w}mm,跳過 {_skipped});Pattern {self.num}")
+            _sites, _skipped = diag_bridge_sites(_mat, abs(self.diag_bridge_w), _pmm)
+            logger.info(f"{'挖空槽(斷開)' if _slot else '菱形對角橋'}: {len(_sites)} 座"
+                        f"(w={self.diag_bridge_w}mm,跳過 {_skipped});Pattern {self.num}")
             for _k, (_cx, _cy, _w) in enumerate(_sites):
-                _dn = f"DiagBr_{_k + 1}"
+                _dn = f"{'DiagSl' if _slot else 'DiagBr'}_{_k + 1}"
                 #? 建在原點置中 → 繞全域 Z 轉 45°(等於就地自轉) → Move 到角點——
                 #  HFSS Rotate 只繞全域軸,原點置中是唯一免相對座標系的就地旋轉法。
                 _actual = oEditor.CreateBox(
@@ -393,7 +400,8 @@ class SinglePortSimulator(PatchSimulator):
                     ["NAME:Selections", "Selections:=", _actual, "NewPartsModelFlag:=", "Model"],
                     ["NAME:TranslateParameters", "TranslateVectorX:=", f"{_cx}mm",
                      "TranslateVectorY:=", f"{_cy}mm", "TranslateVectorZ:=", "0mm"])
-                patch_names.append(_actual)               # 進分批 Unite=與貼片同一導體
+                # 橋=進分批 Unite(與貼片同導體);槽=先收著,等貼片+饋線合體後整批 Subtract
+                (slot_names if _slot else patch_names).append(_actual)
 
         ###* 分批聯集 (Batch Unite)：把上百個小盒子合併成單一連通貼片，再接上饋線 ###
         #! 為何要「分批」而非一次全選聯集：HFSS 的 Unite 是 COM 同步呼叫，一次傳入過多 (數百個) 物件名稱
@@ -432,6 +440,16 @@ class SinglePortSimulator(PatchSimulator):
                 ["NAME:Selections", "Selections:=", f"feed_line,{final_patch_body}"],
                 ["NAME:UniteParameters", "KeepOriginals:=", False]
             )
+
+            ###* 挖空槽 Subtract(diag_bridge_w<0 才有;R54 斷開態消融) ###
+            # 時機:必須在貼片+饋線合體(存活名=feed_line)之後——從最終導體一次挖掉所有 45° 槽,
+            # 切斷對角點接觸(0.01mm 意外重疊)。金屬損失僅槽面積(~w²/座),兩斜切角實體淨距=|w|,
+            # 站點集與菱形模式完全相同(diag_bridge_sites)=全有/全無消融同一把尺。
+            for _i in range(0, len(slot_names), 20):  # 分批理由同 Unite:COM 選取字串過長易崩
+                oEditor.Subtract(
+                    ["NAME:Selections", "Blank Parts:=", "feed_line",
+                     "Tool Parts:=", ",".join(slot_names[_i:_i + 20])],
+                    ["NAME:SubtractParameters", "KeepOriginals:=", False])
 
         ###* 邊界條件：設定唯一的訊號激勵埠 (Lumped Port) ###
         # 集總埠 (Lumped Port) 是天線在模擬中與外部電路的「饋入點」，HFSS 由此注入功率並量測 S 參數。

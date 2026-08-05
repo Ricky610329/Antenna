@@ -71,3 +71,11 @@ def test_diag_bridge_sites():
     assert len(s3) == 2 and all(w < 0.14 for _, _, w in s3)    # 0.14 觸碰撞規則→縮
     s3b, _ = diag_bridge_sites(m3, 0.10, 0.2)
     assert all(abs(w - 0.10) < 1e-9 for _, _, w in s3b)        # 0.10 不縮
+
+
+def test_diag_bridge_w_zero_rejected():
+    # R54 斷開態:w 編碼=正菱形/負挖空(淨距=|w|)/None 不變;0 語義含糊必須拒絕
+    import pytest
+    from antenna.patch.patch_simulator.single_port import SinglePortSimulator
+    with pytest.raises(ValueError):
+        SinglePortSimulator("tmp_never_created", diag_bridge_w=0)   # 驗證在 super().__init__ 前=零副作用
