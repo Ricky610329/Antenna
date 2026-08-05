@@ -84,9 +84,13 @@
 （待）
 
 ## 6. 後續決策 (Next)
-- **★斷開態(Ricky 2026-08-05 發車時指示;18:1x 升級=戰役後下一棒)**:「有對角相鄰但不相連」=第三態——
-  現況幾何強制相連(0.01mm 重疊),真斷開需角落開槽(Subtract 小盒切斷點接觸)。
-  保留 `diag_bridge_w=0` 語義=斷開模式;消融=三態(斷開/現況 0.01/菱形)全有全無對照。
+- **★斷開態(Ricky 指示)→ code 已落地(2026-08-05 18:4x,commit 2cc71ea)**:`diag_bridge_w` 編碼=
+  **正值菱形橋(Unite)/負值挖空槽(Subtract,45° 槽切斷點接觸,實體淨距=|w|)/None 不變/0 拒絕**
+  (挖空也有尺寸維度,「0=斷開」表達不了——原保留語義作廢)。站點集與菱形完全同尺
+  (diag_bridge_sites)=三態消融(斷開/現況 0.01/菱形)乾淨可比。391 tests 綠。
+  探針夾已建:`dedust_r54slot100_input`(13 親,S0,淨距 0.10)——**未入列**;
+  部署條件=跑挖空批的機台 git pull+重啟 worker(戰役用舊 code 照跑不受影響),pull 後入列 prio 3。
+  Subtract=新 COM 動詞(Rotate 同級風險),首筆當 smoke 看。
 - **渲染債(Ricky 18:1x)**:S0 雙生/戰役收檔判讀腳本要出「舊 pixel pattern vs 菱形版幾何+response 疊圖」
   每親一版;HFSS 視窗不渲染=code 未變(DispatchEx+RestoreWindow 一直是帶視窗模式),
   最可能=worker 這次由遠端/非互動 shell 啟動,視窗活在看不見的 session——下次重啟時從機台本機桌面
