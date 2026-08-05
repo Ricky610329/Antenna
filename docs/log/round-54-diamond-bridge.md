@@ -51,6 +51,7 @@
 | code | ✅ 15:5x 全落地+390 tests 綠(菱形幾何/select-diagbridge/豁免/select-r54)commit push |
 | 探針生成 | ✅ 16:3x 四夾重生成含 t07 系擴充:**13 親×4 尺寸=52 筆**(283 橋/夾;0.14 檔縮橋 128 座);待三台重啟發車 |
 | v108+b1 | 16:0x 鏈啟動(train --add r53b3a→two→staging 520→select-r54 b1) |
+| 探針發車 | ✅ 16:5x Ricky 核准:db100 prio 2 前導+db50/75/140 prio 3;幾何渲染目檢過(diamond_geometry.png,t07=23 座) |
 
 ## 4. 分析 (Analyze)
 （待）
@@ -59,7 +60,10 @@
 （待）
 
 ## 6. 後續決策 (Next)
-（待;掛起=GEN 面板/rad 頭三連招/轉正制議案/尺政策——皆待 Ricky 訊號）
+- **★斷開態(Ricky 2026-08-05 發車時指示,先記後做)**:「有對角相鄰但不相連」=第三態——
+  現況幾何強制相連(0.01mm 重疊),真斷開需角落開槽(Subtract 小盒切斷點接觸)。
+  保留 `diag_bridge_w=0` 語義=斷開模式;未來消融=三態(斷開/現況 0.01/菱形)全有全無對照。
+- 掛起=GEN 面板/rad 頭三連招/轉正制議案/尺政策——皆待 Ricky 訊號。
 
 ## 7. 歸檔指向 (Archive)
 - 結果夾 `dedust_r54b*`/`dedust_r54db*`(幾何變體域,永不入鍋);kpi*.csv 續帳。
