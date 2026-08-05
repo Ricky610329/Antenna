@@ -22,3 +22,6 @@ date,sm,model,neg_pot_n,ood_err_med,n_ruler
 2026-08-04 23:55,sm_reanchor106.pth,mlp,4649,3.406,30
 2026-08-05 00:18,sm_two106.pth,two,4659,2.044,30
 2026-08-05 00:18,sm_two106.pth,two,4659,3.071,30
+2026-08-05 04:48,sm_reanchor107.pth,mlp,4922,4.480,30
+2026-08-05 05:12,sm_two107.pth,two,4957,3.204,30
+2026-08-05 15:24,sm_ablate_neg5k.pth,mlp,5720,1.819,30
