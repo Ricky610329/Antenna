@@ -4399,6 +4399,55 @@ def select_meshconv(args):
     print("⚠ 發車前確認:三台 worker 已更新(釘選+hfss_setup 支援);三夾 jobs-add 同一個 --machine。")
 
 
+def select_diagbridge(args):
+    """R54 菱形橋探針(核准計畫「45° 對角橋」;判準=round-54 §1):已測對角重 pattern × 橋寬階梯
+    重測=六點橋寬轉移曲線。ids 檔一行=`來源輸入夾:id`;--sizes=µm 逗號清單(50,75,100,140)。
+    一尺寸一夾 dedust_r<NN>db<µm>_input;id=`{parent}~db{µm}`(親代綁定);kind=diagbridge(豁免);
+    各夾 hfss_setup.json=diag_bridge_w+S1 級網格+timeout 2400。**資料永不入鍋(幾何變體域)。**"""
+    from antenna.patch.patch_simulator.single_port import diag_bridge_sites
+    rows = []
+    for ln in open(args.ids_file, encoding="utf-8"):
+        ln = ln.split("#")[0].strip()
+        if ln:
+            fol, pid = ln.split(":")
+            rows.append((fol.strip(), pid.strip()))
+    if not rows:
+        raise SystemExit("ids 檔空的")
+    pats = {}
+    for fol, pid in rows:
+        f = DATASET_PATH.joinpath(fol, f"{pid}.pt")
+        if not f.exists():
+            raise SystemExit(f"找不到 {fol}:{pid}")
+        pats[pid] = torch.load(str(f), weights_only=True)
+    for um in [int(s) for s in args.sizes.split(",")]:
+        w_mm = um / 1000.0
+        input_dir = _dir(f"dedust_r{args.round}db{um}_input")
+        if input_dir.is_dir() and any(input_dir.glob("*.pt")):
+            raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫(防覆寫)")
+        input_dir.mkdir(parents=True, exist_ok=True)
+        manifest = []
+        for fol, pid in rows:
+            mat = np.asarray(pats[pid]).reshape(25, 25) > 0.5
+            sites, skipped = diag_bridge_sites(mat, w_mm, 0.2)
+            vid = f"{pid}~db{um}"
+            torch.save(pats[pid], str(input_dir.joinpath(f"{vid}.pt")))
+            manifest.append(dict(id=vid, kind="diagbridge", family=f"DIAGBR_r{args.round}",
+                                 parent_id=pid, src_folder=fol, diag_bridge_w=w_mm,
+                                 n_bridges=len(sites), n_shrunk=sum(1 for s in sites if s[2] < w_mm - 1e-9),
+                                 n_skipped=skipped, gen_ver="diagbridge-v1",
+                                 sm=None, heads="probe", **piece_stats(mat)))
+        json.dump(dict(diag_bridge_w=w_mm, max_delta_s=0.005, max_passes=20,
+                       min_passes=5, min_converged=3, timeout=2400),
+                  open(str(input_dir.joinpath("hfss_setup.json")), "w", encoding="utf-8"), indent=1)
+        tmp = input_dir.joinpath("manifest.json.tmp")
+        json.dump(manifest, open(str(tmp), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+        os.replace(str(tmp), str(input_dir.joinpath("manifest.json")))
+        tb = sum(m["n_bridges"] for m in manifest)
+        print(f"select-diagbridge db{um}: {len(manifest)} 筆 → {input_dir.name}(橋 {tb} 座,"
+              f"縮 {sum(m['n_shrunk'] for m in manifest)},跳 {sum(m['n_skipped'] for m in manifest)};S1 網格+timeout 2400)")
+    print("⚠ 發車前置:三台 worker 已 pull 新 code(diag_bridge_w 支援);資料永不入鍋。")
+
+
 def select_senior(args):
     """R50 學長未殖民族驗證臂（b2 起 10 席;判準=round-50 §1②/decisions 雙外軸——出血統的外）。
     學長池 pool.npz(24,189)→top-300(池值)→greedy 家族(d≤20)領袖→池值降冪逐批驗;
@@ -4612,7 +4661,7 @@ def check_dup(args):
     man_kind = {m["id"]: m.get("kind", "") for m in json.load(
         open(str(DATASET_PATH.joinpath(args.input, "manifest.json")), encoding="utf-8"))}
     new = {k: v for k, v in load_folder(args.input).items()
-           if man_kind.get(k) not in ("repeat", "notarize", "meshconv")}  # 蓄意重複(公證/網格收斂重測)不算違規
+           if man_kind.get(k) not in ("repeat", "notarize", "meshconv", "diagbridge")}  # 蓄意重複(公證/網格/菱形重測)不算違規
     seen, bad = {}, 0
     for k, v in new.items():
         if v in seen:
@@ -5333,7 +5382,7 @@ def run(args):
     if _setup_f.exists():
         with open(str(_setup_f), encoding="utf-8") as f:
             hfss_setup = json.load(f)
-        allowed = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout"}
+        allowed = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout", "diag_bridge_w"}
         bad = set(hfss_setup) - allowed
         if bad:
             raise SystemExit(f"hfss_setup.json 不明鍵 {bad}（合法鍵={sorted(allowed)}）")
@@ -7396,6 +7445,45 @@ def main():
     s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
     s.set_defaults(fn=select_r22mix, round=53, key="sel")
 
+    s = sub.add_parser("select-r54", help="R54 菱形橋輪:正片 30(=r51 配置);判準=round-54 檔")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--seed", type=int, default=20260821)
+    s.add_argument("--sm", default="sm_reanchor108.pth")
+    s.add_argument("--config", default=DEFAULT_CFG)
+    s.add_argument("--xover", type=int, default=0)
+    s.add_argument("--g", type=int, default=6)
+    s.add_argument("--gstage", default=os.path.join("tmp", "invert_stage"))
+    s.add_argument("--lbeach", type=int, default=0)
+    s.add_argument("--v", type=int, default=2)
+    s.add_argument("--o", type=int, default=2)
+    s.add_argument("--m", type=int, default=3)
+    s.add_argument("--c", type=int, default=1)
+    s.add_argument("--q", type=int, default=0)
+    s.add_argument("--h", type=int, default=0)
+    s.add_argument("--s", type=int, default=0)
+    s.add_argument("--d", type=int, default=5)
+    s.add_argument("--d-sm", default="sm_denovo2.pth", dest="d_sm")
+    s.add_argument("--f", type=int, default=0)
+    s.add_argument("--mesh", type=int, default=0)
+    s.add_argument("--surgery", type=int, default=0)
+    s.add_argument("--blockmap", type=int, default=0)
+    s.add_argument("--bmix", type=int, default=0)
+    s.add_argument("--denovo-sm", default="sm_harvest.pth", dest="denovo_sm")
+    s.add_argument("--i", type=int, default=6)
+    s.add_argument("--novelty", action="store_true")
+    s.add_argument("--root-cap", type=float, default=0.6, dest="root_cap")
+    s.add_argument("--dyn-simcap", type=float, default=0.08, dest="dyn_simcap")
+    s.add_argument("--dyn-frac", type=float, default=0.2, dest="dyn_frac")
+    s.add_argument("--wild", type=int, default=5)
+    s.add_argument("--shards", type=int, default=1)
+    s.add_argument("--rad-head", default="rad_head108.pth", dest="rad_head")
+    s.add_argument("--rad-key", action="store_true", dest="rad_key")
+    s.add_argument("--cnn-solo", action="store_true", default=False, dest="cnn_solo")
+    s.add_argument("--no-cnn-solo", action="store_false", dest="cnn_solo")
+    s.add_argument("--struct-pen", type=float, default=4.0, dest="struct_pen")
+    s.add_argument("--diagb-pen", type=float, default=2.0, dest="diagb_pen")
+    s.set_defaults(fn=select_r22mix, round=54, key="sel")
+
     s = sub.add_parser("select-neg", help="R50 負片臂:neg_gen 七臂池→farthest-point 覆蓋選席(SM-blind;判準=round-50/decisions 型態體系軸;每輪必換 --seed)")
     s.add_argument("--round", type=int, required=True, help="必填防跨輪覆寫(稽核 H1)")
     s.add_argument("--batch", type=int, required=True)
@@ -7417,6 +7505,12 @@ def main():
     s.add_argument("--round", type=int, required=True)
     s.add_argument("--ids-file", required=True, help="一行=`來源輸入夾:id 組別(A/B)`;S2 只收 A")
     s.set_defaults(fn=select_meshconv)
+
+    s = sub.add_parser("select-diagbridge", help="R54 菱形橋探針:對角重 pattern×橋寬階梯重測(kind=diagbridge;判準=round-54 §1;資料永不入鍋)")
+    s.add_argument("--round", type=int, required=True)
+    s.add_argument("--ids-file", required=True, help="一行=`來源輸入夾:id`")
+    s.add_argument("--sizes", default="50,75,100,140", help="橋寬 µm 逗號清單")
+    s.set_defaults(fn=select_diagbridge)
 
     s = sub.add_parser("select-bridge", help="R50 橋接臂:正負片中間過渡(dil/ero/mix;kind=bridge;批號 30+)")
     s.add_argument("--round", type=int, required=True)

@@ -22,6 +22,35 @@ def get_penalty(expected_len:int=17):
     return {'S11': tensor([0.0] * expected_len), 'Gain': tensor([-40.0] * expected_len)}
 
 
+def diag_bridge_sites(mat, w_mm, pixel_mm):
+    """45° 菱形對角橋放置計算(R54;決定性,select 端與模擬器共用同一份邏輯)。
+    真對角接點=對角同開∧兩正交位皆空(L 型冗餘角不加料——電流已走邊路;正交邊連=連續金屬不動)。
+    碰撞規則(計畫 §6):同格相鄰角雙菱形淨距 <0.05mm → 兩顆同步縮至淨距;縮後 w<0.04 → 跳過。
+    回傳 (sites, skipped):sites=[(cx_mm, cy_mm, w_mm_site)],cx 沿第一索引軸(=HFSS X)。"""
+    n = mat.shape[0]
+    p = pixel_mm
+    sites = []
+    for i in range(n - 1):
+        for j in range(n):
+            if j < n - 1 and mat[i, j] and mat[i + 1, j + 1] and not mat[i + 1, j] and not mat[i, j + 1]:
+                sites.append([(i + 1) * p, (j + 1) * p, float(w_mm)])
+            if j > 0 and mat[i, j] and mat[i + 1, j - 1] and not mat[i + 1, j] and not mat[i, j - 1]:
+                sites.append([(i + 1) * p, j * p, float(w_mm)])
+    #? 相鄰角碰撞(軸向距離=一格):各縮至淨距 0.05
+    for a in range(len(sites)):
+        for b in range(a + 1, len(sites)):
+            dx = abs(sites[a][0] - sites[b][0])
+            dy = abs(sites[a][1] - sites[b][1])
+            if (abs(dx - p) < 1e-9 and dy < 1e-9) or (dx < 1e-9 and abs(dy - p) < 1e-9):
+                gap = p - (sites[a][2] + sites[b][2]) / np.sqrt(2)
+                if gap < 0.05:
+                    w_fit = (p - 0.05) / 2 * np.sqrt(2)
+                    sites[a][2] = min(sites[a][2], w_fit)
+                    sites[b][2] = min(sites[b][2], w_fit)
+    kept = [s for s in sites if s[2] >= 0.04]
+    return kept, len(sites) - len(kept)
+
+
 def align_curve(freqs, vals, freqs_expected) -> np.ndarray:
     """把 (freqs, vals) 對齊到 freqs_expected 網格——**永遠按頻率值對位**（網格相符時原樣快速通過）。
 
@@ -44,7 +73,8 @@ class SinglePortSimulator(PatchSimulator):
     """
     def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'single_port.sab'), pixel_count:int = 25,
                  sweep_type: str = "Interpolating",
-                 max_delta_s: float = 0.02, max_passes: int = 6, min_passes: int = 5, min_converged: int = 5):
+                 max_delta_s: float = 0.02, max_passes: int = 6, min_passes: int = 5, min_converged: int = 5,
+                 diag_bridge_w=None):
         #? sweep_type: HFSS 掃頻演算法 {"Interpolating"(預設,快;自選頻點+有理擬合) / "Discrete"(17 點逐點硬解,
         #  慢但每點真解) / "Fast"}。Discrete 用於「掃頻法交叉驗證」——量化 Interpolating 擬合誤差 (round-10)。
         self.sweep_type = str(sweep_type)
@@ -55,6 +85,10 @@ class SinglePortSimulator(PatchSimulator):
         self.max_passes = int(max_passes)
         self.min_passes = int(min_passes)
         self.min_converged = int(min_converged)
+        #? 45° 菱形對角橋(2026-08-05 R54,Ricky 核准計畫「45° 對角橋」):對角接點的 0.01mm
+        #  意外角落重疊(diffsim §45)換成可設計橋寬 w_d(mm)。None=現行幾何(bit 級不變);
+        #  覆蓋來源同上=hfss_setup.json 的 diag_bridge_w 鍵。偵測/放置見 _diag_bridge_sites。
+        self.diag_bridge_w = None if diag_bridge_w is None else float(diag_bridge_w)
         #? HFSS_sab_path 預設指向本套件 sab/single_port.sab：一塊已預先繪製好的「底板」幾何，
         #? 內含基板 (Sub)、地平面 (GND)、單一饋線 (feed_line) 與激勵面 (Rectangle1)。
         #? 像素貼片只需畫在這塊底板上方即可，省去每次重建固定結構的時間。
@@ -332,6 +366,34 @@ class SinglePortSimulator(PatchSimulator):
                         ])
                     patch_names.append(actual_patch_name)  # 收集實際名稱，供分批聯集使用
                     patch_count += 1
+
+        ###* 45° 菱形對角橋(R54;self.diag_bridge_w=None 時整段不執行=歷史幾何 bit 級不變) ###
+        if self.diag_bridge_w is not None:
+            _pmm = 5.0 / pixel_row                        # 像素邊長 mm(25→0.2)
+            _mat = (pixel_matrix.numpy() > 0.5)
+            _sites, _skipped = diag_bridge_sites(_mat, self.diag_bridge_w, _pmm)
+            logger.info(f"菱形對角橋: {len(_sites)} 座(w={self.diag_bridge_w}mm,跳過 {_skipped});Pattern {self.num}")
+            for _k, (_cx, _cy, _w) in enumerate(_sites):
+                _dn = f"DiagBr_{_k + 1}"
+                #? 建在原點置中 → 繞全域 Z 轉 45°(等於就地自轉) → Move 到角點——
+                #  HFSS Rotate 只繞全域軸,原點置中是唯一免相對座標系的就地旋轉法。
+                _actual = oEditor.CreateBox(
+                    ["NAME:BoxParameters",
+                     "XPosition:=", f"{-_w / 2}mm", "YPosition:=", f"{-_w / 2}mm", "ZPosition:=", "0.508mm",
+                     "XSize:=", f"{_w}mm", "YSize:=", f"{_w}mm", "ZSize:=", "CooperH"],
+                    ["NAME:Attributes", "Name:=", _dn, "Flags:=", "", "Color:=", "(255 128 0)",
+                     "Transparency:=", 0, "PartCoordinateSystem:=", "Global", "UDMId:=", "",
+                     "MaterialValue:=", "\"copper\"", "SurfaceMaterialValue:=", "\"\"",
+                     "SolveInside:=", False, "IsMaterialEditable:=", True,
+                     "UseMaterialAppearance:=", False, "IsLightweight:=", False])
+                oEditor.Rotate(
+                    ["NAME:Selections", "Selections:=", _actual, "NewPartsModelFlag:=", "Model"],
+                    ["NAME:RotateParameters", "RotateAxis:=", "Z", "RotateAngle:=", "45deg"])
+                oEditor.Move(
+                    ["NAME:Selections", "Selections:=", _actual, "NewPartsModelFlag:=", "Model"],
+                    ["NAME:TranslateParameters", "TranslateVectorX:=", f"{_cx}mm",
+                     "TranslateVectorY:=", f"{_cy}mm", "TranslateVectorZ:=", "0mm"])
+                patch_names.append(_actual)               # 進分批 Unite=與貼片同一導體
 
         ###* 分批聯集 (Batch Unite)：把上百個小盒子合併成單一連通貼片，再接上饋線 ###
         #! 為何要「分批」而非一次全選聯集：HFSS 的 Unite 是 COM 同步呼叫，一次傳入過多 (數百個) 物件名稱

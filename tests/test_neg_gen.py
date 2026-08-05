@@ -53,3 +53,21 @@ def test_pool_seed_round_disjoint():
     news = {_pool_seed(base, r, b) for r in range(50, 60) for b in range(1, 55)}
     olds = {base + b for b in range(1, 55)}
     assert not news & olds
+
+
+def test_diag_bridge_sites():
+    # R54 菱形橋:偵測決定性/零接點=零菱形/L 型不加料/相鄰角碰撞縮橋(核准計畫 §6)
+    import numpy as np
+    from antenna.patch.patch_simulator.single_port import diag_bridge_sites
+    z = np.zeros((25, 25), dtype=bool)
+    assert diag_bridge_sites(z, 0.10, 0.2) == ([], 0)          # 空盤
+    m = z.copy(); m[3, 3] = m[4, 4] = True                     # 真對角
+    s, sk = diag_bridge_sites(m, 0.10, 0.2)
+    assert len(s) == 1 and sk == 0 and abs(s[0][0] - 0.8) < 1e-9 and abs(s[0][1] - 0.8) < 1e-9
+    m2 = m.copy(); m2[3, 4] = True                             # L 型(一正交位有金屬)=不加料
+    assert diag_bridge_sites(m2, 0.10, 0.2)[0] == []
+    m3 = z.copy(); m3[3, 3] = m3[4, 4] = m3[5, 3] = True       # 同格相鄰角雙橋(X 谷)
+    s3, _ = diag_bridge_sites(m3, 0.14, 0.2)
+    assert len(s3) == 2 and all(w < 0.14 for _, _, w in s3)    # 0.14 觸碰撞規則→縮
+    s3b, _ = diag_bridge_sites(m3, 0.10, 0.2)
+    assert all(abs(w - 0.10) < 1e-9 for _, _, w in s3b)        # 0.10 不縮
