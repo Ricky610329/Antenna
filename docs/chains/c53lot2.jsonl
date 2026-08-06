@@ -1,0 +1,2 @@
+{"pack": 1, "n": 25, "anchor": "x52t07_add25", "best": "c53lot2p01_12", "best_score": -2.5, "anchor_score": -3.4, "win": true, "wm": -0.52, "rad": -2.5, "oob": 12.93, "lo": -3.56, "hi": 2.88, "gated": 2, "all_out": false}
+{"pack": 2, "n": 25, "anchor": "c53lot2p01_12", "best": "c53lot2p02_07", "best_score": -2.18, "anchor_score": -2.5, "win": true, "wm": -0.42, "rad": -2.18, "oob": 13.6, "lo": -3.48, "hi": 2.54, "gated": 3, "all_out": false}

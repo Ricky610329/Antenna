@@ -1,0 +1,3 @@
+{"pack": 1, "n": 25, "anchor": "x52t03_add100", "best": "c53lot1p01_18", "best_score": -2.18, "anchor_score": -2.34, "win": true, "wm": -1.63, "rad": -2.18, "oob": 10.91, "lo": -3.86, "hi": -0.83, "gated": 3, "all_out": false}
+{"pack": 2, "n": 25, "anchor": "c53lot1p01_18", "best": "c53lot1p02_03", "best_score": -2.0, "anchor_score": -2.18, "win": true, "wm": -1.85, "rad": -1.97, "oob": 11.49, "lo": -4.08, "hi": -0.19, "gated": 3, "all_out": false}
+{"pack": 3, "n": 25, "anchor": "c53lot1p02_03", "best": "c53lot1p03_20", "best_score": -2.08, "anchor_score": -2.0, "win": false, "wm": -1.93, "rad": -2.05, "oob": 11.78, "lo": -4.05, "hi": 0.66, "gated": 1, "all_out": false}

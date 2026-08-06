@@ -1,0 +1,2 @@
+{"pack": 2, "n": 25, "anchor": "e50b2_000_F18644", "best": "c52lo1p02_13", "best_score": -0.8, "anchor_score": -1.12, "win": true, "wm": -0.32, "rad": -0.8, "oob": 7.12, "lo": -2.4, "hi": -0.84, "gated": 19, "all_out": false}
+{"pack": 3, "n": 25, "anchor": "c52lo1p02_13", "best": "c52lo1p03_20", "best_score": -1.31, "anchor_score": -0.8, "win": false, "wm": -1.16, "rad": -0.28, "oob": 6.92, "lo": -4.22, "hi": 1.81, "gated": 22, "all_out": false}
