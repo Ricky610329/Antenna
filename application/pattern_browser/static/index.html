@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pattern Browser</title>
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<header>
+  <h1>Pattern Browser</h1>
+  <nav id="nav">
+    <button data-view="overview">總攬</button>
+    <button data-view="detail">詳情</button>
+    <button data-view="compare">比對 <span id="tray-badge" class="badge">0</span></button>
+    <button data-view="groups">群組</button>
+  </nav>
+</header>
+<div id="msg" hidden></div>
+<div id="tooltip" hidden></div>
+
+<main>
+  <!-- ============ 總攬 ============ -->
+  <section id="view-overview" hidden>
+    <div id="stat-cards" class="cards"></div>
+    <div class="charts">
+      <div class="chart-box"><h3>n8 分布(8-連通組塊數)</h3><canvas id="chart-n8" width="380" height="150"></canvas></div>
+      <div class="chart-box"><h3>ndiag 分布(對角接點數)</h3><canvas id="chart-ndiag" width="380" height="150"></canvas></div>
+      <div class="chart-box"><h3>wm 分布(worst margin, dB)</h3><canvas id="chart-wm" width="380" height="150"></canvas></div>
+    </div>
+
+    <form id="filters" autocomplete="off">
+      <label class="chk"><input type="checkbox" id="f-qual"> 只看合格(wm≥0.15∧rad≥0)</label>
+      <label>ndiag <input type="number" id="f-diag-min" class="num" placeholder="min">–<input type="number" id="f-diag-max" class="num" placeholder="max"></label>
+      <label>n8 <input type="number" id="f-n8-min" class="num" placeholder="min">–<input type="number" id="f-n8-max" class="num" placeholder="max"></label>
+      <label>wm ≥ <input type="number" step="0.1" id="f-wm-min" class="num"></label>
+      <label>lo ≤ <input type="number" step="0.1" id="f-lo-max" class="num"></label>
+      <label class="chk"><input type="checkbox" id="f-has-db"> 有 db100</label>
+      <label class="chk"><input type="checkbox" id="f-has-sl"> 有 sl100</label>
+      <label>id 搜尋 <input type="text" id="f-q" placeholder="子字串"></label>
+      <label>每頁 <select id="limit"><option>50</option><option>100</option><option>200</option></select></label>
+      <button type="submit">套用</button>
+      <button type="button" id="filters-reset">重設</button>
+    </form>
+
+    <div id="list-info" class="muted"></div>
+    <div class="table-wrap">
+      <table id="list-table">
+        <thead><tr>
+          <th>縮圖</th><th>id</th>
+          <th class="sortable" data-sort="wm">wm</th>
+          <th class="sortable" data-sort="rad">rad</th>
+          <th class="sortable" data-sort="lo">lo</th>
+          <th class="sortable" data-sort="ndiag">ndiag</th>
+          <th class="sortable" data-sort="n8">n8</th>
+          <th class="sortable" data-sort="total">total</th>
+          <th>消融</th><th>kind</th><th>store</th><th>操作</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="pager">
+      <button id="pg-prev">‹ 上一頁</button>
+      <span id="pg-info"></span>
+      <button id="pg-next">下一頁 ›</button>
+    </div>
+  </section>
+
+  <!-- ============ 詳情 ============ -->
+  <section id="view-detail" hidden>
+    <div id="detail-empty" class="muted">從總攬點一列、或在比對/群組點 id 進入詳情。</div>
+    <div id="detail-body" hidden>
+      <div class="detail-flex">
+        <div class="canvas-col">
+          <canvas id="detail-canvas" width="500" height="500"></canvas>
+          <div class="feed-edge">▲ 圖下緣＝饋線邊(i 朝下、j 朝右)</div>
+          <label class="chk"><input type="checkbox" id="ov-sites" checked> 疊菱形站點(<span id="site-count">0</span> 座)</label>
+          <div class="btn-row">
+            <button id="detail-to-compare">加入比對</button>
+            <button id="detail-to-group">加入群組</button>
+          </div>
+        </div>
+        <div class="meta-col">
+          <h2 id="detail-id"></h2>
+          <dl id="detail-meta"></dl>
+          <div id="variant-panel"></div>
+        </div>
+      </div>
+      <div id="neighbors-panel">
+        <h3>Hamming 鄰居</h3>
+        <div class="btn-row">
+          <label>maxd <input type="number" id="nb-maxd" class="num" value="100"></label>
+          <label>筆數 <input type="number" id="nb-limit" class="num" value="24"></label>
+          <button id="nb-go">找鄰居</button>
+        </div>
+        <div id="neighbors-grid" class="thumb-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 比對 ============ -->
+  <section id="view-compare" hidden>
+    <div id="tray-editor" class="btn-row"></div>
+    <div id="compare-hint" class="muted"></div>
+    <div id="compare-grid"></div>
+    <div id="xor-panel"></div>
+  </section>
+
+  <!-- ============ 群組 ============ -->
+  <section id="view-groups" hidden>
+    <div class="groups-flex">
+      <aside id="group-side">
+        <h3>群組(localStorage)</h3>
+        <div class="btn-row">
+          <input type="text" id="grp-new-name" placeholder="新群組名稱">
+          <button id="grp-new">新增</button>
+        </div>
+        <ul id="group-list"></ul>
+        <div class="btn-row">
+          <button id="grp-export">匯出 JSON</button>
+          <button id="grp-import">匯入 JSON</button>
+          <input type="file" id="grp-import-file" accept="application/json" hidden>
+        </div>
+      </aside>
+      <div id="group-detail"></div>
+    </div>
+  </section>
+</main>
+<script src="static/app.js"></script>
+</body>
+</html>
