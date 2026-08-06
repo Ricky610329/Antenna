@@ -4418,6 +4418,8 @@ def select_diagbridge(args):
         f = DATASET_PATH.joinpath(fol, f"{pid}.pt")
         if not f.exists():
             raise SystemExit(f"找不到 {fol}:{pid}")
+        if pid in pats:
+            raise SystemExit(f"ids 檔重複 pid: {pid}（跨夾同名會靜默覆寫,拒收）")
         pats[pid] = torch.load(str(f), weights_only=True)
     for um in [int(s) for s in args.sizes.split(",")]:
         w_mm = um / 1000.0
@@ -4427,8 +4429,8 @@ def select_diagbridge(args):
         input_dir.mkdir(parents=True, exist_ok=True)
         manifest = []
         for fol, pid in rows:
-            mat = np.asarray(pats[pid]).reshape(25, 25) > 0.5
-            sites, skipped = diag_bridge_sites(mat, w_mm, 0.2)
+            mat = np.asarray(pats[pid]).reshape(25, 25) > 0.5   # 25×25 域專用(50×50 禁對角,另案)
+            sites, skipped = diag_bridge_sites(mat, abs(w_mm), 0.2)  # abs:負 w(挖空)時站點統計才正確
             vid = f"{pid}~db{um}"
             torch.save(pats[pid], str(input_dir.joinpath(f"{vid}.pt")))
             manifest.append(dict(id=vid, kind="diagbridge", family=f"DIAGBR_r{args.round}",

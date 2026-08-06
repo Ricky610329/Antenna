@@ -4,7 +4,8 @@
 
 ## 批次 HFSS 驗證線（dedust.py）鐵則
 
-1. 流程：開發機 `select-*` 生輸入上 NAS → **`check-dup --input X_input` 必跑**（exit 1 就不發車）→
+1. 流程：開發機 `select-*` 生輸入上 NAS → **`check-dup --input X_input` 必跑、單獨跑不接管線**
+   （exit 1 就不發車;接管線會被尾端指令吃掉 exit code=安全閘靜默失效,2026-08-06 實犯）→
    正式機 `run --input X_input --store X`（可中斷續跑、error 條目重試）→ 任一機 `report`。
    **收檔判讀＝`analyze batch --round R --batch N`**（臂別/前瞻/紀錄候選+公證指令/→行動;
    含**影子 CNN 雙模盲測段**——必須在重錨前跑,重錨後本批進訓練集就不是盲測）;
@@ -34,10 +35,19 @@
    worker 空閒 poll 輪回應（磁碟/殘留/git 版/HFSS 行程;跑 job 中佔線最長 ~70 分才答）。
 6. 錨點注意：x00 是破對稱錨點（含 (4,18) 翻轉），x00 條目收尾用除塵不對稱化（`_finish` 語義），
    不要 `symmetrize`（round-16 §3 caveat）。
+7. **幾何/儀器變體批**（R52 網格起,R54-55 定型）：輸入夾放 `hfss_setup.json`（只收白名單鍵:
+   `max_delta_s/max_passes/min_passes/min_converged/timeout/diag_bridge_w/pixel_count`,run 自動存證進 store）;
+   kind=`meshconv/diagbridge/symprobe…`=check-dup 豁免、id=`{parent}~<tag>` 親代綁定;
+   **資料永不入鍋**（不進 clean_stores、重錨不 --add——漏一次=污染 SM 訓練集）;
+   新 COM 動詞（Rotate/Subtract 級）首筆當 smoke+幾何渲染目檢。
+8. **機台部署事件**（改 worker 端 code:dedust/single_port）：push → 逐台 pull+**重啟 worker**
+   （光 pull 不重啟=舊 code 陷阱,已兩犯;從機台本機桌面終端啟動,HFSS 視窗才可見）→
+   長駐行程（chain daemon）一併重啟 → 首筆 smoke+`jobs-ls` 驗佇列。
 
 ## 其他慣例
 
 - 圖表腳本歸 `figs/`＋`figs/README.md` 索引 +1 行；報告圖規範見 `docs/report/CLAUDE.md`。
 - 改完跑 `python -m pyflakes script/<檔>` 清 undefined name / unused import（CI 會擋）。
 - 判讀/統計工具優先擴充 `analyze.py` 子命令，不另開一次性腳本（用過兩次才工具化）。
-- NAS 路徑經 `DATASET_PATH`（`antenna/utils`），不硬編 `T:\`。
+- NAS 路徑經 `DATASET_PATH`（`antenna/utils`），不硬編 `T:\`（路徑含 `'`:bash 單引號/heredoc 會炸,用雙引號）。
+- 旗標「轉正」（實驗→常規）必同步改 parser 預設——靠指令記憶帶旗標已三犯（rad_head/train-two/ds-mode）。

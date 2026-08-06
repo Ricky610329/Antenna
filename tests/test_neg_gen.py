@@ -73,6 +73,20 @@ def test_diag_bridge_sites():
     assert all(abs(w - 0.10) < 1e-9 for _, _, w in s3b)        # 0.10 不縮
 
 
+def test_diag_bridge_sites_p01_and_negative_w():
+    # 回顧輪必修1/2(2026-08-06):碰撞常數=實體 mm 不隨格縮放——p=0.1(50×50)相鄰角對縮後
+    # w_fit≈0.035<0.04 → 整對跳過=鎖定行為(50×50 域規格=禁新對角);負 w 直接餵會被下限吃光
+    # (select 端統計必須 abs;sim 端建模自帶 abs)。
+    import numpy as np
+    from antenna.patch.patch_simulator.single_port import diag_bridge_sites
+    z = np.zeros((25, 25), dtype=bool)
+    m3 = z.copy(); m3[3, 3] = m3[4, 4] = m3[5, 3] = True       # 同格相鄰角雙橋(X 谷)
+    assert diag_bridge_sites(m3, 0.10, 0.1) == ([], 2)         # p=0.1:整對跳過
+    m = z.copy(); m[3, 3] = m[4, 4] = True
+    assert diag_bridge_sites(m, -0.10, 0.2) == ([], 1)         # 負 w:全滅=陷阱本尊
+    assert len(diag_bridge_sites(m, abs(-0.10), 0.2)[0]) == 1  # abs 後正常
+
+
 def test_diag_bridge_w_zero_rejected():
     # R54 斷開態:w 編碼=正菱形/負挖空(淨距=|w|)/None 不變;0 語義含糊必須拒絕
     import pytest

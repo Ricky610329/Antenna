@@ -26,7 +26,10 @@ def diag_bridge_sites(mat, w_mm, pixel_mm):
     """45° 菱形對角橋放置計算(R54;決定性,select 端與模擬器共用同一份邏輯)。
     真對角接點=對角同開∧兩正交位皆空(L 型冗餘角不加料——電流已走邊路;正交邊連=連續金屬不動)。
     碰撞規則(計畫 §6):同格相鄰角雙菱形淨距 <0.05mm → 兩顆同步縮至淨距;縮後 w<0.04 → 跳過。
-    回傳 (sites, skipped):sites=[(cx_mm, cy_mm, w_mm_site)],cx 沿第一索引軸(=HFSS X)。"""
+    回傳 (sites, skipped):sites=[(cx_mm, cy_mm, w_mm_site)],cx 沿第一索引軸(=HFSS X)。
+    ⚠ 碰撞常數(淨距 0.05/下限 0.04)是**實體 mm**(蝕刻限制),不隨 pixel_mm 縮放——p=0.1(50×50)時
+    相鄰角碰撞對縮後 w_fit≈0.035<0.04 → 整對跳過=物理上正確(0.1mm 格塞不下兩座可製造橋);
+    50×50 精修域規則本就禁新對角(proposal-finetune P4),此行為有回歸測試鎖定。"""
     n = mat.shape[0]
     p = pixel_mm
     sites = []

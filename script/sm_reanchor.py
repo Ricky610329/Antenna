@@ -294,6 +294,8 @@ def train(args):
     if getattr(args, "with_neg", False):
         #? 5k 消融(decisions 雙頭制門檻;R53 §1④):主錨摻負片 vs 現行不摻,凍結尺對照——
         #  side 實驗,不動 clean_stores/雙頭制現制;判「負片在 5k 量級是否仍有罪」(v96 案=有罪)。
+        if not getattr(args, "out", None) or args.out == "sm_reanchor.pth":
+            raise SystemExit("--with-neg 是消融模式,必須顯式 --out(防呆:不准蓋主線 sm_reanchor.pth)")
         _neg = _load_neg_samples()
         tr = tr + _neg
         print(f"⚠ 消融模式 --with-neg:主錨加吃負片 {len(_neg)} 筆(僅本次,雙頭制不變)")
