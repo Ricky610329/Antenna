@@ -5382,7 +5382,8 @@ def run(args):
     if _setup_f.exists():
         with open(str(_setup_f), encoding="utf-8") as f:
             hfss_setup = json.load(f)
-        allowed = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout", "diag_bridge_w"}
+        allowed = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout", "diag_bridge_w",
+                   "pixel_count"}  # 50×50 精修域(proposal-finetune P4;學長內建 {20,25,50} 幾何分支)
         bad = set(hfss_setup) - allowed
         if bad:
             raise SystemExit(f"hfss_setup.json 不明鍵 {bad}（合法鍵={sorted(allowed)}）")
