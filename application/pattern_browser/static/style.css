@@ -158,6 +158,16 @@ dl#detail-meta dd { margin: 0; font-variant-numeric: tabular-nums; word-break: b
 }
 .chip b { font-weight: 500; }
 .chip button { border: none; padding: 0 2px; font-size: 13px; color: var(--muted); background: none; }
+/* 常駐縮圖條(所有分頁籤上方;外框色=該筆線色) */
+.cmp-strip { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; margin: 6px 0 2px; }
+.cs-item { text-align: center; cursor: pointer; font-size: 11px; }
+.cs-item .tid {
+  max-width: 86px; margin: 2px auto 0; color: var(--ink-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cs-item:hover .tid { color: var(--series); }
+canvas.thumb.cs { width: 80px; border: 3px solid var(--grid); margin: 0 auto; }
+.cs-miss { width: 80px; height: 80px; line-height: 80px; border: 3px dashed var(--grid); }
 #compare-grid { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; }
 .cmp-col {
   background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px;
@@ -238,6 +248,7 @@ canvas.thumb.wall { width: 96px; margin: 0 auto; }
 
 /* ---- v2.2:縮放重置鈕 ---- */
 .zoom-host { position: relative; }
+.cv-wrap { width: fit-content; max-width: 100%; }   /* 貼齊 canvas 的殼:讓 ⟲ 落在圖角落而非整個面板角落 */
 button.rst {
   position: absolute; top: 4px; right: 4px; z-index: 5;
   padding: 0 7px; font-size: 13px; line-height: 20px; border-radius: 4px;
@@ -265,6 +276,7 @@ canvas.thumb.gthumb { width: 120px; margin: 0 auto; }
   background: var(--page); border: 1px dashed var(--grid); border-radius: 4px;
   color: var(--muted); font-size: 12px;
 }
+.gmini-none.pol { width: 74px; }   /* 迷你極座標格(方形)的無資料占位 */
 
 /* ---- v2:比對分頁籤 ---- */
 .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--grid); margin: 10px 0 12px; }
@@ -293,35 +305,62 @@ canvas.thumb.gthumb { width: 120px; margin: 0 auto; }
 #abl-coverage { min-width: 300px; }
 #abl-coverage .cards { max-width: 460px; }
 
-/* ---- v2:說明頁(文件站:左 sticky 目錄+右內容) ---- */
+/* ---- v2:說明頁(文件站:左 sticky 目錄+右內容;v2.3 排版打磨:15px 基準/1.65 行高/
+ * 標題層級拉開/內容欄 860px 置中/表格條紋/步驟編號徽章。零外部字型與依賴。) ---- */
 .help-layout { display: flex; gap: 22px; align-items: flex-start; }
 #help-toc {
   position: sticky; top: 54px; flex: 0 0 218px;
   max-height: calc(100vh - 70px); overflow-y: auto;
   background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
-  padding: 10px 6px; font-size: 13px;
+  padding: 10px 6px; font-size: 12.5px;
 }
 #help-toc .toc-title { font-weight: 600; color: var(--ink-2); padding: 2px 10px 6px; }
 #help-toc a {
   display: block; color: var(--ink-2); text-decoration: none;
-  padding: 4px 10px; border-left: 2px solid transparent; border-radius: 0 4px 4px 0;
+  padding: 4px 10px; border-left: 3px solid transparent; border-radius: 0 4px 4px 0;
 }
-#help-toc a.toc-h3 { padding-left: 24px; font-size: 12.5px; }
+#help-toc a.toc-h3 { padding-left: 24px; font-size: 12px; }
 #help-toc a:hover { color: var(--ink); background: #f2f6fc; }
-#help-toc a.active { color: var(--series); border-left-color: var(--series); font-weight: 600; background: #f2f6fc; }
-.help-body { flex: 1; min-width: 0; max-width: 860px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 18px 26px; }
-.help-body h2 { font-size: 16px; margin: 26px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--grid); }
-.help-body h3 { font-size: 14px; margin: 18px 0 6px; color: var(--ink); }
+#help-toc a.active { color: var(--series); border-left-color: var(--series); font-weight: 700; background: #e8f0fb; }
+.help-body {
+  flex: 1; min-width: 0; max-width: 860px; margin: 0 auto;   /* 內容欄置中 */
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  padding: 26px 36px 34px; font-size: 15px; line-height: 1.65;
+}
+.help-body h2 {
+  font-size: 20px; margin: 40px 0 14px; padding-bottom: 8px;
+  border-bottom: 2px solid var(--grid); letter-spacing: 0.01em;
+}
+.help-body h3 { font-size: 16px; margin: 26px 0 8px; color: var(--ink); font-weight: 600; }
 .help-body h2[id], .help-body h3[id] { scroll-margin-top: 58px; }
 .help-body .hsec:first-child h2 { margin-top: 0; }
-.help-body li { margin: 4px 0; }
+.help-body p { margin: 10px 0; }
+.help-body ul { margin: 10px 0; padding-left: 22px; }
+.help-body li { margin: 6px 0; }
 .help-body p, .help-body li, .help-body dd { line-height: 1.65; }
-.gloss-table th, .gloss-table td { white-space: normal; vertical-align: top; font-size: 13px; }
-.gloss-table td:first-child { white-space: nowrap; }
-.help-body pre {
-  background: var(--page); border: 1px solid var(--grid); border-radius: 4px;
-  padding: 8px 12px; overflow-x: auto; font-size: 12.5px;
+/* 步驟(範例/快速開始的有序清單)→ 編號徽章 */
+.help-body ol { margin: 12px 0; padding-left: 4px; list-style: none; counter-reset: step; }
+.help-body ol > li { counter-increment: step; position: relative; padding-left: 32px; margin: 8px 0; }
+.help-body ol > li::before {
+  content: counter(step); position: absolute; left: 0; top: 2px;
+  width: 21px; height: 21px; border-radius: 50%;
+  background: var(--series); color: #fff;
+  font-size: 12px; font-weight: 600; line-height: 21px; text-align: center;
 }
-.help-body code { background: var(--page); border: 1px solid var(--grid); border-radius: 3px; padding: 0 4px; font-size: 12.5px; }
-.glossary dt { font-weight: 600; margin-top: 8px; }
-.glossary dd { margin: 2px 0 0 0; color: var(--ink-2); }
+.gloss-table th, .gloss-table td { white-space: normal; vertical-align: top; font-size: 13.5px; padding: 7px 10px; }
+.gloss-table td:first-child { white-space: nowrap; }
+.gloss-table tbody tr:nth-child(odd) { background: var(--page); }   /* 條紋 */
+.gloss-table tbody tr:hover { background: #f2f6fc; }
+.help-body tbody tr { cursor: default; }   /* 蓋掉全站表列的 pointer(說明頁表格不可點) */
+.help-body pre {
+  background: var(--page); border: 1px solid var(--grid); border-radius: 5px;
+  padding: 11px 14px; overflow-x: auto; font-size: 13px; line-height: 1.55;
+}
+.help-body code {
+  background: var(--page); border: 1px solid var(--grid); border-radius: 3px;
+  padding: 0 4px; font-size: 13px;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+.help-body pre { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+.glossary dt { font-weight: 600; margin-top: 14px; }
+.glossary dd { margin: 3px 0 0 0; color: var(--ink-2); }

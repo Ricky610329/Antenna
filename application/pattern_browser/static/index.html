@@ -10,7 +10,7 @@
 <header>
   <h1>Pattern Browser</h1>
   <nav id="nav">
-    <button data-view="overview" data-tip="全史 pattern 總覽:統計、分布、篩選、排序;可切表格/縮圖牆/散點三種呈現">總攬</button>
+    <button data-view="overview" data-tip="全史 pattern 總覽:統計、分布、篩選、排序;可切表格/縮圖牆/圖卡/散點四種呈現">總攬</button>
     <button data-view="detail" data-tip="單一 pattern 的大圖、全指標、S11/Gain/rad 曲線、消融疊圖與 Hamming 鄰居">詳情</button>
     <button data-view="compare" data-tip="2–4 筆並排比對:pattern XOR 差異、S11/Gain 疊圖、rad 極座標疊圖">比對 <span id="tray-badge" class="badge">0</span></button>
     <button data-view="groups" data-tip="自訂群組(存在瀏覽器 localStorage):收藏、命名、匯出入、一鍵送比對">群組</button>
@@ -51,7 +51,7 @@
       <div class="seg" id="ov-mode">
         <button data-mode="table" data-tip="表格模式:縮圖+指標欄,點欄頭排序,點列進詳情">表格</button>
         <button data-mode="wall" data-tip="縮圖牆模式:96px 大縮圖一目十行,hover 浮出指標,點卡進詳情">縮圖牆</button>
-        <button data-mode="cards" data-tip="圖卡模式:每筆一張橫卡=縮圖+S11+Gain+rad φ90 小圖(原始幾何,含最簡目標線),同頁掃「長相+電性」;曲線對當頁批次抓,建議每頁 20–30;點卡進詳情">圖卡</button>
+        <button data-mode="cards" data-tip="圖卡模式:每筆一張橫卡=縮圖+S11+Gain 小圖(原始幾何,含最簡目標線)+rad 迷你極座標 φ0/φ90(全圓、主波束朝上、金扇=±45° 窗),同頁掃「長相+電性」;曲線對當頁批次抓,建議每頁 20–30;點卡進詳情">圖卡</button>
         <button data-mode="scatter" data-tip="散點模式:自選 X/Y 軸看全篩選結果的分布;點=進詳情,拖框=圈選送比對/建群組,Alt+拖=平移,滾輪=縮放,雙擊=重置">散點</button>
       </div>
     </div>
@@ -85,7 +85,7 @@
         <span class="muted">滾輪=縮放 · Alt+拖=平移 · 拖框=圈選 · 雙擊=重置</span>
         <span id="scatter-info" class="muted"></span>
       </div>
-      <canvas id="scatter-canvas" width="760" height="460"></canvas>
+      <div class="cv-wrap"><canvas id="scatter-canvas" width="760" height="460"></canvas></div>
       <div id="scatter-actions" class="btn-row" hidden>
         <span id="scatter-selinfo"></span>
         <button id="sc-to-compare" data-tip="把框選到的 2–4 筆直接送進比對頁">送比對</button>
@@ -138,10 +138,10 @@
       </div>
 
       <div id="detail-rad">
-        <h3 data-tip="輻射場型兩切面。主波束朝上;金色扇形=±45° 波束窗、橘虛線=窗界、紅虛圈=G0−3dB(G0=θ=0 最大值);每環 5dB">rad 極座標(φ=0° / φ=90°)</h3>
+        <h3 data-tip="輻射場型兩切面,全圓 ±180°:主波束朝上、背瓣在下半圓;金色扇形=±45° 波束窗、橘虛線=窗界、紅虛圈=G0−3dB(G0=θ=0 最大值);每環 5dB">rad 極座標(φ=0° / φ=90°)</h3>
         <div class="chart-row">
-          <div class="chart-box"><h3>φ=0° 切面</h3><canvas id="det-rad0" width="340" height="205"></canvas></div>
-          <div class="chart-box"><h3>φ=90° 切面</h3><canvas id="det-rad90" width="340" height="205"></canvas></div>
+          <div class="chart-box"><h3>φ=0° 切面</h3><canvas id="det-rad0" width="340" height="300"></canvas></div>
+          <div class="chart-box"><h3>φ=90° 切面</h3><canvas id="det-rad90" width="340" height="300"></canvas></div>
         </div>
         <div id="det-rad-legend" class="chart-legend"></div>
         <div id="det-rad-note" class="muted"></div>
@@ -163,11 +163,13 @@
   <section id="view-compare" hidden>
     <div id="tray-editor" class="btn-row"></div>
     <div id="compare-hint" class="muted"></div>
+    <div id="cmp-strip" class="cmp-strip"></div>
     <div class="tabs" id="cmp-tabs">
+      <button data-tab="all" data-tip="同一頁看完(預設):XOR 差異+S11/Gain 疊圖+rad 全圓極座標,縱向全部一次呈現,不用切籤">全部</button>
       <button data-tab="pattern" data-tip="pattern 幾何比對:並排大圖+XOR 差異(共同灰/A獨藍/B獨紅)+兩兩距離">Pattern(XOR)</button>
       <button data-tab="s11" data-tip="S11 反射係數疊圖:紅虛線=−10dB 門檻、金色底=目標頻帶">S11 疊圖</button>
       <button data-tab="gain" data-tip="帶內增益疊圖:紅虛線=4dB 門檻、金色底=目標頻帶">Gain 疊圖</button>
-      <button data-tab="rad" data-tip="輻射場型極座標疊圖(φ0/φ90):金扇=±45°窗、紅虛圈=G0−3dB">rad 極座標</button>
+      <button data-tab="rad" data-tip="輻射場型極座標疊圖(φ0/φ90,全圓 ±180°、主波束朝上背瓣在下):金扇=±45°窗、紅虛圈=G0−3dB">rad 極座標</button>
       <label class="chk" id="cmp-var-wrap" data-tip="預設只畫各 pattern 的原始曲線(實線)避免混淆;勾了才把有量測的菱形(虛線)/挖空(點線)變體疊上來,同 pattern 同色" hidden>
         <input type="checkbox" id="cmp-variants"> 加消融變體曲線
       </label>
@@ -188,8 +190,8 @@
     </div>
     <div id="cmp-rad" hidden>
       <div class="chart-row">
-        <div class="chart-box"><h3>φ=0° 切面</h3><canvas id="cmp-rad0" width="360" height="220"></canvas></div>
-        <div class="chart-box"><h3>φ=90° 切面</h3><canvas id="cmp-rad90" width="360" height="220"></canvas></div>
+        <div class="chart-box"><h3>φ=0° 切面</h3><canvas id="cmp-rad0" width="360" height="320"></canvas></div>
+        <div class="chart-box"><h3>φ=90° 切面</h3><canvas id="cmp-rad90" width="360" height="320"></canvas></div>
       </div>
       <div id="cmp-rad-legend" class="chart-legend"></div>
       <div id="cmp-rad-note" class="muted"></div>

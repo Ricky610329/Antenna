@@ -46,7 +46,7 @@ META_KEYS = ("id", "folder", "store", "wm", "rad", "lo", "sel", "total", "n4", "
 SORT_COLS = ("wm", "lo", "rad", "ndiag", "n8", "total", "sel", "db100_wm")  # 後兩者=※擴充
 NFREQ, NTHETA = 17, 181
 FREQS = [round(24.0 + 0.5 * k, 1) for k in range(NFREQ)]        # 24–32GHz 17 點(契約)
-THETA_DEFAULT = np.linspace(-90.0, 90.0, NTHETA)
+THETA_DEFAULT = np.linspace(-180.0, 180.0, NTHETA)   # 與真實 rad.npz 同域(全圓,步距 2°)
 TARGETS = {"band": [26.5, 29.5], "s11_max": -10, "gain_min": 4, "wm_buffer": 0.15,
            "rad_window": 45, "rad_floor": 3, "freqs": FREQS}     # freqs=※擴充
 CTYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",

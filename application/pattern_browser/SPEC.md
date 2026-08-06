@@ -43,7 +43,7 @@ Ricky 需求:快速瀏覽/比對全史 pattern;Hamming 距離鄰域查找;按對
 ## v2 資料(build_index 增產;全部與 patterns.npz 的 ids 同序對齊)
 - `data/resp.npz`:`resp` float16 [N,2,17](S11,Gain;24-32GHz 17 點;缺=NaN)+`has_resp` bool[N]。
   來源=store 樣本 .pt(hash 檔名):每店載入樣本以 pattern bytes 對映 id;增量刷新同主索引。
-- `data/rad.npz`:`theta` float16[181]+`phi0`/`phi90` float16[N,181](缺=NaN)+`has_rad` bool[N]。
+- `data/rad.npz`:`theta` float16[181](−180…180 全圓,步距 2°)+`phi0`/`phi90` float16[N,181](缺=NaN)+`has_rad` bool[N]。
   來源=store/rad/{id}.pt(id 檔名,直取)。
 - `data/variant_resp.json`:{變體id: {"s11":[17],"gain":[17],"phi0":[181]|null,"phi90":[181]|null}}
   (~db100/~sl100 變體曲線;消融疊圖用)。
@@ -57,7 +57,7 @@ Ricky 需求:快速瀏覽/比對全史 pattern;Hamming 距離鄰域查找;按對
 - `/api/list` 每列加 has_resp/has_rad。
 
 ## v2 前端
-- **比對頁**分頁籤:Pattern(XOR,現行)/S11 疊圖/Gain 疊圖/rad 極座標疊圖(φ0/φ90 兩圖;主波束朝上、
+- **比對頁**分頁籤:Pattern(XOR,現行)/S11 疊圖/Gain 疊圖/rad 極座標疊圖(φ0/φ90 兩圖;全圓 ±180°、主波束朝上背瓣在下、
   金=±45° 窗、紅虛圈=G0−3dB——同 repo 報告圖語言);目標線取 /api/targets。
 - **詳情頁**加:S11+Gain 曲線(含目標線與內帶底色)、rad 極座標兩切面;消融對照卡升級=
   原始/菱形/挖空**曲線疊圖**(不只 wm 數字)。

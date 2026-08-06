@@ -44,7 +44,7 @@ const S = {
   targets: null,
   statsLoaded: false,
   ovMode: loadLS("pb_ov_mode", "table"),
-  cmpTab: "pattern",
+  cmpTab: "all",   // 比對預設=「全部」籤(同一頁看完)
   sc: { pts: [], sel: new Set() },   // 散點狀態
   pareto: { pts: [] },
   mfg: { axis: "db100_wm", rows: [], selId: null },   // 預設=可製造欄降序
@@ -107,13 +107,18 @@ async function getTargets() {
   return S.targets;
 }
 async function getCurves(kind, ids) {
-  // kind='resp'|'radc';逐 id 快取,未快取的一次批抓;回 Map(id → 曲線|null)
+  // kind='resp'|'radc';逐 id 快取,未快取的批抓;回 Map(id → 曲線|null)。
+  // server _ids_param cap=32 → 超過切批並行抓(圖卡模式每頁可到 200)。
   const cache = kind === "resp" ? S.respCache : S.radcCache;
-  const need = ids.filter((id) => !cache.has(id));
-  if (need.length) {
-    const data = await api(`/api/${kind}?ids=${need.map(encodeURIComponent).join(",")}`);
-    for (const id of need) cache.set(id, data[id] === undefined ? null : data[id]);
+  const need = [...new Set(ids.filter((id) => !cache.has(id)))];
+  const CHUNK = 32;
+  const jobs = [];
+  for (let i = 0; i < need.length; i += CHUNK) {
+    const part = need.slice(i, i + CHUNK);
+    jobs.push(api(`/api/${kind}?ids=${part.map(encodeURIComponent).join(",")}`)
+      .then((data) => { for (const id of part) cache.set(id, data[id] === undefined ? null : data[id]); }));
   }
+  await Promise.all(jobs);
   return new Map(ids.map((id) => [id, cache.get(id)]));
 }
 
@@ -128,11 +133,13 @@ function showTip(pageX, pageY, text) {
 }
 function hideTip() { $("#tooltip").hidden = true; }
 function initTips() {
-  // 事件委派:任何帶 data-tip 的元素 hover 即浮出;canvas 自帶座標型 tooltip,不在此蓋掉
+  // 事件委派:任何帶 data-tip 的元素 hover 即浮出。
+  // canvas 只豁免「自帶座標型 tooltip」的(_ownTip:長條/曲線/極座標/散點/帕累托),
+  // 縮圖牆/圖卡等純顯示 canvas 仍走祖先的 data-tip(滑到縮圖上也要浮指標)。
   document.addEventListener("mouseover", (ev) => {
     const tgt = ev.target;
     if (!(tgt instanceof Element)) return;
-    if (tgt.tagName === "CANVAS") return;
+    if (tgt.tagName === "CANVAS" && tgt._ownTip) return;
     const t = tgt.closest("[data-tip]");
     if (!t) { hideTip(); return; }
     const r = t.getBoundingClientRect();
@@ -321,6 +328,7 @@ function drawBars(cv, items) {
   });
   if (!cv._hoverBound) {
     cv._hoverBound = true;
+    cv._ownTip = true;
     cv.addEventListener("mousemove", (ev) => {
       const [mx] = evLogical(cv, ev);
       const hit = (cv._bars || []).find((b) => mx >= b.x - 1 && mx <= b.x + b.w + 1);
@@ -466,6 +474,7 @@ function drawLineChart(cv, o, hoverIdx = -1) {
   cv._plot = { X, pad, plotW, dom: [xmin, xmax], full };
   if (!cv._lineBound) {
     cv._lineBound = true;
+    cv._ownTip = true;
     ensureResetBtn(cv, () => { cv._zx = null; if (cv._opts) drawLineChart(cv, cv._opts); });
     let drag = null;
     cv.addEventListener("mousedown", (ev) => {
@@ -525,9 +534,9 @@ function drawLineChart(cv, o, hoverIdx = -1) {
   }
 }
 
-/* ---------------- rad 極座標(φ 切面;主波束朝上) ---------------- */
+/* ---------------- rad 極座標(φ 切面;全圓 ±180°,主波束朝上、背瓣在下半圓) ---------------- */
 function drawPolar(cv, o, hoverIdx = -1) {
-  // o={theta:[181], series:[{label,color,vals}], windowDeg}
+  // o={theta:[181](−180…180), series:[{label,color,vals}], windowDeg}
   cv._popts = o;
   const ctx = ctx2d(cv);
   const W = cv._lw, H = cv._lh;
@@ -536,48 +545,47 @@ function drawPolar(cv, o, hoverIdx = -1) {
   let vmax = -Infinity;
   for (const s of o.series) for (const v of s.vals) if (v != null && isFinite(v)) vmax = Math.max(vmax, v);
   if (!isFinite(vmax)) { drawEmptyChart(cv, "無曲線資料"); return; }
-  const cx = W / 2, cy = H - 22;
-  const R = Math.min(W / 2 - 34, H - 52);
+  const cx = W / 2, cy = H / 2 + 3;         // 全圓置中(微下移給頂端 0° 標留位)
+  const R = Math.min(W / 2 - 30, H / 2 - 21);   // ±180° 底標(R+13+字高)要留得下
   const rmax = Math.ceil(vmax / 5) * 5;
   const span = 30;                          // 6 環 × 5dB
   const rOf = (v) => R * Math.max(0, Math.min(1, (v - (rmax - span)) / span));
   const P = (deg, r) => [cx + r * Math.sin(deg * Math.PI / 180), cy - r * Math.cos(deg * Math.PI / 180)];
   const wdeg = o.windowDeg || 45;
-  // 金色 ±window 扇形
+  // 金色 ±window 扇形(主波束朝上)
   ctx.fillStyle = COLORS.windowFill;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
   ctx.arc(cx, cy, R, -Math.PI / 2 - wdeg * Math.PI / 180, -Math.PI / 2 + wdeg * Math.PI / 180);
   ctx.closePath();
   ctx.fill();
-  // 5dB 環(上半圓)+環標
+  // 5dB 全圓環+環標(標在正上方軸旁);最外環用軸色=圖框
   ctx.font = "9px system-ui";
   for (let k = 0; k <= span / 5; k++) {
     const rr = R * (1 - k * 5 / span);
     if (rr <= 0) continue;
-    ctx.strokeStyle = COLORS.gridline; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(cx, cy, rr, Math.PI, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = k === 0 ? COLORS.axis : COLORS.gridline; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 2 * Math.PI); ctx.stroke();
     ctx.fillStyle = COLORS.muted; ctx.textAlign = "left";
     ctx.fillText(String(rmax - k * 5), cx + 3, cy - rr - 2);
   }
-  // 放射線:±90 底線+0 軸(灰)、±45 窗界(橘虛線)
-  ctx.strokeStyle = COLORS.axis;
-  ctx.beginPath(); ctx.moveTo(cx - R, cy + 0.5); ctx.lineTo(cx + R, cy + 0.5); ctx.stroke();
+  // 十字淡軸(0/±90/±180)+ ±window 窗界(橘虛線)
   ctx.strokeStyle = COLORS.gridline;
-  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - R); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - R, cy + 0.5); ctx.lineTo(cx + R, cy + 0.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
   ctx.strokeStyle = COLORS.windowEdge; ctx.setLineDash([4, 3]);
   for (const a of [-wdeg, wdeg]) {
     const [x, y] = P(a, R);
     ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
   }
   ctx.setLineDash([]);
-  // θ 刻度標
+  // θ 方位標(0 上、±90 兩側、±180 下)
   ctx.fillStyle = COLORS.muted; ctx.textAlign = "center";
-  for (const a of [-90, -45, 0, 45, 90]) {
+  for (const a of [-90, -45, 0, 45, 90, 180]) {
     const [x, y] = P(a, R + 13);
-    ctx.fillText(`${a}°`, x, y + 3);
+    ctx.fillText(a === 180 ? "±180°" : `${a}°`, x, y + 3);
   }
-  // 紅虛圈=G0−3dB(G0=各曲線 θ=0 的最大值)
+  // 紅虛圈=G0−3dB(G0=各曲線 θ=0 的最大值;全圓)
   const i0 = o.theta.reduce((bi, t, i) => Math.abs(t) < Math.abs(o.theta[bi]) ? i : bi, 0);
   let g0 = -Infinity;
   for (const s of o.series) {
@@ -588,10 +596,10 @@ function drawPolar(cv, o, hoverIdx = -1) {
     const rr = rOf(g0 - 3);
     if (rr > 0) {
       ctx.strokeStyle = COLORS.target; ctx.setLineDash([6, 4]); ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(cx, cy, rr, Math.PI, 2 * Math.PI); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, rr, 0, 2 * Math.PI); ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = COLORS.target; ctx.textAlign = "left";
-      ctx.fillText("G0−3dB", cx - R + 2, cy - rr - 3);
+      ctx.fillStyle = COLORS.target; ctx.textAlign = "right";
+      ctx.fillText("G0−3dB", cx - rr - 3, cy - 3);   // 標在紅圈左側水平軸上,避開頂部環標
     }
   }
   // 序列曲線(dash=幾何譜系線型)
@@ -627,18 +635,18 @@ function drawPolar(cv, o, hoverIdx = -1) {
   cv._pgeom = { cx, cy, R };
   if (!cv._polarBound) {
     cv._polarBound = true;
+    cv._ownTip = true;
     cv.addEventListener("mousemove", (ev) => {
       const o2 = cv._popts;
       if (!o2 || !o2.series.length || !cv._pgeom) return;
       const [mx, my] = evLogical(cv, ev);
       const dx = mx - cv._pgeom.cx, dy = my - cv._pgeom.cy;
-      const ang = Math.atan2(dx, -dy) * 180 / Math.PI;
-      if (dy > 4 || Math.hypot(dx, dy) > cv._pgeom.R + 14 || Math.abs(ang) > 92) {
-        drawPolar(cv, o2); hideTip(); return;
-      }
+      if (Math.hypot(dx, dy) > cv._pgeom.R + 14) { drawPolar(cv, o2); hideTip(); return; }
+      const ang = Math.atan2(dx, -dy) * 180 / Math.PI;   // 0=上、±180=下(全圓)
       let best = 0, bestD = 1e9;
       for (let i = 0; i < o2.theta.length; i++) {
-        const d = Math.abs(o2.theta[i] - ang);
+        const dd = Math.abs(o2.theta[i] - ang);
+        const d = Math.min(dd, 360 - dd);                // ±180 接縫繞圈取最近
         if (d < bestD) { bestD = d; best = i; }
       }
       drawPolar(cv, o2, best);
@@ -728,6 +736,11 @@ function setOvMode(m) {
   $("#ov-cards").hidden = m !== "cards";
   $("#ov-scatter").hidden = m !== "scatter";
   $("#pager").hidden = m === "scatter";
+  // 單軌鐵則:切模式時把非現用容器的 DOM 清掉(hidden 之外再清空,不留上一模式殘骸)
+  S.cardsTok = (S.cardsTok || 0) + 1;   // 同時作廢在途的圖卡渲染
+  if (m !== "table") $("#list-table tbody").textContent = "";
+  if (m !== "wall") $("#ov-wall").textContent = "";
+  if (m !== "cards") $("#ov-cards").textContent = "";
   if (S.view === "overview") {
     if (m === "scatter") renderScatter(); else fetchList();
   }
@@ -822,7 +835,7 @@ function renderWall(data) {
   }
 }
 
-/* ---- 總攬:圖卡模式(縮圖+S11+Gain+radφ90 小圖;曲線=原始幾何,一次繪製不重畫) ---- */
+/* ---- 總攬:圖卡模式(縮圖+S11+Gain+rad 迷你極座標 φ0/φ90;曲線=原始幾何,一次繪製不重畫) ---- */
 function drawMiniCurve(cv, xs, ys, o = {}) {
   // 迷你曲線:無軸刻度;金帶=o.band、紅虛段=o.hline(只畫帶內);dpr 走 ctx2d
   const ctx = ctx2d(cv);
@@ -865,23 +878,69 @@ function drawMiniCurve(cv, xs, ys, o = {}) {
   }
   ctx.stroke();
 }
+function drawMiniPolar(cv, theta, vals, windowDeg) {
+  // 迷你極座標(圖卡用)=詳情頁 drawPolar 的縮小版:全圓 ±180°、主波束朝上(背瓣在下半圓)、
+  // 外圈圓框+十字淡軸、±45° 窗淡金扇、單曲線;r 映射同詳情(頂=vmax 進位 5 的倍數、視窗 30dB)。
+  // 太小畫不下的細節(5dB 刻度環/G0−3dB 紅虛圈/θ 標)刻意省略,但全圓框+金扇保住「一眼是極座標」、不裁半。
+  const ctx = ctx2d(cv);
+  const W = cv._lw, H = cv._lh;
+  ctx.clearRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2;
+  const R = Math.min(W, H) / 2 - 3;
+  const wdeg = windowDeg || 45;
+  ctx.fillStyle = COLORS.windowFill;                 // ±window 金扇(朝上)
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, R, -Math.PI / 2 - wdeg * Math.PI / 180, -Math.PI / 2 + wdeg * Math.PI / 180);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = COLORS.axis; ctx.lineWidth = 1;  // 外圈全圓框
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
+  ctx.strokeStyle = COLORS.gridline;                 // 十字淡軸
+  ctx.beginPath(); ctx.moveTo(cx - R, cy + 0.5); ctx.lineTo(cx + R, cy + 0.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+  let vmax = -Infinity;
+  for (const v of vals) if (v != null && isFinite(v)) vmax = Math.max(vmax, v);
+  if (!isFinite(vmax)) {
+    ctx.fillStyle = COLORS.muted; ctx.font = "11px system-ui"; ctx.textAlign = "center";
+    ctx.fillText("—", cx, cy - 3);
+    ctx.textAlign = "left";
+    return;
+  }
+  const rmax = Math.ceil(vmax / 5) * 5, span = 30;
+  const rOf = (v) => R * Math.max(0, Math.min(1, (v - (rmax - span)) / span));
+  ctx.strokeStyle = COLORS.bar; ctx.lineWidth = 1.5; ctx.lineJoin = "round";
+  let pen = false;
+  ctx.beginPath();
+  for (let i = 0; i < theta.length; i++) {
+    const v = vals[i];
+    if (v == null || !isFinite(v)) { pen = false; continue; }
+    const r = rOf(v);
+    const x = cx + r * Math.sin(theta[i] * Math.PI / 180);
+    const y = cy - r * Math.cos(theta[i] * Math.PI / 180);
+    if (pen) ctx.lineTo(x, y); else { ctx.moveTo(x, y); pen = true; }
+  }
+  ctx.stroke();
+}
 async function renderCards(data) {
   const grid = $("#ov-cards");
+  const tok = (S.cardsTok = (S.cardsTok || 0) + 1);   // 換頁/重篩 race 防護:只讓最新一次 append
   grid.textContent = "";
   if (!data.rows.length) { grid.append(el("div", { class: "muted", text: "沒有符合的 pattern" })); return; }
   const t = await getTargets();
   const ids = data.rows.map((r) => r.id);
   const [respMap, radMap] = await Promise.all([getCurves("resp", ids), getCurves("radc", ids)]);
-  if (S.ovMode !== "cards") return;   // 使用者已切走
+  if (S.ovMode !== "cards" || tok !== S.cardsTok) return;   // 使用者已切走/已發出更新的一頁
   for (const row of data.rows) {
     const resp = respMap.get(row.id), rad = radMap.get(row.id);
-    const mini = (title, avail, drawFn) => {
+    const mini = (title, avail, drawFn, pol = false) => {
+      // pol=迷你極座標格(方形);否則曲線格(橫幅)。無資料=灰底占位(尺寸同該格)。
       const box = el("div", { class: "gmini" }, el("div", { class: "gmini-t", text: title }));
       if (avail) {
-        const cv = el("canvas", { width: 170, height: 74 });
+        const cv = el("canvas", pol ? { width: 74, height: 74 } : { width: 170, height: 74 });
         drawFn(cv);
         box.append(cv);
-      } else box.append(el("div", { class: "gmini-none", text: "無曲線" }));
+      } else box.append(el("div", { class: "gmini-none" + (pol ? " pol" : ""), text: "無曲線" }));
       return box;
     };
     grid.append(el("div", {
@@ -894,8 +953,10 @@ async function renderCards(data) {
       el("div", { class: "muted gcard-geom", text: "曲線=原始幾何" })),
     mini("S11", !!resp, (cv) => drawMiniCurve(cv, t.freqs, resp.s11, { band: t.band, hline: t.s11_max })),
     mini("Gain", !!resp, (cv) => drawMiniCurve(cv, t.freqs, resp.gain, { band: t.band, hline: t.gain_min })),
-    mini("rad φ90(±45°金帶)", !!(rad && rad.phi90), (cv) =>
-      drawMiniCurve(cv, rad.theta, rad.phi90, { band: [-t.rad_window, t.rad_window] })),
+    mini("rad φ0", !!(rad && rad.phi0), (cv) =>
+      drawMiniPolar(cv, rad.theta, rad.phi0, t.rad_window), true),
+    mini("rad φ90", !!(rad && rad.phi90), (cv) =>
+      drawMiniPolar(cv, rad.theta, rad.phi90, t.rad_window), true),
     ));
   }
 }
@@ -1029,6 +1090,7 @@ function updateScatterActions() {
 }
 function initScatterEvents() {
   const cv = $("#scatter-canvas");
+  cv._ownTip = true;
   let drag = null;   // {mode:"select"|"pan", ...}
   cv.addEventListener("mousedown", (ev) => {
     const [mx, my] = evLogical(cv, ev);
@@ -1298,16 +1360,41 @@ function removeTray(id) {
 }
 function updateTrayBadge() { $("#tray-badge").textContent = String(S.tray.length); }
 function setCmpTab(tab) {
+  // 「全部」籤=單軌鐵則的組合模式:同時 unhide 四個既有容器並全部渲染,
+  // 不複製 canvas、不開第二條繪製路徑(canvas id 全站唯一)。
   S.cmpTab = tab;
+  const all = tab === "all";
   document.querySelectorAll("#cmp-tabs button").forEach((b) => {
     b.classList.toggle("active", b.dataset.tab === tab);
   });
-  $("#cmp-pattern").hidden = tab !== "pattern";
-  $("#cmp-s11").hidden = tab !== "s11";
-  $("#cmp-gain").hidden = tab !== "gain";
-  $("#cmp-rad").hidden = tab !== "rad";
-  $("#cmp-var-wrap").hidden = tab === "pattern";   // 變體開關只在曲線籤有意義
+  $("#cmp-pattern").hidden = !all && tab !== "pattern";
+  $("#cmp-s11").hidden = !all && tab !== "s11";
+  $("#cmp-gain").hidden = !all && tab !== "gain";
+  $("#cmp-rad").hidden = !all && tab !== "rad";
+  $("#cmp-var-wrap").hidden = tab === "pattern";   // 變體開關只在有曲線的籤有意義
   if (S.view === "compare") renderCompare();
+}
+async function renderCmpStrip() {
+  // 常駐縮圖條:每筆 80px 方形縮圖(饋線邊=圖下緣),外框色=該筆在曲線圖的線色;點進詳情
+  const box = $("#cmp-strip");
+  box.textContent = "";
+  for (let i = 0; i < S.tray.length; i++) {
+    const id = S.tray[i];
+    const color = SERIES[i % SERIES.length];
+    const item = el("div", { class: "cs-item",
+      "data-tip": `${id}\n外框色=這筆在疊圖的線色;點縮圖進詳情`,
+      onclick: () => nav("detail", id) });
+    item.append(el("div", { class: "tid", text: id }));
+    box.append(item);
+    try {
+      const p = await getPattern(id);
+      const cv = makeThumb(b64ToBits(p.bits_b64), "thumb cs");
+      cv.style.borderColor = color;
+      item.prepend(cv);
+    } catch (e) {
+      item.prepend(el("div", { class: "cs-miss muted", text: "?" }));
+    }
+  }
 }
 async function compareEntries() {
   // 跨 pattern 比對:每 tray 一色;預設只畫原始(避免混淆),勾「加消融變體曲線」才疊變體
@@ -1351,6 +1438,7 @@ async function renderCompare() {
   ed.append(input, addBtn);
   if (S.tray.length) ed.append(el("button", { text: "清空", "data-tip": "清空比對清單",
     onclick: () => { S.tray = []; saveLS("pb_tray_v1", S.tray); updateTrayBadge(); renderCompare(); } }));
+  renderCmpStrip().catch(() => {});   // 縮圖條在所有籤常駐(1 筆也先顯示)
 
   const hint = $("#compare-hint");
   if (S.tray.length < 2) {
@@ -1366,7 +1454,12 @@ async function renderCompare() {
   }
   hint.textContent = "";
   try {
-    if (S.cmpTab === "pattern") await renderComparePattern();
+    if (S.cmpTab === "all") {          // 全部籤:四區塊全渲染(共用同一組 helper 與 canvas)
+      await renderComparePattern();
+      await renderCompareResp("s11");
+      await renderCompareResp("gain");
+      await renderCompareRad();
+    } else if (S.cmpTab === "pattern") await renderComparePattern();
     else if (S.cmpTab === "rad") await renderCompareRad();
     else await renderCompareResp(S.cmpTab);
   } catch (e) { toast(`比對載入失敗:${e.message}`, true); }
@@ -1636,7 +1729,7 @@ async function renderMfg() {
     + ` · 依 ${axis} 排序 · 符合 ${data.total} 筆(取前 ${data.rows.length})`;
   document.querySelectorAll("#mfg-table th.mfg-sort").forEach((th) => {
     th.classList.toggle("sorted", th.dataset.axis === axis);
-    th.textContent = th.dataset.axis + (th.dataset.axis === axis ? " ↓" : "");
+    th.textContent = th.dataset.axis + (th.dataset.axis === axis ? (dir === "asc" ? " ↑" : " ↓") : "");
   });
   const sel = S.mfg.rows.find((r) => r.id === S.mfg.selId) || S.mfg.rows[0] || null;
   S.mfg.selId = sel ? sel.id : null;
@@ -1859,6 +1952,7 @@ function paretoRedraw(hoverI = -1) {
 }
 function initParetoEvents() {
   const cv = $("#pareto-canvas");
+  cv._ownTip = true;
   let drag = null;
   const hit = (ev) => {
     const [mx, my] = evLogical(cv, ev);

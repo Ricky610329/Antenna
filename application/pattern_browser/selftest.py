@@ -130,6 +130,8 @@ def main():
         # ---- 靜態檔 ----
         st, body = get(base, "/")
         check("GET / 回 index.html", st == 200 and b"app.js" in body)
+        check("比對頁有「全部」籤+常駐縮圖條", st == 200 and
+              b'data-tab="all"' in body and b'id="cmp-strip"' in body)
         st, _ = get(base, "/static/app.js")
         check("GET /static/app.js", st == 200)
         st, _ = get(base, "/static/style.css")
@@ -142,6 +144,8 @@ def main():
                                          "h-examples", "h-glossary", "h-faq")))
         check("help 五個 step-by-step 範例",
               all(f"h-ex-{c}" in helptxt for c in "abcde"))
+        check("help 已同步 v2.1–2.3(圖卡/縮放/線型譜系/全圓極座標)",
+              all(k in helptxt for k in ("圖卡", "滾輪縮放", "實線", "±180°")))
         conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)  # raw path,繞過 urllib 正規化
         conn.request("GET", "/static/../server.py")
         resp = conn.getresponse()
@@ -254,6 +258,12 @@ def main():
         check("resp 未知 id → null", r is not None and r.get("no_such_id") is None)
         st, _ = get_json(base, "/api/resp", want_status=400)
         check("resp 缺 ids → 400", st == 400)
+        # ids cap=32 邊界(前端 getCurves 依此切批;圖卡模式每頁可到 200)
+        ids32 = ",".join(f"fx{k:04d}" for k in range(32))
+        st, r = get_json(base, f"/api/resp?ids={ids32}")
+        check("resp 32 個 id(=cap)→ 200", st == 200 and r is not None and len(r) == 32)
+        st, _ = get_json(base, f"/api/resp?ids={ids32},fx0032", want_status=400)
+        check("resp 33 個 id(>cap)→ 400", st == 400)
 
         # ---- v2 /api/radc ----
         st, r = get_json(base, "/api/radc?ids=fx0000,fx0000~sl100,no_such_id")
@@ -261,7 +271,9 @@ def main():
         c = (r or {}).get("fx0000")
         check("radc fx0000 theta/phi0/phi90 各 181 點", c is not None and
               len(c["theta"]) == NTHETA and len(c["phi0"]) == NTHETA and len(c["phi90"]) == NTHETA)
-        check("radc theta -90..90", c is not None and c["theta"][0] == -90 and c["theta"][-1] == 90)
+        check("radc theta -180..180 全圓(同真實 rad.npz)", c is not None and
+              c["theta"][0] == -180 and c["theta"][-1] == 180 and
+              c["theta"][1] - c["theta"][0] == 2)
         cv = (r or {}).get("fx0000~sl100")
         check("radc 變體切面(fx0000~sl100)", cv is not None and len(cv["phi0"]) == NTHETA)
         check("radc 未知 id → null", r is not None and r.get("no_such_id") is None)
