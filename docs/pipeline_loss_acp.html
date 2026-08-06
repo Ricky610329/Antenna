@@ -311,7 +311,7 @@ smodel.<span class="g">train_one_data</span>(series, stack)  <span class="c"># �
 
   <h3>4.1 target loss（依你的規格：相對 + 最小高度 + boresight 最高）</h3>
   <div class="formula">
-<span class="c"># 相對約束；G[0°]=boresight gain，θ∈窗（如 ±55°）</span>
+<span class="c"># 相對約束；G[0°]=boresight gain，θ∈窗（±45°;原 ±55 已改）</span>
 beam_coverage_loss =
     w1 * mean( <span class="p">relu</span>( (G[0°] - 3dB) - G[θ∈窗] ) )   <span class="c"># 逼窗內 ≥ G(0°)-3dB「最小高度」</span>
   + w2 * mean( <span class="p">relu</span>( G[θ] - G[0°] ) )            <span class="c"># 但 0° 要最高（罰任何 θ 超過 boresight）</span>

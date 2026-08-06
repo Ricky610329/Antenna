@@ -1,6 +1,6 @@
 # Round 54 — 菱形橋輪:45° 顯式對角橋 × 六點橋寬轉移曲線 × 批線常態
 
-- **狀態**: proposed（2026-08-05 15:4x 開輪;計畫=Ricky 核准之 plan「45° 對角橋」;R53 收輪接棒）
+- **狀態**: running（2026-08-05 開輪;戰役 6,638 筆跑批中;判準/計畫=Ricky 核准 plan「45° 對角橋」）
 - **提出 / 開跑 / 結論**: 2026-08-05 / — / —
 - **一句話問題**: 把對角接點的 0.01mm 意外微橋換成可設計的 45° 菱形橋(w_d 可製造尺寸),
   電性保得住嗎——保住=左側/lo 票倉整個可製造化;保不住=顯式橋判死,低對角軸原路走。
@@ -52,6 +52,20 @@
 | 探針生成 | ✅ 16:3x 四夾重生成含 t07 系擴充:**13 親×4 尺寸=52 筆**(283 橋/夾;0.14 檔縮橋 128 座);待三台重啟發車 |
 | v108+b1 | 16:0x 鏈啟動(train --add r53b3a→two→staging 520→select-r54 b1) |
 | 探針發車 | ✅ 16:5x Ricky 核准:db100 prio 2 前導+db50/75/140 prio 3;幾何渲染目檢過(diamond_geometry.png,t07=23 座) |
+
+### 戰役選批邏輯歸檔(回顧輪 2026-08-06 補;鐵則 3 合規)
+```python
+# 名單=res_index 全史掃描(排除 store 含 meshconv|smoke|s1base|r54db、id 含 ~、探針 13 親):
+#   合格: wm[2]>=0.15 and rad_margin>=0   → 1,208 筆(wm 降序切 100/夾=valq01..13, prio 3)
+#   近合格: wm[2]>=0 and rad_margin>=-0.5 → 2,111 筆(valn01..22, prio 4)
+# 變體: {pid}~db100(hfss_setup={"diag_bridge_w":0.10,"timeout":1800})
+#      {pid}~sl100(hfss_setup={"diag_bridge_w":-0.10,"timeout":1800}) → slotq/slotn 同切法
+# 探針 13 親(tmp/diagbridge_ids.txt,格式 夾:id):
+#  dedust_r9_input:t07_top / t03_top / t05_top / t09_top;dedust_r50b2c_input:e50b2_007_F6161 /
+#  e50b2_000_F18644;dedust_c8tri_p03_input:c8trip03_01;dedust_c41grp2_p02_input:c41grp2p02_02;
+#  dedust_c48nq1_p05_input:c48nq1p05_16;dedust_r52dx_input:x52t07_add25 / x52t07_add50;
+#  dedust_c53lot2_p02_input:c53lot2p02_07;dedust_c53lot2_p03_input:c53lot2p03_20
+```
 
 ## 4. 分析 (Analyze)
 
