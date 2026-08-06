@@ -17,6 +17,11 @@
   --good: #006300;        /* wm≥0 文字 */
 }
 * { box-sizing: border-box; }
+/* ── canvas 比例鐵則(v2.1)──
+ * 顯示長寬比必須=width/height 屬性比。height:auto+max-width:100% ⇒ 縮放時按內在比例等比縮,
+ * 永不單軸壓扁;display:block 防 inline 基線縫。特定 canvas 若要固定顯示尺寸,必須「兩軸都寫死
+ * 且與屬性同比」(如 .thumb 48×48 對 25×25)——只寫一軸=禁止。 */
+canvas { display: block; max-width: 100%; height: auto; }
 body {
   margin: 0; background: var(--page); color: var(--ink);
   font-family: system-ui, -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
@@ -83,6 +88,7 @@ input.num { width: 64px; }
 .chart-box {
   background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
   padding: 8px 10px;
+  max-width: 100%; min-width: 0;   /* flex/grid 項目防溢出擠壓;canvas 靠全域 height:auto 等比縮 */
 }
 #filters {
   display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
@@ -113,17 +119,19 @@ td button { padding: 1px 7px; font-size: 12px; }
 #pager { display: flex; gap: 12px; align-items: center; justify-content: center; margin: 10px 0; }
 
 canvas.thumb {
-  width: 48px; height: 48px; image-rendering: pixelated;
+  width: 48px; aspect-ratio: 1 / 1; image-rendering: pixelated;   /* height:auto 承全域;夾窄也保方形 */
   border: 1px solid var(--grid); background: var(--empty); display: block;
 }
-canvas.thumb.md { width: 84px; height: 84px; }
+canvas.thumb.md { width: 84px; }
 
 /* ---- 詳情 ---- */
 .detail-flex { display: flex; gap: 24px; flex-wrap: wrap; }
-.canvas-col { display: flex; flex-direction: column; gap: 6px; }
-#detail-canvas { border: 1px solid var(--baseline); background: var(--empty); }
+/* align-items 不可留預設 stretch:canvas 的 CSS width 是 auto,直排 flex 會把它橫向拉滿=單軸變形 */
+.canvas-col { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; max-width: 100%; }
+.canvas-col .feed-edge, .canvas-col .btn-row { align-self: stretch; }
+#detail-canvas { border: 1px solid var(--baseline); background: var(--empty); aspect-ratio: 1 / 1; width: min(500px, 100%); }
 .feed-edge { font-size: 12px; color: var(--muted); text-align: center; }
-.meta-col { flex: 1; min-width: 320px; }
+.meta-col { flex: 1; min-width: min(320px, 100%); }
 dl#detail-meta {
   display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; margin: 0 0 12px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px;
@@ -153,16 +161,17 @@ dl#detail-meta dd { margin: 0; font-variant-numeric: tabular-nums; word-break: b
 #compare-grid { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; }
 .cmp-col {
   background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+  max-width: 100%;
 }
-.cmp-col canvas { border: 1px solid var(--grid); }
+.cmp-col canvas { border: 1px solid var(--grid); aspect-ratio: 1 / 1; width: min(250px, 100%); }
 .cmp-col .cid { font-weight: 600; margin: 4px 0; max-width: 250px; word-break: break-all; cursor: pointer; color: var(--series); }
 .cmp-col table td { padding: 1px 8px; border: none; font-size: 12px; }
 #xor-panel { margin-top: 18px; }
 .xor-legend { font-size: 12px; color: var(--ink-2); margin-bottom: 8px; }
 .xor-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 3px 0 10px; vertical-align: -1px; }
 .xor-grid { display: flex; gap: 14px; flex-wrap: wrap; }
-.xor-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 12px; }
-.xor-card canvas { border: 1px solid var(--grid); }
+.xor-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 12px; max-width: 100%; }
+.xor-card canvas { border: 1px solid var(--grid); aspect-ratio: 1 / 1; width: min(250px, 100%); }
 #pair-matrix td, #pair-matrix th { font-size: 12px; }
 
 /* ---- 群組 ---- */
@@ -180,7 +189,7 @@ dl#detail-meta dd { margin: 0; font-variant-numeric: tabular-nums; word-break: b
 #group-list li.active { background: #e8f0fb; }
 #group-list li .gname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #group-list li button { padding: 0 5px; font-size: 12px; }
-#group-detail { flex: 1; }
+#group-detail { flex: 1; min-width: 0; }
 .member-card { position: relative; }
 .member-card input[type="checkbox"] { position: absolute; top: 4px; left: 4px; }
 .grp-table-wrap { margin-top: 14px; }
@@ -198,10 +207,10 @@ dl#detail-meta dd { margin: 0; font-variant-numeric: tabular-nums; word-break: b
 .wall-card { cursor: pointer; text-align: center; }
 .wall-card:hover .thumb.wall { border-color: var(--series); }
 .wall-card .tid {
-  font-size: 11px; color: var(--ink-2); max-width: 104px; margin: 2px auto 0;
+  font-size: 11px; color: var(--ink-2); max-width: 100%; margin: 2px auto 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-canvas.thumb.wall { width: 96px; height: 96px; margin: 0 auto; }
+canvas.thumb.wall { width: 96px; margin: 0 auto; }
 #ov-scatter { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
 #scatter-canvas, #pareto-canvas { max-width: 100%; cursor: crosshair; }
 #scatter-actions {
@@ -217,7 +226,45 @@ canvas.thumb.wall { width: 96px; height: 96px; margin: 0 auto; }
 .leg-item.clickable { cursor: pointer; }
 .leg-item.clickable:hover { color: var(--ink); text-decoration: underline; }
 .leg-item .sw { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
+.leg-item .swl { display: inline-block; width: 22px; height: 0; }   /* 線型圖例:border-top 呈現實/虛/點線 */
 #detail-curves, #detail-rad { margin-top: 20px; }
+#det-geom-status { margin: 2px 0 4px; }
+.card.geom-off { opacity: 0.4; }                    /* wm 卡與幾何勾選聯動:未勾=調暗 */
+.banner {
+  background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--series);
+  border-radius: 6px; padding: 8px 12px; margin-bottom: 8px; font-size: 13px; color: var(--ink-2);
+}
+#cmp-var-wrap { margin-left: auto; align-self: center; color: var(--ink-2); padding: 4px 6px; }
+
+/* ---- v2.2:縮放重置鈕 ---- */
+.zoom-host { position: relative; }
+button.rst {
+  position: absolute; top: 4px; right: 4px; z-index: 5;
+  padding: 0 7px; font-size: 13px; line-height: 20px; border-radius: 4px;
+  background: rgba(252, 252, 251, 0.9);
+}
+
+/* ---- v2.3:圖卡模式 ---- */
+#ov-cards { display: flex; flex-direction: column; gap: 10px; }
+.gcard {
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px;
+}
+.gcard:hover { border-color: var(--series); }
+.gcard-left { width: 130px; text-align: center; }
+.gcard-left .tid {
+  font-size: 12px; max-width: 128px; margin: 3px auto 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.gcard-geom { font-size: 11px; }
+canvas.thumb.gthumb { width: 120px; margin: 0 auto; }
+.gmini { min-width: 0; }
+.gmini-t { font-size: 11px; color: var(--ink-2); margin-bottom: 2px; }
+.gmini-none {
+  width: 170px; height: 74px; display: flex; align-items: center; justify-content: center;
+  background: var(--page); border: 1px dashed var(--grid); border-radius: 4px;
+  color: var(--muted); font-size: 12px;
+}
 
 /* ---- v2:比對分頁籤 ---- */
 .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--grid); margin: 10px 0 12px; }
