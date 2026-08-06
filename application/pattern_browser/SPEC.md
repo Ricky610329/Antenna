@@ -35,3 +35,40 @@ Ricky 需求:快速瀏覽/比對全史 pattern;Hamming 距離鄰域查找;按對
 - 啟動:`python -m application.pattern_browser.server --port 8321`(repo 根;ant env)。
 - 中文 UI;深色可免;效能目標:list/hamming <300ms(N≈36k,numpy 向量化)。
 - 測試:`tests/` 不動;瀏覽器工具自帶 `application/pattern_browser/selftest.py`(API 冒煙)。
+
+---
+
+# v2 增補契約(2026-08-06;Ricky:response/rad 疊圖比對·雙視角·多渲染·tooltip+說明頁)
+
+## v2 資料(build_index 增產;全部與 patterns.npz 的 ids 同序對齊)
+- `data/resp.npz`:`resp` float16 [N,2,17](S11,Gain;24-32GHz 17 點;缺=NaN)+`has_resp` bool[N]。
+  來源=store 樣本 .pt(hash 檔名):每店載入樣本以 pattern bytes 對映 id;增量刷新同主索引。
+- `data/rad.npz`:`theta` float16[181]+`phi0`/`phi90` float16[N,181](缺=NaN)+`has_rad` bool[N]。
+  來源=store/rad/{id}.pt(id 檔名,直取)。
+- `data/variant_resp.json`:{變體id: {"s11":[17],"gain":[17],"phi0":[181]|null,"phi90":[181]|null}}
+  (~db100/~sl100 變體曲線;消融疊圖用)。
+- meta.json 每筆加 `has_resp`/`has_rad`(bool)。
+
+## v2 API
+- `/api/resp?ids=a,b,c` → {id:{s11:[17],gain:[17]}}(親本查 npz,變體查 variant_resp;缺=null)。
+- `/api/radc?ids=a,b,c` → {id:{theta:[181],phi0:[..],phi90:[..]}}(缺=null)。
+- `/api/targets` → {band:[26.5,29.5], s11_max:-10, gain_min:4, wm_buffer:0.15, rad_window:45, rad_floor:3}
+  (規格常數單一來源,前端畫目標線/合格門檻全由此取)。
+- `/api/list` 每列加 has_resp/has_rad。
+
+## v2 前端
+- **比對頁**分頁籤:Pattern(XOR,現行)/S11 疊圖/Gain 疊圖/rad 極座標疊圖(φ0/φ90 兩圖;主波束朝上、
+  金=±45° 窗、紅虛圈=G0−3dB——同 repo 報告圖語言);目標線取 /api/targets。
+- **詳情頁**加:S11+Gain 曲線(含目標線與內帶底色)、rad 極座標兩切面;消融對照卡升級=
+  原始/菱形/挖空**曲線疊圖**(不只 wm 數字)。
+- **總攬多渲染模式**(切換鈕):表格(現行)/縮圖牆(大縮圖 grid+hover 指標)/散點(X-Y 軸可選
+  wm/lo/rad/ndiag/n8,點=pattern,框選→送比對/建群組)。
+- **雙視角頁籤**:
+  - **製造視角(日月光)**:排行榜(軸可選 wm/rad/lo/sel;硬閘門開關=合格 gates)、
+    「可製造欄」=db100_wm(菱形化後餘裕=實際出貨值)並可按它排序、規格達成卡(距各目標多少 dB)、
+    一鍵匯出 top-N CSV+pattern PNG。
+  - **研究視角**:帕累托前緣圖(lo-wm 平面,合格點高亮)、家族分布(id 前綴聚合)、
+    消融覆蓋統計、與散點模式互通。
+- **全面 tooltip**:每個按鈕/篩選器/欄位標題 hover 出說明(自製 tooltip,非僅 title);
+  **/help 說明頁**:系統導覽(四視圖+雙視角)、名詞表(wm/rad/lo/sel/ndiag/n8/消融)、
+  資料來源與刷新方式、常見工作流(找最好/找鄰居/建群組比對)。

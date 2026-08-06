@@ -10,10 +10,13 @@
 <header>
   <h1>Pattern Browser</h1>
   <nav id="nav">
-    <button data-view="overview">總攬</button>
-    <button data-view="detail">詳情</button>
-    <button data-view="compare">比對 <span id="tray-badge" class="badge">0</span></button>
-    <button data-view="groups">群組</button>
+    <button data-view="overview" data-tip="全史 pattern 總覽:統計、分布、篩選、排序;可切表格/縮圖牆/散點三種呈現">總攬</button>
+    <button data-view="detail" data-tip="單一 pattern 的大圖、全指標、S11/Gain/rad 曲線、消融疊圖與 Hamming 鄰居">詳情</button>
+    <button data-view="compare" data-tip="2–4 筆並排比對:pattern XOR 差異、S11/Gain 疊圖、rad 極座標疊圖">比對 <span id="tray-badge" class="badge">0</span></button>
+    <button data-view="groups" data-tip="自訂群組(存在瀏覽器 localStorage):收藏、命名、匯出入、一鍵送比對">群組</button>
+    <button data-view="mfg" data-tip="製造視角:排行榜+合格閘門+可製造欄 db100_wm(菱形化後=實際出貨值)+匯出">製造視角</button>
+    <button data-view="research" data-tip="研究視角:lo–wm 帕累托前緣、家族統計(id 前綴)、消融覆蓋">研究視角</button>
+    <button data-view="help" data-tip="系統導覽、名詞表、資料刷新方式與常見工作流">說明</button>
   </nav>
 </header>
 <div id="msg" hidden></div>
@@ -30,39 +33,67 @@
     </div>
 
     <form id="filters" autocomplete="off">
-      <label class="chk"><input type="checkbox" id="f-qual"> 只看合格(wm≥0.15∧rad≥0)</label>
-      <label>ndiag <input type="number" id="f-diag-min" class="num" placeholder="min">–<input type="number" id="f-diag-max" class="num" placeholder="max"></label>
-      <label>n8 <input type="number" id="f-n8-min" class="num" placeholder="min">–<input type="number" id="f-n8-max" class="num" placeholder="max"></label>
-      <label>wm ≥ <input type="number" step="0.1" id="f-wm-min" class="num"></label>
-      <label>lo ≤ <input type="number" step="0.1" id="f-lo-max" class="num"></label>
-      <label class="chk"><input type="checkbox" id="f-has-db"> 有 db100</label>
-      <label class="chk"><input type="checkbox" id="f-has-sl"> 有 sl100</label>
-      <label>id 搜尋 <input type="text" id="f-q" placeholder="子字串"></label>
-      <label>每頁 <select id="limit"><option>50</option><option>100</option><option>200</option></select></label>
-      <button type="submit">套用</button>
-      <button type="button" id="filters-reset">重設</button>
+      <label class="chk" data-tip="只留專案正式口徑的合格解:雙帶最差餘裕 wm≥0.15 且 rad 窗地板餘裕≥0"><input type="checkbox" id="f-qual"> 只看合格(wm≥0.15∧rad≥0)</label>
+      <label data-tip="ndiag=真對角接點數(只碰角的金屬對)。0=天生可製造;越多菱形化風險越大">ndiag <input type="number" id="f-diag-min" class="num" placeholder="min">–<input type="number" id="f-diag-max" class="num" placeholder="max"></label>
+      <label data-tip="n8=8-連通組塊數(斜角也算相連)。1=單一塊;多塊=有浮島">n8 <input type="number" id="f-n8-min" class="num" placeholder="min">–<input type="number" id="f-n8-max" class="num" placeholder="max"></label>
+      <label data-tip="只留 wm(雙帶最差餘裕,dB)大於等於此值的 pattern">wm ≥ <input type="number" step="0.1" id="f-wm-min" class="num"></label>
+      <label data-tip="只留 lo(左側帶外增益上限,dB;越負越好)小於等於此值的 pattern">lo ≤ <input type="number" step="0.1" id="f-lo-max" class="num"></label>
+      <label class="chk" data-tip="只留做過 db100 消融(全對角換 0.10mm 菱形橋)的 pattern"><input type="checkbox" id="f-has-db"> 有 db100</label>
+      <label class="chk" data-tip="只留做過 sl100 消融(全對角挖空成槽)的 pattern"><input type="checkbox" id="f-has-sl"> 有 sl100</label>
+      <label data-tip="id 子字串搜尋,例如打 c48 找 R48 家族">id 搜尋 <input type="text" id="f-q" placeholder="子字串"></label>
+      <label data-tip="表格/縮圖牆一頁顯示幾筆">每頁 <select id="limit"><option>50</option><option>100</option><option>200</option></select></label>
+      <button type="submit" data-tip="套用上面所有篩選條件並回到第一頁">套用</button>
+      <button type="button" id="filters-reset" data-tip="清掉所有篩選條件,回到預設排序">重設</button>
     </form>
 
+    <div class="btn-row" id="ov-modebar">
+      <span class="muted">呈現:</span>
+      <div class="seg" id="ov-mode">
+        <button data-mode="table" data-tip="表格模式:縮圖+指標欄,點欄頭排序,點列進詳情">表格</button>
+        <button data-mode="wall" data-tip="縮圖牆模式:96px 大縮圖一目十行,hover 浮出指標,點卡進詳情">縮圖牆</button>
+        <button data-mode="scatter" data-tip="散點模式:自選 X/Y 軸看全篩選結果的分布;點=進詳情,拖框=圈一批送比對/建群組">散點</button>
+      </div>
+    </div>
+
     <div id="list-info" class="muted"></div>
-    <div class="table-wrap">
+    <div id="ov-table" class="table-wrap">
       <table id="list-table">
         <thead><tr>
-          <th>縮圖</th><th>id</th>
-          <th class="sortable" data-sort="wm">wm</th>
-          <th class="sortable" data-sort="rad">rad</th>
-          <th class="sortable" data-sort="lo">lo</th>
-          <th class="sortable" data-sort="ndiag">ndiag</th>
-          <th class="sortable" data-sort="n8">n8</th>
-          <th class="sortable" data-sort="total">total</th>
-          <th>消融</th><th>kind</th><th>store</th><th>操作</th>
+          <th data-tip="25×25 金屬 pattern 縮圖;圖下緣=饋線邊">縮圖</th>
+          <th data-tip="pattern 的唯一識別名(通常=round+批次+序號)">id</th>
+          <th class="sortable" data-sort="wm" data-tip="worst margin:雙頻帶規格最差餘裕(dB)。≥0.15 過合格閘門;點我排序">wm</th>
+          <th class="sortable" data-sort="rad" data-tip="±45° 波束窗內最低增益相對地板的餘裕(dB)。≥0 合格;點我排序">rad</th>
+          <th class="sortable" data-sort="lo" data-tip="左側帶外增益上限(dB),越負=帶外壓得越乾淨;點我排序">lo</th>
+          <th class="sortable" data-sort="ndiag" data-tip="真對角接點數;0=天生可製造;點我排序">ndiag</th>
+          <th class="sortable" data-sort="n8" data-tip="8-連通組塊數;點我排序">n8</th>
+          <th class="sortable" data-sort="total" data-tip="金屬格總數(625 格中幾格是金屬);點我排序">total</th>
+          <th data-tip="消融變體的 wm:db100=菱形橋化、sl100=挖空槽化後重新模擬的最差餘裕">消融</th>
+          <th data-tip="這筆 pattern 的產生方式(select/hill/graft…)">kind</th>
+          <th data-tip="來源 store(NAS 上的批次資料夾)">store</th>
+          <th data-tip="快速把這筆加進比對清單或使用中群組">操作</th>
         </tr></thead>
         <tbody></tbody>
       </table>
     </div>
+    <div id="ov-wall" class="wall-grid" hidden></div>
+    <div id="ov-scatter" hidden>
+      <div class="btn-row">
+        <label data-tip="散點的橫軸要畫哪個指標">X 軸 <select id="sc-x"></select></label>
+        <label data-tip="散點的縱軸要畫哪個指標">Y 軸 <select id="sc-y"></select></label>
+        <span id="scatter-info" class="muted"></span>
+      </div>
+      <canvas id="scatter-canvas" width="760" height="460"></canvas>
+      <div id="scatter-actions" class="btn-row" hidden>
+        <span id="scatter-selinfo"></span>
+        <button id="sc-to-compare" data-tip="把框選到的 2–4 筆直接送進比對頁">送比對</button>
+        <button id="sc-to-group" data-tip="把框選到的所有點加進群組(無使用中群組會先問名稱)">建群組</button>
+        <button id="sc-clear" data-tip="清掉目前的框選">清除選取</button>
+      </div>
+    </div>
     <div id="pager">
-      <button id="pg-prev">‹ 上一頁</button>
+      <button id="pg-prev" data-tip="上一頁">‹ 上一頁</button>
       <span id="pg-info"></span>
-      <button id="pg-next">下一頁 ›</button>
+      <button id="pg-next" data-tip="下一頁">下一頁 ›</button>
     </div>
   </section>
 
@@ -74,10 +105,10 @@
         <div class="canvas-col">
           <canvas id="detail-canvas" width="500" height="500"></canvas>
           <div class="feed-edge">▲ 圖下緣＝饋線邊(i 朝下、j 朝右)</div>
-          <label class="chk"><input type="checkbox" id="ov-sites" checked> 疊菱形站點(<span id="site-count">0</span> 座)</label>
+          <label class="chk" data-tip="疊出 45° 菱形站點:每個真對角接點做 db100 菱形化時會放橋的位置"><input type="checkbox" id="ov-sites" checked> 疊菱形站點(<span id="site-count">0</span> 座)</label>
           <div class="btn-row">
-            <button id="detail-to-compare">加入比對</button>
-            <button id="detail-to-group">加入群組</button>
+            <button id="detail-to-compare" data-tip="把這筆加進比對清單(最多 4 筆)">加入比對</button>
+            <button id="detail-to-group" data-tip="把這筆加進使用中群組">加入群組</button>
           </div>
         </div>
         <div class="meta-col">
@@ -86,12 +117,33 @@
           <div id="variant-panel"></div>
         </div>
       </div>
+
+      <div id="detail-curves">
+        <h3 data-tip="S11=反射係數(越低越匹配);Gain=帶內增益。紅虛線=規格門檻,金色底=目標頻帶 26.5–29.5GHz;有消融變體曲線時一併疊上(原始/菱形/挖空)">頻率響應(S11 / Gain,含消融疊圖)</h3>
+        <div class="chart-row">
+          <div class="chart-box"><h3>S11(dB)</h3><canvas id="det-s11" width="470" height="240"></canvas></div>
+          <div class="chart-box"><h3>Gain(dB)</h3><canvas id="det-gain" width="470" height="240"></canvas></div>
+        </div>
+        <div id="det-curve-legend" class="chart-legend"></div>
+        <div id="det-curve-note" class="muted"></div>
+      </div>
+
+      <div id="detail-rad">
+        <h3 data-tip="輻射場型兩切面。主波束朝上;金色扇形=±45° 波束窗、橘虛線=窗界、紅虛圈=G0−3dB(G0=θ=0 最大值);每環 5dB">rad 極座標(φ=0° / φ=90°)</h3>
+        <div class="chart-row">
+          <div class="chart-box"><h3>φ=0° 切面</h3><canvas id="det-rad0" width="340" height="205"></canvas></div>
+          <div class="chart-box"><h3>φ=90° 切面</h3><canvas id="det-rad90" width="340" height="205"></canvas></div>
+        </div>
+        <div id="det-rad-legend" class="chart-legend"></div>
+        <div id="det-rad-note" class="muted"></div>
+      </div>
+
       <div id="neighbors-panel">
         <h3>Hamming 鄰居</h3>
         <div class="btn-row">
-          <label>maxd <input type="number" id="nb-maxd" class="num" value="100"></label>
-          <label>筆數 <input type="number" id="nb-limit" class="num" value="24"></label>
-          <button id="nb-go">找鄰居</button>
+          <label data-tip="最大 Hamming 距離(翻幾個格子以內算鄰居)">maxd <input type="number" id="nb-maxd" class="num" value="100"></label>
+          <label data-tip="最多列出幾筆鄰居">筆數 <input type="number" id="nb-limit" class="num" value="24"></label>
+          <button id="nb-go" data-tip="用 packed XOR 全庫掃一遍,依距離排序列出最像的 pattern">找鄰居</button>
         </div>
         <div id="neighbors-grid" class="thumb-grid"></div>
       </div>
@@ -102,8 +154,34 @@
   <section id="view-compare" hidden>
     <div id="tray-editor" class="btn-row"></div>
     <div id="compare-hint" class="muted"></div>
-    <div id="compare-grid"></div>
-    <div id="xor-panel"></div>
+    <div class="tabs" id="cmp-tabs">
+      <button data-tab="pattern" data-tip="pattern 幾何比對:並排大圖+XOR 差異(共同灰/A獨藍/B獨紅)+兩兩距離">Pattern(XOR)</button>
+      <button data-tab="s11" data-tip="S11 反射係數疊圖:紅虛線=−10dB 門檻、金色底=目標頻帶">S11 疊圖</button>
+      <button data-tab="gain" data-tip="帶內增益疊圖:紅虛線=4dB 門檻、金色底=目標頻帶">Gain 疊圖</button>
+      <button data-tab="rad" data-tip="輻射場型極座標疊圖(φ0/φ90):金扇=±45°窗、紅虛圈=G0−3dB">rad 極座標</button>
+    </div>
+    <div id="cmp-pattern">
+      <div id="compare-grid"></div>
+      <div id="xor-panel"></div>
+    </div>
+    <div id="cmp-s11" hidden>
+      <div class="chart-box wide"><canvas id="cmp-s11-cv" width="700" height="320"></canvas></div>
+      <div id="cmp-s11-legend" class="chart-legend"></div>
+      <div id="cmp-s11-note" class="muted"></div>
+    </div>
+    <div id="cmp-gain" hidden>
+      <div class="chart-box wide"><canvas id="cmp-gain-cv" width="700" height="320"></canvas></div>
+      <div id="cmp-gain-legend" class="chart-legend"></div>
+      <div id="cmp-gain-note" class="muted"></div>
+    </div>
+    <div id="cmp-rad" hidden>
+      <div class="chart-row">
+        <div class="chart-box"><h3>φ=0° 切面</h3><canvas id="cmp-rad0" width="360" height="220"></canvas></div>
+        <div class="chart-box"><h3>φ=90° 切面</h3><canvas id="cmp-rad90" width="360" height="220"></canvas></div>
+      </div>
+      <div id="cmp-rad-legend" class="chart-legend"></div>
+      <div id="cmp-rad-note" class="muted"></div>
+    </div>
   </section>
 
   <!-- ============ 群組 ============ -->
@@ -113,19 +191,102 @@
         <h3>群組(localStorage)</h3>
         <div class="btn-row">
           <input type="text" id="grp-new-name" placeholder="新群組名稱">
-          <button id="grp-new">新增</button>
+          <button id="grp-new" data-tip="建一個新群組並設為使用中(之後各處的「群組＋」都加進它)">新增</button>
         </div>
         <ul id="group-list"></ul>
         <div class="btn-row">
-          <button id="grp-export">匯出 JSON</button>
-          <button id="grp-import">匯入 JSON</button>
+          <button id="grp-export" data-tip="把所有群組下載成 JSON(換瀏覽器/備份用)">匯出 JSON</button>
+          <button id="grp-import" data-tip="讀入先前匯出的群組 JSON,同名群組成員自動合併">匯入 JSON</button>
           <input type="file" id="grp-import-file" accept="application/json" hidden>
         </div>
       </aside>
       <div id="group-detail"></div>
     </div>
   </section>
+
+  <!-- ============ 製造視角 ============ -->
+  <section id="view-mfg" hidden>
+    <div class="btn-row">
+      <label data-tip="排行榜依哪個指標排:wm/rad 越大越好、lo/sel 越負越好、db100_wm=菱形化後的出貨值">排序軸
+        <select id="mfg-axis">
+          <option value="wm">wm(最差餘裕)</option>
+          <option value="rad">rad(窗地板餘裕)</option>
+          <option value="lo">lo(左帶外上限)</option>
+          <option value="sel">sel(選擇性)</option>
+          <option value="db100_wm">db100_wm(可製造)</option>
+        </select>
+      </label>
+      <label class="chk" data-tip="開=只列合格解(wm≥0.15∧rad≥0);關=全部一起排"><input type="checkbox" id="mfg-gates" checked> 合格閘門</label>
+      <label data-tip="匯出/畫圖取排行榜前幾名">top-N <input type="number" id="mfg-topn" class="num" value="20" min="1" max="200"></label>
+      <button id="mfg-csv" data-tip="下載排行榜前 N 名的指標 CSV(Excel 可直接開)">匯出 top-N CSV</button>
+      <button id="mfg-png" data-tip="把前 N 名的 pattern 縮圖拼成一張 PNG 下載">匯出 top-N PNG</button>
+      <span id="mfg-info" class="muted"></span>
+    </div>
+    <div id="mfg-speccard"></div>
+    <div class="table-wrap">
+      <table id="mfg-table">
+        <thead><tr>
+          <th data-tip="排行榜名次">#</th>
+          <th data-tip="pattern 縮圖;圖下緣=饋線邊">縮圖</th>
+          <th data-tip="點 id 進詳情">id</th>
+          <th class="mfg-sort" data-axis="wm" data-tip="雙帶最差餘裕(dB);點我改用它排序">wm</th>
+          <th class="mfg-sort" data-axis="rad" data-tip="±45° 窗地板餘裕(dB);點我改用它排序">rad</th>
+          <th class="mfg-sort" data-axis="lo" data-tip="左側帶外增益上限(dB,越負越好);點我改用它排序">lo</th>
+          <th class="mfg-sort" data-axis="sel" data-tip="選擇性(帶外壓制,越負越好);點我改用它排序">sel</th>
+          <th class="mfg-sort" data-axis="db100_wm" data-tip="可製造欄:全對角換菱形橋後重模擬的 wm=實際出貨值;點我改用它排序">db100_wm</th>
+          <th data-tip="全對角挖空後重模擬的 wm(反向消融對照)">sl100_wm</th>
+          <th data-tip="真對角接點數;0=天生可製造">ndiag</th>
+          <th data-tip="產生方式">kind</th>
+          <th data-tip="來源批次">store</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 研究視角 ============ -->
+  <section id="view-research" hidden>
+    <div class="chart-box wide">
+      <h3 data-tip="X=lo(左帶外上限,越左越好)、Y=wm(最差餘裕,越上越好)。橘線=帕累托前緣(沒有任何點同時比它更左更上);藍點=合格解。點一下進詳情">帕累托前緣(lo–wm)</h3>
+      <canvas id="pareto-canvas" width="760" height="440"></canvas>
+      <div class="btn-row">
+        <span class="muted" id="pareto-info"></span>
+        <button id="res-to-scatter" data-tip="跳到總攬的散點模式,可自選軸並拖框圈點">去總攬散點框選</button>
+      </div>
+    </div>
+    <div class="research-flex">
+      <div id="family-panel">
+        <h3 data-tip="家族=id 第一個底線前的前綴(例:c48nq1p05_16 → c48nq1p05)。看哪個家族量多、最強">家族統計(id 前綴,top 20)</h3>
+        <div class="table-wrap">
+          <table id="family-table">
+            <thead><tr>
+              <th data-tip="id 前綴">家族</th>
+              <th data-tip="這個家族有幾筆">筆數</th>
+              <th data-tip="家族內合格(wm≥0.15∧rad≥0)幾筆">合格</th>
+              <th data-tip="家族內最好的 wm">best wm</th>
+              <th data-tip="家族內最負(最好)的 lo">best lo</th>
+              <th data-tip="家族內做過 db100 消融的筆數">db100</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="abl-coverage">
+        <h3 data-tip="消融=改幾何再重模擬的對照實驗:db100 全對角換菱形橋、sl100 全對角挖空">消融/曲線覆蓋</h3>
+        <div id="abl-cards" class="cards"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 說明(文件站:左 TOC+右內容,內容在 static/help.js) ============ -->
+  <section id="view-help" hidden>
+    <div class="help-layout">
+      <aside id="help-toc" data-tip="章節目錄:點任一條平滑捲動到該節;捲動時自動高亮目前所在章節"></aside>
+      <div id="help-content" class="help-body"></div>
+    </div>
+  </section>
 </main>
+<script src="static/help.js"></script>
 <script src="static/app.js"></script>
 </body>
 </html>
