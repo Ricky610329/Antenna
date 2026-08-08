@@ -22,6 +22,11 @@ import statistics as st
 import sys
 
 import numpy as np
+
+
+def _n99(v):
+    """None→99(沉底);0.0 是合法帶外值,不可用 `or 99`(回顧輪必修1)。"""
+    return 99.0 if v is None else v
 import torch
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -605,7 +610,7 @@ def cmd_gain(args):
         stores.append((os.path.getmtime(str(rp)), batch, man, res))
     if not stores:
         raise SystemExit(f"找不到 dedust_{args.line}*_input 批次")
-    stores.sort()
+    stores.sort(key=lambda t: t[:2])   # 必修5:比到第三元素 list[dict] 會 TypeError
     samp = []                                         # 時序展平（store 粒度排序）
     for _, batch, man, res in stores:
         for m in man:
@@ -650,8 +655,8 @@ def cmd_gain(args):
             t3 = [s for s in g if tri(s)]
             cells = [f"{100*len([s for s in t3 if s['wm'] >= t])/len(g):.0f}%" for t in LADDER]
             rec = len([s for s in t3 if s["wm"] > args.record])
-            ocells = [f"{100*len([s for s in t3 if (s['oob'] or 99) < t])/len(g):.0f}%" for t in OOBL]
-            orec = len([s for s in t3 if (s["oob"] or 99) < args.oob_record])
+            ocells = [f"{100*len([s for s in t3 if _n99(s['oob']) < t])/len(g):.0f}%" for t in OOBL]
+            orec = len([s for s in t3 if _n99(s["oob"]) < args.oob_record])
             print(f"| {b} | {k} | {len(g)} | {100*len(t3)/len(g):.0f}% | " + " | ".join(cells)
                   + f" | {rec} | " + " | ".join(ocells) + f" | {orec} |")
 
@@ -820,7 +825,7 @@ def cmd_data(args):
             tag = []
             if r["wm"][2] > rec["wm"]["value"]:
                 tag.append(f"wm{r['wm'][2]:+.2f}>王")
-            if (r.get("oob_bad") or 99) < rec["usable_oob"]["value"] and r["wm"][2] >= rec["buffer"]:
+            if _n99(r.get("oob_bad")) < rec["usable_oob"]["value"] and r["wm"][2] >= rec["buffer"]:
                 tag.append(f"可用oob{r['oob_bad']}")
             if (r.get("rad_margin") or -9) > rec["rad"]["value"]:
                 tag.append(f"rad{r['rad_margin']}>王")
@@ -828,7 +833,7 @@ def cmd_data(args):
     tri_n = len(hits)
     print(f"  自產 {autos} 筆,三標 {tri_n}"
           + ("——★ 含紀錄候選,下方列(照 /notarize 公證)" if any(h[4] for h in hits) else "（無紀錄候選;已自動餵 SM）"))
-    for fol, i, wm, oob, tag in sorted(hits, key=lambda h: h[3] or 99)[:8]:
+    for fol, i, wm, oob, tag in sorted(hits, key=lambda h: _n99(h[3]))[:8]:
         star = "★ " + ",".join(tag) if tag else ""
         print(f"    {i[:24]} [{fol[7:]}] wm{wm:+.2f} oob{oob} {star}")
 
@@ -874,7 +879,7 @@ def cmd_tiers(args):
             r = v.get("rad_margin")
             if w >= 0 and (r if r is not None else -9) >= 0:
                 t["tri"] += 1
-                if (v.get("oob_bad") or 99) < 9.5:
+                if _n99(v.get("oob_bad")) < 9.5:
                     t["near"] += 1
     tot_n = sum(t["n"] for t in tiers.values()) or 1
     print(f"== tier 使用率/ROI（近 {args.days} 天;機時=筆數×2.7 分估;{_dt.date.today()}）==")
@@ -1031,14 +1036,14 @@ def cmd_batch(args):
         t3 = [s for s in g if tri(s)]
         us = [s for s in g if usable(s)]
         best = max(g, key=lambda s: s["wm"])
-        buo = min(us, key=lambda s: s["oob"] or 99) if us else None
+        buo = min(us, key=lambda s: _n99(s["oob"])) if us else None
         print(f"  {kind}: n={len(g)} 三標 {len(t3)}({100 * len(t3) / len(g):.0f}%)"
               f" 合格 {len(us)}({100 * len(us) / len(g):.0f}%) | best {best['id']} wm{best['wm']:+.2f}"
               + (f" | 合格最佳oob {buo['id']} {buo['oob']}" if buo else ""))
 
     print(f"\n-- 可用帶外（紀錄 {rec['usable_oob']['value']}＝{rec['usable_oob']['id']}）--")
-    us_all = sorted([s for s in rows if usable(s)], key=lambda s: s["oob"] or 99)
-    adv = [s for s in us_all if (s["oob"] or 99) < rec["usable_oob"]["value"]]
+    us_all = sorted([s for s in rows if usable(s)], key=lambda s: _n99(s["oob"]))
+    adv = [s for s in us_all if _n99(s["oob"]) < rec["usable_oob"]["value"]]
     for s in us_all[:5]:
         print(f"  {s['oob']}  {s['id']} [{s['kind']}] wm{s['wm']:+.2f} rad{s['rad']:+.2f}"
               + (f" lo{s['lo']:+.2f} hi{s['hi']:+.2f}" if s.get("lo") is not None else "")
@@ -1086,11 +1091,11 @@ def cmd_batch(args):
             tags.append(f"wm{s['wm']:+.2f}>{rec['wm']['value']}(margin王,三標)")
         elif (not tri(s)) and s["wm"] > rec["inband"]["value"]:
             tags.append(f"wm{s['wm']:+.2f}>{rec['inband']['value']}(帶內參考,非三標;不換王)")
-        if tri(s) and (s["oob"] or 99) < rec["oob"]["value"]:
+        if tri(s) and _n99(s["oob"]) < rec["oob"]["value"]:
             tags.append(f"oob{s['oob']}<{rec['oob']['value']}")
         if tri(s) and (s["rad"] or -9) > rec["rad"]["value"]:
             tags.append(f"rad{s['rad']}>{rec['rad']['value']}")
-        if usable(s) and (s["oob"] or 99) < rec["usable_oob"]["value"]:
+        if usable(s) and _n99(s["oob"]) < rec["usable_oob"]["value"]:
             tags.append(f"可用oob{s['oob']}<{rec['usable_oob']['value']}")
         for side in ("lo", "hi"):
             key = f"usable_{side}"

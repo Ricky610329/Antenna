@@ -278,24 +278,36 @@ def _build_ds(tr, replay, over, mode="pattern"):
 
 def train(args):
     global CLEAN_STORES
+    #? 消融防呆前置(回顧輪必修4:攔截要在 --add 落盤之前,保原子性)
+    if getattr(args, "with_neg", False):
+        if not getattr(args, "out", None) or args.out == "sm_reanchor.pth":
+            raise SystemExit("--with-neg 是消融模式,必須顯式 --out(防呆:不准蓋主線 sm_reanchor.pth)")
+        #? 必修3:消融鍋產物不准進制度合訓(rad_head/ens/shadow 以 out 名數字取版,會劫持主線版號)
+        for k in ("no_rad", "no_ens", "no_shadow"):
+            setattr(args, k, True)
+        print("⚠ --with-neg:制度合訓(rad/ens/shadow)已自動關閉(消融產物不進主線版號)")
     if getattr(args, "add", None):                       # 重錨一鍵化:append clean_stores.txt 再訓
         import time as _t
         new = [s.strip() for s in args.add.split(",") if s.strip() and s.strip() not in CLEAN_STORES]
+        bad = [s for s in new if not DATASET_PATH.joinpath(s, "results.json").exists()]
+        if bad:
+            raise SystemExit(f"--add 店不存在或無 results.json: {','.join(bad)}(typo 防呆,一筆都不落盤)")
+        if not getattr(args, "out", None) or args.out == "sm_reanchor.pth":
+            raise SystemExit("--add 重錨必須顯式 --out(防呆:不准隱式蓋主線 sm_reanchor.pth)")
         if new:
             with open(_CS_PATH, "a", encoding="utf-8") as f:
                 f.write(f"# {args.out} 追加（{_t.strftime('%Y-%m-%d')}）\n")
                 for n in new:
                     f.write(n + "\n")
-            CLEAN_STORES = CLEAN_STORES + tuple(new)
-            print(f"clean_stores.txt +{len(new)}: {','.join(new)}")
+            #? 必修2:追加後重套公證店前移排序(否則本次訓練公證均值標籤被舊單測值蓋掉,下次重跑才正確)
+            CLEAN_STORES = tuple(sorted(CLEAN_STORES + tuple(new), key=_cs_sort_key))
+            print(f"clean_stores.txt +{len(new)}: {','.join(new)}(已重套公證前移排序)")
     tr, ho = _load_clean()
     replay, _ = _load_harvest(args.replay, args.val)
     print(f"乾淨真值 {len(tr) + len(ho)} 筆（train {len(tr)} / held-out {len(ho)}）＋ harvest 重放 {len(replay)}")
     if getattr(args, "with_neg", False):
         #? 5k 消融(decisions 雙頭制門檻;R53 §1④):主錨摻負片 vs 現行不摻,凍結尺對照——
-        #  side 實驗,不動 clean_stores/雙頭制現制;判「負片在 5k 量級是否仍有罪」(v96 案=有罪)。
-        if not getattr(args, "out", None) or args.out == "sm_reanchor.pth":
-            raise SystemExit("--with-neg 是消融模式,必須顯式 --out(防呆:不准蓋主線 sm_reanchor.pth)")
+        #  side 實驗,不動 clean_stores/雙頭制現制;防呆已前置到 train() 開頭(必修4)。
         _neg = _load_neg_samples()
         tr = tr + _neg
         print(f"⚠ 消融模式 --with-neg:主錨加吃負片 {len(_neg)} 筆(僅本次,雙頭制不變)")
