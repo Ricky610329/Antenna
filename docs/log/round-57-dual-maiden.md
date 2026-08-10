@@ -50,6 +50,7 @@ SM 排序+錨點鄰域能把首批推得比 harvest 錨更好;上下鏡像 ⇒ S
 | 施工 A+B+審計必修 | 2026-08-10 綠(424 pytest;commit 2f7d797 前後系列) |
 | 部署 | 2026-08-10 三台 pull+重啟(Ricky) |
 | smoke(dedust_r57smoke,2 筆 harvest 交叉樣本) | 2026-08-10 20:41 收檔,0 error;**對帳=樣本 00 與學長存值 bit 級全同**(三通道 MAE 0.00/相關 1.000),樣本 01 求解噪音級(MAE 0.1-0.4dB);通道序錯位檢查過(對角相關 1.000 ≫ 交叉 0.68-0.81);energy_max 0.86-0.89≤1;m1..m4 與 D1 手算逐位吻合 → **判準② 管線活=通過** |
+| 三台驗證(dedust_r57s216/r57s37,各 2 筆 harvest 樣本) | 2026-08-10 21:20 收檔:216/37 各自接單、0 error、對帳全過(MAE 0.01-0.32dB/相關 0.991-1.000/能量≤1)→ **三台 dual 路徑全驗**(含 COM 例外型的 37);Ricky 21:0x 三台重啟,b1 續跑無中斷=可中斷續跑實證 |
 | b1 發車 | 2026-08-10 20:52 `jobs-add --input dedust_r57b1_input --store dedust_r57b1 --config configs/dual_r1_eval.yaml --prio 3`;**98 筆**(select-dual 100 − 2 筆與 smoke 重複移除:d57b1_a_04/a_10 即 smoke 兩樣本,判讀時併 smoke 結果補回 a 臂帳);check-dup 綠(dual 域);218 20:53 接單 |
 
 ## 4. 分析 (Analyze)
