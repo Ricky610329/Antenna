@@ -13,6 +13,7 @@
 | **找二值化/梯度的優化方向**（BiScaleNorm 同類方法、STE/tau/Heaviside 投影文獻表） | [`binarization_literature.md`](binarization_literature.md) |
 | **看總進度（R1-R18 演進版）**（每輪最佳 gallery＋血統鏈＋帶外定案） | [`report/progress-r1-r18.md`](report/progress-r1-r18.md)（PDF 同資料夾;重建 `build_pdf.py <stem>`;撰寫規範 [`report/CLAUDE.md`](report/CLAUDE.md)） |
 | 看 R1-R10 / R11-R14 分卷報告 | [`report/progress-r1-r10.md`](report/progress-r1-r10.md)／[`report/progress-r11-r14.md`](report/progress-r11-r14.md) |
+| **對 pattern 做消融**（三類算子／量測紀律／歸因框架／14 條設計規則／可複製 checklist） | [`report/ablation-methodology.md`](report/ablation-methodology.md)（R54-R56 收攏） |
 | **查研究時間軸**（每個 round 的假設→實驗→結論） | [`log/README.md`](log/README.md)（索引;撰寫規範 [`log/CLAUDE.md`](log/CLAUDE.md)） |
 | **查現任冠軍與配方** | [`champions.md`](champions.md)（名鑑）＋[`design_priors.md`](design_priors.md)(設計規則) |
 | **接續討論**（半熟點子/定案結論兩層） | [`discuss/scratch.md`](discuss/scratch.md)／[`discuss/decisions.md`](discuss/decisions.md) |
