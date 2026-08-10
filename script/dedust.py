@@ -20,6 +20,13 @@ HFSS → 任一機 report 看結果。輸入/結果都在 NAS（`DATASET_PATH/<n
     select-r15(GA vs 知情)/r16b/r17/r18(帶外戰役)/select-r19data(模型線)/select-r20gen(演化)/
     select-r21harvest(收割;--tag 填空池仍現役)/select-r22mix(分布組合,select-r23/r24/r25 的本體)
 
+dual 線（二埠濾波天線,2026-08-10 開線;proposal-dual-kickoff）：同一套管線靠 `--config` 的 `port` 分派——
+    開發機:  select-dual --round 57 --batch 1            # a 錨/n 鄰域/r 隨機/s 上下鏡像 四臂
+             check-dup --input dedust_r57b1_input        # 分域查重（dual 只與 dual 夾交叉）
+             jobs-add --input ... --store ... --config configs/dual_r1_eval.yaml   # 批帶尺
+    判準尺=`antenna.losses.worst_margin_dual`（min(m1..m4),m5/m6 記帳）+ `dual_energy_max` 能量自證;
+    無方向圖（dual 不輸出遠場）→ 無 rad/oob/sel 欄,report 走 m1..m4/energy 表。
+
 慣例：margin/rad 全走同一把尺（`antenna.losses.worst_margin` + `configs/single_r5_explore.yaml` targets、
 `rad_window_margin` ±45°/3dB）；生成全決定性（seed 進 manifest,各 select 的 seed 域不重疊）；
 「可製造」= 全碎片 ≥4px＋feed pad。select/select-r8/r9 依賴 `tmp/pattern_anatomy/pool.npz`
@@ -645,6 +652,92 @@ def oob_metrics(resp, n_side: int = 4) -> dict:
                 rolloff_lo=round(edge_lo - float(r[1][lo].max()), 2),
                 rolloff_hi=round(edge_hi - float(r[1][hi].max()), 2),
                 oob_gain_argmax=float(freqs[far][int(np.argmax(r[1][far]))]))
+
+
+# ---------------------------------------------------------------- dual（二埠濾波天線）判讀器
+#? dual 線鐵則（proposal-dual-kickoff §2 / docs/reference/notes/senior-thesis-dual-port.md）：
+#  · 六項 margin（mask 口徑,與 loss 同尺;**不可沿用 single 的 width 切片算術**——dual 的 S11/S22
+#    有斜邊 width=2,按切片算會靜默切錯帶）:m1/m2=帶內 S11/S22、m3=通帶 S21、m4=阻帶 S21、
+#    m5/m6=帶外 S11/S22。**wm_dual = min(m1..m4);m5/m6 只記帳不進 min**（決策點③:帶外反射
+#    由能量守恆幾乎自動達標,資訊量低,不該主導判準——比照 single 帶外拆帳制）。
+#  · 每筆免費儀器自證:`energy_max = max(|Sii|²+|S21|²) ≤ 1`（>1 = 資料/模擬壞了）。
+#  · 判準尺本體在 `antenna.losses`（worst_margin_dual / dual_energy_max）——本檔只做欄位化。
+DUAL_M_KEYS = ("m1", "m2", "m3", "m4", "m5", "m6")
+DUAL_LABEL_M = {"S11": ("m1",), "S21": ("m3", "m4"), "S22": ("m2",)}   # entry["wm"] 的 per-label 欄（m5/m6 不進）
+DUAL_FEEDS = ((0, 5, 10, 15), (20, 25, 10, 15))        # 上/下 5×5 饋墊 (r0,r1,c0,c1)；同源 PORT_SPECS["dual"]["feeds"]
+#! 掃頻法的 port 專屬預設（`--sweep` 不給時才套）——**不可共用一個字面值**：兩個模擬器歷來寫死的
+#  值本來就不同（single_port.py=Interpolating / dual_port.py=Fast），而 dual 的 `harvest_dual`
+#  一萬筆真值全是 Fast 跑出來的；換掃頻法＝換分佈（重建演算法不同）→ 首批「存檔 y vs 我們重測」
+#  的對帳與 SM 暖啟價值會一起失效。`tests/test_dedust.py` 有跨實作對帳測試盯住這張表。
+PORT_SWEEP = {"single": "Interpolating", "dual": "Fast"}
+
+
+def dual_metrics(resp, labels, targets) -> dict:
+    """dual 六項分項 margin + 能量自證 → results.json 欄位 dict（{m1..m6, energy_max}）。
+
+    對應 single 的 `oob_metrics`：run() 每筆收檔時 `entry.update(dual_metrics(...))`。
+    下游契約：**m1..m4 = 主判準分項**（worst = min，已在 entry["wm"] 末欄）；**m5/m6 = 記帳欄**
+    （帶外 S11/S22，不進 min，決策點③待第一批驗可達性後定案）；`energy_max > 1` = 壞檔告警。
+    判準尺 lazy import（施工包 A 的 `antenna.losses`）——single 路徑與其他子命令不受其落地與否影響。"""
+    from antenna.losses import dual_energy_max, worst_margin_dual
+    _, per = worst_margin_dual(resp, labels, targets)
+    missing = [k for k in DUAL_M_KEYS if k not in per]
+    if missing:
+        raise KeyError(f"worst_margin_dual 的 per 缺 {missing}——契約=六項分項 m1..m6"
+                       f"（拿到 {sorted(per)}）")
+    out = {k: _r(per[k]) for k in DUAL_M_KEYS}
+    out["energy_max"] = _r(dual_energy_max(resp), 3)     # 3 位:1.001 與 0.999 必須分得出來
+    #? s11_s22_gap = max_f |S11−S22|（dB）＝**鏡像假說（round-57 §1③）的直接量**：上下對稱幾何
+    #  ⇒ S11≡S22 ⇒ 本值 →0（只剩求解雜訊）。取 max 而非中位＝身分等式要看最壞頻點；round 的
+    #  「中位 <1dB」是對 20 筆**樣本**取中位。收檔即算，免得判讀時還要回頭重讀 store 的原始響應。
+    r = torch.as_tensor(resp).float().reshape(len(labels), -1)
+    i11, i22 = list(labels).index("S11"), list(labels).index("S22")
+    out["s11_s22_gap"] = _r(float((r[i11] - r[i22]).abs().max()), 3)
+    return out
+
+
+def _dual_label_margins(per, labels):
+    """把 worst_margin_dual 的 per 折成 per-label margin（entry["wm"] 的前 n 欄）。
+    per 若已帶 label 鍵直接用；否則由 m 鍵合成（S11=m1 / S21=min(m3,m4) / S22=m2）。"""
+    out = []
+    for lb in labels:
+        if lb in per:
+            out.append(float(per[lb]))
+        else:
+            out.append(min(float(per[k]) for k in DUAL_LABEL_M[lb]))
+    return out
+
+
+def dual_pads(p):
+    """dual 可製造閘：上下兩個 5×5 饋墊全滿（饋電點 [(24,12),(0,12)] 各自的遮罩塊）。
+    **不可用 single 的 FEED / R_feed**——耦合式濾波器允許兩埠不直流連通（圖 4-10 的 R_feed=0.00%
+    正是這個機制），沿用會得到恆為 0 的死指標（senior-thesis §6.7）。純函式、回新陣列。"""
+    q = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    for r0, r1, c0, c1 in DUAL_FEEDS:
+        q[r0:r1, c0:c1] = True
+    return q
+
+
+def dual_mirror(p):
+    """上下鏡像對稱化（沿 row 中線、row 12 為軸）：上半覆蓋下半 ⇒ 幾何上下對稱 ⇒ **S11≡S22**。
+    假說成立的話判準 6→4 項、自由度 625→約 325（senior-thesis §6.9,學長資料零對稱樣本）。
+    ⚠ single 的 `symmetrize` 是**左右**軸（feed 在底部中央），dual 要的是**上下**軸——
+    是新的對稱軸，不是換個參數。饋墊在 row 0-4 / 20-24 對稱位置，鏡像後仍全滿。"""
+    q = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    q[13:] = q[:12][::-1]
+    return dual_pads(q)
+
+
+def dual_flip(p, d: int, rng):
+    """在**非饋墊**像素上隨機翻 d 格（鄰域變異用）。回新 pattern（饋墊由 dual_pads 復原）。"""
+    q = (np.asarray(p).reshape(25, 25) > 0.5).copy()
+    free = np.ones((25, 25), bool)
+    for r0, r1, c0, c1 in DUAL_FEEDS:
+        free[r0:r1, c0:c1] = False
+    pos = rng.choice(np.flatnonzero(free.reshape(-1)), size=int(d), replace=False)
+    flat = q.reshape(-1)
+    flat[pos] = ~flat[pos]
+    return dual_pads(q)
 
 
 SEL_BUFFER, SEL_KAPPA = 0.15, 10.0                     # 可用解 wm buffer（R11 缺陷存活=margin 函數）/罰權
@@ -4650,9 +4743,146 @@ def select_graft(args):
     print(f"（估 {len(manifest) * 3} 分 ≈ {len(manifest) * 3 / 60:.1f} hr;判準=round-48 §1:lo 保留率 ≥20%）")
 
 
+# ---------------------------------------------------------------- select-dual（開發機，零 HFSS）
+def select_dual(args):
+    """dual 元年首批（R57b1；判準寫死於 round-57 檔 §1 ＋ proposal-dual-kickoff §2）。
+
+    **臂別／筆數／判準（發車前寫死，script/CLAUDE.md 鐵則 3）**——預設 100 筆＝20+40+20+20：
+
+      | 臂 | 筆 | 內容 | 為什麼 |
+      |---|---|---|---|
+      | `a` | 20 | `harvest_dual`（10,023 筆）以 **worst_margin_dual**（min(m1..m4)，mask 口徑）對存檔的 (3,17) 真響應排序後的**最佳 20** | 學長資料的天花板＝零合格起跑線的錨；同時是**跨時代響應對帳**（存檔 y vs 我們重測） |
+      | `n` | 40 | 上列 20 錨各 2 筆、d∈{1,2,3} 非饋墊像素翻轉 | 錨附近的可達性（首批唯一的「局部」資訊） |
+      | `r` | 20 | 純隨機 iid 伯努利，密度 0.5±0.15（每筆 U(0.35,0.65)） | 分佈基線（dual 全域從沒有人量過） |
+      | `s` | 20 | **上下鏡像試點**＝`r` 臂那 20 筆各做 row 中線鏡像（parent 欄＝配對的 `r` 筆） | 驗 **S11≡S22** 假說：成立則判準 6→4 項、自由度砍半（senior-thesis §6.9）。配對設計 ⇒ 同一批隨機底片的對稱/不對稱直接對照 |
+
+    可製造閘＝**上下雙饋墊 [(24,12),(0,12)] 各 5×5 全滿必保**（`dual_pads`；**不得**用 single 的
+    `FEED`／`R_feed`——耦合式濾波器允許兩埠不直流連通，R_feed 在 dual 是死指標，senior-thesis §6.7）。
+    **不套 single 的 ≥4px 除塵**：dual 的可製造代理量尚未定案（proposal §6 後補項），首批先量原樣、
+    `piece_stats` 隨 manifest 入檔供事後定義。
+    全臂決定性（`_pool_seed(seed, round, batch)` 分臂衍生）；id＝`d<round>b<batch>_<臂>_<序>`；
+    夾＝`dedust_r<round>b<批>_input`；manifest 每筆帶 `port:"dual"`（check-dup 分域鍵）/`arm`/`parent`。
+    """
+    from antenna.losses import worst_margin_dual
+    from antenna.utils.store import SampleStore
+    cfg = load_config(args.config)
+    if cfg.port != "dual":
+        raise SystemExit(f"--config 必須是 dual port（拿到 {cfg.port}；預設 configs/dual_r1_eval.yaml）")
+    labels = PORT_SPECS["dual"]["labels"]                 # (S11, S21, S22)＝harvest_dual 的通道序
+    input_dir = _dir(f"dedust_r{args.round}b{args.batch}_input")
+    if input_dir.is_dir() and any(input_dir.glob("*.pt")):
+        raise SystemExit(f"{input_dir.name} 已存在且非空——拒寫（防覆寫）")
+
+    #? A 臂：harvest 全掃排序（10,023 筆小檔走 NAS，實測 ~6 分鐘；SampleStore 讀過即留 RAM）
+    src = DATASET_PATH.joinpath(args.harvest)
+    if not src.is_dir():
+        raise SystemExit(f"找不到 harvest 錨池 {src}（預設 harvest_dual＝學長收割資產）")
+    ss = SampleStore(src, verbose=False)
+    scored, skipped = [], 0
+    for i in range(len(ss)):
+        x, y = ss[i]
+        if tuple(torch.as_tensor(y).shape) != (len(labels), 17) or torch.as_tensor(x).numel() != 625:
+            skipped += 1
+            continue                                      # 壞檔保險（D1 體檢全綠，這行是安全網）
+        w, _ = worst_margin_dual(y, labels, cfg.targets)
+        scored.append((float(w), i))
+    scored.sort(key=lambda t: (-t[0], t[1]))               # wm 降冪，同分以 index 破平（決定性）
+    if len(scored) < args.anchors:
+        raise SystemExit(f"harvest 可用樣本 {len(scored)} < 錨數 {args.anchors}")
+    anchors = scored[:args.anchors]
+    print(f"harvest {args.harvest}: {len(ss)} 筆（跳過壞檔 {skipped}），"
+          f"最佳 {args.anchors} 的 wm_dual 範圍 {anchors[0][0]:+.2f} ~ {anchors[-1][0]:+.2f}")
+
+    base = _pool_seed(args.seed, args.round, args.batch)
+    rng_n = np.random.default_rng(base + 1)
+    rng_r = np.random.default_rng(base + 2)
+    tag = f"d{args.round}b{args.batch}"
+    manifest, pats, uniq = [], {}, set()
+
+    def _emit(q, arm, k, **extra):
+        q = dual_pads(q)
+        key = q.tobytes()
+        if key in uniq:
+            return False                                  # 批內自我去重（check-dup 前先自清）
+        uniq.add(key)
+        pid = f"{tag}_{arm}_{k:02d}"
+        pats[pid] = q
+        manifest.append(dict(id=pid, kind="dual", port="dual", arm=arm,
+                             family=f"DUAL_{arm.upper()}", **extra, **piece_stats(q)))
+        return True
+
+    forced = 0
+    for k, (w, idx) in enumerate(anchors):                 # a：harvest 最佳錨
+        q = np.asarray(ss[idx][0]).reshape(25, 25) > 0.5
+        #! 錨臂的 `harvest_wm` 宣稱的是「**這一張** pattern 的存檔響應」——可製造閘若真的動了像素，
+        #  重測的就不是同一張，跨時代對帳（存檔 y vs 我們重測）會靜默失效。實測 harvest 全數本來
+        #  就滿足雙饋墊（抽 1500 筆 0 例外，管線本來就疊 M_feed），這裡把假設寫成顯性記帳。
+        pads_forced = bool((dual_pads(q) != q).any())
+        forced += pads_forced
+        _emit(q, "a", k, parent=None, harvest_idx=int(idx), harvest_wm=round(float(w), 3),
+              pads_forced=pads_forced)
+    if forced:
+        print(f"⚠ a 臂有 {forced} 筆的饋墊被可製造閘補過 → 這幾筆**不可**當「存檔 y vs 重測」對帳"
+              f"（manifest 的 pads_forced=true 標記了是哪幾筆）")
+    a_ids = [m["id"] for m in manifest if m["arm"] == "a"]
+
+    kn = 0
+    for ai, pid in enumerate(a_ids):                       # n：錨鄰域 d1-3（每錨 2 筆，d 輪替）
+        for j in range(args.per_anchor):
+            d = ((2 * ai + j) % 3) + 1
+            for _try in range(50):                         # 撞到重複就重抽（決定性序列，不改 seed）
+                if _emit(dual_flip(pats[pid], d, rng_n), "n", kn, parent=pid, d=int(d)):
+                    kn += 1
+                    break
+
+    for k in range(args.rand):                             # r：純隨機（密度 0.5±0.15）
+        for _try in range(50):
+            dens = float(rng_r.uniform(0.35, 0.65))
+            q = rng_r.random((25, 25)) < dens
+            if _emit(q, "r", k, parent=None, density=round(dens, 3)):
+                break
+    r_ids = [m["id"] for m in manifest if m["arm"] == "r"]
+
+    ks = 0
+    for pid in r_ids:                                      # s：上下鏡像試點（配對 r 臂）
+        if _emit(dual_mirror(pats[pid]), "s", ks, parent=pid):
+            ks += 1
+
+    #? 落檔前自證（不合格就不寫，免留半套輸入夾）：鏡像臂必須真的上下對稱——渲染轉 90° 的 bug
+    #  在上下對稱結構上**完全隱形**（2026-08-06 教訓），這條斷言是它唯一的攔截點。
+    for m in manifest:
+        q = pats[m["id"]]
+        assert q[0:5, 10:15].all() and q[20:25, 10:15].all(), f"{m['id']} 饋墊未全滿"
+        if m["arm"] == "s":
+            assert (q == q[::-1]).all(), f"{m['id']} 鏡像臂非上下對稱"
+    input_dir.mkdir(parents=True, exist_ok=True)
+    for m in manifest:
+        torch.save(torch.tensor(pats[m["id"]].astype(np.float32)), str(input_dir.joinpath(f"{m['id']}.pt")))
+    _save_manifest(manifest, input_dir)
+    from collections import Counter
+    cnt = Counter(m["arm"] for m in manifest)
+    want = args.anchors * (1 + args.per_anchor) + 2 * args.rand
+    if len(manifest) != want:
+        print(f"⚠ 筆數 {len(manifest)} ≠ 預期 {want}——批內去重吃掉了席次（重複=真的撞到，請看臂別分佈）")
+    print(f"select-dual {tag}: {len(manifest)} 筆 → {input_dir.name}  {dict(cnt)}")
+    print(f"（下一步：check-dup --input {input_dir.name} → jobs-add --config {args.config}）")
+
+
+def _manifest_port(folder) -> str:
+    """輸入夾的域：manifest 任一筆帶 `port: "dual"` 即視為 dual，缺欄=single（歷史夾全是 single）。
+    查重分域用（D2 #6）——single/dual 的 pattern 空間結構性不相交（dual 多一個上緣饋墊），
+    但同一張 pattern 在兩域各測一次是**合法對照**，不該被判重複。"""
+    try:
+        man = json.load(open(str(DATASET_PATH.joinpath(folder, "manifest.json")), encoding="utf-8"))
+    except Exception:
+        return "single"
+    return "dual" if any(m.get("port") == "dual" for m in man) else "single"
+
+
 def check_dup(args):
     """發車前查重（教訓 2026-07-07:ref3 出現 4/319 重複——掃位跨拓撲撞位、k=2 被再對稱化蓋回錨點）。
-    查 --input 批內重複＋與全部歷史輸入夾（自動掃描,排除自身）的交叉重複。exit 1=有重複。"""
+    查 --input 批內重複＋與全部歷史輸入夾（自動掃描,排除自身）的交叉重複。exit 1=有重複。
+    **分域**（2026-08-10 dual 開線）:只與**同 port** 的夾交叉（manifest 的 `port` 欄,缺=single）。"""
     def load_folder(folder):
         d = DATASET_PATH.joinpath(folder)
         man = json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8"))
@@ -4660,28 +4890,32 @@ def check_dup(args):
                                     ).reshape(-1).__gt__(0.5).tobytes()
                 for m in man if d.joinpath(f"{m['id']}.pt").exists()}
 
-    man_kind = {m["id"]: m.get("kind", "") for m in json.load(
-        open(str(DATASET_PATH.joinpath(args.input, "manifest.json")), encoding="utf-8"))}
+    _man = json.load(open(str(DATASET_PATH.joinpath(args.input, "manifest.json")), encoding="utf-8"))
+    man_kind = {m["id"]: m.get("kind", "") for m in _man}
+    man_port = {m["id"]: m.get("port", "single") for m in _man}
     new = {k: v for k, v in load_folder(args.input).items()
            if man_kind.get(k) not in ("repeat", "notarize", "meshconv", "diagbridge")}  # 蓄意重複(公證/網格/菱形重測)不算違規
     seen, bad = {}, 0
     for k, v in new.items():
-        if v in seen:
-            print(f"批內重複: {k} == {seen[v]}")
+        key = (man_port.get(k, "single"), v)             # 批內也分域（夾理論上同質,混夾亦不誤判）
+        if key in seen:
+            print(f"批內重複: {k} == {seen[key]}")
             bad += 1
         else:
-            seen[v] = k
-    hist = {}
+            seen[key] = k
+    my_port = _manifest_port(args.input)
+    hist, n_fol = {}, 0
     for fol in _all_input_folders():
-        if fol == args.input:
-            continue
+        if fol == args.input or _manifest_port(fol) != my_port:
+            continue                                     # 跨域不交叉（同 pattern 兩域各測=合法對照）
+        n_fol += 1
         for k, v in load_folder(fol).items():
             hist.setdefault(v, f"{fol}:{k}")
     for k, v in new.items():
-        if v in hist:
+        if man_port.get(k, "single") == my_port and v in hist:
             print(f"與歷史重複: {k} == {hist[v]}")
             bad += 1
-    print(f"{args.input}: {len(new)} 筆,重複 {bad}")
+    print(f"{args.input}: {len(new)} 筆,重複 {bad}（域 port={my_port},交叉 {n_fol} 個同域歷史夾）")
     if bad:
         raise SystemExit(1)
 
@@ -5349,12 +5583,19 @@ def sm_screen(args):
 
 # ---------------------------------------------------------------- run（正式機，燒 HFSS；可中斷續跑）
 def run(args):
-    from antenna.patch import SinglePortRadSimulator          # lazy：開發機/CI 不 import COM 相依
+    from antenna.patch import DualPortSimulator, SinglePortRadSimulator   # lazy：開發機/CI 不 import COM 相依
     from antenna.utils.store import SampleStore
     from antenna.utils.utils import Path
 
     cfg = load_config(args.config)
     labels = PORT_SPECS[cfg.port]["labels"]
+    #? port 分派（2026-08-10 dual 開線,D2 #4）:模擬器選型 + entry 泛化;rad/oob/sel 是 single 專屬
+    #  （dual 無遠場輸出——作者明述,senior-thesis §3.4）,dual 走 dual_metrics 六項+能量自證。
+    #  single 路徑逐位元不變（同一把 worst_margin 尺、同樣的欄位與印字）。
+    SIM_CLS = {"single": SinglePortRadSimulator, "dual": DualPortSimulator}[cfg.port]
+    sweep = args.sweep or PORT_SWEEP[cfg.port]             # --sweep 不給 → port 專屬預設（見常數註解）
+    if cfg.port == "dual":
+        from antenna.losses import worst_margin_dual       # lazy:dual 判準尺（single 路徑不碰）
     window = cfg.radiation.get("window_deg", 45)
     floor = cfg.radiation.get("floor_db", 3)
     input_dir = _dir(args.input)
@@ -5363,7 +5604,8 @@ def run(args):
 
     store_dir.mkdir(parents=True, exist_ok=True)
     rad_dir = store_dir.joinpath("rad")
-    rad_dir.mkdir(parents=True, exist_ok=True)
+    if cfg.port == "single":
+        rad_dir.mkdir(parents=True, exist_ok=True)         # dual 無方向圖 → 不建空夾
     results_path = store_dir.joinpath("results.json")
     results = {}
     if results_path.exists():
@@ -5386,9 +5628,13 @@ def run(args):
             hfss_setup = json.load(f)
         allowed = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout", "diag_bridge_w",
                    "pixel_count"}  # 50×50 精修域(proposal-finetune P4;學長內建 {20,25,50} 幾何分支)
+        if cfg.port == "dual":
+            #? dual 模擬器無菱形橋/多網格分支——鍵給了也不會生效,顯性擋掉不靜默吞（D2 #4）
+            allowed -= {"diag_bridge_w", "pixel_count"}
         bad = set(hfss_setup) - allowed
         if bad:
-            raise SystemExit(f"hfss_setup.json 不明鍵 {bad}（合法鍵={sorted(allowed)}）")
+            hint = "（dual 不支援 diag_bridge_w/pixel_count）" if cfg.port == "dual" else ""
+            raise SystemExit(f"hfss_setup.json 不明鍵 {bad}（合法鍵={sorted(allowed)}）{hint}")
         with open(str(store_dir.joinpath("hfss_setup.json")), "w", encoding="utf-8") as f:
             json.dump(hfss_setup, f, ensure_ascii=False, indent=1)
         print(f"⚠ 非預設求解設定生效: {hfss_setup}（來源 {_setup_f.name};已存證進 store）")
@@ -5437,7 +5683,9 @@ def run(args):
         last = None
         for attempt in range(3):
             def _mk():
-                s = SinglePortRadSimulator(record_path=str(out), sweep_type=args.sweep, **hfss_setup)
+                #! 契約:兩個模擬器同簽名 (record_path, sweep_type, **求解設定)——dual 亦已參數化
+                #  (dual_port.py 的 max_delta_s/max_passes/min_passes/min_converged)。
+                s = SIM_CLS(record_path=str(out), sweep_type=sweep, **hfss_setup)
                 s.open()
                 return s
             try:
@@ -5576,10 +5824,19 @@ def run(args):
                         return "yield"
 
                 resp = torch.stack([torch.as_tensor(result[l]).float().reshape(-1) for l in labels])
-                w, per = worst_margin(resp, labels, cfg.targets)
-                entry = {"wm": [_r(per[labels[0]]), _r(per[labels[1]]), _r(w)], "time_s": _r(elapsed, 1)}
+                #? entry["wm"] 泛化＝各 label margin + worst（n+1 欄;single 2+1、dual 3+1）——
+                #  single 的三欄輸出與舊版逐位元相同（labels=[S11,Gain]）。
+                if cfg.port == "single":
+                    w, per = worst_margin(resp, labels, cfg.targets)
+                    cols = [_r(per[l]) for l in labels]
+                else:
+                    w, per = worst_margin_dual(resp, labels, cfg.targets)
+                    cols = [_r(v) for v in _dual_label_margins(per, labels)]
+                entry = {"wm": cols + [_r(w)], "time_s": _r(elapsed, 1)}
 
-                rad = sim.last_radiation                 # 方向圖順手收：±window 覆蓋餘裕 + 原始資料落檔
+                #? 方向圖：single 專屬。`DualPortSimulator` 根本沒有 last_radiation 屬性
+                #  （dual 不輸出遠場）→ getattr 防炸，取到 None 就整段跳過。
+                rad = getattr(sim, "last_radiation", None)
                 if isinstance(rad, dict) and rad.get("theta") is not None:
                     torch.save(rad, str(rad_dir.joinpath(f"{m['id']}.pt")))
                     cuts = {f"phi{phi}": _r(rad_window_margin(rad["theta"], rad[f"phi{phi}"], window, floor))
@@ -5587,12 +5844,17 @@ def run(args):
                     if cuts:
                         entry["rad"] = cuts
                         entry["rad_margin"] = min(cuts.values())
-                entry.update(oob_metrics(resp))           # 帶外選擇性 (2026-07-07 起隨批入檔)
-                entry["sel"] = sel_score(entry["wm"][2], entry.get("rad_margin"), entry["oob_bad"])
+                if cfg.port == "single":
+                    entry.update(oob_metrics(resp))       # 帶外選擇性 (2026-07-07 起隨批入檔)
+                    entry["sel"] = sel_score(entry["wm"][2], entry.get("rad_margin"), entry["oob_bad"])
+                    tail = f"rad_margin={entry.get('rad_margin', '—')}"
+                else:
+                    entry.update(dual_metrics(resp, labels, cfg.targets))   # 六項分項 + 能量自證
+                    tail = f"energy_max={entry.get('energy_max', '—')}"
                 store.add(p, resp)                       # (pattern, 真響應) 入庫：可再餵 SM 重錨/Stage-3
                 results[m["id"]] = entry
                 _flush()
-                print(f"  ✓ wm={entry['wm']}  rad_margin={entry.get('rad_margin', '—')}  {entry['time_s']}s")
+                print(f"  ✓ wm={entry['wm']}  {tail}  {entry['time_s']}s")
             if aborted:
                 break
     finally:
@@ -5744,6 +6006,10 @@ def jobs_add(args):
         job = dict(input=args.input, store=args.store, prio=args.prio)
         if getattr(args, "machine", None):
             job["machine"] = args.machine                # 釘選:只有這台認領(同機三組對照等)
+        if getattr(args, "config", None):
+            #? 派工帶 config（2026-08-10 dual 開線,D2 #5）:worker 常駐時吃的是自己的 --config,
+            #  單一 worker 要能同時吃 single/dual 兩種批 → 由「批」帶尺,不給就沿用 worker 預設。
+            job["config"] = args.config
         jobs.append(job)
         tmp = str(qp) + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
@@ -5976,6 +6242,8 @@ def worker(args):
     O_EXCL 建檔含機器 IP）→ run（斷點續跑＋單筆 watchdog＋連敗保險絲＋批尾自動補測）→ 標 done → 下一個;
     佇列空 → 睡 --poll 秒再掃。**同 store 兩機並跑由 claim 檔擋掉**（results.json 互踩防護）。
     stale 接管:claim 存在但 store 無進度超過 --stale 分鐘（機器死了）→ 別台可接手續跑。
+    **批帶尺**（2026-08-10 dual 開線）:job 若有 `config` 欄（`jobs-add --config`）就用它,否則沿用本機
+    `--config`——同一台 worker 因此能交錯吃 single 與 dual 批,不必為了換域重啟。
     停止:建 jobs_state/STOP（跑完當前 job 收工）或 Ctrl-C。死亡判定三層（2026-07-15 升級,216 教訓）:
     ①連 --max-fail 敗=熔斷→冷卻 --cooldown 秒重開再試,--max-blowout 循環用盡才判死;
     ②判死→寫 <store>.fail（JSON 記 machines 名單）並停機;③別台 worker 見 .fail 名單無自己
@@ -6093,8 +6361,10 @@ def worker(args):
             time.sleep(args.poll)
             continue
         st = picked["store"]
-        print(f"▶ 認領 {st}（input {picked['input']}）")
-        ns = argparse.Namespace(config=args.config, input=picked["input"], store=st, out=None,
+        job_cfg = picked.get("config") or args.config    # 批帶尺優先（dual 批;沒帶=沿用本機預設）
+        print(f"▶ 認領 {st}（input {picked['input']}"
+              f"{'' if job_cfg == args.config else f', config {os.path.basename(job_cfg)}'}）")
+        ns = argparse.Namespace(config=job_cfg, input=picked["input"], store=st, out=None,
                                 sweep=args.sweep, timeout=args.timeout, max_fail=args.max_fail,
                                 cooldown=args.cooldown, max_blowout=args.max_blowout,
                                 retry_pass=args.retry_pass, job_prio=picked.get("prio", 9),
@@ -6200,6 +6470,55 @@ def jobs_ls(args):
 
 
 # ---------------------------------------------------------------- report（匯總表，貼 round 檔 §4）
+def _report_dual(manifest, results):
+    """dual 版匯總表（D2 #9）：表格欄＝m1..m4 分項＋worst＋energy 自證；**無 rad、無三標**
+    （dual 無遠場輸出）。表尾摘要直接餵 round-57 的三條判準：②能量自證告警、③鏡像假說
+    （鏡像臂 |S11−S22| 中位 vs 非鏡像臂）、④起跑線（最佳 worst）；m5/m6＝帶外反射，
+    記帳不進 worst（決策點③）→ 只進摘要，等首批母體決定要不要進 min。"""
+    print("| id | 臂 | m1 S11帶內 | m2 S22帶內 | m3 S21通帶 | m4 S21阻帶 | worst | energy | 時間 |")
+    print("|---|---|---|---|---|---|---|---|---|")
+    for m in manifest:
+        r = results.get(m["id"], {})
+        if "wm" in r:
+            cells = [f"{r.get(k, float('nan')):+.2f}" for k in ("m1", "m2", "m3", "m4")]
+            cells.append(f"**{r['wm'][-1]:+.2f}**" if r["wm"][-1] >= 0 else f"{r['wm'][-1]:+.2f}")
+            e = r.get("energy_max")
+            cells.append(f"{e:.3f}{'⚠' if e is not None and e > 1 else ''}" if e is not None else "—")
+            cells.append(f"{r.get('time_s', 0) / 60:.0f}m")
+        elif "error" in r:
+            cells = [f"✗ {r['error'][:30]}"] + ["—"] * 6      # 7 格＝m1..m4/worst/energy/時間
+        else:
+            cells = ["（待跑）"] + ["—"] * 6
+        print(f"| {m['id']} | {m.get('arm', '—')} | " + " | ".join(cells) + " |")
+
+    done = [r for r in results.values() if "wm" in r]
+    if not done:
+        print(f"\n已完成 0/{len(manifest)}。")
+        return
+    ok = [r for r in done if r["wm"][-1] >= 0]
+    bad_e = [r for r in done if (r.get("energy_max") or 0) > 1]
+    print(f"\n已完成 {len(done)}/{len(manifest)}；**合格（worst=min(m1..m4) ≥ 0）：{len(ok)} 筆**；"
+          f"最佳 worst {max(r['wm'][-1] for r in done):+.2f}。")
+    for k, name in (("m5", "帶外 S11"), ("m6", "帶外 S22")):
+        vs = [r[k] for r in done if k in r]
+        if vs:
+            print(f"（記帳欄 {k} {name}：中位 {float(np.median(vs)):+.2f} / 最佳 {max(vs):+.2f} / "
+                  f"≥0 {sum(v >= 0 for v in vs)} 筆——決策點③待此數據定案是否進 min）")
+    if bad_e:
+        print(f"⚠ 能量自證失敗（energy_max>1）{len(bad_e)} 筆＝資料/模擬壞了，先查再判讀。")
+    #? 鏡像假說（round-57 §1③）：鏡像臂 |S11−S22| 中位 <1dB ⇒ 成立（對照非鏡像臂中位 ~9dB）
+    def _gaps(arm_pred):
+        ids = {m["id"] for m in manifest if arm_pred(m.get("arm"))}
+        return [results[i]["s11_s22_gap"] for i in ids if "s11_s22_gap" in results.get(i, {})]
+
+    mir, oth = _gaps(lambda a: a == "s"), _gaps(lambda a: a != "s")
+    if mir:
+        print(f"**鏡像假說（§1③）**：鏡像臂 |S11−S22| 中位 {float(np.median(mir)):.3f} dB"
+              f"（{len(mir)} 筆，max {max(mir):.3f}）"
+              + (f" vs 非鏡像臂中位 {float(np.median(oth)):.3f} dB（{len(oth)} 筆）" if oth else "")
+              + f" → {'成立' if float(np.median(mir)) < 1.0 else '不成立'}（門檻 1dB）。")
+
+
 def report(args):
     input_dir = _dir(args.input)
     manifest = _load_manifest(input_dir)
@@ -6208,6 +6527,9 @@ def report(args):
     if results_path.exists():
         with open(results_path, encoding="utf-8") as f:
             results = json.load(f)
+
+    if any(m.get("port") == "dual" for m in manifest):     # port-aware（D2 #9）：dual 走專屬表
+        return _report_dual(manifest, results)
 
     hfss_orig = {m["id"].split("_", 1)[0]: results.get(m["id"], {}).get("wm")
                  for m in manifest if m["kind"] == "orig"}
@@ -6382,7 +6704,8 @@ def main():
     s.add_argument("--rad-key", action="store_true", dest="rad_key")
     s.set_defaults(fn=select_r22mix, round=24, key="sel")
 
-    s = sub.add_parser("select-r25", help="R25 多樣性加碼：根稅 0.6+王朝 48%+F 碎片/低側修復臂(同 r22mix 機器)")
+    #! help 內的字面 % 要寫成 %%（argparse 會對 help 做 %-格式化）——否則 `dedust --help` 整個炸
+    s = sub.add_parser("select-r25", help="R25 多樣性加碼：根稅 0.6+王朝 48%%+F 碎片/低側修復臂(同 r22mix 機器)")
     s.add_argument("--batch", type=int, required=True)
     s.add_argument("--seed", type=int, default=20260713)
     s.add_argument("--sm", default="sm_reanchor22.pth")
@@ -7628,9 +7951,21 @@ def main():
     s.add_argument("--ref3-input", default="dedust_ref3_input")
     s.set_defaults(fn=select_probes)
 
-    s = sub.add_parser("check-dup", help="發車前查重：批內 + 對歷史輸入夾交叉（exit 1=有重複）")
+    s = sub.add_parser("check-dup", help="發車前查重：批內 + 對歷史輸入夾交叉（**同 port 才交叉**;exit 1=有重複）")
     s.add_argument("--input", required=True)
     s.set_defaults(fn=check_dup)
+
+    s = sub.add_parser("select-dual", help="dual 元年首批:harvest 最佳錨 a20+鄰域 n40+隨機 r20+上下鏡像 s20（判準寫死於 docstring 與 round-57 §1）")
+    s.add_argument("--round", type=int, required=True, help="必填防跨輪覆寫（夾名/ id 都吃這個號）")
+    s.add_argument("--batch", type=int, required=True)
+    s.add_argument("--config", default=os.path.join(REPO, "configs", "dual_r1_eval.yaml"),
+                   help="dual 判準尺（targets=論文 p.44 規格;必須 port: dual）")
+    s.add_argument("--harvest", default="harvest_dual", help="錨池 SampleStore 名（DATASET_PATH 下）")
+    s.add_argument("--anchors", type=int, default=20, help="a 臂：harvest wm_dual 最佳 N 筆")
+    s.add_argument("--per-anchor", type=int, default=2, dest="per_anchor", help="n 臂：每錨幾筆 d1-3 變異")
+    s.add_argument("--rand", type=int, default=20, help="r 臂筆數（s 鏡像臂同額，配對對照）")
+    s.add_argument("--seed", type=int, default=20260810)
+    s.set_defaults(fn=select_dual)
 
     s = sub.add_parser("select-occlude", help="物理遮蔽掃描：錨點 5×5 區塊逐一清空 → 真空間重要度圖 (R10)")
     s.add_argument("--source-input", default="dedust_r9_input", help="來源輸入夾（取 --ids 的 .pt）")
@@ -7667,8 +8002,9 @@ def main():
     s.add_argument("--store", default=DEFAULT_STORE, help="結果夾名（DATASET_PATH 下）")
     s.add_argument("--config", default=DEFAULT_CFG)
     s.add_argument("--out", default=None, help="HFSS 工作目錄（正式機本地碟;預設 _dedust_<store>,批次間隔離防殘留污染）")
-    s.add_argument("--sweep", default="Interpolating", choices=["Interpolating", "Discrete", "Fast"],
-                   help="掃頻演算法（Discrete=17 點逐點硬解,慢但每點真解;掃頻法交叉驗證用）")
+    s.add_argument("--sweep", default=None, choices=["Interpolating", "Discrete", "Fast"],
+                   help="掃頻演算法（不給=依 port 取歷來預設:single→Interpolating、dual→Fast;"
+                        "Discrete=17 點逐點硬解,慢但每點真解——掃頻法交叉驗證用。⚠ 換掃頻法=換分佈）")
     s.add_argument("--timeout", type=int, default=900, help="單筆 watchdog 秒數（超時殺 HFSS 標 error 續跑;中位 160s/P90 176s）")
     s.add_argument("--max-fail", type=int, default=5, dest="max_fail", help="連續失敗幾筆＝保險絲熔斷一次")
     s.add_argument("--cooldown", type=int, default=600, help="熔斷後冷卻秒數（殺透 HFSS 睡完重開再試）")
@@ -7679,8 +8015,10 @@ def main():
     s.set_defaults(fn=run)
 
     s = sub.add_parser("worker", help="資料工廠 worker：常駐認領 NAS 佇列 job（jobs.json）自動跑批")
-    s.add_argument("--config", default=DEFAULT_CFG)
-    s.add_argument("--sweep", default="Interpolating", choices=["Interpolating", "Discrete", "Fast"])
+    s.add_argument("--config", default=DEFAULT_CFG,
+                   help="預設尺（single）；job 自帶 config（jobs-add --config）時以批為準——同一台 worker 吃兩域")
+    s.add_argument("--sweep", default=None, choices=["Interpolating", "Discrete", "Fast"],
+                   help="不給=依 job 的 port 取歷來預設（single→Interpolating、dual→Fast）")
     s.add_argument("--poll", type=int, default=300, help="佇列空時幾秒掃一次")
     s.add_argument("--timeout", type=int, default=900)
     s.add_argument("--max-fail", type=int, default=5, dest="max_fail")
@@ -7700,6 +8038,8 @@ def main():
     s.add_argument("--store", required=True)
     s.add_argument("--prio", type=int, default=5, help="小=先跑")
     s.add_argument("--machine", default=None, help="釘選 IP 末段(216/218/37)——只有這台認領;同機對照實驗用")
+    s.add_argument("--config", default=None,
+                   help="這一批用的 config（dual 批必給 configs/dual_r1_eval.yaml;不給=worker 沿用自己的 --config）")
     s.set_defaults(fn=jobs_add)
 
     s = sub.add_parser("jobs-ls", help="看派工佇列現況（預設隱藏 done 歷史;--all 列全部）")

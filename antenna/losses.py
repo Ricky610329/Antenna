@@ -692,3 +692,129 @@ def worst_margin(response, labels, targets) -> tuple:
         c = float(t["center"])
         margins[label] = (c - float(band.max())) if t["method"] == "low" else (float(band.min()) - c)
     return min(margins.values()), margins
+
+
+###* ============================================================================
+###* dual-port (二埠濾波天線) 判準：worst_margin_dual + dual_energy_max
+###* 與 single 的 worst_margin **完全獨立**（single 是 golden 基準,一個 byte 都不動）；
+###* 呼叫端自行依 port 選尺。規格出處＝docs/reference/notes/senior-thesis-dual-port.md §4.1/§6.8。
+###* ============================================================================
+
+def _dual_target_curve(t, n_points: int, label: str) -> np.ndarray:
+    """把 targets 的 (side, center, width 五段) 展開成目標曲線 —— 與 `TargetResponse.__call__` 同一條公式。
+
+    五段＝左平台(side) / 左斜邊(side→center 線性) / 中央平台(center) / 右斜邊 / 右平台
+    （見 `antenna/response.py:165-202`）。此處只用 numpy 重算一次（不建 TargetResponse，
+    避免判準函式牽進全域 spec/裝置狀態）；長度不符即 fail-fast。
+    """
+    w = list(t["width"])
+    if len(w) != 5:
+        raise ValueError(f"worst_margin_dual: {label} 的 width 需 5 段，得到 {len(w)} 段 ({w})。")
+    side, center = float(t["side"]), float(t["center"])
+    curve = np.concatenate([
+        np.ones(w[0]) * side,
+        np.linspace(side, center, w[1]),
+        np.ones(w[2]) * center,
+        np.linspace(center, side, w[3]),
+        np.ones(w[4]) * side,
+    ])
+    if len(curve) != n_points:
+        raise ValueError(f"worst_margin_dual: {label} 的 width {w} 展開成 {len(curve)} 點，"
+                         f"但響應有 {n_points} 點。請檢查 targets 的 width。")
+    return curve
+
+
+def worst_margin_dual(response, labels, targets) -> tuple:
+    """dual-port 的「最差餘裕」(dB)：正＝達標、越高越好。客觀判讀指標(非 loss)，與 single 的
+    `worst_margin` 是**兩把獨立的尺**（single 路徑一個 byte 都沒動）。
+
+    六項單側 margin（門檻值全部從 targets 的 side/center 讀，不硬編）:
+
+    ====  =========================  ==================================  ===========================
+    項    定義                        頻點集合 (dual_base.yaml 的 idx)      進 wm?
+    ====  =========================  ==================================  ===========================
+    m1    center − max(S11[帶內])     S11 target==min → idx 5-11           ✔
+    m2    center − max(S22[帶內])     S22 target==min → idx 5-11           ✔
+    m3    min(S21[通帶]) − center     S21 target==max → idx 3-13           ✔
+    m4    side − max(S21[阻帶])       S21 target==min → idx 0-2 ∪ 14-16    ✔
+    m5    min(S11[帶外]) − side       S11 target==max → idx 0-4 ∪ 12-16    ✘ (只記帳)
+    m6    min(S22[帶外]) − side       S22 target==max → idx 0-4 ∪ 12-16    ✘ (只記帳)
+    ====  =========================  ==================================  ===========================
+
+    **wm_dual = min(m1..m4)；m5/m6 只入 per 不入 min**（判準定案 2026-08-10）：帶外反射由能量守恆
+    `|Sii|²+|S21|²+P_rad+P_loss=1` 幾乎被 S21 阻帶規格蘊含、資訊量低，塞進 min 只會讓判準對一個
+    近乎「白送」的量敏感（比照 single 把帶外拆成 usable_lo/hi 獨立紀錄的做法）。
+
+    #! **頻點集合一律走 mask，不用 width 切片算術**（single 的 `worst_margin` 用切片是因為它的
+    #  width 斜邊恆為 0）。dual 的 S11/S22 width=[4,2,5,2,4] 有斜邊，而 `np.linspace(side,center,2)`
+    #  只產出端點 [side, center] → 斜邊的兩個點實際上一個等於 side、一個等於 center。
+    #  切片算術 `w[0]+w[1] : +w[2]` 會切出 idx 6:11，**漏掉 idx 5 與 idx 11 這兩個真的等於 center
+    #  的頻點＝靜默切錯帶**。mask (`target==target.min()/max()`) 與 `custom_loss_minmax` 同一把尺，
+    #  斜邊怎麼配都不會漏。
+
+    :param response: (n_labels, n_points) 或攤平,列序＝labels。
+    :param labels:   label 順序 (dual 為 ['S11','S21','S22'])。
+    :param targets:  {label: {side, center, width, ...}} (＝ TrainConfig.targets)。
+    :return: (wm, per)。wm=min(m1..m4)；per 含 'm1'..'m6' 六項 + 每 label 的主 margin
+             ('S11'=m1、'S22'=m2、'S21'=min(m3,m4))。
+    """
+    labels = list(labels)
+    need = {"S11", "S21", "S22"}
+    if not need.issubset(labels):
+        raise ValueError(f"worst_margin_dual 需要 labels 含 {sorted(need)}，得到 {labels}。"
+                         f"(single-port 請用 worst_margin)")
+    response = torch.as_tensor(response).float().reshape(len(labels), -1).cpu()   # mask 走 CPU bool，統一裝置
+    n_points = response.shape[1]
+
+    curves, rows, sides, centers = {}, {}, {}, {}
+    for label in ("S11", "S21", "S22"):
+        t = targets[label]
+        curves[label] = _dual_target_curve(t, n_points, label)
+        rows[label] = response[labels.index(label)]
+        sides[label], centers[label] = float(t["side"]), float(t["center"])
+
+    #! 方向自證：S11/S22 是「帶內要更低」(center < side)、S21 是「通帶要更高」(center > side)。
+    #  兩者若被寫反，min/max mask 會整組互換而 margin 靜默反號 → 這裡 fail-fast。
+    for label in ("S11", "S22"):
+        if not centers[label] < sides[label]:
+            raise ValueError(f"worst_margin_dual: {label} 應為帶內壓低型 (center < side)，"
+                             f"但 center={centers[label]}、side={sides[label]}。")
+    if not centers["S21"] > sides["S21"]:
+        raise ValueError(f"worst_margin_dual: S21 應為通帶抬高型 (center > side)，"
+                         f"但 center={centers['S21']}、side={sides['S21']}。")
+
+    def _lo(label):     # 該 label 目標曲線的低平台 (== curve.min()) 所在頻點的響應值
+        c = curves[label]
+        return rows[label][torch.as_tensor(c == c.min())]
+
+    def _hi(label):     # 該 label 目標曲線的高平台 (== curve.max()) 所在頻點的響應值
+        c = curves[label]
+        return rows[label][torch.as_tensor(c == c.max())]
+
+    per = {
+        "m1": centers["S11"] - float(_lo("S11").max()),      # 帶內 S11 反射夠低
+        "m2": centers["S22"] - float(_lo("S22").max()),      # 帶內 S22 反射夠低
+        "m3": float(_hi("S21").min()) - centers["S21"],      # 通帶 S21 傳得過去
+        "m4": sides["S21"] - float(_lo("S21").max()),        # 阻帶 S21 抑制得夠
+        "m5": float(_hi("S11").min()) - sides["S11"],        # 帶外 S11 反射夠強 (記帳)
+        "m6": float(_hi("S22").min()) - sides["S22"],        # 帶外 S22 反射夠強 (記帳)
+    }
+    wm = min(per["m1"], per["m2"], per["m3"], per["m4"])     #! m5/m6 刻意不進 min
+    per["S11"], per["S22"] = per["m1"], per["m2"]
+    per["S21"] = min(per["m3"], per["m4"])
+    return wm, per
+
+
+def dual_energy_max(response) -> float:
+    """dual 每筆的能量自證：`max` over 頻點 of (|S11|²+|S21|², |S22|²+|S21|²)。
+
+    被動網路單埠激發時 `|Sii|² + |S21|² + P_rad + P_loss = 1` → 本值**必 ≤ 1**，>1 即代表
+    這筆資料/模擬壞了（免費的儀器自證；single 沒有這種閉合檢查）。harvest_dual 一萬筆實測
+    max≈0.91，缺的 ~46% 就是輻射——這結構是「二埠濾波天線」而非無輻射濾波器的實錘。
+
+    :param response: (3, n) 或攤平，**列序固定為 dual 的 labels 序 (S11, S21, S22)**，單位 dB。
+    :return: 最大能量和 (無因次，線性功率)。
+    """
+    r = torch.as_tensor(response).float().reshape(3, -1)
+    p = torch.pow(10.0, r / 10.0)                            # dB → 線性功率
+    return float(torch.maximum(p[0] + p[1], p[2] + p[1]).max())

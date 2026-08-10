@@ -437,6 +437,306 @@ def test_cs_sort_key_notarize_first():
     assert key("dedust_r9n1") == 0 and key("dedust_r45b3a") == 1
 
 
+# ---------------------------------------------------------------- dual 開線（2026-08-10，D2 #3-#6/#8/#9）
+def _dual_pattern(seed=0):
+    import numpy as np
+    return np.random.default_rng(seed).random((25, 25)) < 0.5
+
+
+class TestDualHelpers:
+    """dual 可製造閘與上下鏡像（single 的 FEED/symmetrize 是**左右**軸，dual 必須另立一套）。"""
+
+    def test_pads_forced_full(self):
+        from script.dedust import dual_pads
+        q = dual_pads(np.zeros((25, 25), bool))
+        assert q[0:5, 10:15].all() and q[20:25, 10:15].all()     # 上下兩個 5×5 饋墊
+        assert q.sum() == 50                                      # 只補饋墊，不多動一格
+        assert q[0, 12] and q[24, 12]                             # 饋電點 [(0,12),(24,12)]
+
+    def test_mirror_is_row_axis_and_keeps_pads(self):
+        from script.dedust import dual_mirror
+        q = dual_mirror(_dual_pattern(3))
+        assert (q == q[::-1]).all()                               # 沿 row 中線（row 12 為軸）對稱
+        assert q[0:5, 10:15].all() and q[20:25, 10:15].all()
+        assert (dual_mirror(_dual_pattern(3)) == q).all()         # 決定性（純函式）
+
+    def test_flip_avoids_pads_and_counts(self):
+        from script.dedust import dual_flip, dual_pads
+        p = dual_pads(_dual_pattern(5))
+        rng = np.random.default_rng(11)
+        q = dual_flip(p, 3, rng)
+        assert int((q != p).sum()) == 3                           # 恰翻 d 格
+        assert q[0:5, 10:15].all() and q[20:25, 10:15].all()      # 饋墊沒被翻掉
+        assert not ((q != p)[0:5, 10:15]).any() and not ((q != p)[20:25, 10:15]).any()
+        assert (dual_flip(p, 3, np.random.default_rng(11)) == q).all()   # 同 seed 決定性
+
+
+def test_cli_help_renders(monkeypatch, capsys):
+    """回歸（2026-08-10 修）：help 字串裡的**字面 %** 沒跳脫會讓 `dedust --help` 整個炸
+    （argparse 對 help 做 %-格式化；select-r25 的「48%」是實犯）。順帶當全部子命令 help 的語法閘。"""
+    import sys
+    import pytest
+    import script.dedust as dd
+    monkeypatch.setattr(sys, "argv", ["dedust", "--help"])
+    with pytest.raises(SystemExit) as e:
+        dd.main()
+    assert e.value.code == 0
+    assert "select-dual" in capsys.readouterr().out
+
+
+def test_port_sweep_defaults_match_simulators():
+    """跨實作對帳：dedust 的 `--sweep` port 預設表必須等於兩個模擬器**自己**的預設。
+    dual 的 harvest_dual 一萬筆真值全是 Fast 跑的——共用一個字面值（Interpolating）會靜默換分佈。"""
+    import inspect
+    from antenna.patch import DualPortSimulator, SinglePortRadSimulator
+    from script.dedust import PORT_SWEEP
+    for port, cls in (("single", SinglePortRadSimulator), ("dual", DualPortSimulator)):
+        sig = inspect.signature(cls.__init__)
+        if "sweep_type" not in sig.parameters:             # single_rad 由父類吃 **kwargs
+            sig = inspect.signature(cls.__mro__[1].__init__)
+        assert PORT_SWEEP[port] == sig.parameters["sweep_type"].default, f"{port} 掃頻預設不一致"
+
+
+def _fake_dual_losses(monkeypatch, per=None, energy=0.91):
+    """施工包 A（antenna.losses.worst_margin_dual / dual_energy_max）落地前也能驗 dedust 這側的配管。"""
+    import antenna.losses as L
+    per = per if per is not None else dict(m1=1.0, m2=-2.0, m3=0.5, m4=3.0, m5=-9.0, m6=-8.0)
+    monkeypatch.setattr(L, "worst_margin_dual",
+                        lambda resp, labels, targets: (min(per[k] for k in ("m1", "m2", "m3", "m4")), per),
+                        raising=False)
+    monkeypatch.setattr(L, "dual_energy_max", lambda resp: energy, raising=False)
+    return per
+
+
+def test_dual_metrics_fields(monkeypatch):
+    """results.json 的 dual 欄位契約：m1..m6 全入檔（m5/m6=記帳欄）+ energy_max 3 位（1.001/0.999 要
+    分得出）+ s11_s22_gap（鏡像假說 round-57 §1③ 的直接量，取**最壞頻點**）。"""
+    from script.dedust import dual_metrics
+    _fake_dual_losses(monkeypatch, energy=1.0004)
+    resp = np.zeros((3, 17))
+    resp[2, 4] = -2.5                              # S22 在 idx4 與 S11 差 2.5dB（其餘同值）
+    out = dual_metrics(resp, ["S11", "S21", "S22"], {})
+    assert set(out) == {"m1", "m2", "m3", "m4", "m5", "m6", "energy_max", "s11_s22_gap"}
+    assert out["m2"] == -2.0 and out["m5"] == -9.0
+    assert out["energy_max"] == 1.0                # 3 位（>1 的告警不會被 2 位四捨五入吃掉方向）
+    assert out["s11_s22_gap"] == 2.5               # max_f |S11−S22|，不是平均（身分等式看最壞點）
+    assert dual_metrics(np.zeros((3, 17)), ["S11", "S21", "S22"], {})["s11_s22_gap"] == 0.0
+    assert "rad" not in out and "sel" not in out and "oob_bad" not in out
+
+
+def test_dual_metrics_rejects_incomplete_per(monkeypatch):
+    """契約守衛：per 少一項就炸（別讓缺欄靜默進 results.json）。"""
+    import pytest
+    from script.dedust import dual_metrics
+    _fake_dual_losses(monkeypatch, per=dict(m1=1.0, m2=2.0, m3=3.0, m4=4.0))
+    with pytest.raises(KeyError):
+        dual_metrics(np.zeros((3, 17)), ["S11", "S21", "S22"], {})
+
+
+def test_dual_label_margins_mapping():
+    """entry["wm"] 的 per-label 欄：S11=m1 / S21=min(m3,m4) / S22=m2；**m5/m6 不進**（決策點③）。"""
+    from script.dedust import _dual_label_margins
+    per = dict(m1=1.0, m2=2.0, m3=0.5, m4=-3.0, m5=-99.0, m6=-99.0)
+    assert _dual_label_margins(per, ["S11", "S21", "S22"]) == [1.0, -3.0, 2.0]
+    per2 = dict(per, S11=7.0, S21=8.0, S22=9.0)          # per 若自帶 label 鍵則優先
+    assert _dual_label_margins(per2, ["S11", "S21", "S22"]) == [7.0, 8.0, 9.0]
+
+
+def _mk_input(root, name, ids_ports, pattern):
+    """造一個迷你輸入夾：manifest（可帶 port）+ 每 id 一個 .pt。"""
+    import json
+    import torch
+    d = root / name
+    d.mkdir()
+    man = []
+    for pid, port in ids_ports:
+        m = {"id": pid, "kind": "dual" if port == "dual" else "orig"}
+        if port:
+            m["port"] = port
+        man.append(m)
+        torch.save(torch.tensor(pattern.astype("float32")), str(d / f"{pid}.pt"))
+    (d / "manifest.json").write_text(json.dumps(man), encoding="utf-8")
+    return d
+
+
+def test_check_dup_splits_by_port_domain(tmp_path, monkeypatch):
+    """查重分域（D2 #6）：同一張 pattern 在 single 夾與 dual 夾各測一次＝合法對照，不算重複；
+    同域撞到才 exit 1。"""
+    import pytest
+    import script.dedust as dd
+    from types import SimpleNamespace
+    monkeypatch.setattr(dd, "DATASET_PATH", tmp_path)
+    p = _dual_pattern(7)
+    _mk_input(tmp_path, "dedust_hist_input", [("h1", None)], p)          # 歷史 single 夾（無 port 欄）
+    _mk_input(tmp_path, "dedust_d1_input", [("d1", "dual")], p)          # dual 夾，同一張 pattern
+    dd.check_dup(SimpleNamespace(input="dedust_d1_input"))               # 跨域 → 不得判重複
+
+    _mk_input(tmp_path, "dedust_d2_input", [("d2", "dual")], p)          # 另一個 dual 夾，同 pattern
+    with pytest.raises(SystemExit):
+        dd.check_dup(SimpleNamespace(input="dedust_d2_input"))           # 同域 → 必須攔
+
+    _mk_input(tmp_path, "dedust_s2_input", [("s2", None)], p)            # single 對 single 也照攔
+    with pytest.raises(SystemExit):
+        dd.check_dup(SimpleNamespace(input="dedust_s2_input"))
+
+
+def test_jobs_add_carries_config(tmp_path, monkeypatch):
+    """派工鏈帶 config（D2 #5）：給了才寫進 job dict；不給＝worker 沿用自己的 --config。"""
+    import json
+    from types import SimpleNamespace
+    import script.dedust as dd
+    monkeypatch.setattr(dd, "DATASET_PATH", tmp_path)
+    for n in ("inA", "inB"):
+        (tmp_path / n).mkdir()
+        (tmp_path / n / "manifest.json").write_text("[]", encoding="utf-8")
+    dd.jobs_add(SimpleNamespace(input="inA", store="stA", prio=3, config="configs/dual_r1_eval.yaml"))
+    dd.jobs_add(SimpleNamespace(input="inB", store="stB", prio=3))       # 舊呼叫端（無 config 屬性）不得炸
+    jobs = {j["store"]: j for j in json.loads((tmp_path / "jobs.json").read_text(encoding="utf-8"))}
+    assert jobs["stA"]["config"] == "configs/dual_r1_eval.yaml"
+    assert "config" not in jobs["stB"]
+
+
+def test_report_dual_is_port_aware(tmp_path, monkeypatch, capsys):
+    """report port-aware（D2 #9）：dual 表頭＝m1..m4/energy，無 rad、無三標；能量>1 要告警。"""
+    import json
+    from types import SimpleNamespace
+    import script.dedust as dd
+    monkeypatch.setattr(dd, "DATASET_PATH", tmp_path)
+    _mk_input(tmp_path, "dedust_r99b1_input",
+              [("d99b1_a_00", "dual"), ("d99b1_s_00", "dual"), ("d99b1_r_00", "dual"),
+               ("d99b1_r_01", "dual")], _dual_pattern(1))
+    man = json.loads((tmp_path / "dedust_r99b1_input" / "manifest.json").read_text(encoding="utf-8"))
+    for m, arm in zip(man, ("a", "s", "r", "r")):
+        m["arm"] = arm                                       # r_00=error 列、r_01=待跑列（驗欄數）
+    (tmp_path / "dedust_r99b1_input" / "manifest.json").write_text(json.dumps(man), encoding="utf-8")
+    (tmp_path / "dedust_r99b1").mkdir()
+    (tmp_path / "dedust_r99b1" / "results.json").write_text(json.dumps({
+        "d99b1_a_00": {"wm": [1.0, -0.5, 2.0, -0.5], "m1": 1.0, "m2": 2.0, "m3": -0.5, "m4": 3.0,
+                       "m5": -9.0, "m6": -8.0, "energy_max": 0.91, "s11_s22_gap": 9.2,
+                       "time_s": 120.0},
+        "d99b1_s_00": {"wm": [1.0, 1.0, 2.0, 1.0], "m1": 1.0, "m2": 1.0, "m3": 2.0, "m4": 4.0,
+                       "m5": -9.0, "m6": -9.0, "energy_max": 1.004, "s11_s22_gap": 0.02,
+                       "time_s": 120.0},
+        "d99b1_r_00": {"error": "COM 例外", "attempts": 1}}), encoding="utf-8")
+    dd.report(SimpleNamespace(input="dedust_r99b1_input", store="dedust_r99b1"))
+    out = capsys.readouterr().out
+    #? 每一列的欄數必須等於表頭（error/待跑 列曾少一格 → markdown 表整個錯位）
+    rows = [ln for ln in out.splitlines() if ln.startswith("|")]
+    assert len({ln.count("|") for ln in rows}) == 1, "表格欄數不一致"
+    assert "m1 S11帶內" in out and "energy" in out
+    assert "rad" not in out and "三標" not in out            # dual 無遠場 → 這兩個概念不該出現
+    assert "合格（worst=min(m1..m4) ≥ 0）：1 筆" in out
+    assert "energy_max>1" in out                             # 能量自證告警
+    assert "鏡像假說" in out and "成立" in out                # §1③ 判準直接落在表尾（0.02 < 1dB）
+
+
+def test_select_dual_arm_table(tmp_path, monkeypatch):
+    """select-dual 臂別契約（D2 #8）：a/n/r/s 席次、id 規範、port 欄、饋墊閘、鏡像對稱、決定性。
+    ⚠ 這批 = 100 筆真 HFSS（~數小時機時），生成錯了才發現＝燒掉的預算回不來。"""
+    import json
+    import os
+    import numpy as np
+    import torch
+    from types import SimpleNamespace
+    import antenna.losses as L
+    import antenna.utils.store as ST
+    import script.dedust as dd
+
+    N = 12
+    #? 真實的 harvest pattern 本來就疊了 M_feed（雙饋墊全滿）——除了 idx 10，用來驗
+    #  「可製造閘動到錨」時 pads_forced 會被標記（動過就不能拿來當存檔 y vs 重測的對帳）
+    pats = [dd.dual_pads(np.random.default_rng(100 + i).random((25, 25)) < 0.5) for i in range(N)]
+    pats[10] = pats[10].copy()
+    pats[10][0, 10] = False
+    resps = [torch.full((3, 17), float(i)) for i in range(N)]
+
+    class FakeStore:
+        def __init__(self, rootdir, verbose=True):
+            pass
+
+        def __len__(self):
+            return N
+
+        def __getitem__(self, i):
+            return torch.tensor(pats[i].astype(np.float32)), resps[i]
+
+    monkeypatch.setattr(ST, "SampleStore", FakeStore)
+    monkeypatch.setattr(L, "worst_margin_dual",
+                        lambda y, labels, targets: (float(torch.as_tensor(y)[0, 0]), {}), raising=False)
+    monkeypatch.setattr(dd, "DATASET_PATH", tmp_path)
+    (tmp_path / "harvest_dual").mkdir()
+    cfg = os.path.join(dd.REPO, "configs", "dual_base.yaml")
+    args = SimpleNamespace(round=99, batch=1, config=cfg, harvest="harvest_dual",
+                           anchors=4, per_anchor=2, rand=3, seed=20260810)
+    dd.select_dual(args)
+
+    d = tmp_path / "dedust_r99b1_input"
+    man = json.loads((d / "manifest.json").read_text(encoding="utf-8"))
+    assert len(man) == 4 + 8 + 3 + 3
+    by = {}
+    for m in man:
+        by.setdefault(m["arm"], []).append(m)
+        assert m["port"] == "dual" and m["kind"] == "dual"
+        assert m["id"].startswith("d99b1_")
+        q = np.asarray(torch.load(str(d / f"{m['id']}.pt"), weights_only=True)).reshape(25, 25) > 0.5
+        assert q[0:5, 10:15].all() and q[20:25, 10:15].all(), "可製造閘：雙饋墊必全滿"
+    assert [len(by[a]) for a in "anrs"] == [4, 8, 3, 3]
+    assert [m["harvest_wm"] for m in by["a"]] == [11.0, 10.0, 9.0, 8.0]      # wm 降冪選錨
+    assert [m["pads_forced"] for m in by["a"]] == [False, True, False, False]  # 只有被閘動過的那筆標記
+    a_ids = {m["id"] for m in by["a"]}
+    r_ids = {m["id"] for m in by["r"]}
+    assert all(m["parent"] in a_ids and m["d"] in (1, 2, 3) for m in by["n"])
+    assert all(m["parent"] in r_ids for m in by["s"])
+    assert {m["d"] for m in by["n"]} == {1, 2, 3}                            # d 階梯有鋪開
+    for m in by["s"]:                                                        # 鏡像臂真的上下對稱
+        q = np.asarray(torch.load(str(d / f"{m['id']}.pt"), weights_only=True)).reshape(25, 25) > 0.5
+        assert (q == q[::-1]).all()
+    # 決定性：同參數重跑 → 位元級相同（可重現、可續跑）
+    sig = {m["id"]: open(str(d / f"{m['id']}.pt"), "rb").read() for m in man}
+    import shutil
+    shutil.rmtree(str(d))
+    dd.select_dual(args)
+    assert {m["id"]: open(str(d / f"{m['id']}.pt"), "rb").read()
+            for m in json.loads((d / "manifest.json").read_text(encoding="utf-8"))} == sig
+
+
+def test_select_dual_end_to_end_real_ruler(tmp_path, monkeypatch):
+    """零 mock 整合：真 SampleStore + 真 `worst_margin_dual` + 真 dual config 走一遍 select-dual。
+    盯的是「錨真的是按同一把判準尺挑的」——排序若跟手算不一致，首批 20 個錨就選錯了。"""
+    import json
+    import os
+    import numpy as np
+    import torch
+    from types import SimpleNamespace
+    import script.dedust as dd
+    from antenna.losses import worst_margin_dual
+    from antenna.training import PORT_SPECS, load_config
+    from antenna.utils.store import SampleStore
+
+    monkeypatch.setattr(dd, "DATASET_PATH", tmp_path)
+    src = SampleStore(tmp_path / "harvest_dual", verbose=False)
+    rng = np.random.default_rng(2026)
+    for i in range(6):
+        x = torch.tensor((rng.random((25, 25)) < 0.5).astype(np.float32))
+        y = torch.tensor(rng.uniform(-30, 0, (3, 17)).astype(np.float32))
+        src.add(x, y)
+    cfg = load_config(os.path.join(dd.REPO, "configs", "dual_base.yaml"))
+    labels = PORT_SPECS["dual"]["labels"]
+    ss = SampleStore(tmp_path / "harvest_dual", verbose=False)
+    want = sorted(((float(worst_margin_dual(ss[i][1], labels, cfg.targets)[0]), i) for i in range(6)),
+                  key=lambda t: (-t[0], t[1]))[:3]
+
+    dd.select_dual(SimpleNamespace(round=98, batch=1,
+                                   config=os.path.join(dd.REPO, "configs", "dual_base.yaml"),
+                                   harvest="harvest_dual", anchors=3, per_anchor=1, rand=2,
+                                   seed=20260810))
+    man = json.loads((tmp_path / "dedust_r98b1_input" / "manifest.json").read_text(encoding="utf-8"))
+    a = [m for m in man if m["arm"] == "a"]
+    assert [m["harvest_idx"] for m in a] == [i for _, i in want]          # 錨＝真尺排序的前 N
+    assert [m["harvest_wm"] for m in a] == [round(w, 3) for w, _ in want]
+    assert len(man) == 3 + 3 + 2 + 2
+
+
 def test_scheduler_steps_per_epoch(tmp_path):
     """audit 2026-07-29: scheduler 以 epoch 為單位(原 per-batch → 首 epoch 撞 1e-6 地板)。"""
     import torch

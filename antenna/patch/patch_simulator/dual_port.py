@@ -1,8 +1,10 @@
 import numpy as np
+from loguru import logger
 from pandas import read_csv
 from torch import Tensor, tensor   # 注意：torch.tensor (與 antenna.utils 的自訂 tensor 不同)
 from ...utils import Path
 from . import PatchSimulator
+from .single_port import align_curve   #! 頻率對位共用同一份實作 (別另寫一份 → 兩把尺會漂)
 
 
 class DualPortSimulator(PatchSimulator):
@@ -24,12 +26,26 @@ class DualPortSimulator(PatchSimulator):
     * 單埠版額外輸出遠場 Realized Gain；雙埠版此處改為聚焦三條 S 參數，未輸出增益。
     """
 
-    def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'dual_port.sab'), pixel_count:int = 25):
+    def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'dual_port.sab'), pixel_count:int = 25,
+                 sweep_type: str = "Fast",
+                 max_delta_s: float = 0.02, max_passes: int = 6, min_passes: int = 5, min_converged: int = 5):
         # record_path：本次訓練/實驗的紀錄根目錄 (基底類別會在其下建立 HFSS/、result/、project/)。
         # HFSS_sab_path：雙埠底板幾何檔，預設指向與本檔同層 sab/ 目錄下的 dual_port.sab，
         #               內含基板 Sub、地 GND、兩條饋線 feedline1/feedline2 及兩個 port 用矩形。
         #               (單埠版預設為 single_port.sab，僅一條 feed_line。)
         # pixel_count：每邊像素數，預設 25 → 25x25=625 個像素的可佈線網格。
+        #? sweep_type: HFSS 掃頻演算法 {"Fast"(**本檔預設**;自適應網格頻點+快速重建) /
+        #  "Interpolating"(single 的預設,自選頻點+有理擬合) / "Discrete"(17 點逐點硬解,慢但每點真解)}。
+        #! 預設刻意留 "Fast"＝本檔歷來寫死的值——`harvest_dual` 一萬筆全是這個設定跑出來的,
+        #  換掃頻法等於換分佈 (SM 冷啟動/暖啟價值打折,兩者的重建演算法不同)。要換先想清楚代價。
+        self.sweep_type = str(sweep_type)
+        #? 自適應網格收斂設定 (簽名與預設值同 single_port,方便批次線兩埠共用同一組旋鈕)。
+        #  預設值=本檔歷來寫死的值 (0.02/6/5/5)——不帶參數的行為與所有既有 dual 真值同設定;
+        #  覆蓋來源=批次線讀輸入夾 hfss_setup.json,不進 config、不進訓練管線。
+        self.max_delta_s = float(max_delta_s)
+        self.max_passes = int(max_passes)
+        self.min_passes = int(min_passes)
+        self.min_converged = int(min_converged)
         super().__init__(record_path, HFSS_sab_path, pixel_count)
 
     def __call__(self, pixel_matrix:Tensor):
@@ -445,11 +461,11 @@ class DualPortSimulator(PatchSimulator):
                 "NAME:Setup1",
                 "SolveType:=", "Single",
                 "Frequency:=", "28GHz",
-                "MaxDeltaS:=", 0.02,
+                "MaxDeltaS:=", self.max_delta_s,       # 收斂門檻：相鄰兩次細化的 S 參數最大變化 < 此值即視為收斂
                 "UseMatrixConv:=", False,
-                "MaximumPasses:=", 6,
-                "MinimumPasses:=", 5,
-                "MinimumConvergedPasses:=", 5,
+                "MaximumPasses:=", self.max_passes,    # 最多細化次數 (上限，防止無止盡細化)
+                "MinimumPasses:=", self.min_passes,    # 至少細化次數 (確保網格足夠)
+                "MinimumConvergedPasses:=", self.min_converged,  # 至少連續 N 次都收斂才算真收斂 (避免假性收斂)
                 "PercentRefinement:=", 30,
                 "IsEnabled:=", True,
                 [
@@ -474,9 +490,10 @@ class DualPortSimulator(PatchSimulator):
                 "UseDefaultLambdaTgtForIESolver:=", True,
                 "IE Solver Accuracy:=", "Balanced"
             ])
-        # 設定頻率掃描：24~32GHz、步進 0.5GHz → 共 17 個頻點 (與後續取 0:17 列、插值補 17 點一致)。
-        #! 與單埠版差異：本雙埠版 Type 用 "Fast" 掃描法；單埠版改用 "Interpolating" (插值掃描)。
-        #!   兩者皆只在少數頻點實際求解再重建頻率響應，差別在重建演算法。
+        # 設定頻率掃描：24~32GHz、步進 0.5GHz → 共 17 個頻點 (與後續 align_curve 對齊的 17 點網格一致)。
+        #! 與單埠版差異：本雙埠版預設 Type 用 "Fast" 掃描法；單埠版預設 "Interpolating" (插值掃描)。
+        #!   兩者皆只在少數頻點實際求解再重建頻率響應，差別在重建演算法 (故兩埠數值不可混為同分佈)。
+        logger.info(f"FrequencySweep Type={self.sweep_type} (Pattern {self.num})")   # 掃頻型式可觀測
         oModule.InsertFrequencySweep("Setup1",
             [
                 "NAME:Sweep",
@@ -485,7 +502,7 @@ class DualPortSimulator(PatchSimulator):
                 "RangeStart:=", "24GHz",
                 "RangeEnd:=", "32GHz",
                 "RangeStep:=", "0.5GHz",
-                "Type:=", "Fast",
+                "Type:=", self.sweep_type,       #! 掃頻演算法 (建構參數;預設 Fast = harvest_dual 同設定)
                 "SaveFields:=", True,
                 "SaveRadFields:=", False,
                 "GenerateFieldsForAllFreqs:=", False,
@@ -563,6 +580,14 @@ class DualPortSimulator(PatchSimulator):
         #* Export csv
         # 將三張報表分別匯出成 CSV，檔名格式 NN_patch_Sparameter_{num}_S11/S21/S22.csv，
         # {num} 為當前 pattern 編號 (self.num)，供下方讀回與後續計算 loss。第三引數 False = 不只匯出可見區。
+        #! 匯出前先刪同名舊檔 (照 single_port 的做法)：檔名只含批內編號 → 跨批共用工作目錄時,若本次匯出
+        #  silently 失敗,讀回的會是「上一批同編號的殘留 CSV」＝無聲污染 (single 的 verify-discrete 實際踩到)。
+        #  先刪掉 → 匯出失敗會在 read_csv 炸 FileNotFoundError,錯誤變成看得見的。
+        for _stale in (self.path_result.joinpath(f"NN_patch_Sparameter_{self.num}_S11.csv"),
+                       self.path_result.joinpath(f"NN_patch_Sparameter_{self.num}_S21.csv"),
+                       self.path_result.joinpath(f"NN_patch_Sparameter_{self.num}_S22.csv")):
+            if _stale.exists():
+                _stale.unlink()
         oModule.ExportToFile("S Parameter Plot 1", self.path_result.joinpath(f"NN_patch_Sparameter_{self.num}_S11.csv"), False)
         oModule.ExportToFile("S Parameter Plot 2", self.path_result.joinpath(f"NN_patch_Sparameter_{self.num}_S21.csv"), False)
         oModule.ExportToFile("S Parameter Plot 3", self.path_result.joinpath(f"NN_patch_Sparameter_{self.num}_S22.csv"), False)
@@ -575,26 +600,29 @@ class DualPortSimulator(PatchSimulator):
         Sparameter_dataframe_22 = read_csv(self.path_result.joinpath(f"NN_patch_Sparameter_{self.num}_S22.csv"))
 
         #  將數值取出 之後要算loss
-        # 取前 17 列、第 1 欄 (數值欄)，對齊 24~32GHz / 17 頻點的固定長度，便於與目標響應計算 loss。
-        #! 與單埠版差異：單埠版會檢查實際點數並用 np.interp 插值補足到 17 點；
-        #!   本雙埠版此處直接以 iloc[0:17] 截取 (假設 HFSS 已輸出足量頻點)。
-        S11 = Sparameter_dataframe_11.iloc[0:17, 1]
-        S21 = Sparameter_dataframe_21.iloc[0:17, 1]
-        S22 = Sparameter_dataframe_22.iloc[0:17, 1]
+        #? 24~32GHz 等分 17 點 (對應掃頻步距 0.5GHz)；訓練端 (SM/loss/margin) 假設響應固定長度 17。
+        freqs_expected = np.linspace(24, 32, 17)
 
-        full_output = []                                    # 起始空容器，供下方串接成單一向量
+        #* 三條 S 參數一律用 align_curve **按頻率值對位**到 17 點網格 (與 single_port 同一份實作)。
+        #! 修掉的舊 bug (2026-08-10)：舊碼上面用 iloc[0:17] 截取、但下面回傳的 dict 卻用 iloc[:, 1] 全長 →
+        #  HFSS 只要吐出 ≠17 個頻點 (Fast 掃頻的重建點數不保證),回傳張量長度就錯,而且**不會報錯**
+        #  (下游 reshape/loss 靜默錯位)。改成按頻率對位 + 長度斷言,錯誤變成看得見的。
+        S11_vals = align_curve(Sparameter_dataframe_11.iloc[:, 0].values,
+                               Sparameter_dataframe_11.iloc[:, 1].values, freqs_expected)
+        S21_vals = align_curve(Sparameter_dataframe_21.iloc[:, 0].values,
+                               Sparameter_dataframe_21.iloc[:, 1].values, freqs_expected)
+        S22_vals = align_curve(Sparameter_dataframe_22.iloc[:, 0].values,
+                               Sparameter_dataframe_22.iloc[:, 1].values, freqs_expected)
+        assert len(S11_vals) == 17, f"S11 對齊後長度 {len(S11_vals)} != 17 (Pattern {self.num})"
+        assert len(S21_vals) == 17, f"S21 對齊後長度 {len(S21_vals)} != 17 (Pattern {self.num})"
+        assert len(S22_vals) == 17, f"S22 對齊後長度 {len(S22_vals)} != 17 (Pattern {self.num})"
 
-        # TODO
-        # 回傳結果 dict：注意這裡取「完整」第 1 欄 (iloc[:, 1]) 轉成 tensor，而非上面截到 17 點的版本。
-        # 三個 key 分別對應 port1 反射 / 兩埠互耦 / port2 反射，交給訓練流程做損失計算與紀錄。
+        # 回傳結果 dict：三個 key 分別對應 port1 反射 / 兩埠互耦 / port2 反射，
+        # 交給訓練流程做損失計算與紀錄 (各為長度 17 的 torch.Tensor)。
         _result = {
-            'S11': tensor(Sparameter_dataframe_11.iloc[:, 1].to_list()),
-            'S21': tensor(Sparameter_dataframe_21.iloc[:, 1].to_list()),
-            'S22': tensor(Sparameter_dataframe_22.iloc[:, 1].to_list())
+            'S11': tensor(S11_vals.tolist()),
+            'S21': tensor(S21_vals.tolist()),
+            'S22': tensor(S22_vals.tolist())
         }
 
-
-        # 將 S11/S21/S22 (各 17 點) 依序串接成單一一維向量；目前僅供除錯/後續擴充，未直接回傳。
-        full_parameter = np.append(np.append(np.append(full_output, S11.to_numpy()), S21.to_numpy()),S22.to_numpy())
-        # breakpoint()
         return _result
