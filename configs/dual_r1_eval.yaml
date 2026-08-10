@@ -1,0 +1,31 @@
+# dual 批次線判讀 config(R57 起;dedust run/select-dual/report 用)——targets=論文 p.44 規格,
+# 與 dual_base 完全一致;判準尺=worst_margin_dual(mask 口徑,min(m1..m4),m5/m6 記帳)。
+# 線上學習欄位(epochs/lr/generator 等)沿 base 保留但批次線不用(Ricky 2026-08-10:線上路徑延後/忽略)。
+name: dual_r1_eval
+port: dual
+
+epochs: 1000
+lr: 0.005
+patience: 10
+
+loss:
+  total_variation: 0.0
+
+sm_train:
+  lr: 0.001
+  min_loss: 0.1
+  max_epoch: 20000
+
+scheduler:
+  on_plateau: linear
+
+generator: sigmoid
+
+surrogate:
+  pretrained: patch_dual.pth
+  offline_dataset: harvest_dual
+
+targets:
+  S11: { side: -1.25, center: -12, width: [4, 2, 5, 2, 4], interval: [-1, 1] }
+  S21: { side: -20,   center: -3,  width: [3, 0, 11, 0, 3], interval: [-1, 1] }
+  S22: { side: -1.25, center: -12, width: [4, 2, 5, 2, 4], interval: [-1, 1] }

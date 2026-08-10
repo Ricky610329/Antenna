@@ -1,0 +1,9 @@
+{
+  "_comment": "dual-port 紀錄真相源(2026-08-10 開檔;與 single 的 records.json 分立,勿混)。判準=wm_dual=min(m1..m4)(mask 口徑,worst_margin_dual);m5/m6 記帳不進 min。論文對 dual 零量化基準——首個紀錄即全場基準,照公證鐵則 x2 才入帳。energy_max<=1 為每筆自證。",
+  "updated": "2026-08-10",
+  "buffer": null,
+  "wm_dual": {"id": null, "value": null, "note": "待首公證"},
+  "m3_pass_s21": {"id": null, "value": null},
+  "m4_stop_s21": {"id": null, "value": null},
+  "history": []
+}

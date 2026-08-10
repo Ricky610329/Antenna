@@ -24,6 +24,7 @@ python train.py configs/single_base.yaml
 | --- | --- | --- |
 | single | `single_base.yaml` | **學長單埠基準**（所有 loss 正則化＝0）。新單埠實驗都對標它。 |
 | dual | `dual_base.yaml` | 學長雙埠基準。新雙埠實驗都對標它。 |
+| dual | `dual_r1_eval.yaml` | dual 批次線判讀 config(R57 起):targets=論文 p.44 規格(與 base 同);判準尺=worst_margin_dual(min(m1..m4),m5/m6 記帳);線上欄位保留不用。 |
 
 ## 單埠 single（對標 `single_base.yaml`）
 
