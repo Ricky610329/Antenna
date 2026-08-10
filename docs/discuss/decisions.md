@@ -716,5 +716,7 @@
   後面還可以加上濾波器」「Pattern 好應該就可以」)——pattern 的核心職責縮小為**帶內+rad+可製造**;
   左側 lo 壓制從 pattern 的必要責任降為加分項(與 analysis-11「左側-置中同軸」張力的解法
   在架構層出現;左側戰役的最終定位待 Ricky 裁,現階段持續探索不下結論不變)。
-- **Dual port=學長論文的濾波器線**(2-port,S11/S21/S22,無輻射量):日月光計畫框架下做,
-  本階段不開工;文獻等學長提供。repo 資產=DualPortSimulator 完整+harvest_dual 10,023 筆已收割。
+- **Dual port=學長論文的濾波器線**(2-port,S11/S21/S22,無輻射量):日月光計畫框架下做。
+  ★ 修訂(2026-08-10,Ricky):**啟動時點=剩餘 round(R54/R56)收尾即開**,不等 8/15;
+  工作模式=Claude 任務管理+Opus 5 agent 寫 code/讀文件(多開);首任務=學長論文 dual 章節規格精讀。
+  repo 資產=DualPortSimulator 完整+harvest_dual 10,023 筆已收割。
