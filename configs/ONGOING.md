@@ -31,7 +31,7 @@
 - 🔵 **R58 dual SM 冷啟動輪**(2026-08-11 開,proposed):SM 品質閘(ρ≥0.4+top-K 命中雙閘,
   不過不發)→ b1=g 臂 SM top50 vs c 臂對照 50;押注結帳「對稱⇒阻帶優勢」;主指標=records_dual
   王 −6.04;施工=script/sm_dual.py(Opus 發包)→[round-58](../docs/log/round-58-dual-sm-coldstart.md)。
-- ✅ R57 dual 元年(2026-08-11 收,一日輪 3 批+公證):**設施復用全綠 302 筆 0 error/三判準全過/
+- ✅ R57 dual 元年(2026-08-11 收,一日輪 3 批+公證):**設施復用全綠 240 筆 0 error/三判準全過/
   harvest 天花板 −7.20 推至 −6.04(單次,公證中)/生成時對稱升預設/事後對稱化死/殺手軸=S21 選擇性**
   →[round-57](../docs/log/round-57-dual-maiden.md)+[analysis-12](../docs/log/analysis-12-harvest-dual-audit.md)。
 - ✅ R56 組消融方法論輪(2026-08-10 收):**歸因圖成立+Δn8 偵測器轉正 6.8×;c8trip=25×25 局部最優,收穫=無(誠實帳)**→[round-56](../docs/log/round-56-block-ablation.md)。

@@ -30,5 +30,6 @@
 | `sm_selection_audit.py` | **SM 的「選批能力」稽核**（唯讀）：把準度翻譯成「這一批能挑到多好的候選」——`P(勝隨機)` ＋ `top10% 命中率`，重抽候選池給 CI。樣本自動取 `fit` 分割中**不在 `CLEAN_STORES`**（587 店，含自動納入的 `dedust_auto*`/`dedust_c*`）的 OOS 樣本。**何時用**：改動只碰模型的一部分機制時（換架構／加特徵／換錨組／改 loss 的一項）——diffsim 實測過一個反例：修結構性 bug 讓 ρ 改善 +124% 而選批 P(勝隨機) 18%→17% 完全沒動（`docs/log/analysis-10` §7/§8）。`--versions 88,94,100 [--k 60] [--stratum clean\|neg]` |
 | `diffsim/` | **可微模擬器**（`docs/diffsim.md`／log `analysis-08`→`09`→`10`）：`data`(NAS 索引+val/dev/fit 決定性切分)／`geom`(SAB 直解的幾何真相)／`l1`(腔模型，快、clean 層內 ρ +0.418、84ms/筆)／`l2`(rooftop MoM；**求解器登記表 `SOLVERS`＝`dcim`/`l3`/`l3fl`**，一個名字＝核+埠+遠場一整組)／`l3`(精確分層 Green's function，Michalski–Mosig formulation C；表以整數 d² 索引、格網無關；`python -m script.diffsim.l3 build` 建表)／`eval`(同一把尺+ρ)／`run`(fitscan・gate1・l2cal・l2eval・l2fit・gate2・head，`--solver` 選設定)。零 HFSS、只讀 NAS。⚠ 舊的「離散化天花板」結論**已於 analysis-10 §37 撤回**（真根因是埠模型）；`analysis-09` 的 G-L3a 判準未過仍成立 |
 | `gnn_bakeoff.py` | 金屬像素圖 GNN bakeoff（規格 v3;build-cache/train/grid/exam=d=1 考卷;方向③） |
+| `sm_dual.py` | **dual-port 排序器**（R58;`train`/`eval`/`rank`）：幾千張候選 → 挑 top-N 送 HFSS。鍋＝`harvest_dual`+`dedust_r57*` 去重 10,239 筆,尺＝`worst_margin_dual`。**排序走 margin 頭（直接回歸 m1..m4）而非「先預測響應再取極值」**（held-out ρ +0.47 vs +0.39）。權重＝NAS `sm_dual_v1_s{0,1,2}.pth` |
 
 接手導覽：先讀 `docs/log/README.md`（時間軸）→ `configs/ONGOING.md`（live）→ 該 round 檔。
