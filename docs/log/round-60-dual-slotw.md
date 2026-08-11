@@ -94,11 +94,7 @@ b1(~50 筆):
 - **規格彈性問學長**(證據包=§5-3;Ricky 出現點)。
 - auto 池照常;SM v2 觸發不變。
 
-## 5. 結論 (Conclude)
-（待）
-
-## 6. 後續決策 (Next)
-- dual auto 池(2026-08-11 上線)持續累積;SM v2 觸發=鍋質變(R59 通濾族+autod 進鍋)。
-
 ## 7. 歸檔指向 (Archive)
-（待;結果夾 `dedust_r60*`;紀錄=docs/records_dual.json)
+- 結果夾:`dedust_r60{smoke,swc_*,sw1_*,sw2_*}`(19 店 19 筆,error 0;各店存證 hfss_setup 含 slot_spec)
+- 幾何變體域=**永不入鍋**;儀器=slot_spec(已驗證,掛任何拓撲);紀錄=records_dual 未動
+- 提出 / 開跑 / 結論:2026-08-11 / 2026-08-11 / 2026-08-11(一日輪,1 批 19 筆答定)
