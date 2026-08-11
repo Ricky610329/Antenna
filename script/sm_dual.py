@@ -56,13 +56,34 @@ MARGINS = ("m1", "m2", "m3", "m4")             # wm_dual = min(m1..m4)（m5/m6 �
 #? 鍋的店清單與**順序＝去重優先權**（首見先贏，同 sm_reanchor 的「certified 先見先贏」慣例）：
 #  公證重測店（n1/n2，同 pattern 重測）排最前 → 其重測值蓋過批次店的單測值；
 #  smoke 與 harvest 重複、批次店與 n1/n2 重複，都靠這個順序解決。
-STORES = (
-    "dedust_r57n1", "dedust_r57n2",                                     # 公證重測（最高優先）
-    "dedust_r57b1", "dedust_r57b2a", "dedust_r57b2b", "dedust_r57b2c",  # 批次量測
+#! v2 起（2026-08-11）鍋擴充到 R58/R59 與 autod 自產池；**dedust_r60*（kind=slotw 幾何變體）
+#! 永不入鍋**——同 bits 不同幾何=毒資料（script/CLAUDE.md 鐵則 7）。autod 店動態發現。
+_FIXED_STORES = (
+    "dedust_r57n1", "dedust_r57n2", "dedust_r58n1", "dedust_r58n2",     # 公證重測（最高優先）
+    "dedust_r57b1", "dedust_r57b2a", "dedust_r57b2b", "dedust_r57b2c",  # R57 批次量測
     "dedust_r57b3a", "dedust_r57b3b", "dedust_r57b3c",
+    "dedust_r58b1a", "dedust_r58b1b", "dedust_r58b1c",                  # R58
+    "dedust_r58b2a", "dedust_r58b2b", "dedust_r58b2c",
+    "dedust_r58b3a", "dedust_r58b3b", "dedust_r58b3c",
+    "dedust_r59b1a", "dedust_r59b1b", "dedust_r59b1c",                  # R59（通濾族＝新物種）
+    "dedust_r59b2a", "dedust_r59b2b", "dedust_r59b2c",
+    "dedust_r59b3a", "dedust_r59b3b", "dedust_r59b3c",
+    "dedust_r59dx",                                                     # 對角探針（bits 忠實）
     "dedust_r57s216", "dedust_r57s37", "dedust_r57smoke",               # smoke（與 harvest 重複）
     "harvest_dual",                                                     # 學長池 ~10k（最低優先）
 )
+
+
+def _discover_stores():
+    """固定清單 + 動態 autod 自產店（插在 harvest 之前=自量測優先於學長池）。"""
+    import glob as _g
+    autod = sorted(os.path.basename(p) for p in _g.glob(os.path.join(str(DATASET_PATH), "dedust_autod*"))
+                   if not p.endswith("_input"))
+    fixed = list(_FIXED_STORES)
+    return tuple(fixed[:-1] + autod + fixed[-1:])
+
+
+STORES = _discover_stores()
 
 SPLIT_SEED = 58            #! held-out 抽樣 seed，寫死（改它＝換一份 held-out，等於換考卷）
 HELDOUT_FRAC = 0.10
@@ -72,8 +93,9 @@ GATE_TOPK = 30             # 品質閘 (b)：pred 取前 30
 GATE_TRUE_FRAC = 0.10      # 品質閘 (b)：true 前 10%
 GATE_P = 0.05
 
-WEIGHT_FMT = "sm_dual_v1_s{}.pth"
-SPLIT_JSON = "sm_dual_v1_split.json"
+SM_VER = os.environ.get("SM_DUAL_VER", "v2")   #! v2=2026-08-11 鍋擴充(R58/R59+autod);v1 權重保留不覆蓋
+WEIGHT_FMT = "sm_dual_" + SM_VER + "_s{}.pth"
+SPLIT_JSON = "sm_dual_" + SM_VER + "_split.json"
 
 
 # ────────────────────────────────────────────────────────────────────────────
