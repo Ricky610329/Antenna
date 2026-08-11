@@ -8,7 +8,9 @@
    （exit 1 就不發車;接管線會被尾端指令吃掉 exit code=安全閘靜默失效,2026-08-06 實犯）→
    正式機 `run --input X_input --store X`（可中斷續跑、error 條目重試）→ 任一機 `report`。
    **收檔判讀＝`analyze batch --round R --batch N`**（臂別/前瞻/紀錄候選+公證指令/→行動;
-   含**影子 CNN 雙模盲測段**——必須在重錨前跑,重錨後本批進訓練集就不是盲測）;
+   含**影子 CNN 雙模盲測段**——必須在重錨前跑,重錨後本批進訓練集就不是盲測;
+   **port 自動分派**——dual 批走獨立分支:尺=wm_dual、紀錄源=`docs/records_dual.json`、
+   店名可 a/b/c 三拆自動聚合,無 rad/前瞻/重錨段）;
    收檔偵測＝`dedust watch --stores ...`（Monitor 直接掛）;重錨＝`sm_reanchor train --add "..." --out vN.pth`
    （自動 append `configs/clean_stores.txt`;**自帶制度合訓**:rad_headNN+ens 2 顆+影子 sm_shadowNN
    〔尺1 落 docs/kpi_shadow.csv;--no-rad/--no-ens/--no-shadow 可關〕）。

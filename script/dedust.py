@@ -6236,6 +6236,112 @@ def _selfgen_chunk(me, args):
     return True
 
 
+_SELFGEN_DUAL = None
+_DUAL_PAD_MASK = None
+
+
+def _dual_pad_mask():
+    global _DUAL_PAD_MASK
+    if _DUAL_PAD_MASK is None:
+        m = np.zeros((25, 25), bool)
+        m[0:5, 10:15] = True
+        m[20:25, 10:15] = True
+        _DUAL_PAD_MASK = m
+    return _DUAL_PAD_MASK
+
+
+def _dual_selfgen_cands(rng, anchors, hist, want):
+    """dual 自產候選生成（純函式,可測）:模式輪替=①對稱隨機(密度 U(0.35,0.65),上半鏡下——
+    「生成時對稱=預設」decisions 2026-08-11)②錨鄰域(dual_anchors.json 的錨翻 d1-4 bit,饋墊必保)。
+    無錨檔時全走對稱隨機。回傳 [(pattern, src, meta)];決定性=呼叫端給 seeded rng。"""
+    pad = _dual_pad_mask()
+    out, tries = [], 0
+    while len(out) < want and tries < want * 300:
+        tries += 1
+        if anchors and tries % 2 == 0:
+            tag, base = anchors[int(rng.integers(0, len(anchors)))]
+            q = base.copy()
+            d = int(rng.integers(1, 5))
+            free = np.argwhere(~pad)
+            for j in rng.choice(len(free), size=d, replace=False):
+                r, c = free[j]
+                q[r, c] = ~q[r, c]
+            src, meta = "anchor_nbr", dict(parent=tag, d=d)
+        else:
+            dens = float(rng.uniform(0.35, 0.65))
+            half = rng.random((12, 25)) < dens
+            mid = rng.random((1, 25)) < dens
+            q = np.concatenate([half, mid, half[::-1]], 0)
+            src, meta = "symr", dict(density=round(dens, 3))
+        q = q.copy()
+        q[pad] = True
+        if not (150 <= int(q.sum()) <= 550) or q.tobytes() in hist:
+            continue
+        hist.add(q.tobytes())
+        out.append((q, src, meta))
+    return out
+
+
+def _selfgen_chunk_dual(me, args):
+    """dual 版自產 tier-2（Ricky 2026-08-11「之後變成 dual auto 池」）:store=dedust_autod<ip>,
+    批帶 dual 尺(configs/dual_r1_eval.yaml);錨池=NAS dataset/dual_anchors.json（開發機維護,
+    輪換錨不需重新部署;無檔=全對稱隨機）;查重=全 dual 域輸入夾+自身 store;讓位機制同 single 版。
+    資料語義:dual SM 鍋候選(sm_dual v2 併入),與 single 鍋永不混。"""
+    global _SELFGEN_DUAL
+    tag = "autod" + me.split(".")[-1]
+    ind = _dir(f"dedust_{tag}_input")
+    ind.mkdir(parents=True, exist_ok=True)
+    mp = ind.joinpath("manifest.json")
+    manifest = json.load(open(str(mp), encoding="utf-8")) if mp.exists() else []
+    if _SELFGEN_DUAL is None:
+        hist, anchors = set(), []
+        for fol in _all_input_folders():
+            dd = DATASET_PATH.joinpath(fol)
+            try:
+                man_ = json.load(open(str(dd.joinpath("manifest.json")), encoding="utf-8"))
+            except Exception:
+                continue
+            if not (man_ and man_[0].get("port") == "dual"):
+                continue                                  # 只收 dual 域(查重分域鐵則)
+            for m in man_:
+                f = dd.joinpath(m["id"] + ".pt")
+                if f.exists():
+                    hist.add((np.asarray(torch.load(str(f), weights_only=True))
+                              .reshape(25, 25) > 0.5).tobytes())
+        af = DATASET_PATH.joinpath("dual_anchors.json")
+        if af.exists():
+            try:
+                for a in json.load(open(str(af), encoding="utf-8")):
+                    anchors.append((a["tag"], np.asarray(a["bits"], dtype=bool).reshape(25, 25)))
+            except Exception as e_:
+                print(f"⚠ dual_anchors.json 解析失敗(退回純對稱隨機): {e_}")
+        if not hist:
+            print("⚠ selfgen-dual: dual 域歷史空(NAS 瞬態?)——本輪跳過自產")
+            return False                                  # 同 single 版:空=瞬態,不快取
+        _SELFGEN_DUAL = (hist, anchors)
+        print(f"⚙ dual 自產基底:歷史 {len(hist)} bits,錨 {len(anchors)} 支")
+    hist, anchors = _SELFGEN_DUAL
+    rng = np.random.default_rng(len(manifest) * 1000 + int(me.split(".")[-1]) + 7)
+    cands = _dual_selfgen_cands(rng, anchors, hist, args.selfgen)
+    made = []
+    for q, src, meta in cands:
+        pid = f"ad{tag[5:]}_{len(manifest) + len(made):05d}"
+        torch.save(torch.tensor(q, dtype=torch.float32), str(ind.joinpath(pid + ".pt")))
+        made.append(dict(id=pid, kind="selfgen", port="dual", family=f"AUTOD_{tag}",
+                         source_id=src, metal_px=int(q.sum()), **meta))
+    if not made:
+        return False
+    manifest += made
+    _save_manifest(manifest, ind)
+    dual_cfg = getattr(args, "selfgen_config", None) or os.path.join(REPO, "configs", "dual_r1_eval.yaml")
+    print(f"⚙ dual 自產 tier-2 {len(made)} 筆 → dedust_{tag}（任何 job 入佇列即讓位）")
+    ns = argparse.Namespace(config=dual_cfg, input=f"dedust_{tag}_input", store=f"dedust_{tag}",
+                            out=None, sweep=args.sweep, timeout=args.timeout, max_fail=args.max_fail,
+                            retry_pass=0, job_prio=999, tier2_prio=999, claim_path=None, claim_me=me)
+    run(ns)
+    return True
+
+
 def worker(args):
     """資料工廠 worker（Ricky 2026-07-10「三台都變資料收集系統,用 NAS 控制」）——正式機常駐:
     迴圈＝讀 jobs.json（prio 升冪）→ 跳過 done/被認領 → **原子認領**（jobs_state/<store>.claim,
@@ -6350,7 +6456,9 @@ def worker(args):
                 break
             if getattr(args, "selfgen", 0):              # 佇列空 → 自產 tier-2,HFSS 不停(Ricky 2026-07-12)
                 try:
-                    if _selfgen_chunk(me, args):
+                    _sg = (_selfgen_chunk_dual if getattr(args, "selfgen_port", "dual") == "dual"
+                           else _selfgen_chunk)          # 預設 dual(Ricky 2026-08-11 轉正;--selfgen-port single 可退)
+                    if _sg(me, args):
                         continue
                 except (KeyboardInterrupt, SystemExit):
                     raise
@@ -8031,6 +8139,10 @@ def main():
                    help="prio ≥ 此值=tier-2 填空批（每筆完成後掃佇列,tier-1 出現即讓位）")
     s.add_argument("--selfgen", type=int, default=12,
                    help="佇列全空時自產 tier-2 段長（歷史翻bit+查重;0=關;任何 job 入佇列即讓位）")
+    s.add_argument("--selfgen-port", default="dual", choices=("dual", "single"), dest="selfgen_port",
+                   help="自產域(2026-08-11 預設轉正 dual:store=dedust_autod<ip>,批帶 dual 尺;single=舊行為)")
+    s.add_argument("--selfgen-config", default=None, dest="selfgen_config",
+                   help="dual 自產用的 config(預設 configs/dual_r1_eval.yaml)")
     s.set_defaults(fn=worker)
 
     s = sub.add_parser("jobs-add", help="把批次加進派工佇列（select+check-dup 先跑完）")

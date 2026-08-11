@@ -210,3 +210,156 @@ def test_run_curve_falls_back_to_epoch_for_old_runs(tmp_path):
         assert best == [1.0, 1.0, 1.0]
     finally:
         _config.device = _dev
+
+
+# ── analyze batch 的 dual-port 分支（R57-59 手寫 scratchpad 腳本沉澱,2026-08-11）──────────
+#? 合成資料、零 NAS：DATASET_PATH 換 tmp_path、records_dual 換固定 dict（真檔會隨換王變動,
+#  拿它當斷言基準＝測試每次破紀錄就紅）。
+def _mk_dual_batch(root, store, entries, port="dual"):
+    """在 tmp NAS 造一個 dual 店：<store>_input/manifest.json + <store>/results.json。
+    entries = [(id, arm, m1, m2, m3, m4, m5, m6, energy)]。"""
+    import json
+    (root / f"{store}_input").mkdir(parents=True, exist_ok=True)
+    (root / store).mkdir(parents=True, exist_ok=True)
+    man, res = [], {}
+    for pid, arm, m1, m2, m3, m4, m5, m6, en in entries:
+        m = {"id": pid, "kind": "dual", "arm": arm}
+        if port:
+            m["port"] = port
+        man.append(m)
+        res[pid] = {"wm": [m1, min(m1, m2, m3, m4), m2, min(m1, m2, m3, m4)],
+                    "m1": m1, "m2": m2, "m3": m3, "m4": m4, "m5": m5, "m6": m6,
+                    "energy_max": en, "time_s": 100.0}
+    (root / f"{store}_input" / "manifest.json").write_text(json.dumps(man), encoding="utf-8")
+    (root / store / "results.json").write_text(json.dumps(res), encoding="utf-8")
+
+
+_REC_DUAL = {"updated": "TEST", "buffer": None,
+             "wm_dual": {"id": "old_wm", "value": -6.04},
+             "m3_pass_s21": {"id": None, "value": None},
+             "m4_stop_s21": {"id": "old_m4", "value": 5.92}}
+
+
+def test_wm_dual_ruler_matches_losses():
+    """尺一致（硬規範）：analyze 的 `_wm_dual`（吃 results.json 已存分項）必須與
+    `antenna.losses.worst_margin_dual`（吃曲線）給同一個數——兩把尺一旦分家,判讀就在說謊。"""
+    import torch
+    from antenna.losses import worst_margin_dual
+    from antenna.training import PORT_SPECS, load_config
+    from script.analyze import _wm_dual
+    from pathlib import Path as _P
+    targets = load_config(_P(__file__).resolve().parents[1] / "configs" / "dual_base.yaml").targets
+    labels = PORT_SPECS["dual"]["labels"]
+    rng = np.random.default_rng(57)
+    for _ in range(20):
+        resp = torch.tensor(rng.uniform(-30, 0, size=(3, 17)), dtype=torch.float32)
+        wm, per = worst_margin_dual(resp, labels, targets)
+        entry = {k: float(per[k]) for k in ("m1", "m2", "m3", "m4", "m5", "m6")}
+        assert abs(_wm_dual(entry) - float(wm)) < 1e-4      # m5/m6 在 entry 裡也不得混進 min
+
+
+def test_wm_dual_returns_none_on_incomplete():
+    """分項不全＝不猜（回 None,該筆跳過）——寧可少一筆也不要用半套尺算出假數字。"""
+    from script.analyze import _wm_dual
+    assert _wm_dual({"m1": -1.0, "m2": -2.0, "m3": -3.0}) is None
+
+
+def test_med_lo_is_lower_median_desc():
+    """中位口徑＝降序下中位（round 檔 §4 歷史數字用這把;np.median 會插值→對不上）。"""
+    from script.analyze import _med_lo
+    assert _med_lo([-7.0, -8.0, -9.0, -10.0]) == -9.0        # np.median 會給 -8.5
+    assert _med_lo([-7.0, -8.0, -9.0]) == -8.0
+
+
+def test_batch_dispatch_single_when_no_port_key(tmp_path, monkeypatch):
+    """port 分派：manifest 無 `port` 鍵（single 歷史夾）→ 必須走 single 分支,一 byte 不變。"""
+    import script.analyze as az
+    from types import SimpleNamespace
+    monkeypatch.setattr(az, "DATASET_PATH", tmp_path)
+    _mk_dual_batch(tmp_path, "dedust_r98b1a", [("s98b1_x", "x", -1, -2, -3, -4, -5, -6, 0.9)],
+                   port=None)
+    called = {}
+    monkeypatch.setattr(az, "_batch_single", lambda a: called.setdefault("single", True))
+    monkeypatch.setattr(az, "_batch_dual", lambda a: called.setdefault("dual", True))
+    az.cmd_batch(SimpleNamespace(round=98, batch=1))
+    assert called == {"single": True}
+
+
+def test_batch_dispatch_dual_and_report(tmp_path, monkeypatch, capsys):
+    """dual 分支端到端（三店聚合/臂別表/sel 前緣/紀錄候選+公證指令/m5m6 觸發/→行動）。"""
+    import script.analyze as az
+    from types import SimpleNamespace
+    monkeypatch.setattr(az, "DATASET_PATH", tmp_path)
+    monkeypatch.setattr(az, "_records_dual", lambda: _REC_DUAL)
+    #  a 臂 4 筆（best -5.00 > 紀錄 -6.04 → wm_dual 候選;降序下中位 = 第 3 高 = -8.00）
+    _mk_dual_batch(tmp_path, "dedust_r99b1a", [
+        ("d99b1_a_00", "a", -5.0, -6.0, -7.0, -8.0, -20.0, -21.0, 0.88),   # wm -8.00
+        ("d99b1_a_01", "a", -5.0, -5.0, -5.0, -5.0, -20.0, -21.0, 0.88),   # wm -5.00 ← best
+    ])
+    _mk_dual_batch(tmp_path, "dedust_r99b1b", [
+        ("d99b1_a_02", "a", -9.0, -9.0, -9.0, -9.0, -20.0, -21.0, 0.88),   # wm -9.00
+        ("d99b1_a_03", "a", -6.0, -6.0, -6.0, -6.0, -20.0, -21.0, 0.88),   # wm -6.00
+    ])
+    #  b 臂:m4 破紀錄（+7.0 > 5.92）+ sel 前緣頭名（sel=min(m3,m4)=-1.0）
+    _mk_dual_batch(tmp_path, "dedust_r99b1c", [
+        ("d99b1_b_00", "b", -30.0, -30.0, -1.0, 7.0, -20.0, -21.0, 0.90),
+        ("d99b1_b_01", "b", -30.0, -30.0, -2.0, 3.0, -20.0, -21.0, 1.004),  # energy 超標
+    ])
+    az.cmd_batch(SimpleNamespace(round=99, batch=1))
+    out = capsys.readouterr().out
+    assert "**dual** 收檔判讀（3 夾 6 筆" in out                      # 三店自動聚合
+    assert "| a | 4 | -5.00（d99b1_a_01） | -8.00 |" in out          # 臂別:n/best/降序下中位
+    assert "energy_max≤1: 5/6 通過" in out and "⚠ 超標 1 筆" in out   # 能量自證
+    assert "sel -1.00  d99b1_b_00 [b]" in out                        # sel=min(m3,m4) 前緣
+    #  紀錄候選:wm_dual 與 m4 各一件;m3 現任 None → 只列 ○ 行、不印公證指令
+    assert "★ d99b1_a_01 [a] wm_dual -5.00 > 現任 -6.04" in out
+    assert "★ d99b1_b_00 [b] m4(S21 阻帶) +7.00 > 現任 +5.92" in out
+    assert ("select-repeat --source-input dedust_r99b1a_input --id d99b1_a_01 --n 2"
+            " --input dedust_r99n1_input") in out
+    assert "--store dedust_r99n2 --prio 2" in out                    # 第二件另開 n2,不共用
+    assert "○ m3(S21 通帶) 未開帳" in out and "不自動發車" in out
+    assert "同機 3/3 bit 級一致" in out                               # 公證口徑提醒
+    assert "① 公證候選 2 件" in out and "③ m5/m6 重議: 未觸發" in out
+
+
+def test_batch_dual_m5m6_trigger_and_incomplete(tmp_path, monkeypatch, capsys):
+    """m5/m6 任一樣本 ≥0 → 顯性觸發重議；未收全（error/待跑）→ 顯性警告不靜默。"""
+    import json
+    import script.analyze as az
+    from types import SimpleNamespace
+    monkeypatch.setattr(az, "DATASET_PATH", tmp_path)
+    monkeypatch.setattr(az, "_records_dual", lambda: _REC_DUAL)
+    _mk_dual_batch(tmp_path, "dedust_r99b2a", [
+        ("d99b2_a_00", "a", -5.0, -5.0, -5.0, -5.0, +0.3, -21.0, 0.88),   # m5 ≥0 → 觸發
+        ("d99b2_a_01", "a", -6.0, -6.0, -6.0, -6.0, -20.0, -21.0, 0.88),
+    ])
+    res = json.loads((tmp_path / "dedust_r99b2a" / "results.json").read_text(encoding="utf-8"))
+    res["d99b2_a_01"] = {"error": "COM 例外", "attempts": 1}              # 一筆 error
+    (tmp_path / "dedust_r99b2a" / "results.json").write_text(json.dumps(res), encoding="utf-8")
+    az.cmd_batch(SimpleNamespace(round=99, batch=2))
+    out = capsys.readouterr().out
+    assert "⚠ 未收全 1/2（error 1）" in out
+    assert "⚠ **觸發重議**: m5 1 筆 ≥0" in out
+    assert "③ m5/m6 重議: ⚠ 觸發" in out
+
+
+def test_batch_dual_incumbent_is_not_its_own_candidate(tmp_path, monkeypatch, capsys):
+    """回歸（2026-08-11 r58b3 實犯）：紀錄以**跨機保守值**入帳時,現任本人在原批的單次值仍高於
+    帳面值 → 重跑該批判讀會提示「破自己」,照抄就白燒 2×HFSS 重新公證在位王。
+    現任 id 不得進候選;同批第二名若真的超過帳面值,仍要被抓出來。"""
+    import script.analyze as az
+    from types import SimpleNamespace
+    monkeypatch.setattr(az, "DATASET_PATH", tmp_path)
+    monkeypatch.setattr(az, "_records_dual", lambda: dict(
+        _REC_DUAL, m4_stop_s21={"id": "d99b3_x_king", "value": 5.92}))
+    _mk_dual_batch(tmp_path, "dedust_r99b3a", [
+        ("d99b3_x_king", "x", -30.0, -30.0, -5.0, 6.67, -20.0, -21.0, 0.9),   # 現任本人（跨機保守 5.92）
+        ("d99b3_x_two", "x", -30.0, -30.0, -5.0, 6.10, -20.0, -21.0, 0.9),    # 第二名,真的超過帳面
+        ("d99b3_x_low", "x", -30.0, -30.0, -5.0, 1.00, -20.0, -21.0, 0.9),
+    ])
+    az.cmd_batch(SimpleNamespace(round=99, batch=3))
+    out = capsys.readouterr().out
+    assert "★ d99b3_x_king" not in out                        # 現任不得自己公證自己
+    assert "★ d99b3_x_two [x] m4(S21 阻帶) +6.10 > 現任 +5.92" in out
+    assert "另有" not in out.split("-- 紀錄候選")[1].split("--")[0]   # 扣掉現任後只剩 1 筆
+    assert "m4(S21 阻帶) +6.67（紀錄 +5.92" in out              # ②前緣仍報原始批 best（不隱藏）

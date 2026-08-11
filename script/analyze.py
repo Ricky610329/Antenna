@@ -8,12 +8,17 @@ script/analyze.py — 可重現的診斷分析工具（把散在對話裡的一�
   rad-error   已訓 rad head 的窗內 pred-vs-real 誤差（需載 SM;判「凍 trunk」是否是瓶頸）
   gain        性能期望儀表（三層帳:階梯命中率/學習曲線斜率/近王→紀錄轉換）——
               本意=用實測數字擋「過早悲觀/過早樂觀」,不做尾巴外推（偽精確禁區）
+  batch       批次收檔判讀一鍵化（/batch-cycle step①）。**port 自動分派**（讀輸入 manifest
+              的 `port` 鍵）:single 走原本那套（臂別/可用帶外/前瞻 ρ/影子對決/KPI②③）;
+              dual 走 `_batch_dual`——尺=wm_dual=min(m1..m4)、紀錄源=docs/records_dual.json,
+              無 rad/oob/SM 相關段（dual 沒遠場也還沒有 SM）。兩條線零共用判準。
 
 用法：
   python -m script.analyze volatility --runs single_r3_explore single_r3_dip --labels E D
   python -m script.analyze rad-repr   --run single_r2_enstrust_harvest
   python -m script.analyze rad-error  --run single_r2_enstrust_harvest
   python -m script.analyze gain --line r21 [--record 0.39]
+  python -m script.analyze batch --round 59 --batch 2
 """
 import argparse
 import csv
@@ -900,6 +905,46 @@ def _records():
     return json.load(open(p, encoding="utf-8"))
 
 
+def _records_dual():
+    """docs/records_dual.json＝**dual** 紀錄真相源（與 single 的 records.json 分立,勿混）。
+    三鍵:wm_dual / m3_pass_s21 / m4_stop_s21;value=None 代表該鍵尚未開帳。"""
+    import json
+    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     "docs", "records_dual.json")
+    return json.load(open(p, encoding="utf-8"))
+
+
+#? dual 判準尺（**與 antenna.losses.worst_margin_dual 同一把尺**,losses.py:744 判準定案 2026-08-10）：
+#  wm_dual = min(m1..m4)；m5/m6＝帶外反射,只記帳不進 min（≥0 才觸發重議）。
+#  這裡直接吃 results.json 已存的分項（run 收檔時由 dedust.dual_metrics 寫入,源頭就是
+#  worst_margin_dual 的 per）——**不重算曲線**;兩把尺的等價性由
+#  tests/test_analyze_dual.py::test_wm_dual_matches_losses 用合成響應對死。
+DUAL_WM_KEYS = ("m1", "m2", "m3", "m4")
+
+
+def _wm_dual(r):
+    """results.json 單筆 → wm_dual（分項不全時回 None,不猜）。"""
+    v = [r.get(k) for k in DUAL_WM_KEYS]
+    return min(v) if all(x is not None for x in v) else None
+
+
+def _med_lo(vals):
+    """降序下中位（`sorted(desc)[n//2]`）——與 round 檔臂別表/OOD 簡表同口徑,
+    偶數筆取偏低那個（保守）；勿換成 np.median（會插值,數字對不上歷史 §4）。"""
+    return sorted(vals, reverse=True)[len(vals) // 2]
+
+
+def _find_batch_stores(rnd, batch, sufs):
+    """dedust_r<rnd>b<batch><suf> 中「輸入 manifest 與 results 都在」的店（照 sufs 順序）。"""
+    out = []
+    for suf in sufs:
+        st = f"dedust_r{rnd}b{batch}{suf}"
+        if DATASET_PATH.joinpath(st, "results.json").exists() \
+                and DATASET_PATH.joinpath(st + "_input", "manifest.json").exists():
+            out.append(st)
+    return out
+
+
 def _shadow_duel(rows):
     """影子 CNN 對決尺2/尺3（R32 判準;2026-07-17）:MLP vs 影子 CNN **現場**對本批樣本雙模打分
     ——不拿 manifest pred_wm 比架構（那混了 LCB/通道差異）,兩具同版模型同條件盲測才公平。
@@ -980,6 +1025,21 @@ def _shadow_duel(rows):
 
 
 def cmd_batch(args):
+    """收檔判讀一鍵化——**port 分派**（2026-08-11 加 dual 分支;R57-59 三輪手寫 scratchpad 腳本沉澱）。
+
+    偵測＝輸入 manifest 的 `port` 鍵（dual 夾每筆帶 `port="dual"`,single 歷史夾沒這欄）。
+    single → `_batch_single`（原樣,一 byte 未動＝回歸基準）;dual → `_batch_dual`（獨立函式、
+    獨立紀錄源 records_dual.json、獨立尺 wm_dual）。dual 店名可帶 a/b/c 後綴（三台並行拆店）
+    也可無後綴（R57b1）→ 偵測掃 ["", a..h]。"""
+    import json
+    for sto in _find_batch_stores(args.round, args.batch, ["", *"abcdefgh"]):
+        man = json.load(open(str(DATASET_PATH.joinpath(sto + "_input", "manifest.json")), encoding="utf-8"))
+        if any(m.get("port") == "dual" for m in man):
+            return _batch_dual(args)
+    return _batch_single(args)
+
+
+def _batch_single(args):
     """收檔判讀一鍵化（弱模型化 2026-07-12,取代每批手寫 judge script）:
     自動發現 dedust_r<round>b<batch>* 夾,輸出完成度/臂別表/可用帶外推進/前瞻 ρ（含 rad 頭退鍵線）/
     紀錄候選＋現成公證指令/「→ 行動」摘要——弱模型照「→」行執行即可,判斷都在程式裡。"""
@@ -1292,6 +1352,172 @@ def cmd_batch(args):
         print("  → 記帳: 負片入 neg_stores.txt(只餵 two);學長店=池值漂移校準另記;不入 train --add")
 
 
+def _batch_dual(args):
+    """dual-port 收檔判讀（2026-08-11 沉澱 R57/R58/R59 三輪的手寫 scratchpad 腳本）。
+
+    與 single 分支的差別（**兩條線不共用任何判準**）：
+      · 尺＝`wm_dual = min(m1..m4)`（m5/m6 只記帳）,不是 single 的 `wm[2]`
+        ——dual 的 `wm[2]` 是 **m2（S22 帶內）**,誤用會靜默算錯;
+      · 無 rad / 無 oob / 無三標（dual 不輸出遠場）→ 沒有「可用帶外」「rad 頭前瞻」那些段;
+      · 紀錄源＝`docs/records_dual.json` 三鍵（wm_dual / m3_pass_s21 / m4_stop_s21）;
+      · 沒有 dual SM → 沒有前瞻 ρ／影子對決／誤差錨點池／重錨建議（有了再加,不先造殼）。
+    輸出：完成度＋自證 → 臂別表 → sel=min(m3,m4) 前緣 → 紀錄候選＋公證指令 → m5/m6 重議
+    觸發 → 「→ 行動」。"""
+    import json
+    import re
+    rec = _records_dual()
+    stores = _find_batch_stores(args.round, args.batch, ["", *"abcdefgh"])
+    if not stores:
+        raise SystemExit(f"找不到 dedust_r{args.round}b{args.batch}* 的 store（還沒收檔?）")
+    rows, comp = [], []
+    for sto in stores:
+        man = json.load(open(str(DATASET_PATH.joinpath(sto + "_input", "manifest.json")), encoding="utf-8"))
+        res = json.load(open(str(DATASET_PATH.joinpath(sto, "results.json")), encoding="utf-8"))
+        okn = sum(1 for m in man if m["id"] in res and "error" not in res[m["id"]])
+        nerr = sum(1 for m in man if "error" in res.get(m["id"], {}))
+        comp.append((sto, okn, len(man), nerr))
+        for m in man:
+            r = res.get(m["id"])
+            if r is None or "error" in r:
+                continue
+            wm = _wm_dual(r)
+            if wm is None:
+                continue
+            rows.append(dict(id=m["id"], st=sto, arm=m.get("arm", "?"), wm=wm,
+                             m3=r["m3"], m4=r["m4"], m5=r.get("m5"), m6=r.get("m6"),
+                             e=r.get("energy_max"), stored=(r.get("wm") or [None])[-1]))
+    if not rows:
+        raise SystemExit(f"dedust_r{args.round}b{args.batch}* 有店但零可判讀樣本（全 error/待跑?）")
+    n_ok = sum(c[1] for c in comp)
+    n_man = sum(c[2] for c in comp)
+    n_err = sum(c[3] for c in comp)
+    print(f"== r{args.round} b{args.batch} **dual** 收檔判讀（{len(stores)} 夾 {len(rows)} 筆;"
+          f"尺=wm_dual=min(m1..m4);門檻源 records_dual.json {rec['updated']}）==")
+
+    #? ① 完成度＋兩項自證（能量守恆 energy_max≤1、存檔 wm[-1] vs 現算 min(m1..m4)）
+    print("\n-- 完成度/自證 --")
+    for sto, okn, tot, nerr in comp:
+        print(f"  {sto}: {okn}/{tot}" + (f"（error {nerr}）" if nerr else ""))
+    bad_e = [s for s in rows if s["e"] is not None and s["e"] > 1.0]
+    n_e = sum(1 for s in rows if s["e"] is not None)
+    mism = [s for s in rows if s["stored"] is not None and abs(s["stored"] - s["wm"]) > 0.005]
+    if n_ok < n_man:
+        print(f"⚠ 未收全 {n_ok}/{n_man}（error {n_err}）——先決定等/補跑,別急著下結論")
+    else:
+        print(f"  合計 {n_ok}/{n_man} 零缺;error {n_err}")
+    print(f"  energy_max≤1: {n_e - len(bad_e)}/{n_e} 通過"
+          + (f"  ⚠ 超標 {len(bad_e)} 筆（{','.join(s['id'] for s in bad_e[:3])}）＝資料/模擬壞了,先查再判讀"
+             if bad_e else ""))
+    print(f"  尺自證 min(m1..m4) vs 存檔 wm[-1]: {len(rows) - len(mism)}/{len(rows)} 一致"
+          + (f"  ⚠ 不一致 {len(mism)} 筆（{','.join(s['id'] for s in mism[:3])}）" if mism else ""))
+
+    #? ② 臂別表（中位＝降序下中位,與 round-57 §4 起的手寫表同口徑;markdown 可直接貼 §4）
+    print("\n-- 臂別（wm_dual=min(m1..m4);中位=降序下中位）--")
+    print("| 臂 | n | wm_dual best | wm_dual 中位 | m3 best | m4 best | energy max |")
+    print("|---|---|---|---|---|---|---|")
+    for arm in sorted({s["arm"] for s in rows}):
+        g = [s for s in rows if s["arm"] == arm]
+        b = max(g, key=lambda s: s["wm"])
+        b3, b4 = max(s["m3"] for s in g), max(s["m4"] for s in g)
+        es = [s["e"] for s in g if s["e"] is not None]
+        ecell = f"{max(es):.3f}{'⚠' if es and max(es) > 1 else ''}" if es else "—"
+        print(f"| {arm} | {len(g)} | {b['wm']:+.2f}（{b['id']}） |"
+              f" {_med_lo([s['wm'] for s in g]):+.2f} | {b3:+.2f} | {b4:+.2f} | {ecell} |")
+
+    #? ③ 通濾選擇性前緣 sel=min(m3,m4)（R59 主指標:S21 通帶與阻帶必須同時成立,
+    #  單看 m3 會被「導線型」樣本騙——直通結構 m3 漂亮但 m4 冰凍在 −19）
+    print("\n-- 通濾選擇性前緣（sel=min(m3,m4);通帶∧阻帶同時看）--")
+    sel_sorted = sorted(rows, key=lambda s: -min(s["m3"], s["m4"]))
+    for s in sel_sorted[:5]:
+        print(f"  sel {min(s['m3'], s['m4']):+.2f}  {s['id']} [{s['arm']}]"
+              f"  m3 {s['m3']:+.2f} / m4 {s['m4']:+.2f} | wm_dual {s['wm']:+.2f}")
+
+    #? ④ 紀錄候選:三鍵各取本批最佳一筆與現任比。每鍵只打頭名——公證要燒 2×HFSS,把第 2/3 名
+    #  一起發車是浪費（另有幾筆超過只報數）。
+    #  **現任 value=None（該鍵未開帳）不自動發車**:沒有門檻時「本批最佳」必然存在,無腦印指令
+    #  等於每批白燒兩次 HFSS;且 m3 的坑是「導線型高 m3 不是濾波解」（records_dual 註記）——
+    #  這個判斷程式做不了 → 只列出、標人工判定,不進①件數。
+    print(f"\n-- 紀錄候選（單次;鐵則=下批公證;{rec['updated']} 現任）--")
+    KEYS = (("wm_dual", "wm", "wm_dual"), ("m3_pass_s21", "m3", "m3(S21 通帶)"),
+            ("m4_stop_s21", "m4", "m4(S21 阻帶)"))
+    cands, opens, front = {}, [], []
+    for key, fld, name in KEYS:
+        cur = rec.get(key, {}).get("value")
+        cid = rec.get(key, {}).get("id")
+        b = max(rows, key=lambda s: s[fld])                  # 前緣報「原始」批best（含現任本人）
+        front.append((name, b, fld, cur, cur is not None and b[fld] > cur))
+        if cur is None:
+            opens.append((name, b, fld))
+            continue
+        #? **現任本人不算候選**（2026-08-11 r58b3 實犯）:m4 王 d58b3_x2_xs07_13 帳面 +5.92 是
+        #  **跨機保守值**,而它在原批的單次量測是 +6.67 → 重跑該批的判讀會永遠提示「破自己」,
+        #  照抄就白燒 2×HFSS 重新公證在位王。跨機地板是記帳口徑,不是新前緣。
+        pool = [s for s in rows if s["id"] != cid and s[fld] > cur]
+        if not pool:
+            continue
+        bc = max(pool, key=lambda s: s[fld])
+        cands.setdefault(bc["id"], (bc, []))[1].append(
+            f"{name} {bc[fld]:+.2f} > 現任 {cur:+.2f}（{cid}）"
+            + (f";另有 {len(pool) - 1} 筆亦超過,未列" if len(pool) > 1 else ""))
+    if cands:
+        nums = [int(mo.group(1)) for f in os.listdir(str(DATASET_PATH))
+                if (mo := re.match(rf"dedust_r{args.round}n(\d+)$", f))]
+        nx = (max(nums) + 1) if nums else 1
+        for j, (b, tags) in enumerate(cands.values()):
+            nst = f"dedust_r{args.round}n{nx + j}"
+            print(f"  ★ {b['id']} [{b['arm']}] " + " ; ".join(tags))
+            print(f"    → python -m script.dedust select-repeat --source-input {b['st']}_input"
+                  f" --id {b['id']} --n 2 --input {nst}_input")
+            print(f"    → python -m script.dedust jobs-add --input {nst}_input --store {nst} --prio 2")
+        print("  ⓘ 公證口徑（records_dual.json 註記）: **同機 3/3 bit 級一致**;跨機有地板"
+              "（r58n2 首量 0.75）→ 跨機時取保守（最小）值入帳")
+    else:
+        print("  （無）")
+    for name, b, fld in opens:
+        print(f"  ○ {name} 未開帳（現任 None）: 本批最佳 {b[fld]:+.2f} {b['id']} [{b['arm']}]"
+              f"（m3 {b['m3']:+.2f}/m4 {b['m4']:+.2f}）——**人工判定要不要開帳**"
+              "（導線型高 m3 非濾波解,不入帳）,不自動發車")
+
+    #? ⑤ m5/m6 重議觸發（判準定案 2026-08-10:帶外反射被 S21 阻帶規格幾乎蘊含=資訊量低,
+    #  不進 min。但「幾乎」不是「一定」——一旦有樣本真的把 m5/m6 頂到 ≥0,就得重議判準）
+    print("\n-- m5/m6 記帳（定案:不進 min;任一樣本 ≥0 → 觸發重議）--")
+    trig = []
+    for k, nm in (("m5", "帶外 S11"), ("m6", "帶外 S22")):
+        v = [s for s in rows if s[k] is not None]
+        if not v:
+            continue
+        b = max(v, key=lambda s: s[k])
+        ge = [s for s in v if s[k] >= 0]
+        if ge:
+            trig.append((k, ge))
+        print(f"  {k} {nm}: best {b[k]:+.2f}（{b['id']}）/ 中位 {_med_lo([s[k] for s in v]):+.2f}"
+              f" | ≥0: {len(ge)} 筆")
+    if trig:
+        print("  ⚠ **觸發重議**: " + "; ".join(f"{k} {len(g)} 筆 ≥0（{g[0]['id']}…）" for k, g in trig)
+              + " → 判準是否把該項納入 wm_dual,回 round 檔 §1 記修訂（發車前寫死紀律）")
+    else:
+        print("  → 未觸發（維持記帳不進 min）")
+
+    print("\n== → 行動（照抄執行;細節見 /batch-cycle skill）==")
+    print(f"  ① 公證候選 {len(cands)} 件"
+          + ("——照上方 select-repeat/jobs-add 發車(prio 2),收檔走 /notarize;口徑=同機 3/3 bit 級"
+             if cands else "——無,跳過")
+          + (f"（另 {len(opens)} 鍵未開帳,待人工判定,見 ○ 行）" if opens else ""))
+    parts = []
+    for name, b, fld, cur, hit in front:
+        parts.append(f"{name} {b[fld]:+.2f}"
+                     + (f"（紀錄 {cur:+.2f},{'★推進 ' + format(b[fld] - cur, '+.2f') if hit else '未破'}）"
+                        if cur is not None else "（未開帳）"))
+    print("  ② 前緣: " + " | ".join(parts))
+    sb = sel_sorted[0]
+    print(f"     sel 前緣 {min(sb['m3'], sb['m4']):+.2f}（{sb['id']}）——sel 無紀錄鍵,跨批推進記 round 檔 §4")
+    print("  ③ m5/m6 重議: " + ("⚠ 觸發（見上）" if trig else "未觸發"))
+    print(f"  ④ 完成度: {n_ok}/{n_man}（error {n_err};energy ⚠{len(bad_e)};尺自證 ⚠{len(mism)}）"
+          + ("  ← 未收全,判讀前先補跑" if n_ok < n_man else ""))
+    print("  ⑤ 記帳: 臂別表/前緣貼 round 檔 §4;換王**先改 docs/records_dual.json**（真相源）"
+          "再補 history 條目——dual 與 single 兩本帳分開,別寫錯檔")
+
+
 def cmd_credit(args):
     """血統貢獻分（R24 探索誘因包 D,Ricky 核准 2026-07-12）:紀錄 id 沿 source_id 鏈回溯,
     每個祖先給其出身臂記一分——探索的延遲報酬記帳（例:margin 王經 g1 填空池=池記功）。
@@ -1404,7 +1630,8 @@ def main():
     gn.add_argument("--oob-record", type=float, default=None, dest="oob_record", help="現任帶外紀錄（預設讀 records.json）")
     gn.add_argument("--near", type=float, default=None, help="近王級門檻（預設=wm 紀錄−0.09）")
     gn.set_defaults(func=cmd_gain)
-    bt = sub.add_parser("batch", help="收檔判讀一鍵化（臂別/可用帶外/前瞻/紀錄候選+公證指令/→行動;/batch-cycle step①）")
+    bt = sub.add_parser("batch", help="收檔判讀一鍵化（臂別/可用帶外/前瞻/紀錄候選+公證指令/→行動;"
+                                      "**port 自動分派**:dual 走 wm_dual+records_dual;/batch-cycle step①）")
     bt.add_argument("--round", type=int, required=True)
     bt.add_argument("--batch", type=int, required=True)
     bt.set_defaults(func=cmd_batch)
