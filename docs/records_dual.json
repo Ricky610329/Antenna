@@ -1,14 +1,66 @@
 {
-  "_comment": "dual-port 紀錄真相源(2026-08-10 開檔;與 single 的 records.json 分立,勿混)。判準=wm_dual=min(m1..m4)(mask 口徑,worst_margin_dual);m5/m6 記帳不進 min。論文對 dual 零量化基準——首個紀錄即全場基準,照公證鐵則 x2 才入帳。energy_max<=1 為每筆自證。噪音地板:同機=0.000(bit 級,HFSS 決定性);跨機首量=0.75(r58n2,m4 阻帶敏感點,n=1 對,待專項釘死)→公證口徑=同機 3/3 bit 級,跨機值取保守(最小)入帳。",
-  "updated": "2026-08-11",
-  "buffer": null,
-  "wm_dual": {"id": "d57b3_n3_b2_n2_n_00_01_03", "value": -6.04, "note": "R57 首帳(2026-08-11 公證 3/3 bit 級一致,dedust_r57n1);m1..m6=-4.84/-6.04/-5.33/-4.76/-7.45/-5.08;血統=harvest idx? -> b1 n_00 -> b2 n2_n_00_01 -> b3 d2;harvest 起跑線 -7.20"},
-  "m3_pass_s21": {"id": null, "value": null, "note": "R57 批內最佳 -2.72(d57b3_symr_25)未公證;harvest 歷史最佳 +2.11(導線型,非濾波解)不入帳"},
-  "m4_stop_s21": {"id": "d58b3_x2_xs07_13", "value": 5.92, "note": "R58 二度易主(2026-08-11 公證,dedust_r58n2;跨機 218=+6.67/216=+5.92x2 bit 級,取保守值 5.92=跨機地板 0.75 首量);血統=s07_07 二代(symr_07 孫);wm=-28.29 隔離器家族;前任 d58b2_x_s07_07 +3.13"},
-  "history": [
-    {"date": "2026-08-11", "key": "wm_dual", "id": "d57b3_n3_b2_n2_n_00_01_03", "value": -6.04, "round": 57},
-    {"date": "2026-08-11", "key": "m4_stop_s21", "id": "d57b3_symr_07", "value": 1.93, "round": 57},
-    {"date": "2026-08-11", "key": "m4_stop_s21", "id": "d58b2_x_s07_07", "value": 3.13, "round": 58},
-    {"date": "2026-08-11", "key": "m4_stop_s21", "id": "d58b3_x2_xs07_13", "value": 5.92, "round": 58, "note": "跨機保守值;218 原測 6.67"}
-  ]
+ "_comment": "dual-port 紀錄真相源(2026-08-10 開檔;與 single 的 records.json 分立,勿混)。判準=wm_dual=min(m1..m4)(mask 口徑,worst_margin_dual);m5/m6 記帳不進 min。論文對 dual 零量化基準——首個紀錄即全場基準,照公證鐵則 x2 才入帳。energy_max<=1 為每筆自證。噪音地板:同機=0.000(bit 級,HFSS 決定性);跨機:r58n2 見 0.75(m4 阻帶敏感點)但 r61n1 wm 跨機 bit 級一致=點依賴非通則(n=2 對)→公證口徑=同機 3/3 bit 級,跨機值取保守(最小)入帳。",
+ "updated": "2026-08-11",
+ "buffer": null,
+ "wm_dual": {
+  "id": "d61b1_d_nbr_king_wm_0876",
+  "value": -5.62,
+  "note": "R61 易主(2026-08-11 公證 3/3 跨機 bit 級:216 原測+37 重測x2);出自高分歧臂(SM 不確定區);m1..m6=-5.04/-5.61/-5.62/-2.40/-8.13/-5.47=四軸首見全>-6;血統=R57 王 d 鄰域;前任 d57b3_n3_b2_n2_n_00_01_03 -6.04"
+ },
+ "m3_pass_s21": {
+  "id": null,
+  "value": null,
+  "note": "R57 批內最佳 -2.72(d57b3_symr_25)未公證;harvest 歷史最佳 +2.11(導線型,非濾波解)不入帳"
+ },
+ "m4_stop_s21": {
+  "id": "d61b1_c_nbr_m4_king_0286",
+  "value": 6.34,
+  "note": "R61 易主(2026-08-11 公證 3/3 同機 bit 級);血統=m4_king(xs07_13)鄰域,c 臂均勻抽中;wm=-29.5 隔離器家;前任 d58b3_x2_xs07_13 +5.92"
+ },
+ "history": [
+  {
+   "date": "2026-08-11",
+   "key": "wm_dual",
+   "id": "d57b3_n3_b2_n2_n_00_01_03",
+   "value": -6.04,
+   "round": 57
+  },
+  {
+   "date": "2026-08-11",
+   "key": "m4_stop_s21",
+   "id": "d57b3_symr_07",
+   "value": 1.93,
+   "round": 57
+  },
+  {
+   "date": "2026-08-11",
+   "key": "m4_stop_s21",
+   "id": "d58b2_x_s07_07",
+   "value": 3.13,
+   "round": 58
+  },
+  {
+   "date": "2026-08-11",
+   "key": "m4_stop_s21",
+   "id": "d58b3_x2_xs07_13",
+   "value": 5.92,
+   "round": 58,
+   "note": "跨機保守值;218 原測 6.67"
+  },
+  {
+   "date": "2026-08-11",
+   "key": "wm_dual",
+   "id": "d61b1_d_nbr_king_wm_0876",
+   "value": -5.62,
+   "round": 61,
+   "note": "跨機 bit 級 3/3;高分歧臂"
+  },
+  {
+   "date": "2026-08-11",
+   "key": "m4_stop_s21",
+   "id": "d61b1_c_nbr_m4_king_0286",
+   "value": 6.34,
+   "round": 61
+  }
+ ]
 }
