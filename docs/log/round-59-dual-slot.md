@@ -146,15 +146,6 @@ rows6-12×cols10-16 全切/10-13 半切,對稱鏡像;seed 5901);check-dup ×3 �
 - R59 store=dual SM 鍋候選(通濾混合族=鍋內新物種,SM v2 素材)。
 - 圖(構型 vs m3/m4 地圖)=收尾時與 R57-59 總圖一起產(round_report dual 版待工具化)。
 
-## 5. 結論 (Conclude)
-（待）
-
-## 6. 後續決策 (Next)
-- dual 跨機噪音地板專項(R58 首量 0.75,n=1 對)[M];analyze batch dual 分支 [M]。
-
-## 7. 歸檔指向 (Archive)
-（待;結果夾 `dedust_r59*`;紀錄=docs/records_dual.json)
-
 ---
 ★ 修正(2026-08-11 11:3x,Ricky 問「dual HFSS 設定與 single 差在哪」時發現):
 **b3 conn 臂的「連通恆真/無選擇力」結論用錯連通口徑**。dual 幾何的像素盒**沒有** single 的
