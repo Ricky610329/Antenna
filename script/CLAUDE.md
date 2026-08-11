@@ -38,8 +38,9 @@
 6. 錨點注意：x00 是破對稱錨點（含 (4,18) 翻轉），x00 條目收尾用除塵不對稱化（`_finish` 語義），
    不要 `symmetrize`（round-16 §3 caveat）。
 7. **幾何/儀器變體批**（R52 網格起,R54-55 定型）：輸入夾放 `hfss_setup.json`（只收白名單鍵:
-   `max_delta_s/max_passes/min_passes/min_converged/timeout/diag_bridge_w/pixel_count`,run 自動存證進 store）;
-   kind=`meshconv/diagbridge`=check-dup 豁免（豁免集合以 code 為準,僅 bits 不變的幾何變體;
+   `max_delta_s/max_passes/min_passes/min_converged/timeout/diag_bridge_w/pixel_count/slot_spec`,
+   run 自動存證進 store;`diag_bridge_w`+`pixel_count`=single 專屬、`slot_spec`=dual 專屬,給錯域直接擋）;
+   kind=`meshconv/diagbridge/slotw`=check-dup 豁免（豁免集合以 code 為準,僅 bits 不變的幾何變體;
    `symprobe` 等**改 bits 的變體不豁免、必跑 check-dup**）、id=`{parent}~<tag>` 親代綁定;
    **資料永不入鍋**（不進 clean_stores、重錨不 --add——漏一次=污染 SM 訓練集）;
    新 COM 動詞（Rotate/Subtract 級）首筆當 smoke+幾何渲染目檢。

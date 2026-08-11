@@ -4894,7 +4894,7 @@ def check_dup(args):
     man_kind = {m["id"]: m.get("kind", "") for m in _man}
     man_port = {m["id"]: m.get("port", "single") for m in _man}
     new = {k: v for k, v in load_folder(args.input).items()
-           if man_kind.get(k) not in ("repeat", "notarize", "meshconv", "diagbridge")}  # 蓄意重複(公證/網格/菱形重測)不算違規
+           if man_kind.get(k) not in ("repeat", "notarize", "meshconv", "diagbridge", "slotw")}  # 蓄意重複(公證/網格/菱形/縫寬重測)不算違規
     seen, bad = {}, 0
     for k, v in new.items():
         key = (man_port.get(k, "single"), v)             # 批內也分域（夾理論上同質,混夾亦不誤判）
@@ -5582,6 +5582,17 @@ def sm_screen(args):
 
 
 # ---------------------------------------------------------------- run（正式機，燒 HFSS；可中斷續跑）
+def _hfss_setup_keys(port: str) -> set:
+    """`hfss_setup.json` 白名單（幾何/儀器變體批,script/CLAUDE.md 鐵則 7）——**分域**。
+
+    共用鍵＝求解設定＋看門狗；幾何鍵各自只有一邊的模擬器有分支，給錯域要顯性擋掉、不靜默吞（D2 #4）：
+      * `diag_bridge_w`（R54 菱形橋/挖空槽）、`pixel_count`（50×50 精修域）＝**single 專屬**。
+      * `slot_spec`（R60 亞像素耦合縫）＝**dual 專屬**。
+    `timeout` 只進看門狗、不進模擬器建構子；其餘鍵一律直接 pass-through 給 SIM_CLS(**hfss_setup)。"""
+    keys = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout"}
+    return keys | ({"slot_spec"} if port == "dual" else {"diag_bridge_w", "pixel_count"})
+
+
 def run(args):
     from antenna.patch import DualPortSimulator, SinglePortRadSimulator   # lazy：開發機/CI 不 import COM 相依
     from antenna.utils.store import SampleStore
@@ -5626,14 +5637,11 @@ def run(args):
     if _setup_f.exists():
         with open(str(_setup_f), encoding="utf-8") as f:
             hfss_setup = json.load(f)
-        allowed = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout", "diag_bridge_w",
-                   "pixel_count"}  # 50×50 精修域(proposal-finetune P4;學長內建 {20,25,50} 幾何分支)
-        if cfg.port == "dual":
-            #? dual 模擬器無菱形橋/多網格分支——鍵給了也不會生效,顯性擋掉不靜默吞（D2 #4）
-            allowed -= {"diag_bridge_w", "pixel_count"}
+        allowed = _hfss_setup_keys(cfg.port)
         bad = set(hfss_setup) - allowed
         if bad:
-            hint = "（dual 不支援 diag_bridge_w/pixel_count）" if cfg.port == "dual" else ""
+            hint = ("（dual 不支援 diag_bridge_w/pixel_count）" if cfg.port == "dual"
+                    else "（single 不支援 slot_spec）")
             raise SystemExit(f"hfss_setup.json 不明鍵 {bad}（合法鍵={sorted(allowed)}）{hint}")
         with open(str(store_dir.joinpath("hfss_setup.json")), "w", encoding="utf-8") as f:
             json.dump(hfss_setup, f, ensure_ascii=False, indent=1)

@@ -580,6 +580,59 @@ def test_check_dup_splits_by_port_domain(tmp_path, monkeypatch):
         dd.check_dup(SimpleNamespace(input="dedust_s2_input"))
 
 
+def test_check_dup_exempts_slotw_geometry_variants(tmp_path, monkeypatch):
+    """R60 縫寬變體＝**bits 不變**的幾何變體（照 meshconv/diagbridge 前例）→ 查重豁免。
+    不豁免的話，同一張 parent 掃五種縫寬會被自己攔下來、整輪發不了車。"""
+    import json
+    import pytest
+    from types import SimpleNamespace
+    import script.dedust as dd
+    monkeypatch.setattr(dd, "DATASET_PATH", tmp_path)
+    p = _dual_pattern(9)
+
+    def _kind(folder, kind):
+        f = tmp_path / folder / "manifest.json"
+        man = json.loads(f.read_text(encoding="utf-8"))
+        for m in man:
+            m["kind"] = kind
+        f.write_text(json.dumps(man), encoding="utf-8")
+
+    _mk_input(tmp_path, "dedust_r60sw50_input", [("d59_x~sw50", "dual")], p)
+    _mk_input(tmp_path, "dedust_r60sw75_input", [("d59_x~sw75", "dual")], p)   # 同 bits、不同縫寬
+    _kind("dedust_r60sw50_input", "slotw")
+    _kind("dedust_r60sw75_input", "slotw")
+    dd.check_dup(SimpleNamespace(input="dedust_r60sw75_input"))                # 豁免 → 不得 exit 1
+
+    #! 反面對照：同樣的 bits 重複、kind 不在豁免集合 → 必須攔（證明上面不是「根本沒查到」）
+    _mk_input(tmp_path, "dedust_r60plain_input", [("d59_x_plain", "dual")], p)
+    with pytest.raises(SystemExit):
+        dd.check_dup(SimpleNamespace(input="dedust_r60plain_input"))
+
+
+def test_hfss_setup_whitelist_is_port_scoped():
+    """幾何鍵分域（鐵則 7）：`slot_spec` 只有 dual 模擬器有、`diag_bridge_w`/`pixel_count`
+    只有 single 有——給錯域要顯性擋掉，不能靜默吞（吞掉＝整夾用預設幾何白燒）。"""
+    from script.dedust import _hfss_setup_keys
+    assert "slot_spec" in _hfss_setup_keys("dual") and "slot_spec" not in _hfss_setup_keys("single")
+    assert {"diag_bridge_w", "pixel_count"} <= _hfss_setup_keys("single")
+    assert not {"diag_bridge_w", "pixel_count"} & _hfss_setup_keys("dual")
+    assert {"timeout", "max_delta_s", "max_passes"} <= _hfss_setup_keys("dual") & _hfss_setup_keys("single")
+
+
+def test_hfss_setup_keys_are_real_simulator_params():
+    """跨實作對帳：白名單的鍵是 `SIM_CLS(**hfss_setup)` 直接 pass-through 的 → 每個鍵都必須
+    真的是該 port 模擬器的建構參數，否則發車當下才 TypeError（`timeout` 例外：只進看門狗）。"""
+    import inspect
+    from antenna.patch import DualPortSimulator, SinglePortRadSimulator
+    from script.dedust import _hfss_setup_keys
+    for port, cls in (("dual", DualPortSimulator), ("single", SinglePortRadSimulator)):
+        sig = inspect.signature(cls.__init__)
+        if "sweep_type" not in sig.parameters:                 # single_rad 由父類吃 **kwargs
+            sig = inspect.signature(cls.__mro__[1].__init__)
+        for k in _hfss_setup_keys(port) - {"timeout"}:
+            assert k in sig.parameters, f"{port}: {k} 不是 {cls.__name__} 的建構參數"
+
+
 def test_jobs_add_carries_config(tmp_path, monkeypatch):
     """派工鏈帶 config（D2 #5）：給了才寫進 job dict；不給＝worker 沿用自己的 --config。"""
     import json

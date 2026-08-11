@@ -7,6 +7,72 @@ from . import PatchSimulator
 from .single_port import align_curve   #! 頻率對位共用同一份實作 (別另寫一份 → 兩把尺會漂)
 
 
+def slot_boxes(slot_spec, pixel_count: int):
+    """把 `slot_spec` 展開成「縫盒」幾何 (mm)。**純函式、不碰 COM** → 開發機可測。
+
+    R60 亞像素耦合縫 (round-60 §1)：R59 證明 0.2mm 格距下耦合縫只有「直通/斷路」兩個
+    量子態；本函式讓縫寬變成連續幾何參數 (bits 不變，模擬器在指定位置 Subtract 挖細縫)。
+
+    **座標對應 (以 `__call__` 的 CreateBox 為準，別憑直覺)**::
+
+        pixel_matrix[r][c]  →  XPosition = r * pixel_H,  YPosition = c * pixel_W
+
+    也就是**第一維 (列 r) 走 HFSS X 軸、第二維 (欄 c) 走 HFSS Y 軸**。旁證：兩個饋墊
+    `q[0:5, 10:15]` / `q[20:25, 10:15]` (`dedust.dual_pads`) → X∈[0,1]∪[4,5]mm、
+    Y∈[2,3]mm，恰好對上兩個 port 的 IntLine (x=-7.5mm / x=+12.5mm，兩者 y=2.5mm)。
+    ⇒ 兩埠沿 **X** 分居兩端，「切第 r 列」＝在直通路上豎一道牆 (R59 的 `r12 全切`)。
+
+    格式 (整夾一組，來自 `hfss_setup.json`)::
+
+        [{"rows": [11, 13], "cols": [10, 16], "width_mm": 0.05}, ...]
+
+    * ``rows``：要開縫的像素列 r 清單；縫**厚度落在 X 軸**、中心＝第 r 列的中心線
+      ``(r+0.5)*pmm``。故 ``width_mm → pmm`` 時退化成「整列清空」(括號自證的上端)。
+    * ``cols``：``[c0, c1]`` 像素欄閉區間；縫**沿 Y 軸延伸** ``c0*pmm ~ (c1+1)*pmm``。
+    * ``width_mm``：縫寬 (mm)，需 ``0 < w < pmm``。上下界都拒收——``w=0`` 請直接不給
+      ``slot_spec``；``w >= pmm`` 請在 bits 上清列 (幾何上會把單像素體挖成空物件)。
+
+    對稱性由呼叫端負責 (鏡像列自己寫進 rows)，本函式不自動鏡像。
+
+    :return: 每條縫一個 dict：``row/c0/c1/w`` (像素域) + ``x0/y0/dx/dy`` (mm，盒左下角與邊長)。
+    """
+    pmm = 5.0 / pixel_count                       # 像素邊長 mm (25→0.2 / 50→0.1)；貼片實體固定 5mm 見方
+    if isinstance(slot_spec, dict):
+        raise ValueError("slot_spec 必須是 list（一條縫一個 dict），不是單一 dict")
+    out = []
+    for k, item in enumerate(slot_spec):
+        tag = f"slot_spec[{k}]"
+        if not isinstance(item, dict):
+            raise ValueError(f"{tag} 必須是 dict（鍵 rows/cols/width_mm）")
+        #! 鍵名嚴格比對（多一個少一個都擋）：打錯鍵最惡劣的下場是「靜默不挖」——HFSS 照跑完、
+        #  S 參數照樣長得像回事，整夾白燒還以為量到了 w 的效應。
+        if set(item) != {"rows", "cols", "width_mm"}:
+            raise ValueError(f"{tag} 鍵不對 {sorted(item)}（只收且必須有 rows/cols/width_mm）")
+        w = float(item["width_mm"])
+        if not 0.0 < w < pmm:
+            raise ValueError(f"{tag} width_mm={w} 超出 (0, {pmm})：w=0 請不要給 slot_spec，"
+                             f"w>=像素邊長請直接在 bits 上清列")
+        cols = list(item["cols"])
+        if len(cols) != 2:
+            raise ValueError(f"{tag} cols 必須是 [c0, c1] 閉區間")
+        c0, c1 = int(cols[0]), int(cols[1])
+        if not 0 <= c0 <= c1 < pixel_count:
+            raise ValueError(f"{tag} cols={c0},{c1} 越界（需 0<=c0<=c1<{pixel_count}）")
+        rows = list(item["rows"])
+        if not rows:
+            raise ValueError(f"{tag} rows 是空的")
+        for r in rows:
+            r = int(r)
+            if not 0 <= r < pixel_count:
+                raise ValueError(f"{tag} row={r} 越界（需 0<=r<{pixel_count}）")
+            out.append(dict(row=r, c0=c0, c1=c1, w=w,
+                            x0=(r + 0.5) * pmm - w / 2.0,   # 厚度方向＝X，中心對準第 r 列中心線
+                            dx=w,
+                            y0=c0 * pmm,                    # 延伸方向＝Y，跨 c0..c1 含
+                            dy=(c1 - c0 + 1) * pmm))
+    return out
+
+
 class DualPortSimulator(PatchSimulator):
     """雙埠 Patch 天線 HFSS 模擬器。
 
@@ -28,7 +94,8 @@ class DualPortSimulator(PatchSimulator):
 
     def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'dual_port.sab'), pixel_count:int = 25,
                  sweep_type: str = "Fast",
-                 max_delta_s: float = 0.02, max_passes: int = 6, min_passes: int = 5, min_converged: int = 5):
+                 max_delta_s: float = 0.02, max_passes: int = 6, min_passes: int = 5, min_converged: int = 5,
+                 slot_spec: list = None):
         # record_path：本次訓練/實驗的紀錄根目錄 (基底類別會在其下建立 HFSS/、result/、project/)。
         # HFSS_sab_path：雙埠底板幾何檔，預設指向與本檔同層 sab/ 目錄下的 dual_port.sab，
         #               內含基板 Sub、地 GND、兩條饋線 feedline1/feedline2 及兩個 port 用矩形。
@@ -46,6 +113,13 @@ class DualPortSimulator(PatchSimulator):
         self.max_passes = int(max_passes)
         self.min_passes = int(min_passes)
         self.min_converged = int(min_converged)
+        #? 亞像素耦合縫(2026-08-11 R60,round-60 §1):bits 不變、在指定位置挖指定寬度的細縫
+        #  (Subtract);None=現行幾何(完全向後相容,整段不執行)。格式與座標對應見 slot_boxes()。
+        #  覆蓋來源=批次線輸入夾的 hfss_setup.json 的 slot_spec 鍵(整夾一組)。
+        #! 建構時就展開一次＝**發車前就炸**(不等 HFSS 開起來、跑一半才發現格式錯)。
+        self.slot_spec = None if slot_spec is None else list(slot_spec)
+        if self.slot_spec is not None:
+            slot_boxes(self.slot_spec, pixel_count)
         super().__init__(record_path, HFSS_sab_path, pixel_count)
 
     def __call__(self, pixel_matrix:Tensor):
@@ -287,12 +361,17 @@ class DualPortSimulator(PatchSimulator):
         #! 與單埠版差異：單埠版會逐一收集 Box 名稱 (patch_names) 並在 XSize/YSize 加
         #!   0.01mm 偏移避免奇異點；本雙埠版沿用較早的寫法——方塊統一命名為 "Patch"，
         #!   尺寸剛好等於 pixel_H/pixel_W，後續以另一套 Unite 邏輯逐欄聯集。
+        #? box_names：依**建立順序**記下 HFSS 會給的名字(第 0 個叫 "Patch"、之後 "Patch_<序>")——
+        #  與下方 Unite 的命名推算是同一套規則。R60 挖縫的 Subtract 需要知道「最後還活著哪些物件」，
+        #  這份清單＋Unite 的吞併記帳就是答案（slot_spec=None 時只是純 Python append，幾何零影響）。
+        box_names = []
         for y in range(0, pixel_row, 1):
             for x in range(0, pixel_column, 1):
                 # if pixel_matrix[x][y] > 0:
                 #     one_num = one_num + 1
                 if pixel_matrix[x][y] == 1:                  # 該像素要鋪銅
                     one_num = one_num + 1                    # 累計鋪銅像素數
+                    box_names.append("Patch" if not box_names else f"Patch_{len(box_names)}")
                     oEditor.CreateBox(
                         [
                             "NAME:BoxParameters",
@@ -327,6 +406,7 @@ class DualPortSimulator(PatchSimulator):
         # 逐欄將同一行 (column) 內鋪銅的小方塊聯集成連續金屬，降低物件數量、利於後續網格化。
         # ones_buf：跨欄累計的「已生成方塊總數」，用來推算每個方塊在 HFSS 的全域序號 (Patch_<n>)。
         ones_buf = 0
+        patch_dead = set()                          # 被 Unite 吃掉的盒子序號（存活名單＝挖縫 Subtract 的下刀對象）
         for i in range(pixel_row):
             patch_unite = ""                            # 累積本欄要聯集的方塊名稱字串 ("Patch_a,Patch_b,...")
             E = pixel_matrix[:, i]                       # 取出第 i 欄所有像素值
@@ -362,8 +442,56 @@ class DualPortSimulator(PatchSimulator):
                         "NAME:UniteParameters",
                         "KeepOriginals:=", False
                     ])
+                #? 記帳（R60）：Unite 只保留清單中第一個名字，其餘物件就此消失。序號推算與上面
+                #  組 patch_unite 的那圈**完全同一式**（含跳過全域序號 0＝那顆叫 "Patch" 的沒進聯集、
+                #  仍獨立存活），故兩者不會漂。
+                _merged = [u + ones_buf for u in range(ones_indices.shape[0]) if u + ones_buf != 0]
+                patch_dead.update(_merged[1:])
             # 不論本欄是否聯集，皆把本欄方塊數累加進全域計數，供下一欄推算正確序號。
             ones_buf = ones_buf + ones_indices.shape[0]
+
+        ###* 亞像素耦合縫：挖縫盒 → Subtract（R60；self.slot_spec=None 時整段不執行＝歷史幾何 bit 級不變）###
+        if self.slot_spec is not None:
+            patch_bodies = [n for k, n in enumerate(box_names) if k not in patch_dead]   # 逐欄聯集後的存活體
+            _slots = slot_boxes(self.slot_spec, pixel_row)
+            _mat = pixel_matrix.numpy() > 0.5
+            _names = []
+            if not patch_bodies:
+                logger.warning(f"slot_spec 指定了 {len(_slots)} 條縫，但這張 pattern 沒有任何金屬"
+                               f"——整段跳過（Pattern {self.num}）")
+                _slots = []                          # 沒東西可挖就連盒子都別建（免留一塊懸空的銅片在模型裡）
+            for _s in _slots:
+                #? 空操作偵測：縫若落在全空區域，幾何上等於沒挖 → 結果會與「無縫」不可分辨。
+                #  這是括號自證(w→0 收斂)最危險的假陽性來源，故顯性告警而非靜默。
+                _cover = int(_mat[_s["row"], _s["c0"]:_s["c1"] + 1].sum())
+                _dn = f"Slot_{len(_names) + 1}"
+                _actual = oEditor.CreateBox(
+                    ["NAME:BoxParameters",
+                     #! X＝厚度方向（列 r 的中心線 ± w/2）、Y＝延伸方向（欄 c0..c1）——別搞反，
+                     #  搞反縫會開成縱向（與兩埠直通路平行＝完全不切耦合路徑）。考證見 slot_boxes()。
+                     "XPosition:=", f"{_s['x0']:.6f}mm", "YPosition:=", f"{_s['y0']:.6f}mm",
+                     "ZPosition:=", "0.498mm",               # =0.508-0.01：上下各留 0.01mm 餘裕，防與銅層共面害布林失敗
+                     "XSize:=", f"{_s['dx']:.6f}mm", "YSize:=", f"{_s['dy']:.6f}mm",
+                     "ZSize:=", "CooperH+0.02mm"],
+                    ["NAME:Attributes", "Name:=", _dn, "Flags:=", "", "Color:=", "(0 128 255)",
+                     "Transparency:=", 0, "PartCoordinateSystem:=", "Global", "UDMId:=", "",
+                     "MaterialValue:=", "\"copper\"", "SurfaceMaterialValue:=", "\"\"",
+                     "SolveInside:=", False, "IsMaterialEditable:=", True,
+                     "UseMaterialAppearance:=", False, "IsLightweight:=", False])
+                _names.append(_actual)
+                logger.info(f"耦合縫 {_actual}: row {_s['row']} cols {_s['c0']}-{_s['c1']} w={_s['w']}mm"
+                            f"（X {_s['x0']:.4f}+{_s['dx']:.4f} / Y {_s['y0']:.4f}+{_s['dy']:.4f}mm，"
+                            f"覆蓋金屬 {_cover}px）；Pattern {self.num}")
+                if _cover == 0:
+                    logger.warning(f"{_actual} 覆蓋 0 個金屬像素＝幾何空操作（Pattern {self.num}）")
+            #! 時機：必須在逐欄 Unite 之後——對「存活的 Patch 物件」一次下刀（縫跨欄時會同時切到
+            #  多個欄體，故 Blank 給全部存活體）。刀具(縫盒)分批 20 個，理由同 Unite：COM 選取字串過長易崩。
+            #  饋線 feedline1/feedline2 **不在 Blank 名單**（dual 的貼片與饋線從不 Unite），縫切不到饋線。
+            for _i in range(0, len(_names), 20):
+                oEditor.Subtract(
+                    ["NAME:Selections", "Blank Parts:=", ",".join(patch_bodies),
+                     "Tool Parts:=", ",".join(_names[_i:_i + 20])],
+                    ["NAME:SubtractParameters", "KeepOriginals:=", False])
 
         # 設定邊界條件
         oModule = oDesign.GetModule("BoundarySetup")        # 取得邊界/激勵設定模組
