@@ -48,6 +48,10 @@ b1(~50 筆):
 | 事件 | 狀態 |
 |---|---|
 | 開檔+裁定 | 2026-08-11 14:27(Ricky:25×25 門檻制/可施工/資料量優先) |
+| 施工完成(Opus,~25 分) | 2026-08-11 15:0x:dual_port.py slot_boxes+Subtract(+129 行)/dedust 白名單分域+slotw 豁免/24 新測試;**472 pytest 綠 golden 零漂移**;commit 271ede8 已 push。★座標考證:pixel_matrix **列→HFSS X、欄→Y**(轉置!三旁證互驗:饋墊座標/兩埠 IntLine/R59 實驗語義)——brief 原式是陷阱,agent 抓到 |
+| smoke 檢核表(發車前必過) | ①多 Blank Subtract 零報錯 ②縫方向目檢=橫向(垂直兩埠連線)+log「覆蓋金屬 N px」N>0 ③**網格解析力=最大靜默風險**:0.03mm 特徵配預設 S0 會假陰性 → b1 全批 hfss_setup 帶 S1 級(max_delta_s 0.005/max_passes 20/min_converged 3/timeout 2400) ④括號自證=唯一物理驗收 |
+| ★ §2 修訂(2026-08-11 15:0x,發車前、零結果) | swc 括號臂原寫「理論上與既測值同」——**錯,R59 既測值是 S0 尺**;b1 全批(含 swc 端點)統一 S1 級設定=同尺才可比(R54 s1base 前例);swc 臂改為「無縫 wireO+全切 f12 各 1 筆以 S1 重測」當括號端點 |
+| 部署 | 待 Ricky 三台 pull+重啟(鐵則 8);auto 池在跑不急,方便時即可 |
 
 ## 4. 分析 (Analyze)
 （待）
