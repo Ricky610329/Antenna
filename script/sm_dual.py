@@ -76,6 +76,12 @@ _FIXED_STORES = (
 )
 
 
+def _pot_eligible(man) -> bool:
+    """鍋收店資格(純函式,可測):manifest 首筆 port=dual 且非幾何變體(kind=slotw)。
+    幾何變體=同 bits 不同幾何 → 入鍋會讓「pattern→響應」映射多值=毒資料(鐵則)。"""
+    return bool(man) and man[0].get("port") == "dual" and man[0].get("kind") != "slotw"
+
+
 def _discover_stores():
     """固定清單 + 動態發現(R61+ 批次/公證店與 autod 自產店,插在 harvest 之前)。
     ★2026-08-12 修:v3 前只收到 r59=R61-63 均衡王朝資料從未入鍋(R64 押錯家族的根因之一)。
@@ -90,10 +96,11 @@ def _discover_stores():
             continue
         #! 域安全閘(2026-08-12:dedust_r7*/r8*/r9* glob 曾撈到 single 老店 (2,17) 炸鍋):
         #  只收 manifest 標 port=dual 的店——單一真相源,未來輪免改 code。
+        #  kind=slotw(亞像素縫幾何變體,R60/R68b3)=毒資料,同一道閘擋(_pot_eligible)。
         mp = os.path.join(str(DATASET_PATH), name + "_input", "manifest.json")
         try:
             man = json.load(open(mp, encoding="utf-8"))
-            if not (man and man[0].get("port") == "dual"):
+            if not _pot_eligible(man):
                 continue
         except Exception:
             continue

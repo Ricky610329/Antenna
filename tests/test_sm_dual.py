@@ -136,3 +136,13 @@ def test_load_pool_from_npz(tmp_path):
     np.savez(p, X=np.zeros((3, 625), dtype=np.float32), ids=np.array(["p0", "p1", "p2"]))
     X, ids = _load_pool_arg(str(p))
     assert X.shape == (3, 625) and ids == ["p0", "p1", "p2"]
+
+
+def test_pot_eligible_excludes_slotw_and_nondual():
+    """鍋收店資格閘:kind=slotw 幾何變體與非 dual 店都擋(R68 b3 縫店防污染)。"""
+    from script.sm_dual import _pot_eligible
+    assert _pot_eligible([{"port": "dual", "kind": "dual"}])
+    assert _pot_eligible([{"port": "dual", "kind": "repeat"}])
+    assert not _pot_eligible([{"port": "dual", "kind": "slotw"}])
+    assert not _pot_eligible([{"port": "single"}])
+    assert not _pot_eligible([])
