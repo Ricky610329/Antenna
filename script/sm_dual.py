@@ -51,7 +51,8 @@ LOCK_PATH = os.path.join(REPO, "tmp", "sm_dual.lock")
 LABELS = PORT_SPECS["dual"]["labels"]          # ['S11', 'S21', 'S22'] — dual response 列序
 N_POINTS = 17                                  # 24-32GHz 17 點
 N_PIX = 625                                    # 25×25
-MARGINS = ("m1", "m2", "m3", "m4")             # wm_dual = min(m1..m4)（m5/m6 只記帳，不進 min）
+MARGINS = ("m1", "m2", "m3", "m4", "m5", "m6")  #! v4 起=六軸全尺(學長裁定 2026-08-12:帶內帶外全硬);
+                                                #  wm_full = min(m1..m6);v1-v3 權重為四軸頭,僅 SM_DUAL_VER 指舊版時可載
 
 #? 鍋的店清單與**順序＝去重優先權**（首見先贏，同 sm_reanchor 的「certified 先見先贏」慣例）：
 #  公證重測店（n1/n2，同 pattern 重測）排最前 → 其重測值蓋過批次店的單測值；
@@ -93,7 +94,7 @@ GATE_TOPK = 30             # 品質閘 (b)：pred 取前 30
 GATE_TRUE_FRAC = 0.10      # 品質閘 (b)：true 前 10%
 GATE_P = 0.05
 
-SM_VER = os.environ.get("SM_DUAL_VER", "v2")   #! v2=2026-08-11 鍋擴充(R58/R59+autod);v1 權重保留不覆蓋
+SM_VER = os.environ.get("SM_DUAL_VER", "v4")   #! v2=2026-08-11 鍋擴充(R58/R59+autod);v1 權重保留不覆蓋
 WEIGHT_FMT = "sm_dual_" + SM_VER + "_s{}.pth"
 SPLIT_JSON = "sm_dual_" + SM_VER + "_split.json"
 
@@ -157,9 +158,10 @@ def pattern_key(x):
 
 
 def margins_of(y, targets):
-    """(3,17) 響應 → (wm, [m1,m2,m3,m4])。wm = min(m1..m4)（`worst_margin_dual` 定義）。"""
-    wm, per = worst_margin_dual(np.asarray(y, dtype=np.float32).reshape(len(LABELS), -1), LABELS, targets)
-    return float(wm), np.array([per[k] for k in MARGINS], dtype=np.float32)
+    """(3,17) 響應 → (wm_full, [m1..m6])。wm_full = min(MARGINS)=六軸主尺(2026-08-12 換代)。"""
+    _, per = worst_margin_dual(np.asarray(y, dtype=np.float32).reshape(len(LABELS), -1), LABELS, targets)
+    m = np.array([per[k] for k in MARGINS], dtype=np.float32)
+    return float(m.min()), m
 
 
 def wm_of(y, targets):

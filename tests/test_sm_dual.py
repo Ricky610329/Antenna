@@ -15,7 +15,7 @@ import pytest
 import torch
 from torch import nn
 
-from script.sm_dual import (DualNet, HELDOUT_FRAC, N_POINTS, SPLIT_BINS, _load_pool_arg,
+from script.sm_dual import (MARGINS, DualNet, HELDOUT_FRAC, N_POINTS, SPLIT_BINS, _load_pool_arg,
                             make_split, pattern_key, rank_pool)
 
 
@@ -74,7 +74,7 @@ def test_model_output_shape(shape):
     with torch.no_grad():
         resp, marg = m(torch.zeros(*shape))
     assert resp.shape == (4, 3, N_POINTS)
-    assert marg.shape == (4, 4)
+    assert marg.shape == (4, len(MARGINS))  # v4 起=6(六軸全尺)
 
 
 # ── 4. rank 排序 ─────────────────────────────────────────────────────────
