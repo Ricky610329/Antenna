@@ -241,7 +241,7 @@ def build_pool(refresh=False, cache=CACHE_PATH, stores=STORES):
         X, Y, src, n_raw = _scan_stores(stores)
     targets = load_targets()
     t0 = time.time()
-    wm, M = np.zeros(len(Y), np.float32), np.zeros((len(Y), 4), np.float32)
+    wm, M = np.zeros(len(Y), np.float32), np.zeros((len(Y), len(MARGINS)), np.float32)
     for i, y in enumerate(Y):
         wm[i], M[i] = margins_of(y, targets)
     print(f"  wm_dual/margins 算完 {len(wm)} 筆（{time.time() - t0:.1f}s）")
