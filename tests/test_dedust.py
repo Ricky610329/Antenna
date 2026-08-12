@@ -610,12 +610,15 @@ def test_check_dup_exempts_slotw_geometry_variants(tmp_path, monkeypatch):
 
 
 def test_hfss_setup_whitelist_is_port_scoped():
-    """幾何鍵分域（鐵則 7）：`slot_spec` 只有 dual 模擬器有、`diag_bridge_w`/`pixel_count`
-    只有 single 有——給錯域要顯性擋掉，不能靜默吞（吞掉＝整夾用預設幾何白燒）。"""
+    """幾何鍵分域（鐵則 7）：`slot_spec` 只有 dual 模擬器有、`diag_bridge_w` 只有 single 有
+    ——給錯域要顯性擋掉，不能靜默吞（吞掉＝整夾用預設幾何白燒）。
+    `pixel_count` 自 R69 起兩域皆收（dual 開 50×50 精修域;兩邊建構子都真的有這參數,
+    由 test_hfss_setup_keys_are_real_simulator_params 對帳）。"""
     from script.dedust import _hfss_setup_keys
     assert "slot_spec" in _hfss_setup_keys("dual") and "slot_spec" not in _hfss_setup_keys("single")
-    assert {"diag_bridge_w", "pixel_count"} <= _hfss_setup_keys("single")
-    assert not {"diag_bridge_w", "pixel_count"} & _hfss_setup_keys("dual")
+    assert "diag_bridge_w" in _hfss_setup_keys("single")
+    assert "diag_bridge_w" not in _hfss_setup_keys("dual")
+    assert "pixel_count" in _hfss_setup_keys("dual") & _hfss_setup_keys("single")
     assert {"timeout", "max_delta_s", "max_passes"} <= _hfss_setup_keys("dual") & _hfss_setup_keys("single")
 
 

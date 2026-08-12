@@ -5586,11 +5586,12 @@ def _hfss_setup_keys(port: str) -> set:
     """`hfss_setup.json` 白名單（幾何/儀器變體批,script/CLAUDE.md 鐵則 7）——**分域**。
 
     共用鍵＝求解設定＋看門狗；幾何鍵各自只有一邊的模擬器有分支，給錯域要顯性擋掉、不靜默吞（D2 #4）：
-      * `diag_bridge_w`（R54 菱形橋/挖空槽）、`pixel_count`（50×50 精修域）＝**single 專屬**。
+      * `diag_bridge_w`（R54 菱形橋/挖空槽）＝**single 專屬**。
       * `slot_spec`（R60 亞像素耦合縫）＝**dual 專屬**。
+      * `pixel_count`（50×50 精修域）＝兩域皆可（R69 起 dual 開 50×50;兩邊模擬器建構子都收）。
     `timeout` 只進看門狗、不進模擬器建構子；其餘鍵一律直接 pass-through 給 SIM_CLS(**hfss_setup)。"""
-    keys = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout"}
-    return keys | ({"slot_spec"} if port == "dual" else {"diag_bridge_w", "pixel_count"})
+    keys = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout", "pixel_count"}
+    return keys | ({"slot_spec"} if port == "dual" else {"diag_bridge_w"})
 
 
 def run(args):
@@ -5640,7 +5641,7 @@ def run(args):
         allowed = _hfss_setup_keys(cfg.port)
         bad = set(hfss_setup) - allowed
         if bad:
-            hint = ("（dual 不支援 diag_bridge_w/pixel_count）" if cfg.port == "dual"
+            hint = ("（dual 不支援 diag_bridge_w）" if cfg.port == "dual"
                     else "（single 不支援 slot_spec）")
             raise SystemExit(f"hfss_setup.json 不明鍵 {bad}（合法鍵={sorted(allowed)}）{hint}")
         with open(str(store_dir.joinpath("hfss_setup.json")), "w", encoding="utf-8") as f:
@@ -6309,8 +6310,10 @@ def _selfgen_chunk_dual(me, args):
                 man_ = json.load(open(str(dd.joinpath("manifest.json")), encoding="utf-8"))
             except Exception:
                 continue
-            if not (man_ and man_[0].get("port") == "dual"):
-                continue                                  # 只收 dual 域(查重分域鐵則)
+            if not (man_ and man_[0].get("port") == "dual"
+                    and man_[0].get("pixel_count", 25) == 25):
+                continue                                  # 只收 dual 25×25 域(查重分域鐵則;
+                                                          # 50×50=另一域,R69 起 reshape 會炸故顯性擋)
             for m in man_:
                 f = dd.joinpath(m["id"] + ".pt")
                 if f.exists():

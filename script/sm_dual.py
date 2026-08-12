@@ -77,9 +77,11 @@ _FIXED_STORES = (
 
 
 def _pot_eligible(man) -> bool:
-    """鍋收店資格(純函式,可測):manifest 首筆 port=dual 且非幾何變體(kind=slotw)。
+    """鍋收店資格(純函式,可測):manifest 首筆 port=dual、非幾何變體(kind=slotw)、
+    且 25×25 域(pixel_count 缺省=25;50×50=R69 另域,X 維度不同不可混鍋)。
     幾何變體=同 bits 不同幾何 → 入鍋會讓「pattern→響應」映射多值=毒資料(鐵則)。"""
-    return bool(man) and man[0].get("port") == "dual" and man[0].get("kind") != "slotw"
+    return (bool(man) and man[0].get("port") == "dual" and man[0].get("kind") != "slotw"
+            and man[0].get("pixel_count", 25) == 25)
 
 
 def _discover_stores():
@@ -218,8 +220,9 @@ def _scan_stores(stores, workers=8):
         bad_shape = 0
         for x, y in samples:
             n_raw += 1
-            if np.asarray(y).size != len(LABELS) * N_POINTS:   # 防呆:非 dual 響應直接跳(毒鍋守門)
-                bad_shape += 1
+            if (np.asarray(y).size != len(LABELS) * N_POINTS
+                    or np.asarray(x).size != N_PIX):   # 防呆:非 dual 響應/非 25×25 pattern 直接跳(毒鍋守門;
+                bad_shape += 1                         # x 閘=50×50 域第二道保險,第一道在 _pot_eligible)
                 continue
             k = pattern_key(x)
             if k in seen:

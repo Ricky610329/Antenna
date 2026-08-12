@@ -146,3 +146,10 @@ def test_pot_eligible_excludes_slotw_and_nondual():
     assert not _pot_eligible([{"port": "dual", "kind": "slotw"}])
     assert not _pot_eligible([{"port": "single"}])
     assert not _pot_eligible([])
+
+
+def test_pot_eligible_excludes_hd50():
+    """50×50 域(pixel_count=50)不入 25×25 鍋;缺省 pixel_count 視為 25(向後相容)。"""
+    from script.sm_dual import _pot_eligible
+    assert not _pot_eligible([{"port": "dual", "kind": "dual", "pixel_count": 50}])
+    assert _pot_eligible([{"port": "dual", "kind": "dual", "pixel_count": 25}])
