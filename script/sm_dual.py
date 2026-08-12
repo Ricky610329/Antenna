@@ -313,8 +313,12 @@ class DualNet(nn.Module):
         return self.net(x.reshape(x.shape[0], -1)) * self.t_std + self.t_mean
 
 
-#? 上下翻轉時 55 維目標的重排：響應 [S11,S21,S22] → [S22,S21,S11]；margin m1(S11)↔m2(S22)，m3/m4 不動。
-_UD_PERM = torch.as_tensor(list(range(34, 51)) + list(range(17, 34)) + list(range(0, 17)) + [52, 51, 53, 54])
+#? 上下翻轉時目標向量的重排：響應 [S11,S21,S22] → [S22,S21,S11]；margin m1(S11)↔m2(S22)、
+#  m5(S11 帶外)↔m6(S22 帶外)，m3/m4(S21)不動。寬度跟 MARGINS 走（v4=51+6）。
+_UD_MARGIN_SWAP = {"m1": "m2", "m2": "m1", "m5": "m6", "m6": "m5"}
+_UD_PERM = torch.as_tensor(
+    list(range(34, 51)) + list(range(17, 34)) + list(range(0, 17)) +
+    [51 + MARGINS.index(_UD_MARGIN_SWAP.get(k, k)) for k in MARGINS])
 
 
 def _augment(xb, tb, aug, device):
