@@ -84,12 +84,20 @@ def _discover_stores():
     fixed = list(_FIXED_STORES)
     known = set(fixed)
     dyn = []
-    for q in ("dedust_r6*", "dedust_r7*", "dedust_r8*", "dedust_r9*", "dedust_autod*"):
-        for pth in _g.glob(os.path.join(str(DATASET_PATH), q)):
-            name = os.path.basename(pth)
-            if name.endswith("_input") or name.startswith("dedust_r60") or name in known:
+    for pth in _g.glob(os.path.join(str(DATASET_PATH), "dedust_*")):
+        name = os.path.basename(pth)
+        if name.endswith("_input") or name.startswith("dedust_r60") or name in known:
+            continue
+        #! 域安全閘(2026-08-12:dedust_r7*/r8*/r9* glob 曾撈到 single 老店 (2,17) 炸鍋):
+        #  只收 manifest 標 port=dual 的店——單一真相源,未來輪免改 code。
+        mp = os.path.join(str(DATASET_PATH), name + "_input", "manifest.json")
+        try:
+            man = json.load(open(mp, encoding="utf-8"))
+            if not (man and man[0].get("port") == "dual"):
                 continue
-            dyn.append(name)
+        except Exception:
+            continue
+        dyn.append(name)
     is_notar = lambda n: re.search(r"dedust_r\d+n\d", n) is not None
     dyn.sort(key=lambda n: (not is_notar(n), n))
     return tuple(dyn[:0] + [d for d in dyn if is_notar(d)] + fixed[:-1] +
@@ -200,8 +208,12 @@ def _scan_stores(stores, workers=8):
         with ThreadPoolExecutor(max_workers=workers) as ex:
             samples = list(ex.map(lambda f: torch.load(os.path.join(str(d), f), weights_only=True), files))
         kept = 0
+        bad_shape = 0
         for x, y in samples:
             n_raw += 1
+            if np.asarray(y).size != len(LABELS) * N_POINTS:   # 防呆:非 dual 響應直接跳(毒鍋守門)
+                bad_shape += 1
+                continue
             k = pattern_key(x)
             if k in seen:
                 continue
