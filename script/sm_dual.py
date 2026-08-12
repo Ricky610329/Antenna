@@ -29,6 +29,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import sys
 import time
 
@@ -76,12 +77,23 @@ _FIXED_STORES = (
 
 
 def _discover_stores():
-    """固定清單 + 動態 autod 自產店（插在 harvest 之前=自量測優先於學長池）。"""
+    """固定清單 + 動態發現(R61+ 批次/公證店與 autod 自產店,插在 harvest 之前)。
+    ★2026-08-12 修:v3 前只收到 r59=R61-63 均衡王朝資料從未入鍋(R64 押錯家族的根因之一)。
+    排除:*_input / dedust_r60*(kind=slotw 幾何變體,毒資料)。公證店(rNNnN)排前=首見先贏。"""
     import glob as _g
-    autod = sorted(os.path.basename(p) for p in _g.glob(os.path.join(str(DATASET_PATH), "dedust_autod*"))
-                   if not p.endswith("_input"))
     fixed = list(_FIXED_STORES)
-    return tuple(fixed[:-1] + autod + fixed[-1:])
+    known = set(fixed)
+    dyn = []
+    for q in ("dedust_r6*", "dedust_r7*", "dedust_r8*", "dedust_r9*", "dedust_autod*"):
+        for pth in _g.glob(os.path.join(str(DATASET_PATH), q)):
+            name = os.path.basename(pth)
+            if name.endswith("_input") or name.startswith("dedust_r60") or name in known:
+                continue
+            dyn.append(name)
+    is_notar = lambda n: re.search(r"dedust_r\d+n\d", n) is not None
+    dyn.sort(key=lambda n: (not is_notar(n), n))
+    return tuple(dyn[:0] + [d for d in dyn if is_notar(d)] + fixed[:-1] +
+                 [d for d in dyn if not is_notar(d)] + fixed[-1:])
 
 
 STORES = _discover_stores()
