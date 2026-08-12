@@ -11,8 +11,8 @@ targets 讀 `configs/dual_r1_eval.yaml`（與批次線判讀同一把尺，不�
 子命令地圖::
 
     train   建鍋（harvest_dual + dedust_r57* 全鍋去重）→ 分位分層 split（seed 寫死）
-            → 訓 3 個 seed → 權重存 ROOTDIR/sm_dual_v1_s{0,1,2}.pth
-            + split 索引存 ROOTDIR/sm_dual_v1_split.json
+            → 訓 3 個 seed → 權重存 ROOTDIR/sm_dual/sm_dual_<ver>_s{0,1,2}.pth
+            + split 索引存 ROOTDIR/sm_dual/sm_dual_<ver>_split.json(與 single 線權重分夾)
     eval    載權重，held-out 上印：逐通道 MAE / spearman ρ(wm_dual 口徑，單模型 vs ensemble)
             / top30 ∩ true top10% 命中數 + 超幾何 P → 「→ 品質閘: 過/不過」
     rank    --pool <npz 或資料夾> --top N → 以 3-seed ensemble 平均預測的 wm_dual 排序，
@@ -434,8 +434,14 @@ def rank_pool(models, X, ids, top=None, device="cpu"):
 # ────────────────────────────────────────────────────────────────────────────
 # 權重 I/O
 # ────────────────────────────────────────────────────────────────────────────
+#? 權重專屬子夾(2026-08-12 Ricky:與 single 線的 sm_reanchor*/rad_head* 分家,不再平鋪 NAS 根)
+SM_DIR = os.path.join(str(ROOTDIR), "sm_dual")
+
+
 def weight_path(seed, outdir=None):
-    return os.path.join(str(outdir) if outdir else str(ROOTDIR), WEIGHT_FMT.format(seed))
+    base = str(outdir) if outdir else SM_DIR
+    os.makedirs(base, exist_ok=True)
+    return os.path.join(base, WEIGHT_FMT.format(seed))
 
 
 def load_models(seeds=(0, 1, 2), outdir=None):
@@ -466,7 +472,7 @@ def cmd_train(a):
     print(f"wm_dual 分布：min {wm.min():.2f} / 中位 {np.median(wm):.2f} / max {wm.max():.2f}\n")
 
     T = _targets_matrix(Y, M)
-    outdir = a.outdir or str(ROOTDIR)
+    outdir = a.outdir or SM_DIR
     os.makedirs(outdir, exist_ok=True)
     metas = []
     for s in a.seeds:
@@ -513,7 +519,7 @@ def cmd_eval(a):
     models = load_models(tuple(a.seeds), a.outdir)
 
     #! split 對帳：權重旁的 json 若與現在算出來的 held-out 不一致（鍋變了/seed 改了）→ 明講，別靜默。
-    sp = os.path.join(str(a.outdir) if a.outdir else str(ROOTDIR), SPLIT_JSON)
+    sp = os.path.join(str(a.outdir) if a.outdir else SM_DIR, SPLIT_JSON)
     if os.path.exists(sp):
         rec = json.load(open(sp, encoding="utf-8"))
         same = rec.get("heldout_idx") == ho.tolist()
@@ -615,7 +621,7 @@ def main(argv=None):
     #? 共用旗標放 parent（不放主 parser）：--seeds 是 nargs="+"，擺在子命令前會把子命令名吃掉。
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--device", default=None, help="cpu / cuda:0（預設有卡就用卡）")
-    common.add_argument("--outdir", default=None, help=f"權重/split 目錄（預設 {ROOTDIR}）")
+    common.add_argument("--outdir", default=None, help="權重/split 目錄（預設 ROOTDIR/sm_dual/）")
     common.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])
     sub = ap.add_subparsers(dest="cmd", required=True)
 
