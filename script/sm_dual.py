@@ -235,10 +235,11 @@ def _scan_stores(stores, workers=8):
         if not d.is_dir():
             print(f"[warn] store 不存在，略過：{name}")
             continue
-        if not _store_is_p00(d):
-            #! 幾何儀器代閘(2026-08-13 p01 換代):本鍋=p00 代凍結——p01(+0.01 重疊/全聯集)
-            #  量測與 p00 對「對角重 pattern」差到 20dB 級,混鍋=同 pattern 兩真值=毒。
-            #  p01 資料的鍋=未來 SM v5 另起爐灶(乾淨域),不在這裡長。
+        if SM_VER < "v5" and not _store_is_p00(d):
+            #! 幾何儀器代閘(2026-08-13 p01 換代):p00 鍋(v1-v4)凍結——p01 量測與 p00 對
+            #  「對角重 pattern」差到 20dB 級,混鍋=同 pattern 兩真值=毒。
+            #  v5+(mfg 代)的店單由 _discover_stores_mfg 把關,本閘不適用(2026-08-14 修:
+            #  原無條件生效,v5 首訓把自家 20 店全跳=空鍋,訓練輸出全是 [era] 行抓包)。
             print(f"[era] {name} 含 p01 代量測——p00 鍋跳過整店(SM v5 另起)")
             continue
         files = sorted(f for f in os.listdir(str(d)) if f.endswith(".pt"))
@@ -267,6 +268,62 @@ def _scan_stores(stores, workers=8):
     X = np.stack([seen[k] for k, _, _ in order]).astype(np.uint8)
     Y = np.stack([y for _, y, _ in order]).astype(np.float32)
     return X, Y, [s for _, _, s in order], n_raw
+
+
+def _store_is_mfg(store_dir, man) -> bool:
+    """mfg 代鍋資格(SM v5+):標準尺=geom p01 ∧ 標準橋 0.075。判定=逐筆 dbw 章
+    (2026-08-13 深夜起)∨ 店級 hfss_setup 存證(R70 帶橋批,dbw 章前)∨ 零接點免橋店
+    (R70 B 臂,kind=dual+manifest 無 diag_bridge_w 但 arm=B——幾何等價,顯式白名單)。
+    排除:非標橋寬(db05/db10/xcut)、裸 p01 探針(p1/p2/xbare)、slotw、50×50、p00。"""
+    rj = os.path.join(str(store_dir), "results.json")
+    try:
+        res = json.load(open(rj, encoding="utf-8"))
+    except Exception:
+        return False
+    ent = [v for v in res.values() if isinstance(v, dict) and "m1" in v]
+    if not ent or any(v.get("geom") != "p01" for v in ent):
+        return False                                   # p00/混代 → 不收
+    if all(v.get("dbw") == 0.075 for v in ent):
+        return True                                    # 逐筆章齊
+    if any("dbw" in v and v.get("dbw") != 0.075 for v in ent):
+        return False                                   # 非標橋寬
+    hs = os.path.join(str(store_dir), "hfss_setup.json")
+    try:
+        setup = json.load(open(hs, encoding="utf-8"))
+    except Exception:
+        setup = {}
+    if setup.get("diag_bridge_w") == 0.075:
+        return True                                    # 店級存證(R70 帶橋批)
+    if setup.get("diag_bridge_w") is not None or "pixel_count" in setup or "slot_spec" in setup:
+        return False
+    return bool(man) and all(m.get("arm") == "B" for m in man)   # 零接點免橋店(R70 B 臂)
+
+
+def _discover_stores_mfg():
+    """SM v5+ 的鍋店發現:全掃 dedust_*,收 _store_is_mfg 過的店(公證店排前=首見先贏)。"""
+    import glob as _g
+    dyn = []
+    for pth in _g.glob(os.path.join(str(DATASET_PATH), "dedust_*")):
+        name = os.path.basename(pth)
+        if name.endswith("_input"):
+            continue
+        mp = os.path.join(str(DATASET_PATH), name + "_input", "manifest.json")
+        try:
+            man = json.load(open(mp, encoding="utf-8"))
+        except Exception:
+            man = []
+        if _store_is_mfg(pth, man):
+            dyn.append(name)
+    is_notar = lambda n: re.search(r"dedust_r\d+n\d", n) is not None
+    dyn.sort(key=lambda n: (not is_notar(n), n))
+    return tuple(dyn)
+
+
+#! 代切換(2026-08-14):SM_DUAL_VER >= v5 = mfg 代(標準橋尺)——鍋店發現與快取都換,
+#  與 p00 鍋(v1-v4)完全分離;字串比較 "v4"<"v5" 足夠(版本號單字元遞增慣例)。
+if SM_VER >= "v5":
+    STORES = _discover_stores_mfg()
+    CACHE_PATH = os.path.join(REPO, "tmp", f"sm_dual_pool_{SM_VER}.npz")
 
 
 def build_pool(refresh=False, cache=CACHE_PATH, stores=STORES):
