@@ -32,6 +32,10 @@
   白名單拒收 pixel_count):煙測輸入就緒(`dedust_r69s50_input`,上採樣王×2=括號自證),
   重啟後 `jobs-add --input dedust_r69s50_input --store dedust_r69s50 --prio 3
   --config configs/dual_r1_eval.yaml`→[round-69](../docs/log/round-69-dual-hd50.md)。
+- 🟢 **SM 篩選補池上線**(2026-08-13,Ricky 核):`dedust select-smpool --dispatch`=
+  auto 池升級(SM 粗篩+配額防馬太 L40/d30/c30,prio 6;對照臂出頂率=馬太量測);
+  首 chunk smp001(90 筆,預測 max −2.84)已生成、**待三台重啟後與煙測一起發**;
+  selfgen 退居佇列全空備胎→decisions「Auto 池升級」節。
 - ✅ R68 零點歸因輪(2026-08-13 收,3 批 145 筆單日):**歸因成功手術失敗——敏感度地圖
   (零點旋鈕區/通帶命脈/中央脊柱)+通濾非鎖死;但六種位元粒度+亞像素縫劑量全滅於 m3
   (整像素匯率 1:17/細縫非單調)→25×25 對規格 v2 判死,50×50 匯合轉正**
