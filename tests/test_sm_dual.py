@@ -153,3 +153,38 @@ def test_pot_eligible_excludes_hd50():
     from script.sm_dual import _pot_eligible
     assert not _pot_eligible([{"port": "dual", "kind": "dual", "pixel_count": 50}])
     assert _pot_eligible([{"port": "dual", "kind": "dual", "pixel_count": 25}])
+
+
+def test_wm_r2_from_margins():
+    """規格 v2 平移(單一真相源):min(m1+2, m2+2, m3, m4+5),m5/m6 不進。"""
+    import numpy as np
+    from script.sm_dual import wm_r2_from_margins
+    M = np.array([[-4.61, -5.48, -5.18, -3.14, -6.21, -5.03]])   # 0549 舊尺六軸
+    assert abs(wm_r2_from_margins(M)[0] - (-5.18)) < 1e-5        # 短板=m3(不平移)
+    M2 = np.array([[-1.76 - 2, -2.16 - 2, -3.05, 0.03 - 5, -9, -9]])  # kn_16 逆推
+    assert abs(wm_r2_from_margins(M2)[0] - (-3.05)) < 1e-5
+    # ensemble 形狀 (n_models, n, 6) 也要通
+    E = np.stack([M, M])
+    assert wm_r2_from_margins(E).shape == (2, 1)
+
+
+def test_smpool_pick_quota_and_control_purity():
+    """補池配額:40/30/30;對照臂只出 symr 且不看 SM(馬太對照組)。"""
+    import numpy as np
+    from script.dedust import _smpool_pick
+    rng = np.random.default_rng(0)
+    n_c = 200
+    mean = np.linspace(-20, -3, n_c)          # 越後面預測越好
+    std = rng.uniform(0.1, 2.0, n_c)
+    is_symr = np.arange(n_c) < 60             # 前 60 個=symr(預測最爛的一段)
+    picks = _smpool_pick(mean, std, is_symr, 30, rng)
+    arms = [a for _, a in picks]
+    assert len(picks) == 30 and len({i for i, _ in picks}) == 30
+    assert arms.count("L") == 12 and arms.count("d") == 9 and arms.count("c") == 9
+    # L 臂=LCB 頂端;d 臂全在預測前 40%;c 臂全出 symr
+    lcb = mean - std
+    l_idx = [i for i, a in picks if a == "L"]
+    assert min(lcb[l_idx]) >= np.sort(lcb)[::-1][40]      # 鬆檢:都在前段
+    front = mean >= np.quantile(mean, 0.6)
+    assert all(front[i] for i, a in picks if a == "d")
+    assert all(is_symr[i] for i, a in picks if a == "c")

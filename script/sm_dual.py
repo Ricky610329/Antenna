@@ -197,6 +197,19 @@ def wm_of(y, targets):
     return margins_of(y, targets)[0]
 
 
+#! 規格 v2 平移量(學長裁定 2026-08-12:帶內 −12→−10/阻帶 −20→−15/帶外退場)——
+#  量測口徑凍結在 dual_r1_eval.yaml(m1..m6 語義全史一致),v2 只活在評分層(decisions
+#  「dual 規格 v2」節)。**單一真相源**:所有 wm_r2 計算(排序/判讀/補池)一律走這裡。
+SPEC_V2_OFF = (2.0, 2.0, 0.0, 5.0)
+
+
+def wm_r2_from_margins(M):
+    """(n,6) 或 (…,6) 的舊尺 margin → wm_r2 = min(m1+2, m2+2, m3, m4+5)。numpy 陣列進出。"""
+    import numpy as _np
+    M = _np.asarray(M, dtype=_np.float32)
+    return (M[..., :4] + _np.asarray(SPEC_V2_OFF, dtype=_np.float32)).min(axis=-1)
+
+
 def wm_array(Y, targets):
     return np.array([wm_of(y, targets) for y in Y], dtype=np.float64)
 

@@ -6353,6 +6353,130 @@ def _selfgen_chunk_dual(me, args):
     return True
 
 
+def _smpool_pick(mean, std, is_symr, n, rng):
+    """SM 篩選補池的配額選擇(純函式,可測)。配額防馬太(decisions 三件套):
+    L=40% LCB(mean−std)開採 / d=30% 分歧(預測前 40% 中 std 最高) / c=30% 純隨機對照
+    (只從 symr 候選抽,**不經 SM 過濾**=馬太效應的對照組)。回 [(idx, arm)]。"""
+    n_l = int(round(n * 0.4)); n_d = int(round(n * 0.3)); n_c = n - n_l - n_d
+    mean = np.asarray(mean); std = np.asarray(std); is_symr = np.asarray(is_symr, bool)
+    used = set()
+    picks = []
+    for i in np.argsort(mean - std)[::-1]:
+        if len(picks) >= n_l: break
+        picks.append((int(i), "L")); used.add(int(i))
+    front = mean >= np.quantile(mean, 0.6)
+    div = [i for i in np.argsort(std)[::-1] if front[i] and int(i) not in used]
+    for i in div[:n_d]:
+        picks.append((int(i), "d")); used.add(int(i))
+    ctrl = [i for i in np.flatnonzero(is_symr) if int(i) not in used]
+    for i in (rng.permutation(ctrl)[:n_c] if len(ctrl) else []):
+        picks.append((int(i), "c")); used.add(int(i))
+    for i in rng.permutation(len(mean)):                  # 對照不足時隨機補滿(仍不看 SM)
+        if len(picks) >= n: break
+        if int(i) not in used:
+            picks.append((int(i), "c")); used.add(int(i))
+    return picks
+
+
+def select_smpool(args):
+    """SM 篩選補池(Ricky 核 2026-08-13)——auto 池升級:開發機生成大候選池→SM 粗篩
+    →配額防馬太→出 **prio 6** 批(round 批 prio 3 永遠優先;selfgen 退居佇列全空備胎)。
+    worker 零改動;manifest 帶 pred_wm2/pred_std/sm_ver=每 chunk 前瞻 ρ 免費入帳。
+    尺=規格 v2(wm_r2,平移量單一真相源 sm_dual.SPEC_V2_OFF)。25×25 域專用。"""
+    import script.sm_dual as SD
+    rng = np.random.default_rng(args.seed)
+    pool = SD.build_pool(refresh=False)
+    tg = SD.load_targets()
+    M = np.stack([SD.margins_of(y, tg)[1] for y in pool["Y"]])
+    wm2 = SD.wm_r2_from_margins(M)
+    X = pool["X"].astype(bool)
+    order = np.argsort(wm2)[::-1]
+    anchors = [X[i].reshape(25, 25) for i in order[:args.anchors]]
+    hist = set(x.tobytes() for x in X)
+    for fol in _all_input_folders():                      # 輸入夾層(在跑未回鍋的也要避)
+        dd = DATASET_PATH.joinpath(fol)
+        try:
+            man_ = json.load(open(str(dd.joinpath("manifest.json")), encoding="utf-8"))
+        except Exception:
+            continue
+        if not (man_ and man_[0].get("port") == "dual" and man_[0].get("pixel_count", 25) == 25):
+            continue
+        for m in man_:
+            f = dd.joinpath(m["id"] + ".pt")
+            if f.exists():
+                hist.add((np.asarray(torch.load(str(f), weights_only=True))
+                          .reshape(-1) > 0.5).astype(bool).tobytes())
+
+    def gate(q):
+        q = dual_pads(q); b = q.reshape(-1).astype(bool).tobytes()
+        if not (150 <= int(q.sum()) <= 550) or b in hist:
+            return None
+        hist.add(b); return q
+
+    cands, meta = [], []                                  # 六成錨鄰域/兩成錨雜交/兩成 symr
+    want = args.cand
+    while len(cands) < int(want * 0.6):
+        a = int(rng.integers(0, len(anchors)))
+        q = gate(dual_flip(anchors[a], int(rng.integers(1, 7)), rng))
+        if q is not None:
+            cands.append(q.reshape(-1)); meta.append(("nbr", f"a{a}"))
+    t = 0
+    while len(cands) < int(want * 0.8) and t < want * 20:
+        t += 1
+        a, b = rng.choice(len(anchors), size=2, replace=False)
+        cut = int(rng.integers(6, 20))
+        q = gate(np.concatenate([anchors[a][:, :cut], anchors[b][:, cut:]], 1))
+        if q is not None:
+            cands.append(q.reshape(-1)); meta.append(("xov", f"a{a}xa{b}c{cut}"))
+    while len(cands) < want:
+        dens = float(rng.uniform(0.35, 0.65))
+        half = rng.random((12, 25)) < dens
+        mid = rng.random((1, 25)) < dens
+        q = gate(np.concatenate([half, mid, half[::-1]], 0))
+        if q is not None:
+            cands.append(q.reshape(-1)); meta.append(("symr", f"dens{dens:.2f}"))
+    Xc = np.stack(cands).astype(np.float32)
+    models = SD.load_models()
+    _, G = SD.predict(models, Xc)
+    wp = SD.wm_r2_from_margins(G)                         # (n_models, n)
+    mean, std = wp.mean(0), wp.std(0)
+    is_symr = np.array([k == "symr" for k, _ in meta])
+    picks = _smpool_pick(mean, std, is_symr, args.n, rng)
+
+    import re as _re
+    k = 1 + max([int(_re.search(r"dedust_smp(\d+)", f).group(1))
+                 for f in _all_input_folders() if _re.search(r"dedust_smp(\d+)", f)] or [0])
+    shards = "abc"[:args.shards]
+    folders = {s: (_dir(f"dedust_smp{k:03d}{s}_input"), []) for s in shards}
+    for s, (ind, _) in folders.items():
+        ind.mkdir(parents=True, exist_ok=True)
+    for j, (i, arm) in enumerate(picks):
+        s = shards[j % len(shards)]
+        ind, man = folders[s]
+        vid = f"smp{k:03d}_{arm}_{j:03d}"
+        torch.save(torch.tensor(Xc[i].reshape(25, 25)), str(ind.joinpath(vid + ".pt")))
+        man.append(dict(id=vid, kind="dual", port="dual", arm=arm, family=f"SMPOOL{k:03d}",
+                        gen=meta[i][0], parent=meta[i][1], sm_ver=SD.SM_VER,
+                        pred_wm2=round(float(mean[i]), 2), pred_std=round(float(std[i]), 3),
+                        metal_px=int(Xc[i].sum())))
+    stores = []
+    for s, (ind, man) in folders.items():
+        _save_manifest(man, ind)
+        stores.append(f"dedust_smp{k:03d}{s}")
+        print(f"  {ind.name}: {len(man)} 筆")
+    print(f"補池 chunk smp{k:03d}:n={len(picks)}(L/d/c 配額 40/30/30),SM={SD.SM_VER},"
+          f"預測 max {mean[[i for i, _ in picks]].max():+.2f}")
+    for st in stores:
+        if args.dispatch:
+            check_dup(argparse.Namespace(input=st + "_input"))
+            jobs_add(argparse.Namespace(input=st + "_input", store=st, prio=args.prio,
+                                        machine=None, config="configs/dual_r1_eval.yaml"))
+        else:
+            print(f"  → python -m script.dedust check-dup --input {st}_input && "
+                  f"python -m script.dedust jobs-add --input {st}_input --store {st} "
+                  f"--prio {args.prio} --config configs/dual_r1_eval.yaml")
+
+
 def worker(args):
     """資料工廠 worker（Ricky 2026-07-10「三台都變資料收集系統,用 NAS 控制」）——正式機常駐:
     迴圈＝讀 jobs.json（prio 升冪）→ 跳過 done/被認領 → **原子認領**（jobs_state/<store>.claim,
@@ -8110,6 +8234,16 @@ def main():
     s.add_argument("--n", type=int, default=30, help="重複次數 (預設 30 ≈ 1.5hr)")
     s.add_argument("--input", default="dedust_repeat_input")
     s.set_defaults(fn=select_repeat)
+
+    s = sub.add_parser("select-smpool", help="SM 篩選補池(dual 25×25):SM 粗篩+配額防馬太(L40/d30/c30)→prio 6 低優先批;auto 池升級(Ricky 核 2026-08-13)")
+    s.add_argument("--n", type=int, default=90, help="一 chunk 幾筆")
+    s.add_argument("--cand", type=int, default=8000, help="候選池大小(SM 免費,盡量大)")
+    s.add_argument("--anchors", type=int, default=10, help="錨=鍋 wm_r2 前 K 名")
+    s.add_argument("--shards", type=int, default=3, choices=(1, 2, 3))
+    s.add_argument("--prio", type=int, default=6, help="低優先(round 批 prio 3 永遠先)")
+    s.add_argument("--seed", type=int, default=None)
+    s.add_argument("--dispatch", action="store_true", help="生成後直接 check-dup+jobs-add")
+    s.set_defaults(fn=select_smpool)
 
     s = sub.add_parser("sm-screen", help="sm_harvest.pth 預測預篩（零 HFSS）")
     s.add_argument("--input", default=DEFAULT_INPUT)
