@@ -144,6 +144,7 @@ def test_pot_eligible_excludes_slotw_and_nondual():
     assert _pot_eligible([{"port": "dual", "kind": "dual"}])
     assert _pot_eligible([{"port": "dual", "kind": "repeat"}])
     assert not _pot_eligible([{"port": "dual", "kind": "slotw"}])
+    assert not _pot_eligible([{"port": "dual", "kind": "diagbridge"}])
     assert not _pot_eligible([{"port": "single"}])
     assert not _pot_eligible([])
 

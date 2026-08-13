@@ -80,7 +80,8 @@ def _pot_eligible(man) -> bool:
     """鍋收店資格(純函式,可測):manifest 首筆 port=dual、非幾何變體(kind=slotw)、
     且 25×25 域(pixel_count 缺省=25;50×50=R69 另域,X 維度不同不可混鍋)。
     幾何變體=同 bits 不同幾何 → 入鍋會讓「pattern→響應」映射多值=毒資料(鐵則)。"""
-    return (bool(man) and man[0].get("port") == "dual" and man[0].get("kind") != "slotw"
+    return (bool(man) and man[0].get("port") == "dual"
+            and man[0].get("kind") not in ("slotw", "diagbridge")
             and man[0].get("pixel_count", 25) == 25)
 
 
