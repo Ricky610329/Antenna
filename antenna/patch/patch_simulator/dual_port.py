@@ -6,6 +6,12 @@ from ...utils import Path
 from . import PatchSimulator
 from .single_port import align_curve   #! 頻率對位共用同一份實作 (別另寫一份 → 兩把尺會漂)
 
+#! 幾何儀器版本(dedust run 逐筆蓋章進 results.json 的 geom 欄):
+#  p00=學長原版(逐欄 Unite/盒剛好像素尺寸→對角零厚度接觸=數值幻影,R69 定讞)
+#  p01=2026-08-13 換代(follow 單埠:+0.01mm 重疊/全聯集含饋線/SolveInside=False)
+#  跨代量測對「對角重 pattern」不可比;乾淨結構(無真對角接點)預期近乎不變(括號驗證)。
+GEOM_VER = "p01"
+
 
 def slot_boxes(slot_spec, pixel_count: int):
     """把 `slot_spec` 展開成「縫盒」幾何 (mm)。**純函式、不碰 COM** → 開發機可測。
@@ -95,7 +101,7 @@ class DualPortSimulator(PatchSimulator):
     def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'dual_port.sab'), pixel_count:int = 25,
                  sweep_type: str = "Fast",
                  max_delta_s: float = 0.02, max_passes: int = 6, min_passes: int = 5, min_converged: int = 5,
-                 slot_spec: list = None):
+                 slot_spec: list = None, diag_bridge_w: float = None):
         # record_path：本次訓練/實驗的紀錄根目錄 (基底類別會在其下建立 HFSS/、result/、project/)。
         # HFSS_sab_path：雙埠底板幾何檔，預設指向與本檔同層 sab/ 目錄下的 dual_port.sab，
         #               內含基板 Sub、地 GND、兩條饋線 feedline1/feedline2 及兩個 port 用矩形。
@@ -120,6 +126,11 @@ class DualPortSimulator(PatchSimulator):
         self.slot_spec = None if slot_spec is None else list(slot_spec)
         if self.slot_spec is not None:
             slot_boxes(self.slot_spec, pixel_count)
+        #? R54 菱形對角橋移植(2026-08-13,Ricky 核「湯物種救援」實驗):正值=45° 菱形橋
+        #  (寬 w mm,Unite 進導體)、負值=45° 挖空槽(切斷對角,Subtract)、None=不加料。
+        #  站點計算共用單埠 diag_bridge_sites(同一份邏輯,兩把尺不漂);p01 幾何下對角
+        #  本已是 0.01mm 真橋,此參數用於劑量法問「加寬到可蝕刻寬度(0.075)還活著嗎」。
+        self.diag_bridge_w = None if diag_bridge_w is None else float(diag_bridge_w)
         super().__init__(record_path, HFSS_sab_path, pixel_count)
 
     def __call__(self, pixel_matrix:Tensor):
@@ -358,9 +369,10 @@ class DualPortSimulator(PatchSimulator):
         # Create PatchBlock
         # 逐格掃描像素矩陣，凡值為 1 的格子就在對應位置畫一個銅方塊 (Box)，
         # 最終這些小方塊聯集 (Unite) 起來即為神經網路設計出的不規則 Patch 金屬面。
-        #! 與單埠版差異：單埠版會逐一收集 Box 名稱 (patch_names) 並在 XSize/YSize 加
-        #!   0.01mm 偏移避免奇異點；本雙埠版沿用較早的寫法——方塊統一命名為 "Patch"，
-        #!   尺寸剛好等於 pixel_H/pixel_W，後續以另一套 Unite 邏輯逐欄聯集。
+        #! 2026-08-13 儀器換代 GEOM_VER=p01:本段已改 follow 單埠版——+0.01mm 重疊、
+        #!   全域分批聯集、與饋線合體、SolveInside=False。歷史(p00=逐欄 Unite/剛好尺寸)
+        #!   的對角零厚度接觸被 R69 證為數值幻影(fill 探針 Δ-20.8/尺度依賴 Δ-3~-5),
+        #!   換代理由與證據=docs/log/round-69 §4。跨代量測不可比(對角重 pattern)。
         #? box_names：依**建立順序**記下 HFSS 會給的名字(第 0 個叫 "Patch"、之後 "Patch_<序>")——
         #  與下方 Unite 的命名推算是同一套規則。R60 挖縫的 Subtract 需要知道「最後還活著哪些物件」，
         #  這份清單＋Unite 的吞併記帳就是答案（slot_spec=None 時只是純 Python append，幾何零影響）。
@@ -381,8 +393,12 @@ class DualPortSimulator(PatchSimulator):
                             "XPosition:=", "0mm" + str("+pixel_H" * x),
                             "YPosition:=", "0mm" + str("+pixel_W" * y),
                             "ZPosition:=", "0.508mm",        # Z 起點疊在 0.508mm 厚基板上表面
-                            "XSize:=", "pixel_H",            # 方塊 X 邊長 = 一個像素寬
-                            "YSize:=", "pixel_W",            # 方塊 Y 邊長 = 一個像素寬
+                            "XSize:=", "pixel_H + 0.01mm",   #! 避免奇異點(2026-08-13 儀器換代 p01,follow 單埠)
+                            # 盒子故意比一格像素大 0.01mm:相鄰像素「重疊」而非邊對邊零厚度相接。
+                            # R69 實證:零厚度接觸(尤其對角共邊)的導通是求解器數值縫合,強度隨網格/
+                            # 離散度漂移(fill 探針 Δ-20.8/50×50 括號崩 3-5dB)——重疊後對角=真實
+                            # 0.01mm 橋,幾何定義良好、尺度不變(可製造性另由 R54 菱形橋劑量法處理)。
+                            "YSize:=", "pixel_W + 0.01mm",   #!
                             "ZSize:=", "CooperH"             # 方塊厚度 = 銅厚
                         ],
                         [
@@ -397,62 +413,78 @@ class DualPortSimulator(PatchSimulator):
                             "UDMId:=", "",
                             "MaterialValue:=", "\"copper\"",
                             "SurfaceMaterialValue:=", "\"\"",
-                            "SolveInside:=", True,
+                            "SolveInside:=", False,          #! 隨換代改 follow 單埠:良導體只解表面,省網格
                             "IsMaterialEditable:=", True,
                             "UseMaterialAppearance:=", False,
                             "IsLightweight:=", False
                         ])
 
-        # 逐欄將同一行 (column) 內鋪銅的小方塊聯集成連續金屬，降低物件數量、利於後續網格化。
-        # ones_buf：跨欄累計的「已生成方塊總數」，用來推算每個方塊在 HFSS 的全域序號 (Patch_<n>)。
-        ones_buf = 0
-        patch_dead = set()                          # 被 Unite 吃掉的盒子序號（存活名單＝挖縫 Subtract 的下刀對象）
-        for i in range(pixel_row):
-            patch_unite = ""                            # 累積本欄要聯集的方塊名稱字串 ("Patch_a,Patch_b,...")
-            E = pixel_matrix[:, i]                       # 取出第 i 欄所有像素值
-            # 使用 numpy.where 找到值為 1 的位置
-            ones_indices = np.where(E == 1)[0]           # 本欄中鋪銅像素的列索引
-            # 因為只有一個不能unite
-            # Unite 至少需要兩個物件；本欄只有 0 或 1 個方塊就無從聯集，直接略過。
-            if ones_indices.shape[0] > 1:
-                for u in range(ones_indices.shape[0]):
-                    # u+ones_buf == 0 對應 HFSS 的 "Patch" 本體 (無後綴/序號 0)，
-                    # 命名規則使其不會出現於 "Patch_<n>" 系列，故跳過以免選到不存在的名稱。
-                    if u+ones_buf == 0:
-                        continue
-                    # 串接全域序號：本欄第 u 個方塊的全域編號 = u + ones_buf。
-                    patch_unite = patch_unite + "Patch_" + str(u+ones_buf) + ","
+        ###* 45° 菱形對角橋/挖空槽(R54 移植;self.diag_bridge_w=None 時整段不執行) ###
+        diag_slot_names = []                              # 挖空模式(w<0):全聯集後從導體 Subtract
+        if self.diag_bridge_w is not None:
+            from .single_port import diag_bridge_sites    # 站點邏輯共用單埠(同一份,兩把尺不漂)
+            _slot_mode = self.diag_bridge_w < 0
+            _pmm = 5.0 / pixel_row
+            _sites, _skipped = diag_bridge_sites((pixel_matrix.numpy() > 0.5), abs(self.diag_bridge_w), _pmm)
+            logger.info(f"{'挖空槽(斷開)' if _slot_mode else '菱形對角橋'}: {len(_sites)} 座"
+                        f"(w={self.diag_bridge_w}mm,跳過 {_skipped});Pattern {self.num}")
+            for _k, (_cx, _cy, _w) in enumerate(_sites):
+                _dn = f"{'DiagSl' if _slot_mode else 'DiagBr'}_{_k + 1}"
+                #? 原點置中建盒 → 繞全域 Z 轉 45° → Move 到角點(單埠同式:HFSS Rotate 只繞全域軸)。
+                _actual = oEditor.CreateBox(
+                    ["NAME:BoxParameters",
+                     "XPosition:=", f"{-_w / 2}mm", "YPosition:=", f"{-_w / 2}mm", "ZPosition:=", "0.508mm",
+                     "XSize:=", f"{_w}mm", "YSize:=", f"{_w}mm", "ZSize:=", "CooperH"],
+                    ["NAME:Attributes", "Name:=", _dn, "Flags:=", "", "Color:=", "(255 128 0)",
+                     "Transparency:=", 0, "PartCoordinateSystem:=", "Global", "UDMId:=", "",
+                     "MaterialValue:=", "\"copper\"", "SurfaceMaterialValue:=", "\"\"",
+                     "SolveInside:=", False, "IsMaterialEditable:=", True,
+                     "UseMaterialAppearance:=", False, "IsLightweight:=", False])
+                oEditor.Rotate(
+                    ["NAME:Selections", "Selections:=", _actual, "NewPartsModelFlag:=", "Model"],
+                    ["NAME:RotateParameters", "RotateAxis:=", "Z", "RotateAngle:=", "45deg"])
+                oEditor.Move(
+                    ["NAME:Selections", "Selections:=", _actual, "NewPartsModelFlag:=", "Model"],
+                    ["NAME:TranslateParameters", "TranslateVectorX:=", f"{_cx}mm",
+                     "TranslateVectorY:=", f"{_cy}mm", "TranslateVectorZ:=", "0mm"])
+                # 橋=進分批 Unite(與導體同體);槽=收著,等全聯集後整批 Subtract
+                (diag_slot_names if _slot_mode else box_names).append(_actual)
 
-                patch_unite = patch_unite[:len(patch_unite)-1]   # 去掉字串尾端多餘的逗號
-
-                # 因為只有一個不能unite
-                # 若整串只剩 "Patch_1" 單一物件 (邊界情況)，同樣無法聯集，更新計數後略過。
-                if patch_unite == "Patch_1":
-                    ones_buf = ones_buf + ones_indices.shape[0]
-                    continue
-
-                # 對本欄收集到的方塊執行聯集；KeepOriginals=False 表示聯集後不保留原始小方塊，
-                # 直接融合成單一連續銅面 (預設保留清單中第一個物件的名稱)。
+        ###* 全域分批聯集(2026-08-13 儀器換代 p01,follow 單埠版)###
+        #! 舊版=逐欄 Unite(欄間/對角=零厚度接觸→數值奇異點;R69 實證其導通強度隨網格/
+        #!   離散度漂移=幻影)。新版照單埠三階段:分批(20/批)互聯 → 全區塊合一 →
+        #!   與 feedline1/feedline2 合體=**整個導體同一個物件**(Ricky 裁定 2026-08-13)。
+        #! +0.01mm 放大使貼片盒與饋線金屬重疊,不聯集會留下重疊物件炸網格——與饋線合體
+        #!   是幾何必需,不只是風格;port 激勵面 Rectangle1/2 為獨立 sheet,不受影響。
+        if box_names:
+            chunk_size = 20                     # 一次 Unite 過多物件會讓 COM/幾何核心過載(同單埠註解)
+            united_chunks = []
+            for _i in range(0, len(box_names), chunk_size):
+                _chunk = box_names[_i:_i + chunk_size]
+                if len(_chunk) > 1:
+                    oEditor.Unite(
+                        ["NAME:Selections", "Selections:=", ",".join(_chunk)],
+                        ["NAME:UniteParameters", "KeepOriginals:=", False])
+                united_chunks.append(_chunk[0])  # Unite 保留清單首名
+            if len(united_chunks) > 1:
                 oEditor.Unite(
-                    [
-                        "NAME:Selections",
-                        "Selections:=", patch_unite
-                    ],
-                    [
-                        "NAME:UniteParameters",
-                        "KeepOriginals:=", False
-                    ])
-                #? 記帳（R60）：Unite 只保留清單中第一個名字，其餘物件就此消失。序號推算與上面
-                #  組 patch_unite 的那圈**完全同一式**（含跳過全域序號 0＝那顆叫 "Patch" 的沒進聯集、
-                #  仍獨立存活），故兩者不會漂。
-                _merged = [u + ones_buf for u in range(ones_indices.shape[0]) if u + ones_buf != 0]
-                patch_dead.update(_merged[1:])
-            # 不論本欄是否聯集，皆把本欄方塊數累加進全域計數，供下一欄推算正確序號。
-            ones_buf = ones_buf + ones_indices.shape[0]
+                    ["NAME:Selections", "Selections:=", ",".join(united_chunks)],
+                    ["NAME:UniteParameters", "KeepOriginals:=", False])
+            oEditor.Unite(
+                ["NAME:Selections", "Selections:=", f"feedline1,feedline2,{united_chunks[0]}"],
+                ["NAME:UniteParameters", "KeepOriginals:=", False])
+            # 此後整個導體(貼片+兩饋線)存活名=feedline1;上下貼片區若無金屬相連,
+            # 仍是同一物件的兩個 lobe(HFSS 允許),電性不受聯集影響。
+            ###* 45° 挖空槽 Subtract(diag_bridge_w<0 才有;時機=全聯集後,同單埠) ###
+            for _i in range(0, len(diag_slot_names), 20):  # 分批理由同 Unite:COM 選取字串過長易崩
+                oEditor.Subtract(
+                    ["NAME:Selections", "Blank Parts:=", "feedline1",
+                     "Tool Parts:=", ",".join(diag_slot_names[_i:_i + 20])],
+                    ["NAME:SubtractParameters", "KeepOriginals:=", False])
 
         ###* 亞像素耦合縫：挖縫盒 → Subtract（R60；self.slot_spec=None 時整段不執行＝歷史幾何 bit 級不變）###
         if self.slot_spec is not None:
-            patch_bodies = [n for k, n in enumerate(box_names) if k not in patch_dead]   # 逐欄聯集後的存活體
+            patch_bodies = ["feedline1"] if box_names else []   # 全聯集後整個導體=單一物件(p01 儀器換代)
             _slots = slot_boxes(self.slot_spec, pixel_row)
             _mat = pixel_matrix.numpy() > 0.5
             _names = []
@@ -484,9 +516,9 @@ class DualPortSimulator(PatchSimulator):
                             f"覆蓋金屬 {_cover}px）；Pattern {self.num}")
                 if _cover == 0:
                     logger.warning(f"{_actual} 覆蓋 0 個金屬像素＝幾何空操作（Pattern {self.num}）")
-            #! 時機：必須在逐欄 Unite 之後——對「存活的 Patch 物件」一次下刀（縫跨欄時會同時切到
-            #  多個欄體，故 Blank 給全部存活體）。刀具(縫盒)分批 20 個，理由同 Unite：COM 選取字串過長易崩。
-            #  饋線 feedline1/feedline2 **不在 Blank 名單**（dual 的貼片與饋線從不 Unite），縫切不到饋線。
+            #! 時機：必須在全聯集之後——對單一導體(存活名 feedline1)下刀。刀具(縫盒)分批 20 個,
+            #  理由同 Unite:COM 選取字串過長易崩。p01 換代後導體含饋線,但縫盒幾何嚴格落在像素區
+            #  (X∈[0,5]mm),搆不到饋線本體(僅 0.01mm 重疊薄片),不會誤切饋電路徑。
             for _i in range(0, len(_names), 20):
                 oEditor.Subtract(
                     ["NAME:Selections", "Blank Parts:=", ",".join(patch_bodies),

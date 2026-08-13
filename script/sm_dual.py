@@ -214,6 +214,17 @@ def wm_array(Y, targets):
     return np.array([wm_of(y, targets) for y in Y], dtype=np.float64)
 
 
+def _store_is_p00(store_dir) -> bool:
+    """幾何代檢(純函式邏輯,I/O 僅讀 results.json):任何條目帶 geom 鍵=p01+ 代 → False。
+    p00 老 code 不寫 geom 欄,故「無 geom」=p00;混代店(跨部署重啟的 autod)整店保守排除。"""
+    rj = os.path.join(str(store_dir), "results.json")
+    try:
+        res = json.load(open(rj, encoding="utf-8"))
+    except Exception:
+        return True                                    # 無 results.json(如公證中)→ 沿 p00 慣例
+    return not any(isinstance(v, dict) and "geom" in v for v in res.values())
+
+
 def _scan_stores(stores, workers=8):
     """依 STORES 順序掃 NAS，首見先贏去重。回 (X uint8 (n,625), Y float32 (n,3,17), src, n_raw)。"""
     from concurrent.futures import ThreadPoolExecutor
@@ -222,6 +233,12 @@ def _scan_stores(stores, workers=8):
         d = DATASET_PATH.joinpath(name)
         if not d.is_dir():
             print(f"[warn] store 不存在，略過：{name}")
+            continue
+        if not _store_is_p00(d):
+            #! 幾何儀器代閘(2026-08-13 p01 換代):本鍋=p00 代凍結——p01(+0.01 重疊/全聯集)
+            #  量測與 p00 對「對角重 pattern」差到 20dB 級,混鍋=同 pattern 兩真值=毒。
+            #  p01 資料的鍋=未來 SM v5 另起爐灶(乾淨域),不在這裡長。
+            print(f"[era] {name} 含 p01 代量測——p00 鍋跳過整店(SM v5 另起)")
             continue
         files = sorted(f for f in os.listdir(str(d)) if f.endswith(".pt"))
         t0 = time.time()

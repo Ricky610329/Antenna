@@ -242,18 +242,30 @@ def _mat_3cols():
 
 
 def test_slot_subtract_targets_surviving_bodies(tmp_path, monkeypatch):
-    """★挖縫要對「逐欄 Unite 之後還活著的物件」下刀。被吃掉的 Patch_3/Patch_4 若混進
-    Blank Parts，HFSS 會在選不到名稱時整筆炸掉（或更糟：選到別的東西）。"""
+    """★p01 儀器換代契約(2026-08-13,follow 單埠):全域分批聯集(非逐欄)→ 與兩饋線合體
+    成單一導體(存活名 feedline1)→ 挖縫對它下刀。舊逐欄契約=零厚度接觸幻影根因,R69 定讞。"""
     ed = _run_geometry(tmp_path, monkeypatch, _mat_3cols(),
                        slot_spec=[{"rows": [4], "cols": [3, 7], "width_mm": 0.05}])
     # 建立順序→HFSS 名：欄3(列2,4)=Patch,Patch_1 → 欄7(列0,1,5)=Patch_2..4 → 欄9(列8)=Patch_5
-    assert ed.unites == ["Patch_2,Patch_3,Patch_4"]
+    # 6 盒 < 20 = 單一 chunk 全聯集；再與 feedline1,feedline2 合體。
+    assert ed.unites == ["Patch,Patch_1,Patch_2,Patch_3,Patch_4,Patch_5",
+                         "feedline1,feedline2,Patch"]
     (blank, tool), = ed.subtracts
-    assert blank == "Patch,Patch_1,Patch_2,Patch_5"     # 存活體全上；Patch_3/4 已被吃掉
+    assert blank == "feedline1"                          # 全聯集後單一導體
     assert tool == "Slot_1"
-    assert "feedline1" not in blank and "feedline2" not in blank   # dual 的貼片與饋線從不合體
     order = ed.verbs
     assert order.index("Subtract") > max(i for i, v in enumerate(order) if v == "Unite")
+
+
+def test_p01_boxes_overlap_and_surface_solve(tmp_path, monkeypatch):
+    """p01 兩件套：像素盒 +0.01mm 重疊(消零厚度接觸奇異點)、銅盒 SolveInside=False
+    (follow 單埠)。這兩項是儀器換代的本體,回歸鎖死防止靜默退回 p00。"""
+    ed = _run_geometry(tmp_path, monkeypatch, _mat_3cols())
+    px = [b for b in ed.boxes if b["base"].startswith("Patch")]
+    assert px and all(b["XSize:="] == "pixel_H + 0.01mm" and b["YSize:="] == "pixel_W + 0.01mm"
+                      for b in px)
+    from antenna.patch.patch_simulator.dual_port import GEOM_VER
+    assert GEOM_VER == "p01"
 
 
 def test_slot_box_geometry_and_z_clearance(tmp_path, monkeypatch):
@@ -291,3 +303,42 @@ def test_slot_spec_skips_when_pattern_has_no_metal(tmp_path, monkeypatch):
     ed = _run_geometry(tmp_path, monkeypatch, np.zeros((25, 25), bool),
                        slot_spec=[{"rows": [4], "cols": [3, 7], "width_mm": 0.05}])
     assert ed.boxes == [] and ed.subtracts == []
+
+
+def _mat_one_diag():
+    """單一真對角接點:(2,3)-(3,4) 對角同開、兩正交位空。"""
+    m = np.zeros((25, 25))
+    m[2, 3] = m[3, 4] = 1
+    return m
+
+
+def test_dual_diag_bridge_joins_unite(tmp_path, monkeypatch):
+    """R54 菱形橋移植:正 w → DiagBr 盒建立並進全聯集(與導體同體);站點邏輯共用單埠
+    diag_bridge_sites。"""
+    import pandas as pd
+    monkeypatch.setattr(dual_port, "read_csv",
+                        lambda *_a, **_k: pd.DataFrame({0: np.linspace(24, 32, 17), 1: np.zeros(17)}))
+    sim = DualPortSimulator(str(tmp_path), diag_bridge_w=0.075)
+    ed = _FakeEditor()
+    sim.oDesign = _FakeDesign(ed)
+    sim.num = 7
+    sim(torch.tensor(_mat_one_diag().astype("float32")).reshape(-1))
+    br = [b for b in ed.boxes if b["base"] == "DiagBr_1"]
+    assert len(br) == 1 and br[0]["XSize:="] == "0.075mm"
+    assert any("DiagBr_1" in u for u in ed.unites)        # 橋進了聯集
+    assert not ed.subtracts                               # 正 w 無 Subtract
+
+
+def test_dual_diag_slot_subtracts_from_conductor(tmp_path, monkeypatch):
+    """負 w → 45° 挖空槽,全聯集後從單一導體(feedline1)Subtract。"""
+    import pandas as pd
+    monkeypatch.setattr(dual_port, "read_csv",
+                        lambda *_a, **_k: pd.DataFrame({0: np.linspace(24, 32, 17), 1: np.zeros(17)}))
+    sim = DualPortSimulator(str(tmp_path), diag_bridge_w=-0.075)
+    ed = _FakeEditor()
+    sim.oDesign = _FakeDesign(ed)
+    sim.num = 7
+    sim(torch.tensor(_mat_one_diag().astype("float32")).reshape(-1))
+    (blank, tool), = ed.subtracts
+    assert blank == "feedline1" and tool == "DiagSl_1"
+    assert not any("DiagSl" in u for u in ed.unites)      # 槽不進聯集

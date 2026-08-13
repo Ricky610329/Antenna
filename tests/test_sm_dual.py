@@ -188,3 +188,16 @@ def test_smpool_pick_quota_and_control_purity():
     front = mean >= np.quantile(mean, 0.6)
     assert all(front[i] for i, a in picks if a == "d")
     assert all(is_symr[i] for i, a in picks if a == "c")
+
+
+def test_store_is_p00_era_gate(tmp_path):
+    """幾何代閘:results.json 任一條目帶 geom 鍵 → 整店排除 p00 鍋(混代=同 pattern 兩真值=毒)。"""
+    import json as _json
+    from script.sm_dual import _store_is_p00
+    d = tmp_path / "s1"; d.mkdir()
+    (d / "results.json").write_text(_json.dumps({"a": {"m1": -1.0}}), encoding="utf-8")
+    assert _store_is_p00(d)                              # 老條目無 geom = p00
+    (d / "results.json").write_text(_json.dumps(
+        {"a": {"m1": -1.0}, "b": {"m1": -2.0, "geom": "p01"}}), encoding="utf-8")
+    assert not _store_is_p00(d)                          # 混代店整店排除
+    assert _store_is_p00(tmp_path / "no_such")           # 無 results.json → 沿 p00 慣例
