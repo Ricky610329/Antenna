@@ -5861,6 +5861,8 @@ def run(args):
                     entry.update(dual_metrics(resp, labels, cfg.targets))   # 六項分項 + 能量自證
                     from antenna.patch.patch_simulator.dual_port import GEOM_VER   # lazy:與 SIM 同源
                     entry["geom"] = GEOM_VER              # 幾何儀器版本蓋章(p00→p01 換代 2026-08-13)
+                    if "diag_bridge_w" in hfss_setup:     # 橋寬逐筆蓋章:斷絕混夾疑義(王冠三檢②的帳)
+                        entry["dbw"] = hfss_setup["diag_bridge_w"]
                     tail = f"energy_max={entry.get('energy_max', '—')}"
                 store.add(p, resp)                       # (pattern, 真響應) 入庫：可再餵 SM 重錨/Stage-3
                 results[m["id"]] = entry
@@ -6294,14 +6296,20 @@ def _dual_selfgen_cands(rng, anchors, hist, want):
 
 
 def _selfgen_chunk_dual(me, args):
-    """dual 版自產 tier-2（Ricky 2026-08-11「之後變成 dual auto 池」）:store=dedust_autod<ip>,
+    """dual 版自產 tier-2（Ricky 2026-08-11「之後變成 dual auto 池」）:store=dedust_autd2<ip>,
     批帶 dual 尺(configs/dual_r1_eval.yaml);錨池=NAS dataset/dual_anchors.json（開發機維護,
     輪換錨不需重新部署;無檔=全對稱隨機）;查重=全 dual 域輸入夾+自身 store;讓位機制同 single 版。
-    資料語義:dual SM 鍋候選(sm_dual v2 併入),與 single 鍋永不混。"""
+    ★2026-08-13 可製造時代對齊:store 由 autod→**autd2**(era 純夾,舊 autod=p00/p01 混代封存)
+    +輸入夾自帶 hfss_setup {"diag_bridge_w": 0.075}=**標準橋常態**(decisions「可製造時代」節)。
+    資料語義:mfg 新鍋候選;與 single 鍋、p00 鍋永不混。"""
     global _SELFGEN_DUAL
-    tag = "autod" + me.split(".")[-1]
+    tag = "autd2" + me.split(".")[-1]
     ind = _dir(f"dedust_{tag}_input")
     ind.mkdir(parents=True, exist_ok=True)
+    _hs = ind.joinpath("hfss_setup.json")
+    if not _hs.exists():                                  # 標準橋常態(冪等;整夾一組)
+        with open(str(_hs), "w", encoding="utf-8") as f:
+            json.dump({"diag_bridge_w": 0.075}, f)
     mp = ind.joinpath("manifest.json")
     manifest = json.load(open(str(mp), encoding="utf-8")) if mp.exists() else []
     if _SELFGEN_DUAL is None:
