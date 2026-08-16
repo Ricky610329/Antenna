@@ -6465,13 +6465,21 @@ def select_smpool(args):
         ind, man = folders[s]
         vid = f"smp{k:03d}_{arm}_{j:03d}"
         torch.save(torch.tensor(Xc[i].reshape(25, 25)), str(ind.joinpath(vid + ".pt")))
-        man.append(dict(id=vid, kind="dual", port="dual", arm=arm, family=f"SMPOOL{k:03d}",
+        #? mfg 代(SM v5+,2026-08-16 Ricky:「SM 排覺得有用的每 round 主動送,auto 防馬太」):
+        #  kind=diagbridge+標準橋 hfss_setup=量測走 wm_mfg 尺;c 臂 30% 不看 SM=馬太對照。
+        _mfg = SD.SM_VER >= "v5"
+        man.append(dict(id=vid, kind=("diagbridge" if _mfg else "dual"), port="dual", arm=arm,
+                        family=f"SMPOOL{k:03d}",
                         gen=meta[i][0], parent=meta[i][1], sm_ver=SD.SM_VER,
                         pred_wm2=round(float(mean[i]), 2), pred_std=round(float(std[i]), 3),
-                        metal_px=int(Xc[i].sum())))
+                        metal_px=int(Xc[i].sum()),
+                        **({"diag_bridge_w": 0.075} if _mfg else {})))
     stores = []
     for s, (ind, man) in folders.items():
         _save_manifest(man, ind)
+        if SD.SM_VER >= "v5":
+            with open(str(ind.joinpath("hfss_setup.json")), "w", encoding="utf-8") as f:
+                json.dump({"diag_bridge_w": 0.075}, f)
         stores.append(f"dedust_smp{k:03d}{s}")
         print(f"  {ind.name}: {len(man)} 筆")
     print(f"補池 chunk smp{k:03d}:n={len(picks)}(L/d/c 配額 40/30/30),SM={SD.SM_VER},"
