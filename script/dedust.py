@@ -6401,7 +6401,22 @@ def select_smpool(args):
     wm2 = SD.wm_r2_from_margins(M)
     X = pool["X"].astype(bool)
     order = np.argsort(wm2)[::-1]
-    anchors = [X[i].reshape(25, 25) for i in order[:args.anchors]]
+    #? 雙前緣錨池(2026-08-20,R76-77 產出;analysis-16 單一栽培診斷):
+    #  只取 wm 前 K 名 → 錨全是同一家族(實測:鍋 top300 零外族、十五代王互距 10 bits)
+    #  → chunk 天花板變成**多樣性天花板**。故錨=「wm 前 K」+「與已選錨互距 ≥DIV_MIN 的
+    #  各家族最佳」(貪婪),讓遠域家族(R77 第二王朝 −3.36,距王 257 bits)也常駐錨池。
+    DIV_MIN, DIV_N = 150, 4
+    anchor_idx = list(order[:args.anchors])
+    picked = X[anchor_idx]
+    for i in order[args.anchors:]:
+        if len(anchor_idx) >= args.anchors + DIV_N:
+            break
+        if int(np.min(np.sum(picked != X[i], axis=1))) >= DIV_MIN:
+            anchor_idx.append(int(i))
+            picked = X[anchor_idx]
+    n_div = len(anchor_idx) - args.anchors
+    print(f"錨池:wm 前 {args.anchors} + 遠域家族 {n_div}(互距 ≥{DIV_MIN} bits)")
+    anchors = [X[i].reshape(25, 25) for i in anchor_idx]
     hist = set(x.tobytes() for x in X)
     for fol in _all_input_folders():                      # 輸入夾層(在跑未回鍋的也要避)
         dd = DATASET_PATH.joinpath(fol)
