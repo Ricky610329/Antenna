@@ -952,3 +952,14 @@ R78 判準③(脆弱)觸發後,預先登記的分支 B 為「轉 single」;**Ric
   (和,失衡) 組合)多代開採——「高和且已半均衡」的個體,其鄰域是否保和,是 R78
   極端種脆弱結論的**邊界測試**(極端高和脆弱 ≠ 中度高和也脆弱)。
 - 慢磨補池鏈續轉(雙前緣錨池已含高和個體)。
+
+## 無人值守慢磨迴圈 grind_loop(Ricky 2026-08-21:「不用激活就放著跑」)
+
+- `script/grind_loop.py` = 把補池鏈寫成**純腳本**(迴圈裡沒有 LLM):
+  select-smpool --dispatch → 輪詢收檔 → 判讀 best → 破紀錄則自動公證(select-repeat ×2,
+  prio 2)→ 每 3 chunk 重訓 SM+過閘;detached 長跑,**與對話 session 無關**。
+- **治理合約嚴格生效**:迴圈**不自己加冕**——公證結果只寫 `tmp/pending_records.jsonl`
+  (待審),**絕不改 docs/records_dual.json**;換王仍由人/round 定。
+- **異常就停**:error 率 >20% / 全機靜默 >90 分 / `tmp/grind_loop.STOP` 存在。
+- **人看的地方**:`tmp/grind_loop_status.json`(當前狀態)、`tmp/grind_loop.jsonl`(逐 chunk 帳)、
+  `tmp/pending_records.jsonl`(待審換王)。煞車=建 STOP 檔(不必殺進程)。
