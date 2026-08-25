@@ -182,8 +182,18 @@ def main():
             k = latest_chunk_no() + 1
             stores = [f"dedust_smp{k:03d}{s}" for s in "abc"]
             write_status(state="生成中", chunk=k, iter=it, record=rec)
-            rc, out = _run(["script.dedust", "select-smpool", "--n", str(args.n),
-                            "--cand", str(args.cand), "--seed", str(seed + it), "--dispatch"])
+            #! 韌性(2026-08-25 實戰:select-smpool 子進程偶發 KERNELBASE 崩潰,手動複現正常
+            #  =暫時性故障)——重試 3 次(換 seed + 退避),連三次才收工,免得一次抖動殺掉整條迴圈。
+            rc, out = 1, ""
+            for attempt in range(3):
+                rc, out = _run(["script.dedust", "select-smpool", "--n", str(args.n),
+                                "--cand", str(args.cand), "--seed", str(seed + it * 7 + attempt),
+                                "--dispatch"])
+                if rc == 0:
+                    break
+                log({"event": "retry", "stage": "select-smpool", "attempt": attempt + 1,
+                     "chunk": k, "out": out[-200:]})
+                time.sleep(300)
             if rc != 0:
                 log({"event": "error", "stage": "select-smpool", "out": out[-300:]}); break
             write_status(state="等待收檔", chunk=k, iter=it, record=rec, stores=stores)
