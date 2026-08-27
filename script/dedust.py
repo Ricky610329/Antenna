@@ -6418,7 +6418,26 @@ def select_smpool(args):
     print(f"錨池:wm 前 {args.anchors} + 遠域家族 {n_div}(互距 ≥{DIV_MIN} bits)")
     anchors = [X[i].reshape(25, 25) for i in anchor_idx]
     hist = set(x.tobytes() for x in X)
-    for fol in _all_input_folders():                      # 輸入夾層(在跑未回鍋的也要避)
+    #? 輸入夾層查重表(在跑未回鍋的也要避)——**磁碟快取**(2026-08-27:夾數破 240、
+    #  每次 torch.load 2 萬+ 檔 → 記憶體尖峰使 grind_loop 的子進程偶發 KERNELBASE 崩潰
+    #  〔連三次重試全掛,手動單跑卻正常=資源壓力型故障〕)。快取存「夾名→packbits 陣列」,
+    #  只掃新夾/檔數變動的夾;快取壞掉就全掃(退化成舊行為,不會錯只會慢)。
+    import glob as _g
+    cache_p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                           "tmp", "dual_hist_cache.npz")
+    cached, counts = {}, {}
+    if os.path.exists(cache_p):
+        try:
+            z = np.load(cache_p, allow_pickle=False)
+            for k in z.files:
+                if k.endswith("__n"):
+                    counts[k[:-3]] = int(z[k])
+                else:
+                    cached[k] = z[k]
+        except Exception:
+            cached, counts = {}, {}
+    changed = False
+    for fol in _all_input_folders():
         dd = DATASET_PATH.joinpath(fol)
         try:
             man_ = json.load(open(str(dd.joinpath("manifest.json")), encoding="utf-8"))
@@ -6426,11 +6445,26 @@ def select_smpool(args):
             continue
         if not (man_ and man_[0].get("port") == "dual" and man_[0].get("pixel_count", 25) == 25):
             continue
+        n_pt = len(_g.glob(os.path.join(str(dd), "*.pt")))
+        if fol in cached and counts.get(fol) == n_pt:
+            for row in cached[fol]:
+                hist.add(np.unpackbits(row)[:625].astype(bool).tobytes())
+            continue
+        packed = []
         for m in man_:
             f = dd.joinpath(m["id"] + ".pt")
             if f.exists():
-                hist.add((np.asarray(torch.load(str(f), weights_only=True))
-                          .reshape(-1) > 0.5).astype(bool).tobytes())
+                bits = (np.asarray(torch.load(str(f), weights_only=True)).reshape(-1) > 0.5)
+                hist.add(bits.astype(bool).tobytes())
+                packed.append(np.packbits(bits))
+        if packed:
+            cached[fol] = np.stack(packed); counts[fol] = n_pt; changed = True
+    if changed:
+        try:
+            os.makedirs(os.path.dirname(cache_p), exist_ok=True)
+            np.savez_compressed(cache_p, **cached, **{f"{k}__n": np.array(v) for k, v in counts.items()})
+        except Exception as e:
+            print(f"⚠ 查重快取寫入失敗(不影響正確性): {e}")
 
     def gate(q):
         q = dual_pads(q); b = q.reshape(-1).astype(bool).tobytes()
