@@ -26,15 +26,27 @@
 - [project_benchmark_vs_random.md](project_benchmark_vs_random.md) — 客觀 benchmark：worst-margin(dB)；學習式搜尋目前輸給 random best-of-N(同 HFSS 預算)
 - [project_generator_hyperfeature_pivot.md](project_generator_hyperfeature_pivot.md) — zbatch 砍掉;G=單一 pattern 超特徵;SM-only guided 搜尋已實作 (single_guided* 三 config:direct+ensemble+trust,golden-safe,待正式機 A/B)
 - [project_litreview_direction.md](project_litreview_direction.md) — 文獻定論:輸 random 屬預期;治本=不確定性/信任域門控 SM + active learning + harvest warm-start (docs/research_landscape.md)
-- [project_w17_champion.md](project_w17_champion.md) — 冠軍現況:margin王 o29b2_011 +0.56/rad王 +1.00/帶外王 8.61/可用帶外 9.0/帶內 0.61/真相源=docs/records.json;⚠血統口徑修正(2026-07-17):王遞迴追根=g1_038 王朝,王朝判定改表型(decisions「王朝重定義」)
+- [project_w17_champion.md](project_w17_champion.md) — 冠軍現況:★左側合格解首例 c8trip03_01(wm+0.15∧rad+0.03∧lo−2.63∧oob7.78 雙紀錄,2026-07-24 左側戰役36hr達陣)/margin王 c48nq1p05_16 +0.79(R48 嫁接+爬山兩段式,2026-07-31 公證3/3)/rad王 +1.00/真相源=docs/records.json
 - [project_narrative_pivot.md](project_narrative_pivot.md) — 2026-07-08 敘事定調:線上學習=工具,agent+human-in-the-loop 共同優化;文獻背書 docs/reference/(Sengupta 組三篇,索引 README.md)
 - [feedback_check_clock.md](feedback_check_clock.md) — 寫時間戳記前先 date 查時間（跨午夜 session 教訓 2026-07-10）
 - [project_machine_profiles.md](project_machine_profiles.md) — 三台正式機個性:216穩快/218=timeout型/37=COM例外型慢;機器錯誤vs毒樣本分開歸因
 - [feedback_autonomous_rounds.md](feedback_autonomous_rounds.md) — Ricky授權自主續輪(R23,24,25…):收檔即開下輪,宣告制不等核准;護欄=判準寫死+公證鐵則+異常停
 - [feedback_round_naming.md](feedback_round_naming.md) — R23起round號貫穿所有命名(夾/id/填空池/公證),一輪一號;廢跨round全域批數(m5→m6反例)
-- [feedback_value_axis_oob.md](feedback_value_axis_oob.md) — 價值軸修正(2026-07-12):三標=硬閘門,過線後wm邊際≈0,收益軸=壓帶外;可用解留wm≥+0.15製造buffer
+- [feedback_value_axis_oob.md](feedback_value_axis_oob.md) — 價值軸演進:三標=硬閘門→壓帶外→★左右側拆帳(2026-07-23):usable_lo/hi獨立紀錄,左側=主戰場(全史零壓制),總帳型0.0x推進無可比性
 - [project_strategy_data_flywheel.md](project_strategy_data_flywheel.md) — ★戰略換軸(2026-07-15):多樣性→SM準度→變現;五軸KPI面板;王系凍結(dyn-frac 0.2,R31);低側=中繼帶+鄰域變異非梯度;SM工具常駐(std LCB/rad鍵/漏斗/誤差錨)
 - [project_batch_runbook.md](project_batch_runbook.md) — 批次迴圈已弱模型化(2026-07-12):接手=/takeover,主入口=/batch-cycle,對帳=/reconcile(2026-07-13持久化事件教訓:關鍵操作後驗證落地再往上蓋);判讀=analyze batch;門檻=docs/records.json;重錨=train --add
 - [feedback_exploration_eval.md](feedback_exploration_eval.md) — Ricky 2026-07-13:①擴散型探索介入(根稅等)用效率over長baseline評,不做單批因果判決(gain-check L2,≥5round) ②每輪硬上限3批
 - [project_senior_showcase_vs_f2.md](project_senior_showcase_vs_f2.md) — 學長招牌=論文圖4-4=t07_top(合規+0.35但含粉塵不可製造);F2=我們對稱練習母本(非學長最好);design_priors「F2 −6.44」誤植;報告框架=學長可合規,我們補可製造+系統化
 - [project_ase_report_v2.md](project_ase_report_v2.md) — ASE 報告 v2 完成(2026-07-16,桌面進度報告_v2.md);逐節共筆流程+對外用語表+核心 framing(飽和拚初始化/最後一哩路/款式變體);圖產線 report_*.py commit 94c3fed
+- [feedback_no_shell_ampersand.md](feedback_no_shell_ampersand.md) — Bash 工具內禁用 shell & 背景化,一律 run_in_background（2026-07-23 一天犯五次教訓）
+- [feedback_timeline_owner.md](feedback_timeline_owner.md) — 時間軸/寫作切換點由 Ricky 自管,Claude 不主動提醒
+- [project_writing_handoff.md](project_writing_handoff.md) — 寫作 session 交接包=docs/report/handoff-direction-doc.md;兩 session 分工邊界(寫作只增不改)
+- [project_instrument_era.md](project_instrument_era.md) — 2026-07-29=SM 儀器換代日(lr bug 修,凍結尺-51%);引用此前準度結論標斷點
+- [feedback_shared_machine.md](feedback_shared_machine.md) — 共機協調公約在 tmp/SESSION_COORDINATION.md(gitignore,git 看不到,接手要主動讀);GPU 讓批次線、禁全域殺 python、TaskStop 停長 job 有誤殺嫌疑、commit 別用 git add -A
+- [feedback_failure_modes.md](feedback_failure_modes.md) — 我反覆犯的六類錯(排除法只排掉想到的×2/宣稱修好只落地一半×4/指標漲用途沒漲×5)＋真的有效的五種做法(無因次量·儀器自證·跨實作對帳)
+- [project_diffsim_status.md](project_diffsim_status.md) — diffsim:出貨=**l3fld+a_quad=1**(§51 歸因完畢:崩掉的是 a_quad=4 非對角);ρ 追平 SM、差距在 P(勝隨機);★三大進展=兩個規格不符+一個 bug,先審「有沒有模擬 HFSS 實際做的事」。⚠Gain 真值 26% 內插
+- [project_lowdiag_axis.md](project_lowdiag_axis.md) — R53+ 主軸=低對角左側(2026-08-04 定向);兩閘裁手術路/生成路;Ricky 出現點限四種+每日晨報資料量
+- [feedback_session_replies.md](feedback_session_replies.md) — 自主迴圈期間重要節點要在對話給人話摘要,不能只落檔(2026-08-05)
+- [pattern 渲染方向鐵則](reference_pattern_render_convention.md) — 饋線邊=圖下緣;自畫要轉座標(2026-08-06 轉90°bug)
+- [feedback_dev_machine_load.md](feedback_dev_machine_load.md) — 開發機重掃節流鐵則:單例/必要才跑/降優先權/subagent brief 必寫(2026-08-06 卡機事件)
+- [project_dual_line.md](project_dual_line.md) — dual 線 R57 一日立線:生成時對稱=預設/殺手軸=S21 選擇性/records_dual.json 分帳;R58=SM 冷啟動

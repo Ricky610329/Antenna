@@ -25,3 +25,5 @@ round 檔只連結不複製。工具：`script/status.py`（掃 NAS 真相，更
 **How to apply**：跨 session 接手先讀 `docs/log/README.md`＋`configs/ONGOING.md`＋scratch 最新塊。
 新工作優先序：論文 P0 章節 > 量測支援 > generator 工程 > 新 HFSS 批（除非有新假設，別再刷探索）。
 關聯 [[project_experiment_catalog]] [[project_benchmark_vs_random]] [[project_sm_training_redesign]]
+
+**2026-08-07 相位更新**:專案獲學長點頭;**single-port 收尾至 8/15**(消融+方法論收攏+合格 pattern 交付),之後不開新戰線;帶外壓制可外包後級濾波器(pattern 職責=帶內+rad+可製造);下一線=dual port 濾波器(日月光框架,未開工)。詳 decisions「Single-port 收尾期程」。

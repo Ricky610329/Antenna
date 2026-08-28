@@ -1,11 +1,12 @@
 ---
-updated: 2026-07-16
+updated: 2026-07-23
 name: feedback-value-axis-oob
-description: "Ricky 2026-07-12 價值軸修正:三標過線後帶內餘裕邊際價值≈0,主要收益軸=帶外壓低（字典序目標）"
+description: "價值軸演進:2026-07-12 收益軸=壓帶外→2026-07-23 左右側拆帳(usable_lo/hi 獨立紀錄,左側=主戰場,oob_bad 總帳型 0.0x 推進無可比性)"
 metadata: 
   node_type: memory
   type: feedback
   originSessionId: 514acb31-4aa0-43ec-a3b3-98cdf8e2a623
+  modified: 2026-07-23T03:12:09.191Z
 ---
 
 Ricky（2026-07-12）：「對於 S11 與 Gain 來說,只要過標之後額外的收益都沒有這麼重要了,
@@ -19,6 +20,17 @@ R17-R22 的紀錄演進也支持:wm 卡 +0.4 級天花板,帶外從 9.04 一路�
 - 可用解保留 wm ≥ +0.15 製造 buffer（R11:缺陷存活=margin 函數）;wm+0.00 刀鋒王只算科學紀錄。
 - 選批鍵（R22 b4 起）:pred_wm ≥ buffer → pred_oob 升冪為主鍵;紀錄優先序=帶外王旗艦。
 - 正式定案文字在 docs/discuss/decisions.md「價值軸修正」;相關 [[project-w17-champion]]。
+
+**★★ trade-off 範圍修正（Ricky 2026-07-23）**：「rad↔lo 不可兼得」與「三軸同好 0 筆」=**王系內
+經驗律,非物理定律**（三確認全在王系鄰域量測;資料集母體王系主導）。反例=學長 t09 族（lo −4.5∧
+oob 7.2∧wm 可用,只卡 rad）。左側戰役正解=**去左側好的系統修缺軸**,非王系內壓左側;
+換系統戰略四手段見 decisions。
+
+**★★ 左右側拆帳制（Ricky 2026-07-23,R36 期）**：可用帶外 9.0→8.97 被判「同型邊際推進無可比性」
+（左側 +3.7 紋絲不動）——**oob_bad 總帳蓋牌左側=尺的問題**。制度:records.json `usable_lo`/`usable_hi`
+（合格門檻內 min 單側 gain;基線 +3.68/−5.92=全史掃描）;analyze batch 側前緣段;chain goal lo/hi。
+**左側=主戰場**（全史 882 合格解零壓制、三標∧lo≤0=0 筆）;總帳型 0.0x 推進降級記帳不推播。
+定案全文=decisions「左右側拆帳紀錄制」。
 
 **★ 王系凍結叮嚀（Ricky 2026-07-16 午）**：「王系列的不要再增加了,Gain 帶外的左側一直壓不下去
 真的是很大的問題（這是王系的問題）」——王系=實心語言=高側特化低側全通（lo 全群 +3.6~+4.7 vs
