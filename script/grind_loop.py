@@ -21,6 +21,7 @@ import os
 import subprocess
 import sys
 import time
+import glob as _g
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -117,7 +118,21 @@ def wait_stores(stores, poll=120, stall_min=STALL_MIN):
         if state_done >= len(stores) or done >= 90:
             return True, f"完成 {done}"
         if (time.time() - t_last) / 60 > stall_min:
-            return False, f"停滯 {stall_min} 分無新結果(done={done})"
+            #! 停滯誤判修正(2026-08-28 實戰:補發的 chunk 90-92 排在前面,迴圈自己的 93
+            #  90 分拿不到機器 → 誤判機器掛了收工)。真正的停滯=**整個機隊沒產出**;
+            #  自己的批只是排隊 → 繼續等(機隊還活著就有輪到的一天)。
+            newest = 0.0
+            for pat in ("dedust_autd2*", "dedust_smp*", "dedust_gl*"):
+                for f in _g.glob(os.path.join(D, pat, "*.pt")):
+                    m = os.path.getmtime(f)
+                    if m > newest:
+                        newest = m
+            fleet_idle_min = (time.time() - newest) / 60 if newest else 999
+            if fleet_idle_min > stall_min:
+                return False, f"機隊靜默 {fleet_idle_min:.0f} 分(done={done})"
+            t_last = time.time()          # 機隊活著=只是排隊,重置等待窗口
+            log({"event": "queued", "stores": stores[:1], "done": done,
+                 "fleet_idle_min": round(fleet_idle_min, 1)})
         time.sleep(poll)
 
 
