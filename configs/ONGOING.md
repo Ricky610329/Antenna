@@ -5,12 +5,28 @@
 > - config 全集（不刪）→ [README.md](README.md)
 > **流程**：新實驗 → `docs/log/` 開 round 檔 + 這裡加「🔵 進行中」一行指向它；跑完結論寫進 round 檔，這裡只留「✅ 已歸檔」一行指標。
 
-最後更新：2026-08-28
+最後更新：2026-08-31
 
-> **🚚 2026-08-28 換機遷移中(舊機碩一_電腦退役)**：全線**已暫停**(`tmp/grind_loop.STOP` 存在、
-> 迴圈 state=結束、無殘留行程)。資產已補備份+對帳通過(三週 38,249 筆量測入本機副本)並暫存於
-> `D:\碩一_電腦\`(repo 整包 / `antenna_nas_backup` 37.7 GB / AI 記憶 52 檔 / 對話歷史)。
-> **新機還原步驟看 `D:\碩一_電腦\README_遷移.md`**；現任王 `smp073_d_040` wm_mfg −2.39 未變。
+> **✅ 2026-08-31 換機遷移完成**（舊機碩一_電腦退役 → 新機 i5-14600K）。
+> 環境：conda `ant` / **torch 2.7.1+cu128**（golden 綁此版）/ RTX 3060。
+> **⚠ 跑測試一律 `OMP_NUM_THREADS=4 python -m pytest tests/ -q`**——golden 綁**執行緒數 4**
+> （舊機預設值），新機預設 14 緒會讓 `sc_loss`/迴圈漂 0.003–1.09%；設 4 即 482 passed 零漂移。
+> **不要重錨 golden、不要在本機加 `CI=1`**（CI 的相對 1% 容差會讓 conftest 把漂移值寫回
+> `tests/golden.json`＝靜默重錨）。詳見 [[project_golden_thread_count]]。
+> NAS `T:` 已掛、量測備份 37.7 GB 已對帳通過（八類逐項相符）。三台正式機 worker 已 pull 並重啟。
+> 現任王 `smp073_d_040` wm_mfg −2.39 未變；`tmp/grind_loop.STOP` **仍在**＝無人值守磨機維持暫停。
+>
+> **📦 2026-08-31 送板交付（學長鄭國宏要安排送板）**：天線 25 張 + 濾波器 14 張，
+> 39 筆全部重跑 HFSS 產模擬檔（零失敗；**37 筆與原量測位元級一致**、2 筆差 ≤0.08 dB
+> ＝順帶完成一次交付集公證）。工具＝`script/handoff_pack.py`（`index`/`report`/`pdf`/
+> `export`/`collect`/`zip`）；輕量包（`.aedt`＋2 份 PDF，5 MB）已產出，含解完整版
+> 在 NAS `dataset/handoff_package/`（7.5 GB）。
+> 橋寬：天線 21 張 @0.1mm ＋ 學長池頂系 4 張 @0.075/0.05mm；濾波器 14 張全 @0.075mm。
+> ⚠ **待人工清**：三台的 `keep_handoff_*` 工作目錄（`keep_*` 不符 `_dedust_*`，三道自動清理
+> 都不碰＝刻意的 opt-in 設計，防整批線重演 2026-07-15 磁碟滿事件）；
+> **218 那個 `keep_handoff_flt_db075` 是跑錯的單埠版，務必刪**。
+> 教訓：dual 批發車漏帶 `--config` 被當 single 量完 14 筆 → 已補埠數守門（`bf1271f`），
+> 誤打資料保留於 `dedust_xport_probe_20260831`（附 README，**不入鍋**）。見 [[project_dual_dispatch_config]]。
 
 **批次線現況（2026-08-01）**：R33/R34/R35 已連續收輪（⚠ 開輪漏加本板 🔵 行三次——
 時間軸真相以 [log/README](../docs/log/README.md) 為準,本板此段補指標）:

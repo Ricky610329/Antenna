@@ -665,11 +665,68 @@ def deliver_picks(prefix="handoff"):
     return out
 
 
+
+def make_zip(pack_dir, out_zip, pdf_dir=OUT_DIR):
+    """輕量交付 zip：每個設計只放 `.aedt`（丟掉 `.aedtresults`）＋ 兩份 PDF ＋ 對照表。
+
+    含場解的 `.aedtresults` 每筆約 190MB（39 筆 ≈ 7.5GB），對「送板」用不到——學長要的是幾何，
+    電性看 PDF 即可（要細看再自己 solve，每筆 2–3 分鐘）。完整含解版留在 NAS `handoff_package/`。
+    丟掉 results 就沒有「改檔名弄斷 .aedt ↔ .aedtresults 關聯」的顧慮 → **.aedt 直接命名成交付名**，
+    扁平結構，與 PDF 一眼對得起來。"""
+    import zipfile
+    n, total = 0, 0
+    os.makedirs(os.path.dirname(out_zip) or ".", exist_ok=True)
+    with zipfile.ZipFile(out_zip, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+        for name in sorted(os.listdir(pack_dir)):
+            d = os.path.join(pack_dir, name)
+            if not os.path.isdir(d):
+                continue
+            aedt = [f for f in os.listdir(d) if f.endswith(".aedt")]
+            if not aedt:
+                print(f"  ⚠ {name}: 無 .aedt，跳過")
+                continue
+            src = os.path.join(d, aedt[0])
+            total += os.path.getsize(src)
+            z.write(src, f"HFSS_模擬檔/{name}.aedt")
+            n += 1
+        for pdf, label in (("handoff_single.pdf", "天線_single-port.pdf"),
+                           ("handoff_dual.pdf", "濾波器_dual-port.pdf")):
+            f = os.path.join(pdf_dir, pdf)
+            if os.path.exists(f):
+                z.write(f, label)
+        csv_f = os.path.join(pack_dir, "對照表.csv")
+        if os.path.exists(csv_f):
+            z.write(csv_f, "對照表.csv")
+        readme = [
+            "天線／濾波器 交付包",
+            "=====================",
+            "",
+            "1. 兩份 PDF 是目錄：每一列一個設計，含 pattern 圖、S 參數/增益曲線、",
+            "   方向圖（天線），以及各項規格餘裕。紅色空心圈標出規格區間內未達標的頻點。",
+            "",
+            "2. HFSS_模擬檔/ 內每個 .aedt 的檔名，就是 PDF 上該設計的名稱，可直接對應。",
+            "",
+            "3. 這些 .aedt 只含模型與求解設定，不含場解（檔案較小）。開啟後按 Analyze",
+            "   約 2-3 分鐘可重現 PDF 上的數字。含場解的完整版留在 NAS。",
+            "",
+            "4. 幾何已包含 45 度菱形對角橋（可製造化處理）；每個設計的橋寬與橋座數標在",
+            "   PDF 上——天線批為 0.05 / 0.075 / 0.1 mm，濾波器批為 0.075 mm。",
+            "",
+            "5. 掃頻 24-32 GHz、17 點、中心 28 GHz。",
+        ]
+        z.writestr("README.txt", (chr(13) + chr(10)).join(readme))
+    size = os.path.getsize(out_zip)
+    print(f"→ {out_zip}")
+    print(f"   {n} 個 .aedt（原始 {total / 1e6:.0f} MB）+ 2 份 PDF + 對照表 "
+          f"→ 壓縮後 {size / 1e6:.0f} MB")
+    return n, size
+
+
 # ---------------------------------------------------------------- CLI
 
 def main():
     ap = argparse.ArgumentParser(description="送板交付包：家族代表挑選 + PDF 目錄")
-    ap.add_argument("cmd", choices=["index", "report", "pdf", "export", "collect"])
+    ap.add_argument("cmd", choices=["index", "report", "pdf", "export", "collect", "zip"])
     ap.add_argument("--port", choices=["single", "dual", "both"], default="both")
     ap.add_argument("--max-dist", type=int, default=100, help="家族 Hamming 門檻（同 dedust 預設 100）")
     ap.add_argument("--top", type=int, default=5, help="每家族取前幾名（single）")
@@ -687,6 +744,11 @@ def main():
     ap.add_argument("--work", default=".", help="collect：keep_* 工作目錄所在（正式機本地碟）")
     ap.add_argument("--pack", default=None, help="collect：打包輸出路徑（預設 NAS handoff_package）")
     a = ap.parse_args()
+
+    if a.cmd == "zip":
+        make_zip(a.pack or str(DATASET_PATH.joinpath("handoff_package")),
+                 os.path.join(a.out_dir, "交付包_天線與濾波器.zip"))
+        return
 
     if a.cmd == "collect":
         collect(a.work, a.pack or str(DATASET_PATH.joinpath("handoff_package")))
