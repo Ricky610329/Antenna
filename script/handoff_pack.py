@@ -604,11 +604,25 @@ def collect(work_root, out_dir, inputs=None):
             n_ok += 1
             rows_out.append([m["id"], m.get("parent_id", ""), m.get("src_folder", ""),
                              store, os.path.basename(hits[0]), "OK"])
-    with open(os.path.join(out_dir, "對照表.csv"), "w", encoding="utf-8-sig", newline="") as f:
+    #! **合併寫入**，不是整份重寫（2026-08-31 實犯）：交付集散在多台正式機，每台各跑一次
+    #  collect，後跑的會把先跑的那份蓋掉——實際發生過（39 筆的表只剩最後一台的 21 筆）。
+    #  以交付名為鍵：本次有結果的覆蓋舊列，本次沒跑到的保留舊列。
+    csv_path = os.path.join(out_dir, "對照表.csv")
+    merged = {}
+    if os.path.exists(csv_path):
+        with open(csv_path, encoding="utf-8-sig", newline="") as f:
+            for i, row in enumerate(csv.reader(f)):
+                if i and row:
+                    merged[row[0]] = row
+    for row in rows_out:
+        if row[-1] == "OK" or row[0] not in merged:      # 別讓「缺」蓋掉別台已收到的 OK
+            merged[row[0]] = row
+    with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
         w.writerow(["交付名（＝資料夾名，對應 PDF）", "原 pattern id", "原批 store",
                     "重測 store", "HFSS 專案檔", "狀態"])
-        w.writerows(rows_out)
+        w.writerows([merged[k] for k in sorted(merged)])
+    print(f"    對照表合併後共 {len(merged)} 列")
     print(f"打包完成：{n_ok} 個 OK / {n_miss} 個缺 → {out_dir}（對照表.csv 已寫）")
     return n_ok, n_miss
 
