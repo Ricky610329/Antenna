@@ -5616,6 +5616,18 @@ def run(args):
     store_dir = _dir(args.store)
     manifest = _load_manifest(input_dir)
 
+    #! 埠數守門（2026-08-31 實犯）：manifest 的 `port` 是生成端寫的宣告（select-dual/select-smpool
+    #  都有帶）——與 `--config` 的 port 不符就是「用錯模擬器」，會一路跑完並產出**看起來合理但
+    #  無意義**的資料（單埠底板只有一條饋線,量濾波器等於量錯元件;.aedt 幾何也錯）。
+    #  比照 hfss_setup 分域「給錯域直接擋掉、不靜默吞」，這裡硬擋、不自動切換——自動切換會蓋掉
+    #  「其實是輸入夾給錯」這種更嚴重的手滑。舊批 manifest 無此欄＝不宣告＝不擋（向後相容）。
+    declared = {m.get("port") for m in manifest if m.get("port")}
+    if declared and declared != {cfg.port}:
+        raise SystemExit(
+            f"埠數不符：manifest 宣告 port={sorted(declared)}，但 config 是 {cfg.port}"
+            f"（{os.path.basename(getattr(args, 'config', '') or '')}）。"
+            " dual 批發車要帶尺：jobs-add ... --config configs/dual_r1_eval.yaml")
+
     store_dir.mkdir(parents=True, exist_ok=True)
     rad_dir = store_dir.joinpath("rad")
     if cfg.port == "single":

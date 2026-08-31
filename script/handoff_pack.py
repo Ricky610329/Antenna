@@ -533,6 +533,8 @@ def export_inputs(picks_by_port, prefix="handoff", dry=False):
             shutil.copyfile(str(DATASET_PATH.joinpath(f"{p['store']}_input", f"{p['id']}.pt")),
                             str(d.joinpath(f"{vid}.pt")))
             manifest.append(dict(id=vid, kind="repeat", family=f"HANDOFF_{port}",
+                                 port=port,          #! 埠數宣告：run() 會與 --config 對帳（2026-08-31 實犯：
+                                 #  匯出時漏帶 port,dual 批被當 single 量,幾何與數字全錯）
                                  parent_id=p["id"], src_folder=p["store"],
                                  src_score=round(float(p["score"]), 3),
                                  n_sites=p["n_sites"], diag_bridge_w=p["bridge_w"],

@@ -623,6 +623,22 @@ def test_hfss_setup_whitelist_is_port_scoped():
 CONTROL_KEYS = {"timeout", "keep_project"}      # run() 內 pop 掉、不進模擬器建構子
 
 
+def test_run_guards_port_mismatch():
+    """埠數守門（2026-08-31 實犯）：manifest 的 `port` 宣告與 `--config` 的 port 不符 → 硬擋。
+
+    不擋的後果不是報錯而是**靜默跑完**：dual 批被單埠模擬器量，底板只有一條饋線＝量錯元件，
+    數字（rad/sel 而非 m1..m4）與 .aedt 幾何全錯，卻看起來像正常結果。比照 hfss_setup 分域的
+    「給錯域直接擋掉、不靜默吞」。**硬擋而非自動切換**——自動切換會蓋掉「輸入夾給錯」這種更嚴重的手滑。
+    舊批 manifest 無 `port` 欄＝不宣告＝不擋（向後相容）。"""
+    import inspect
+    from script.dedust import run
+    src = inspect.getsource(run)
+    assert 'declared = {m.get("port") for m in manifest' in src, "run() 必須讀 manifest 的 port 宣告"
+    assert "if declared and declared != {cfg.port}:" in src, "宣告與 config 不符時要擋；無宣告時放行"
+    i_guard, i_mkdir = src.index("declared ="), src.index("store_dir.mkdir")
+    assert i_guard < i_mkdir, "守門要在建 store/開 HFSS 之前，否則已經燒掉機時才擋"
+
+
 def test_keep_project_is_a_control_key():
     """`keep_project`（2026-08-31 學長送板需求：保留 .aedt）是**輸入夾宣告**的控制鍵：
     兩域都收、但不是模擬器建構參數 → run() 必須 pop 掉，否則 SIM_CLS(**hfss_setup) 會 TypeError。
