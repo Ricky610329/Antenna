@@ -577,7 +577,16 @@ def collect(work_root, out_dir, inputs=None):
         if not man_f.exists():
             print(f"  ⚠ 找不到 manifest：{man_f}"); continue
         manifest = json.load(open(str(man_f), encoding="utf-8"))
-        proj = os.path.join(kd, "project")
+        #! 專案檔在 `<out>/HFSS/project/`——`PatchSimulator.__init__` 有多包一層
+        #  `Path(record_path).joinpath("HFSS")`（`patch_simulator/__init__.py:59`）。
+        #  2026-08-31 實犯：只找 `<out>/project/` → 39 筆全標「缺」。保留舊路徑當後備。
+        proj = next((c for c in (os.path.join(kd, "HFSS", "project"), os.path.join(kd, "project"))
+                     if os.path.isdir(c)), None)
+        if proj is None:
+            found = glob.glob(os.path.join(kd, "**", "*.aedt"), recursive=True)
+            print(f"  ⚠ {kd} 找不到 project 夾；整棵樹的 .aedt: {len(found)} 個"
+                  + (f"，例如 {found[0]}" if found else "（一個都沒有）"))
+            proj = os.path.join(kd, "HFSS", "project")
         for num, m in enumerate(manifest):
             hits = [f for f in glob.glob(os.path.join(proj, f"*_{num}.aedt"))
                     if os.path.basename(f).rsplit("_", 1)[1] == f"{num}.aedt"]
