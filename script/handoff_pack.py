@@ -370,11 +370,11 @@ def render(port, picks, out_path, png_dir=None, ylim=None):
         for start in range(0, len(picks), ROWS_PER_PAGE):
             chunk = picks[start:start + ROWS_PER_PAGE]
             rows = len(chunk)
-            fig_h = 3.15 * rows + 1.7           # +1.7 吋 = 頁首標題 + x 軸標籤 + 頁尾圖說的固定留白
+            fig_h = 3.15 * rows + 1.9           # +1.9 吋 = 頁首標題 + x 軸標籤 + 兩行頁尾圖說的固定留白
             fig = plt.figure(figsize=(13.6, fig_h))
             gs = fig.add_gridspec(rows, 4, width_ratios=ratios,
                                   left=0.035, right=0.975,
-                                  top=1 - 0.80 / fig_h, bottom=0.90 / fig_h,
+                                  top=1 - 0.80 / fig_h, bottom=1.05 / fig_h,
                                   hspace=0.62, wspace=0.32)
             for r, p in enumerate(chunk):
                 y = _resp(p)
@@ -465,15 +465,14 @@ def render(port, picks, out_path, png_dir=None, ylim=None):
             page = start // ROWS_PER_PAGE + 1
             fig.suptitle(f"送板交付目錄 — {'天線 (single-port)' if port == 'single' else '濾波器 (dual-port)'}"
                          f"　第 {page} 頁", color=INK, fontsize=13, y=1 - 0.28 / fig_h)
-            note = ("灰帶＝工作頻帶 26.5–29.5 GHz、紅虛線＝門檻（S11 −10 / Gain +4 dB）；"
+            note = ("灰帶＝工作頻帶 26.5–29.5 GHz；紅虛線＝門檻（S11 −10 / Gain +4 dB）\n"
                     "極座標＝主波束朝上、金＝±45° 窗、紅虛圈＝峰值−3dB 門檻；"
                     "橘◇＝45° 菱形橋位（HFSS 實際建的幾何）、青三角＝饋點；紅空心圈＝帶內未達標的頻點"
                     if port == "single" else
-                    "判準 wm_mfg=min(m1′, m2′, m3, m4′)＝規格 v2 四軸（m1′=m1+2、m2′=m2+2、m4′=m4+5）；"
-                    "灰帶＝S11/S22 帶內 26.5–30 GHz、"
-                    "S21 深灰＝通帶 25.5–30.5 / 淺灰＝阻帶；紅虛線＝門檻；"
-                    "橘◇＝45° 菱形橋位；**紅空心圈＝規格區間內未達標的頻點**。dual 不輸出遠場，故無方向圖")
-            fig.text(0.5, 0.22 / fig_h, note, ha="center", color=INK2, fontsize=8.4)
+                    "判準 wm_mfg=min(m1′, m2′, m3, m4′)＝規格 v2 四軸（m1′=m1+2、m2′=m2+2、m4′=m4+5）\n"
+                    "灰帶＝S11/S22 帶內 26.5–30 GHz；S21 深灰＝通帶 25.5–30.5、淺灰＝阻帶；"
+                    "紅虛線＝門檻；橘◇＝45° 菱形橋位；紅空心圈＝規格區間內未達標的頻點。dual 不輸出遠場，故無方向圖")
+            fig.text(0.5, 0.20 / fig_h, note, ha="center", color=INK2, fontsize=8.4)
             pdf.savefig(fig, facecolor=SURF)
             if png_dir:
                 os.makedirs(png_dir, exist_ok=True)
@@ -605,6 +604,58 @@ def collect(work_root, out_dir, inputs=None):
     return n_ok, n_miss
 
 
+
+DELIVER_RE = re.compile(r"^(ANT|FLT)_(F(\d+)|S)_(\d+)_(.+)$")
+
+
+def deliver_picks(prefix="handoff"):
+    """從**已重跑的交付 store** 反建 picks → PDF 數字＝附給學長的 .aedt 跑出來的數字。
+
+    交付名本身就編碼了家族與名次（`ANT_F00_1_<name>`／`ANT_S_1_<name>`），所以不必重跑挑選邏輯，
+    直接把 `handoff_*_input/manifest.json` ＋ 對應 store 的 `results.json` 讀回來即可。
+    這樣 PDF 與交付包同源；不這麼做的話 PDF 用的是原批數字，會出現「PDF 說 +0.69、
+    附的專案檔按下 solve 跑出 +0.77」的不一致（2026-08-31 實測 39 筆中有 2 筆會這樣）。"""
+    out = {"single": [], "dual": []}
+    root = str(DATASET_PATH)
+    for d in sorted(os.listdir(root)):
+        if not (d.startswith(f"{prefix}_") and d.endswith("_input")):
+            continue
+        store = d[:-6]
+        man_f, res_f = os.path.join(root, d, "manifest.json"), os.path.join(root, store, "results.json")
+        if not (os.path.exists(man_f) and os.path.exists(res_f)):
+            continue
+        manifest = json.load(open(man_f, encoding="utf-8"))
+        res = json.load(open(res_f, encoding="utf-8"))
+        for m in manifest:
+            r = res.get(m["id"])
+            if not r or "error" in r:
+                print(f"    ⚠ 跳過（無結果）：{m['id']}")
+                continue
+            g = DELIVER_RE.match(m["id"])
+            if not g:
+                print(f"    ⚠ 跳過（交付名格式不符）：{m['id']}")
+                continue
+            port = m.get("port", "single")
+            mat = _pattern(store, m["id"])
+            sites, _ = diag_bridge_sites(mat, m["diag_bridge_w"], PIXEL_MM)
+            pick = dict(store=store, id=m["id"], name=g.group(5), port=port, aliases=[],
+                        bridge_w=m["diag_bridge_w"], n_sites=len(sites), sites=sites, mat=mat,
+                        family=-1 if g.group(2) == "S" else int(g.group(3)), rank=int(g.group(4)))
+            if port == "single":
+                pick.update(wm=r["wm"][:3], score=r["wm"][2],
+                            rad_margin=r.get("rad_margin"), sel=r.get("sel"))
+            else:
+                mm = [r.get(f"m{i}") for i in range(1, 7)]
+                pick.update(m=mm, energy_max=r.get("energy_max"),
+                            score=min(mm[0] + 2, mm[1] + 2, mm[2], mm[3] + 5))
+            out[port].append(pick)
+    for port in out:
+        out[port].sort(key=lambda p: (p["family"] < 0, p["family"], p["rank"]))
+        if out[port]:
+            print(f"[{port}] 交付 store 反建 {len(out[port])} 張（數字＝重跑值，與附的 .aedt 同源）")
+    return out
+
+
 # ---------------------------------------------------------------- CLI
 
 def main():
@@ -621,6 +672,8 @@ def main():
                     help="橋座數上限（預設依 SITES_RULE：single 17、dual 不濾）")
     ap.add_argument("--out-dir", default=OUT_DIR)
     ap.add_argument("--png", action="store_true", help="同時輸出每頁 PNG")
+    ap.add_argument("--deliver", action="store_true",
+                    help="pdf：改用已重跑的 handoff_* store 反建（數字與交付的 .aedt 同源）")
     ap.add_argument("--dry", action="store_true", help="export：只列出要寫什麼，不寫 NAS")
     ap.add_argument("--work", default=".", help="collect：keep_* 工作目錄所在（正式機本地碟）")
     ap.add_argument("--pack", default=None, help="collect：打包輸出路徑（預設 NAS handoff_package）")
@@ -637,7 +690,10 @@ def main():
         return
 
     chosen = {}
-    for port in (["single", "dual"] if a.port == "both" else [a.port]):
+    if a.deliver:
+        chosen = deliver_picks()
+    else:
+      for port in (["single", "dual"] if a.port == "both" else [a.port]):
         ms = SITES_RULE[port] if a.max_sites is None else a.max_sites
         top = a.top if port == "single" else a.top_dual
         picks = select(rows, port, a.max_dist, top, a.dual_window,
