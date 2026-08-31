@@ -40,12 +40,17 @@
 6. 錨點注意：x00 是破對稱錨點（含 (4,18) 翻轉），x00 條目收尾用除塵不對稱化（`_finish` 語義），
    不要 `symmetrize`（round-16 §3 caveat）。
 7. **幾何/儀器變體批**（R52 網格起,R54-55 定型）：輸入夾放 `hfss_setup.json`（只收白名單鍵:
-   `max_delta_s/max_passes/min_passes/min_converged/timeout/diag_bridge_w/pixel_count/slot_spec`,
-   run 自動存證進 store;`diag_bridge_w`+`pixel_count`=single 專屬、`slot_spec`=dual 專屬,給錯域直接擋）;
+   `max_delta_s/max_passes/min_passes/min_converged/timeout/diag_bridge_w/pixel_count/slot_spec/keep_project`,
+   run 自動存證進 store;`slot_spec`=dual 專屬,給錯域直接擋;`diag_bridge_w`(2026-08-13 移植進 dual)與
+   `pixel_count`(R69 起 dual 開 50×50)=**兩域皆可**——真相以 `_hfss_setup_keys` 的 docstring 為準）;
    kind=`meshconv/diagbridge/slotw`=check-dup 豁免（豁免集合以 code 為準,僅 bits 不變的幾何變體;
    `symprobe` 等**改 bits 的變體不豁免、必跑 check-dup**）、id=`{parent}~<tag>` 親代綁定;
    **資料永不入鍋**（不進 clean_stores、重錨不 --add——漏一次=污染 SM 訓練集）;
    新 COM 動詞（Rotate/Subtract 級）首筆當 smoke+幾何渲染目檢。
+   **`keep_project: true`（2026-08-31 送板交付）**：跑完保留工作目錄→`.aedt` 留在 `keep_<store>/project/`。
+   目錄名不以 `_dedust_` 開頭 → 跑完即刪/啟動清掃/probe cleanup **三道都不碰＝要人工清**。
+   **只給小批用**（交付/複驗，數十筆）；**整批線開這個會重演 2026-07-15 磁碟滿事件**。
+   打包＝正式機跑 `python -m script.handoff_pack collect`（一 pattern 一夾、夾名＝交付名）。
 8. **機台部署事件**（改 worker 端 code:dedust/single_port）：push → 逐台 pull+**重啟 worker**
    （光 pull 不重啟=舊 code 陷阱,已兩犯;從機台本機桌面終端啟動,HFSS 視窗才可見）→
    長駐行程（chain daemon）一併重啟 → 首筆 smoke+`jobs-ls` 驗佇列。

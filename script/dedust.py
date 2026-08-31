@@ -5589,9 +5589,10 @@ def _hfss_setup_keys(port: str) -> set:
       * `slot_spec`（R60 亞像素耦合縫）＝**dual 專屬**。
       * `pixel_count`（50×50 精修域）＝兩域皆可（R69 起 dual 開 50×50）。
       * `diag_bridge_w`（R54 菱形橋/挖空槽）＝兩域皆可（2026-08-13 移植進 dual,湯物種救援劑量法）。
-    `timeout` 只進看門狗、不進模擬器建構子；其餘鍵一律直接 pass-through 給 SIM_CLS(**hfss_setup)。"""
+    `timeout` 只進看門狗、`keep_project` 只決定工作目錄，兩者都不進模擬器建構子；
+    其餘鍵一律直接 pass-through 給 SIM_CLS(**hfss_setup)。"""
     keys = {"max_delta_s", "max_passes", "min_passes", "min_converged", "timeout",
-            "pixel_count", "diag_bridge_w"}
+            "pixel_count", "diag_bridge_w", "keep_project"}
     return keys | ({"slot_spec"} if port == "dual" else set())
 
 
@@ -5635,6 +5636,7 @@ def run(args):
     #  (鍵=max_delta_s/max_passes/min_passes/min_converged)即整夾生效;無檔=歷來預設(0.02/6/5/5)。
     #  存證:複製一份進 store_dir——結果夾自帶「這批用什麼設定量的」,不靠人記。
     hfss_setup = {}
+    keep_project = False            #? 見下：hfss_setup 的 keep_project 鍵
     _setup_f = input_dir.joinpath("hfss_setup.json")
     if _setup_f.exists():
         with open(str(_setup_f), encoding="utf-8") as f:
@@ -5652,6 +5654,14 @@ def run(args):
             #  watchdog_timeout——加密網格是「合法地慢」,不是卡死;timeout 鍵只進看門狗不進模擬器)
             args.timeout = int(hfss_setup.pop("timeout"))
             print(f"⚠ 單筆看門狗放寬 → {args.timeout}s")
+        if hfss_setup.pop("keep_project", False):
+            #? 保留 HFSS 專案檔(2026-08-31,學長送板需求):跑完不刪工作目錄,.aedt 留在 <out>/project/。
+            #  以**輸入夾宣告**而非指令旗標——「靠指令記憶帶旗標已三犯」(script/CLAUDE.md);
+            #  worker 派工也吃得到(worker 走同一個 run(),out=None)。
+            #! 目錄名不以 `_dedust_` 開頭 → 啟動清掃/probe cleanup 都不會碰它 = **要人工清**。
+            #  只給小批用(交付/複驗);整批線開這個會重演 2026-07-15 磁碟滿事件。
+            keep_project = True
+            print("⚠ keep_project：工作目錄跑完保留（.aedt 在 <out>/project/），⚠ 需人工清理")
 
     store = SampleStore(store_dir)
     #? 續跑規則：成功的跳過、error 的重試（COM 偶發例外佔比 ~15%,R8 實測）
@@ -5659,7 +5669,8 @@ def run(args):
             if m["id"] not in results or "error" in results[m["id"]]]
     print(f"待模擬 {len(todo)}/{len(manifest)} 筆（成功跳過、error 重試；中斷再跑即續）")
 
-    out = Path(args.out if args.out else f"_dedust_{args.store}").resolve()   # 預設每 store 一個工作目錄
+    out = Path(args.out if args.out else
+               (f"keep_{args.store}" if keep_project else f"_dedust_{args.store}")).resolve()
     #! 隔離理由 (2026-07-06)：CSV 檔名只含批內編號,跨批共用目錄+匯出 silently 失敗=讀到上一批殘留
     #  (verify-discrete 實際踩到);連同 single_port.py 的「匯出前刪舊檔」雙保險。
     import threading
@@ -5878,7 +5889,7 @@ def run(args):
     poison = [i for i, v in results.items() if "error" in v and v.get("attempts", 1) >= 3]
     if poison:
         print(f"⚠ 毒樣本嫌疑（3 連敗）{len(poison)} 筆: {','.join(poison[:10])}——人工判;重派=刪 .done+.claim")
-    if args.out is None:
+    if args.out is None and not keep_project:
         #! 工作目錄=純暫存（結果全在 NAS）,跑完即刪——不清會吃滿系統碟:216 事件 2026-07-15,
         #  C 槽 0GB=78 個 job 的 HFSS 專案暫存,磁碟見底→COM 例外 0x80070223 爆發（重開機=假好轉）。
         #  只刪預設命名目錄;--out 自訂路徑視為使用者要保留。續跑不受影響（HFSS 專案會重建）。

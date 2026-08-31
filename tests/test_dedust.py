@@ -620,9 +620,33 @@ def test_hfss_setup_whitelist_is_port_scoped():
     assert {"timeout", "max_delta_s", "max_passes"} <= _hfss_setup_keys("dual") & _hfss_setup_keys("single")
 
 
+CONTROL_KEYS = {"timeout", "keep_project"}      # run() 內 pop 掉、不進模擬器建構子
+
+
+def test_keep_project_is_a_control_key():
+    """`keep_project`（2026-08-31 學長送板需求：保留 .aedt）是**輸入夾宣告**的控制鍵：
+    兩域都收、但不是模擬器建構參數 → run() 必須 pop 掉，否則 SIM_CLS(**hfss_setup) 會 TypeError。
+    以輸入夾宣告而非指令旗標，是因為「靠指令記憶帶旗標已三犯」(script/CLAUDE.md)；
+    worker 派工走同一個 run(out=None)，所以佇列派工也吃得到。"""
+    import inspect
+    from antenna.patch import DualPortSimulator, SinglePortRadSimulator
+    from script.dedust import _hfss_setup_keys, run
+    for port in ("single", "dual"):
+        assert "keep_project" in _hfss_setup_keys(port)
+    for cls in (DualPortSimulator, SinglePortRadSimulator):
+        assert "keep_project" not in inspect.signature(cls.__init__).parameters
+    src = inspect.getsource(run)
+    assert 'hfss_setup.pop("keep_project"' in src, "run() 必須 pop 掉 keep_project,不可下傳模擬器"
+    assert "keep_{args.store}" in src, "keep_project 時工作目錄不可用 _dedust_ 前綴(會被啟動清掃刪掉)"
+    assert "if args.out is None and not keep_project:" in src, "keep_project 時不可刪工作目錄"
+
+
 def test_hfss_setup_keys_are_real_simulator_params():
     """跨實作對帳：白名單的鍵是 `SIM_CLS(**hfss_setup)` 直接 pass-through 的 → 每個鍵都必須
-    真的是該 port 模擬器的建構參數，否則發車當下才 TypeError（`timeout` 例外：只進看門狗）。"""
+    真的是該 port 模擬器的建構參數，否則發車當下才 TypeError。
+
+    **控制鍵例外**（run() 內 pop 掉、不下傳）：`timeout` 只進看門狗、`keep_project` 只決定
+    工作目錄要不要保留。新增控制鍵時要同步加進這裡的排除集，否則這條會紅。"""
     import inspect
     from antenna.patch import DualPortSimulator, SinglePortRadSimulator
     from script.dedust import _hfss_setup_keys
@@ -630,7 +654,7 @@ def test_hfss_setup_keys_are_real_simulator_params():
         sig = inspect.signature(cls.__init__)
         if "sweep_type" not in sig.parameters:                 # single_rad 由父類吃 **kwargs
             sig = inspect.signature(cls.__mro__[1].__init__)
-        for k in _hfss_setup_keys(port) - {"timeout"}:
+        for k in _hfss_setup_keys(port) - CONTROL_KEYS:
             assert k in sig.parameters, f"{port}: {k} 不是 {cls.__name__} 的建構參數"
 
 
