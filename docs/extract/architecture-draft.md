@@ -1,3 +1,6 @@
+> ⚠ **已被取代（2026-09-01）**：新系統的架構定稿在 `docs/platform/architecture.md`（§13 指向實作），實作在獨立 repo `emforge`（`C:/Users/ricky/Documents/GitHub/emforge`，見其 `docs/implementation.md`）。本檔的六層版只留作盤點時的思路，**不要**照它蓋。
+icky\Documents\GitHubmforge`，`docs/implementation.md`）。本檔的六層版只留作盤點時的思路，**不要**照它蓋。
+
 # 新系統架構草案
 
 > **讀者**：接手這套系統並長期使用的人（不一定參與過原專案）。

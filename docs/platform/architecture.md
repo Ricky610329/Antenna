@@ -475,3 +475,16 @@ def propose(ctx):
 - **`arm="blind"` 是自我宣告，契約無法驗證。** 策略可以說謊。設計只保證說謊的地方會留紀錄（`C-12` 修正版：「繞過會留下紀錄，而非不可能」）。
 - **所有具體數字都來自單一問題域**（毫米波像素化天線／濾波器）。配額比例、門檻、樣本數、噪音地板——跨域全部要重調。本文件刻意不寫任何數值當預設。
 - **「重訓的作用是讓模型跟上分布、不是讓它更準」`❓`** 是從 C-07（域外崩潰）與 C-08（相關性改善不轉化）推出的解釋，不是實驗結果。它影響 SM 策略內部的重訓設計（近期資料加權 vs 全量），但不影響平台契約。
+
+---
+
+## §13　實作在哪裡、偏差是什麼（2026-09-01 回寫）
+
+本文件的實作是獨立 repo **`emforge`**（`C:\Users\ricky\Documents\GitHub\emforge`；套件／CLI 同名；274 條測試，TDD）。
+文件對應：`emforge/docs/architecture.md`（本文帶入版）、`emforge/docs/implementation.md`（依程式碼寫的實作文檔）、`emforge/docs/deploy.md`（三台切換）。
+
+與本文的偏差（詳 `implementation.md` §13）：Record 檔用 `.npz` 不是 `.pt`（核心零 torch）；`Context` 多第 7 欄 `params`；`Record` 多 `extra`（儀器側通道）；
+批結果改逐筆檔 `batches/<store>/results/<id>.json`（I-15／I-5）；`profile_hash` 納入 measure 名；Simulator 協定收成 `open/simulate/kill/close`；
+`state.json`／`status.json` 分開；resume 走 `control.json`；保留字為 `repeat/notarize/runtime/cli`（`blind` 是內建策略名兼保留 arm）；
+single 的 geom_ver 單邊宣告（Ricky：不動舊 repo）；`deliver`／keep_project 未實作（留位子）。
+本 repo 的 `docs/extract/architecture-draft.md`（六層版）已標記取代。
