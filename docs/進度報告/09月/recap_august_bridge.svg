@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="700" viewBox="0 0 1600 700">
+  <rect width="1600" height="700" fill="#ffffff"/>
+  <style>
+    text { font-family: "Microsoft JhengHei", sans-serif; fill: #111827; }
+    .head { font-size: 38px; font-weight: 700; }
+    .sub { font-size: 24px; fill: #4b5563; }
+    .label { font-size: 25px; font-weight: 700; }
+    .small { font-size: 20px; fill: #4b5563; }
+    .metric { font-size: 31px; font-weight: 700; }
+  </style>
+
+  <rect x="55" y="40" width="650" height="455" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="85" y="92" class="head">舊版：零厚度角點</text>
+  <text x="85" y="128" class="sub">兩片銅只在一個數學角點相碰</text>
+
+  <g stroke="#e5e7eb" stroke-width="2">
+    <line x1="130" y1="175" x2="630" y2="175"/><line x1="130" y1="255" x2="630" y2="255"/>
+    <line x1="130" y1="335" x2="630" y2="335"/><line x1="130" y1="415" x2="630" y2="415"/>
+    <line x1="170" y1="155" x2="170" y2="455"/><line x1="250" y1="155" x2="250" y2="455"/>
+    <line x1="330" y1="155" x2="330" y2="455"/><line x1="410" y1="155" x2="410" y2="455"/>
+    <line x1="490" y1="155" x2="490" y2="455"/><line x1="570" y1="155" x2="570" y2="455"/>
+  </g>
+  <rect x="170" y="175" width="240" height="160" fill="#b87333"/>
+  <rect x="410" y="335" width="160" height="80" fill="#b87333"/>
+  <circle cx="410" cy="335" r="13" fill="#dc2626"/>
+  <line x1="395" y1="320" x2="345" y2="270" stroke="#dc2626" stroke-width="4"/>
+  <text x="180" y="447" class="label" fill="#dc2626">接觸面積 = 0</text>
+  <text x="355" y="474" class="small">網格改變時，數值連通可能改變</text>
+
+  <path d="M735 300 H835" stroke="#1c5cab" stroke-width="9"/>
+  <path d="M835 300 l-28 -20 v40 z" fill="#1c5cab"/>
+
+  <rect x="895" y="40" width="650" height="455" rx="8" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <text x="925" y="92" class="head" fill="#1c5cab">新版：顯式 45° 菱形橋</text>
+  <text x="925" y="128" class="sub">dual 標準橋寬 0.075 mm</text>
+
+  <g stroke="#e5e7eb" stroke-width="2">
+    <line x1="970" y1="175" x2="1470" y2="175"/><line x1="970" y1="255" x2="1470" y2="255"/>
+    <line x1="970" y1="335" x2="1470" y2="335"/><line x1="970" y1="415" x2="1470" y2="415"/>
+    <line x1="1010" y1="155" x2="1010" y2="455"/><line x1="1090" y1="155" x2="1090" y2="455"/>
+    <line x1="1170" y1="155" x2="1170" y2="455"/><line x1="1250" y1="155" x2="1250" y2="455"/>
+    <line x1="1330" y1="155" x2="1330" y2="455"/><line x1="1410" y1="155" x2="1410" y2="455"/>
+  </g>
+  <rect x="1010" y="175" width="240" height="160" fill="#b87333"/>
+  <rect x="1250" y="335" width="160" height="80" fill="#b87333"/>
+  <polygon points="1250,282 1303,335 1250,388 1197,335" fill="#ff8c00" stroke="#d97706" stroke-width="3"/>
+  <line x1="1180" y1="245" x2="1227" y2="303" stroke="#1c5cab" stroke-width="3"/>
+  <path d="M1227 303 l-14 -7 11 -9 z" fill="#1c5cab"/>
+  <text x="1015" y="232" class="label" fill="#1c5cab">橋寬參數 w = 0.075 mm</text>
+  <text x="1015" y="447" class="label" fill="#15803d">有限寬度的銅路徑</text>
+  <text x="1085" y="474" class="small">幾何設定、模擬與交付使用同一座橋</text>
+
+  <rect x="55" y="535" width="1490" height="120" rx="8" fill="#eef2f8"/>
+  <text x="85" y="576" class="label">R71 單一冠軍三態探針</text>
+  <text x="85" y="616" class="small">wm_mfg，dB，越高越好</text>
+  <text x="520" y="606" class="metric" fill="#b91c1c">切除橋  −31.03</text>
+  <text x="860" y="606" class="metric" fill="#92400e">0.01 mm 微橋  −6.86</text>
+  <text x="1240" y="606" class="metric" fill="#15803d">0.075 mm 橋  −3.82</text>
+  <text x="520" y="642" class="small">切橋與 0.01 mm 為單次探針；0.075 mm 為跨機 3/3 公證值</text>
+  <text x="85" y="685" class="small">示意，比例非實際。數字來源：docs/log/round-71-dual-dynasty-mining.md §0、§4。</text>
+</svg>

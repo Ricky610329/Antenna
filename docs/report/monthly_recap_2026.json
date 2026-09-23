@@ -1,0 +1,811 @@
+{
+  "source": "docs/進度報告/09月/九月份進度報告.pptx",
+  "preserve_slides": 17,
+  "old_recap_title": "七、八月成果回顧（討論用）",
+  "slides": [
+    {
+      "title": "七月：研究流程與驗證效率",
+      "elements": [
+        {
+          "type": "text",
+          "x": 42,
+          "y": 108,
+          "w": 876,
+          "h": 32,
+          "text": "把候選決策、真值模擬與代理訓練拆開，讓工作分配可追溯",
+          "size": 18,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "rect",
+          "x": 42,
+          "y": 166,
+          "w": 192,
+          "h": 86,
+          "fill": "#EEF4F8",
+          "line": "#A6BBCD"
+        },
+        {
+          "type": "text",
+          "x": 52,
+          "y": 184,
+          "w": 172,
+          "h": 56,
+          "text": "Agent 決策\n提出下一輪假設",
+          "size": 19,
+          "bold": true,
+          "color": "#245B85",
+          "align": 2
+        },
+        {
+          "type": "rect",
+          "x": 270,
+          "y": 166,
+          "w": 192,
+          "h": 86,
+          "fill": "#EEF4F8",
+          "line": "#A6BBCD"
+        },
+        {
+          "type": "text",
+          "x": 280,
+          "y": 184,
+          "w": 172,
+          "h": 56,
+          "text": "工具箱\n產生候選圖樣",
+          "size": 19,
+          "bold": true,
+          "color": "#245B85",
+          "align": 2
+        },
+        {
+          "type": "rect",
+          "x": 498,
+          "y": 166,
+          "w": 192,
+          "h": 86,
+          "fill": "#EEF4F8",
+          "line": "#A6BBCD"
+        },
+        {
+          "type": "text",
+          "x": 508,
+          "y": 184,
+          "w": 172,
+          "h": 56,
+          "text": "HFSS\n批次驗證真值",
+          "size": 19,
+          "bold": true,
+          "color": "#245B85",
+          "align": 2
+        },
+        {
+          "type": "rect",
+          "x": 726,
+          "y": 166,
+          "w": 192,
+          "h": 86,
+          "fill": "#EEF4F8",
+          "line": "#A6BBCD"
+        },
+        {
+          "type": "text",
+          "x": 736,
+          "y": 184,
+          "w": 172,
+          "h": 56,
+          "text": "資料池與分析\n回饋研究判斷",
+          "size": 19,
+          "bold": true,
+          "color": "#245B85",
+          "align": 2
+        },
+        {
+          "type": "line",
+          "x": 238,
+          "y": 209,
+          "x2": 266,
+          "y2": 209,
+          "color": "#245B85",
+          "weight": 1.5,
+          "arrow": true
+        },
+        {
+          "type": "line",
+          "x": 466,
+          "y": 209,
+          "x2": 494,
+          "y2": 209,
+          "color": "#245B85",
+          "weight": 1.5,
+          "arrow": true
+        },
+        {
+          "type": "line",
+          "x": 694,
+          "y": 209,
+          "x2": 722,
+          "y2": 209,
+          "color": "#245B85",
+          "weight": 1.5,
+          "arrow": true
+        },
+        {
+          "type": "line",
+          "x": 822,
+          "y": 252,
+          "x2": 822,
+          "y2": 285,
+          "color": "#245B85",
+          "weight": 1.5,
+          "arrow": false
+        },
+        {
+          "type": "line",
+          "x": 822,
+          "y": 285,
+          "x2": 138,
+          "y2": 285,
+          "color": "#245B85",
+          "weight": 1.5,
+          "arrow": false
+        },
+        {
+          "type": "line",
+          "x": 138,
+          "y": 285,
+          "x2": 138,
+          "y2": 252,
+          "color": "#245B85",
+          "weight": 1.5,
+          "arrow": true
+        },
+        {
+          "type": "text",
+          "x": 214,
+          "y": 302,
+          "w": 570,
+          "h": 29,
+          "text": "代理模型在事後批次重錨，分析結果用於下一輪決策",
+          "size": 16,
+          "bold": false,
+          "color": "#526A7D",
+          "align": 2
+        },
+        {
+          "type": "line",
+          "x": 42,
+          "y": 344,
+          "x2": 918,
+          "y2": 344,
+          "color": "#C6D5E1",
+          "weight": 0.7,
+          "arrow": false
+        },
+        {
+          "type": "text",
+          "x": 60,
+          "y": 356,
+          "w": 390,
+          "h": 27,
+          "text": "原線上迴圈：單次 profiling",
+          "size": 17,
+          "bold": true,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 60,
+          "y": 389,
+          "w": 390,
+          "h": 46,
+          "text": "278 秒／輪",
+          "size": 29,
+          "bold": true,
+          "color": "#245B85",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 60,
+          "y": 439,
+          "w": 390,
+          "h": 29,
+          "text": "HFSS 約 170 秒，占 61%",
+          "size": 16,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 520,
+          "y": 356,
+          "w": 380,
+          "h": 27,
+          "text": "批次線：模擬資料產出",
+          "size": 17,
+          "bold": true,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 520,
+          "y": 389,
+          "w": 380,
+          "h": 46,
+          "text": "中位 160 秒／筆",
+          "size": 29,
+          "bold": true,
+          "color": "#245B85",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 520,
+          "y": 439,
+          "w": 380,
+          "h": 29,
+          "text": "代理訓練移出模擬機迴圈",
+          "size": 16,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 42,
+          "y": 478,
+          "w": 876,
+          "h": 19,
+          "text": "兩者為不同運作情境的快照，用於說明時間分配，不換算同條件加速倍率。",
+          "size": 12,
+          "bold": false,
+          "color": "#526A7D",
+          "align": 1
+        }
+      ],
+      "source_label": "來源：七月進度報告 v2 §1–2；methodology-divergences.md D22。",
+      "notes": "來源：docs/進度報告/07月/進度報告_v2.md §1–2；docs/進度報告/07月/進度報告_2026-07.md §8.1；docs/methodology-divergences.md D22。278 秒/epoch 為單次正式機 profiling，HFSS 約170秒；批次線中位160秒/筆。不可推算同條件加速倍率。原生可編輯流程圖為依上述來源重繪。",
+      "body_md": "研究工作拆成 Agent 決策、工具產生候選、HFSS 真值驗證與資料分析回饋；代理模型改在事後批次重錨。\n\n原線上 profiling 為 278 秒／輪，其中 HFSS 約 170 秒（61%）；批次線中位 160 秒／筆。兩者為不同運作情境的快照，用於說明工作分配，不換算同條件加速倍率。\n\n![研究流程與時間分配](recap_july_workflow.png)"
+    },
+    {
+      "title": "七月：生成約束與可製造性",
+      "elements": [
+        {
+          "type": "text",
+          "x": 42,
+          "y": 108,
+          "w": 876,
+          "h": 31,
+          "text": "先把幾何規則放進生成條件，再驗證電性是否維持",
+          "size": 18,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 52,
+          "y": 150,
+          "w": 255,
+          "h": 31,
+          "text": "原圖：含碎片",
+          "size": 18,
+          "bold": true,
+          "color": "#526A7D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 345,
+          "y": 150,
+          "w": 274,
+          "h": 31,
+          "text": "10–5–10 部分對稱",
+          "size": 18,
+          "bold": true,
+          "color": "#245B85",
+          "align": 1
+        },
+        {
+          "type": "image",
+          "path": "docs/進度報告/09月/recap_july_symmetry.png",
+          "x": 42,
+          "y": 183,
+          "w": 565,
+          "h": 238,
+          "crop": {
+            "left": 0.03769740193581253,
+            "top": 0.3380952380952381,
+            "right": 0.5669893020886398,
+            "bottom": 0.36
+          }
+        },
+        {
+          "type": "text",
+          "x": 42,
+          "y": 432,
+          "w": 565,
+          "h": 43,
+          "text": "F2 → s05：wm −1.42 → −0.29 dB\ns05 經 41 次重複模擬確認",
+          "size": 15,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 645,
+          "y": 163,
+          "w": 273,
+          "h": 33,
+          "text": "事後除塵的代價",
+          "size": 21,
+          "bold": true,
+          "color": "#245B85",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 645,
+          "y": 205,
+          "w": 273,
+          "h": 101,
+          "text": "R7 的 5 個案例中，4 個\nworst-margin 下降\n4.7–16.9 dB。",
+          "size": 18,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 645,
+          "y": 322,
+          "w": 273,
+          "h": 33,
+          "text": "幾何規則是第一關",
+          "size": 21,
+          "bold": true,
+          "color": "#245B85",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 645,
+          "y": 362,
+          "w": 273,
+          "h": 89,
+          "text": "零粉塵、金屬碎片 ≥ 4 px、\n饋墊完整；實體製程\n公差仍需另行驗證。",
+          "size": 17,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 42,
+          "y": 479,
+          "w": 876,
+          "h": 18,
+          "text": "此處為像素幾何條件與 HFSS 模擬驗證；製程公差及實體量測尚待驗證。",
+          "size": 12,
+          "bold": false,
+          "color": "#526A7D",
+          "align": 1
+        }
+      ],
+      "source_label": "來源：七月月報；R7（除塵）、R9–R10（部分對稱與重測）。圖為原圖樣局部，饋線朝下。",
+      "notes": "來源：docs/進度報告/07月/進度報告_v2.md；docs/log/round-07-dedust.md §4–5；docs/log/round-09-pool-revalidation.md；docs/log/round-10-refine-attribution.md。圖樣取自07月/對稱化實例.png的左右原圖部分，以PPT原生裁切放大；無修改像素。F2 wm以重測−1.42為準，不採歷史池−0.01。此處可製造性僅指像素幾何判準，非已完成製程或實物驗證。",
+      "body_md": "R7 除塵試驗中，5 個案例有 4 個 worst-margin 下降 4.7–16.9 dB，說明小碎片可能參與共振，不能將電性良好的圖樣清理後直接當作可交付設計。\n\n部分對稱提供另一個構造方向：F2 改為 10–5–10 部分對稱的 s05，wm 由重測 −1.42 改善至 −0.29 dB，且移除粉塵；s05 經 41 次重複模擬確認。\n\n![部分對稱的圖樣與電性對照](recap_july_symmetry.png)\n\n此處的可製造性指零粉塵、金屬碎片 ≥4 px、饋墊完整等像素幾何條件與模擬驗證；實體製造、製程公差及量測仍需另行確認。"
+    },
+    {
+      "title": "七月：合格設計的款式多樣性",
+      "elements": [
+        {
+          "type": "text",
+          "x": 42,
+          "y": 108,
+          "w": 876,
+          "h": 31,
+          "text": "七月報告快照：1,575 筆帶內與方向圖合格解，整理為 66 種款式",
+          "size": 18,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 42,
+          "y": 148,
+          "w": 424,
+          "h": 31,
+          "text": "款式 1｜607 個變體",
+          "size": 20,
+          "bold": true,
+          "color": "#245B85",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 495,
+          "y": 148,
+          "w": 423,
+          "h": 31,
+          "text": "款式 2｜412 個變體",
+          "size": 20,
+          "bold": true,
+          "color": "#245B85",
+          "align": 1
+        },
+        {
+          "type": "image",
+          "path": "docs/進度報告/09月/recap_july_families.png",
+          "x": 42,
+          "y": 186,
+          "w": 214,
+          "h": 214,
+          "crop": {
+            "left": 0.03361344537815126,
+            "top": 0.08163265306122448,
+            "right": 0.805672268907563,
+            "bottom": 0.5680272108843537
+          }
+        },
+        {
+          "type": "image",
+          "path": "docs/進度報告/09月/recap_july_families.png",
+          "x": 495,
+          "y": 186,
+          "w": 214,
+          "h": 214,
+          "crop": {
+            "left": 0.03361344537815126,
+            "top": 0.5986394557823129,
+            "right": 0.805672268907563,
+            "bottom": 0.05215419501133787
+          }
+        },
+        {
+          "type": "text",
+          "x": 284,
+          "y": 182,
+          "w": 184,
+          "h": 25,
+          "text": "代表設計的電性餘裕",
+          "size": 14,
+          "bold": false,
+          "color": "#526A7D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 737,
+          "y": 182,
+          "w": 182,
+          "h": 25,
+          "text": "代表設計的電性餘裕",
+          "size": 14,
+          "bold": false,
+          "color": "#526A7D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 284,
+          "y": 224,
+          "w": 184,
+          "h": 33,
+          "text": "S11   +1.11 dB",
+          "size": 18,
+          "bold": true,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 284,
+          "y": 273,
+          "w": 184,
+          "h": 33,
+          "text": "Gain  +0.05 dB",
+          "size": 18,
+          "bold": true,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 284,
+          "y": 322,
+          "w": 184,
+          "h": 33,
+          "text": "Rad   +0.36 dB",
+          "size": 18,
+          "bold": true,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 737,
+          "y": 224,
+          "w": 184,
+          "h": 33,
+          "text": "S11   +1.19 dB",
+          "size": 18,
+          "bold": true,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 737,
+          "y": 273,
+          "w": 184,
+          "h": 33,
+          "text": "Gain  +0.15 dB",
+          "size": 18,
+          "bold": true,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 737,
+          "y": 322,
+          "w": 184,
+          "h": 33,
+          "text": "Rad   +0.13 dB",
+          "size": 18,
+          "bold": true,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 42,
+          "y": 426,
+          "w": 876,
+          "h": 45,
+          "text": "同款變體用局部微調檢查可動區；不同款式保留結構差異，作為後續驗證備選。",
+          "size": 18,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 42,
+          "y": 479,
+          "w": 876,
+          "h": 18,
+          "text": "數字為七月月報中的 HFSS 模擬快照，未換算為實體製造良率。",
+          "size": 12,
+          "bold": false,
+          "color": "#526A7D",
+          "align": 1
+        }
+      ],
+      "source_label": "來源：七月進度報告 v2 §7.1–7.3、多樣性 gallery。兩圖樣均保留原始方向，饋線朝下。",
+      "notes": "來源：docs/進度報告/07月/進度報告_v2.md §7.1–7.3；07月/多樣性gallery_slide.png。兩個圖樣以PPT原生裁切取原圖左右區域，不改動像素。數字為圖面快照：1575、66、607、412；S11/Gain/radiation餘裕分別1.11/0.05/0.36及1.19/0.15/0.13 dB。統計條件為 wm≥0 且 rad_margin≥0，未以帶外作篩選。不得作為月底全池統計、均勻隨機搜尋成功率或實物製造良率。",
+      "body_md": "七月報告將 1,575 筆帶內與方向圖合格解整理成 66 種款式；統計條件為 wm ≥0 且 rad_margin ≥0，未以帶外作篩選。下圖的兩個代表款式各有 607、412 個變體，提供結構不同的後續驗證備選。\n\n![款式代表與電性指標](recap_july_families.png)\n\n款式 1 的 S11／Gain／radiation 餘裕為 +1.11／+0.05／+0.36 dB；款式 2 為 +1.19／+0.15／+0.13 dB。這是集中取樣於已知好區的模擬快照，不能直接解讀為從零探索的命中率或實體良率。"
+    },
+    {
+      "title": "八月：資料瀏覽與可製造性篩選",
+      "elements": [
+        {
+          "type": "text",
+          "x": 42,
+          "y": 108,
+          "w": 876,
+          "h": 32,
+          "text": "約 3.9 萬筆單埠模擬資料，依幾何變形後的結果篩選",
+          "size": 18,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "image",
+          "path": "docs/進度報告/09月/recap_august_browser.png",
+          "x": 42,
+          "y": 150,
+          "w": 876,
+          "h": 282,
+          "crop": {
+            "left": 0.165,
+            "top": 0,
+            "right": 0.165,
+            "bottom": 0.4917721518987342
+          }
+        },
+        {
+          "type": "text",
+          "x": 42,
+          "y": 447,
+          "w": 876,
+          "h": 45,
+          "text": "原圖 wm、菱形化後 db100_wm 與差值並列；先用合格閘門篩選，再匯出候選。",
+          "size": 17,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 42,
+          "y": 479,
+          "w": 876,
+          "h": 18,
+          "text": "製造視角採幾何變形後的 HFSS 分數，與實體量測結果分開記錄。",
+          "size": 12,
+          "bold": false,
+          "color": "#526A7D",
+          "align": 1
+        }
+      ],
+      "source_label": "來源：八月進度報告；Pattern Browser 單埠製造視角截圖（當時資料快照，放大前三列）。",
+      "notes": "來源：docs/進度報告/08月/八月份進度報告.md §1；ui_06_mfg.png。08月MD記錄38972筆，較晚的總覽截圖39111筆，因此以約3.9萬描述規模。製造視角截圖以db100_wm排序，為菱形化之後的HFSS結果；不是實測。截圖以PPT原生裁切放大上方控制及前三列，未改動原始數值。",
+      "body_md": "八月建立離線、唯讀的 Pattern Browser，把約 3.9 萬筆單埠（single-port）模擬資料整理成可篩選、排序、查看電性與匯出的資料工具。資料筆數為當時的快照。\n\n![單埠製造視角：依菱形化後結果排序並匯出](recap_august_browser.png)\n\n製造視角並列原圖 wm、菱形化後 db100_wm 與變形差值；先以合格閘門縮小候選，再輸出 top-N。這些是模擬及幾何驗證結果，與實體量測分開記錄。"
+    },
+    {
+      "title": "八月：顯式菱形橋與可製造幾何",
+      "elements": [
+        {
+          "type": "image",
+          "path": "docs/進度報告/09月/recap_august_bridge.svg",
+          "x": 42,
+          "y": 104,
+          "w": 876,
+          "h": 389
+        }
+      ],
+      "source_label": "來源：R70–R71；dual_port.py 的 diag_bridge_w 實作。示意圖不依實際比例；實體製程仍需驗證。",
+      "notes": "來源：docs/log/round-70-dual-mfg-founding.md；docs/log/round-71-dual-dynasty-mining.md §4；antenna/patch/patch_simulator/dual_port.py:433–446。diag_bridge_w是旋轉前w×w正方形邊長，非旋轉後水平對角長。R71單一冠軍三態：0.075 mm −3.82公證；0.01 mm −6.86單次；切角−31.03單次。這是八月研究條件；九月送板幾何以主報告§2為準。不將單一探針泛化為族群平均，不宣稱已有製程或實物驗證。",
+      "body_md": "八月將零厚度對角接點改成顯式的 45° 菱形橋，讓有限寬度的銅路徑直接進入幾何與模擬。研究條件的橋寬參數 w=0.075 mm，是旋轉前 w×w 方塊的邊長，並非菱形的水平對角長。\n\n![角點與菱形橋，以及 R71 三態探針](recap_august_bridge.png)\n\nR71 同一設計的三態探針：切橋 −31.03 dB、0.01 mm 微橋 −6.86 dB（兩者為單次），0.075 mm 橋 −3.82 dB（跨機 3/3 公證）。此案例顯示橋接幾何會改變電性，不宜視為求解完成後才加上的製造補丁。這不是族群平均，也不是實體製程驗證；九月送板幾何仍以前文為準。"
+    },
+    {
+      "title": "八月：Dual-port 性能與代表設計",
+      "elements": [
+        {
+          "type": "text",
+          "x": 42,
+          "y": 108,
+          "w": 876,
+          "h": 31,
+          "text": "可製造幾何下的性能進展｜8/13–8/24",
+          "size": 18,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "image",
+          "path": "docs/進度報告/09月/recap_august_progress.png",
+          "x": 42,
+          "y": 149,
+          "w": 598,
+          "h": 273
+        },
+        {
+          "type": "text",
+          "x": 658,
+          "y": 151,
+          "w": 260,
+          "h": 30,
+          "text": "代表圖樣：同家族局部微調",
+          "size": 16,
+          "bold": true,
+          "color": "#245B85",
+          "align": 1
+        },
+        {
+          "type": "image",
+          "path": "docs/進度報告/09月/recap_august_lineage.png",
+          "x": 668,
+          "y": 197,
+          "w": 112,
+          "h": 112,
+          "crop": {
+            "left": 0.0070921985815602835,
+            "top": 0.19285714285714287,
+            "right": 0.8351063829787234,
+            "bottom": 0.18571428571428572
+          }
+        },
+        {
+          "type": "image",
+          "path": "docs/進度報告/09月/recap_august_lineage.png",
+          "x": 806,
+          "y": 197,
+          "w": 112,
+          "h": 112,
+          "crop": {
+            "left": 0.8368794326241135,
+            "top": 0.19285714285714287,
+            "right": 0.005319148936170213,
+            "bottom": 0.18571428571428572
+          }
+        },
+        {
+          "type": "line",
+          "x": 785,
+          "y": 253,
+          "x2": 799,
+          "y2": 253,
+          "color": "#245B85",
+          "weight": 1.5,
+          "arrow": true
+        },
+        {
+          "type": "text",
+          "x": 657,
+          "y": 316,
+          "w": 137,
+          "h": 29,
+          "text": "−5.90 dB",
+          "size": 17,
+          "bold": true,
+          "color": "#526A7D",
+          "align": 2
+        },
+        {
+          "type": "text",
+          "x": 800,
+          "y": 316,
+          "w": 118,
+          "h": 29,
+          "text": "−2.39 dB",
+          "size": 17,
+          "bold": true,
+          "color": "#245B85",
+          "align": 2
+        },
+        {
+          "type": "text",
+          "x": 658,
+          "y": 363,
+          "w": 260,
+          "h": 40,
+          "text": "改善 3.51 dB",
+          "size": 26,
+          "bold": true,
+          "color": "#245B85",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 658,
+          "y": 409,
+          "w": 260,
+          "h": 29,
+          "text": "17 次刷新｜23 輪研究",
+          "size": 17,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        },
+        {
+          "type": "text",
+          "x": 42,
+          "y": 457,
+          "w": 876,
+          "h": 34,
+          "text": "幾何換代後重新開帳；−2.39 dB 仍低於零餘裕，性能改善與全部達標分開判讀。",
+          "size": 16,
+          "bold": false,
+          "color": "#152C3D",
+          "align": 1
+        }
+      ],
+      "source_label": "來源：八月月報、dual 歷史紀錄。性能區間 8/13–8/24；R57–R79 為 8/11–8/24 的研究輪次。",
+      "notes": "來源：docs/進度報告/08月/八月份進度報告.md §2；dual_progress.png；dual_ladder.png；docs/records_dual.json。8/13幾何換代後wm_mfg由−5.90到8/24−2.39，改善3.51dB，17次刷新；8/11–8/24完成R57–R79共23輪。代表圖样以PPT原生裁切取最初與最末圖，不修改像素/方向。未採用含−2.30理論上界的舊圖；該上界不可作理論保證。",
+      "body_md": "dual-port 在 8/13 幾何換代後重新開帳，wm_mfg 由 −5.90 改善至 8/24 的 −2.39 dB，增加 3.51 dB、共 17 次刷新紀錄。8/11–8/24 累積 R57–R79 共 23 輪研究。\n\n![可製造幾何下的 dual 性能進展](recap_august_progress.png)\n\n![沿同一家族逐步微調的代表圖樣](recap_august_lineage.png)\n\n這條進展代表在相同量尺下的改善；−2.39 dB 仍低於零餘裕，不能寫成所有規格已達標。"
+    }
+  ]
+}
