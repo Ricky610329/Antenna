@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EMForge 論文與投稿評估｜IMS · APMC · EuMC</title>
+<style>
+:root{--ink:#183132;--muted:#526665;--paper:#f5f4ef;--card:#fffefa;--line:#d6dfd9;--teal:#08786d;--pale:#e3f1ea;--amber:#8b5720;--sand:#fff1d9;--navy:#173a4b}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:80px}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Segoe UI","Microsoft JhengHei",sans-serif;line-height:1.8}a{color:#076e70;text-underline-offset:3px}a:hover{color:#a45121}header{background:var(--navy);color:#fff;padding:64px max(24px,calc((100vw - 1160px)/2)) 48px}header p{max-width:850px;color:#d6e6e7}header .eyebrow{color:#a6dcd1;font-size:13px;letter-spacing:.12em}h1{font-size:clamp(30px,4vw,49px);line-height:1.35;margin:16px 0}h2{font-size:27px;line-height:1.45;margin:0 0 20px}h3{font-size:19px;line-height:1.5;margin:0 0 12px}p{margin:10px 0 16px}.lead{font-size:19px}.pill{display:inline-block;padding:3px 10px;border:1px solid #aacdc9;border-radius:20px;font-size:12px;margin:3px 5px 0 0}.nav{position:sticky;top:0;z-index:5;background:#fffefaed;backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}.nav-inner{max-width:1210px;margin:auto;display:flex;align-items:center;gap:22px;overflow:auto;padding:13px 25px;white-space:nowrap}.nav a{font-size:14px;text-decoration:none}.nav button{margin-left:auto;border:1px solid var(--line);background:white;border-radius:7px;padding:6px 12px;color:var(--ink);cursor:pointer;white-space:nowrap}main{max-width:1210px;margin:auto;padding:38px 25px 60px}section{margin:0 0 48px}.section-no{color:var(--teal);font-size:13px;letter-spacing:.08em;margin-bottom:7px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.two{grid-template-columns:repeat(2,minmax(0,1fr))}.card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:24px}.card.featured{border-top:4px solid var(--teal)}.card .label{color:var(--teal);font-size:12px;font-weight:700;letter-spacing:.05em}.card h3{font-size:25px;margin:8px 0}.date{font-size:25px;font-weight:650;line-height:1.3;margin:15px 0 8px}.small{font-size:13px;color:var(--muted)}.muted{color:var(--muted)}.note{border-left:4px solid var(--teal);background:var(--pale);padding:17px 21px;border-radius:0 9px 9px 0;margin:20px 0}.note.caution{border-color:#bc8741;background:var(--sand)}.note p:last-child{margin-bottom:0}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;background:#eaf0eb;vertical-align:top;color:#274849}th,td{padding:15px 17px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}td:first-child{min-width:135px;font-weight:600}code{font-family:Consolas,"Microsoft JhengHei",monospace;font-size:.88em;overflow-wrap:anywhere;background:#eaf0eb;padding:2px 4px;border-radius:3px}.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:24px 0}.flow article{position:relative;border:1px solid var(--line);background:white;border-radius:10px;padding:19px 16px;font-size:14px}.flow article:not(:last-child)::after{content:'→';position:absolute;right:-12px;top:39%;z-index:1;color:var(--teal);font-weight:bold}.flow strong{display:block;color:var(--teal);font-size:16px;margin-bottom:8px}.flow span{display:block}.steps{counter-reset:step;display:grid;gap:13px}.step{display:grid;grid-template-columns:44px 1fr;gap:17px;padding:20px;background:var(--card);border:1px solid var(--line);border-radius:10px}.step:before{counter-increment:step;content:counter(step);display:block;background:var(--pale);color:var(--teal);border-radius:50%;width:38px;height:38px;line-height:38px;text-align:center;font-weight:700}.step p{margin:5px 0}.tag{display:inline-block;background:var(--pale);color:#096055;font-size:12px;padding:1px 7px;border-radius:4px;white-space:nowrap}.tag.amber{background:var(--sand);color:var(--amber)}ul{padding-left:22px}li{margin:6px 0}details{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:15px 20px;margin:12px 0}summary{cursor:pointer;font-weight:600}details p:last-child{margin-bottom:4px}.refs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.ref{padding:20px;background:var(--card);border:1px solid var(--line);border-radius:9px}.ref h3{font-size:16px}.ref p{font-size:14px;margin:8px 0}.ref .number{font-size:12px;color:var(--teal);font-weight:700}.verdict{font-size:22px;line-height:1.65;max-width:960px}footer{border-top:1px solid var(--line);padding-top:22px;font-size:12px;color:var(--muted)}.kpi{font-size:35px;line-height:1.2;color:var(--teal);margin:9px 0}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #bf8f32;outline-offset:4px}@media(max-width:850px){.grid,.two,.refs{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.flow article:not(:last-child)::after{content:'↓';top:auto;right:50%;bottom:-17px}.nav-inner{gap:18px}.nav button{display:none}header{padding:40px 23px}main{padding:28px 18px}th,td{padding:12px}h2{font-size:24px}}@media print{body{background:white;font-size:10pt}.nav,.print-only-hide{display:none}header{background:white;color:var(--ink);padding:15px 0 20px;border-bottom:2px solid var(--teal)}header p,header .eyebrow{color:var(--muted)}h1{font-size:27pt}main{padding:20px 0}.card,.note,.ref,.step{break-inside:avoid}section{margin-bottom:24px}.grid,.refs{gap:10px}.card{padding:15px}h2{font-size:19pt}h3{font-size:14pt}.flow{gap:8px}.flow article{padding:12px 9px}a{color:var(--ink)}.table-wrap{overflow:visible}table{font-size:9pt}th,td{padding:10px}details{break-inside:avoid}.pill{border-color:var(--muted)}footer{font-size:9pt}@page{size:A4;margin:16mm}
+</style>
+</head>
+<body>
+<header>
+<div class="eyebrow">RESEARCH DISCUSSION · 2026.10.02 · VERSION 1</div>
+<h1>從單筆迭代到多候選回饋<br>EMForge 的論文定位與投稿路線</h1>
+<p class="lead">以實驗室 6G 計畫為背景，把 Antenna 的方法演進與 emforge 的執行系統，整理成可被檢驗的微波設計自動化貢獻。</p>
+<span class="pill">指定會議：IMS / APMC / EuMC</span><span class="pill">以既有模擬與紀錄為基礎</span><span class="pill">討論稿，非投稿本文</span>
+</header>
+<nav class="nav" aria-label="章節導覽"><div class="nav-inner"><a href="#position">建議定位</a><a href="#venues">會議現況</a><a href="#lineage">學長脈絡</a><a href="#batch">多候選學習</a><a href="#outline">撰寫順序</a><a href="#evidence">證據配置</a><a href="#references">參考文獻</a><button type="button" onclick="window.print()">列印 / PDF</button></div></nav>
+<main>
+<section id="position">
+<div class="section-no">01 / 建議定位</div><h2>把「學習怎麼更新」與「模擬怎麼執行」接起來</h2>
+<p class="verdict">建議主軸是：<strong>多候選回饋驅動的像素化電磁設計流程，以及支援這個流程的可追溯執行系統。</strong>方法演進是問題與動機，emforge 是把這些需求固定下來的系統實作。</p>
+<div class="grid two">
+<article class="card"><div class="label">方法層 · ANTENNA</div><h3>一次問多個設計問題</h3><p>候選池如何產生？哪些 pattern 值得做 HFSS？一次新增多少真值、多久更新一次模型？歷史資料如何再次利用？這些才是「多候選線上學習」需要交代的設計。</p><p class="small">已有 K-way 候選、replay 與 R73 批次回饋原型。不同模式的實作與效果須分開描述。</p></article>
+<article class="card"><div class="label">系統層 · EMFORGE</div><h3>讓昂貴回饋可管理、可重用</h3><p>用明確的評估設定辨識結果、承接批次候選、共享已完成的求解、安排多機工作，並把模擬量測值與評分規格分離。</p><p class="small">已具備批次提交與結果查詢能力；目前沒有把 Antenna 的批次 surrogate 更新算法完整移植進 emforge。</p></article>
+</div>
+<div class="note"><strong>6G 放在研究背景，技術貢獻落在已驗證的問題。</strong><p>這些專案隸屬實驗室 6G 計畫；本文可由下一代通訊元件的設計負擔切入，再用既有毫米波／像素化結構案例具體驗證。現有 28 GHz 附近案例的頻段與規格應如實列出，不將「6G 計畫」直接等同完整 6G 系統驗證。</p></div>
+<p class="small">此處是選題判斷，不是錄取機率預估。多候選、replay、代理模型與自動控制 HFSS 都已有先例；貢獻要落在具體機制、取捨及量化證據。</p>
+</section>
+<section id="venues">
+<div class="section-no">02 / 會議現況 · 查核至 2026-10-02</div><h2>目前最明確的投稿窗口是 IMS 2027</h2>
+<div class="grid">
+<article class="card featured"><div class="label">優先規劃 · 已有明確 CFP</div><h3>IMS 2027</h3><div class="date">2026 / 12 / 08</div><div class="small">RFSA / RFTT 論文截止</div><p>2027 年 5 月 23–28 日，美國 San Antonio。IMS 現以 International MTT Symposia 架構涵蓋 RFIC、RFSA 與 RFTT。</p><p><strong>首選 RFTT2：Circuit and System CAD。</strong>若最後以學習方法與 inverse design 為重心，再評估 RFTT3：AI-Enabled EM and Circuit Design。</p><p class="small">最多 4 頁；第 4 頁第二欄僅供致謝及 references，雙盲審查。這是 RFSA/RFTT 規則，不套用 RFIC 的 IC 量測要求。</p><p><a href="https://ims-ieee.org/authortools2027">作者與截止資訊</a> · <a href="https://ims-ieee.org/rftt/home">RFTT 領域</a> · <a href="https://ims-ieee.org/sites/ims/files/ims2027-author-instructions-for-rftt-and-rfsa_14september2026.pdf">篇幅規則</a></p></article>
+<article class="card"><div class="label">2026 已截止 · 追蹤 2027</div><h3>APMC</h3><div class="date">2027 · 廣州</div><div class="small">2027 日期、截止與篇幅尚待核實</div><p>APMC 2026 為 11 月 8–11 日福岡；一般投稿延至 6 月 2 日，Late Breaking News 至 8 月 17 日，均已截止。</p><p>2026 主題包含場分析、CAD／最佳化、AI／ML 電磁設計。適合把方法、系統與一個完整電磁案例一起說清楚。</p><p class="small">2026 要求 3–4 頁；僅供準備份量參考，不能當作 2027 規則。ISC 已列出 2027 廣州，本次未找到可核實的 2027 CFP。</p><p><a href="https://www.ec.ee.es.osaka-u.ac.jp/apmc-conf/">ISC 主辦地列表</a> · <a href="https://www.apmc2026.org/paper-submission.html">2026 投稿</a> · <a href="https://www.apmc2026.org/latebreakingnews_papersubmission.html">LBN</a> · <a href="https://www.apmc2026.org/conference-topics.html">領域</a></p></article>
+<article class="card"><div class="label">2026 已截止 · 追蹤 2027</div><h3>EuMC</h3><div class="date">2027 · 米蘭</div><div class="small">EuMW：2027 / 10 / 03–08</div><p>EuMC 2026 為 10 月 6–8 日倫敦，論文截止日為 3 月 27 日。2027 已確認的是 EuMW 整週日期與主辦地。</p><p>可朝微波 CAD、AI 輔助設計與可重現工作流程定位。2026 相關 workshops 顯示有相近受眾；正式投稿分類仍須看 2027 CFP。</p><p class="small">EuMC 是 EuMW 中的一個會議；上述整週日期不等於 EuMC 2027 的確切會期。本次未找到可核實的 2027 截止與篇幅。</p><p><a href="https://www.eumwa.org/en/30st-eumw2027.html?cmp_id=20&amp;news_id=257&amp;vID=50">EuMA 2027 公告</a> · <a href="https://www.eumw.eu/wp-content/uploads/2025/10/4997_eumw2026_call_for_papers-06.pdf">2026 CFP</a> · <a href="https://www.eumw.eu/conferences/workshops-and-short-courses/">2026 workshops</a></p></article>
+</div>
+<div class="note"><strong>投稿安排：</strong>先按 IMS RFTT2 的 4 頁容量組織一個清楚問題與一組核心證據；APMC、EuMC 保留為指定範圍內的後續選項。三者的先後取決於 CFP、結果整理狀況與是否需要轉投，不把同一稿件同時送審。</div>
+<details><summary>IMS 2027 的撰稿規定需要另行注意</summary><p>官方作者頁目前明列：<q>Artificial Intelligence generation of any part of a paper is forbidden</q>。這是該頁實際文字，並非禁止研究 AI 方法。本 HTML 是選題、資料與證據的討論整理；若投 IMS，投稿文字與圖表的製作方式應由作者依最新會議規定處理。<a href="https://ims-ieee.org/authortools2027">官方來源</a></p></details>
+</section>
+<section id="lineage">
+<div class="section-no">03 / 6G 專案與實驗室研究脈絡</div><h2>直接前作已經有線上學習，差異要再往前一步</h2>
+<div class="table-wrap"><table><thead><tr><th>研究／來源</th><th>已做的事情</th><th>你可以如何接續</th></tr></thead><tbody>
+<tr><td>陳廷茂，2024<br><span class="small">梯度估計網路設計貼片天線金屬圖形</span></td><td>MPGN 生成圖形 → HFSS → GEN 線上學習 → 反向傳播。每次迭代一次 HFSS；圖 3-1 已有 pattern/result buffer。論文未明列 optimizer 的 mini-batch size。<br><span class="small">PDF pp.27–28、33–34、55；正文 pp.17–18、23–24、45。</span></td><td>從單筆新真值取得，延伸到同輪多筆候選查詢與跨機執行；不能把「有 buffer」或「HFSS＋神經網路」當成新的部分。</td></tr>
+<tr><td>吳維文，2026<br><span class="small">ACP 與圖譜連通度損失</span></td><td>自適應循環策略、連通度限制、DLF 篩選歷史資料並重訓。Algorithm 4 仍是一個圖形的 HFSS 路徑，搭配歷史菁英子集。<br><span class="small">PDF pp.47–54；本機 docs/Paper.pdf。</span></td><td>歷史 pattern 重複利用已有明確前例。新段落應交代「新候選數 K、訓練 batch B、重訓間隔 R」分別如何設計。</td></tr>
+<tr><td>曾俊瑋／賴昱鈞，2024<br><span class="small">面鏡相位生成／RL RIS 單元迭代</span></td><td>同屬 6G 專案中的電磁結構／控制研究，但設計變數、物理對象與驗證問題不同。</td><td>可參考背景與篇章鋪陳；性能數字不能直接拿來和貼片金屬 pattern 當相同 baseline。</td></tr>
+<tr><td>Temp 的兩篇外部 paper<br><span class="small">Shan 2020；Taghvaee 2021</span></td><td>可程式化超表面編碼與神經網路輻射場型預測，說明實驗室早期從電磁響應建模切入的路線。</td><td>適合背景 references；多候選線上更新仍須補更直接的 surrogate optimization 與 population-based training 文獻。</td></tr>
+</tbody></table></div>
+<details><summary>已定位的實驗室原始資料</summary><p><code>T:\6G Team\Temp\士勛、北辰參考paper\</code><br><code>T:\6G Team\碩論交換\</code><br><code>T:\6G Team\6G_2024\Meeting\0723\</code><br><code>A:\AILab計畫\Lab543_5G面鏡\HFSS\Paper\</code></p><p class="small">本次詳細比對陳廷茂與吳維文的方法頁；曾俊瑋、賴昱鈞用於研究脈絡。論文原檔留在原位置，未修改。</p></details>
+</section>
+<section id="batch">
+<div class="section-no">04 / 新增的方法論重點</div><h2>「一次學很多 pattern」要拆成四個可描述的量</h2>
+<p>線上學習可以是逐筆更新，也可以週期性以一批新資料更新。建議以<strong>批次回饋的序列設計</strong>描述 R73；只有在明確使用模型資訊選取昂貴查詢時，再進一步稱為 batch active learning。</p>
+<div class="table-wrap"><table><thead><tr><th>要區分的量</th><th>現有實作</th><th>論文中代表什麼</th></tr></thead><tbody>
+<tr><td>C：候選池大小</td><td>單埠 DirectPatternGenerator 有 8 個獨立 pattern logits（程式稱 K，本表記 C）；R73 每輪約 400 個局部變異／移植候選。</td><td>便宜的設計探索數量，不等於新 HFSS 標籤數。</td></tr>
+<tr><td>K：本輪新 HFSS 查詢數</td><td>單埠 training.py 雖有多候選，仍只選 1 張模擬；R73 預設 K=9。</td><td>你提出的「一次取得多個候選回饋」最直接落在這一層。</td></tr>
+<tr><td>B：每個 optimizer step 的訓練批量</td><td>單埠 replay 會掃多筆歷史，但預設 DataLoader batch_size=None，一筆一步；R73 呼叫的 sm_dual 訓練使用 B=128。</td><td>一次反向傳播用多少樣本，與候選數 C、新查詢數 K 是不同選項。</td></tr>
+<tr><td>R：重訓間隔</td><td>R73 每 3 輪重新掃入資料並全量重訓；理想全數成功時，兩次重訓之間新增 27 筆。</td><td>權衡模型新鮮度與訓練成本；R73 並非每收到 9 筆就立即做一次聯合更新。</td></tr>
+</tbody></table></div>
+<div class="flow" aria-label="批次回饋流程">
+<article><strong>1. 形成候選池</strong><span>生成器、局部變異或已知設計延伸</span><span class="small">R73：C ≈ 400</span></article>
+<article><strong>2. 選出查詢</strong><span>代理模型的目標預測與模型分歧</span><span class="small">R73：K = 9</span></article>
+<article><strong>3. 取得模擬回饋</strong><span>提交、去重、排程與結果保存</span><span class="small">emforge 提供承載能力</span></article>
+<article><strong>4. 更新資料池</strong><span>保留 pattern、原始響應與評估設定</span><span class="small">區分新回饋與歷史資料</span></article>
+<article><strong>5. 更新模型</strong><span>每 R 輪重訓，再開始下一輪選擇</span><span class="small">R73：R = 3；B = 128</span></article>
+</div>
+<p class="small">流程圖是整合後的論文表達；R73 當時使用 Antenna 的舊隊列，並未經 emforge 執行。emforge 支援一次提交多筆，但工作拆分策略決定是否分到多台 worker；「批次提交」本身不保證多機平行。</p>
+<div class="grid">
+<article class="card"><div class="label">已有執行紀錄</div><div class="kpi">15 × 9</div><p>R73 跑滿 15 輪，共 135 筆有效 HFSS 結果，紀錄為零 error。</p><p class="small">證明該次批次回饋迴圈可運作；不代表所有故障情境都具備完整回復保證。</p></article>
+<article class="card"><div class="label">已有個案成果</div><div class="kpi">−3.15 → −3.14</div><p>該輪 best worst-margin 約改善 0.01 dB，候選完成跨機重複驗證。</p><p class="small">分數仍未達到所有規格；此為搜尋個案，不是批次學習的平均收益。</p></article>
+<article class="card"><div class="label">尚無隔離對照</div><div class="kpi">K=1 vs K=9</div><p>未找到同親本、同 acquisition、同預算與重訓規則的對照。</p><p class="small">現有資料不能把改善歸因於 K&gt;1，也不能從 R73 推出「K 越大越好」。</p></article>
+</div>
+<div class="note caution"><strong>最合適的貢獻表述範圍：</strong><p>把候選探索、昂貴真值取得、歷史資料重用與模型更新拆開設計，並用實際執行揭示各自的限制。GLOnet 等前作已研究一批候選共同訓練生成器；你的差異需要放在 HFSS 黑箱、離散 pattern、查詢選擇與可靠執行的具體組合。</p></div>
+<p class="small">程式證據：<a href="../../script/online_loop.py">online_loop.py</a>（候選／K／R）、<a href="../../script/sm_dual.py">sm_dual.py</a>（資料池與 B）、<a href="../../antenna/training.py">training.py</a>（單埠迴圈）、<a href="../../antenna/models/generators.py">generators.py</a>（多起點）、<a href="../log/round-73-dual-online-suture.md">R73 紀錄</a>。emforge：<a href="../../../emforge/emforge/client.py">client.py</a>、<a href="../../../emforge/emforge/runtime/inbox.py">inbox.py</a>、<a href="../../../emforge/emforge/runtime/dispatch.py">dispatch.py</a>。</p>
+</section>
+<section id="outline">
+<div class="section-no">05 / 大概的撰寫脈絡</div><h2>從一個設計瓶頸開始，不必按開發日誌逐輪敘述</h2>
+<div class="steps">
+<article class="step"><div><h3>問題：昂貴模擬與逐筆更新綁在一起</h3><p>簡述 6G 計畫背景與像素化 EM 設計。直接以前作的「生成 → 模擬 → 訓練 → 下一張」說明等待、模型更新與候選探索耦合的問題；對照既有 surrogate／batch design 文獻。</p><p class="small">約 0.5 頁。只保留必要前作，不寫長篇 6G 產業介紹。</p></div></article>
+<article class="step"><div><h3>方法：把新候選批次、歷史重用與模型更新分開</h3><p>定義 C、K、B、R；描述候選生成、選擇準則、有效結果進入資料池的條件與重訓時點。用一張流程圖對照前作和目前方案。</p><p class="small">約 0.75 頁。R73 是批次回饋原型；單埠 K=8 與歷史 replay 作演進說明，避免混成同一算法。</p></div></article>
+<article class="step"><div><h3>系統：讓同一設計在相同設定下得到可追溯回饋</h3><p>精簡成三項：① pattern 與幾何／求解設定共同辨識評估；② 多個需求共享昂貴結果與排程；③ 保存原始量測、固定 run 規格，支援回復與後續重評分。emforge 的模組名稱只留必要者。</p><p class="small">約 0.75 頁。CLI、HTTP、MCP 作實作介面，不列為三個獨立學術創新。</p></div></article>
+<article class="step"><div><h3>結果：電磁案例與系統行為各自回答一個問題</h3><p>同一套已固定的評估設定下呈現結構、響應與搜尋歷程；另用既有紀錄呈現批次完成、結果共享、重複性與版本化的必要性。R73 的負結果可用來說明「模型更常更新不保證搜尋更好」。</p><p class="small">約 1 頁。不要把所有數千筆歷史模擬算成 emforge 的實績，也不把跨機重複性當成實物量測。</p></div></article>
+<article class="step"><div><h3>收束：已證明的能力與可延伸的介面</h3><p>結論聚焦「可執行的多候選回饋流程與可追溯評估」，交代目前案例、算法移植與對照的範圍。References 預留足夠空間。</p><p class="small">正文合計約 3 頁，再為結論、圖表調整與引用保留餘裕；IMS 第 4 頁第二欄限制另依正式模板檢查。</p></div></article>
+</div>
+<div class="note"><strong>現在建議的重心：</strong>以「設計自動化系統」為主，把多候選學習作為驅動系統需求的核心工作流程。若既有紀錄能補出乾淨的 learning 對照，再提高算法篇幅；目前不把新的 HFSS 大量掃描或硬體量測當成開始整理論文的前提。</div>
+</section>
+<section id="evidence">
+<div class="section-no">06 / 已有證據怎麼放進論文</div><h2>先整理與重算，避免把不同年代的結果混在一起</h2>
+<div class="table-wrap"><table><thead><tr><th>候選圖／表</th><th>已有素材與可以支持的結論</th><th>需守住的界線</th></tr></thead><tbody>
+<tr><td>圖 1：流程演進</td><td>學長單筆 HFSS → 多候選／replay → R73 批次回饋 → emforge 執行支援。<span class="tag">可直接整理</span></td><td>R73 與 emforge 尚未是同一次端到端實驗，整合部分標示為系統承載能力。</td></tr>
+<tr><td>圖 2：固定 profile 的電磁案例</td><td>既有 pattern、S 參數、方向圖與跨機重複結果；同一規格比較 best-so-far。<span class="tag">需選同條件資料</span></td><td>單埠早期 S0 正分數在 S1 曾翻為負值；雙埠目前最佳仍是負 margin。不得合併成全部達標的數據。</td></tr>
+<tr><td>表 1：批次回饋實績</td><td>R73 15 輪、135/135 有效結果、重訓間隔與分數歷程。<span class="tag">有原始 log</span></td><td>缺同條件 K=1 對照。R72 的 270 筆與 R73 的 135 筆不能以 best improvement 除以樣本數，就當成公平效率比較。</td></tr>
+<tr><td>表 2：系統驗收</td><td>2026-09-12 紀錄含 10 筆真 HFSS（4 sample、6 repeat），3 台 worker；以及 fake backend 與 hosted feedback 驗收。<span class="tag">有驗收檔</span></td><td>代表整合與重複性檢查；不是大規模算法優越性或實物量測。後續程式修正與當時部署版本分開列。</td></tr>
+<tr><td>選配圖：執行紀錄回放</td><td>若時間戳與任務資料齊全，可重算排隊時間、重用率、有效新增真值、求解成本。<span class="tag amber">尚未執行</span></td><td>固定 trace replay 可評估排程；無法替代未知候選的 HFSS，也無法還原另一種自適應算法會選到哪些新設計。</td></tr>
+</tbody></table></div>
+<details><summary>目前不宜直接放進摘要的宣稱</summary><ul><li>「批次學習比單筆快 15 倍」：37／540 筆每日來自不同組態，缺完整原始耗時拆解。</li><li>「首次用 agent 自動設計天線」：已有 LLM RF workflow 與官方 PyAEDT-MCP 等前作。</li><li>「模型擬合更好，因此最佳設計更好」：R5 與 R73 的紀錄不支持直接推論。</li><li>「大量模擬證明 emforge 完整可靠」：Antenna 歷史資料與 emforge 後來的系統驗收是不同證據集。</li></ul></details>
+<p class="small">主要追溯：<a href="../log/round-52-anchor-assault.md">R52 mesh 診斷</a> · <a href="../log/round-54-diamond-bridge.md">R54 幾何橋接</a> · <a href="../log/round-05-window-sm.md">R5 replay 訓練</a> · <a href="../methodology.md">methodology §3.2–3.4</a> · <a href="../../../emforge/docs/delivery-readiness-2026-09-12.md">emforge 驗收</a> · <a href="../../../emforge/docs/implementation.md">emforge 實作說明</a>。</p>
+</section>
+<section id="references">
+<div class="section-no">07 / REFERENCE 地圖</div><h2>每篇文獻都要有明確用途</h2>
+<p>短篇會議論文先挑最直接的 6–8 筆引用。下面是候選池：學長論文交代承接關係，正式 EM 論文界定方法差異，工具文件與 preprint 用於補充最新工作。</p>
+<div class="refs">
+<article class="ref"><div class="number">R1 · 直接前作</div><h3>陳廷茂（2024）；吳維文（2026）</h3><p>前者為《基於梯度估計網路設計貼片天線金屬圖形之研究》；後者為《自適應循環策略與圖譜連通度損失函數於貼片天線金屬圖形生成之研究》，均為中正大學電機工程研究所碩士論文。</p><p class="muted">用途：界定你延伸的是批次真值取得與系統能力；線上 GEN、DLF／歷史重用須交代前作。</p><p class="small">來源：T:\6G Team\碩論交換；本機 docs/Paper.pdf。</p></article>
+<article class="ref"><div class="number">R2 · 最直接的天線最佳化比較</div><h3>Q. Wu et al., “Machine-Learning-Assisted Optimization for Antenna Geometry Design”</h3><p>IEEE Transactions on Antennas and Propagation, 72(3), 2083–2095, 2024. <a href="https://doi.org/10.1109/TAP.2023.3346493">DOI</a></p><p class="muted">用全波驗證結果持續更新代理模型，為陳廷茂論文 [29]。用途：說明 simulation–model–optimization 迴圈已有基礎，你的差異不能只寫「持續把新資料放回訓練」。</p></article>
+<article class="ref"><div class="number">R3 · 多候選共同更新的關鍵先例</div><h3>J. Jiang &amp; J. A. Fan, “Simulator-based training of generative neural networks for the inverse design of metasurfaces”</h3><p>Nanophotonics, 9(5), 1059–1069, 2020；2019 年先行上線。<a href="https://doi.org/10.1515/nanoph-2019-0330">DOI／全文</a></p><p class="muted">GLOnet 以一批器件的效率與 adjoint 梯度共同更新生成器，並研究 batch size。用途：對照 population training；它的光學結構、可取得物理梯度與 HFSS surrogate 黑箱情境不同。</p></article>
+<article class="ref"><div class="number">R4 · 實驗室前作引用的自動設計</div><h3>Z. Wei et al., “Fully Automated Design Method Based on Reinforcement Learning and Surrogate Modeling for Antenna Array Decoupling”</h3><p>IEEE Transactions on Antennas and Propagation, 71(1), 660–671, 2023. <a href="https://doi.org/10.1109/TAP.2022.3221613">DOI</a></p><p class="muted">用途：自動設計與 surrogate／RL 的既有路線。此筆書目已由陳廷茂論文 [5] 核對；正式比較具體算法前，仍需讀原文方法與成本定義。</p></article>
+<article class="ref"><div class="number">R5 · RF／mmWave 深度學習背景</div><h3>E. A. Karahan et al., “Deep Learning Enabled Design of RF/mmWave IC and Antennas”</h3><p>MWSCAS 2024, 769–772. <a href="https://doi.org/10.1109/MWSCAS60917.2024.10658956">DOI</a> · <a href="https://collaborate.princeton.edu/en/publications/deep-learning-enabled-design-of-rfmmwave-ic-and-antennas/">作者機構書目</a></p><p class="muted">用途：pixel／surrogate 逆向設計的微波背景。這是另一會議的參考文獻，投稿目標仍只保留 IMS、APMC、EuMC。</p></article>
+<article class="ref"><div class="number">R6 · TEMP 的研究背景</div><h3>H. Taghvaee et al., “Radiation Pattern Prediction for Metasurfaces: A Neural Network-Based Approach”</h3><p>Sensors, 21(8), 2765, 2021. <a href="https://doi.org/10.3390/s21082765">DOI</a></p><p class="muted">用途：6G／可程式化電磁環境與神經網路響應預測的背景。不是貼片 pattern 批次學習的直接效能對照。</p></article>
+<article class="ref"><div class="number">R7 · TEMP 的可程式化超表面</div><h3>T. Shan et al., “Coding Programmable Metasurfaces Based on Deep Learning Techniques”</h3><p>IEEE Journal on Emerging and Selected Topics in Circuits and Systems, 10(1), 114–125, 2020。</p><p class="muted">用途：由目標波束求編碼的逆向映射背景。已讀 Temp 原文；與逐輪針對單一規格做最佳化的用途需區分。</p><p class="small">來源：Temp／士勛、北辰參考paper／同名 PDF。</p></article>
+<article class="ref"><div class="number">R8 · 最新自動 RF 工作流程，PREPRINT</div><h3>M. Heinrichs et al., “From Prompt to Prototype: Towards a Frontier LLM Driven RF Engineering Workflow”</h3><p>arXiv:2608.31006，2026-08-31。<a href="https://arxiv.org/abs/2608.31006">原文與版本狀態</a></p><p class="muted">用途：界定 agent 協作的先例，避免「首次 agent＋RF 工具」宣稱。以 preprint 身分引用，不當成已通過同儕審查的定論。</p></article>
+<article class="ref"><div class="number">R9 · 工具先例，非研究論文</div><h3>Ansys PyAEDT-MCP：HFSS patch antenna workflow</h3><p><a href="https://aedt-mcp.docs.pyansys.com/version/stable/examples/hfss_patch_antenna_workflow.html">官方示例</a> · <a href="https://aedt-mcp.docs.pyansys.com/version/stable/user_guide/tools_and_capabilities.html">工具能力</a></p><p class="muted">用途：說明工具呼叫與建模自動化本身已有實作。emforge 須以評估辨識、結果共享、恢復與可比較的紀錄提出自己的價值。</p></article>
+<article class="ref"><div class="number">R10 · 選配：工程批次主動學習</div><h3>S. Kapoor et al., “Data efficient surrogate modeling for engineering design: Ensemble-free batch mode deep active learning for regression”</h3><p>arXiv:2211.10360，v1 2022、v2 2025。<a href="https://arxiv.org/abs/2211.10360">原文與版本</a></p><p class="muted">用途：查詢成本固定下的 surrogate 資料選擇；案例為 CFD／FEA／propeller。若最終主軸偏 batch acquisition 再深入閱讀，本次僅核對摘要與版本。</p></article>
+</div>
+</section>
+<footer><p>整理依據：Antenna、emforge 的程式及紀錄；T:\6G Team 的實驗室論文；會議官方頁與出版者／作者機構來源。會議資訊查核日為 2026-10-02；「未找到」表示本次查核未取得可靠資料，不代表主辦方尚未發布。</p><p>此版完成文獻與程式證據核對，未執行新 HFSS、未修改既有研究資料、未把歷史結果重新解讀為未做過的對照實驗。下一次討論可直接決定：以系統論文為主，或提高多候選學習方法的篇幅。</p></footer>
+</main>
+</body>
+</html>
