@@ -13,7 +13,7 @@ BASE = Path(__file__).resolve().parent
 data = json.loads((BASE / 'paper-evidence-data.json').read_text(encoding='utf-8'))
 out = BASE / 'figures'
 out.mkdir(exist_ok=True)
-plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 10, 'axes.spines.top': False, 'axes.spines.right': False, 'svg.fonttype': 'none', 'svg.hashsalt': 'antenna-paper-2026-10'})
+plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 11, 'axes.titlesize': 13, 'axes.spines.top': False, 'axes.spines.right': False, 'svg.fonttype': 'none', 'svg.hashsalt': 'antenna-paper-2026-10'})
 teal, amber, ink = '#087d80', '#bd6532', '#1e3346'
 
 c = data['candidate']
@@ -41,73 +41,88 @@ exec(compile(ast.Module(body=[function], type_ignores=[]), str(geom_path), 'exec
 sites, skipped = namespace['diag_bridge_sites'](bits, .075, .2)
 assert len(sites) == 67 and skipped == 0
 
-fig, axes = plt.subplots(1, 3, figsize=(12.2, 4.25), gridspec_kw={'width_ratios':[1,1.25,1.25]}, layout='constrained')
+def save_figure(fig, basename):
+    """Save only the new manuscript assets; leave archived composite figures intact."""
+    svg = out / f'{basename}.svg'
+    fig.savefig(svg, metadata={'Date': None})
+    fig.savefig(out / f'{basename}.png', dpi=165)
+    plt.close(fig)
+    svg.write_text('\n'.join(line.rstrip() for line in svg.read_text(encoding='utf-8').splitlines())+'\n', encoding='utf-8')
+
+
+fig, ax = plt.subplots(figsize=(6.4, 6.6), layout='constrained')
 for row, col in zip(*np.nonzero(bits)):
-    axes[0].add_patch(Rectangle((row*.2, col*.2), .21, .21, facecolor=ink, edgecolor='none'))
+    ax.add_patch(Rectangle((row*.2, col*.2), .21, .21, facecolor=ink, edgecolor='none'))
 for sx, sy, width in sites:
     delta = width / np.sqrt(2)
-    axes[0].add_patch(Polygon([(sx-delta,sy),(sx,sy+delta),(sx+delta,sy),(sx,sy-delta)], closed=True, facecolor=amber, edgecolor='none'))
-axes[0].set(xlim=(-.18,5.18), ylim=(-.18,5.18), xlabel='HFSS x (mm)', ylabel='HFSS y (mm)', title='(a) Pixel-region geometry')
-axes[0].set_aspect('equal')
+    ax.add_patch(Polygon([(sx-delta,sy),(sx,sy+delta),(sx+delta,sy),(sx,sy-delta)], closed=True, facecolor=amber, edgecolor='none'))
+ax.set(xlim=(-.18,5.18), ylim=(-.18,5.18), xlabel='HFSS x (mm)', ylabel='HFSS y (mm)', title='Record candidate: pixel-region geometry')
+ax.set_aspect('equal')
 for px, marker, label, text_x in [(0,'>', 'P2', .18), (5,'<','P1',4.5)]:
-    axes[0].scatter([px],[2.5],marker=marker,s=65,c=teal,edgecolor='white',linewidth=.7,zorder=10)
-    axes[0].text(text_x,2.82,label,fontsize=8,color=teal,bbox={'facecolor':'white','edgecolor':'none','alpha':.9,'pad':1})
-axes[0].text(.5,-.27, '67 bridges (orange), width 0.075 mm\nP1/P2: schematic feed connections\nExternal feeds / substrate / ground omitted', transform=axes[0].transAxes, ha='center', fontsize=8)
+    ax.scatter([px],[2.5],marker=marker,s=80,c=teal,edgecolor='white',linewidth=.8,zorder=10)
+    ax.text(text_x,2.82,label,fontsize=11,color=teal,bbox={'facecolor':'white','edgecolor':'none','alpha':.95,'pad':1})
+fig.supxlabel('67 orange bridges: square side 0.075 mm\np01 overlap 0.01 mm; P1/P2: schematic feed connections\nExternal feeds / substrate / ground omitted', fontsize=10)
+save_figure(fig, 'candidate-geometry')
 
-axes[1].axvspan(26.5,29.5, color=teal, alpha=.10)
-axes[1].plot(f, s11, 'o-', color=teal, ms=3, label='S11')
-axes[1].plot(f, s22, 's-', color=ink, ms=3, label='S22')
-axes[1].hlines(-10,26.5,29.5, color=amber, ls='--', lw=1.6, label='Reflection limit')
-axes[1].set(title='(b) Reflection', xlabel='Frequency (GHz)', ylabel='S-parameter (dB)', xlim=(24,32), ylim=(-31,0), xticks=[24,26,28,30,32])
-axes[1].legend(loc='lower left', fontsize=8, frameon=False)
-axes[1].text(.38,.94, f'Margins:\n{margins[0]:+.2f} / {margins[1]:+.2f} dB', transform=axes[1].transAxes, va='top', fontsize=8)
+fig, axes = plt.subplots(2, 1, figsize=(7.2, 6.4), layout='constrained')
+axes[0].axvspan(26.5,29.5, color=teal, alpha=.10)
+axes[0].plot(f, s11, 'o-', color=teal, ms=4, label='S11')
+axes[0].plot(f, s22, 's-', color=ink, ms=4, label='S22')
+axes[0].hlines(-10,26.5,29.5, color=amber, ls='--', lw=1.6)
+axes[0].set(title='(a) Reflection', xlabel='Frequency (GHz)', ylabel='S-parameter (dB)', xlim=(24,32), ylim=(-31,0), xticks=np.arange(24,33))
+axes[0].legend(loc='lower right', fontsize=10, frameon=False)
+axes[0].text(28,-1.1, 'Required: S11, S22 \u2264 \u221210 dB\n26.5\u201329.5 GHz', ha='center', va='top', fontsize=10)
+axes[0].text(.48,.13, f'S11 margin: {margins[0]:+.2f} dB\nS22 margin: {margins[1]:+.2f} dB', transform=axes[0].transAxes, fontsize=10)
 
-axes[2].axvspan(25.5,30.5, color=teal, alpha=.10)
+axes[1].axvspan(25.5,30.5, color=teal, alpha=.10)
 for lo,hi in [(24,25),(31,32)]:
-    axes[2].axvspan(lo,hi, color=amber, alpha=.09)
-    axes[2].hlines(-15,lo,hi,color=amber,ls='--',lw=1.6)
-axes[2].hlines(-3,25.5,30.5,color=amber,ls='--',lw=1.6, label='Spec limits')
-axes[2].plot(f,s21,'o-',color=teal,ms=3,label='S21')
+    axes[1].axvspan(lo,hi, color=amber, alpha=.09)
+    axes[1].hlines(-15,lo,hi,color=amber,ls='--',lw=1.6)
+axes[1].hlines(-3,25.5,30.5,color=amber,ls='--',lw=1.6, label='Spec limits')
+axes[1].plot(f,s21,'o-',color=teal,ms=4,label='S21')
 bad = np.zeros(17,dtype=bool)
 bad[3:14] = s21[3:14] < -3
 bad[:3] = s21[:3] > -15
 bad[14:] = s21[14:] > -15
 assert bad.sum() == 6
-axes[2].scatter(f[bad],s21[bad],s=45,facecolors='none',edgecolors=amber,zorder=5,label='Unmet sampled point')
-axes[2].set(title='(c) Transmission', xlabel='Frequency (GHz)', ylabel='S21 (dB)', xlim=(24,32), ylim=(-31,0), xticks=[24,26,28,30,32])
-axes[2].legend(loc='lower center',fontsize=8,frameon=False)
-axes[2].text(.28,.57, f'Pass / stop margins:\n{margins[2]:+.2f} / {margins[3]:+.2f} dB',transform=axes[2].transAxes,fontsize=8)
-for ax in axes[1:]:
+axes[1].scatter(f[bad],s21[bad],s=65,facecolors='none',edgecolors=amber,linewidths=1.5,zorder=5,label='Unmet sampled point')
+axes[1].set(title='(b) Transmission', xlabel='Frequency (GHz)', ylabel='S21 (dB)', xlim=(24,32), ylim=(-31,0), xticks=np.arange(24,33))
+axes[1].legend(loc='lower center',fontsize=10,frameon=False,ncol=2)
+axes[1].text(28,-7.2, 'Pass band: S21 \u2265 \u22123 dB, 25.5\u201330.5 GHz\nStop bands: S21 \u2264 \u221215 dB, 24\u201325 / 31\u201332 GHz', ha='center', va='top', fontsize=10)
+axes[1].text(28,-16, f'Pass-band margin: {margins[2]:+.2f} dB\nStop-band margin: {margins[3]:+.2f} dB', ha='center', va='top',fontsize=10)
+for ax in axes:
     ax.grid(alpha=.18)
-fig.savefig(out / 'candidate.svg', metadata={'Date': None})
-fig.savefig(out / 'candidate.png', dpi=165)
-plt.close(fig)
+save_figure(fig, 'candidate-response')
 
-fig, axes = plt.subplots(1, 2, figsize=(10.2, 4.2), layout='constrained')
+fig, ax = plt.subplots(figsize=(7.2, 4.6), layout='constrained')
 hist = data['history']
 x = np.arange(1, len(hist)+1)
 vals = [r['value'] for r in hist]
-axes[0].step(x, vals, where='post', color=teal, lw=2)
-axes[0].scatter(x, vals, color=teal, s=20, zorder=3)
-axes[0].axhline(0, color=ink, ls='--', lw=1, label='All four margins pass')
-axes[0].set(xlabel='Recorded best-so-far milestone (not query count)', ylabel='Worst specification margin (dB)', title='(a) Fixed profile: p01 + 0.075 mm bridges', ylim=(-6.4, .5), xticks=[1, 5, 9, 13, 17])
-axes[0].annotate('-5.90', (1, vals[0]), xytext=(6, 9), textcoords='offset points')
-axes[0].annotate('-2.39', (17, vals[-1]), xytext=(-34, 12), textcoords='offset points')
-axes[0].text(.03, .77, '2026-08-13 to 08-24\nBest-so-far change: 3.51 dB', transform=axes[0].transAxes, fontsize=9)
-axes[0].grid(alpha=.18)
+ax.step(x, vals, where='post', color=teal, lw=2)
+ax.scatter(x, vals, color=teal, s=28, zorder=3)
+ax.axhline(0, color=ink, ls='--', lw=1)
+ax.text(1,.12, '0 dB margin: all four sampled requirements pass', fontsize=10, va='bottom')
+ax.set(xlabel='Best-so-far record number (not HFSS query count)', ylabel='Worst specification margin (dB)', title='Fixed profile: p01 + 0.075 mm bridges', ylim=(-6.4, .75), xticks=[1, 5, 9, 13, 17])
+ax.annotate('\u22125.90 dB', (1, vals[0]), xytext=(6, 10), textcoords='offset points')
+ax.annotate('\u22122.39 dB', (17, vals[-1]), xytext=(-62, 12), textcoords='offset points')
+ax.text(.03, .70, '2026-08-13 to 08-24\n17 records; endpoint change: +3.51 dB', transform=ax.transAxes, fontsize=10)
+assert hist[7]['round'] == 73 and hist[7]['value'] == -3.14
+ax.annotate('R73 candidate\n(record 8)', (8, vals[7]), xytext=(8,-4.45), ha='center', fontsize=10, arrowprops={'arrowstyle':'-', 'color':ink})
+ax.grid(alpha=.18)
+save_figure(fig, 'best-so-far')
+
+fig, ax = plt.subplots(figsize=(7.2, 4.8), layout='constrained')
 r73 = data['online_r73']
 rounds = [r['iter'] for r in r73]
 v = [r['wm'] for r in r73]
 cum = np.maximum.accumulate([-3.15] + v)[1:]
-axes[1].plot(rounds, v, 'o-', color=amber, ms=4, label='Best returned in each batch')
-axes[1].step(rounds, cum, where='post', color=teal, lw=2, label='Best-so-far incl. starting record')
-axes[1].set(xlabel='R73 iteration (9 HFSS results per iteration)', ylabel='Worst specification margin (dB)', title='(b) Multi-candidate online-loop case', xticks=[1, 3, 6, 9, 12, 15], ylim=(-10.3, -2.2))
-axes[1].grid(alpha=.18)
-axes[1].legend(loc='lower left', fontsize=8, frameon=False)
-axes[1].annotate('Round 7: -3.14 dB', (7, -3.14), xytext=(7.4, -4.9), arrowprops={'arrowstyle':'-', 'color': ink}, fontsize=9)
-fig.savefig(out / 'search-history.svg', metadata={'Date': None})
-fig.savefig(out / 'search-history.png', dpi=165)
-plt.close(fig)
-for svg in out.glob('*.svg'):
-    svg.write_text('\n'.join(line.rstrip() for line in svg.read_text(encoding='utf-8').splitlines())+'\n', encoding='utf-8')
-print('Wrote two SVG/PNG figure pairs from frozen data.')
+assert cum[5] == -3.15 and cum[6] == -3.14 and np.all(np.diff(cum) >= 0)
+ax.plot(rounds, v, 'o-', color=amber, ms=5, label='Best returned in each batch')
+ax.step(rounds, cum, where='post', color=teal, lw=2, label='Best-so-far, including starting record')
+ax.set(xlabel='R73 iteration (9 HFSS search results per iteration)', ylabel='Worst specification margin (dB)', title='R73 multi-candidate online feedback', xticks=[1, 3, 6, 9, 12, 15], ylim=(-10.5, -2.3))
+ax.grid(alpha=.18)
+ax.legend(loc='lower left', fontsize=10, frameon=False)
+ax.annotate('Iteration 7: \u22123.15 \u2192 \u22123.14 dB\nRecord gain: +0.01 dB', (7, -3.14), xytext=(1.5, -5.4), arrowprops={'arrowstyle':'-', 'color': ink}, fontsize=10)
+ax.text(.98,.97, 'Starting record: \u22123.15 dB', transform=ax.transAxes, ha='right', va='top', fontsize=10)
+save_figure(fig, 'online-feedback')
+print('Wrote four SVG/PNG figure pairs from frozen data; archived composites retained.')
