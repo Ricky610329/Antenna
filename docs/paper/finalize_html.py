@@ -10,7 +10,8 @@ import xml.etree.ElementTree as ET
 BASE = Path(__file__).resolve().parent
 path = BASE / 'manuscript-draft-2026-10.html'
 s = path.read_text(encoding='utf-8')
-FIGURES = ('batch-flow', 'candidate-geometry', 'candidate-response', 'best-so-far', 'online-feedback')
+FIGURES = ('batch-flow', 'single-geometry', 'single-response', 'single-radiation',
+           'candidate-geometry', 'candidate-response', 'best-so-far', 'online-feedback')
 for name in FIGURES[1:]:
     figure = (BASE / 'figures' / f'{name}.svg').read_bytes()
     ET.fromstring(figure)
@@ -56,6 +57,8 @@ for number, (name, figure) in enumerate(zip(FIGURES, a.figures), start=1):
     assert intro, f'Missing first-use paragraph directly before {target}'
     assert re.search(rf'<figcaption id="{caption}">圖 {number}\s', s), caption
 assert '圖 3(c)' not in s and '圖 4(a)' not in s and '圖 4(b)' not in s
+assert '@@' not in s, 'Unresolved manuscript placeholder'
+assert '@media(max-width:780px)' not in s, 'Mobile flow rules must not affect print'
 for img in a.images:
     assert img.get('alt') and img['src'].startswith('data:image/svg+xml;base64,')
     ET.fromstring(base64.b64decode(img['src'].split(',',1)[1], validate=True))
@@ -65,6 +68,19 @@ assert '\ufffd' not in s and '<html lang="zh-Hant">' in s
 assert all(f'id="ref{i}"' in s for i in range(1,9))
 data = json.loads((BASE / 'paper-evidence-data.json').read_text(encoding='utf-8'))
 assert round(data['history'][-1]['value'] - data['history'][0]['value'],2) == 3.51
+single = json.loads((BASE / 'single-port-evidence.json').read_text(encoding='utf-8'))
+band = single['frequency_response_definition']['spec_sample_indices']
+response = single['response_db']
+m_s = -10 - max(response['S11'][i] for i in band)
+m_g = min(response['RealizedGainTotal'][i] for i in band) - 4
+assert [round(m_s, 2), round(m_g, 2), round(min(m_s, m_g), 2)] == [1.13, 0.77, 0.77]
+rad = single['radiation']
+theta = rad['theta_deg']
+zero = min(range(len(theta)), key=lambda i: abs(theta[i]))
+window = [i for i, angle in enumerate(theta) if abs(angle) <= 45]
+rad_margins = [min(rad[cut][i] for i in window) - rad[cut][zero] + 3 for cut in ('phi0_db', 'phi90_db')]
+assert [round(value, 2) for value in rad_margins] == [0.63, 0.50]
+assert max(abs(theta[i]) for i in window) == 44
 path.write_text(s, encoding='utf-8')
-print(f'PASS: balanced HTML; {len(a.ids)} unique ids; internal/local targets resolve among {len(a.links)} links; 5 numbered figures with first-use explanations; 4 embedded SVGs match their source files; no external assets. External URLs are not fetched by this check.')
+print(f'PASS: balanced HTML; {len(a.ids)} unique ids; internal/local targets resolve among {len(a.links)} links; {len(FIGURES)} numbered figures with first-use explanations; {len(a.images)} embedded SVGs match their source files; single frequency/radiation margins independently recomputed; no external assets. External URLs are not fetched by this check.')
 print(f'HTML size: {path.stat().st_size:,} bytes. Browser rendering was not performed by this check.')
