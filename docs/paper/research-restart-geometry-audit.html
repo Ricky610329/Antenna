@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>研究重啟：幾何座標與單埠證據重新稽核</title>
+<style>body{font:16px/1.85 "Microsoft JhengHei",sans-serif;color:#203547;background:#f5f7f7;margin:0}main{max-width:1140px;margin:auto;padding:38px 28px 70px}h1,h2,h3{line-height:1.4}h1{font-size:31px}h2{border-bottom:1px solid #bdcccc;padding-bottom:8px;margin-top:42px}a{color:#087d80}table{width:100%;border-collapse:collapse;background:white;font-size:14px;margin:18px 0}th,td{padding:11px 13px;border:1px solid #d3dddd;vertical-align:top;text-align:left}th{background:#e6f0ed}code{font:14px Consolas,monospace;background:#eaf0f0;padding:2px 4px}figure{background:white;padding:18px;margin:24px 0}figure img{display:block;width:100%;height:auto}figcaption{font-size:14px;margin-top:10px}.notice{border-left:5px solid #b85f32;background:#fff4e8;padding:17px 23px}.equation{padding:18px;background:#e9f2ef;font:17px/1.9 Consolas,"Microsoft JhengHei",sans-serif}.small{font-size:14px;color:#526774}.table-wrap{overflow:auto}@media(max-width:700px){main{padding:24px 15px}h1{font-size:25px}table{min-width:640px}figure{padding:8px}}@media print{body{background:white}main{max-width:none;padding:0}figure,table{break-inside:avoid}h2{break-after:avoid}}@page{size:A4;margin:16mm}</style>
+</head><body><main>
+<p class="small">內部證據稽核 · 2026-10-04 · 重新由原始碼、既有交付圖及既有求解資料核對</p>
+<h1>圖形為何差了 90°，以及如何避免再次出錯</h1>
+<div class="notice"><strong>撤回前一輪「幾何圖已通過」的結論。</strong>前次只檢查標示、橋數及可讀性，漏查專案既定方向。舊繪圖程式直接把 HFSS 的 X 畫成水平軸、Y 畫成垂直軸，令 P1 出現在右側。專案報告的矩陣顯示慣例則是第一索引朝下、第二索引朝右，因此 P1 應在下方。這是顯示座標錯誤；不得以此旋轉原始位元、改寫模擬結果或交換 S11／S22。</div>
+
+<h2>1. 三份獨立證據指向同一方向</h2>
+<p>以下行號依本次核對的工作樹。記憶檔提供先前錯誤背景，真正的物理軸與埠身分另由模擬器建立幾何及指定埠的程式碼確認；既有報告圖再確認讀者看到的方向。</p>
+<div class="table-wrap"><table><thead><tr><th>來源</th><th>核對內容</th><th>結論</th></tr></thead><tbody>
+<tr><td><a href="../memory/reference_pattern_render_convention.md">reference_pattern_render_convention.md</a>，第 13–24 行；<a href="../../script/figs/README.md">script/figs/README.md</a>，第 3–4 行</td><td>既有論文／報告使用 <code>imshow(mat, origin="upper")</code>；第一索引 i 朝下，j 朝右；2026-08-06 曾發生同類 90° 錯誤。橋位必須使用同源函式。</td><td>新圖必須遵循既有方向，不能自行另立視角。</td></tr>
+<tr><td><a href="../../antenna/patch/patch_simulator/single_port.py">single_port.py</a>，第 339、347–354 行；<a href="../../antenna/patch/patch_simulator/dual_port.py">dual_port.py</a>，第 384、391–401 行</td><td><code>pixel_matrix[x][y]</code> 的第一索引乘 pixel_H 成為 XPosition，第二索引乘 pixel_W 成為 YPosition；金屬方塊尺寸沿正 X、正 Y 各增加 0.01 mm。</td><td>矩陣 i = HFSS X 軸，j = HFSS Y 軸。p01 方塊為 0.21 × 0.21 mm，不能只改錨點而保留錯誤的延伸方向。</td></tr>
+<tr><td><a href="../../antenna/patch/patch_simulator/single_port.py">single_port.py</a>，第 479–481 行；<a href="../../script/diffsim/geom.py">script/diffsim/geom.py</a>，第 6–12、86–109 行；<a href="../diffsim.md">docs/diffsim.md</a>「已考證的幾何事實」</td><td>單埠積分線位於 (X,Y) = (27.5,2.5) mm。SAB 解析紀錄給出饋線 X ∈ [5,27.5]、Y ∈ [1.95,3.05] mm，接在像素區 X = 5 邊。</td><td>單埠 P1 從第一索引最大側饋入；顯示慣例下位於圖下方。SAB 紀錄用於幾何核對，不採用 diffsim 其餘近似物理推論。</td></tr>
+<tr><td><a href="../../antenna/patch/patch_simulator/dual_port.py">dual_port.py</a>，第 541–556、572–588 行</td><td>埠名稱 1 對應 Rectangle1、積分線 X = 12.5 mm；埠名稱 2 對應 Rectangle2、積分線 X = −7.5 mm；Y 皆為 2.5 mm。</td><td>雙埠 P1 接 X = 5 邊，顯示於下方；P2 接 X = 0 邊，顯示於上方。不能只憑饋線位置猜埠名。</td></tr>
+<tr><td><a href="../../script/figs/report_r1r10_style.py">report_r1r10_style.py</a>，第 50–57 行；<a href="../../script/handoff_pack.py">handoff_pack.py</a>，第 250–255、383–394 行</td><td>共用 show_pattern 用 origin="upper"，feed=(24,12)；雙埠另加 (12,0) 上方三角；橋中心以 (cy/p−0.5,cx/p−0.5) 疊加。</td><td>單埠下饋入、雙埠上下饋入的報告慣例與模擬器埠身分吻合。</td></tr>
+</tbody></table></div>
+<p>本次亦直接重跑既有 <code>sab_probe</code> 的純解析函式，讀取兩個本地 SAB 二進位檔，沒有開啟 HFSS。單埠 z=0.543 mm 的頂面座標外框為 X=[5,27.5]、Y=[1.95,3.05] mm；雙埠同高度的整體外框為 X=[−7.5,12.5]、Y=[1.95,3.05] mm。這個簡易 probe 只能提供各高度的整體座標外框，不辨識每個 ACIS body 的埠名稱；P1/P2 命名仍以模擬器的 AssignLumpedPort 為準。</p>
+<div class="table-wrap"><table><thead><tr><th>已直接解析的檔案</th><th>SHA-256</th></tr></thead><tbody><tr><td>single_port.sab</td><td><code>02a296a0b9a53a94c802a719997d707d789be43d2552a830869458b275cff902</code></td></tr><tr><td>dual_port.sab</td><td><code>47e12602d2513e74a30d5826425efaaa5b1fcf77c5a8ac990265e56149735ba0</code></td></tr></tbody></table></div>
+
+<h2>2. 精確轉換：旋轉顯示座標，不轉動設計資料</h2>
+<div class="equation">HFSS：X = 0.2 i，Y = 0.2 j（mm）<br>論文圖：u = Y，v = 5 − X（mm）<br>線性部分 [[0,1],[-1,0]]，det = +1；為順時針 90° 旋轉後平移，沒有鏡射。</div>
+<p>每個像素先依模擬器建立物理四角 <code>(X,Y)、(X+s,Y)、(X+s,Y+s)、(X,Y+s)</code>，其中 <code>s=0.21 mm</code>，再逐頂點套用轉換。所得顯示左下角為 <code>(0.2j, 5−0.2i−0.21)</code>。記憶檔中的簡式 <code>(jP,(24−i)P)</code> 適用於邊長等於節距的 0.20 mm 格子；若直接套在 p01 的 0.21 mm 方塊上，會多出 0.01 mm 的垂直錯位。因此本次不以簡式放置 Rectangle。</p>
+<div class="table-wrap"><table><thead><tr><th>對象</th><th>矩陣／HFSS</th><th>論文圖 (u,v)</th><th>可見位置</th></tr></thead><tbody>
+<tr><td>第一格名義中心</td><td>(i,j)=(0,0)；(X,Y)=(0.1,0.1)</td><td>(0.1,4.9)</td><td>左上</td></tr>
+<tr><td>最後列第一格名義中心</td><td>(i,j)=(24,0)；(X,Y)=(4.9,0.1)</td><td>(0.1,0.1)</td><td>左下</td></tr>
+<tr><td>第一列最後格名義中心</td><td>(i,j)=(0,24)；(X,Y)=(0.1,4.9)</td><td>(4.9,4.9)</td><td>右上</td></tr>
+<tr><td>p01 最後列方塊邊界</td><td>X ∈ [4.8,5.01]</td><td>v ∈ [−0.01,0.2]</td><td>正確保留超出名義 5 mm 網格的 0.01 mm 重疊延伸</td></tr>
+<tr><td>單／雙埠 P1 的像素區連接處</td><td>(X,Y)=(5,2.5)；實際埠平面在區外正 X 側</td><td>(2.5,0)</td><td>下緣，向上三角</td></tr>
+<tr><td>雙埠 P2 的像素區連接處</td><td>(X,Y)=(0,2.5)；實際埠平面在區外負 X 側</td><td>(2.5,5)</td><td>上緣，向下三角</td></tr>
+<tr><td>菱形橋中心</td><td>同源函式回傳 (cx,cy,w)</td><td>(cy,5−cx)，四頂點亦各自轉換</td><td>中心與金屬像素使用同一映射；不重寫接點偵測</td></tr>
+</tbody></table></div>
+<p>橋的位置使用 <a href="../../antenna/patch/patch_simulator/single_port.py">single_port.py:25–54</a> 的 <code>diag_bridge_sites</code>，與雙埠模擬器第 425–449 行相同。w 是旋轉前正方形邊長，菱形水平或垂直對角長為 √2w；不是把 w 當成菱形對角長。程式透過 AST 僅載入這個純函式，不匯入模擬器、不啟動 HFSS。</p>
+
+<h2>3. 不對稱原設計的肉眼對照</h2>
+<figure><a href="figures/geometry-orientation-audit.svg"><img src="figures/geometry-orientation-audit.svg" alt="同一不對稱雙埠設計的三圖比較：舊錯向P1在右、新正向P1在下，以及獨立imshow矩陣參照。"></a><figcaption>三圖均使用 <code>smp073_d_040</code> 的同一份 625 位元，未旋轉或重寫資料。(a) 重現舊圖錯誤：P1 在右。(b) 精確轉換像素與 67 座橋後，P1 在下、P2 在上。(c) 以獨立 <code>imshow(bits, origin="upper")</code> 顯示的名義格子；它只核方向，因此不畫 0.01 mm 延伸及菱形橋。左右不對稱的孔洞與支臂在 (b)、(c) 對位。可點图開啟原尺寸 SVG。</figcaption></figure>
+<p>另外已逐張查看既有 <a href="../../tmp/handoff/png_dual/page01.png">雙埠交付圖第 1 頁</a>、<a href="../../tmp/handoff/png_single/page01.png">單埠交付圖第 1 頁</a>：雙埠第一列與修正後的同一設計方向一致，單埠第一列的上方大缺口與下方饋入亦一致。既有交付圖用名義格子及橋位標記，不能拿它代替本次精確重疊多邊形的尺寸檢查。</p>
+
+<h2>4. 恢復單埠天線的正面結果，並把批次來源分開</h2>
+<p>研究包含單埠天線與雙埠濾波器。前稿只充分繪出雙埠曲線，缺少單埠天線的 S11、實現增益與方向圖，令應用範圍失衡。本次選用已正式交付重測的 <code>ANT_F00_1_c48nq1p06_18~db100</code>，以同一 store 的輸入、頻率響應、方向圖及 results 記錄重建三張圖。</p>
+<div class="table-wrap"><table><thead><tr><th>量</th><th>正式 handoff 同源結果</th><th>與歷史數字的區別</th></tr></thead><tbody>
+<tr><td>單埠幾何</td><td>25×25 位元；0.2 mm 節距、0.21 mm 金屬邊長；12 座 0.1 mm 正方形邊長的菱形橋</td><td>原位元與 R54 快取逐一比對一致；不是未橋接設計。</td></tr>
+<tr><td>帶內頻率響應</td><td>26.5–29.5 GHz 的 7 個採樣點：S11 ≤ −10 dB，boresight RealizedGainTotal ≥ 4 dBi；兩項餘裕 +1.13、+0.77 dB，最差 +0.77 dB</td><td>R54 原批同圖形記錄 +0.69 dB；正式交付重測為 +0.77 dB，差 +0.08 dB。图上曲線只配正式重測餘裕，沒有把原批評分配重測曲線。</td></tr>
+<tr><td>28 GHz 方向圖</td><td>GainTotal，Setup1 : LastAdaptive；φ=0°、90° 各自相對 θ=0° 正規化；採樣窗餘裕 +0.63、+0.50 dB</td><td>不是 RealizedGainTotal 頻率掃描曲線。原始 θ 每 2° 一點，|θ|≤45° 的實際端點為 ±44°，未補造 ±45° 樣本。</td></tr>
+<tr><td>歷史未橋接冠軍</td><td><code>c48nq1p05_16</code> 曾有 +0.79 dB 記錄</td><td>另一個圖形、未橋接評估；不可稱為本代表設計的橋前結果，也不可與 +0.77 dB 拼成一組受控前後比較。</td></tr>
+</tbody></table></div>
+<p>凍結檔：<a href="single-port-evidence.json">single-port-evidence.json</a>；擷取器：<a href="extract_single_port_evidence.py">extract_single_port_evidence.py</a>。擷取器唯讀掃描正式 store 的 21 個回傳檔，找到唯一一份與輸入全部 625 位元一致的 2×17 響應，另核對兩個既有位圖快取別名。輸入、頻率響應、方向圖、正式 results、原批 results、setup overrides 共六份來源均保存 SHA-256；原始資料與衍生值一起保留。</p>
+<p>方向圖保留 HFSS 原始 φ 標籤，<strong>不因幾何圖換顯示方向而交換 φ=0° 與 φ=90°</strong>，亦不在未確認極化定義下把兩切面改叫 E/H-plane。只有像素幾何繪圖需要本次座標修正；頻率曲線和原始輻射座標不可一起旋轉。</p>
+
+<h2>5. 可重做的防錯檢查與限制</h2>
+<p><a href="build_figures.py">build_figures.py</a> 已加入獨立四角與兩埠位置斷言、旋轉行列式 +1 的非鏡射檢查、全部 625 個名義格中心與 origin="upper" 的對位檢查，以及逐像素 0.21 mm 多邊形最小頂點與 −0.01 mm 延伸檢查。雙埠 67 橋、單埠 12 橋皆由同源函式得到且無跳過；原始 bits、頻率餘裕及方向图窗餘裕另行核對。方向圖明確固定 −180° 至 +180° 全圓範圍，避免帶正負號刻度意外裁切極座標。</p>
+<p>已重建七組正文 SVG／PNG：單埠幾何、S11／實現增益、正規化方向圖；雙埠幾何、S 參數、歷史最佳包絡、R73 回饋。另存本頁三聯方向稽核圖。舊 <code>candidate.svg/png</code> 合成圖含錯向幾何，應由新版圖資目錄移除；舊版由 Git 歷史保存，不得再插入新稿。</p>
+<p>本次沒有新增求解或訓練。NAS 正式 setup 檔僅含橋寬、逾時與保留 project 的覆寫值，不能宣稱它就是完整歷史求解設定封存；正餘裕是既有指定採樣判準的結果，不等同連續頻率／角度的全域保證或完成網格收斂。幾何圖省略外部饋線、埠面、基板與地平面，亦非完整製造圖。</p>
+</main></body></html>
