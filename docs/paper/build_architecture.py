@@ -45,15 +45,18 @@ box(.55, 7.63, 5.15, .95, 'Researcher / optional AI assistant',
     ['Define variants, inspect evidence, configure strategies'], '#f3f3f0', True)
 box(6.55, 7.63, 4.9, .95, 'Task definition',
     ['Geometry + solver profile; response + target specification'], '#f3f3f0')
-arrow([(5.5, 7.6), (5.5, 6.93)], muted, True)
+arrow([(5.5, 7.6), (5.5, 7.06)], muted, True)
 arrow([(11.15, 7.6), (11.15, 6.93)], muted)
 ax.text(.65, 7.13, 'STRATEGY-OWNED SEARCH', color=teal, fontsize=12, weight='bold')
 ax.text(6.67, 7.13, 'SHARED EVALUATION', color=teal, fontsize=12, weight='bold')
+ax.add_patch(FancyBboxPatch((.49, 1.57), 5.57, 5.45,
+                          boxstyle='round,pad=0.025,rounding_size=0.1',
+                          facecolor='none', edgecolor='#c6d9d6', linewidth=.9))
 
 box(.65, 4.96, 5.25, 1.93, 'Structured search with forward surrogate',
     ['Seeds / structural variation / candidate pool',
      'SM-based selection + score-independent exploration',
-     'Own parents, model, pending results and update rule'])
+     'Own parents, model and update rule'])
 box(.65, 3.43, 5.25, 1.25, 'Other stateful search strategies',
     ['Local search / component edits / random reference',
      'Own state and feedback schedule; SM not required'])
@@ -68,7 +71,7 @@ arrow([(5.94, 6.13), (6.12, 6.13), (6.48, 6.13)])
 arrow([(5.94, 4.05), (6.12, 4.05), (6.12, 6.13)])
 box(6.52, 5.47, 4.88, 1.42, 'Validate, share and schedule',
     ['Identity / deduplication / existing-result reuse',
-     'Priority + budget + in-flight limits',
+     'Priority + applicable budgets + in-flight limits',
      'Dispatch new work; keep repeat requests distinct'])
 box(6.52, 3.65, 4.88, 1.3, 'HFSS workers',
     ['Build and solve the specified geometry',
