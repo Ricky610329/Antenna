@@ -10,9 +10,9 @@ import xml.etree.ElementTree as ET
 BASE = Path(__file__).resolve().parent
 path = BASE / 'manuscript-draft-2026-10.html'
 s = path.read_text(encoding='utf-8')
-FIGURES = ('batch-flow', 'single-geometry', 'single-response', 'single-radiation',
-           'candidate-geometry', 'candidate-response', 'best-so-far', 'online-feedback')
-for name in FIGURES[1:]:
+FIGURES = ('architecture', 'single-geometry', 'single-response', 'single-radiation',
+           'candidate-geometry', 'candidate-response')
+for name in FIGURES:
     figure = (BASE / 'figures' / f'{name}.svg').read_bytes()
     ET.fromstring(figure)
     uri = 'data:image/svg+xml;base64,' + base64.b64encode(figure).decode('ascii')
@@ -46,7 +46,7 @@ for href in a.links:
     if href.startswith('#'): assert href[1:] in a.ids, href
     elif not u.scheme: assert (BASE / unquote(u.path)).exists(), href
 assert [figure.get('id') for figure in a.figures] == [f'fig-{name}' for name in FIGURES]
-assert [img.get('data-figure') for img in a.images] == list(FIGURES[1:])
+assert [img.get('data-figure') for img in a.images] == list(FIGURES)
 for number, (name, figure) in enumerate(zip(FIGURES, a.figures), start=1):
     target = f'fig-{name}'
     caption = f'caption-{name}'
@@ -81,6 +81,27 @@ window = [i for i, angle in enumerate(theta) if abs(angle) <= 45]
 rad_margins = [min(rad[cut][i] for i in window) - rad[cut][zero] + 3 for cut in ('phi0_db', 'phi90_db')]
 assert [round(value, 2) for value in rad_margins] == [0.63, 0.50]
 assert max(abs(theta[i]) for i in window) == 44
+dual = json.loads((BASE / 'final-candidate-response.json').read_text(encoding='utf-8'))
+f = dual['frequency_ghz']
+dr = dual['response_db']
+reflection = [i for i, x in enumerate(f) if 26.5 <= x <= 29.5]
+passband = [i for i, x in enumerate(f) if 25.5 <= x <= 30.5]
+stopband = [i for i, x in enumerate(f) if x in {24, 24.5, 25, 31, 31.5, 32}]
+dual_margins = [
+    -10 - max(dr['S11'][i] for i in reflection),
+    -10 - max(dr['S22'][i] for i in reflection),
+    min(dr['S21'][i] for i in passband) + 3,
+    -15 - max(dr['S21'][i] for i in stopband),
+]
+assert [round(value, 2) for value in dual_margins] == [1.97, 2.31, -2.39, -2.17]
+failed = sum(dr['S11'][i] > -10 or dr['S22'][i] > -10 for i in reflection)
+failed += sum(dr['S21'][i] < -3 for i in passband)
+failed += sum(dr['S21'][i] > -15 for i in stopband)
+assert failed == 6
+ideal = 3 * 604800 / 160
+assert ideal == 11340
+assert round(ideal * 0.50 * 0.95 * 0.90) == 4848
+assert round(ideal * 0.70 * 0.95 * 0.90) == 6787
 path.write_text(s, encoding='utf-8')
-print(f'PASS: balanced HTML; {len(a.ids)} unique ids; internal/local targets resolve among {len(a.links)} links; {len(FIGURES)} numbered figures with first-use explanations; {len(a.images)} embedded SVGs match their source files; single frequency/radiation margins independently recomputed; no external assets. External URLs are not fetched by this check.')
+print(f'PASS: balanced HTML; {len(a.ids)} unique ids; internal/local targets resolve among {len(a.links)} links; {len(FIGURES)} numbered figures with first-use explanations; {len(a.images)} embedded SVGs match their source files; antenna and filter margins, failed filter points, and capacity examples independently recomputed; no external assets. External URLs are not fetched by this check.')
 print(f'HTML size: {path.stat().st_size:,} bytes. Browser rendering was not performed by this check.')
