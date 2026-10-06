@@ -89,18 +89,20 @@ def geometry_figure(matrix, bridge_side, dual, basename, title):
         delta = width / np.sqrt(2)
         corners = [(sx-delta,sy),(sx,sy+delta),(sx+delta,sy),(sx,sy-delta)]
         ax.add_patch(Polygon(paper_coordinates(corners), closed=True, facecolor=amber, edgecolor='none'))
-    ax.set(xlim=(-.18,5.18), ylim=(-.18,5.18), xlabel='HFSS Y (mm)',
+    ax.set(xlim=(-.18,5.18), ylim=(-.40,5.40), xlabel='HFSS Y (mm)',
            ylabel='5 mm \u2212 HFSS X (mm)', title=title)
     ax.set_aspect('equal')
     # Port locations follow simulator assignments: single P1 X=27.5;
     # dual P1 X=12.5, P2 X=-7.5. Mark only their pixel-region connections.
-    feeds = [(5, '^', 'P1', .30)]
+    # Keep transparent port labels outside the metal region: an opaque label
+    # patch can otherwise look like an etched opening in the pixel geometry.
+    feeds = [(5, '^', 'P1', -.22)]
     if dual:
-        feeds.append((0, 'v', 'P2', 4.60))
+        feeds.append((0, 'v', 'P2', 5.22))
     for physical_x, marker, label, text_v in feeds:
         u, v = paper_coordinates([(physical_x, 2.5)])[0]
-        ax.scatter([u],[v],marker=marker,s=90,c=teal,edgecolor='white',linewidth=.8,zorder=10)
-        ax.text(u+.22,text_v,label,fontsize=11,color=teal,bbox={'facecolor':'white','edgecolor':'none','alpha':.95,'pad':1})
+        ax.scatter([u],[v],marker=marker,s=90,c=teal,edgecolor='none',zorder=10)
+        ax.text(u+.22,text_v,label,fontsize=11,color=teal,va='center')
     fig.supxlabel(f'{len(bridge_sites)} orange bridges: square side {bridge_side:g} mm\n'
                   '0.01 mm pixel overlap; P1 feed connection at bottom\n'
                   'External feeds / substrate / ground omitted', fontsize=10)
