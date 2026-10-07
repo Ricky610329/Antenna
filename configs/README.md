@@ -16,7 +16,7 @@
 | `single_r80_symmetry_factory.yaml` | 使用者擴大為至少10,000有效唯一對稱量測；沿用R80完全相同量測身分 | 16筆小job；每48新真值批次更新SM；歷史先驗＋新資料、40/30/30配額、2,048盲選預備池；取代舊三批工廠停止上限，不改首批snapshot | R80 factory |
 | `symmetry_training.py` / [已凍結訓練protocol](../docs/log/assets/r80_factory_training_protocol_20261007.json) | 累積當前profile全曲線SM，每48–96個新唯一圖形更新 | 3 seeds；625–512–512–256–216 MLP；歷史預訓練30ep＋当前真值100ep；34個seed映至13家族；無HFSS驗證通過前不計實測 | R80 factory SM |
 | `dual_r81_wide_filter.yaml` | S21 26–30 ≥−3、16–20/36–40 ≤−20 dB | **延後**；smoke、Discrete、mesh、正式批次均不得排入目前佇列 | R81 |
-| `filter_prior.py`（備料API） | 舊24–32 GHz資料只監督完整覆蓋的三段margin，兩新阻帶mask | 明示manifest／hash／p01幾何；保留集家族與圖形排除；未啟用於現行訓練，R81派工順序不變 | R81 SM準備 |
+| `filter_prior.py`（備料API） | 舊24–32 GHz資料只監督完整覆蓋的三段margin，兩新阻帶mask | 明示manifest／hash／p01幾何；[實際21,034唯一先驗已備妥](../docs/log/assets/r81_full_prior_20261007.json)，axis/worker重建限制明示；保留集家族與圖形排除；R81派工順序不變 | R81 SM準備 |
 | `filter_training.py` / `exploration.training_protocol: filter_masked_prior_v1` | 歷史三段masked預訓練→累積新版五段margin；沿用exploration回填／訓練／選樣 | 明示歷史清單、固定家族保留集、同一train正規化、epoch恢復與批次hash綁定；僅生成fixture驗證，R81 config尚未啟用 | R81 SM整合 |
 
 `script.prepare_symmetry_filter prepare` 預設 `--phase single`，只讀34個 R55 seeds；`--phase combined` 保留給後續 R81 階段。

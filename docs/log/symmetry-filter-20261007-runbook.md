@@ -109,7 +109,11 @@ R81派工前先執行`python -m script.prepare_symmetry_filter check-wide-inputs
 
 完成回填後用`python -m script.exploration train --work-dir <工作區> --through-batch <N>`，再用`select-batch --work-dir <工作區> --batch <N+1>`產生候選。回填收據綁定選樣manifest、各批完整ID集合與sample hashes；後續訓練核對分割帳本，選樣核對模型所屬批次、成員及hash。改資料、少資料或誤放其他批次模型會拒絕。生成候選仍須通過既有查重與工程檢查才能派HFSS。
 
-目前只完成生成CPU fixture的整鏈與中斷恢復驗證，最終完整回歸677 tests通過（415.30秒，無warnings），含golden；沒有R81 HFSS真值或實際歷史先驗清單。`dual_r81_wide_filter.yaml`維持未啟用此protocol；實際清單須補足頻率、label及p01幾何來源證據後才凍結訓練設定。R80仍為唯一派工項目；濾波器完成條件仍是重測確認的新版實測WM > 0。
+生成CPU fixture的整鏈與中斷恢復已驗證，最終完整回歸677 tests通過（415.30秒，無warnings），含golden；沒有R81 HFSS真值。實際歷史清單已擴充至21,034個唯一圖形，[完整備料收據](assets/r81_full_prior_20261007.json)保留來源hash及axis／worker重建限制。私人`experiments/r81_wide_filter_20261007/historical_prior/full_p01_db075_v001/prior_bundle.zip`含全部原曲線與來源metadata；使用時先核對外部`archive_manifest.json`與bundle hash，解開後以`manifest.json`及`raw_snapshot`作兩個絕對路徑，固定manifest SHA256 `8fcd05614e7851e9c0f7043c00540068df37380423ee4469db0afed90505c777`。21,034是當前保留集排除前的上限，不能當作每版實際先驗訓練筆數。
+
+`dual_r81_wide_filter.yaml`仍未啟用此protocol；待正式設定凍結及新版真值回填後，才以current train正規化做masked預訓練。不要為了背景備料先用全歷史估計正規化而破壞兩階段共用座標。R80仍為唯一派工項目；濾波器完成條件仍是原件與重測均確認的新版實測WM > 0，不能用SM預測或舊wm_mfg替代。
+
+歷史先驗含量測不一致：217個重複圖形對中11對的covered margin差>0.3 dB、4對>1，最大2.559473 dB；原因未確定。固定保留first而不挑高分、保留全部候選來源，屬帶噪聲先驗，不可當作新profile的真值或模型校準證據。
 
 ## 可證明範圍
 
