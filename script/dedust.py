@@ -4340,7 +4340,8 @@ def _all_input_folders():
     漏補清單的教訓從制度上消滅）。HISTORY_INPUTS 保留給舊 select 的內建去重引用。"""
     return tuple(sorted(
         d for d in os.listdir(str(DATASET_PATH))
-        if d.endswith("_input") and DATASET_PATH.joinpath(d, "manifest.json").exists()))
+        if d.endswith("_input") and DATASET_PATH.joinpath(d, "manifest.json").exists()
+        and not DATASET_PATH.joinpath(d, "measurement.json").exists()))
 
 
 def _tri(r):
@@ -4883,6 +4884,13 @@ def check_dup(args):
     """發車前查重（教訓 2026-07-07:ref3 出現 4/319 重複——掃位跨拓撲撞位、k=2 被再對稱化蓋回錨點）。
     查 --input 批內重複＋與全部歷史輸入夾（自動掃描,排除自身）的交叉重複。exit 1=有重複。
     **分域**（2026-08-10 dual 開線）:只與**同 port** 的夾交叉（manifest 的 `port` 欄,缺=single）。"""
+    current_dir = DATASET_PATH.joinpath(args.input)
+    if current_dir.joinpath("measurement.json").exists():
+        from script.profiled_batch import check_duplicates
+        n = check_duplicates(current_dir, DATASET_PATH)
+        print(f"{args.input}: {n} 筆，具名 measurement identity 查重通過")
+        return
+
     def load_folder(folder):
         d = DATASET_PATH.joinpath(folder)
         man = json.load(open(str(d.joinpath("manifest.json")), encoding="utf-8"))
@@ -5596,25 +5604,61 @@ def _hfss_setup_keys(port: str) -> set:
     return keys | ({"slot_spec"} if port == "dual" else set())
 
 
+def _resolve_batch_config(config_path, input_name=None):
+    """worker job 的 profile config 可相對共享 DATASET_PATH，避免綁某台機器的絕對路徑。"""
+    if not config_path:
+        return config_path
+    raw = os.fspath(config_path)
+    if os.path.isabs(raw) or os.path.exists(raw):
+        return raw
+    shared = DATASET_PATH.joinpath(raw)
+    if shared.exists():
+        return str(shared)
+    if input_name:
+        beside_input = DATASET_PATH.joinpath(input_name, raw)
+        if beside_input.exists():
+            return str(beside_input)
+    return raw
+
+
 def run(args):
     from antenna.patch import DualPortSimulator, SinglePortRadSimulator   # lazy：開發機/CI 不 import COM 相依
     from antenna.utils.store import SampleStore
     from antenna.utils.utils import Path
 
-    cfg = load_config(args.config)
-    labels = PORT_SPECS[cfg.port]["labels"]
+    from script.profiled_batch import (load_profile_config, observation as profile_observation,
+                                       prepare_store, simulator_kwargs, verify_completed)
+    config_path = _resolve_batch_config(args.config, getattr(args, "input", None))
+    profile_cfg = load_profile_config(config_path)
+    cfg = profile_cfg or load_config(config_path)
+    labels = cfg.measurement["labels"] if profile_cfg else PORT_SPECS[cfg.port]["labels"]
     #? port 分派（2026-08-10 dual 開線,D2 #4）:模擬器選型 + entry 泛化;rad/oob/sel 是 single 專屬
     #  （dual 無遠場輸出——作者明述,senior-thesis §3.4）,dual 走 dual_metrics 六項+能量自證。
     #  single 路徑逐位元不變（同一把 worst_margin 尺、同樣的欄位與印字）。
     SIM_CLS = {"single": SinglePortRadSimulator, "dual": DualPortSimulator}[cfg.port]
-    sweep = args.sweep or PORT_SWEEP[cfg.port]             # --sweep 不給 → port 專屬預設（見常數註解）
+    if profile_cfg:
+        profile_sweep = cfg.measurement["sweep"]["type"]
+        if args.sweep is not None and args.sweep != profile_sweep:
+            raise SystemExit(f"profile sweep={profile_sweep}，不可用 CLI 改成 {args.sweep}")
+        sweep = profile_sweep
+        if "timeout" in cfg.runtime:
+            args.timeout = cfg.runtime["timeout"]
+    else:
+        sweep = args.sweep or PORT_SWEEP[cfg.port]         # --sweep 不給 → port 專屬預設（見常數註解）
     if cfg.port == "dual":
         from antenna.losses import worst_margin_dual       # lazy:dual 判準尺（single 路徑不碰）
     window = cfg.radiation.get("window_deg", 45)
     floor = cfg.radiation.get("floor_db", 3)
     input_dir = _dir(args.input)
     store_dir = _dir(args.store)
-    manifest = _load_manifest(input_dir)
+    # profile 先驗 input/identity/既有成果，通過後才允許任何 store 寫入或 HFSS 啟動。
+    if profile_cfg:
+        try:
+            manifest = prepare_store(input_dir, store_dir, cfg)
+        except Exception as profile_error:
+            raise SystemExit(f"profile 發車前驗證失敗：{profile_error}") from profile_error
+    else:
+        manifest = _load_manifest(input_dir)
 
     #! 埠數守門（2026-08-31 實犯）：manifest 的 `port` 是生成端寫的宣告（select-dual/select-smpool
     #  都有帶）——與 `--config` 的 port 不符就是「用錯模擬器」，會一路跑完並產出**看起來合理但
@@ -5647,10 +5691,10 @@ def run(args):
     #? 求解設定覆蓋(2026-08-03 網格收斂實驗,proposal-mesh-convergence):輸入夾放 hfss_setup.json
     #  (鍵=max_delta_s/max_passes/min_passes/min_converged)即整夾生效;無檔=歷來預設(0.02/6/5/5)。
     #  存證:複製一份進 store_dir——結果夾自帶「這批用什麼設定量的」,不靠人記。
-    hfss_setup = {}
+    hfss_setup = simulator_kwargs(cfg) if profile_cfg else {}
     keep_project = False            #? 見下：hfss_setup 的 keep_project 鍵
     _setup_f = input_dir.joinpath("hfss_setup.json")
-    if _setup_f.exists():
+    if not profile_cfg and _setup_f.exists():
         with open(str(_setup_f), encoding="utf-8") as f:
             hfss_setup = json.load(f)
         allowed = _hfss_setup_keys(cfg.port)
@@ -5680,6 +5724,13 @@ def run(args):
     todo = [(n, m) for n, m in enumerate(manifest)
             if m["id"] not in results or "error" in results[m["id"]]]
     print(f"待模擬 {len(todo)}/{len(manifest)} 筆（成功跳過、error 重試；中斷再跑即續）")
+    if profile_cfg and not todo:
+        try:
+            verify_completed(store_dir, cfg, require_complete=True)
+        except Exception as profile_error:
+            raise SystemExit(f"profile 完整性驗證失敗：{profile_error}") from profile_error
+        print(f"profile 已完整驗證：{len(manifest)} 筆；未啟動 HFSS")
+        return
 
     out = Path(args.out if args.out else
                (f"keep_{args.store}" if keep_project else f"_dedust_{args.store}")).resolve()
@@ -5834,6 +5885,7 @@ def run(args):
                 #  填空批（prio ≥ tier2_prio）每筆完成後掃佇列,出現可認領的 tier-1 → 釋放 claim 退出;
                 #  進度全在 results.json（冪等）,之後任一機續跑——暫停/恢復零額外儲存機制。
                 if getattr(args, "job_prio", 0) >= getattr(args, "tier2_prio", 99):
+                    from script.batch_scope import job_in_scope
                     _qp = DATASET_PATH.joinpath("jobs.json")
                     _sd = DATASET_PATH.joinpath("jobs_state")
                     try:
@@ -5841,6 +5893,8 @@ def run(args):
                     except Exception:
                         _jobs = []
                     for _j in _jobs:
+                        if not job_in_scope(_j, getattr(args, "scope", None)):
+                            continue
                         if _j.get("prio", 9) >= getattr(args, "tier2_prio", 99):
                             continue
                         _st = _j["store"]
@@ -5856,6 +5910,36 @@ def run(args):
                         return "yield"
 
                 resp = torch.stack([torch.as_tensor(result[l]).float().reshape(-1) for l in labels])
+                rad = getattr(sim, "last_radiation", None)
+                if profile_cfg:
+                    try:
+                        profile_rad = rad
+                        if cfg.port == "single" and isinstance(rad, dict):
+                            profile_rad = {key: torch.as_tensor(value).detach().cpu()
+                                           for key, value in rad.items() if key in ("theta", "phi0", "phi90")}
+                        entry = profile_observation(resp, profile_rad, m, p, cfg, _r(elapsed, 1))
+                        store.add(p, resp)               # 標準 SampleStore tuple，檔名須與 observation 一致
+                        sample_path = store_dir.joinpath(entry["sample_file"])
+                        from script.profiled_batch import file_sha256
+                        entry["sample_sha256"] = file_sha256(sample_path)
+                        if cfg.port == "single":
+                            rad_path = rad_dir.joinpath(f"{m['id']}.pt")
+                            torch.save(profile_rad, str(rad_path))
+                            entry["rad_sha256"] = file_sha256(rad_path)
+                        results[m["id"]] = entry
+                        _flush()
+                        tail = (f"worst_margin={entry.get('worst_margin')}" if cfg.port == "dual"
+                                else f"gain28={entry['gain28']:+.2f}")
+                        print(f"  ✓ profile {tail}  {entry['time_s']}s")
+                    except Exception as profile_error:
+                        attempts = results.get(m["id"], {}).get("attempts", 0) + 1
+                        results[m["id"]] = {
+                            "error": f"profile_observation_invalid: {_errstr(profile_error)}",
+                            "attempts": attempts,
+                        }
+                        _flush()
+                        print(f"  ✗ profile observation 無效（第 {attempts} 次）: {profile_error}")
+                    continue
                 #? entry["wm"] 泛化＝各 label margin + worst（n+1 欄;single 2+1、dual 3+1）——
                 #  single 的三欄輸出與舊版逐位元相同（labels=[S11,Gain]）。
                 if cfg.port == "single":
@@ -5868,7 +5952,6 @@ def run(args):
 
                 #? 方向圖：single 專屬。`DualPortSimulator` 根本沒有 last_radiation 屬性
                 #  （dual 不輸出遠場）→ getattr 防炸，取到 None 就整段跳過。
-                rad = getattr(sim, "last_radiation", None)
                 if isinstance(rad, dict) and rad.get("theta") is not None:
                     torch.save(rad, str(rad_dir.joinpath(f"{m['id']}.pt")))
                     cuts = {f"phi{phi}": _r(rad_window_margin(rad["theta"], rad[f"phi{phi}"], window, floor))
@@ -5901,6 +5984,11 @@ def run(args):
     poison = [i for i, v in results.items() if "error" in v and v.get("attempts", 1) >= 3]
     if poison:
         print(f"⚠ 毒樣本嫌疑（3 連敗）{len(poison)} 筆: {','.join(poison[:10])}——人工判;重派=刪 .done+.claim")
+    if profile_cfg:
+        try:
+            verify_completed(store_dir, cfg, require_complete=True)
+        except Exception as profile_error:
+            raise SystemExit(f"profile 完整性驗證失敗：{profile_error}") from profile_error
     if args.out is None and not keep_project:
         #! 工作目錄=純暫存（結果全在 NAS）,跑完即刪——不清會吃滿系統碟:216 事件 2026-07-15,
         #  C 槽 0GB=78 個 job 的 HFSS 專案暫存,磁碟見底→COM 例外 0x80070223 爆發（重開機=假好轉）。
@@ -6032,12 +6120,33 @@ def _jobs_lock_acquire(timeout=90.0, stale=180.0):
 def jobs_add(args):
     """把一個批次加進 NAS 派工佇列（round 檔照常開、check-dup 照常跑——佇列只管「誰去燒」）。"""
     from script.batch_scope import validate_scope
+    from script.profiled_batch import load_profile_config, validate_input
     scope = validate_scope(getattr(args, "scope", None))
     if scope and not getattr(args, "config", None):
         raise ValueError("限定 scope 的 job 必須明確提供 --config")
     qp, _ = _jobs_paths()
     if not DATASET_PATH.joinpath(args.input, "manifest.json").exists():
         raise SystemExit(f"{args.input} 無 manifest——先跑 select 與 check-dup")
+    profile_cfg = None
+    config_path = _resolve_batch_config(getattr(args, "config", None), args.input)
+    if config_path:
+        profile_cfg = load_profile_config(config_path)
+    if profile_cfg:
+        if scope and scope != profile_cfg.scope:
+            raise ValueError(f"--scope={scope} 與 profile config scope={profile_cfg.scope} 不符")
+        scope = profile_cfg.scope
+        validate_input(DATASET_PATH.joinpath(args.input), profile_cfg)
+        # profile config 跟輸入一起放共享 dataset；worker kit 不依賴發車機的絕對 repo 路徑。
+        snapshot = DATASET_PATH.joinpath(args.input, "config.yaml")
+        source_bytes = open(config_path, "rb").read()
+        if snapshot.exists() and open(str(snapshot), "rb").read() != source_bytes:
+            raise ValueError(f"{snapshot} 已存在但內容不同，拒絕換尺")
+        if not snapshot.exists():
+            temp = str(snapshot) + ".tmp"
+            with open(temp, "wb") as stream:
+                stream.write(source_bytes)
+            os.replace(temp, str(snapshot))
+        config_path = f"{args.input}/config.yaml"
     lk = _jobs_lock_acquire()
     try:
         jobs = json.load(open(str(qp), encoding="utf-8")) if qp.exists() else []
@@ -6051,7 +6160,7 @@ def jobs_add(args):
         if getattr(args, "config", None):
             #? 派工帶 config（2026-08-10 dual 開線,D2 #5）:worker 常駐時吃的是自己的 --config,
             #  單一 worker 要能同時吃 single/dual 兩種批 → 由「批」帶尺,不給就沿用 worker 預設。
-            job["config"] = args.config
+            job["config"] = config_path
         jobs.append(job)
         tmp = str(qp) + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
@@ -6587,6 +6696,7 @@ def worker(args):
     →自動接管重跑（毒批收斂:全機敗過=永久 fail 等人工;舊純文字 .fail 不自動接管）。"""
     import time
     from script.batch_scope import job_in_scope, validate_worker_scope
+    from script.profiled_batch import load_profile_config
     scope = validate_worker_scope(args)
     from antenna.utils.web import get_local_ip
     me = get_local_ip()
@@ -6620,6 +6730,16 @@ def worker(args):
                 continue
             if scope and not j.get("config"):
                 raise ValueError(f"scope={scope} 的 job 缺 config：{j.get('store')}")
+            _queued_config = _resolve_batch_config(j.get("config"), j.get("input"))
+            _queued_profile = load_profile_config(_queued_config) if _queued_config else None
+            if _queued_profile:
+                _solve_timeout = _queued_profile.runtime.get("timeout", args.timeout)
+                _required_stale = _solve_timeout + 900       # 單筆合法求解時間 + 15 分鐘存檔／排程餘裕
+                if args.stale * 60 <= _required_stale:
+                    raise ValueError(
+                        f"profile job {j.get('store')} timeout={_solve_timeout}s；--stale 必須大於"
+                        f" {_required_stale / 60:.0f} 分鐘，避免長測中被其他 worker 接管"
+                    )
             st = j["store"]
             _pin = str(j.get("machine") or "")
             #! 釘選比對:me=完整 IP(2026-08-03 實戰 bug:jobs-add 寫末段「216」等值比較永不匹配
@@ -6708,7 +6828,8 @@ def worker(args):
             time.sleep(args.poll)
             continue
         st = picked["store"]
-        job_cfg = picked.get("config") or args.config    # 批帶尺優先（dual 批;沒帶=沿用本機預設）
+        job_cfg_raw = picked.get("config") or args.config    # 批帶尺優先（dual 批;沒帶=沿用本機預設）
+        job_cfg = _resolve_batch_config(job_cfg_raw, picked["input"])
         print(f"▶ 認領 {st}（input {picked['input']}"
               f"{'' if job_cfg == args.config else f', config {os.path.basename(job_cfg)}'}）")
         ns = argparse.Namespace(config=job_cfg, input=picked["input"], store=st, out=None,
@@ -6716,10 +6837,18 @@ def worker(args):
                                 cooldown=args.cooldown, max_blowout=args.max_blowout,
                                 retry_pass=args.retry_pass, job_prio=picked.get("prio", 9),
                                 tier2_prio=args.tier2_prio,
+                                scope=scope,
                                 claim_path=str(sd.joinpath(st + ".claim")), claim_me=me)
         try:
             if run(ns) == "yield":                       # tier-2 讓位/被接管:不標 done,回佇列重掃
                 continue
+            from script.profiled_batch import verify_completed
+            _profile = load_profile_config(job_cfg)
+            if _profile:
+                try:
+                    verify_completed(DATASET_PATH.joinpath(st), _profile, require_complete=True)
+                except Exception as verify_error:
+                    raise SystemExit(f"profile 完整性驗證失敗，禁止 .done：{verify_error}") from verify_error
         except SystemExit as e:                          #? 判死:.fail 記機器名單（JSON,別台自動接管）、停機等人工
             prior = []
             try:
@@ -6814,7 +6943,8 @@ def jobs_ls(args):
         done_n = 0
         if rp.exists():
             res = json.load(open(str(rp), encoding="utf-8"))
-            done_n = sum(1 for v in res.values() if "wm" in v)
+            done_n = sum(1 for v in res.values()
+                         if isinstance(v, dict) and ("wm" in v or v.get("status") == "ok"))
         print(f"[prio {j.get('prio', 9)}] {st}: {done_n}/{total} | {state}")
     if hidden:
         print(f"（已隱藏 {hidden} 個 done 歷史 job;--all 列全部）")
@@ -6871,6 +7001,10 @@ def _report_dual(manifest, results):
 
 
 def report(args):
+    profile_store = _dir(args.store)
+    if profile_store.joinpath("measurement.json").exists():
+        from script.profiled_batch import report as profile_report
+        return profile_report(profile_store)
     input_dir = _dir(args.input)
     manifest = _load_manifest(input_dir)
     results_path = _dir(args.store).joinpath("results.json")

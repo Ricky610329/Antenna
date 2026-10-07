@@ -8,6 +8,16 @@
 
 ## 怎麼跑
 
+### 2026-10-07 具名量測批次（使用 `script.exploration`，不是 `train.py`）
+
+| config | 測試重點 | 與歷史批次差異 | 紀錄 |
+| --- | --- | --- | --- |
+| `single_r80_symmetry_explore.yaml` | 金屬精確左右鏡射下，研究兩切面場型及 S11/Gain | 固定 0.1 mm 橋；48×最多3批；SM 選資訊/多樣性，不設性能門檻 | R80 |
+| `dual_r81_wide_filter.yaml` | S21 26–30 ≥−3、16–20/36–40 ≤−20 dB | 獨立 49 點量測身分；保留 26.5–29.5 的 −10 dB 匹配；60×最多3批，先做寬頻檢查 | R81 |
+
+`script/exploration.py` 訓練專屬兩成員 SM，先稽核送測時的預測，再納入新真值。
+兩個 profile 不加入歷史 SM 大鍋。操作及量測前檢查見 [R80/R81 操作說明](../docs/log/symmetry-filter-20261007-runbook.md)。
+
 ```bash
 conda activate patch          # 正式機才有 HFSS
 python train.py configs/single_base.yaml

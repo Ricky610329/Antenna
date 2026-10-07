@@ -40,7 +40,7 @@ def test_production_configs_parse():
 
 
 def test_all_configs_load_and_valid():
-    """catalog smoke test：configs/ 下每一支 *.yaml 都要能 load_config（白名單/打字錯就 raise）、
+    """catalog smoke test：每個 YAML 由對應 train/profile loader 驗證白名單與完整性；
     targets 涵蓋 port 標籤、generator/surrogate 是 zoo 已註冊、且 name 不撞（撞名→結果夾撞→誤續跑）。
     守住新增/改 config（含 harvest 三支與未來實驗）時的低級錯誤。"""
     paths = sorted(glob.glob(os.path.join(CONFIGS, "*.yaml")))
@@ -48,12 +48,19 @@ def test_all_configs_load_and_valid():
     seen = {}
     for p in paths:
         base = os.path.basename(p)
-        cfg = load_config(p)                                    # 白名單/拼錯/缺 target → 這裡 raise
-        assert set(PORT_SPECS[cfg.port]["labels"]).issubset(cfg.targets), f"{base}: targets 缺標籤"
-        gen = cfg.generator.get("name", "sigmoid") if cfg.generator else "sigmoid"
-        assert gen in zoo.GENERATORS, f"{base}: generator {gen!r} 未在 zoo 註冊"
-        sur = cfg.surrogate.get("name", "mlp") if cfg.surrogate else "mlp"
-        assert sur in zoo.SURROGATES, f"{base}: surrogate {sur!r} 未在 zoo 註冊"
+        from script.profiled_batch import load_profile_config, simulator_kwargs
+        cfg = load_profile_config(p)
+        if cfg is not None:
+            from script.exploration import validate_exploration_config
+            validate_exploration_config(vars(cfg))
+            simulator_kwargs(cfg)
+        else:
+            cfg = load_config(p)                                # 白名單/拼錯/缺 target → 這裡 raise
+            assert set(PORT_SPECS[cfg.port]["labels"]).issubset(cfg.targets), f"{base}: targets 缺標籤"
+            gen = cfg.generator.get("name", "sigmoid") if cfg.generator else "sigmoid"
+            assert gen in zoo.GENERATORS, f"{base}: generator {gen!r} 未在 zoo 註冊"
+            sur = cfg.surrogate.get("name", "mlp") if cfg.surrogate else "mlp"
+            assert sur in zoo.SURROGATES, f"{base}: surrogate {sur!r} 未在 zoo 註冊"
         assert cfg.name not in seen, f"{base} 與 {seen.get(cfg.name)} 的 name 撞了: {cfg.name!r}"
         seen[cfg.name] = base
 

@@ -1,0 +1,31 @@
+# Research sampling only. Gain/S11/radiation are observations, never acceptance gates.
+name: single_r80_symmetry_explore
+port: single
+scope: symmetry_filter_20261007
+measurement:
+  name: single25_db100_rad28_v1
+  port: single
+  labels: [S11, Gain]
+  geometry: {geom: single_v1, pixel_count: 25, diag_bridge_w: 0.1}
+  sweep: {start_ghz: 24, stop_ghz: 32, step_ghz: 0.5, type: Interpolating}
+  solver: {setup_freq_ghz: 28, open_region_freq_ghz: 28, max_delta_s: 0.02, max_passes: 6, min_passes: 5, min_converged: 5}
+score_spec:
+  name: symmetry_observation_only_v1
+  bands: []
+runtime: {timeout: 1200}
+exploration:
+  mode: single_fullcurve
+  geometry_profile: single25_lr_exact_db100
+  seed: 801007
+  batch_size: 48
+  max_batches: 3
+  candidate_pool_size: 1024
+  ensemble_seeds: [0, 1]
+  hidden_dims: [128, 128]
+  epochs: 100
+  pretrain_epochs: 0
+  batch_train_size: 32
+  learning_rate: 0.001
+  holdout_fraction: 0.2
+  arms: {random: 12, geometry: 12, uncertainty: 12, predcurve_diversity: 12}
+  later_arms: {random: 12, geometry: 12, uncertainty: 12, predcurve_diversity: 12}

@@ -5,7 +5,17 @@
 > - config 全集（不刪）→ [README.md](README.md)
 > **流程**：新實驗 → `docs/log/` 開 round 檔 + 這裡加「🔵 進行中」一行指向它；跑完結論寫進 round 檔，這裡只留「✅ 已歸檔」一行指標。
 
-最後更新：2026-08-31
+最後更新：2026-10-07
+
+## 2026-10-07：新研究工作，worker 待使用者啟動
+
+- 🟡 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：本機備料48筆與4次重測；沒有新HFSS結果。
+- 🟡 [R81 新濾波器規格](../docs/log/round-81-wide-filter.md)：先6筆wide＋4次Discrete/mesh檢查；正式60筆在量測檢查後才排隊。
+- [啟動及回填指令](../docs/log/symmetry-filter-20261007-runbook.md)：scope=`symmetry_filter_20261007`、`--selfgen 0`，emforge未動。
+- 本次實際執行 `python -m script.status --factory`：T: 未掛，result 路徑不存在，無法取得NAS現況；不能以空佇列輸出判定遠端空閒。
+- 以下2026-08的worker/王者段落是歷史快照；沒有本次重新啟動的含義。舊grind/selfgen不恢復。
+
+## 2026-08-31 歷史快照
 
 > **✅ 2026-08-31 換機遷移完成**（舊機碩一_電腦退役 → 新機 i5-14600K）。
 > 環境：conda `ant` / **torch 2.7.1+cu128**（golden 綁此版）/ RTX 3060。

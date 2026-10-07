@@ -97,6 +97,8 @@ def _discover_stores():
         name = os.path.basename(pth)
         if name.endswith("_input") or name.startswith("dedust_r60") or name in known:
             continue
+        if os.path.exists(os.path.join(pth, "measurement.json")):
+            continue                                  # 具名 profile（49 點等）不得混入 legacy 17 點鍋
         #! 域安全閘(2026-08-12:dedust_r7*/r8*/r9* glob 曾撈到 single 老店 (2,17) 炸鍋):
         #  只收 manifest 標 port=dual 的店——單一真相源,未來輪免改 code。
         #  kind=slotw(亞像素縫幾何變體,R60/R68b3)=毒資料,同一道閘擋(_pot_eligible)。
@@ -235,6 +237,9 @@ def _scan_stores(stores, workers=8):
         if not d.is_dir():
             print(f"[warn] store 不存在，略過：{name}")
             continue
+        if d.joinpath("measurement.json").exists():
+            print(f"[profile] {name} 有 measurement.json——legacy dual SM 明確跳過")
+            continue
         if SM_VER < "v5" and not _store_is_p00(d):
             #! 幾何儀器代閘(2026-08-13 p01 換代):p00 鍋(v1-v4)凍結——p01 量測與 p00 對
             #  「對角重 pattern」差到 20dB 級,混鍋=同 pattern 兩真值=毒。
@@ -265,6 +270,9 @@ def _scan_stores(stores, workers=8):
         print(f"  {name:<18} 讀 {len(files):>5} 筆，新增 {kept:>5}（{time.time() - t0:.1f}s）")
     #! 排序鍵＝pattern bytes → 鍋的順序與檔案系統列舉順序無關（split 決定性的前提）。
     order.sort(key=lambda t: t[0])
+    if not order:
+        return (np.empty((0, N_PIX), dtype=np.uint8),
+                np.empty((0, len(LABELS), N_POINTS), dtype=np.float32), [], n_raw)
     X = np.stack([seen[k] for k, _, _ in order]).astype(np.uint8)
     Y = np.stack([y for _, y, _ in order]).astype(np.float32)
     return X, Y, [s for _, _, s in order], n_raw
@@ -307,6 +315,8 @@ def _discover_stores_mfg():
         name = os.path.basename(pth)
         if name.endswith("_input"):
             continue
+        if os.path.exists(os.path.join(pth, "measurement.json")):
+            continue                                  # 具名 profile 另鍋，不靠 shape 碰巧擋
         mp = os.path.join(str(DATASET_PATH), name + "_input", "manifest.json")
         try:
             man = json.load(open(mp, encoding="utf-8"))

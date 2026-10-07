@@ -43,3 +43,9 @@
 且不做啟動時舊工作目錄清掃或歷史 probe。`jobs_state/STOP` 仍是全域停止，
 `jobs_state/STOP_<scope>` 可只停該實驗。正式啟動前先核對本輪佇列，不能直接恢復舊慢磨。
 CLI 的全域 `--dataset-root <path>` 必須放在子命令之前，供明確指定 NAS 或本機測試資料根。
+
+R80/R81 的 `profiled_batch.py` 驗證量測/評分身分、標準 tensor 與 rad sidecar 的 hash；
+`exploration.py` 執行 prepare → feedback → train → select-batch，先核對送測前預測才訓練。
+`prepare_symmetry_filter.py` 只讀具名歷史 seeds、備妥首批與量測檢查；`check-wide` 不通過就不放行正式 dual 批次。
+`symmetry_analysis.py` 與 `figs/symmetry_census.py` 重現歷史對稱統計與圖。
+完整參數、資料限制及 worker 指令見 [runbook](../docs/log/symmetry-filter-20261007-runbook.md)。

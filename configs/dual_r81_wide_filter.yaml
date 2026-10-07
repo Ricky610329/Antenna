@@ -1,0 +1,36 @@
+# Initial finite engineering window; no claim below 16 or above 40 GHz.
+name: dual_r81_wide_filter
+port: dual
+scope: symmetry_filter_20261007
+measurement:
+  name: dual25_p01_db075_wide16_40_v1
+  port: dual
+  labels: [S11, S21, S22]
+  geometry: {geom: p01, pixel_count: 25, diag_bridge_w: 0.075}
+  sweep: {start_ghz: 16, stop_ghz: 40, step_ghz: 0.5, type: Fast}
+  solver: {setup_freq_ghz: 28, open_region_freq_ghz: 16, max_delta_s: 0.02, max_passes: 6, min_passes: 5, min_converged: 5}
+score_spec:
+  name: filter_26_30_stop20_36_v1
+  bands:
+    - {name: s11_match, label: S11, start_ghz: 26.5, stop_ghz: 29.5, relation: le, threshold: -10}
+    - {name: s22_match, label: S22, start_ghz: 26.5, stop_ghz: 29.5, relation: le, threshold: -10}
+    - {name: s21_pass, label: S21, start_ghz: 26, stop_ghz: 30, relation: ge, threshold: -3}
+    - {name: s21_low_stop, label: S21, start_ghz: 16, stop_ghz: 20, relation: le, threshold: -20}
+    - {name: s21_high_stop, label: S21, start_ghz: 36, stop_ghz: 40, relation: le, threshold: -20}
+runtime: {timeout: 1800}
+exploration:
+  mode: dual_margin5
+  geometry_profile: dual25_p01_db075
+  seed: 811007
+  batch_size: 60
+  max_batches: 3
+  candidate_pool_size: 1024
+  ensemble_seeds: [0, 1]
+  hidden_dims: [128, 128]
+  epochs: 100
+  pretrain_epochs: 0
+  batch_train_size: 32
+  learning_rate: 0.001
+  holdout_fraction: 0.2
+  arms: {history: 20, specialist: 20, random: 20}
+  later_arms: {best_min_margin: 20, uncertainty: 20, random: 20}

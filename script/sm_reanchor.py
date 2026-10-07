@@ -41,6 +41,11 @@ DEFAULT_CFG = os.path.join(REPO, "configs", "single_r5_explore.yaml")
 _CS_PATH = os.path.join(REPO, "configs", "clean_stores.txt")
 
 
+def _is_profiled_store(path):
+    """具名 measurement store 與 legacy 17 點 SM/rad 鍋永久隔離。"""
+    return os.path.exists(os.path.join(os.fspath(path), "measurement.json"))
+
+
 def _move_opt_state(sm, device):
     for st in sm.optimizer.state.values():
         for k, v in st.items():
@@ -95,6 +100,8 @@ def _load_clean_stores():
             name = os.path.basename(p)
             if name.endswith("_input") or name.endswith("_frozen"):
                 continue   # _frozen=OOD 凍結尺隔離夾,永不入鍋(R50 協議;稽核 F8 升不變式)
+            if _is_profiled_store(p):
+                continue
             if os.path.isdir(p) and DATASET_PATH.joinpath(name, "results.json").exists() and name not in out:
                 out.append(name)
     #? 公證店（dedust_rNNn*）前移——「certified 先見先贏」去重不變式從註解變事實
@@ -122,6 +129,9 @@ def _load_clean():
     for name in CLEAN_STORES:
         if not DATASET_PATH.joinpath(name).is_dir():
             continue                                     # 尚未跑出來的 store (如 champ_disc) 自動略過
+        if _is_profiled_store(DATASET_PATH.joinpath(name)):
+            print(f"[profile] {name} 有 measurement.json——legacy single SM 明確跳過")
+            continue
         store = SampleStore(DATASET_PATH.joinpath(name), verbose=False)
         for i in range(len(store)):
             x, y = store[i]
@@ -203,7 +213,7 @@ def _load_neg_samples():
         if not name:
             continue
         p = DATASET_PATH.joinpath(name)
-        if p.is_dir():
+        if p.is_dir() and not _is_profiled_store(p):
             st = SampleStore(p, verbose=False)
             out.extend(st[i] for i in range(len(st)))
     return out
@@ -585,6 +595,9 @@ def _load_denovo():
         mp = DATASET_PATH.joinpath(fol, "manifest.json")
         if not mp.exists() or not DATASET_PATH.joinpath(stname).is_dir():
             continue
+        if (DATASET_PATH.joinpath(fol, "measurement.json").exists()
+                or _is_profiled_store(DATASET_PATH.joinpath(stname))):
+            continue
         ids = [m["id"] for m in json.load(open(str(mp), encoding="utf-8"))
                if m.get("kind") == "denovo"]
         if not ids:
@@ -719,6 +732,8 @@ def _rad_dataset():
         if fol.endswith("_input") or not fol.startswith("dedust_") or not rd.is_dir() \
                 or not ind.joinpath("manifest.json").exists():
             continue
+        if _is_profiled_store(d):
+            continue                                  # 新 profile rad sidecar 不進 legacy rad 頭
         for m in json.load(open(str(ind.joinpath("manifest.json")), encoding="utf-8")):
             rf, pf = rd.joinpath(m["id"] + ".pt"), ind.joinpath(m["id"] + ".pt")
             if not (rf.exists() and pf.exists()):
