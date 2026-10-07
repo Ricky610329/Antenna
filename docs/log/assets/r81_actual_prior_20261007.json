@@ -1,0 +1,441 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-07T13:38:52.978735+00:00",
+  "source_root": "C:\\Users\\ricky\\antenna_nas_backup\\dataset",
+  "frozen_source_commit": "07de8e3fdb17a7649201d76fbc2dea2282fa05fd",
+  "frozen_source_bindings": [
+    {
+      "path": "antenna/patch/patch_simulator/dual_port.py",
+      "sha256": "1d800a5973bd7ac79a6fcbc149fe303d925ac96c4b66de653b06cf6c73ea183b",
+      "git_blob": "db36d48dc34a0a6b5fff679203327bddb8abe1c6"
+    },
+    {
+      "path": "antenna/training.py",
+      "sha256": "bf3c5de7bc44155c50409fd067fcb224185a64228ea34840289c44b1a67e9467",
+      "git_blob": "a17b414d9c306a65e2e6d3839ee6d8f750e92df2"
+    },
+    {
+      "path": "antenna/losses.py",
+      "sha256": "9486e3f9190c0fff0e2c2bbf8292fd5f79440e486cf44c77ca5b081cb931fdf0",
+      "git_blob": "b64db0b35ad7e521b80eaa842c334c826355bb42"
+    },
+    {
+      "path": "script/dedust.py",
+      "sha256": "732856148f410808ba5c24f84bc1b679e65ebb3756a31e6c28effc2d17f2bf1d",
+      "git_blob": "9bdbc8619c82c0381c90cda94d03378c525f5e22"
+    },
+    {
+      "path": "configs/dual_r1_eval.yaml",
+      "sha256": "b501672324ce9044c71833354a8a1f8b2650d17facff6b063a68dae32eb5b883",
+      "git_blob": "b96deff1d56c982770dc281ee834e041448ff7d2"
+    },
+    {
+      "path": "docs/log/round-79-dual-h1-lineage.md",
+      "sha256": "71574216c282844f4447a9ca83223ba1dfd215268735f928c606e43fdb086c20",
+      "git_blob": "af6564c6c09fbe3b2cf48ac48af94252d0dd64fc"
+    }
+  ],
+  "source_stores": [
+    {
+      "store": "dedust_r79b1a",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_r79b1a_input/manifest.json",
+          "sha256": "087c2872523b44be217201f6653c3bda43f2939c83f84993b2bfdcff8e97718d"
+        },
+        {
+          "file": "dedust_r79b1a/results.json",
+          "sha256": "7d9e7b17f5fd72ff516550ec5a53b6a666ca2196d9b8d4ad1cc3045b2805eff2"
+        },
+        {
+          "file": "dedust_r79b1a_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_r79b1a/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_r79b1b",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_r79b1b_input/manifest.json",
+          "sha256": "9402e832110d1712cad386fd858c59a75b6b8f993c2c10d11db0e2ac7043af5b"
+        },
+        {
+          "file": "dedust_r79b1b/results.json",
+          "sha256": "4a3e5fa4ced3072fc6317ef18bba11e20abcbffbb6ac31206aca5ac927e2b813"
+        },
+        {
+          "file": "dedust_r79b1b_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_r79b1b/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_r79b1c",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_r79b1c_input/manifest.json",
+          "sha256": "6bb969fdbecddcb9d6232b819e6011fb5cf54cb28a810f6f10d2ff6abbc62833"
+        },
+        {
+          "file": "dedust_r79b1c/results.json",
+          "sha256": "08afd21081ee2ea2afae17b8ae24331443bdcfa84c911fd3620f06b58d93b126"
+        },
+        {
+          "file": "dedust_r79b1c_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_r79b1c/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_r79b2a",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_r79b2a_input/manifest.json",
+          "sha256": "3f07c0f8779608d0c3851f3d35a72284abefbc5221b8f53c00849d715f92e6b1"
+        },
+        {
+          "file": "dedust_r79b2a/results.json",
+          "sha256": "e1e246cf3a3c102d95718401b3288993a3299bcf1b85216a2e474b078933cc70"
+        },
+        {
+          "file": "dedust_r79b2a_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_r79b2a/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_r79b2b",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_r79b2b_input/manifest.json",
+          "sha256": "a09a748335b4720594c4457a7a745edecc3c52d96d5dbffd834296395971c74b"
+        },
+        {
+          "file": "dedust_r79b2b/results.json",
+          "sha256": "1b6ebf80ae88b1fc29595cb6bc502e0fab819c49cbaa5f47eab7cfb04278a25e"
+        },
+        {
+          "file": "dedust_r79b2b_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_r79b2b/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_r79b2c",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_r79b2c_input/manifest.json",
+          "sha256": "5d1d9c461645632a5752ba1d4b095ef56c5a207964e68fed26872cf1f0d668f0"
+        },
+        {
+          "file": "dedust_r79b2c/results.json",
+          "sha256": "20dc5b2aa6752577fad3480938c9b0b3cfa88e3f3291a99f7943e8d18e1b93aa"
+        },
+        {
+          "file": "dedust_r79b2c_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_r79b2c/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_r79b3a",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_r79b3a_input/manifest.json",
+          "sha256": "0815e329184fbd51ccd806a33c488921217c284cc2182ef4eff2a104b2a929e1"
+        },
+        {
+          "file": "dedust_r79b3a/results.json",
+          "sha256": "7176458cf60371fe9d52726041c0c66c27bb9a7b577d5ce6eeaf09296ba6332c"
+        },
+        {
+          "file": "dedust_r79b3a_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_r79b3a/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_r79b3b",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_r79b3b_input/manifest.json",
+          "sha256": "af8fc91e3a6586b7867451b04706b70a22d650a41429ce229386799bd6c70714"
+        },
+        {
+          "file": "dedust_r79b3b/results.json",
+          "sha256": "3fece2bc7a2e87c86f339bc967c75050acb7c867cfe141f33e56d08607dcce15"
+        },
+        {
+          "file": "dedust_r79b3b_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_r79b3b/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_r79b3c",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_r79b3c_input/manifest.json",
+          "sha256": "ef45a24cdccbf3483748ebb2620a1bc90996e152406fa149700299f0b8166b92"
+        },
+        {
+          "file": "dedust_r79b3c/results.json",
+          "sha256": "4bbe5a1bc528d2cf7b47c1daea4846c173c3793f874d6f34830a1c38f7703cbb"
+        },
+        {
+          "file": "dedust_r79b3c_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_r79b3c/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_smp073a",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_smp073a_input/manifest.json",
+          "sha256": "0a84642819184e2648244c6ce1527534f52468bf40ddff2ecaa6d5a1ef0d2771"
+        },
+        {
+          "file": "dedust_smp073a/results.json",
+          "sha256": "e42e2544417d666829f7895e84e125ff6be6384ef5d20711a65a910d9c353ba1"
+        },
+        {
+          "file": "dedust_smp073a_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_smp073a/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_smp073b",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_smp073b_input/manifest.json",
+          "sha256": "553a939e54834454aaa8ba636885b5eacec9ec5d7d90e265df973fc66c485460"
+        },
+        {
+          "file": "dedust_smp073b/results.json",
+          "sha256": "4ea5a8b07740b4bc44725935930c0e817f6807fb4fa3789b4e06699e79b3949d"
+        },
+        {
+          "file": "dedust_smp073b_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_smp073b/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    },
+    {
+      "store": "dedust_smp073c",
+      "counts": {
+        "matched": 30
+      },
+      "n_inputs": 30,
+      "n_results": 30,
+      "n_raw": 30,
+      "metadata": [
+        {
+          "file": "dedust_smp073c_input/manifest.json",
+          "sha256": "8c2bf22d710dc52fce7d7e4c768a09bef59a16660c31b7416876262a4e260701"
+        },
+        {
+          "file": "dedust_smp073c/results.json",
+          "sha256": "8cf8aa086f3586c9e9ff0b10a11e43497c2adb0d41e2f77f599ac76910506928"
+        },
+        {
+          "file": "dedust_smp073c_input/hfss_setup.json",
+          "sha256": "5648e5aa2728663219e7ce39eacdff3397182e77392aeef69e2175579edd73c1"
+        },
+        {
+          "file": "dedust_smp073c/hfss_setup.json",
+          "sha256": "fe526814d92fe2e3d8c4bb88143c1e08703c6f845d045b26bbac577c0411b5c1"
+        }
+      ]
+    }
+  ],
+  "candidates_seen": 360,
+  "matched_rows": 360,
+  "exclusions": [],
+  "prior_audit": {
+    "schema_version": 1,
+    "role": "historical_prior_not_current_truth",
+    "manifest": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r81_filter_prior_20261007\\manifest.json",
+    "manifest_sha256": "54ca9a84798c50b72435b1a52e34b9eb94f25607b8dbc12dfc126a2bb5942f4b",
+    "current_measurement_id": "285ef64d46a6a39a73bfb444de299464d8ba3a637710f14818886c71379ef919",
+    "current_score_spec_id": "3da2ba77ef7c10623cd8ecc4ca8b991ee5f8edd8bde8f4a8321def9c1441c4e4",
+    "historical_rows_validated": 360,
+    "records_kept": 360,
+    "records_excluded": 0,
+    "band_names": [
+      "s11_match",
+      "s22_match",
+      "s21_pass",
+      "s21_low_stop",
+      "s21_high_stop"
+    ],
+    "covered_bands": [
+      "s11_match",
+      "s22_match",
+      "s21_pass"
+    ],
+    "masked_bands": [
+      "s21_low_stop",
+      "s21_high_stop"
+    ],
+    "full_current_worst_margin_available": false
+  },
+  "manifest_sha256": "54ca9a84798c50b72435b1a52e34b9eb94f25607b8dbc12dfc126a2bb5942f4b",
+  "raw_snapshot_roundtrip": true,
+  "n_unique_kept": 360,
+  "raw_response_shape": [
+    360,
+    3,
+    17
+  ],
+  "canonical_families": {
+    "DUAL_H79": 180,
+    "DUAL_HS79": 90,
+    "SMPOOL073": 90
+  },
+  "current_holdout_applied": false,
+  "hfss_run": false,
+  "training_run": false,
+  "limitations": [
+    "Original tensors do not carry frequency/label axes; reconstruction uses frozen source and eight stored metrics.",
+    "Actual historical worker revision was not recorded and is unknown.",
+    "All 12 stores are p01/25/.075; the named diagbridge kind is accepted only after explicit identity validation.",
+    "Only three fully covered R81 margins are prior targets; both new stopbands stay masked.",
+    "Current holdout family exclusion must be repeated when actual R81 observations arrive.",
+    "This is data preparation only; no R81 HFSS, SM training, or positive-WM claim."
+  ],
+  "archive": {
+    "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\historical_prior\\r79_smp073_v001",
+    "manifest_sha256": "238df47eefd9bcd20fb8c2bf90c78c32148d28e5710eb9c78baac95a9491a777",
+    "file_count_including_manifest": 372,
+    "payload_bytes": 3023728,
+    "all_payload_hashes_verified_after_publish": true
+  },
+  "reconstruction_source_sha256": "a5f45d5466631148d257fe4f92dbb65e2fd5949224b9eba715fdb312e21bea38",
+  "sm_dual_corroboration": {
+    "git_blob": "562293110f59f9cc114d64343335c5d484ef0fea",
+    "sha256": "60dd189fb42743e0e975333ffd46e128f59dbe0315eeb818c217dbf337a68985",
+    "scope": "frozen source corroborates labels/17-point convention and p01/.075 eligibility; not the actual worker revision"
+  },
+  "independent_sol_review": {
+    "status": "pass",
+    "raw_snapshot_loader_replay": true,
+    "all_360_sample_hashes": true,
+    "all_six_frozen_source_bindings": true,
+    "four_R79_commits_same_producer_blobs": true,
+    "repeated_eight_metric_replay": false,
+    "actual_worker_revision_known": false
+  }
+}
