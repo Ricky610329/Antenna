@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-07T12:28:36.162508+00:00",
+  "purpose": "post-fit matched holdout diagnostic, no training, policy or checkpoint selection",
+  "source_bindings": {
+    "1": {
+      "binding": {
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+        "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+        "data_version": 1,
+        "manifest_id": "ae3cfb1a863b20c47cd0167f513190f40c324a6c4340066b2a634eed225f7b86",
+        "cumulative_valid_unique": 49
+      },
+      "model_ids": [
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v001\\member-0.pt",
+          "sha256": "6c5bbcf719af86a6dcbb55560cb1a55a724aa4419a927ee2b0a0edf878e10578",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+          "data_version": "1",
+          "manifest_id": "ae3cfb1a863b20c47cd0167f513190f40c324a6c4340066b2a634eed225f7b86"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v001\\member-1.pt",
+          "sha256": "bd53a93afe3b043daa8f87ea528a54c5d4f13990425ca6d4600dce3fc0cf0e44",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+          "data_version": "1",
+          "manifest_id": "ae3cfb1a863b20c47cd0167f513190f40c324a6c4340066b2a634eed225f7b86"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v001\\member-2.pt",
+          "sha256": "7f8b610b7b5122b17e00ab420726c76ac04da0fe0f319d0761e8efd15e64a189",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+          "data_version": "1",
+          "manifest_id": "ae3cfb1a863b20c47cd0167f513190f40c324a6c4340066b2a634eed225f7b86"
+        }
+      ],
+      "data_manifest_sha256": "4674a78beabbb31d2c5baa85500fc1b2cbf7d4cd15013beb2dcd91fa71b08d6c",
+      "model_summary_sha256": "59dad35a4c7cc6d4a6f62ede81fa0f483f86dff86c9bf32fbd518457fae4e407"
+    },
+    "2": {
+      "binding": {
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+        "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+        "data_version": 2,
+        "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d",
+        "cumulative_valid_unique": 99
+      },
+      "model_ids": [
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v002\\member-0.pt",
+          "sha256": "37e2bd09a7087a5f63096722b525fa50870c422a8782fd302e2431fdd09c0ed4",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+          "data_version": "2",
+          "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v002\\member-1.pt",
+          "sha256": "01b711f2bd106d50b5410f455d95d4ed6b4b79f41f26996c17570405ac59a571",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+          "data_version": "2",
+          "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v002\\member-2.pt",
+          "sha256": "bb3dbae260141e1dd9d6f1d8d5e8dab887ac41fdff8fbaec6b46a5b29172dab5",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+          "data_version": "2",
+          "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d"
+        }
+      ],
+      "data_manifest_sha256": "7988d08313b25c5ff5b04cf31b5746546135ef5d1502463eb750c921a50526e2",
+      "model_summary_sha256": "4dc9948e27accd9830ce501149f6954319d9306a8d09ecc1c2eb6e2502cddc53"
+    }
+  },
+  "results": {
+    "v001_fixed_anchor": {
+      "n": 17,
+      "canonical_families": 12,
+      "ids": [
+        "26a4f6ef0f6b750fa6b748f5922c41f88cd8129ac20bdf72a70630ee6a59518c",
+        "2bca7a9893a01349ca0c2cf9b8f500e65180cc8d4a827faa07480ca0b8eef19c",
+        "2bd7d467e43eaa1eee42938c12c07d2ad49d79fd98665d3b00e9a70541dfc4c1",
+        "2f4149a97c40684da8052e6a5daf8ff6d07542ca4dd03c90f03adbc110c4ed5e",
+        "4ba650e9baa0c0006b926ac66c5e581eec21b71f524b7154a18ad1ec3703f1f6",
+        "6483075684772fa1b4818538ee72231f9865d80655445e361388c32086269628",
+        "78badcd7b868fa7bf164674b3ce8559e00e651d7403cd444d9d110698407b4c9",
+        "ae545758fa8fce33844251512a6d52e7f0d4819402703596cf3c437654cfc08d",
+        "af5ae618d2bac3003fb5407886d694bb38913800dd5463f5ff050df9c9488b11",
+        "b7fb1ce3f6789e982f46ff5b52c62c680d12cada0381c0cc89adfd717f4a74c4",
+        "b9959b337f3d23b741c449de11372ee9db55ecc852797b9c04465da3885a0d4c",
+        "bbf517be4f1fb7bc54ffc20514d33d27afcdc565788dab6ac5911403a4e5300c",
+        "c0d687185af9cc23f99eed12cc115c8fd0d707e7157e4b3c078fc1f0ef980976",
+        "c9605d132096ffbd5f8f89507bcf0a35502803e1644429c0fc67a7775a32c815",
+        "d043ed2942856bf768371963f6278616b5dbc87569444485051971ef2ced5457",
+        "eca84119299a055b62e7b6f68fa32d4c8278e0686ee86c2c631a5099cfdd3ea9",
+        "f8c1bada0fc655e316c0aa0c759691fc5777fed39ce86ad4d7da726a9ed87240"
+      ],
+      "mae_by_version": {
+        "1": {
+          "full_vector": 2.895477533340454,
+          "s11": 1.9605839252471924,
+          "gain": 3.7696139812469482,
+          "phi0": 3.1413137912750244,
+          "phi90": 2.6609914302825928
+        },
+        "2": {
+          "full_vector": 2.90311598777771,
+          "s11": 1.9161807298660278,
+          "gain": 3.932260751724243,
+          "phi0": 3.3355138301849365,
+          "phi90": 2.4628326892852783
+        }
+      },
+      "delta_v002_minus_v001": {
+        "full_vector": 0.007638454437255859,
+        "s11": -0.04440319538116455,
+        "gain": 0.16264677047729492,
+        "phi0": 0.1942000389099121,
+        "phi90": -0.19815874099731445
+      },
+      "rows_lower_full_vector_mae": 9,
+      "per_row_full_vector_mae_delta": [
+        -0.15833663940429688,
+        -0.3978860378265381,
+        -0.10660481452941895,
+        -0.6600077152252197,
+        0.4274425506591797,
+        -0.01664423942565918,
+        -0.3619730472564697,
+        0.5102415084838867,
+        -0.7380356788635254,
+        0.19669592380523682,
+        0.11055350303649902,
+        0.325122594833374,
+        -0.7563940286636353,
+        1.6922005414962769,
+        0.7226400375366211,
+        -0.8247389793395996,
+        0.16557693481445312
+      ]
+    },
+    "v002_expanded_holdout": {
+      "n": 40,
+      "canonical_families": 13,
+      "ids": [
+        "00189b4a08209ae5263f8b6f0786f86b9a72a33e6a67154486a584918a6dfe77",
+        "0392daf10e3d7a8a1cf8b8d10afc0278bfbdf8eb25d8c5512fe8d3626fb8a3e2",
+        "0e1fab76a5e07779c1a15cf20e35ed594c32ee44f7098b413eb03a85e0cae0c5",
+        "1afdff715057ec4f3130c85f9e64e605c2b4df07020f1e75b742dba47894ebe8",
+        "26a4f6ef0f6b750fa6b748f5922c41f88cd8129ac20bdf72a70630ee6a59518c",
+        "29757a906c3f24ed8b7a88d7e0fb1ac95e4d6d0bb197277ee64d3baf5f96bd46",
+        "2abacc2f87422fe4a55a9182b74e40f1da43fe43c05b8bd9fd62dc9e55af882b",
+        "2bca7a9893a01349ca0c2cf9b8f500e65180cc8d4a827faa07480ca0b8eef19c",
+        "2bd7d467e43eaa1eee42938c12c07d2ad49d79fd98665d3b00e9a70541dfc4c1",
+        "2f4149a97c40684da8052e6a5daf8ff6d07542ca4dd03c90f03adbc110c4ed5e",
+        "38eed1262f03ab5794a7e0535a038d719b03012c92421284fb4a56a54da4f93d",
+        "4330b21f6926601c081945fa1c7c69f96d28b93cdfa518e5af5d33fe17a882ae",
+        "44439ec9f53bc5a32ea06d8c86976068993150dabf3211cf2a39e6ec5cc48ea1",
+        "4ba650e9baa0c0006b926ac66c5e581eec21b71f524b7154a18ad1ec3703f1f6",
+        "4e12bc2b7e88d939b231ab058351b605aa7336673683daee9b3e0c83e81063e8",
+        "60f07de827195e79637a576e6add4a63f4561bcbc3ade6b466b738b4601e13a0",
+        "6483075684772fa1b4818538ee72231f9865d80655445e361388c32086269628",
+        "696229f32ff075c55286e0e6f90d7e4bac61821716ee98d7f7f70315f546c2c4",
+        "6df2b2e584f1b75adde28f0b68946d8daf4937b9786103f4ecac4c4c73a40beb",
+        "7163b64a69f33234ea412ce170d3ff10679a48310752b4f974bcc25fcd7531b4",
+        "78badcd7b868fa7bf164674b3ce8559e00e651d7403cd444d9d110698407b4c9",
+        "87f40c67f5f542618ce0835b68551860669c10480120f752150c19e04649b7a1",
+        "a0ecee70b11dae0eb0a45247340aa26e9b1a57cffe13ca37edd66a2f90f877b5",
+        "aaf8df382a85cc1a1aa4b3d3e4f27d4d266682e225aff41d41436c14d865752a",
+        "ae545758fa8fce33844251512a6d52e7f0d4819402703596cf3c437654cfc08d",
+        "af5ae618d2bac3003fb5407886d694bb38913800dd5463f5ff050df9c9488b11",
+        "b7fb1ce3f6789e982f46ff5b52c62c680d12cada0381c0cc89adfd717f4a74c4",
+        "b9959b337f3d23b741c449de11372ee9db55ecc852797b9c04465da3885a0d4c",
+        "bbf517be4f1fb7bc54ffc20514d33d27afcdc565788dab6ac5911403a4e5300c",
+        "bdb705f48ea576bb58a5257c39f479cc202a93c91732fc3ceccfd4a649dafb01",
+        "c0d687185af9cc23f99eed12cc115c8fd0d707e7157e4b3c078fc1f0ef980976",
+        "c311ee5b41906c6dbd9c9fa09c20b95c6b72cae8533672113e2f8ab8b184138f",
+        "c9605d132096ffbd5f8f89507bcf0a35502803e1644429c0fc67a7775a32c815",
+        "cd5798901c7192961478313db38637611ee6a2bd86c97fbbb4387bcaa5ba7c2f",
+        "d043ed2942856bf768371963f6278616b5dbc87569444485051971ef2ced5457",
+        "e7c178f29f42875122ad94c94af96166548d694db5da8e538899d502a64f5989",
+        "eca84119299a055b62e7b6f68fa32d4c8278e0686ee86c2c631a5099cfdd3ea9",
+        "f05ec61e3bedf37a51a935de03c8c268c0d84a1fbc432c8b78a345770cbbd2f5",
+        "f8c1bada0fc655e316c0aa0c759691fc5777fed39ce86ad4d7da726a9ed87240",
+        "fca6e4f4e9b7933e06ae2e2490ffcd23e52b8a20bb259d8ded85a6b859540498"
+      ],
+      "mae_by_version": {
+        "1": {
+          "full_vector": 3.27079439163208,
+          "s11": 2.679265022277832,
+          "gain": 5.149151802062988,
+          "phi0": 3.2594029903411865,
+          "phi90": 3.0417892932891846
+        },
+        "2": {
+          "full_vector": 3.0690386295318604,
+          "s11": 2.664330005645752,
+          "gain": 5.0644731521606445,
+          "phi0": 3.000201463699341,
+          "phi90": 2.8407070636749268
+        }
+      },
+      "delta_v002_minus_v001": {
+        "full_vector": -0.20175576210021973,
+        "s11": -0.014935016632080078,
+        "gain": -0.08467864990234375,
+        "phi0": -0.2592015266418457,
+        "phi90": -0.2010822296142578
+      },
+      "rows_lower_full_vector_mae": 24,
+      "per_row_full_vector_mae_delta": [
+        0.4435880184173584,
+        -0.2698512077331543,
+        -0.8536603450775146,
+        -0.7203106880187988,
+        -0.15833663940429688,
+        0.1750473976135254,
+        0.0721592903137207,
+        -0.3978860378265381,
+        -0.10660481452941895,
+        -0.6600077152252197,
+        -0.9582662582397461,
+        0.320987343788147,
+        -0.044901371002197266,
+        0.4274425506591797,
+        -0.9147791862487793,
+        0.29996514320373535,
+        -0.01664423942565918,
+        0.21915316581726074,
+        -0.11446619033813477,
+        -0.3292558193206787,
+        -0.3619730472564697,
+        -1.0026543140411377,
+        0.061373233795166016,
+        0.23949384689331055,
+        0.5102415084838867,
+        -0.7380356788635254,
+        0.19669592380523682,
+        0.11055350303649902,
+        0.325122594833374,
+        -0.4604916572570801,
+        -0.7563940286636353,
+        -0.7110838890075684,
+        1.6922005414962769,
+        -1.185248851776123,
+        0.7226400375366211,
+        -0.9986536502838135,
+        -0.8247389793395996,
+        -0.477783203125,
+        0.16557693481445312,
+        -0.9904451370239258
+      ]
+    }
+  },
+  "legacy_overlap_check": {
+    "legacy_manifest_sha256": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+    "both_models_compared_holdout_pattern_or_family_overlap": 0
+  },
+  "predictions_npz": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\matched_v001_v002_holdout_checked.npz",
+    "sha256": "5899d0185271423421b245fe8eab71974c5d5941dbe59244dce06f2a47c63996"
+  },
+  "cuda_initialized": false,
+  "hfss_run": false,
+  "training_run": false,
+  "limitations": [
+    "Fixed anchor was defined by the existing v001 holdout, not by observed v002 performance.",
+    "Both models exclude every comparison row and canonical family from current-profile training.",
+    "Expanded holdout uses new v002 observations and is retrospective; not a prospective selection comparison.",
+    "Rows share families; no iid confidence interval or efficacy significance claim.",
+    "Version 2 already dispatched before this diagnostic; no policy or checkpoint changes made from these results.",
+    "Full-vector MAE weights all216 coordinates equally;182 are radiation, so report S11/Gain/phi0/phi90 components separately.",
+    "Expanded40 includes23 newly collected observations; it is retrospective and not an independent prospective confirmation set."
+  ],
+  "private_archive": {
+    "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\model-compare-v001-v002",
+    "payload": {
+      "comparison.json": {
+        "sha256": "3d77baaa4b803f43ff9620de0b2defc1524b42f71f3caf661498478e8bdc1a7e",
+        "bytes": 14052
+      },
+      "predictions.npz": {
+        "sha256": "5899d0185271423421b245fe8eab71974c5d5941dbe59244dce06f2a47c63996",
+        "bytes": 98788
+      },
+      "compare_r80_sm_v001_v002.py": {
+        "sha256": "d27ce76bcb8757beece82b900215f67a2fc1c9493277f3a67df77d3ede48a62b",
+        "bytes": 6250
+      }
+    },
+    "archive_manifest_sha256": "72584251bb1d489165bde171ab090ee6ab82d1f8927d06dd32821547e30e2e2f",
+    "model_archives": {
+      "1": {
+        "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\sm_versions\\data-v001",
+        "manifest_sha256": "11656931b1511e03d56695abf403a7d58f73c01a194b08f44a7af3dc966b45fd"
+      },
+      "2": {
+        "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\sm_versions\\data-v002",
+        "manifest_sha256": "71fc9d8e3e389539aa6ce1ae28a83fc286b8883d687397cda3e17cdb65305297"
+      }
+    },
+    "all_postpublish_hashes_match": true
+  },
+  "independent_sol_review": {
+    "status": "PASS",
+    "replayed_from_bound_npz": true,
+    "metric_max_absolute_difference": 2.83e-07,
+    "per_row_delta_max_absolute_difference": 6.55e-07,
+    "fixed_anchor_subset_verified": true,
+    "script_train_holdout_and_model_bindings_reviewed": true
+  }
+}
