@@ -32,6 +32,7 @@
 | `symmetry_training.py` | 對稱工廠新真值按批累積、歷史非對稱曲線僅作預訓練；固定家族保留集、唯一圖形更新計數、epoch恢復及模型/資料版本綁定 |
 | `profiled_shards.py` | canonical輸入分為16筆獨立jobs；完成子批嚴格同一集合、hash驗證後合併；亦可將長批已成功量測凍結為明示partial的獨立子集合供SM更新 |
 | `filter_confirmation.py` | R81原件／重測的唯讀性能確認：完整3×49真值重播、同profile與圖形、兩筆WM皆嚴格>0；不代替工程檢查 |
+| `filter_prior.py` | R81歷史先驗讀取API：明示manifest及hash，保留3×17原曲線、三段可用margin／兩阻帶mask，排除保留集家族與圖形；尚未串接訓練 |
 | `expected_best.py` | R6 期望基準尺（每 round 收檔可重跑疊圖） |
 | `pattern_anatomy.py` | 池結構特徵快取（`collect-pool` → `tmp/pattern_anatomy/pool.npz`,多個 select 依賴） |
 | `round_report.py` / `analyze.py` / `benchmark_vs_random.py` | 線上 run 的歸檔圖表 / 重現診斷 / worst-margin 對標 |

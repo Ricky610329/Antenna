@@ -16,6 +16,7 @@
 | `single_r80_symmetry_factory.yaml` | 使用者擴大為至少10,000有效唯一對稱量測；沿用R80完全相同量測身分 | 16筆小job；每48新真值批次更新SM；歷史先驗＋新資料、40/30/30配額、2,048盲選預備池；取代舊三批工廠停止上限，不改首批snapshot | R80 factory |
 | `symmetry_training.py` / [已凍結訓練protocol](../docs/log/assets/r80_factory_training_protocol_20261007.json) | 累積當前profile全曲線SM，每48–96個新唯一圖形更新 | 3 seeds；625–512–512–256–216 MLP；歷史預訓練30ep＋当前真值100ep；34個seed映至13家族；無HFSS驗證通過前不計實測 | R80 factory SM |
 | `dual_r81_wide_filter.yaml` | S21 26–30 ≥−3、16–20/36–40 ≤−20 dB | **延後**；smoke、Discrete、mesh、正式批次均不得排入目前佇列 | R81 |
+| `filter_prior.py`（備料API） | 舊24–32 GHz資料只監督完整覆蓋的三段margin，兩新阻帶mask | 明示manifest／hash／p01幾何；保留集家族與圖形排除；未啟用於現行訓練，R81派工順序不變 | R81 SM準備 |
 
 `script.prepare_symmetry_filter prepare` 預設 `--phase single`，只讀34個 R55 seeds；`--phase combined` 保留給後續 R81 階段。
 目前操作與啟動方式見 [R80 操作說明](../docs/log/symmetry-filter-20261007-runbook.md)。程式由 Git `GAN` 交付，每台 worker 均使用 `GAN`，不使用舊 ZIP。
