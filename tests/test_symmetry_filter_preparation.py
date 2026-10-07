@@ -1,44 +1,144 @@
 """Bounded measurement gate: successful files must still agree numerically."""
 import json
+import numpy as np
 import pytest
 import torch
+import yaml
+
+from antenna.measurement import measurement_id, score_spec_id
 
 from script import prepare_symmetry_filter as prep
 
 
-def _fixture(tmp_path, monkeypatch, delta):
-    monkeypatch.setattr(prep.pb, "load_profile_config", lambda p: object())
-    monkeypatch.setattr(prep.pb, "verify_completed", lambda *args: None)
+def _fixture(tmp_path, delta):
+    configs = prep.wide_check_configs()
+    formal = tmp_path / "dedust_r81b1_input"
+    formal.mkdir()
+    (formal / "config.yaml").write_text(yaml.safe_dump(configs["smoke"]), encoding="utf-8")
+    cfg = prep.pb.load_profile_config(formal / "config.yaml")
+    rows = []
+    for i in range(60):
+        pattern = prep.ex.enforce_dual_geometry(np.random.default_rng(i).random((25, 25)))
+        key = f"p{i}"
+        torch.save(torch.tensor(pattern, dtype=torch.float32), formal / (key + ".pt"))
+        rows.append({"id": key, "pattern_file": key + ".pt", "port": "dual",
+                     "pattern_sha256": prep.pb.pattern_sha256(pattern),
+                     "measurement_id": measurement_id(cfg.measurement),
+                     "score_spec_id": score_spec_id(cfg.score_spec),
+                     "selection_arm": ("history", "specialist", "random")[i // 20]})
+    for name, value in (("measurement.json", cfg.measurement), ("score_spec.json", cfg.score_spec),
+                        ("manifest.json", rows)):
+        prep.pb.atomic_json(formal / name, value)
     for name, offset in (("smoke", 0), ("discrete", delta), ("mesh", delta)):
+        folder = tmp_path / ("dedust_r81" + name + "_input")
+        indices = [0, 1, 20, 21, 40, 41] if name == "smoke" else [0, 1]
+        prep.auxiliary_bundle(formal, folder, indices, config=configs[name])
+        cfg = prep.pb.load_profile_config(folder / "config.yaml")
         store = tmp_path / ("dedust_r81" + name)
-        store.mkdir()
-        manifest, results = [], {}
-        for i in range(6 if name == "smoke" else 2):
-            key = f"p{i}"
-            manifest.append({"id": key, "parent_batch_id": key})
-            torch.save((torch.ones(25, 25), torch.zeros(3, 49) + offset), store / (key + ".pt"))
-            results[key] = {"status": "ok", "sample_file": key + ".pt",
-                            "margins": {f"m{j}": offset for j in range(5)}}
-        (store / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
-        (store / "results.json").write_text(json.dumps(results), encoding="utf-8")
+        manifest = prep.pb.prepare_store(folder, store, cfg)
+        results = {}
+        for row in manifest:
+            pattern = torch.load(folder / row["pattern_file"], weights_only=True)
+            response = torch.full((3, 49), -9.0) + offset
+            entry = prep.pb.observation(response, None, row, pattern, cfg, elapsed=1.0)
+            sample = store / entry["sample_file"]
+            torch.save((pattern, response), sample)
+            entry["sample_sha256"] = prep.pb.file_sha256(sample)
+            results[row["id"]] = entry
+        prep.pb.atomic_json(store / "results.json", results)
 
 
-def test_gate_rejects_numerical_disagreement_even_after_artifact_validation(tmp_path, monkeypatch):
-    _fixture(tmp_path, monkeypatch, .31)
+def test_gate_rejects_numerical_disagreement_even_after_artifact_validation(tmp_path):
+    _fixture(tmp_path, .31)
     out = prep.measurement_check(tmp_path)
     assert out["full_batch_release_allowed"] is False
     assert len(out["comparisons"]) == 4
 
 
-def test_gate_accepts_bounded_agreement_and_rejects_missing_sample(tmp_path, monkeypatch):
-    _fixture(tmp_path, monkeypatch, .1)
-    assert prep.measurement_check(tmp_path)["engineering_check_passed"]
+def test_gate_accepts_bounded_agreement_and_rejects_missing_sample(tmp_path):
+    _fixture(tmp_path, .1)
+    report = prep.measurement_check(tmp_path)
+    assert report["engineering_check_passed"]
+    assert not report["performance_target_assessed"] and not report["campaign_complete"]
+    assert len(report["metadata_sha256"]) == 29
     path = tmp_path / "dedust_r81mesh/results.json"
     values = json.loads(path.read_text(encoding="utf-8"))
-    values["p0"] = {"error": "timeout"}
+    values[next(iter(values))] = {"error": "timeout"}
     path.write_text(json.dumps(values), encoding="utf-8")
-    with pytest.raises(ValueError, match="incomplete"):
+    with pytest.raises(ValueError, match="未完整成功"):
         prep.measurement_check(tmp_path)
+
+
+@pytest.mark.parametrize("instrument", ["discrete", "mesh", "timeout"])
+def test_gate_rejects_same_instrument_disguised_as_independent_check(tmp_path, instrument):
+    _fixture(tmp_path, .1)
+    name = "mesh" if instrument == "timeout" else instrument
+    path = tmp_path / f"dedust_r81{name}_input/config.yaml"
+    value = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if instrument == "discrete":
+        value["measurement"]["sweep"]["type"] = "Fast"
+    elif instrument == "mesh":
+        value["measurement"]["solver"]["max_delta_s"] = .02
+    else:
+        value["runtime"]["timeout"] = 1800
+    path.write_text(yaml.safe_dump(value), encoding="utf-8")
+    with pytest.raises(ValueError, match="instrument differs"):
+        prep.measurement_check(tmp_path)
+
+
+def test_gate_rejects_duplicate_parent_instead_of_collapsing_evidence(tmp_path):
+    _fixture(tmp_path, .1)
+    path = tmp_path / "dedust_r81mesh_input/manifest.json"
+    rows = prep.pb.read_json(path)
+    rows[1]["parent_batch_id"] = rows[0]["parent_batch_id"]
+    prep.pb.atomic_json(path, rows)
+    with pytest.raises(ValueError, match="distinct known parent"):
+        prep.measurement_check(tmp_path)
+
+
+def test_preflight_rejects_missing_smoke_stratum_before_hfss(tmp_path):
+    _fixture(tmp_path, .1)
+    folder = tmp_path / "dedust_r81smoke_input"
+    rows = prep.pb.read_json(folder / "manifest.json")
+    formal = tmp_path / "dedust_r81b1_input"
+    # Replace one random representative with a third history representative.
+    parent = prep.pb.read_json(formal / "manifest.json")[2]
+    rows[-1].update(parent_batch_id=parent["id"], pattern_sha256=parent["pattern_sha256"])
+    import shutil
+    shutil.copyfile(formal / parent["pattern_file"], folder / rows[-1]["pattern_file"])
+    prep.pb.atomic_json(folder / "manifest.json", rows)
+    with pytest.raises(ValueError, match="two representatives"):
+        prep.validate_wide_inputs(tmp_path)
+
+
+@pytest.mark.parametrize("corruption", ["profile", "curve"])
+def test_gate_rejects_tampered_curve_and_store_profile(tmp_path, corruption):
+    _fixture(tmp_path, .1)
+    if corruption == "profile":
+        path = tmp_path / "dedust_r81mesh/measurement.json"
+        measurement = prep.pb.read_json(path)
+        measurement["solver"]["max_delta_s"] = .02
+        prep.pb.atomic_json(path, measurement)
+    else:
+        store = tmp_path / "dedust_r81mesh"
+        entry = next(iter(prep.pb.read_json(store / "results.json").values()))
+        (store / entry["sample_file"]).write_bytes(b"damaged")
+    with pytest.raises(ValueError, match="measurement_id|hash"):
+        prep.measurement_check(tmp_path)
+
+
+def test_preflight_requires_mesh_and_discrete_to_remeasure_same_smoke_parents(tmp_path):
+    _fixture(tmp_path, .1)
+    folder = tmp_path / "dedust_r81mesh_input"
+    rows = prep.pb.read_json(folder / "manifest.json")
+    formal = tmp_path / "dedust_r81b1_input"
+    parent = prep.pb.read_json(formal / "manifest.json")[20]
+    rows[-1].update(parent_batch_id=parent["id"], pattern_sha256=parent["pattern_sha256"])
+    import shutil
+    shutil.copyfile(formal / parent["pattern_file"], folder / rows[-1]["pattern_file"])
+    prep.pb.atomic_json(folder / "manifest.json", rows)
+    with pytest.raises(ValueError, match="share two smoke parents"):
+        prep.validate_wide_inputs(tmp_path)
 
 
 def test_single_phase_reads_only_r55_and_prepares_three_jobs_52_measurements(tmp_path, monkeypatch):

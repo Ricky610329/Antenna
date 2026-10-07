@@ -95,6 +95,8 @@ JSON 保存來源、原始觀測與分位數；hash 綁定的 NPZ 保存對齊�
 
 ## R81 正 WM 候選的確認入口（待後續濾波器階段使用）
 
+R81派工前先執行`python -m script.prepare_symmetry_filter check-wide-inputs --dataset-root <R81備妥dataset>`：只驗證正式60筆與6+2+2工程輸入、來源組、親代及Fast／Discrete／mesh設定，不啟動HFSS。完成量測後才用同模組`check-wide`重播完整觀測並比較四組曲線／margin，任一差異>0.3 dB不放行。
+
 `python -m script.filter_confirmation --profile-config configs/dual_r81_wide_filter.yaml --candidate-store <原件store> --candidate-id <原件id> --repeat-store <重測store> --repeat-id <重測id> --out <來源store以外的新收據.json>`
 
 唯讀重播完整3×49量測及五段margin，核對原件與repeatability重測的parent、圖形、profile和hash。只有兩筆HFSS實測WM均嚴格>0才輸出`performance_target_confirmed=true`；WM=0仍可是通用評分的等號合格，但不達本次正餘裕目標。輸出不覆寫既有檔，也不寫入來源store。相同response bytes可來自兩次獨立觀測，來源獨立性依可信worker/snapshot metadata判定。此入口固定保留`campaign_complete=false`：smoke、Discrete及0.3 dB網格一致性仍須另驗證。目前沒有R81真值，不能把生成fixture測試當作達標。

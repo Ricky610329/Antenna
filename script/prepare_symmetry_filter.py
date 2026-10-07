@@ -7,11 +7,13 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import shutil
 import io
 import subprocess
 import zipfile
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -198,16 +200,12 @@ def prepare(history_root, out, *, phase="single"):
         for arm in ("history", "specialist", "random"):
             indices.extend([i for i, r in enumerate(dm) if r["selection_arm"] == arm][:2])
         auxiliary_bundle(duals, dataset / "dedust_r81smoke_input", indices)
-        dc = yaml.safe_load((duals / "config.yaml").read_text(encoding="utf-8"))
-        dc["measurement"]["name"] += "_discrete"
-        dc["measurement"]["sweep"]["type"] = "Discrete"
-        auxiliary_bundle(duals, dataset / "dedust_r81discrete_input", indices[:2], config=dc)
-        tight = copy.deepcopy(dc)
-        tight["measurement"]["name"] += "_mesh005"
-        tight["measurement"]["solver"].update(max_delta_s=.005, max_passes=20,
-                                                min_passes=5, min_converged=3)
-        tight["runtime"]["timeout"] = 3600
-        auxiliary_bundle(duals, dataset / "dedust_r81mesh_input", indices[:2], config=tight)
+        check_configs = wide_check_configs()
+        auxiliary_bundle(duals, dataset / "dedust_r81discrete_input", indices[:2],
+                         config=check_configs["discrete"])
+        auxiliary_bundle(duals, dataset / "dedust_r81mesh_input", indices[:2],
+                         config=check_configs["mesh"])
+        validate_wide_inputs(dataset)
         ready = ["dedust_r81smoke", "dedust_r81discrete", "dedust_r81mesh", *ready]
         prepared_inputs = [name + "_input" for name in ready]
     # jobs-add is deliberately a separate check-dup/dispatch step.
@@ -224,36 +222,125 @@ def prepare(history_root, out, *, phase="single"):
                       "wide_full_batch": "deferred" if phase == "single" else "awaiting measurement check"}))
 
 
-def measurement_check(dataset):
-    configs, results = {}, {}
-    for name in ("smoke", "discrete", "mesh"):
-        store = dataset / ("dedust_r81" + name)
-        cfg = pb.load_profile_config(dataset / (store.name + "_input") / "config.yaml")
-        pb.verify_completed(store, cfg)
-        rows = pb.read_json(store / "manifest.json")
+def wide_check_configs():
+    """The three declared R81 engineering instruments, before any HFSS call."""
+    base = yaml.safe_load((REPO / "configs/dual_r81_wide_filter.yaml").read_text(encoding="utf-8"))
+    discrete = copy.deepcopy(base)
+    discrete["measurement"]["name"] += "_discrete"
+    discrete["measurement"]["sweep"]["type"] = "Discrete"
+    mesh = copy.deepcopy(discrete)
+    mesh["measurement"]["name"] += "_mesh005"
+    mesh["measurement"]["solver"].update(max_delta_s=.005, max_passes=20,
+                                         min_passes=5, min_converged=3)
+    mesh["runtime"]["timeout"] = 3600
+    return {"smoke": base, "discrete": discrete, "mesh": mesh}
+
+
+def validate_wide_inputs(dataset):
+    """Validate 6+2+2 instruments and parent coverage without opening HFSS."""
+    dataset = Path(dataset)
+    expected = wide_check_configs()
+    formal = dataset / "dedust_r81b1_input"
+    formal_cfg = pb.load_profile_config(formal / "config.yaml")
+    if (formal_cfg is None or formal_cfg.scope != SCOPE or
+            formal_cfg.runtime != expected["smoke"].get("runtime", {}) or
+            measurement_id(formal_cfg.measurement) !=
+                              measurement_id(expected["smoke"]["measurement"]) or
+                              score_spec_id(formal_cfg.score_spec) !=
+                              score_spec_id(expected["smoke"]["score_spec"])):
+        raise ValueError("formal R81 input does not match the expected profile")
+    formal_rows = pb.validate_input(formal, formal_cfg)
+    if len(formal_rows) != 60 or Counter(r.get("selection_arm") for r in formal_rows) != {
+            "history": 20, "specialist": 20, "random": 20}:
+        raise ValueError("formal R81 input must preserve the declared 20/20/20 seed strata")
+    parents = {r["id"]: r for r in formal_rows}
+    configs, by_parent = {}, {}
+    for name, expected_cfg in expected.items():
+        folder = dataset / ("dedust_r81" + name + "_input")
+        cfg = pb.load_profile_config(folder / "config.yaml")
+        if (cfg is None or cfg.scope != SCOPE or cfg.runtime != expected_cfg.get("runtime", {}) or
+                measurement_id(cfg.measurement) != measurement_id(expected_cfg["measurement"]) or
+                           score_spec_id(cfg.score_spec) != score_spec_id(expected_cfg["score_spec"])):
+            raise ValueError(f"{name} instrument differs from declared R81 engineering profile")
+        rows = pb.validate_input(folder, cfg)
         if len(rows) != (6 if name == "smoke" else 2):
             raise ValueError(f"unexpected {name} check sample count")
-        res = pb.read_json(store / "results.json")
-        if any(res.get(r["id"], {}).get("status") != "ok" for r in rows):
-            raise ValueError(f"incomplete {name} results")
-        results[name] = {r["parent_batch_id"]: (r, res[r["id"]], store) for r in rows}
-        configs[name] = cfg
+        selected = {}
+        for row in rows:
+            parent = row.get("parent_batch_id")
+            if parent not in parents or parent in selected:
+                raise ValueError(f"{name} check requires distinct known parent ids")
+            if (row.get("kind") != "repeat" or row.get("repeat") is not False or
+                    row.get("repeat_reason") != "wide_solver_engineering_check" or
+                    row["pattern_sha256"] != parents[parent]["pattern_sha256"]):
+                raise ValueError(f"{name} check metadata/pattern differs from its formal parent")
+            selected[parent] = row
+        if len({r["pattern_sha256"] for r in rows}) != len(rows):
+            raise ValueError(f"{name} engineering representatives must be distinct physical patterns")
+        configs[name], by_parent[name] = cfg, selected
+    if Counter(parents[p]["selection_arm"] for p in by_parent["smoke"]) != {
+            "history": 2, "specialist": 2, "random": 2}:
+        raise ValueError("smoke input must contain two representatives from each seed stratum")
+    if (set(by_parent["discrete"]) != set(by_parent["mesh"]) or
+            not set(by_parent["discrete"]).issubset(by_parent["smoke"])):
+        raise ValueError("Discrete and mesh checks must share two smoke parents")
+    return configs, by_parent
+
+
+def measurement_check(dataset):
+    dataset = Path(dataset)
+    results, evidence = {}, {}
+    # Bind all metadata across replay; call only on completed, frozen stores.
+    bound_paths = [REPO / "configs/dual_r81_wide_filter.yaml"]
+    for name in ("b1", "smoke", "discrete", "mesh"):
+        folder = dataset / ("dedust_r81" + name + "_input")
+        bound_paths.extend(folder / f for f in ("config.yaml", "measurement.json", "score_spec.json", "manifest.json"))
+    for name in ("smoke", "discrete", "mesh"):
+        folder = dataset / ("dedust_r81" + name)
+        bound_paths.extend(folder / f for f in ("measurement.json", "score_spec.json", "manifest.json", "results.json"))
+    before = {str(p): pb.file_sha256(p) for p in bound_paths}
+    configs, inputs = validate_wide_inputs(dataset)
+    for name in ("smoke", "discrete", "mesh"):
+        store = dataset / ("dedust_r81" + name)
+        cfg = configs[name]
+        res = pb.validate_store(store, require_complete=True)
+        if (measurement_id(pb.read_json(store / "measurement.json")) != measurement_id(cfg.measurement) or
+                score_spec_id(pb.read_json(store / "score_spec.json")) != score_spec_id(cfg.score_spec)):
+            raise ValueError(f"{name} store differs from its expected input profile")
+        rows = pb.read_json(store / "manifest.json")
+        if rows != pb.read_json(dataset / (store.name + "_input") / "manifest.json"):
+            raise ValueError(f"{name} input/store manifest mismatch")
+        results[name] = {}
+        for parent, row in inputs[name].items():
+            entry = res[row["id"]]
+            sample = store / entry["sample_file"]
+            # Parse the same bytes that are checked against the validated hash.
+            raw = sample.read_bytes()
+            if hashlib.sha256(raw).hexdigest() != entry["sample_sha256"]:
+                raise ValueError(f"{name} sample changed after replay")
+            x, y = torch.load(io.BytesIO(raw), weights_only=True, map_location="cpu")
+            results[name][parent] = (entry, x, y)
+        evidence[name] = {"measurement_id": measurement_id(cfg.measurement),
+                          "score_spec_id": score_spec_id(cfg.score_spec),
+                          "sample_sha256": {r["id"]: res[r["id"]]["sample_sha256"] for r in rows}}
     comparisons = []
     for reference, alternate in (("smoke", "discrete"), ("discrete", "mesh")):
-        for parent, (_row, result, store) in results[alternate].items():
-            ref = results[reference][parent]
-            x0, y0 = torch.load(ref[2] / ref[1]["sample_file"], weights_only=True)
-            x1, y1 = torch.load(store / result["sample_file"], weights_only=True)
+        for parent, (result, x1, y1) in results[alternate].items():
+            ref, x0, y0 = results[reference][parent]
             if not torch.equal(x0, x1) or tuple(y0.shape) != (3, 49) or tuple(y1.shape) != (3, 49):
                 raise ValueError("engineering comparisons require identical patterns and 49-point curves")
             point_difference = float(torch.max(torch.abs(y1 - y0)))
-            margin_difference = max(abs(result["margins"][k] - ref[1]["margins"][k]) for k in result["margins"])
+            margin_difference = max(abs(result["margins"][k] - ref["margins"][k]) for k in result["margins"])
             comparisons.append({"parent": parent, "reference": reference, "alternate": alternate,
                                 "max_curve_difference_db": point_difference,
                                 "max_margin_difference_db": margin_difference})
     passed = all(max(c["max_curve_difference_db"], c["max_margin_difference_db"]) <= .3 for c in comparisons)
+    if before != {str(p): pb.file_sha256(p) for p in bound_paths}:
+        raise ValueError("engineering metadata changed during validation")
     return {"threshold_db": .3, "comparisons": comparisons, "engineering_check_passed": passed,
-            "full_batch_release_allowed": passed, "claims_outside_16_40_ghz": False}
+            "full_batch_release_allowed": passed, "claims_outside_16_40_ghz": False,
+            "metadata_sha256": before, "observations": evidence,
+            "performance_target_assessed": False, "campaign_complete": False}
 
 
 def package_input_names(receipt, jobs):
@@ -319,6 +406,8 @@ def main():
     p.add_argument("--phase", choices=("single", "combined"), default="single")
     p = sub.add_parser("check-wide")
     p.add_argument("--dataset-root", type=Path, required=True)
+    p = sub.add_parser("check-wide-inputs")
+    p.add_argument("--dataset-root", type=Path, required=True)
     p = sub.add_parser("pack")
     p.add_argument("--preparation", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
@@ -327,6 +416,13 @@ def main():
         prepare(args.history_root, args.out, phase=args.phase)
     elif args.command == "pack":
         print(json.dumps(package(args.preparation, args.out), indent=2))
+    elif args.command == "check-wide-inputs":
+        configs, rows = validate_wide_inputs(args.dataset_root)
+        print(json.dumps({"input_check_passed": True, "hfss_started": False,
+                          "engineering_check_passed": None,
+                          "instruments": {name: {"measurement_id": measurement_id(cfg.measurement),
+                                                  "count": len(rows[name])}
+                                          for name, cfg in configs.items()}}, indent=2))
     else:
         report = measurement_check(args.dataset_root)
         print(json.dumps(report, indent=2))
