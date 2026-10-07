@@ -280,3 +280,13 @@ v005新增`r80c961ec405g_00022_c64ecf92`（high_disagreement／seed_mutation）�
 新證據已存私人`analysis_versions/performance-window-v001-v005_20261008`，223檔、payload5,589,448 bytes，manifest SHA256 `80a8ff60e67be3f0a0e720bddb9c284174d22a0dda3c32fb7a9dfe3ee3291eeb`，發布後逐檔hash核對；舊raw不重複複製，以原643檔封存及manifest hash為前置證據。[延伸窗口收據](assets/r80_performance_window_v001_v005_20261008.json)保留重用、重播及future-error限制。
 
 背景controller與量測／score spec／SM協定／派工比例均未改。01:34稽核347唯一／v006；02:04為379／v007；02:34為408／v007，三次具名PID16556實際存活、stderr空且status無警報。最近current jobs13/16、10/16、5/16均有3分鐘內新結果；下一例行健康檢查約03:04。5,000筆目標尚未完成，R81仍未派工。
+
+### 2026-10-08 04:50：216更新關機後恢復，殘留單筆補測完成
+
+使用者回報216因Windows更新自動關機，要求重跑指令；已提供原repo內依序`conda activate patch`、`git checkout GAN`、`git pull --ff-only origin GAN`與`start_scoped_worker.ps1`。原controller PID16556於04:47由Win32_Process確認仍存活、waiting，沒有另開controller或在本機啟動HFSS。
+
+`dedust_r80ce64b0644g02`先前15筆成功、殘留`r80ce64b0644g_00027_634887a3`曾出現COM `0x80070223`及attempts4；具體機況病因仍未知。216於04:31:24帶`prior_fail=[218,37]`接手，04:34:53.done記錄16/16、零error。完整16筆profile／sample／rad實體重播通過；原15筆逐檔SHA與03:04及04:34:23以前完成的兩份training_snapshot及其controller收據核對一致，只有剩餘一筆新增成功。不重置attempts或刪除claims／done／fail，也不為已恢復任務再打worker補丁。先前error原檔未單獨凍結，不宣稱持有故障前完整error快照。
+
+[恢復收據](assets/r80_worker216_recovery_20261008.json)與原始16筆、job輸入、claim／done、前置snapshot metadata及producer共73檔存私人`operational_incidents/worker216_recovery_20261008_043453`；payload2,216,833 bytes，manifest SHA256 `9277abab421582b4884ab2e59aae5c6f8bca00e894c98e4ce7c79ceb3bd5a203`，發布後逐檔hash核對。第一次封存暫存路徑超過Windows長度限制，保留該暫存，改短stage／證據目錄後完成，未改NAS ACL或刪資料。
+
+04:50實際status無警報，current jobs15/16、9/16、2/16均有4分鐘內新結果。最新controller具名稽核仍是04:31的508唯一／v009（fit507）；新補測尚未納入該計數，不能由16/16直接推估最新唯一總量。遠端runtime Git仍未獨立核對。後續修正retryable fail與全機耗盡fail的派工名額差異，避免最後5,000筆邊界補派後原樣本跨機恢復造成超額；目前尚未部署此修正。R80與R81目標未完成。

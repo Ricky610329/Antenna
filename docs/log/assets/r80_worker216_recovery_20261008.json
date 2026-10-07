@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-07T20:50:25.496796+00:00",
+  "store": "dedust_r80ce64b0644g02",
+  "job": {
+    "input": "dedust_r80ce64b0644g02_input",
+    "store": "dedust_r80ce64b0644g02",
+    "prio": 1,
+    "scope": "symmetry_filter_20261007",
+    "config": "dedust_r80ce64b0644g02_input/config.yaml"
+  },
+  "successes_verified_from_raw": 16,
+  "errors": 0,
+  "claim": {
+    "machine": "140.123.106.216",
+    "at": "2026-10-08 04:31:24",
+    "prior_fail": [
+      "140.123.106.218",
+      "140.123.106.37"
+    ]
+  },
+  "done": {
+    "machine": "140.123.106.216",
+    "at": "2026-10-08 04:34:53",
+    "errors": 0,
+    "error_ids": []
+  },
+  "recovered_id": "r80ce64b0644g_00027_634887a3",
+  "old_successes_preserved": 15,
+  "all_old_sample_and_rad_sha256_unchanged": true,
+  "pre_recovery_binding": "Frozen training snapshots and their controller receipts; completed before the residual recovery",
+  "pre_recovery_error_raw_archive": false,
+  "cause": "Original COM 0x80070223 observed; specific cause remains unknown",
+  "live_state_changed_here": false,
+  "hfss_started_here": false,
+  "attempts_or_claims_reset_here": false,
+  "worker_patch_required_for_this_recovery": false,
+  "results_sha256": "21a3508b19ad5a9b3d2e7451789e7393c5869c8ebb61406b76d17d033efcceb5",
+  "verification": "Full frozen 16-row profile/raw replay plus physical pre-recovery comparison for the original 15 rows",
+  "archive": {
+    "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\operational_incidents\\worker216_recovery_20261008_043453",
+    "files_including_manifest": 73,
+    "payload_bytes": 2216833,
+    "manifest_sha256": "9277abab421582b4884ab2e59aae5c6f8bca00e894c98e4ce7c79ceb3bd5a203",
+    "all_payload_hashes_verified_after_publish": true
+  }
+}

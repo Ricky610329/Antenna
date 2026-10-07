@@ -9,7 +9,7 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
-- 🔵 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：最新02:31自動實體稽核408唯一、SM v007，02:34唯讀確認唯一controller PID16556仍在線、waiting、stderr空，實際status無警報。三個current jobs為13/16、10/16、5/16，均有3分鐘內新結果；維持30分鐘健康檢查，不重啟或另開行程。使用者已回報三台均重啟，遠端runtime Git仍未獨立核對。5,000蒐集及R81正WM目標均未完成。
+- 🔵 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：04:31自動實體稽核508唯一、SM v009；04:47確認唯一controller PID16556仍在線、waiting。216更新關機後，04:34:53跨機補完殘留一筆，該批16/16零error，原15筆sample/rad與補測前凍結資料相同；見[恢復收據](../docs/log/assets/r80_worker216_recovery_20261008.json)。04:50實際status無警報，current jobs15/16、9/16、2/16均有4分鐘內新結果。沿用30分鐘健康檢查，遠端runtime Git仍未獨立核對。5,000蒐集及R81正WM目標均未完成。
 - **首個成熟性能窗口已驗證**：v001／v002／v003共176唯一實測（48／48／80），全部終態且零error。v001、v002有實質推進；v003無相關前緣增量，只累積一個未推進世代，未達三世代停滯判準。此225筆窗口最佳單次factory margin−0.246441 dB，帶內最差S11−9.76091、最低Gain3.75356，仍未達原天線雙門檻；不把這個窗口數字當作326筆全量最優。主基準49與非重測48敏感性結果一致；完整證據643檔存私人`analysis_versions/performance-window-v001-v003_20261008`，見[收據及適用限制](../docs/log/assets/r80_performance_window_v001_v003_20261008.json)。
 - **延伸至v005的性能窗口**：新增v004／v005各48筆，17片共272唯一實測。v003、v004無實質推進，但v005有一個相關2D／3D前緣增量，重置停滯計數；綜合最佳仍−0.246441 dB。新增點S11最差−10.46454 dB、最低Gain2.66478 dBi，屬取捨而非雙門檻達標。49／48基準結論一致，完整新證據223檔存私人`performance-window-v001-v005_20261008`，見[延伸窗口收據](../docs/log/assets/r80_performance_window_v001_v005_20261008.json)。
 - ⏭️ [R81 新濾波器規格](../docs/log/round-81-wide-filter.md)：使用者19:55補充性能目標為**新版五段spec的實測WM > 0 dB**；改完程式/跑完批次不算達標，WM≤0仍未完成。對稱任務後接續，先做smoke、Discrete、mesh工程檢查再放行探索；正WM候選仍需重測確認。目前仍只派R80。
