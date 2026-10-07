@@ -79,6 +79,39 @@ def slot_boxes(slot_spec, pixel_count: int):
     return out
 
 
+def _frequency_grid(start_ghz: float, stop_ghz: float, step_ghz: float) -> np.ndarray:
+    """建立含兩端點的掃頻網格；不可整除的規格在開 HFSS 前即拒絕。"""
+    values = np.asarray([start_ghz, stop_ghz, step_ghz], dtype=float)
+    if not np.all(np.isfinite(values)):
+        raise ValueError("sweep_start/sweep_end/sweep_step 必須是有限值")
+    start, stop, step = values.tolist()
+    if stop <= start or step <= 0:
+        raise ValueError("sweep_end 必須大於 sweep_start，且 sweep_step 必須大於 0")
+    intervals = (stop - start) / step
+    rounded = round(intervals)
+    if not np.isclose(intervals, rounded, rtol=0.0, atol=1e-9):
+        raise ValueError("掃頻範圍必須能被 sweep_step 整除，才能包含兩端點")
+    return np.linspace(start, stop, int(rounded) + 1)
+
+
+def _require_curve_coverage(freqs, vals, freqs_expected, label: str, pattern_num) -> None:
+    """阻止 ``np.interp`` 以端值靜默外插，並先擋非有限或未排序的 CSV。"""
+    freqs = np.asarray(freqs, dtype=float)
+    vals = np.asarray(vals, dtype=float)
+    if freqs.ndim != 1 or vals.ndim != 1 or len(freqs) != len(vals) or len(freqs) == 0:
+        raise ValueError(f"{label} CSV 的頻率/響應欄形狀不符 (Pattern {pattern_num})")
+    if not np.all(np.isfinite(freqs)) or not np.all(np.isfinite(vals)):
+        raise ValueError(f"{label} CSV 含非有限值 (Pattern {pattern_num})")
+    if len(freqs) > 1 and not np.all(np.diff(freqs) > 0):
+        raise ValueError(f"{label} CSV 頻率必須嚴格遞增 (Pattern {pattern_num})")
+    tolerance = max(1e-9, float(freqs_expected[-1] - freqs_expected[0]) * 1e-9)
+    if freqs[0] > freqs_expected[0] + tolerance or freqs[-1] < freqs_expected[-1] - tolerance:
+        raise ValueError(
+            f"{label} CSV 未覆蓋掃頻兩端 {freqs_expected[0]:g}–{freqs_expected[-1]:g}GHz，"
+            f"禁止 np.interp 端值外插 (Pattern {pattern_num})"
+        )
+
+
 class DualPortSimulator(PatchSimulator):
     """雙埠 Patch 天線 HFSS 模擬器。
 
@@ -101,7 +134,9 @@ class DualPortSimulator(PatchSimulator):
     def __init__(self, record_path, HFSS_sab_path = Path(__file__).parent.joinpath('sab', 'dual_port.sab'), pixel_count:int = 25,
                  sweep_type: str = "Fast",
                  max_delta_s: float = 0.02, max_passes: int = 6, min_passes: int = 5, min_converged: int = 5,
-                 slot_spec: list = None, diag_bridge_w: float = None):
+                 slot_spec: list = None, diag_bridge_w: float = None,
+                 sweep_start: float = 24.0, sweep_end: float = 32.0, sweep_step: float = 0.5,
+                 setup_frequency: float = 28.0, open_region_frequency: float = 28.0):
         # record_path：本次訓練/實驗的紀錄根目錄 (基底類別會在其下建立 HFSS/、result/、project/)。
         # HFSS_sab_path：雙埠底板幾何檔，預設指向與本檔同層 sab/ 目錄下的 dual_port.sab，
         #               內含基板 Sub、地 GND、兩條饋線 feedline1/feedline2 及兩個 port 用矩形。
@@ -119,6 +154,17 @@ class DualPortSimulator(PatchSimulator):
         self.max_passes = int(max_passes)
         self.min_passes = int(min_passes)
         self.min_converged = int(min_converged)
+        sweep_grid = _frequency_grid(sweep_start, sweep_end, sweep_step)
+        self.sweep_start = float(sweep_start)
+        self.sweep_end = float(sweep_end)
+        self.sweep_step = float(sweep_step)
+        self.sweep_point_count = len(sweep_grid)
+        self.setup_frequency = float(setup_frequency)
+        self.open_region_frequency = float(open_region_frequency)
+        if not np.isfinite(self.setup_frequency) or not self.sweep_start <= self.setup_frequency <= self.sweep_end:
+            raise ValueError("setup_frequency 必須是掃頻範圍內的有限 GHz 值")
+        if not np.isfinite(self.open_region_frequency) or self.open_region_frequency <= 0:
+            raise ValueError("open_region_frequency 必須是大於 0 的有限 GHz 值")
         #? 亞像素耦合縫(2026-08-11 R60,round-60 §1):bits 不變、在指定位置挖指定寬度的細縫
         #  (Subtract);None=現行幾何(完全向後相容,整段不執行)。格式與座標對應見 slot_boxes()。
         #  覆蓋來源=批次線輸入夾的 hfss_setup.json 的 slot_spec 鍵(整夾一組)。
@@ -599,19 +645,19 @@ class DualPortSimulator(PatchSimulator):
 
         # 設定輻射開放邊界 (Open Region)：
         # CreateOpenRegion 會在結構外圍自動套用輻射邊界 (Radiation)，模擬天線向自由空間輻射，
-        # 而非被金屬牆封閉。OpFreq=28GHz 為設定吸收邊界距離所用的中心頻率。
+        # 而非被金屬牆封閉。OpFreq 預設 28GHz，wide profile 可獨立指定。
         # ApplyInfiniteGP=False：不假設無限大地平面 (本設計地為有限尺寸)。
         oModule = oDesign.GetModule("ModelSetup")
         oModule.CreateOpenRegion(
             [
                 "NAME:Settings",
-                "OpFreq:=", "28GHz",
+                "OpFreq:=", f"{self.open_region_frequency:g}GHz",
                 "Boundary:=", "Radiation",
                 "ApplyInfiniteGP:=", False
             ])
 
         ###* 模擬設定 ###
-        # 建立求解設定 Setup1：以 28GHz 為自適應網格 (adaptive mesh) 的求解頻率。
+        # 建立求解設定 Setup1：預設以 28GHz 為自適應網格 (adaptive mesh) 的求解頻率。
         # MaxDeltaS=0.02：相鄰兩次自適應 pass 間 S 參數變化量門檻，<0.02 即視為收斂。
         # MaximumPasses/MinimumPasses/MinimumConvergedPasses：自適應加密的上下限與最少連續收斂次數，
         #   在「精度」與「運算時間」間取得平衡。BasisOrder=1 為一階基底函數。
@@ -620,7 +666,7 @@ class DualPortSimulator(PatchSimulator):
             [
                 "NAME:Setup1",
                 "SolveType:=", "Single",
-                "Frequency:=", "28GHz",
+                "Frequency:=", f"{self.setup_frequency:g}GHz",
                 "MaxDeltaS:=", self.max_delta_s,       # 收斂門檻：相鄰兩次細化的 S 參數最大變化 < 此值即視為收斂
                 "UseMatrixConv:=", False,
                 "MaximumPasses:=", self.max_passes,    # 最多細化次數 (上限，防止無止盡細化)
@@ -650,7 +696,7 @@ class DualPortSimulator(PatchSimulator):
                 "UseDefaultLambdaTgtForIESolver:=", True,
                 "IE Solver Accuracy:=", "Balanced"
             ])
-        # 設定頻率掃描：24~32GHz、步進 0.5GHz → 共 17 個頻點 (與後續 align_curve 對齊的 17 點網格一致)。
+        # 設定頻率掃描：預設 24~32GHz、步進 0.5GHz → 17 點；wide profile 為 16~40GHz → 49 點。
         #! 與單埠版差異：本雙埠版預設 Type 用 "Fast" 掃描法；單埠版預設 "Interpolating" (插值掃描)。
         #!   兩者皆只在少數頻點實際求解再重建頻率響應，差別在重建演算法 (故兩埠數值不可混為同分佈)。
         logger.info(f"FrequencySweep Type={self.sweep_type} (Pattern {self.num})")   # 掃頻型式可觀測
@@ -659,9 +705,9 @@ class DualPortSimulator(PatchSimulator):
                 "NAME:Sweep",
                 "IsEnabled:=", True,
                 "RangeType:=", "LinearStep",
-                "RangeStart:=", "24GHz",
-                "RangeEnd:=", "32GHz",
-                "RangeStep:=", "0.5GHz",
+                "RangeStart:=", f"{self.sweep_start:g}GHz",
+                "RangeEnd:=", f"{self.sweep_end:g}GHz",
+                "RangeStep:=", f"{self.sweep_step:g}GHz",
                 "Type:=", self.sweep_type,       #! 掃頻演算法 (建構參數;預設 Fast = harvest_dual 同設定)
                 "SaveFields:=", True,
                 "SaveRadFields:=", False,
@@ -760,8 +806,14 @@ class DualPortSimulator(PatchSimulator):
         Sparameter_dataframe_22 = read_csv(self.path_result.joinpath(f"NN_patch_Sparameter_{self.num}_S22.csv"))
 
         #  將數值取出 之後要算loss
-        #? 24~32GHz 等分 17 點 (對應掃頻步距 0.5GHz)；訓練端 (SM/loss/margin) 假設響應固定長度 17。
-        freqs_expected = np.linspace(24, 32, 17)
+        # 預設仍是 24~32GHz 的 17 點；wide profile 則由建構參數產生 49 點，不進全域訓練管線。
+        freqs_expected = _frequency_grid(self.sweep_start, self.sweep_end, self.sweep_step)
+
+        for _label, _frame in (("S11", Sparameter_dataframe_11),
+                               ("S21", Sparameter_dataframe_21),
+                               ("S22", Sparameter_dataframe_22)):
+            _require_curve_coverage(_frame.iloc[:, 0].values, _frame.iloc[:, 1].values,
+                                    freqs_expected, _label, self.num)
 
         #* 三條 S 參數一律用 align_curve **按頻率值對位**到 17 點網格 (與 single_port 同一份實作)。
         #! 修掉的舊 bug (2026-08-10)：舊碼上面用 iloc[0:17] 截取、但下面回傳的 dict 卻用 iloc[:, 1] 全長 →
@@ -773,12 +825,15 @@ class DualPortSimulator(PatchSimulator):
                                Sparameter_dataframe_21.iloc[:, 1].values, freqs_expected)
         S22_vals = align_curve(Sparameter_dataframe_22.iloc[:, 0].values,
                                Sparameter_dataframe_22.iloc[:, 1].values, freqs_expected)
-        assert len(S11_vals) == 17, f"S11 對齊後長度 {len(S11_vals)} != 17 (Pattern {self.num})"
-        assert len(S21_vals) == 17, f"S21 對齊後長度 {len(S21_vals)} != 17 (Pattern {self.num})"
-        assert len(S22_vals) == 17, f"S22 對齊後長度 {len(S22_vals)} != 17 (Pattern {self.num})"
+        assert len(S11_vals) == self.sweep_point_count, \
+            f"S11 對齊後長度 {len(S11_vals)} != {self.sweep_point_count} (Pattern {self.num})"
+        assert len(S21_vals) == self.sweep_point_count, \
+            f"S21 對齊後長度 {len(S21_vals)} != {self.sweep_point_count} (Pattern {self.num})"
+        assert len(S22_vals) == self.sweep_point_count, \
+            f"S22 對齊後長度 {len(S22_vals)} != {self.sweep_point_count} (Pattern {self.num})"
 
         # 回傳結果 dict：三個 key 分別對應 port1 反射 / 兩埠互耦 / port2 反射，
-        # 交給訓練流程做損失計算與紀錄 (各為長度 17 的 torch.Tensor)。
+        # 交給呼叫端做評分與紀錄（預設各 17 點；wide profile 各 49 點）。
         _result = {
             'S11': tensor(S11_vals.tolist()),
             'S21': tensor(S21_vals.tolist()),

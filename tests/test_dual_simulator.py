@@ -32,22 +32,29 @@ def test_dual_defaults_match_harvest_dual_settings(tmp_path):
     assert sim.max_passes == 6
     assert sim.min_passes == 5
     assert sim.min_converged == 5
+    assert (sim.sweep_start, sim.sweep_end, sim.sweep_step, sim.sweep_point_count) == (24.0, 32.0, 0.5, 17)
+    assert sim.setup_frequency == 28.0 and sim.open_region_frequency == 28.0
 
 
 def test_dual_solver_params_overridable(tmp_path):
     """批次線（hfss_setup.json）要能覆蓋求解/掃頻設定，且型別被正規化。"""
     sim = DualPortSimulator(str(tmp_path), sweep_type="Discrete", max_delta_s=0.005,
-                            max_passes=20, min_passes=3, min_converged=2)
+                            max_passes=20, min_passes=3, min_converged=2,
+                            sweep_start=16, sweep_end=40, sweep_step=0.5,
+                            setup_frequency=28, open_region_frequency=16)
     assert sim.sweep_type == "Discrete"
     assert sim.max_delta_s == 0.005 and isinstance(sim.max_delta_s, float)
     assert (sim.max_passes, sim.min_passes, sim.min_converged) == (20, 3, 2)
+    assert (sim.sweep_start, sim.sweep_end, sim.sweep_step, sim.sweep_point_count) == (16.0, 40.0, 0.5, 49)
+    assert sim.setup_frequency == 28.0 and sim.open_region_frequency == 16.0
 
 
 def test_dual_solver_params_are_used_not_hardcoded():
     """COM 呼叫必須讀 self.*（防「加了參數但 InsertSetup 仍寫死」的半套修法）。"""
     src = inspect.getsource(DualPortSimulator.__call__)
     for attr in ("self.max_delta_s", "self.max_passes", "self.min_passes",
-                 "self.min_converged", "self.sweep_type"):
+                 "self.min_converged", "self.sweep_type", "self.sweep_start", "self.sweep_end",
+                 "self.sweep_step", "self.setup_frequency", "self.open_region_frequency"):
         assert attr in src, f"{attr} 沒被 __call__ 用到 —— 參數化只做了一半"
     assert '"MaxDeltaS:=", 0.02' not in src and '"Type:=", "Fast"' not in src
 
@@ -57,8 +64,8 @@ def test_dual_shares_single_align_curve():
     assert dual_port.align_curve is single_port.align_curve
 
 
-def test_dual_call_aligns_and_asserts_17_points():
-    """回傳前必須 align_curve 三條 + 斷言長度 17，且**回傳的就是對齊後的那份**。
+def test_dual_call_aligns_and_asserts_profile_point_count():
+    """回傳前必須 align_curve 三條 + 斷言 profile 點數，且**回傳的就是對齊後的那份**。
 
     舊 bug 的形狀正是「上面截了 17 點、下面回傳全長」——所以光有 align_curve 不夠，
     要釘死 `_result` 的三個值都來自 `*_vals`。
@@ -66,7 +73,7 @@ def test_dual_call_aligns_and_asserts_17_points():
     src = inspect.getsource(DualPortSimulator.__call__)
     assert src.count("align_curve(") == 3
     for label in ("S11", "S21", "S22"):
-        assert f"assert len({label}_vals) == 17" in src
+        assert f"assert len({label}_vals) == self.sweep_point_count" in src
         assert f"'{label}': tensor({label}_vals" in src
 
 
@@ -170,8 +177,13 @@ def test_dual_slot_spec_stored_and_validated_at_construct(tmp_path):
 
 # ---- 假 COM：驗「對哪些物件下刀」（存活名單推算是唯一有 off-by-one 風險的邏輯） ----
 class _FakeModule:
+    def __init__(self):
+        self.calls = []
+
     def __getattr__(self, name):
-        return lambda *a, **k: None
+        def call(*args, **kwargs):
+            self.calls.append((name, args, kwargs))
+        return call
 
 
 class _FakeEditor:
@@ -206,12 +218,13 @@ class _FakeEditor:
 class _FakeDesign:
     def __init__(self, editor):
         self._editor = editor
+        self.modules = {}
 
     def SetActiveEditor(self, _name):
         return self._editor
 
     def GetModule(self, _name):
-        return _FakeModule()
+        return self.modules.setdefault(_name, _FakeModule())
 
     def __getattr__(self, name):
         return lambda *a, **k: None
@@ -229,6 +242,87 @@ def _run_geometry(tmp_path, monkeypatch, mat, slot_spec=None):
     out = sim(torch.tensor(mat.astype("float32")).reshape(-1))
     assert set(out) == {"S11", "S21", "S22"}
     return ed
+
+
+def _call_arg(module, method):
+    matches = [args for name, args, _kwargs in module.calls if name == method]
+    assert len(matches) == 1
+    return matches[0]
+
+
+def _named_value(sequence, name):
+    return sequence[sequence.index(name) + 1]
+
+
+def test_wide_profile_reaches_fake_com_and_returns_49_points(tmp_path, monkeypatch):
+    """wide 五個旋鈕要真的送入 COM；49 點 CSV 不可再被舊 17 點路徑截斷。"""
+    import pandas as pd
+    freqs = np.linspace(16, 40, 49)
+    vals = np.arange(49, dtype=float) - 30
+    monkeypatch.setattr(dual_port, "read_csv",
+                        lambda *_a, **_k: pd.DataFrame({0: freqs, 1: vals}))
+    sim = DualPortSimulator(str(tmp_path), sweep_start=16, sweep_end=40, sweep_step=0.5,
+                            setup_frequency=28, open_region_frequency=16)
+    design = _FakeDesign(_FakeEditor())
+    sim.oDesign, sim.num = design, 11
+    out = sim(torch.zeros(625))
+    for label in ("S11", "S21", "S22"):
+        np.testing.assert_array_equal(out[label].numpy(), vals)
+
+    open_args = _call_arg(design.modules["ModelSetup"], "CreateOpenRegion")[0]
+    assert _named_value(open_args, "OpFreq:=") == "16GHz"
+    setup_args = _call_arg(design.modules["AnalysisSetup"], "InsertSetup")[1]
+    assert _named_value(setup_args, "Frequency:=") == "28GHz"
+    sweep_args = _call_arg(design.modules["AnalysisSetup"], "InsertFrequencySweep")[1]
+    assert _named_value(sweep_args, "RangeStart:=") == "16GHz"
+    assert _named_value(sweep_args, "RangeEnd:=") == "40GHz"
+    assert _named_value(sweep_args, "RangeStep:=") == "0.5GHz"
+
+
+def test_legacy_profile_fake_com_and_values_remain_24_to_32_17(tmp_path, monkeypatch):
+    """不給新 kwargs 時，原 24–32GHz/17 點、28GHz setup/open 與逐點值維持不變。"""
+    import pandas as pd
+    freqs = np.linspace(24, 32, 17)
+    vals = np.linspace(-31, -7, 17)
+    monkeypatch.setattr(dual_port, "read_csv",
+                        lambda *_a, **_k: pd.DataFrame({0: freqs, 1: vals}))
+    sim = DualPortSimulator(str(tmp_path))
+    design = _FakeDesign(_FakeEditor())
+    sim.oDesign, sim.num = design, 12
+    out = sim(torch.zeros(625))
+    for label in ("S11", "S21", "S22"):
+        np.testing.assert_array_equal(out[label].numpy(), vals)
+    open_args = _call_arg(design.modules["ModelSetup"], "CreateOpenRegion")[0]
+    setup_args = _call_arg(design.modules["AnalysisSetup"], "InsertSetup")[1]
+    sweep_args = _call_arg(design.modules["AnalysisSetup"], "InsertFrequencySweep")[1]
+    assert _named_value(open_args, "OpFreq:=") == "28GHz"
+    assert _named_value(setup_args, "Frequency:=") == "28GHz"
+    assert [_named_value(sweep_args, key) for key in ("RangeStart:=", "RangeEnd:=", "RangeStep:=")] == [
+        "24GHz", "32GHz", "0.5GHz"]
+
+
+def test_wide_profile_rejects_missing_csv_endpoint_before_interp(tmp_path, monkeypatch):
+    """np.interp 會拿 16.5GHz 端值冒充 16GHz；wide CSV 少端點時必須明確失敗。"""
+    import pandas as pd
+    freqs = np.linspace(16.5, 40, 48)
+    monkeypatch.setattr(dual_port, "read_csv",
+                        lambda *_a, **_k: pd.DataFrame({0: freqs, 1: np.zeros(len(freqs))}))
+    sim = DualPortSimulator(str(tmp_path), sweep_start=16, sweep_end=40, sweep_step=0.5,
+                            setup_frequency=28, open_region_frequency=16)
+    sim.oDesign, sim.num = _FakeDesign(_FakeEditor()), 13
+    with pytest.raises(ValueError, match="禁止 np.interp 端值外插"):
+        sim(torch.zeros(625))
+
+
+@pytest.mark.parametrize("kwargs", [
+    {"sweep_start": 16, "sweep_end": 40, "sweep_step": 0.7},
+    {"sweep_start": 16, "sweep_end": 40, "sweep_step": 0},
+    {"sweep_start": 16, "sweep_end": 40, "setup_frequency": 41},
+    {"open_region_frequency": float("nan")},
+])
+def test_wide_profile_rejects_invalid_frequencies_before_com(tmp_path, kwargs):
+    with pytest.raises(ValueError):
+        DualPortSimulator(str(tmp_path), **kwargs)
 
 
 def _mat_3cols():
