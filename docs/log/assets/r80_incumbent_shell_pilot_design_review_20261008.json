@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "status": "predeclared_design_pass_implementation_and_dispatch_pending",
+  "date": "2026-10-08",
+  "protocol": "r80_incumbent_shell_pilot_protocol_20261008.json",
+  "protocol_sha256": "e74221c63302b4beb1369f0e9d84c8028974c613a887444b325c12148ed07bd9",
+  "diagnosis": "r80_stall_diagnosis_v006_v008_20261008.json",
+  "independent_review": {
+    "initial_verdict": "CHANGES_REQUIRED_BEFORE_IMPLEMENTATION",
+    "initial_sha256": "aff0157935b4bda10e75cb11c4a2b9eb8c016db22df0cc4be690167a301f8f0d",
+    "final_verdict": "PASS",
+    "final_sha256": "0902ad2a2232eb47ef05bf03376cea5eb77ffe72e03653e9c8959fcfe9f39920",
+    "resolved_blockers": [
+      "Permanent unavailability consumes the exact request and resumes ordinary collection, including target tail.",
+      "Request absence/presence, path, SHA and pilot identity are bound at launch, cycle, active recovery and commit.",
+      "Preparation-time frozen reference has immutable scalar/entry/raw schema; append-only new successes coexist without refreshing it."
+    ],
+    "remaining_design_blockers": [],
+    "implementation_review_pass": false
+  },
+  "validation_scope": {
+    "design_sources_rehashed": 20,
+    "ephemeral_d1_geometry_candidates_checked": 324,
+    "valid_spatial_strata": 15,
+    "bound_blind_pool_unique_rows": 2048,
+    "prepared_or_selected_pilot_cohort": false,
+    "prospective_model_inference": false,
+    "hfss_results": 0,
+    "note": "Protocol 'no patterns' means no prepared 16-row pilot cohort; design review checked transient geometry candidates only."
+  },
+  "private_archive": {
+    "relative_to_personal_antenna": "experiments/r80_symmetry_20261007/pilot_protocols/incumbent_shell_v001/prelaunch_design_20261008",
+    "payload_file_count": 30,
+    "payload_bytes": 998966,
+    "manifest_sha256": "c7f169d4a1f6ef37d51a8480069db23b9922e582fb6bafebd80c9dd5f6ccc623",
+    "readback_hash_passed": true
+  },
+  "adoption": {
+    "bounded_experiment_within_existing_user_authorization": true,
+    "next_action": "Implement and verify the optional one-shot factory-native pilot; then prepare a versioned request and concrete cohort before dispatch.",
+    "production_or_queue_changed": false,
+    "existing_watcher_restarted": false,
+    "target_valid_unique": 5000,
+    "after_pilot": "All valid truth feeds ordinary SM updates; no automatic repeat."
+  },
+  "limits": [
+    "Design PASS is not an implementation, dispatch or HFSS pass.",
+    "Pilot comparisons are against a fixed preparation-time reference, not a then-current global-best or campaign-first claim.",
+    "No symmetry causation, spec pass, repeat certification, local exhaustion or research completion is established."
+  ]
+}

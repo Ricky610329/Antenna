@@ -355,3 +355,13 @@ conductor完整回歸**707 passed／319.69秒**、無warnings、golden未改；�
 依歷史Claude停滯協議，下一步提案是一片15個預宣告左右對稱佳解小殼層突變＋1個固定blind control，作獨立cohort、沿用tier16及既有名額／排重／恢復閘門。所有選擇在SM annotation前固定，仍收下全部低分真值，不能把這16筆混稱普通40／30／30世代；本次僅完成只讀設計，尚未準備圖形、訓練、派工或更換controller。原5,000目標、量測／score spec及worker均保持。
 
 07:09:54–07:13:48 controller第五輪完成（234.094秒），正式收據稽核639唯一、pending97、guided65，訓練前新unique52並更新SM v011，派一片普通16筆；07:18由Win32_Process再次核對原PID25924／creation／command。個人dataset／R80 scope的07:10健康檢查回傳0／無警報，current jobs15／16、13／16、1／16均有近期成功；不把誤掃歷史公共queue的輸出用作本輪證據。下次例行健康檢查約07:40，R80全量研究與R81正WM／重測仍未完成。
+
+### 2026-10-08：15+1佳解鄰域測試發車前設計定案，實作待驗證
+
+採用[固定protocol](assets/r80_incumbent_shell_pilot_protocol_20261008.json)：以v008窗口已驗證佳解作固定anchor，獨立半網格d1單bit翻轉，5個row bands×3個column bands各選一個符合profile、未預留的圖形。每格以固定salt／anchor／座標／candidate hash排序，不以SM或HFSS結果選擇；另外取既有blind池manifest第一個合格對照。16筆候選固定後才保存當時current-SM預測，明示獨立pilot cohort，與普通40／30／30 wave分開。這是小分布診斷，非全殼層窮舉或對稱因果實驗。
+
+第一輪獨立設計審查提出三項問題，已在任何pilot結果前修正：永久空格／無blind／最後目標名額不足16時，持久記錄該exact request不可用並恢復普通planner，避免堵住5,000尾批；request的缺席／存在／path／SHA／pilot ID須在watcher啟動、每cycle、active recovery與commit全部一致；完整科學比較基準明示為**preparation-time凍結reference**。建構前後metadata／raw變動轉正常LiveSnapshotChanged，發布後保護每個chosen observation entry／sample／rad hash；允許後來增加新成功，但不改這個reference，不能稱當前全局最佳改善或全campaign首次達標。
+
+最終Sol只讀審查PASS、無設計blocker；保留原CHANGES_REQUIRED證據與conductor addendum，不重複全量審查。20個來源／anchor tensor／profile gates核對，324個暫時d1幾何候選全部valid、分布15格，原blind池2,048個unique；這些是設計檢查，未選定／準備16筆cohort、未查詢新模型或執行HFSS。未完成實作、回歸或dispatch gates，故不把design PASS當作已派工。
+
+[設計審查收據](assets/r80_incumbent_shell_pilot_design_review_20261008.json)與protocol、原設計、addendum、兩次審查／原source共30檔、payload998,966 bytes已封存私人`pilot_protocols/incumbent_shell_v001/prelaunch_design_20261008`；manifest SHA256 `c7f169d4a1f6ef37d51a8480069db23b9922e582fb6bafebd80c9dd5f6ccc623`，發布後逐檔hash一致。protocol SHA256 `e74221c63302b4beb1369f0e9d84c8028974c613a887444b325c12148ed07bd9`，判準在結果前固定。下一步實作可選one-shot request接既有receipt／lock／排重／5,000與guided96名額；cohort成功或不可用後普通SM wave恢復，全部valid低分真值繼續入鍋，無自動第二批。原watcher／worker／queue仍未由此設計里程碑更動。

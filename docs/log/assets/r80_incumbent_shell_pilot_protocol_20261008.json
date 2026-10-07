@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "status": "predeclared_design_implementation_pending_no_hfss_results",
+  "date": "2026-10-08",
+  "scope": "symmetry_filter_20261007",
+  "algorithm_id": "r80_exact_lr_independent_d1_stratified_v1",
+  "purpose": "Test immediate symmetric neighbors of a fixed verified window incumbent after the v006-v008 performance stall.",
+  "diagnosis_record": "r80_stall_diagnosis_v006_v008_20261008.json",
+  "fixed_anchor": {
+    "id": "r80c91d71565g_00019_5a42476c",
+    "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+    "ancestry_id": "c48nq1p05_16",
+    "scope": "Verified v001-v008 window best; anchor stays fixed even if later observations improve."
+  },
+  "unchanged_campaign": {
+    "target_valid_unique": 5000,
+    "profile_sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "training_protocol_sha256": "01ec4d10362c02d5664760d6024fd44e32892cf01ee444048dea17e8e962c54c",
+    "measurement_or_spec_changes": false,
+    "retain_all_valid_low_score_truth": true
+  },
+  "selection": {
+    "shell_rows": 15,
+    "blind_control_rows": 1,
+    "independent_coordinates": "rows 0..24, columns 0..12, excluding forced feed (24,12)",
+    "independent_hamming_distance": 1,
+    "physical_hamming_distance": "2 for column<12; 1 for center column=12",
+    "row_strata": [[0,4],[5,9],[10,14],[15,19],[20,24]],
+    "column_strata": [[0,3],[4,7],[8,12]],
+    "within_stratum_order": "sha256(r80-shell-pilot-v1 + NUL + anchor_pattern_sha256 + NUL + row_2digits,col_2digits + NUL + candidate_pattern_sha256)",
+    "shell_rule": "First valid unreserved candidate per stratum after exact symmetry/feed/profile checks.",
+    "control_rule": "First eligible row in the immutable existing blind-pool manifest, excluding all reserved and selected shell hashes.",
+    "prediction_used_to_choose_or_filter_patterns": false,
+    "current_sm_prospective_annotation": true,
+    "annotation_fields": "Original model/member hashes, generation/fit/protocol/manifest identity, response/radiation curves and derived predictor scalars.",
+    "selection_before_prediction": true,
+    "replacement_after_freeze": false
+  },
+  "dispatch": {
+    "job_count": 1,
+    "rows_per_job": 16,
+    "priority": 1,
+    "planned_kind": "p",
+    "distinct_pilot_cohort": true,
+    "counts_toward_target_and_guided_outstanding_96": true,
+    "normal_factory_receipt_lock_budget_and_duplicate_gates": true,
+    "manual_queue_add": false,
+    "one_shot": true,
+    "ordinary_sm_quota_changed": false,
+    "pending_jobs_removed_or_reprioritized": false,
+    "permanent_unavailability": "Freeze the unavailable reason and resume ordinary collection; never fill another stratum, switch anchor/control/radius, or starve final target completion."
+  },
+  "pre_pilot_baseline": {
+    "freeze_before_dispatch": true,
+    "reference_time": "Preparation-time frozen reference; not refreshed by later successes before dispatch or readout.",
+    "scope": "All unique successful R80 patterns in the stable preparation snapshot, with raw sample/radiation and observation-entry bindings.",
+    "duplicate_representative": "Prefer a normal observation to repeat/notarize; otherwise deterministic queue and manifest order.",
+    "scalar_schema": "schema_version, created_utc, request/pilot/profile identity, representative_order, finite S11/gain/factory/radiation/clipped-radiation margins, B, prior_nonnegative, exact 2D/3D frontier hashes, pair metadata hashes, chosen full observation entries and sample/radiation SHA256 bindings.",
+    "construction_race": "Require pair/results metadata and chosen raw hashes unchanged before/after construction; otherwise LiveSnapshotChanged before immutable publication.",
+    "commit_recheck": "Chosen raw hashes and full observation entries must remain identical; added results may coexist without replacing the frozen reference.",
+    "intervening_new_results_allowed": true,
+    "B": "Maximum measured min(s11_margin,gain_margin) in the frozen pre-pilot baseline.",
+    "relevance": "Both measured response margins >= B-3.0 dB.",
+    "material_rule": "Factory improves frozen B by >=0.30 dB, or relevant uncovered response/radiation frontier, or first factory>=0 dB relative to this frozen reference.",
+    "frontier_tolerance_db": {"s11": 0.30, "gain": 0.30, "radiation_clipped": 0.50},
+    "radiation_frontier_clip_db": [-6.0,3.0]
+  },
+  "readout": {
+    "requires": "16/16 valid unique physical observations with zero result/marker errors; missing/error rows are incomplete.",
+    "shell_and_control_reported_separately": true,
+    "shell_positive": "At least one of the 15 targeted rows is material against the frozen pre-pilot baseline.",
+    "shell_red": "All 16 observations valid and no targeted material point; zero relevant targeted points is explicitly red.",
+    "campaign_first_or_current_global_best_claim": false,
+    "blind_control_can_make_shell_positive": false,
+    "automatic_repeat_radius_expansion_anchor_switch_or_threshold_change": false,
+    "independent_positive_repeat_needed_for_later_spec_claim": true
+  },
+  "limits": [
+    "No patterns, prospective model calls, dispatch or HFSS results exist at this protocol milestone.",
+    "The 16 hashes, current-model binding and complete pre-pilot frontier are frozen by future preparation, before dispatch.",
+    "A tiny local pilot does not establish symmetry causation, radiation-field mirroring, global exhaustion or future-SM performance.",
+    "Model generation labels denote annotation provenance; this cohort is not an ordinary 40/30/30 SM selection generation.",
+    "Intervening ordinary successes remain in the campaign and later training; pilot progress is relative to its preparation-time frozen reference, not a current global-best or campaign-first assertion.",
+    "Existing user authorization covers bounded symmetric optimization; healthy workers and normal collection continue."
+  ]
+}
