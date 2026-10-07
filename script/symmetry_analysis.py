@@ -15,6 +15,9 @@ import hashlib
 import io
 import json
 import math
+import os
+import sys
+import tempfile
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -351,13 +354,388 @@ def _response_metrics(resp):
 
 
 def _json_number(value):
-    if isinstance(value, (np.integer, int)):
-        return int(value)
     if isinstance(value, (np.bool_, bool)):
         return bool(value)
+    if isinstance(value, (np.integer, int)):
+        return int(value)
     if isinstance(value, (np.floating, float)):
         return float(value) if math.isfinite(float(value)) else None
     return value
+
+
+def _json_ready(value):
+    """Recursively replace non-finite numpy/Python scalars for strict JSON."""
+    if isinstance(value, dict):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    return _json_number(value)
+
+
+PROFILE_QUANTILES = (0.05, 0.25, 0.5, 0.75, 0.95)
+PROFILE_SCALAR_KEYS = (
+    "geometry_mismatch_fraction", "metal_fraction", "upper_metal_fraction",
+    "lower_metal_fraction", "upper_lower_metal_imbalance", "s11_db_28",
+    "gain_db_28", "s11_db_band_mean", "s11_db_band_max",
+    "gain_db_band_mean", "gain_db_band_min", "s11_band_margin_db",
+    "gain_band_margin_db",
+)
+RADIAL_SCALAR_KEYS = (
+    "mirror_power_45", "mirror_power_90", "mirror_db_mae_45",
+    "mirror_db_mae_90", "mirror_pairs_45", "mirror_pairs_90",
+    "power_centroid_deg", "front_back_imbalance", "front_back_db",
+    "argmax_deg_diagnostic",
+)
+
+
+def _profile_response_metrics(response, freqs):
+    """Descriptive 28 GHz and 26.5--29.5 GHz values for a named profile."""
+    response = np.asarray(response, dtype=float)
+    freqs = np.asarray(freqs, dtype=float).reshape(-1)
+    if response.shape != (2, freqs.size):
+        raise ValueError("named-profile response must have shape [2, len(freqs)]")
+    band = (freqs >= 26.5) & (freqs <= 29.5)
+    if not np.any(band) or not np.any(np.isclose(freqs, 28.0)):
+        raise ValueError("named-profile response lacks the 26.5--29.5 GHz band or 28 GHz")
+    i28 = int(np.flatnonzero(np.isclose(freqs, 28.0))[0])
+    s11, gain = response
+
+    def safe(fun, values):
+        values = values[np.isfinite(values)]
+        return float(fun(values)) if values.size else math.nan
+
+    s11_max = safe(np.max, s11[band])
+    gain_min = safe(np.min, gain[band])
+    return {
+        "s11_db_28": _finite_float(s11[i28]),
+        "gain_db_28": _finite_float(gain[i28]),
+        "s11_db_band_mean": safe(np.mean, s11[band]),
+        "s11_db_band_max": s11_max,
+        "gain_db_band_mean": safe(np.mean, gain[band]),
+        "gain_db_band_min": gain_min,
+        # These fixed thresholds are descriptive coordinates used by the
+        # factory figures.  No row is accepted or rejected using them.
+        "s11_band_margin_db": -10.0 - s11_max,
+        "gain_band_margin_db": gain_min - 4.0,
+    }
+
+
+def _quantile_summary(rows, keys):
+    summary = {}
+    for key in keys:
+        values = np.asarray([row.get(key, math.nan) for row in rows], dtype=float)
+        values = values[np.isfinite(values)]
+        quantiles = np.quantile(values, PROFILE_QUANTILES) if values.size else []
+        summary[key] = {
+            "finite_count": int(values.size),
+            **{f"q{int(q * 100):02d}": float(value)
+               for q, value in zip(PROFILE_QUANTILES, quantiles)},
+        }
+    return summary
+
+
+def _profile_source_provenance(root, entry_hashes):
+    metadata = {}
+    for name in ("measurement.json", "score_spec.json", "manifest.json",
+                 "results.json", "source_bindings.json", "config.yaml"):
+        path = root / name
+        if path.is_file():
+            metadata[name] = {
+                "bytes": path.stat().st_size,
+                "sha256": _sha256_file(path),
+            }
+    canonical = json.dumps(entry_hashes, sort_keys=True, separators=(",", ":"))
+    return {
+        "path": str(root),
+        "metadata_files": metadata,
+        "validated_artifact_count": len(entry_hashes),
+        "validated_artifact_receipt_sha256": hashlib.sha256(
+            canonical.encode("utf-8")).hexdigest(),
+    }
+
+
+def _write_profile_outputs(summary, arrays, out_json, out_npz):
+    out_json, out_npz = Path(out_json), Path(out_npz)
+    if out_json.resolve() == out_npz.resolve():
+        raise ValueError("profile JSON and NPZ outputs must be different files")
+    if out_json.exists() or out_npz.exists():
+        raise ValueError("profile analysis outputs must be fresh; refusing overwrite")
+    out_json.parent.mkdir(parents=True, exist_ok=True)
+    out_npz.parent.mkdir(parents=True, exist_ok=True)
+    json_temp = npz_temp = None
+    try:
+        with tempfile.NamedTemporaryFile(
+                mode="wb", dir=out_npz.parent, prefix=out_npz.name + ".",
+                suffix=".tmp", delete=False) as stream:
+            npz_temp = Path(stream.name)
+            np.savez_compressed(stream, **arrays)
+        summary["artifacts"] = {"npz": {
+            "path": str(out_npz.resolve()),
+            "sha256": _sha256_file(npz_temp),
+            "keys": sorted(arrays),
+        }}
+        with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", newline="\n", dir=out_json.parent,
+                prefix=out_json.name + ".", suffix=".tmp", delete=False) as stream:
+            json_temp = Path(stream.name)
+            json.dump(_json_ready(summary), stream, ensure_ascii=False, indent=2,
+                      allow_nan=False)
+            stream.write("\n")
+        os.replace(npz_temp, out_npz)
+        npz_temp = None
+        os.replace(json_temp, out_json)
+        json_temp = None
+    finally:
+        for path in (json_temp, npz_temp):
+            if path is not None:
+                path.unlink(missing_ok=True)
+
+
+def analyze_profile_stores(stores, out_json, out_npz):
+    """Validate and describe explicit complete named-profile frozen stores.
+
+    Every input is replayed with :func:`script.profiled_batch.validate_store`,
+    which verifies the measurement snapshot, physical bridge geometry, sample
+    and radiation hashes.  Rows are deduplicated only by
+    ``(measurement_id, pattern_sha256)``; non-repeat observations win before
+    stable caller/store order.  The function never discovers stores, runs
+    HFSS, filters on performance, or trains a model.
+    """
+    from antenna.measurement import measurement_id, score_spec_id
+    from script import profiled_batch as pb
+    import torch
+
+    roots = [Path(value).resolve() for value in stores]
+    if not roots:
+        raise ValueError("at least one explicit frozen store is required")
+    candidates = []
+    provenance = []
+    common_measurement = common_score = None
+    common_mid = common_sid = None
+    for store_index, root in enumerate(roots):
+        results = pb.validate_store(root, require_complete=True)
+        measurement = pb.read_json(root / "measurement.json")
+        score = pb.read_json(root / "score_spec.json")
+        mid, sid = measurement_id(measurement), score_spec_id(score)
+        if measurement.get("port") != "single" or measurement.get("labels") != ["S11", "Gain"]:
+            raise ValueError("profile symmetry analysis requires a single-port S11/Gain measurement")
+        if common_mid is None:
+            common_measurement, common_score = measurement, score
+            common_mid, common_sid = mid, sid
+        elif (mid, sid) != (common_mid, common_sid):
+            raise ValueError("profile stores do not share measurement_id and score_spec_id")
+        manifest = pb.read_json(root / "manifest.json")
+        bindings_path = root / "source_bindings.json"
+        if not bindings_path.is_file():
+            raise ValueError(f"profile input is not a snapshot_successes frozen store: {root}")
+        bindings_doc = pb.read_json(bindings_path)
+        if not isinstance(bindings_doc, dict):
+            raise ValueError(f"invalid snapshot_successes source bindings: {root}")
+        bindings = bindings_doc.get("items", {})
+        manifest_ids = {row["id"] for row in manifest}
+        if (bindings_doc.get("schema_version") != 1
+                or bindings_doc.get("partial_snapshot") is not True
+                or bindings_doc.get("measurement_id") != mid
+                or bindings_doc.get("score_spec_id") != sid
+                or set(bindings) != manifest_ids):
+            raise ValueError(f"invalid snapshot_successes source bindings: {root}")
+        entry_hashes = []
+        for row_index, manifest_row in enumerate(manifest):
+            name = manifest_row["id"]
+            entry = results[name]
+            binding = bindings[name]
+            if (not isinstance(binding, dict)
+                    or binding.get("source_sample_sha256") != entry["sample_sha256"]
+                    or binding.get("source_rad_sha256") != entry["rad_sha256"]):
+                raise ValueError(f"{name}: frozen source binding differs from validated artifacts")
+            repeat = manifest_row.get("kind") in ("repeat", "notarize")
+            entry_hashes.append({
+                "id": name,
+                "sample_file": entry["sample_file"],
+                "sample_sha256": entry["sample_sha256"],
+                "rad_file": entry["rad_file"],
+                "rad_sha256": entry["rad_sha256"],
+            })
+            candidates.append({
+                "store_index": store_index,
+                "row_index": row_index,
+                "store": root,
+                "manifest_row": manifest_row,
+                "raw_result": entry,
+                "source_binding": binding,
+                "repeat": repeat,
+                "key": (mid, entry["pattern_sha256"]),
+            })
+        source = _profile_source_provenance(root, entry_hashes)
+        source["manifest_rows"] = len(manifest)
+        source["measurement_id"] = mid
+        source["score_spec_id"] = sid
+        provenance.append(source)
+
+    winners = {}
+    for candidate in candidates:
+        priority = (candidate["repeat"], candidate["store_index"], candidate["row_index"])
+        previous = winners.get(candidate["key"])
+        if previous is None or priority < previous[0]:
+            winners[candidate["key"]] = (priority, candidate)
+    selected = sorted((item[1] for item in winners.values()),
+                      key=lambda item: (item["store_index"], item["row_index"]))
+    selected_identity = {(item["store_index"], item["row_index"]) for item in selected}
+    duplicate_rows = []
+    for candidate in candidates:
+        identity = (candidate["store_index"], candidate["row_index"])
+        if identity not in selected_identity:
+            winner = winners[candidate["key"]][1]
+            duplicate_rows.append({
+                "id": candidate["manifest_row"]["id"],
+                "source_store_index": candidate["store_index"],
+                "pattern_sha256": candidate["key"][1],
+                "kind": candidate["manifest_row"].get("kind"),
+                "preferred_id": winner["manifest_row"]["id"],
+                "preferred_source_store_index": winner["store_index"],
+                "raw_manifest_row": candidate["manifest_row"],
+                "raw_result": candidate["raw_result"],
+            })
+
+    rows, patterns, responses, radiation = [], [], [], []
+    common_freqs = common_theta = None
+    for array_index, candidate in enumerate(selected):
+        root = candidate["store"]
+        entry = candidate["raw_result"]
+        manifest_row = candidate["manifest_row"]
+        pattern, response = torch.load(
+            root / entry["sample_file"], weights_only=True, map_location="cpu")
+        rad = torch.load(root / entry["rad_file"], weights_only=True, map_location="cpu")
+        pattern = np.asarray(pattern).reshape(25, 25).astype(bool)
+        response = np.asarray(response)
+        freqs = np.asarray(entry["freqs"], dtype=float)
+        theta = np.asarray(rad["theta"], dtype=float)
+        cuts = np.stack((np.asarray(rad["phi0"]), np.asarray(rad["phi90"])))
+        if response.shape != (2, 17) or freqs.shape != (17,):
+            raise ValueError(f"{manifest_row['id']}: expected complete 2x17 S11/Gain response")
+        if theta.shape != (181,) or cuts.shape != (2, 181):
+            raise ValueError(f"{manifest_row['id']}: expected complete phi0/phi90 181-angle radiation")
+        if common_freqs is None:
+            common_freqs, common_theta = freqs, theta
+        elif not np.array_equal(freqs, common_freqs) or not np.array_equal(theta, common_theta):
+            raise ValueError("profile stores contain inconsistent frequency or radiation grids")
+        geom = pattern_geometry(pattern)
+        metrics = {**geom, **_profile_response_metrics(response, freqs)}
+        for cut_name, curve in zip(("phi0", "phi90"), cuts):
+            metrics.update({f"{cut_name}_{key}": value
+                            for key, value in radial_profile(theta, curve).items()})
+        for key in ("mirror_power_45", "mirror_power_90", "mirror_db_mae_45",
+                    "mirror_db_mae_90", "front_back_imbalance", "front_back_db"):
+            values = np.asarray([metrics[f"phi0_{key}"], metrics[f"phi90_{key}"]])
+            metrics[f"field_{key}"] = (float(np.mean(values[np.isfinite(values)]))
+                                         if np.any(np.isfinite(values)) else math.nan)
+        centroids = np.abs([metrics["phi0_power_centroid_deg"],
+                            metrics["phi90_power_centroid_deg"]])
+        metrics["field_abs_power_centroid_deg"] = float(np.mean(centroids))
+        arm = manifest_row.get("selection_arm", manifest_row.get("arm", "unspecified"))
+        row = {
+            "array_index": array_index,
+            "id": manifest_row["id"],
+            "source_store_index": candidate["store_index"],
+            "source_manifest_index": candidate["row_index"],
+            "measurement_id": common_mid,
+            "score_spec_id": common_sid,
+            "pattern_sha256": entry["pattern_sha256"],
+            "lineage_id": manifest_row.get("lineage_id", entry.get("lineage_id")),
+            "kind": manifest_row.get("kind"),
+            "selection_arm": str(arm),
+            "repeat_or_notarize": candidate["repeat"],
+            "raw_manifest_row": manifest_row,
+            "raw_result": entry,
+            "source_binding": candidate["source_binding"],
+            **metrics,
+        }
+        rows.append(row)
+        patterns.append(pattern)
+        responses.append(response)
+        radiation.append(cuts)
+
+    response_array = np.stack(responses)
+    radiation_array = np.stack(radiation)
+    scalar_keys = list(PROFILE_SCALAR_KEYS)
+    scalar_keys += [f"{cut}_{key}" for cut in ("phi0", "phi90")
+                    for key in RADIAL_SCALAR_KEYS]
+    scalar_keys += ["field_mirror_power_45", "field_mirror_power_90",
+                    "field_mirror_db_mae_45", "field_mirror_db_mae_90",
+                    "field_front_back_imbalance", "field_front_back_db",
+                    "field_abs_power_centroid_deg"]
+    arrays = {
+        "ids": np.asarray([row["id"] for row in rows], dtype=np.str_),
+        "source_store_index": np.asarray([row["source_store_index"] for row in rows], dtype=np.int32),
+        "pattern_sha256": np.asarray([row["pattern_sha256"] for row in rows], dtype=np.str_),
+        "lineage_id": np.asarray([row["lineage_id"] or "" for row in rows], dtype=np.str_),
+        "selection_arm": np.asarray([row["selection_arm"] for row in rows], dtype=np.str_),
+        "patterns": np.stack(patterns),
+        "response_freqs_ghz": common_freqs,
+        "responses": response_array,
+        "s11_db": response_array[:, 0],
+        "gain_db": response_array[:, 1],
+        "radiation_theta_deg": common_theta,
+        "radiation": radiation_array,
+        "phi0_db": radiation_array[:, 0],
+        "phi90_db": radiation_array[:, 1],
+        **{key: np.asarray([row[key] for row in rows]) for key in scalar_keys},
+    }
+    arm_counts = Counter(row["selection_arm"] for row in rows)
+    repeat_candidates = sum(item["repeat"] for item in candidates)
+    repeat_selected = sum(item["repeat"] for item in selected)
+    summary = {
+        "schema_version": 1,
+        "analysis_kind": "named_profile_frozen_store_symmetry",
+        "created_local": datetime.now().astimezone().isoformat(),
+        "measurement_id": common_mid,
+        "score_spec_id": common_sid,
+        "measurement": common_measurement,
+        "score_spec": common_score,
+        "scope": {
+            "descriptive_only": True,
+            "causal_claim": False,
+            "performance_filter_applied": False,
+            "hfss_or_training_run": False,
+            "input_discovery": False,
+            "dedup_key": ["measurement_id", "pattern_sha256"],
+            "duplicate_preference": "nonrepeat_then_explicit_store_and_manifest_order",
+        },
+        "counts": {
+            "source_stores": len(roots),
+            "validated_complete_source_rows": len(candidates),
+            "valid_response_rows": len(candidates),
+            "valid_radiation_rows": len(candidates),
+            "unique_selected_rows": len(rows),
+            "duplicate_rows_removed": len(duplicate_rows),
+            "repeat_or_notarize_candidates": repeat_candidates,
+            "repeat_or_notarize_selected": repeat_selected,
+            "symmetry_class": dict(Counter(row["symmetry_class"] for row in rows)),
+        },
+        "arms": {"selected_counts": dict(sorted(arm_counts.items()))},
+        "quantiles": _quantile_summary(rows, scalar_keys),
+        "definitions": {
+            "geometry_mismatch_fraction": "mean XOR over 25x12 left/right pixel pairs",
+            "upper_lower_metal_imbalance": "upper metal fraction minus lower metal fraction; centre row omitted",
+            "field_mirror_power": "sum(abs(P(+theta)-P(-theta)))/sum(P(+theta)+P(-theta)) in linear power",
+            "band": "inclusive 26.5--29.5 GHz",
+            "s11_band_margin_db": "-10 dB minus the maximum S11 in band; descriptive only",
+            "gain_band_margin_db": "minimum Gain in band minus 4 dB; descriptive only",
+            "physical_validation": "profiled_batch.validate_store replay including actual bridge symmetry and artifact hashes",
+        },
+        "sources": provenance,
+        "duplicate_rows": duplicate_rows,
+        "rows": rows,
+        "curve_storage": "aligned full curves are in the bound NPZ; array_index links each JSON row",
+        "limitations": [
+            "This artifact is a descriptive census of explicitly supplied complete frozen stores.",
+            "Selection arms are provenance labels and are not interpreted as randomized treatments.",
+            "No performance threshold was used to include, exclude, or deduplicate a row.",
+            "Duplicate observations are retained in duplicate_rows as audit records but omitted from aligned arrays.",
+        ],
+    }
+    _write_profile_outputs(summary, arrays, out_json, out_npz)
+    return summary
 
 
 def _spot_check(rows, patterns, resp, phi0, phi90, theta, backup_root, limit,
@@ -599,7 +977,26 @@ def run(data_dir=DEFAULT_DATA, backup_root=DEFAULT_BACKUP, out_dir=DEFAULT_OUT,
     return summary
 
 
+def _profile_main(argv):
+    parser = argparse.ArgumentParser(
+        description="具名 profile frozen store 對稱／響應盤點（零 HFSS、零訓練）")
+    parser.add_argument("--store", action="append", required=True, type=Path,
+                        help="snapshot_successes 產生的完整 frozen store；可重複指定")
+    parser.add_argument("--out-json", required=True, type=Path)
+    parser.add_argument("--out-npz", required=True, type=Path)
+    args = parser.parse_args(argv)
+    summary = analyze_profile_stores(args.store, args.out_json, args.out_npz)
+    print(f"validated={summary['counts']['validated_complete_source_rows']} "
+          f"unique={summary['counts']['unique_selected_rows']} "
+          f"duplicates={summary['counts']['duplicate_rows_removed']}")
+    print(f"json={args.out_json}")
+    print(f"npz={args.out_npz}")
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "profile":
+        _profile_main(sys.argv[2:])
+        return
     parser = argparse.ArgumentParser(description="歷史 pattern/場型對稱盤點（零 HFSS）")
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--backup-root", type=Path, default=DEFAULT_BACKUP)

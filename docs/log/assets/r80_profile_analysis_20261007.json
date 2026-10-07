@@ -1,0 +1,430 @@
+{
+  "schema_version": 1,
+  "created_local": "2026-10-07T20:08:53.688729+08:00",
+  "archive": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\data-v001",
+  "data_version": 1,
+  "unique_patterns": 49,
+  "purpose": "descriptive geometry and frequency statistics; no causal comparison",
+  "raw_snapshot_archive": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\sm_versions\\data-v001",
+  "payload": {
+    "analysis.json": {
+      "bytes": 288476,
+      "sha256": "004059d0162b992711570fc2efb20c26611cb9f40000bd3246d10eb41b79f754"
+    },
+    "curves.npz": {
+      "bytes": 176975,
+      "sha256": "068bbb75423b8c5d7f2451c4eefeef79d8df0984a0c041ee31d2060b069f3eb9"
+    },
+    "geometry_terrain.png": {
+      "bytes": 390979,
+      "sha256": "7def71df1f276fb256b689494e093eea1484a3c631e21d4d84c3320d46a6059d"
+    },
+    "frequency_responses.png": {
+      "bytes": 456244,
+      "sha256": "a384919816a592c64cd98623c2ef62014713d405129ce14712224da465a7c4c7"
+    },
+    "plot_receipt.json": {
+      "bytes": 1392,
+      "sha256": "8a36d9f728509dfd75445530937e09069e4e9edada9aff59611c98807c1f51b5"
+    },
+    "symmetry_analysis.py": {
+      "bytes": 48286,
+      "sha256": "d4f38d401721a84218b0dd0b21b6a78d0d0ac5121ef94d6836de80d6640e39ca"
+    },
+    "symmetry_profile.py": {
+      "bytes": 8380,
+      "sha256": "737e3c9ba4aa76a8c56e2bac332836f64d4e0896cf718ed8db1a028652c2944b"
+    }
+  },
+  "note": "Original artifact path strings are provenance; use local archive basenames to replay.",
+  "archive_manifest_sha256": "93be3cb277b9db38dc39e19c984234449f9b18aaaca17d3c5d969361cafdb134",
+  "postpublish_hash_verification": true,
+  "files_including_manifest": 8,
+  "payload_bytes": 1370732,
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "counts": {
+    "source_stores": 1,
+    "validated_complete_source_rows": 49,
+    "valid_response_rows": 49,
+    "valid_radiation_rows": 49,
+    "unique_selected_rows": 49,
+    "duplicate_rows_removed": 0,
+    "repeat_or_notarize_candidates": 1,
+    "repeat_or_notarize_selected": 1,
+    "symmetry_class": {
+      "exact": 49
+    }
+  },
+  "quantiles": {
+    "geometry_mismatch_fraction": {
+      "finite_count": 49,
+      "q05": 0.0,
+      "q25": 0.0,
+      "q50": 0.0,
+      "q75": 0.0,
+      "q95": 0.0
+    },
+    "metal_fraction": {
+      "finite_count": 49,
+      "q05": 0.31488,
+      "q25": 0.4544,
+      "q50": 0.5088,
+      "q75": 0.5824,
+      "q95": 0.69344
+    },
+    "upper_metal_fraction": {
+      "finite_count": 49,
+      "q05": 0.276,
+      "q25": 0.43,
+      "q50": 0.49666666666666665,
+      "q75": 0.6066666666666667,
+      "q95": 0.718
+    },
+    "lower_metal_fraction": {
+      "finite_count": 49,
+      "q05": 0.33799999999999997,
+      "q25": 0.4533333333333333,
+      "q50": 0.5333333333333333,
+      "q75": 0.5866666666666667,
+      "q95": 0.6966666666666667
+    },
+    "upper_lower_metal_imbalance": {
+      "finite_count": 49,
+      "q05": -0.11133333333333328,
+      "q25": -0.050000000000000044,
+      "q50": -0.016666666666666663,
+      "q75": 0.023333333333333317,
+      "q95": 0.06199999999999997
+    },
+    "s11_db_28": {
+      "finite_count": 49,
+      "q05": -8.210321426391602,
+      "q25": -3.9155519008636475,
+      "q50": -2.4278314113616943,
+      "q75": -1.7761822938919067,
+      "q95": -1.4093420028686525
+    },
+    "gain_db_28": {
+      "finite_count": 49,
+      "q05": -15.745611572265624,
+      "q25": -9.348747253417969,
+      "q50": -4.278112888336182,
+      "q75": -2.403033971786499,
+      "q95": -1.1729694366455095
+    },
+    "s11_db_band_mean": {
+      "finite_count": 49,
+      "q05": -7.2090304034096855,
+      "q25": -5.0024734905787875,
+      "q50": -2.8093346868242537,
+      "q75": -1.9635347638811385,
+      "q95": -1.4785071202686857
+    },
+    "s11_db_band_max": {
+      "finite_count": 49,
+      "q05": -3.6156195163726808,
+      "q25": -2.172358274459839,
+      "q50": -1.8351004123687744,
+      "q75": -1.4092862606048584,
+      "q95": -1.2182385921478274
+    },
+    "gain_db_band_mean": {
+      "finite_count": 49,
+      "q05": -13.037153107779366,
+      "q25": -9.097652775900704,
+      "q50": -6.121199028832572,
+      "q75": -3.7144061156681607,
+      "q95": -1.6403739997318834
+    },
+    "gain_db_band_min": {
+      "finite_count": 49,
+      "q05": -21.954228973388673,
+      "q25": -16.230241775512695,
+      "q50": -12.640820503234863,
+      "q75": -6.688477039337158,
+      "q95": -2.8206503391265905
+    },
+    "s11_band_margin_db": {
+      "finite_count": 49,
+      "q05": -8.781761407852173,
+      "q25": -8.590713739395142,
+      "q50": -8.164899587631226,
+      "q75": -7.827641725540161,
+      "q95": -6.3843804836273215
+    },
+    "gain_band_margin_db": {
+      "finite_count": 49,
+      "q05": -25.954228973388673,
+      "q25": -20.230241775512695,
+      "q50": -16.640820503234863,
+      "q75": -10.688477039337158,
+      "q95": -6.8206503391265905
+    },
+    "phi0_mirror_power_45": {
+      "finite_count": 49,
+      "q05": 0.11176982700071918,
+      "q25": 0.19068611516407116,
+      "q50": 0.2685183610612108,
+      "q75": 0.4209303898590698,
+      "q95": 0.5768253751704286
+    },
+    "phi0_mirror_power_90": {
+      "finite_count": 49,
+      "q05": 0.12470525866911822,
+      "q25": 0.1851762945409706,
+      "q50": 0.2571506574417131,
+      "q75": 0.342394946549549,
+      "q95": 0.4689245127600722
+    },
+    "phi0_mirror_db_mae_45": {
+      "finite_count": 49,
+      "q05": 1.09695050354031,
+      "q25": 2.033039744774049,
+      "q50": 2.864996022290804,
+      "q75": 4.421638595448299,
+      "q95": 6.339794712310486
+    },
+    "phi0_mirror_db_mae_90": {
+      "finite_count": 49,
+      "q05": 1.1601352181947895,
+      "q25": 2.0466434694826603,
+      "q50": 2.7553546531591566,
+      "q75": 4.047862371305625,
+      "q95": 5.621358549329965
+    },
+    "phi0_mirror_pairs_45": {
+      "finite_count": 49,
+      "q05": 22.0,
+      "q25": 22.0,
+      "q50": 22.0,
+      "q75": 22.0,
+      "q95": 22.0
+    },
+    "phi0_mirror_pairs_90": {
+      "finite_count": 49,
+      "q05": 45.0,
+      "q25": 45.0,
+      "q50": 45.0,
+      "q75": 45.0,
+      "q95": 45.0
+    },
+    "phi0_power_centroid_deg": {
+      "finite_count": 49,
+      "q05": -50.270376984823564,
+      "q25": -17.90919997064646,
+      "q50": -4.05628399185986,
+      "q75": 11.245164314947495,
+      "q95": 37.03222907121757
+    },
+    "phi0_front_back_imbalance": {
+      "finite_count": 49,
+      "q05": 0.35639815117537627,
+      "q25": 0.5610436551854007,
+      "q50": 0.662255653608808,
+      "q75": 0.7044570847686927,
+      "q95": 0.7733537710780877
+    },
+    "phi0_front_back_db": {
+      "finite_count": 49,
+      "q05": 3.2421474884062573,
+      "q25": 5.509937176072707,
+      "q50": 6.921097307709012,
+      "q75": 7.6096551804952135,
+      "q95": 8.93682566543162
+    },
+    "phi0_argmax_deg_diagnostic": {
+      "finite_count": 49,
+      "q05": -65.2,
+      "q25": -48.0,
+      "q50": -40.0,
+      "q75": 40.0,
+      "q95": 60.39999999999998
+    },
+    "phi90_mirror_power_45": {
+      "finite_count": 49,
+      "q05": 0.005283842943092194,
+      "q25": 0.013086438442593771,
+      "q50": 0.02091448047060394,
+      "q75": 0.04224892354085307,
+      "q95": 0.13261754606817255
+    },
+    "phi90_mirror_power_90": {
+      "finite_count": 49,
+      "q05": 0.004757379354484376,
+      "q25": 0.011116603132274886,
+      "q50": 0.015622698645491463,
+      "q75": 0.04935062630987465,
+      "q95": 0.12269647981738128
+    },
+    "phi90_mirror_db_mae_45": {
+      "finite_count": 49,
+      "q05": 0.0481551857157187,
+      "q25": 0.12786540727723728,
+      "q50": 0.2432204263115471,
+      "q75": 0.4446359859271483,
+      "q95": 1.269671487808227
+    },
+    "phi90_mirror_db_mae_90": {
+      "finite_count": 49,
+      "q05": 0.05267886367109087,
+      "q25": 0.1127252003384961,
+      "q50": 0.19111680255995855,
+      "q75": 0.37570567230383556,
+      "q95": 1.2417590555879783
+    },
+    "phi90_mirror_pairs_45": {
+      "finite_count": 49,
+      "q05": 22.0,
+      "q25": 22.0,
+      "q50": 22.0,
+      "q75": 22.0,
+      "q95": 22.0
+    },
+    "phi90_mirror_pairs_90": {
+      "finite_count": 49,
+      "q05": 45.0,
+      "q25": 45.0,
+      "q50": 45.0,
+      "q75": 45.0,
+      "q95": 45.0
+    },
+    "phi90_power_centroid_deg": {
+      "finite_count": 49,
+      "q05": -4.228981526957104,
+      "q25": -0.8100499305873197,
+      "q50": 0.18337839097551134,
+      "q75": 0.9591102655812775,
+      "q95": 13.87942377118516
+    },
+    "phi90_front_back_imbalance": {
+      "finite_count": 49,
+      "q05": 0.26475197155400515,
+      "q25": 0.4665606640706789,
+      "q50": 0.526571270083338,
+      "q75": 0.6055054392796879,
+      "q95": 0.7040197636686003
+    },
+    "phi90_front_back_db": {
+      "finite_count": 49,
+      "q05": 2.3570123433656964,
+      "q25": 4.392149947153151,
+      "q50": 5.084624752879931,
+      "q75": 6.095707617011309,
+      "q95": 7.628164814661989
+    },
+    "phi90_argmax_deg_diagnostic": {
+      "finite_count": 49,
+      "q05": -54.0,
+      "q25": -52.0,
+      "q50": 0.0,
+      "q75": 50.0,
+      "q95": 53.19999999999999
+    },
+    "field_mirror_power_45": {
+      "finite_count": 49,
+      "q05": 0.0674772240618974,
+      "q25": 0.12766271193337633,
+      "q50": 0.1586132093900593,
+      "q75": 0.24858702307873676,
+      "q95": 0.3286717588496965
+    },
+    "field_mirror_power_90": {
+      "finite_count": 49,
+      "q05": 0.0718160296435892,
+      "q25": 0.1066460591287208,
+      "q50": 0.13901934352758027,
+      "q75": 0.201437605616721,
+      "q95": 0.2929969897396621
+    },
+    "field_mirror_db_mae_45": {
+      "finite_count": 49,
+      "q05": 0.6233582066372036,
+      "q25": 1.247670054224066,
+      "q50": 1.6363831025294282,
+      "q75": 2.447306249565868,
+      "q95": 3.322554369101469
+    },
+    "field_mirror_db_mae_90": {
+      "finite_count": 49,
+      "q05": 0.7483818353712559,
+      "q25": 1.1676371659876572,
+      "q50": 1.4947653976165587,
+      "q75": 2.0732710820312303,
+      "q95": 3.155403163344598
+    },
+    "field_front_back_imbalance": {
+      "finite_count": 49,
+      "q05": 0.37616088451456586,
+      "q25": 0.5314409714274466,
+      "q50": 0.5914648852931256,
+      "q75": 0.6354098569455953,
+      "q95": 0.7258693548390525
+    },
+    "field_front_back_db": {
+      "finite_count": 49,
+      "q05": 3.5043715333397394,
+      "q25": 5.209113309872744,
+      "q50": 6.05399207449839,
+      "q75": 6.57503662220789,
+      "q95": 8.124991226719798
+    },
+    "field_abs_power_centroid_deg": {
+      "finite_count": 49,
+      "q05": 1.5386410734905571,
+      "q25": 3.777801294214671,
+      "q50": 9.796538819328726,
+      "q75": 18.831527680923283,
+      "q95": 30.735224563506346
+    }
+  },
+  "arms": {
+    "selected_counts": {
+      "blind_buffer": 26,
+      "geometry": 10,
+      "random": 12,
+      "repeat": 1
+    }
+  },
+  "plot": {
+    "schema_version": 1,
+    "analysis_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\first_fit_profile_analysis.json",
+    "analysis_sha256": "004059d0162b992711570fc2efb20c26611cb9f40000bd3246d10eb41b79f754",
+    "npz_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\first_fit_profile_analysis.npz",
+    "npz_sha256": "068bbb75423b8c5d7f2451c4eefeef79d8df0984a0c041ee31d2060b069f3eb9",
+    "unique_patterns": 49,
+    "geometry_extent": [
+      0.0,
+      1.0,
+      -1.0,
+      1.0
+    ],
+    "hex_gridsize": [
+      24,
+      24
+    ],
+    "hex_reduction": "median, mincnt=1; no interpolation",
+    "coordinate_policy": "fixed geometric metal fraction and upper-minus-lower fraction; no response embedding",
+    "frequency_quantiles": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "scope": {
+      "descriptive_only": true,
+      "causal_claim": false,
+      "performance_filter_applied": false,
+      "hfss_or_training_run": false,
+      "input_discovery": false,
+      "dedup_key": [
+        "measurement_id",
+        "pattern_sha256"
+      ],
+      "duplicate_preference": "nonrepeat_then_explicit_store_and_manifest_order"
+    },
+    "figures": {
+      "geometry_terrain.png": "7def71df1f276fb256b689494e093eea1484a3c631e21d4d84c3320d46a6059d",
+      "frequency_responses.png": "a384919816a592c64cd98623c2ef62014713d405129ce14712224da465a7c4c7"
+    }
+  }
+}

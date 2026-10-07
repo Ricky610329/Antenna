@@ -80,6 +80,19 @@ python -m script.symmetry_factory_watch --settings tmp/r80_factory_20261007/watc
 
 狀態位於`tmp/r80_factory_20261007/controller/watch_status.json`。該資料夾的`STOP`只在週期邊界停止controller，不會殺HFSS；NAS全域/本scope STOP也會阻止新的prepare/dispatch。正常worker寫入`results.json`造成快照競態時記deferred receipt，下個30分鐘重試；profile/hash損壞仍停止並保留診斷。達10,240唯一真值後只標記對稱資料蒐集完成，R81仍須依工程檢查流程接續，不會由此腳本直接啟動。
 
+## 凍結資料的對稱與頻率統計
+
+先選定 `snapshot_successes` 的完整凍結副本；不直接分析仍在寫入的原始 store，也不以性能篩掉低分有效資料。下列入口重播具名 profile、實體橋接/金屬鏡射與 sample/rad hashes，依量測身分＋實體圖形去重，優先保留非重測項目：
+
+```powershell
+python -m script.symmetry_analysis profile --store tmp/r80_factory_20261007/first_fit_snapshot --out-json <新的 analysis.json> --out-npz <新的 curves.npz>
+python -m script.figs.symmetry_profile --analysis-json <analysis.json> --data-npz <curves.npz> --out-dir <新的圖表目錄>
+```
+
+JSON 保存來源、原始觀測與分位數；hash 綁定的 NPZ 保存對齊的完整頻率／181角度曲線。新入口不改舊歷史 census CLI，輸出拒絕覆蓋。地形圖採固定金屬面積比例與上下金屬差，六角格只取有樣本格的中位數、不插值；精確左右鏡射的左右差恆為0，故不用它作橫軸。頻率圖的25–75%是資料分布，不是信賴區間。selection arm只表示來源，不能視作隨機因果對照。
+
+首版49筆的完整分析及圖已保存私人 `experiments/r80_symmetry_20261007/analysis_versions/data-v001`；來源 raw snapshot 仍在 `sm_versions/data-v001`。這只是早期描述統計，不表示全部10,240筆已完成或對稱改善性能。
+
 ## 可證明範圍
 
 完整回歸 **544 passed / 361.29 秒**（`OMP_NUM_THREADS=4`），golden 原始 bytes 不變；pyflakes 通過。worker 實作 `29a6834` 已包含於遠端 `GAN`。部署收據中的 `main` 為首次交付的歷史紀錄；現行更新與啟動一律使用 `GAN`。
