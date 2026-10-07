@@ -7,14 +7,14 @@
 
 最後更新：2026-10-07
 
-## 2026-10-07：新研究工作，worker 待使用者啟動
+## 2026-10-07：只執行 R80，worker 待使用者啟動
 
-- 🟡 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：本機備料48筆與4次重測；沒有新HFSS結果。
-- 🟡 [R81 新濾波器規格](../docs/log/round-81-wide-filter.md)：先6筆wide＋4次Discrete/mesh檢查；正式60筆在量測檢查後才排隊。
-- [啟動及回填指令](../docs/log/symmetry-filter-20261007-runbook.md)：scope=`symmetry_filter_20261007`、`--selfgen 0`，emforge未動。
-- 工程里程碑已提交 `3f846c7` / `bc8f88b` / `daea96f` / `7fe8443`；完整542項測試通過。約1MB可攜包 `tmp/symmetry_filter_worker_20261007.zip` 已獨立解壓重驗，worker尚未啟動。
-- 本次實際執行 `python -m script.status --factory`：T: 未掛，result 路徑不存在，無法取得NAS現況；不能以空佇列輸出判定遠端空閒。
-- 以下2026-08的worker/王者段落是歷史快照；沒有本次重新啟動的含義。舊grind/selfgen不恢復。
+- 🟡 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：目前唯一量測工作；`dedust_r80b1` 48次、`dedust_r80repeat1/2` 各2次，共52次。尚無新HFSS結果。
+- ⏸️ [R81 新濾波器規格](../docs/log/round-81-wide-filter.md)：所有 spec-change 工作均延後，包含 smoke、Discrete、mesh 與正式批次；不得放入目前佇列。
+- [啟動及回填指令](../docs/log/symmetry-filter-20261007-runbook.md)：程式由 Git `main` 交付；使用者依序執行 `git switch main`、`git pull --ff-only`、`conda activate patch`，再以 `powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_scoped_worker.ps1` 啟動。
+- 啟動器自動解析私人 `ROOTDIR` 下的 `experiments/r80_symmetry_20261007/dataset`；加 `-CheckOnly` 只列出佇列並檢查single-port身分，不啟動HFSS。scope=`symmetry_filter_20261007`，固定 `--selfgen 0 --poll 60 --stale 120`，且拒絕dual jobs。
+- local controller 為 `tmp/r80_symmetry_20261007_single/single`；NAS初始備份為 `controller_initial/single`。158個檔案已部署到私人NAS並逐檔比對；預設 `-CheckOnly` 成功列出三個single jobs共52次，combined queue拒絕檢查也通過。worker實作 `29a6834` 已推送 `main`；完整pytest **544 passed / 361.29秒**，golden bytes不變。worker與HFSS均尚未啟動。
+- 舊ZIP、62次量測與「T:未掛所以NAS不可查」只屬先前交付紀錄，不再是目前操作依據。以下2026-08的worker/王者段落是歷史快照；舊grind/selfgen不恢復。
 
 ## 2026-08-31 歷史快照
 
