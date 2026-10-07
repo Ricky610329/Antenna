@@ -64,6 +64,22 @@ python -m script.exploration train --work-dir tmp/r80_symmetry_20261007_single/s
 
 以上指令僅回填原pilot controller。目前10,240筆工廠使用獨立`tmp/r80_factory_20261007/training_v2`及`symmetry_training.py`，每48筆有效唯一新結果觸發更新（單次最多96）；`snapshot_successes`可凍結長批已成功的子集合，不必等整個長批跑完。原store與送測前預測均保留，低性能有效資料也入訓練。新policy見`configs/single_r80_symmetry_factory.yaml`及R80最新追加紀錄。R81接續對稱階段，先通過工程檢查再擴大量測。
 
+## 開發機的30分鐘controller
+
+三台正式機只需執行原worker；SM/controller僅在開發機啟動一份。`symmetry_factory_cycle --once`先產生具名、hash綁定的action receipt，`--commit-receipt`再逐片查重及加入私人佇列。一般guided小批為16筆，接近總額時允許明記的最後不足16筆尾批。待跑guided最多96，原48長批及claim不改寫。新資料先稽核保存的前瞻曲線再訓練；沒有預測的初始盲選資料明示缺失。
+
+常駐入口讀取本機已準備的設定，設定內明確指定私人dataset、factory profile、seed快照、blind預備池及`training_v2`：
+
+```powershell
+$env:OMP_NUM_THREADS='4'
+$env:PYTHONUTF8='1'
+python -m script.symmetry_factory_watch --settings tmp/r80_factory_20261007/watch_settings.json
+```
+
+此指令為開發機恢复用，**不要在三台worker上另開controller**，也不要重新初始化已訓練的protocol。每1800秒按起始節奏檢查；長週期錯過時跳過過期tick，不立即連跑。模型訓練只用本機CPU，HFSS照原佇列運作。controller與NAS派送均有kernel lock，中斷後鎖自動釋放，原資料/收據保留；重啟另記attempt，不抹掉之前錯誤。
+
+狀態位於`tmp/r80_factory_20261007/controller/watch_status.json`。該資料夾的`STOP`只在週期邊界停止controller，不會殺HFSS；NAS全域/本scope STOP也會阻止新的prepare/dispatch。正常worker寫入`results.json`造成快照競態時記deferred receipt，下個30分鐘重試；profile/hash損壞仍停止並保留診斷。達10,240唯一真值後只標記對稱資料蒐集完成，R81仍須依工程檢查流程接續，不會由此腳本直接啟動。
+
 ## 可證明範圍
 
 完整回歸 **544 passed / 361.29 秒**（`OMP_NUM_THREADS=4`），golden 原始 bytes 不變；pyflakes 通過。worker 實作 `29a6834` 已包含於遠端 `GAN`。部署收據中的 `main` 為首次交付的歷史紀錄；現行更新與啟動一律使用 `GAN`。
