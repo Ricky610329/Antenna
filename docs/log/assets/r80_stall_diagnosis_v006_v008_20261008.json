@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "verified_r80_saved_prediction_and_selection_diagnosis",
+  "date": "2026-10-08",
+  "branch": "GAN",
+  "scope": {
+    "generations": ["data-v006", "data-v007", "data-v008"],
+    "unique_selected_truths": 192,
+    "generation_counts": [48, 64, 80],
+    "tier16_shards": 12,
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "verified_stall_record": "r80_performance_window_v001_v008_20261008.json"
+  },
+  "diagnostic_id": "56986eec03048878c5aed129e8a462269d6699e943364e6a45602b429bfdf2c1",
+  "diagnostic_sha256": "7fe5f2e10030f34faa727027d67ffa9bc4ade65e09afdf136d42af520c717524",
+  "saved_prediction_semantics": {
+    "s11_gain": "Mean of per-member response margins.",
+    "factory": "Mean of per-member minima of S11 and gain margins.",
+    "radiation": "Relative floor margin computed from the ensemble-mean radiation curves.",
+    "error_definition": "saved_pre_hfss_predictor_scalar_minus_measured_truth",
+    "includes_lcb_or_uncertainty_or_diversity_penalty": false,
+    "later_models_recomputed": false
+  },
+  "selected_distribution_errors": {
+    "s11_margin_db": {"mae_db": 0.7519956739205454, "bias_mean_db": 0.3476469610921211, "spearman": 0.19847645335431194},
+    "gain_margin_db": {"mae_db": 7.187376140067094, "bias_mean_db": 5.458240436836301, "spearman": 0.14466233079239346},
+    "factory_margin_db": {"mae_db": 6.81165539369815, "bias_mean_db": 5.604726698042619, "spearman": 0.1478175948783333},
+    "radiation_margin_db": {"mae_db": 6.102758667654901, "bias_mean_db": 5.548927914962405, "spearman": 0.1681451977007841}
+  },
+  "frozen_curve_audit_coverage": {"covered": 190, "missing": 2, "missing_ids": ["r80cd4304ddbg_00000_234351c5", "r80cd4304ddbg_00005_fdde5576"], "scalar_coverage": 192},
+  "selection": {
+    "cycle_quota": "largest-remainder 40/30/30; current code and profile agree",
+    "cycle_count": 7,
+    "arm_counts": {"lcb_performance": 77, "high_disagreement": 60, "blind_random": 55},
+    "shard_arm_counts": [[6, 5, 5], [7, 5, 4]],
+    "families": {"sm_guided_mutation": 128, "random_exploration": 64},
+    "profile_fraction_field_passed_to_pool_config": false,
+    "current_fraction_mismatch": false
+  },
+  "frozen_window_incumbent": {
+    "scope": "Verified v001-v008 window only; not a newest-current-data best claim.",
+    "id": "r80c91d71565g_00019_5a42476c",
+    "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+    "ancestry": "c48nq1p05_16",
+    "source": "seed_0021_5b75bef2",
+    "fixed_seed_ancestry_rows": 3,
+    "exact_pattern_in_fixed_seeds": 0,
+    "selected_suffix_pattern_ancestry_source_counts": [0, 0, 0],
+    "rejected_candidate_pool_representation": "unknown",
+    "measured_parents_automatically_added": false,
+    "excluded_measured_seed_rows_removed_before_parent_generation": true
+  },
+  "verification": {
+    "independent_sol_verdict": "PASS",
+    "independent_checks": 14,
+    "producer_source_bindings_rehashed": 77,
+    "additional_training_source_sha256": "4b58858b7d7adaea68b2e7db3eb527310e390921e5e2d5d05bd115c413a79a36",
+    "independent_review_sha256": "1876b18120903008f700873766887027d8841dd46ea621bd3958c2dd8a075651",
+    "independent_review_source_sha256": "ce8a0b5c9eb82c0eb72f51750ae288b3b828e85d713b01700799c4e40371ddd9",
+    "conductor_saved_scalar_and_curve_audit_replay": "PASS",
+    "fresh_hfss_or_model_inference": false,
+    "raw_replay": "Uses prior independently verified 192 raw pairs; this diagnostic recomputes saved scalar statistics and frozen curve-audit summaries."
+  },
+  "private_archive": {
+    "relative_to_personal_antenna": "experiments/r80_symmetry_20261007/analysis_versions/stall-diagnosis-v006-v008_20261008",
+    "payload_file_count": 87,
+    "payload_bytes": 9311094,
+    "manifest_sha256": "09d00e1f08066508cb065bf3432c7e8bca7642fa60dd67ff5396234ec5568577",
+    "published_readback_hash_passed": true,
+    "prior_raw_archive_manifest_sha256": "4c0ab5f31544eeebeff63607a9cad3fd56ae8abdee5ce13e2969888e43ce34d0"
+  },
+  "next_pilot": {
+    "status": "proposal_only_not_prepared_or_dispatched",
+    "composition": "15 predeclared unique symmetric incumbent-shell mutations plus one fixed blind control",
+    "execution_unit": "One distinct priority-1 tier16 cohort through normal factory budget and duplicate gates.",
+    "target_valid_unique": 5000,
+    "thresholds_or_physics_changed": false,
+    "automatic_second_pilot": false
+  },
+  "limits": [
+    "Selected-distribution associations do not prove the cause of performance stagnation or causal arm effects.",
+    "Bias concerns saved predictor scalars, not calibration of the entire LCB/disagreement/blind selection algorithm.",
+    "No rejected-pool reconstruction, counterfactual selection or v009-and-later model verdict.",
+    "No spec-pass, radiation-mirror, independent-repeat or full-research-completion claim.",
+    "No production, controller, worker, queue, profile or training-protocol change in this milestone."
+  ]
+}

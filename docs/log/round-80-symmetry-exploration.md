@@ -330,3 +330,28 @@ conductor完整回歸**707 passed／319.69秒**、無warnings、golden未改；�
 [完整收據及限制](assets/r80_performance_window_v001_v008_20261008.json)指向私人`analysis_versions/performance-window-v001-v008_20261008`：440檔、payload92,969,666 bytes，包含192筆新真值、原v006–v008九模型／summary／data receipt、獨立審查及producer。manifest SHA256 `4c0ab5f31544eeebeff63607a9cad3fd56ae8abdee5ce13e2969888e43ce34d0`，發布後逐檔hash通過；舊raw仍引用已核對的v003／v005私人封存，不重複複製。
 
 06:42 controller完成第四輪、稽核615唯一、SM v010；發布前Win32_Process確認原PID25924／creation／command仍在，實際`script.status --factory --alert`為0／無警報，current jobs11／16、9／16、1／16有近期成功。216於05:44接手新批後繼續寫入；不把檔案進度或claim當成遠端process／runtime Git核對。R80的5,000蒐集與後續分析／規格調整、R81正WM及獨立正值重測均未完成。健康線照常跑，下次例行檢查約07:10；選樣誤差及歷史處理方式的只讀診斷另行進行，尚未採用新策略。
+
+### 2026-10-08 07:18：停滯工程診斷重播通過，下一批鄰域測試仍為提案
+
+以已驗證v006–v008的192個選中真值，逐筆對照原發車前保存的預測，沒有用後來模型重算。四項餘裕的誤差如下；正bias代表預測較實測樂觀，Spearman使用同值平均排名。
+
+| 保存預測餘裕 | MAE (dB) | 平均prediction−truth (dB) | Spearman |
+|---|---:|---:|---:|
+| S11 | 0.751996 | +0.347647 | 0.198476 |
+| Gain | 7.187376 | +5.458240 | 0.144662 |
+| factory | 6.811655 | +5.604727 | 0.147818 |
+| 場型相對floor | 6.102759 | +5.548928 | 0.168145 |
+
+這是**選中樣本上的predictor scalar診斷**。S11／Gain是各模型member餘裕的平均，factory是各member雙響應最小餘裕的平均，場型是ensemble平均曲線的floor餘裕；比較值沒有LCB／不確定度／多樣性懲罰。blind臂選樣不依賴預測，不能把其預測誤差說成blind選樣校準。Gain與場型偏差、弱排序確實存在，但不足以證明造成停滯，亦不評論v009以後的模型。四份不可變pretrain audits另提供190／192筆完整曲線誤差；兩個缺完整曲線摘要的v008 ID仍有原始scalar，沒有漏掉低分真值。
+
+配額沒有錯派：7次cycle bundle依40／30／30最大餘數法選出LCB77、disagreement60、blind55；12片16筆經balanced round-robin分成6／5／5或7／5／4。SM-guided family128筆、random family64筆，均未產生原相關性能點；分臂結果是不同分布的觀察，非因果比較。YAML的fraction欄位未傳入PoolConfig，但當前值與硬編碼一致，不能把這點當作目前配額錯誤。
+
+凍結v001–v008窗口佳解`5a42476c`的血統`c48nq1p05_16`有3筆固定種子代表，卻沒有其exact圖形；192筆已選樣中exact／ancestry／source計數都0。原pool未保存被拒候選，不能推論10,000候選庫中完全沒有這個血統。現行`_normalise_seeds`把excluded hashes放入seen，已量測佳解若只加進seed_inputs，會在父代生成前被排除；這是可核對的介面限制，尚非停滯因果證明，也未在本里程碑改pool行為。
+
+獨立Sol以另一份程式重播192筆及全部分組，核對77個producer來源hash、7次配額／12片split、4份action-bound pretrain audits及diagnostic ID，14項檢查全通過；另綁定原`script/symmetry_training.py` hash。Conductor以SciPy獨立重算四項scalar誤差與同值排名、190筆保存曲線摘要均值、selected血統及配額，再重核77個來源。這次不再次讀192筆raw，引用前一個v008里程碑已獨立驗證的raw／原模型證據，未冒充新模型推論或新的HFSS驗證。
+
+[診斷收據與限制](assets/r80_stall_diagnosis_v006_v008_20261008.json)及完整來源／審查共87檔、payload9,311,094 bytes已存私人`analysis_versions/stall-diagnosis-v006-v008_20261008`；manifest SHA256 `09d00e1f08066508cb065bf3432c7e8bca7642fa60dd67ff5396234ec5568577`，發布後逐檔hash通過。原440檔raw／weights封存仍引用原manifest，不重複複製或回寫科學停滯判讀。
+
+依歷史Claude停滯協議，下一步提案是一片15個預宣告左右對稱佳解小殼層突變＋1個固定blind control，作獨立cohort、沿用tier16及既有名額／排重／恢復閘門。所有選擇在SM annotation前固定，仍收下全部低分真值，不能把這16筆混稱普通40／30／30世代；本次僅完成只讀設計，尚未準備圖形、訓練、派工或更換controller。原5,000目標、量測／score spec及worker均保持。
+
+07:09:54–07:13:48 controller第五輪完成（234.094秒），正式收據稽核639唯一、pending97、guided65，訓練前新unique52並更新SM v011，派一片普通16筆；07:18由Win32_Process再次核對原PID25924／creation／command。個人dataset／R80 scope的07:10健康檢查回傳0／無警報，current jobs15／16、13／16、1／16均有近期成功；不把誤掃歷史公共queue的輸出用作本輪證據。下次例行健康檢查約07:40，R80全量研究與R81正WM／重測仍未完成。
