@@ -176,6 +176,21 @@ def test_current_profile_must_remain_exact_r81_identity(tmp_path):
         prepare_filter_prior(measurement, _score(), manifest, samples)
 
 
+def test_holdout_excludes_complete_transitive_pattern_family_component(tmp_path):
+    shared = _pattern(40)
+    manifest, samples, _rows = _write_fixture(tmp_path, [
+        ("direct", shared, _response(), "held", "held"),
+        ("bridge", shared, _response(), "new-line", "family-c"),
+        ("transitive", _pattern(41), _response(), "family-c", "another"),
+        ("keep", _pattern(42), _response(), "unrelated", "unrelated"),
+    ])
+    prior = prepare_filter_prior(_measurement(), _score(), manifest, samples,
+                                 current_holdout=[{"canonical_group_id": "held"}])
+    assert [r["id"] for r in prior.records] == ["keep"]
+    assert next(r for r in prior.exclusions if r["id"] == "transitive")["reasons"] == [
+        "current_holdout_alias_component"]
+
+
 def test_holdout_lineage_and_canonical_names_share_one_exclusion_namespace(tmp_path):
     manifest, samples, _rows = _write_fixture(tmp_path, [
         ("line-matches-canonical", _pattern(9), _response(), "shared-a", "train-a"),

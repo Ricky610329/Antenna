@@ -101,6 +101,16 @@ R81派工前先執行`python -m script.prepare_symmetry_filter check-wide-inputs
 
 唯讀重播完整3×49量測及五段margin，核對原件與repeatability重測的parent、圖形、profile和hash。只有兩筆HFSS實測WM均嚴格>0才輸出`performance_target_confirmed=true`；WM=0仍可是通用評分的等號合格，但不達本次正餘裕目標。輸出不覆寫既有檔，也不寫入來源store。相同response bytes可來自兩次獨立觀測，來源獨立性依可信worker/snapshot metadata判定。此入口固定保留`campaign_complete=false`：smoke、Discrete及0.3 dB網格一致性仍須另驗證。目前沒有R81真值，不能把生成fixture測試當作達標。
 
+## R81 歷史先驗與批次 SM 更新（可選入口）
+
+沿用`script.exploration prepare → feedback → train → select-batch`，不新增controller。明示設定`exploration.training_protocol: filter_masked_prior_v1`、正的`pretrain_epochs`及介於0與1的`holdout_fraction`，並提供`exploration.filter_prior`三個欄位：`manifest`與`sample_root`必須是絕對路徑，`expected_manifest_sha256`固定歷史清單hash。prepare先完整驗證歷史樣本再建立工作區；禁止同時使用舊`old_pretrain`。
+
+每批先保存選樣時的前瞻稽核，再以累積新版3×49真值訓練五段margin模型。歷史3×17資料只監督三段完整覆蓋margin，兩新阻帶不計loss；原曲線保留。每次重新由歷史預訓練接續當前真值，兩階段共用只由當前train擬合的輸入正規化。固定親代／canonical家族／相同圖形的相連群組，保留集永不回流；完整排除其歷史別名。epoch恢復保存模型、Adam、RNG與正規化。保留集只記誤差，沒有early stopping或模型挑選。
+
+完成回填後用`python -m script.exploration train --work-dir <工作區> --through-batch <N>`，再用`select-batch --work-dir <工作區> --batch <N+1>`產生候選。回填收據綁定選樣manifest、各批完整ID集合與sample hashes；後續訓練核對分割帳本，選樣核對模型所屬批次、成員及hash。改資料、少資料或誤放其他批次模型會拒絕。生成候選仍須通過既有查重與工程檢查才能派HFSS。
+
+目前只完成生成CPU fixture的整鏈與中斷恢復驗證，最終完整回歸677 tests通過（415.30秒，無warnings），含golden；沒有R81 HFSS真值或實際歷史先驗清單。`dual_r81_wide_filter.yaml`維持未啟用此protocol；實際清單須補足頻率、label及p01幾何來源證據後才凍結訓練設定。R80仍為唯一派工項目；濾波器完成條件仍是重測確認的新版實測WM > 0。
+
 ## 可證明範圍
 
 完整回歸 **544 passed / 361.29 秒**（`OMP_NUM_THREADS=4`），golden 原始 bytes 不變；pyflakes 通過。worker 實作 `29a6834` 已包含於遠端 `GAN`。部署收據中的 `main` 為首次交付的歷史紀錄；現行更新與啟動一律使用 `GAN`。

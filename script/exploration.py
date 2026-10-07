@@ -176,6 +176,18 @@ def validate_exploration_config(cfg: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("hidden_dims must be positive")
     exp["learning_rate"] = float(exp["learning_rate"])
     exp["holdout_fraction"] = float(exp["holdout_fraction"])
+    protocol = exp.get("training_protocol")
+    if protocol is not None:
+        if protocol != "filter_masked_prior_v1":
+            raise ValueError("unsupported exploration.training_protocol")
+        if mode != "dual_margin5" or cfg["measurement"].get("port") != "dual":
+            raise ValueError("filter_masked_prior_v1 is dual-only")
+        if exp["pretrain_epochs"] <= 0:
+            raise ValueError("filter_masked_prior_v1 requires positive pretrain_epochs")
+        if not 0 < exp["holdout_fraction"] < 1:
+            raise ValueError("filter_masked_prior_v1 requires a nonzero holdout fraction below one")
+        if exp.get("old_pretrain") is not None:
+            raise ValueError("filter_masked_prior_v1 cannot also use old_pretrain")
     if exp["max_batches"] != 3:
         raise ValueError("bounded exploration requires exactly three batches")
     if exp["candidate_pool_size"] < exp["batch_size"]:
@@ -465,6 +477,8 @@ def generate_candidates(seed_rows: Sequence[Mapping[str, Any]], count: int, *, s
                     "candidate_group": group, "parent_id": parent_id,
                     "parent_source": parent_source, "lineage_id": lineage,
                     "source": source, "pattern_sha256": key})
+        if parent is not None and parent.get("canonical_group_id") is not None:
+            out[-1]["canonical_group_id"] = parent["canonical_group_id"]
         return True
 
     attempts = 0
@@ -503,6 +517,8 @@ def load_scoped_parent_rows(work_dir: Path) -> list[dict[str, Any]]:
                      "pattern_sha256": row["pattern_sha256"],
                      "lineage_id": row["lineage_id"],
                      "source": "current_scoped_observation"})
+        if row.get("canonical_group_id") is not None:
+            rows[-1]["canonical_group_id"] = row["canonical_group_id"]
     return rows
 
 
@@ -664,8 +680,9 @@ def _save_member_checkpoint(path: Path, *, model: nn.Module, optimizer: torch.op
                             signature: str, mode: str, output_dim: int, measurement_id_value: str,
                             score_spec_id_value: str, geometry_profile: str, member_seed: int,
                             phase: int, epoch: int, norms: Sequence[tuple[torch.Tensor, torch.Tensor]],
-                            complete: bool, through_batch: int) -> None:
-    _atomic_torch(path, {
+                            complete: bool, through_batch: int,
+                            training_protocol: str | None = None) -> None:
+    payload = {
         "schema_version": SCHEMA_VERSION, "signature": signature, "mode": mode,
         "output_dim": output_dim, "measurement_id": measurement_id_value,
         "score_spec_id": score_spec_id_value, "geometry_profile": geometry_profile,
@@ -674,12 +691,18 @@ def _save_member_checkpoint(path: Path, *, model: nn.Module, optimizer: torch.op
         "norms": [(m.cpu(), s.cpu()) for m, s in norms], "complete": complete,
         "through_batch": through_batch, "torch_rng_state": torch.get_rng_state(),
         "numpy_rng_state": np.random.get_state(),
-    })
+    }
+    if training_protocol is not None:
+        payload["training_protocol"] = training_protocol
+    _atomic_torch(path, payload)
 
 
 def train_models(work_dir: Path, through_batch: int, *,
                  interrupt_after_epochs: int | None = None) -> list[Path]:
     cfg = validate_exploration_config(_load_yaml(work_dir / "config.yaml"))
+    if cfg["exploration"].get("training_protocol") == "filter_masked_prior_v1":
+        from script.filter_training import train
+        return train(work_dir, through_batch, interrupt_after_epochs=interrupt_after_epochs)
     exp = cfg["exploration"]
     state = _read_json(work_dir / "state.json")
     for batch in range(1, through_batch + 1):
@@ -798,12 +821,25 @@ def predict_ensemble(work_dir: Path, batch: int, patterns: Sequence[np.ndarray])
     state = _read_json(work_dir / "state.json")
     model_dir = work_dir / "models" / f"batch-{batch:03d}"
     paths = [model_dir / f"member-{seed}.pt" for seed in exp["ensemble_seeds"]]
+    filter_summary = None
+    if exp.get("training_protocol") == "filter_masked_prior_v1":
+        if content_id(cfg) != state["config_hash"]:
+            raise ValueError("filter prediction prepared configuration changed")
+        from script.filter_training import validate_model_evidence
+        _plan, filter_summary = validate_model_evidence(work_dir, batch, cfg, state)
     x = torch.as_tensor(np.asarray(patterns), dtype=torch.float32).reshape(len(patterns), -1)
     preds = []
     output_dim = _model_output_dim(exp["mode"], len(state["frequencies_ghz"]))
     for path in paths:
         saved = torch.load(path, weights_only=False, map_location="cpu")
         _validate_checkpoint(saved, state, exp["mode"], output_dim)
+        if (exp.get("training_protocol") == "filter_masked_prior_v1"
+                and saved.get("training_protocol") != "filter_masked_prior_v1"):
+            raise ValueError(f"filter training protocol mismatch: {path}")
+        if filter_summary is not None:
+            if (file_sha256(path) != filter_summary["model_sha256"].get(path.name) or
+                    saved.get("signature") != filter_summary["member_signatures"].get(str(saved["member_seed"]))):
+                raise ValueError(f"filter prediction model hash/signature mismatch: {path}")
         if not saved.get("complete"):
             raise ValueError(f"incomplete model checkpoint: {path}")
         model = CurveMLP(625, exp["hidden_dims"], output_dim)
@@ -961,6 +997,8 @@ def write_batch_bundle(work_dir: Path, batch: int, rows: Sequence[Mapping[str, A
     state["batches"][str(batch)] = {"input_dir": out.relative_to(work_dir).as_posix(),
                                      "selected": len(manifest), "model_hash": model_hash,
                                      "feedback_audit": None, "trained_model_dir": None}
+    if cfg["exploration"].get("training_protocol") == "filter_masked_prior_v1":
+        state["batches"][str(batch)]["input_manifest_sha256"] = file_sha256(out / "manifest.json")
     state["next_batch"] = batch + 1
     _atomic_json(work_dir / "state.json", state)
     return out
@@ -976,6 +1014,10 @@ def select_batch(work_dir: Path, batch: int, seed_inputs: Sequence[Path] = ()) -
         return work_dir / state["batches"][str(batch)]["input_dir"]
     if batch > 1 and not state["batches"].get(str(batch - 1), {}).get("trained_model_dir"):
         raise ValueError("previous batch must be fed back and trained first")
+    if exp.get("training_protocol") == "filter_masked_prior_v1":
+        from script.filter_training import validate_feedback_binding
+        for previous in range(1, batch):
+            validate_feedback_binding(work_dir, previous, state)
     saved_seed_paths = [(Path(p) if Path(p).is_absolute() else work_dir / p)
                         for p in state.get("seed_inputs", [])]
     seeds = load_seed_rows(list(seed_inputs) or saved_seed_paths)
@@ -1015,6 +1057,10 @@ def prepare_run(config_path: Path, dataset_root: Path, work_dir: Path,
         if measurement["port"] != "dual" or len(freqs) != 49 or len(score["bands"]) != 5:
             raise ValueError("dual_margin5 requires dual port, 49 sweep points, and five score bands")
     cfg["measurement"], cfg["score_spec"] = measurement, score
+    prior_preflight = None
+    if cfg["exploration"].get("training_protocol") == "filter_masked_prior_v1":
+        from script.filter_training import preflight
+        prior_preflight = preflight(cfg)
     cfg_hash = content_id(cfg)
     dataset_root = dataset_root.resolve()
     if not dataset_root.exists():
@@ -1039,6 +1085,8 @@ def prepare_run(config_path: Path, dataset_root: Path, work_dir: Path,
              "seed_inputs": [p.as_posix() for p in snapped_seeds],
              "max_batches": cfg["exploration"]["max_batches"], "measured_budget": 0,
              "next_batch": 1, "batches": {}}
+    if prior_preflight is not None:
+        state["filter_prior_preflight"] = prior_preflight
     _atomic_json(work_dir / "state.json", state)
     return select_batch(work_dir, 1)
 
@@ -1082,6 +1130,9 @@ def import_feedback(work_dir: Path, batch: int, result_manifest: Path,
     if not info:
         raise ValueError(f"batch {batch} was not prepared")
     if info.get("feedback_audit"):
+        if cfg["exploration"].get("training_protocol") == "filter_masked_prior_v1":
+            from script.filter_training import validate_feedback_binding
+            validate_feedback_binding(work_dir, batch, state)
         return work_dir / info["feedback_audit"]
     dataset_root = (dataset_root_override or Path(state["dataset_root"])).resolve()
     result_manifest = result_manifest.resolve()
@@ -1097,6 +1148,16 @@ def import_feedback(work_dir: Path, batch: int, result_manifest: Path,
     if (not score_marker.is_file() or
             score_spec_id(_read_json(score_marker)) != state["score_spec_id"]):
         raise ValueError("result store score_spec.json is missing or mismatched")
+    masked_protocol = (cfg["exploration"].get("training_protocol") ==
+                       "filter_masked_prior_v1")
+    source_metadata = None
+    if masked_protocol:
+        source_metadata = {
+            "result_manifest_sha256": file_sha256(result_manifest),
+            "store_manifest_sha256": file_sha256(result_root / "manifest.json"),
+            "measurement_sha256": file_sha256(measurement_marker),
+            "score_spec_sha256": file_sha256(score_marker),
+        }
     batch_rows = _manifest_rows(work_dir / info["input_dir"] / "manifest.json")
     result_rows = _result_rows(result_manifest)
     if len({row["id"] for row in result_rows}) != len(result_rows):
@@ -1106,6 +1167,31 @@ def import_feedback(work_dir: Path, batch: int, result_manifest: Path,
     missing = sorted(expected - set(by_id))
     if missing:
         raise ValueError(f"result manifest misses {len(missing)} batch ids: {missing[:3]}")
+    if masked_protocol:
+        from script.filter_training import reject_feedback_split_conflict
+        from script import profiled_batch as pb
+        pb.validate_store(result_root, require_complete=True)
+        if file_sha256(work_dir / info["input_dir"] / "manifest.json") != info.get("input_manifest_sha256"):
+            raise ValueError("filter selected input manifest hash changed")
+        if pb.read_json(result_root / "manifest.json") != batch_rows:
+            raise ValueError("filter feedback store manifest differs from selected batch")
+        prospective = []
+        selected_by_id = {row["id"]: row for row in batch_rows}
+        for row_id in sorted(expected):
+            source_row, selected_row = by_id[row_id], selected_by_id[row_id]
+            if (source_row.get("lineage_id") != selected_row.get("lineage_id") or
+                    (source_row.get("canonical_group_id") is not None and
+                     source_row["canonical_group_id"] != selected_row.get("canonical_group_id", selected_row.get("lineage_id")))):
+                raise ValueError("filter feedback family differs from selected batch")
+            lineage = str(source_row.get("lineage_id") or selected_row.get("lineage_id") or
+                          source_row["pattern_sha256"])
+            prospective.append({
+                "pattern_sha256": source_row["pattern_sha256"],
+                "lineage_id": lineage,
+                "canonical_group_id": str(source_row.get("canonical_group_id") or
+                                           selected_row.get("canonical_group_id") or lineage),
+            })
+        reject_feedback_split_conflict(work_dir, prospective)
     scoped = SampleStore(work_dir / "scoped_store", verbose=False)
     scoped_rad = work_dir / "scoped_rad"; scoped_rad.mkdir(parents=True, exist_ok=True)
     dataset_entries = _manifest_rows(work_dir / "dataset_manifest.json")
@@ -1143,6 +1229,8 @@ def import_feedback(work_dir: Path, batch: int, result_manifest: Path,
             raise ValueError(f"feedback sample hash mismatch for {row['id']}")
         source_sample_sha = row["sample_sha256"]
         x, response = torch.load(source_path, weights_only=True)
+        if masked_protocol and file_sha256(source_path) != source_sample_sha:
+            raise ValueError("filter source sample changed during import")
         x = torch.as_tensor(x, dtype=torch.float32).reshape(25, 25)
         response = torch.as_tensor(response, dtype=torch.float32)
         expected_pattern = torch.load(input_dir / selected["pattern_file"], weights_only=True)
@@ -1215,6 +1303,15 @@ def import_feedback(work_dir: Path, batch: int, result_manifest: Path,
                      "response_labels": labels,
                      "response_freqs_ghz": row_freqs,
                      "source_manifest": str(result_manifest.resolve())}
+        if masked_protocol:
+            new_entry.update({
+                "canonical_group_id": str(row.get("canonical_group_id") or
+                                          selected.get("canonical_group_id") or
+                                          new_entry["lineage_id"]),
+                "source_manifest_sha256": source_metadata["result_manifest_sha256"],
+                "source_measurement_sha256": source_metadata["measurement_sha256"],
+                "source_score_spec_sha256": source_metadata["score_spec_sha256"],
+            })
         old_entry = old_by_id.get(row["id"])
         if old_entry is not None:
             stable_keys = ("id", "batch", "sample_fingerprint", "scoped_sample_file",
@@ -1222,6 +1319,9 @@ def import_feedback(work_dir: Path, batch: int, result_manifest: Path,
                            "scoped_rad_sha256", "source_rad_sha256", "lineage_id",
                            "pattern_sha256", "geometry_profile", "measurement_id",
                            "score_spec_id", "response_labels", "response_freqs_ghz")
+            if masked_protocol:
+                stable_keys += ("canonical_group_id", "source_manifest_sha256",
+                                "source_measurement_sha256", "source_score_spec_sha256")
             if any(old_entry.get(key) != new_entry.get(key) for key in stable_keys):
                 raise ValueError(f"partial feedback replay changed content for {row['id']}")
             replayed += 1
@@ -1230,6 +1330,15 @@ def import_feedback(work_dir: Path, batch: int, result_manifest: Path,
             # Its content was verified above, so it is safe to finish this batch.
             replayed += 1
         pending.append(new_entry)
+    if masked_protocol:
+        final_source_metadata = {
+            "result_manifest_sha256": file_sha256(result_manifest),
+            "store_manifest_sha256": file_sha256(result_root / "manifest.json"),
+            "measurement_sha256": file_sha256(measurement_marker),
+            "score_spec_sha256": file_sha256(score_marker),
+        }
+        if final_source_metadata != source_metadata:
+            raise ValueError("feedback source metadata changed during import")
     if mode == "single_fullcurve":
         target_groups = {"S11": (0, n_freq), "Gain": (n_freq, 2 * n_freq),
                          "phi0": (2 * n_freq, 2 * n_freq + 91),
@@ -1243,11 +1352,16 @@ def import_feedback(work_dir: Path, batch: int, result_manifest: Path,
                   "truth_used_for_selection": False,
                   "single_performance_filter_or_optimization": False if mode == "single_fullcurve" else None})
     audit_path = work_dir / "feedback" / f"batch-{batch:03d}-pretrain-audit.json"
+    if masked_protocol:
+        audit["dataset_entries_sha256"] = content_id(sorted(pending, key=lambda row: row["id"]))
+        audit["input_manifest_sha256"] = info["input_manifest_sha256"]
     _atomic_json(audit_path, audit)  # Deliberately written before exposing new data to training.
     final_entries = prior_entries + pending
     _atomic_json(work_dir / "dataset_manifest.json", final_entries)
     state = _read_json(work_dir / "state.json")
     state["batches"][str(batch)]["feedback_audit"] = audit_path.relative_to(work_dir).as_posix()
+    if masked_protocol:
+        state["batches"][str(batch)]["feedback_audit_sha256"] = file_sha256(audit_path)
     state["measured_budget"] = len(final_entries)
     _atomic_json(work_dir / "state.json", state)
     return audit_path

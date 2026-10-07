@@ -13,6 +13,7 @@ import copy
 import hashlib
 import io
 import json
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -250,6 +251,27 @@ def prepare_filter_prior(
             (item[0].get("canonical_group_id") is not None and
              str(item[0]["canonical_group_id"]) in hold_groups))
     }
+    # Identity aliases can span several patterns and family names. Exclude the
+    # complete connected component, not only the first physical duplicate.
+    pattern_groups, group_patterns = defaultdict(set), defaultdict(set)
+    for row, _geometry, _pattern, digest, *_rest in validated:
+        groups = {row["lineage_id"]}
+        if row.get("canonical_group_id") is not None:
+            groups.add(str(row["canonical_group_id"]))
+        pattern_groups[digest].update(groups)
+        for group in groups:
+            group_patterns[group].add(digest)
+    blocked_patterns, blocked_groups = set(hold_patterns), set(hold_groups)
+    pending = deque([("pattern", p) for p in blocked_patterns] +
+                    [("group", g) for g in blocked_groups])
+    while pending:
+        kind, identity = pending.popleft()
+        neighbors = pattern_groups[identity] if kind == "pattern" else group_patterns[identity]
+        blocked = blocked_groups if kind == "pattern" else blocked_patterns
+        next_kind = "group" if kind == "pattern" else "pattern"
+        for neighbor in neighbors - blocked:
+            blocked.add(neighbor)
+            pending.append((next_kind, neighbor))
     kept, exclusions, seen_patterns = [], [], set()
     for row, geometry, pattern, pattern_hash, response, sample_sha, margins, masks in validated:
         reasons = []
@@ -262,6 +284,8 @@ def prepare_filter_prior(
             reasons.append("current_holdout_canonical_group")
         if pattern_hash in group_forbidden_patterns and not reasons:
             reasons.append("current_holdout_physical_alias")
+        if pattern_hash in blocked_patterns and not reasons:
+            reasons.append("current_holdout_alias_component")
         if pattern_hash in seen_patterns:
             reasons.append("duplicate_physical_pattern")
         if reasons:

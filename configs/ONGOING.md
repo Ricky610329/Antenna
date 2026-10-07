@@ -18,7 +18,7 @@
 - 18:34已派4×16盲選補池prio6；18:45派2×16 v108冷啟動SM選樣prio1。19:45已用data-v001新SM從10,000候選選48（19性能/15分歧/14盲選），逐片查重後加入3×16 prio1 jobs `dedust_r80cbdb25da6g01`–`g03`，共12 jobs；3片NAS bytes及queue均驗證。新候選未算入實測數。模型首版與派送收據另存私人NAS `sm_versions/data-v001`、`controller_receipts/bdb25da6...`，不改公共資料。
 - 20:17以data-v002選32、派兩片16筆prio1；模型與50筆新凍結資料保存私人`sm_versions/data-v002`，122檔hash核對。20:45再派`dedust_r80c28d601d2g01`一片16（6性能/5分歧/5盲選），總15 jobs；派送時guided待跑82≤96，實測＋全部待跑＋新派240。最新cycle輸入／收據保存私人`controller_receipts/28d601d2...`，46檔發布後hash一致；新派不計入126實測。
 - 21:17以data-v003再派`dedust_r80c452a2930g01`／`g02`各16筆prio1；guided待跑52＋32=84≤96，實測＋全部待跑＋新派272。模型、56筆凍結真值與收據存私人`sm_versions/data-v003`，135檔、29,192,207 bytes發布後hash核對；R80目標尚未完成，R81仍未派工。
-- R81備料工具已驗證：原件及重測嚴格WM>0確認入口（32相關tests），歷史三段margin／兩阻帶mask先驗API（41相關tests）。尚未導入真實dual歷史、串接訓練或派送R81；後續整鏈與工程檢查仍待完成。
+- R81可選SM整鏈已完成：masked歷史先驗→累積新版五margin→下一批選樣，固定家族保留集、epoch恢復與資料／模型綁定；53項針對性及677項完整回歸通過（415.30秒），Sol只讀review通過。正式config尚未啟用；下一步建立有頻率／label／p01來源證據的真實dual歷史清單，再凍結設定。尚無R81 HFSS真值或派工，後續工程檢查與正WM重測仍待完成。
 - [啟動及回填指令](../docs/log/symmetry-filter-20261007-runbook.md)：開發與每台 worker 均使用 Git `GAN`；依序執行 `git checkout GAN`、`git pull --ff-only origin GAN`、`conda activate patch`，再以 `powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_scoped_worker.ps1` 啟動。
 - 啟動器自動解析私人 `ROOTDIR` 下的 `experiments/r80_symmetry_20261007/dataset`；加 `-CheckOnly` 只列出佇列並檢查single-port身分，不啟動HFSS。scope=`symmetry_filter_20261007`，固定 `--selfgen 0 --poll 60 --stale 120`，且拒絕dual jobs。
 - local controller 為 `tmp/r80_symmetry_20261007_single/single`；NAS初始備份為 `controller_initial/single`。158個檔案已部署到私人NAS並逐檔比對；預設 `-CheckOnly` 成功列出三個single jobs共52次，combined queue拒絕檢查也通過。worker實作 `29a6834` 已包含於遠端 `GAN`；完整pytest **544 passed / 361.29秒**，golden bytes不變。部署時worker與HFSS均尚未啟動。
