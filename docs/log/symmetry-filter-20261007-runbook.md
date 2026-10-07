@@ -93,6 +93,12 @@ JSON 保存來源、原始觀測與分位數；hash 綁定的 NPZ 保存對齊�
 
 首版49筆的完整分析及圖已保存私人 `experiments/r80_symmetry_20261007/analysis_versions/data-v001`；來源 raw snapshot 仍在 `sm_versions/data-v001`。這只是早期描述統計，不表示全部10,240筆已完成或對稱改善性能。
 
+## R81 正 WM 候選的確認入口（待後續濾波器階段使用）
+
+`python -m script.filter_confirmation --profile-config configs/dual_r81_wide_filter.yaml --candidate-store <原件store> --candidate-id <原件id> --repeat-store <重測store> --repeat-id <重測id> --out <來源store以外的新收據.json>`
+
+唯讀重播完整3×49量測及五段margin，核對原件與repeatability重測的parent、圖形、profile和hash。只有兩筆HFSS實測WM均嚴格>0才輸出`performance_target_confirmed=true`；WM=0仍可是通用評分的等號合格，但不達本次正餘裕目標。輸出不覆寫既有檔，也不寫入來源store。相同response bytes可來自兩次獨立觀測，來源獨立性依可信worker/snapshot metadata判定。此入口固定保留`campaign_complete=false`：smoke、Discrete及0.3 dB網格一致性仍須另驗證。目前沒有R81真值，不能把生成fixture測試當作達標。
+
 ## 可證明範圍
 
 完整回歸 **544 passed / 361.29 秒**（`OMP_NUM_THREADS=4`），golden 原始 bytes 不變；pyflakes 通過。worker 實作 `29a6834` 已包含於遠端 `GAN`。部署收據中的 `main` 為首次交付的歷史紀錄；現行更新與啟動一律使用 `GAN`。
