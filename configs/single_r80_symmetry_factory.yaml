@@ -15,7 +15,7 @@ score_spec:
 runtime: {timeout: 1200}
 exploration:
   mode: symmetry_factory_v1
-  target_valid_unique: 10240
+  target_valid_unique: 5000
   seed: 80100701
   wave_size: 48
   shard_size: 16

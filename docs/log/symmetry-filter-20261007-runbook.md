@@ -62,7 +62,7 @@ python -m script.exploration feedback --work-dir tmp/r80_symmetry_20261007_singl
 python -m script.exploration train --work-dir tmp/r80_symmetry_20261007_single/single --through-batch 1
 ```
 
-以上指令僅回填原pilot controller。目前10,240筆工廠使用獨立`tmp/r80_factory_20261007/training_v2`及`symmetry_training.py`，每48筆有效唯一新結果觸發更新（單次最多96）；`snapshot_successes`可凍結長批已成功的子集合，不必等整個長批跑完。原store與送測前預測均保留，低性能有效資料也入訓練。新policy見`configs/single_r80_symmetry_factory.yaml`及R80最新追加紀錄。R81接續對稱階段，先通過工程檢查再擴大量測。
+以上指令僅回填原pilot controller。目前5,000筆工廠使用獨立`tmp/r80_factory_20261007/training_v2`及`symmetry_training.py`，每48筆有效唯一新結果觸發更新（單次最多96）；`snapshot_successes`可凍結長批已成功的子集合，不必等整個長批跑完。原store與送測前預測均保留，低性能有效資料也入訓練。新policy見`configs/single_r80_symmetry_factory.yaml`及R80最新追加紀錄。R81接續對稱階段，先通過工程檢查再擴大量測。
 
 ## 開發機的30分鐘controller
 
@@ -78,9 +78,19 @@ python -m script.symmetry_factory_watch --settings tmp/r80_factory_20261007/watc
 
 此指令為開發機恢复用，**不要在三台worker上另開controller**，也不要重新初始化已訓練的protocol。每1800秒按起始節奏檢查；長週期錯過時跳過過期tick，不立即連跑。模型訓練只用本機CPU，HFSS照原佇列運作。controller與NAS派送均有kernel lock，中斷後鎖自動釋放，原資料/收據保留；重啟另記attempt，不抹掉之前錯誤。
 
-狀態位於`tmp/r80_factory_20261007/controller/watch_status.json`。該資料夾的`STOP`只在週期邊界停止controller，不會殺HFSS；NAS全域/本scope STOP也會阻止新的prepare/dispatch。正常worker寫入`results.json`造成快照競態時記deferred receipt，下個30分鐘重試；profile/hash損壞仍停止並保留診斷。達10,240唯一真值後只標記對稱資料蒐集完成，R81仍須依工程檢查流程接續，不會由此腳本直接啟動。
+狀態位於`tmp/r80_factory_20261007/controller/watch_status.json`。該資料夾的`STOP`只在週期邊界停止controller，不會殺HFSS；NAS全域/本scope STOP也會阻止新的prepare/dispatch。正常worker寫入`results.json`造成快照競態時記deferred receipt，下個30分鐘重試；profile/hash損壞仍停止並保留診斷。使用者已將唯一真值目標降為5,000；達額後只標記對稱資料蒐集完成，R81仍須依工程檢查流程接續，不會由此腳本直接啟動。目標不是16的倍數，既有最後尾批可少於16筆，不以補整批灌成5,008。
 
 使用者2026-10-07最新監看指示：平時讓背景流程掛著，HFSS依私人佇列工作、SM依設定的新資料批次慢慢更新。conductor每30分鐘只做健康檢查，確認原controller狀態／最近週期是否完成、佇列有工作及worker近期進展；一切正常且沒有需處理的結果時，不持續主動喚醒、不逐小批反覆重播預測／全量hash，也不送例行進度。出錯、停滯、研究結果需驗證或到達階段邊界才介入。controller原有snapshot、模型批次更新與派工收據仍自動保存，不因減少人工監看而停用。
+
+## 性能停滯與工作停滯
+
+工作停滯包含worker無近期成功結果、佇列未補上、controller失敗與SM訓練／恢復故障，由conductor自主診斷及修復；保留錯誤與恢復證據，不把工作故障解讀為pattern性能天花板。
+
+性能停滯由conductor在SM迭代有足夠實測回填時按既有`stall-protocol`分軸判讀，通知使用者。只用送測前綁定的當前profile `data-vNNN`版本及HFSS真值：S11/Gain全帶margin、兩者最小值及實測場型；初始盲選／v108、重測、未綁定或後補預測不算成熟SM版本。SM保留集MAE、候選預測、資料數及吞吐都不是性能進步。
+
+預設提醒窗口為三個連續成熟SM版本、合計至少96個有效唯一真值；每版至少24筆，已派圖形均terminal且有效率≥90%，窗口前至少24筆同profile基準。以0.30 dB的S11/Gain實質解析度及0.50 dB的場型解析度檢查最小margin與二／三維前緣；有指標或前緣推進就分列報告，不能只因單一最小margin持平判停滯。詳細判讀政策與不足證據規則保存於私人交接證據；這是conductor的advisory判讀，不是controller已接入的自動通知器。
+
+確認性能停滯時回報版本／真值數、前後最佳值、前緣與分臂／家族進展，且保留資料繼續收集，不擅自停HFSS、改觀測spec或改物理搜索範圍；有效低分資料仍入學習池。未成熟或故障版本先標不足證據並處理工作問題，不發性能停滯通知。
 
 ## 凍結資料的對稱與頻率統計
 
@@ -93,7 +103,7 @@ python -m script.figs.symmetry_profile --analysis-json <analysis.json> --data-np
 
 JSON 保存來源、原始觀測與分位數；hash 綁定的 NPZ 保存對齊的完整頻率／181角度曲線。新入口不改舊歷史 census CLI，輸出拒絕覆蓋。地形圖採固定金屬面積比例與上下金屬差，六角格只取有樣本格的中位數、不插值；精確左右鏡射的左右差恆為0，故不用它作橫軸。頻率圖的25–75%是資料分布，不是信賴區間。selection arm只表示來源，不能視作隨機因果對照。
 
-首版49筆的完整分析及圖已保存私人 `experiments/r80_symmetry_20261007/analysis_versions/data-v001`；來源 raw snapshot 仍在 `sm_versions/data-v001`。這只是早期描述統計，不表示全部10,240筆已完成或對稱改善性能。
+首版49筆的完整分析及圖已保存私人 `experiments/r80_symmetry_20261007/analysis_versions/data-v001`；來源 raw snapshot 仍在 `sm_versions/data-v001`。這只是早期描述統計，不表示全部5,000筆已完成或對稱改善性能。
 
 ## R81 正 WM 候選的確認入口（待後續濾波器階段使用）
 

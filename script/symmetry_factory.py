@@ -33,8 +33,6 @@ def validate_factory_config(config):
             raise ValueError(f'{key} must be a positive integer')
     if type(exp['seed']) is not int or exp['seed'] < 0:
         raise ValueError('seed must be a nonnegative integer')
-    if exp['target_valid_unique'] < 10000:
-        raise ValueError('factory target must honor at least 10000 unique measurements')
     if exp['wave_size'] % exp['shard_size'] or exp['max_guided_outstanding'] < exp['wave_size']:
         raise ValueError('wave/shard/outstanding budgets are inconsistent')
     if not exp['guided_priority'] < exp['blind_priority'] < 8:

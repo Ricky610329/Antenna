@@ -43,12 +43,12 @@ def test_snapshot_counts_repeated_geometry_once_and_calls_physical_audit(tmp_pat
 def test_rolling_policy_keeps_worker_measurement_and_unique_budget():
     cfg = vars(load_profile_config('configs/single_r80_symmetry_factory.yaml'))
     exp = validate_factory_config(cfg)
-    assert exp['target_valid_unique'] == 10240
+    assert exp['target_valid_unique'] == 5000
     assert exp['update_every_valid_unique'] == 48
     assert exp['guided_priority'] < exp['blind_priority'] < 8
 
 
-@pytest.mark.parametrize('key,value', [('blind_priority', 8), ('target_valid_unique', 9999),
+@pytest.mark.parametrize('key,value', [('blind_priority', 8), ('target_valid_unique', 0),
                                      ('performance_gate', True), ('wave_size', 47)])
 def test_rolling_policy_rejects_waste_or_silent_budget_change(key, value):
     cfg = deepcopy(vars(load_profile_config('configs/single_r80_symmetry_factory.yaml')))

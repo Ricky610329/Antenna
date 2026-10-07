@@ -396,6 +396,36 @@ def test_regular_guided_wave_waits_when_capacity_is_below_one_shard(tmp_path, mo
     assert calls == []
 
 
+def test_final_5000_target_tail_reserves_only_remaining_eight(tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3)
+    calls = _fake_pool(monkeypatch)
+    successful = {f"ok-{index}" for index in range(4982)}
+    pending = {f"pending-{index}" for index in range(10)}
+    jobs_hash = pb.file_sha256(dataset / "jobs.json")
+    monkeypatch.setattr(cycle.factory, "snapshot", lambda *args: {"jobs_sha256": jobs_hash})
+    monkeypatch.setattr(cycle, "_queue_view", lambda *args: {
+        "jobs_sha256": jobs_hash, "jobs": [], "pairs": [], "pair_bindings": [],
+        "pending_hashes": pending, "guided_pending_hashes": pending,
+        "successful_hashes": successful, "exclusion_hashes": successful | pending,
+    })
+    monkeypatch.setattr(cycle, "_trained",
+                        lambda root: (1, successful, {"manifest_id": "bound", "data_version": 1}))
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda root, version: ColdPredictor())
+
+    receipt = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds]))
+
+    assert calls[0][0] == 8
+    assert [job["count"] for job in receipt["planned_jobs"]] == [8]
+    assert receipt["planned_jobs"][0]["final_target_tail"] is True
+    assert receipt["target_valid_unique"] == 5000
+    assert receipt["limits"]["valid_plus_pending_plus_planned"] == 5000
+
+
 def test_atomic_bundle_publish_recovers_invalid_known_pending_directory(tmp_path):
     output = tmp_path / "guided_bundle"
     pending = tmp_path / ".guided_bundle.pending"
@@ -507,7 +537,7 @@ def test_commit_rechecks_total_budget_before_copy(tmp_path, monkeypatch):
     job = cycle._planned([staged], "g", 1, "c" * 64)[0]
     receipt_path = _dispatch_receipt(
         tmp_path / "local/cycles/test/action_receipt.json", dataset, train, [job], "c" * 64)
-    almost_full = {f"h-{index}" for index in range(10_239)}
+    almost_full = {f"h-{index}" for index in range(4_999)}
     monkeypatch.setattr(cycle, "_queue_view", lambda *args: {
         "jobs": [], "successful_hashes": almost_full, "pending_hashes": set(),
         "guided_pending_hashes": set(),
@@ -553,7 +583,7 @@ def test_commit_rechecks_budget_for_each_shard_under_dataset_lock(tmp_path, monk
     def queue_view(*_args):
         nonlocal calls
         calls += 1
-        count = 10_238 if calls <= 2 else 10_240
+        count = 4_998 if calls <= 2 else 5_000
         return {"jobs": [], "successful_hashes": {f"ok-{i}" for i in range(count)},
                 "pending_hashes": set(), "guided_pending_hashes": set()}
 
