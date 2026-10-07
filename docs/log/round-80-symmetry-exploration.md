@@ -310,3 +310,23 @@ conductor完整回歸**707 passed／319.69秒**、無warnings、golden未改；�
 05:14實際`script.status --factory --alert`回傳0／無警報，兩個current jobs3/16及6/16（最近更新5／2分鐘），另一批剛認領、尚無成功；不把claim當成新HFSS真值或worker process心跳。遠端runtime Git仍未獨立核對。交接期間原training state／manifest／receipt及三模型hash不變；worker結果、claims、重試帳、HFSS、SM選樣比例與測量spec均未由conductor改寫。
 
 [實際交接收據](assets/r80_retry_controller_handoff_20261008.json)保存舊新行程／settings、兩次watch狀態／attempt、首輪收據、status、v009模型與producer。33檔、payload28,748,467 bytes存私人`controller_handoffs/exact_target_fix_20261008/live_handoff`，manifest SHA256 `4b42bd504b92154ae47ddeb0a9b5c972090140390890bdaf4793ef1758581c75`，發布後逐檔核對。這是操作恢復與名額協定部署的驗證，不是性能提升或5,000蒐集／R81正WM已完成的證據；保持約30分鐘健康檢查，沒有新結果／故障／性能停滯事件就掛著。
+
+### 2026-10-08 07:00：v006–v008實測性能停滯，資料收集仍正常
+
+依原controller收據、派工前manifest及模型bytes盤點，新增v006／v007／v008共12片、48／64／80筆，fit325／377／439；全部終態且`errors=0`、`error_ids=[]`。連同原v001–v005，29片共464個前瞻唯一真值。主分析沿用凍結49筆基準、513筆窗口；非重測48筆敏感性為512筆，不回換歷史基準或剔除低分臂。
+
+| 世代 | 有效／派出 | 當代最佳單次factory margin (dB) | 相對先前最佳差 (dB) | 相關點 | 新2D／3D前緣 | 實質推進 |
+|---|---:|---:|---:|---:|---:|---|
+| v006 | 48／48 | −6.552282 | −6.305841 | 0 | 0／0 | 無 |
+| v007 | 64／64 | −7.468607 | −7.222167 | 0 | 0／0 | 無 |
+| v008 | 80／80 | −6.270690 | −6.024249 | 0 | 0／0 | 無 |
+
+沿用發車前固定的0.30／0.30／0.50 dB解析度及雙響應不低於先前最佳−3 dB的相關條件，三個世代沒有相關性能點、實質最佳改善或首次非負factory margin。v005最後一次前緣增量後，連續三成熟世代共192筆未推進，超過96筆要求；主分析與敏感性均為`performance_stall_notify`。已向使用者回報，未自動停止HFSS、改派工、模型或spec。這是實測性能停滯事件，工作線持續正常。
+
+本513筆窗口的最佳仍為v002 `r80c91d71565g_00019_5a42476c`，factory margin−0.246441 dB，26.5–29.5 GHz最差S11−9.760910 dB、最低RealizedGainTotal3.753559 dBi，仍未達原天線雙門檻。此值不是615筆全量的最新最佳，所有結果均為單次量測；場型坐標是GainTotal的±45°相對boresight−3 dB floor，未證明場型鏡像、重測公證或對稱造成性能改善。
+
+獨立Sol以另一份程式重播全部192筆新sample／rad，核對384個raw SHA、二值25×25金屬左右鏡像、固定頻率／角度網格與float64餘裕；重算全部513／512筆摘要、前緣、世代事件、窗口及收據ID，並核對所有選樣臂、原始模型／profile／protocol／shard／done鏈。舊321／320筆沿用已review的v005證據，重新核對92個舊與161個本次binding、9個凍結local樹及原數值前綴，不再次讀live NAS舊raw。Conductor另重播三個新世代最佳點，合併歷史source bindings後重新核對390個metadata檔；26個數值檢查、py_compile／pyflakes通過。全零error限定仍保持，不宣稱一般部分失敗世代支援；本通知仍是人工採用的advisory，未接成自動notifier。
+
+[完整收據及限制](assets/r80_performance_window_v001_v008_20261008.json)指向私人`analysis_versions/performance-window-v001-v008_20261008`：440檔、payload92,969,666 bytes，包含192筆新真值、原v006–v008九模型／summary／data receipt、獨立審查及producer。manifest SHA256 `4c0ab5f31544eeebeff63607a9cad3fd56ae8abdee5ce13e2969888e43ce34d0`，發布後逐檔hash通過；舊raw仍引用已核對的v003／v005私人封存，不重複複製。
+
+06:42 controller完成第四輪、稽核615唯一、SM v010；發布前Win32_Process確認原PID25924／creation／command仍在，實際`script.status --factory --alert`為0／無警報，current jobs11／16、9／16、1／16有近期成功。216於05:44接手新批後繼續寫入；不把檔案進度或claim當成遠端process／runtime Git核對。R80的5,000蒐集與後續分析／規格調整、R81正WM及獨立正值重測均未完成。健康線照常跑，下次例行檢查約07:10；選樣誤差及歷史處理方式的只讀診斷另行進行，尚未採用新策略。
