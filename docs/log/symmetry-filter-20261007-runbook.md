@@ -3,6 +3,22 @@
 所有工作在 Antenna。emforge 未修改。這份指令供具 HFSS 的正式機使用；開發機只做 CPU 與備料。
 本輪 scope 固定 `symmetry_filter_20261007`，worker 必須 `--selfgen 0`，避免啟動舊自產線。
 
+## 本次交付（2026-10-07）
+
+已備妥 `tmp/symmetry_filter_worker_20261007.zip`（1,073,006 bytes），程式版本 `7fe8443`。
+SHA-256：`d49c24649624273dc61b840721daf6bd1bbd90fd5703902ad5abc9760c2b4788`。
+把包內 `dataset/` **首次**複製到共享 `T:/symmetry_filter_20261007/dataset`；把 `worker/` 內容複製到每台正式機的本機資料夾。
+不要覆蓋已啟動工作的共享 dataset。啟動只需在本機 worker 根目錄、已啟用 patch 環境執行：
+
+```powershell
+./script/start_scoped_worker.ps1 -DatasetRoot 'T:/symmetry_filter_20261007/dataset'
+```
+
+佇列已備妥6個工作、62次量測。正式 dual60 未排隊；工程檢查後才放行。
+本機探索狀態留在 `tmp/symmetry_filter_20261007_v2/single`、`dual`，之後回填使用這兩個 `$work`。
+完整回歸 **542 passed / 308.83秒**，golden 原始內容不變；獨立解壓後全部輸入與可攜 config 重驗通過。
+這些是工程驗證，不是 HFSS 成果。[交付紀錄](assets/symmetry_filter_delivery_20261007.json)保留 package hash、測試與待辦。
+
 ## 開發機備料
 
 ```powershell

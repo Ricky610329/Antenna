@@ -12,6 +12,7 @@
 - 🟡 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：本機備料48筆與4次重測；沒有新HFSS結果。
 - 🟡 [R81 新濾波器規格](../docs/log/round-81-wide-filter.md)：先6筆wide＋4次Discrete/mesh檢查；正式60筆在量測檢查後才排隊。
 - [啟動及回填指令](../docs/log/symmetry-filter-20261007-runbook.md)：scope=`symmetry_filter_20261007`、`--selfgen 0`，emforge未動。
+- 工程里程碑已提交 `3f846c7` / `bc8f88b` / `daea96f` / `7fe8443`；完整542項測試通過。約1MB可攜包 `tmp/symmetry_filter_worker_20261007.zip` 已獨立解壓重驗，worker尚未啟動。
 - 本次實際執行 `python -m script.status --factory`：T: 未掛，result 路徑不存在，無法取得NAS現況；不能以空佇列輸出判定遠端空閒。
 - 以下2026-08的worker/王者段落是歷史快照；沒有本次重新啟動的含義。舊grind/selfgen不恢復。
 

@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-07",
+  "status": "worker_kit_prepared_hfss_not_started",
+  "code_commit": "7fe8443b6d196b4759c4ce7d0a094fe75b6ac7b5",
+  "local_milestones": [
+    "3f846c7",
+    "bc8f88b",
+    "daea96f",
+    "7fe8443"
+  ],
+  "package": "tmp/symmetry_filter_worker_20261007.zip",
+  "package_sha256": "d49c24649624273dc61b840721daf6bd1bbd90fd5703902ad5abc9760c2b4788",
+  "package_bytes": 1073006,
+  "preparation": "tmp/symmetry_filter_20261007_v2",
+  "isolated_unpack_validation": "tmp/worker_kit_verify_20261007",
+  "queue_jobs": 6,
+  "queue_measurements": 62,
+  "wide_formal_60_queued": false,
+  "hfss_started": false,
+  "nas_written": false,
+  "emforge_modified": false,
+  "verification": {
+    "initial_full_suite": {
+      "passed": 540,
+      "failed": 1,
+      "seconds": 323.55,
+      "failure": "catalog treated new profile YAML as TrainConfig; fixed specialized loader routing"
+    },
+    "corrected_config_tests": 17,
+    "exploration_recovery_tests": 15,
+    "profile_and_preparation_tests": 11,
+    "historical_census_tests": 6,
+    "powershell_launcher_syntax": "passed",
+    "portable_kit_inputs": "6 jobs validated after extraction; no results exist",
+    "report_local_links": 13,
+    "final_full_suite": {
+      "passed": 542,
+      "failed": 0,
+      "seconds": 308.83,
+      "omp_num_threads": 4,
+      "golden_reanchored": false
+    }
+  },
+  "pending": [
+    "User starts HFSS workers on the shared prepared dataset",
+    "Actual wide Discrete/mesh gate",
+    "Real batch feedback and next-batch selection within three-batch budgets"
+  ]
+}
