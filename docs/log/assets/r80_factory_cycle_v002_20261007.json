@@ -1,0 +1,1010 @@
+{
+  "schema_version": 1,
+  "verified_utc": "2026-10-07T12:20:37.557391+00:00",
+  "watch_status": {
+    "schema_version": 1,
+    "status": "waiting",
+    "started_utc": "2026-10-07T11:45:19.604311+00:00",
+    "launch_id": "3fedde7022e44915b01319d8fc216bd1",
+    "attempt_record": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller\\watch_attempts\\3fedde7022e44915b01319d8fc216bd1.json",
+    "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings.json",
+    "settings_sha256": "948a1456a681e7b9ee3453766f4e01ab35a8c45eba72084faecf4e6f1624379a",
+    "profile_binding": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+      "sha256": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+      "scope": "symmetry_filter_20261007"
+    },
+    "interval_seconds": 1800,
+    "completed_cycles": 2,
+    "hfss_started_here": false,
+    "cycle_started_utc": "2026-10-07T12:15:19.612834+00:00",
+    "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller\\cycles\\91d715650ac63d85fa05a94b28b9d9c4961c821db8fa43120a950b2bee8c9c25\\action_receipt.json",
+    "last_receipt_sha256": "26b3238fe799e0ec93fd097ba76a6a32e5c2bd504e8e49c489c4dc6172f66fcd",
+    "last_cycle_seconds": 109.76599999982864,
+    "valid_unique": 99,
+    "latest_data_version": 2,
+    "last_completed_utc": "2026-10-07T12:17:09.373637+00:00",
+    "next_cycle_in_seconds": 1690.2340000001714
+  },
+  "action_sha256": "26b3238fe799e0ec93fd097ba76a6a32e5c2bd504e8e49c489c4dc6172f66fcd",
+  "audit_snapshot": {
+    "timestamp_utc": "2026-10-07T12:16:48.178484+00:00",
+    "scope": "symmetry_filter_20261007",
+    "dataset_root": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset",
+    "jobs_sha256": "a420c386c9eea67080549f667ea27a5380a3be7f8e985dd88e3f124865202f3d",
+    "measurement_ids": [
+      "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526"
+    ],
+    "valid_unique_patterns": 99,
+    "audited_ok_including_repeats": 103,
+    "solver_time_median_s": 171.0,
+    "completed_stores": [
+      "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80repeat1",
+      "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80repeat2",
+      "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80g00111",
+      "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80g00112",
+      "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80b2a"
+    ],
+    "jobs": [
+      {
+        "store": "dedust_r80b1",
+        "input": "dedust_r80b1_input",
+        "prio": 1,
+        "expected": 48,
+        "audited_ok": 37,
+        "errors": {
+          "single_r80_symmetry_expl_b01_016_49aac88c": {
+            "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+            "attempts": 1
+          },
+          "single_r80_symmetry_expl_b01_018_5d82bb2d": {
+            "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+            "attempts": 1
+          },
+          "single_r80_symmetry_expl_b01_024_66ad8f28": {
+            "error": "watchdog_timeout: RPC_S_CALL_FAILED(HFSS 行程死亡) | (-2147023170, '遠端程序呼叫失敗。', None, None)",
+            "attempts": 1
+          },
+          "single_r80_symmetry_expl_b01_039_bc4de172": {
+            "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+            "attempts": 1
+          }
+        },
+        "markers": {
+          "claim": {
+            "mtime_utc": "2026-10-07T10:02:01.603646+00:00",
+            "payload": {
+              "machine": "140.123.106.218",
+              "at": "2026-10-07 18:02:01"
+            }
+          }
+        },
+        "input_metadata_sha256": {
+          "config.yaml": "6dc230084c7860cb4fbc3ebdfcba3ae961d1c8bef3d27e2f6d02b26fa5c9aa23",
+          "measurement.json": "439093feb9f4a49276d24df9972501d48d2c90416b52b40a9edaa826816e7d96",
+          "score_spec.json": "7cd051b4c2523cd7611a874dfdcab7fbb0d2f3d5b223f8adf01e8abf444d006b",
+          "manifest.json": "58f1e5c7b79d7c27fe1c580d2163f4b119efb97d80ec8a145a04624e46226c93"
+        },
+        "source_metadata_sha256": {
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "58f1e5c7b79d7c27fe1c580d2163f4b119efb97d80ec8a145a04624e46226c93",
+          "results.json": "d2da79ca87cdd7bfc8480c73284627871ce2625a3e01df63bceef6726446fc3e"
+        }
+      },
+      {
+        "store": "dedust_r80repeat1",
+        "input": "dedust_r80repeat1_input",
+        "prio": 1,
+        "expected": 2,
+        "audited_ok": 2,
+        "errors": {},
+        "markers": {
+          "claim": {
+            "mtime_utc": "2026-10-07T10:03:16.330784+00:00",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-07 18:00:56"
+            }
+          },
+          "done": {
+            "mtime_utc": "2026-10-07T10:10:29.158457+00:00",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-07 18:08:09",
+              "errors": 0,
+              "error_ids": []
+            }
+          }
+        },
+        "input_metadata_sha256": {
+          "config.yaml": "6dc230084c7860cb4fbc3ebdfcba3ae961d1c8bef3d27e2f6d02b26fa5c9aa23",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "398d4e94831034d2194134444350a7a36c8958bed87149af041e9e7d73f92ba9"
+        },
+        "source_metadata_sha256": {
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "398d4e94831034d2194134444350a7a36c8958bed87149af041e9e7d73f92ba9",
+          "results.json": "ff82111592686843015d0759d70727b719179872d49ff30934948a5f565ebf37"
+        }
+      },
+      {
+        "store": "dedust_r80repeat2",
+        "input": "dedust_r80repeat2_input",
+        "prio": 1,
+        "expected": 2,
+        "audited_ok": 2,
+        "errors": {},
+        "markers": {
+          "claim": {
+            "mtime_utc": "2026-10-07T10:10:29.193246+00:00",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-07 18:08:09"
+            }
+          },
+          "done": {
+            "mtime_utc": "2026-10-07T10:20:23.215429+00:00",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-07 18:18:03",
+              "errors": 0,
+              "error_ids": []
+            }
+          }
+        },
+        "input_metadata_sha256": {
+          "config.yaml": "6dc230084c7860cb4fbc3ebdfcba3ae961d1c8bef3d27e2f6d02b26fa5c9aa23",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "0fc1a8595031f4eda7b7c080d0b953d85d1ba4a996021aed96d23d07e8de7bd2"
+        },
+        "source_metadata_sha256": {
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "0fc1a8595031f4eda7b7c080d0b953d85d1ba4a996021aed96d23d07e8de7bd2",
+          "results.json": "bd8858fa0adec3c304498d4e9463eb2f4e7ea6f9e5e3c31b6b817952488506f3"
+        }
+      },
+      {
+        "store": "dedust_r80g00111",
+        "input": "dedust_r80g00111_input",
+        "prio": 6,
+        "expected": 16,
+        "audited_ok": 16,
+        "errors": {},
+        "markers": {
+          "claim": {
+            "mtime_utc": "2026-10-07T10:35:23.881045+00:00",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-07 18:33:04"
+            }
+          },
+          "done": {
+            "mtime_utc": "2026-10-07T11:22:36.642477+00:00",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-07 19:20:16",
+              "errors": 0,
+              "error_ids": []
+            }
+          }
+        },
+        "input_metadata_sha256": {
+          "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "aa60053e3bd95ff4aea689237c311714edea2ee066cec48c10cf9d69c0b33ca9"
+        },
+        "source_metadata_sha256": {
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "aa60053e3bd95ff4aea689237c311714edea2ee066cec48c10cf9d69c0b33ca9",
+          "results.json": "104b25b1ba860ee27309efad2d4b1b028466c5ded4d2527db7e2f15ef4f7cc96"
+        }
+      },
+      {
+        "store": "dedust_r80g00112",
+        "input": "dedust_r80g00112_input",
+        "prio": 6,
+        "expected": 16,
+        "audited_ok": 16,
+        "errors": {},
+        "markers": {
+          "claim": {
+            "mtime_utc": "2026-10-07T10:35:47.659232+00:00",
+            "payload": {
+              "machine": "140.123.106.37",
+              "at": "2026-10-07 18:35:46"
+            }
+          },
+          "done": {
+            "mtime_utc": "2026-10-07T11:33:48.741108+00:00",
+            "payload": {
+              "machine": "140.123.106.37",
+              "at": "2026-10-07 19:33:47",
+              "errors": 0,
+              "error_ids": []
+            }
+          }
+        },
+        "input_metadata_sha256": {
+          "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "58efffd3e765d2db8c8f4c6c0becde1eac413deaf20369fc223897df3daab485"
+        },
+        "source_metadata_sha256": {
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "58efffd3e765d2db8c8f4c6c0becde1eac413deaf20369fc223897df3daab485",
+          "results.json": "a6edcc75f0aa3c702d823991e80de1408be8cd46c0c7ce17c54226e76bb2700b"
+        }
+      },
+      {
+        "store": "dedust_r80g00113",
+        "input": "dedust_r80g00113_input",
+        "prio": 6,
+        "expected": 16,
+        "audited_ok": 0,
+        "errors": {},
+        "markers": {},
+        "input_metadata_sha256": {
+          "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "d9acb9fa6386c9dc248a4cf05a46a0d464006fb06b0dd739a97201e7166274d8"
+        },
+        "source_metadata_sha256": null
+      },
+      {
+        "store": "dedust_r80g00114",
+        "input": "dedust_r80g00114_input",
+        "prio": 6,
+        "expected": 16,
+        "audited_ok": 0,
+        "errors": {},
+        "markers": {},
+        "input_metadata_sha256": {
+          "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "7e9252428b4926e766b8ea8e8ea3960065239a1f6defab0bbdad4a3d156f3c5a"
+        },
+        "source_metadata_sha256": null
+      },
+      {
+        "store": "dedust_r80b2a",
+        "input": "dedust_r80b2a_input",
+        "prio": 1,
+        "expected": 16,
+        "audited_ok": 16,
+        "errors": {},
+        "markers": {
+          "claim": {
+            "mtime_utc": "2026-10-07T11:22:36.701604+00:00",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-07 19:20:16"
+            }
+          },
+          "done": {
+            "mtime_utc": "2026-10-07T12:07:46.896428+00:00",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-07 20:05:27",
+              "errors": 0,
+              "error_ids": []
+            }
+          }
+        },
+        "input_metadata_sha256": {
+          "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "73e1c0a3c37cf17e797826eb07e6af2b031bbca1decc27a8a1403d03ced255ff"
+        },
+        "source_metadata_sha256": {
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "73e1c0a3c37cf17e797826eb07e6af2b031bbca1decc27a8a1403d03ced255ff",
+          "results.json": "6721e27494038ed01114f01dd9f7ae878afd750074a1a808771088927f5e8549"
+        }
+      },
+      {
+        "store": "dedust_r80b2b",
+        "input": "dedust_r80b2b_input",
+        "prio": 1,
+        "expected": 16,
+        "audited_ok": 12,
+        "errors": {
+          "r80b2_00019_4117e03f": {
+            "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+            "attempts": 1
+          }
+        },
+        "markers": {
+          "claim": {
+            "mtime_utc": "2026-10-07T11:33:48.823226+00:00",
+            "payload": {
+              "machine": "140.123.106.37",
+              "at": "2026-10-07 19:33:47"
+            }
+          }
+        },
+        "input_metadata_sha256": {
+          "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "71623d6b48df546904ad141ebf04de82a287421f6d3e929814d8c2b275d983d6"
+        },
+        "source_metadata_sha256": {
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "71623d6b48df546904ad141ebf04de82a287421f6d3e929814d8c2b275d983d6",
+          "results.json": "acf169ba8ed91c081401d528e6d2d92acf26c4eb820b99618802fdf0ef03a43b"
+        }
+      },
+      {
+        "store": "dedust_r80cbdb25da6g01",
+        "input": "dedust_r80cbdb25da6g01_input",
+        "prio": 1,
+        "expected": 16,
+        "audited_ok": 2,
+        "errors": {},
+        "markers": {
+          "claim": {
+            "mtime_utc": "2026-10-07T12:07:46.984808+00:00",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-07 20:05:27"
+            }
+          }
+        },
+        "input_metadata_sha256": {
+          "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "1b15ace47a5504b52fa93e3bef3d1ed2d001e603c404ea155b39bc2fa92ad4ee"
+        },
+        "source_metadata_sha256": {
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "1b15ace47a5504b52fa93e3bef3d1ed2d001e603c404ea155b39bc2fa92ad4ee",
+          "results.json": "9b1822e2c54d18e34efe762dbd9b36edba40e3318c0ae91f62f70f54558202bd"
+        }
+      },
+      {
+        "store": "dedust_r80cbdb25da6g02",
+        "input": "dedust_r80cbdb25da6g02_input",
+        "prio": 1,
+        "expected": 16,
+        "audited_ok": 0,
+        "errors": {},
+        "markers": {},
+        "input_metadata_sha256": {
+          "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "df303b886538c31d8f41bb954a1a756c12ec9af3cea9672a13f1f886cf7cd3ed"
+        },
+        "source_metadata_sha256": null
+      },
+      {
+        "store": "dedust_r80cbdb25da6g03",
+        "input": "dedust_r80cbdb25da6g03_input",
+        "prio": 1,
+        "expected": 16,
+        "audited_ok": 0,
+        "errors": {},
+        "markers": {},
+        "input_metadata_sha256": {
+          "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+          "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+          "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+          "manifest.json": "1091711baf683f1ef3cb5db8b2b886c6bdb8e0b1989f2bb56c38b1c66c726e65"
+        },
+        "source_metadata_sha256": null
+      }
+    ],
+    "progress_limit": "Snapshot of saved artifacts; claims do not prove a live worker heartbeat."
+  },
+  "verified_dispatch": [
+    {
+      "job": {
+        "input": "dedust_r80c91d71565g01_input",
+        "store": "dedust_r80c91d71565g01",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c91d71565g01_input/config.yaml"
+      },
+      "tree_sha256": "b7e3b6a434fe07ca6aab89fc665ba96cfd58b83375eebe5f488078907b64b361",
+      "count": 16
+    },
+    {
+      "job": {
+        "input": "dedust_r80c91d71565g02_input",
+        "store": "dedust_r80c91d71565g02",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c91d71565g02_input/config.yaml"
+      },
+      "tree_sha256": "5bea801b28556f38f956e2e3d08ed0d20fc4378757b4a9c154808cd9962ce01e",
+      "count": 16
+    }
+  ],
+  "jobs_total_after_dispatch": 14,
+  "status_lines": [
+    "  job dedust_r80b1: 39/48 完成,最新結果 1 分前（已認領）",
+    "  job dedust_r80g00113: 0/16（排隊中）",
+    "  job dedust_r80g00114: 0/16（排隊中）",
+    "  job dedust_r80b2b: 13/16 完成,最新結果 3 分前（已認領）",
+    "  job dedust_r80cbdb25da6g01: 4/16 完成,最新結果 0 分前（已認領）",
+    "  job dedust_r80cbdb25da6g02: 0/16（排隊中）",
+    "  job dedust_r80cbdb25da6g03: 0/16（排隊中）",
+    "  job dedust_r80c91d71565g01: 0/16（排隊中）",
+    "  job dedust_r80c91d71565g02: 0/16（排隊中）"
+  ],
+  "status_alarms": [],
+  "training_receipt": {
+    "chunk_id": "73dbf3786656b407987afc560c8d1d81f7da25956f26a74deef9c0b3871f02df",
+    "cumulative_observations": 99,
+    "cumulative_valid_unique": 99,
+    "data_version": 2,
+    "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d",
+    "new_observations": 50,
+    "new_valid_unique": 50,
+    "schema_version": 2,
+    "source_store_count": 1
+  },
+  "training_summary_sha256": "4dc9948e27accd9830ce501149f6954319d9306a8d09ecc1c2eb6e2502cddc53",
+  "training_summary": {
+    "binding": {
+      "cumulative_valid_unique": 99,
+      "data_version": 2,
+      "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d",
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+    },
+    "counts": {
+      "legacy_holdout": 1850,
+      "legacy_train": 10150,
+      "profile_holdout": 40,
+      "profile_train": 59
+    },
+    "data_version": 2,
+    "ensemble_profile_holdout": {
+      "gain_mae": 5.064473628997803,
+      "mae": 3.0690383911132812,
+      "n": 40,
+      "phi0_mae": 3.000201463699341,
+      "phi90_mae": 2.8407068252563477,
+      "s11_mae": 2.664329767227173
+    },
+    "legacy_manifest_id": "944800db42c298b0b34b2133470fce2b3b44942e975f7b46e90562fe8a63730a",
+    "legacy_train_exclusions_for_current_holdout": [],
+    "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d",
+    "member_models": [
+      {
+        "file": "member-0.pt",
+        "member_seed": 0,
+        "sha256": "37e2bd09a7087a5f63096722b525fa50870c422a8782fd302e2431fdd09c0ed4"
+      },
+      {
+        "file": "member-1.pt",
+        "member_seed": 1,
+        "sha256": "01b711f2bd106d50b5410f455d95d4ed6b4b79f41f26996c17570405ac59a571"
+      },
+      {
+        "file": "member-2.pt",
+        "member_seed": 2,
+        "sha256": "bb3dbae260141e1dd9d6f1d8d5e8dab887ac41fdff8fbaec6b46a5b29172dab5"
+      }
+    ],
+    "member_seeds": [
+      0,
+      1,
+      2
+    ],
+    "metrics": [
+      {
+        "legacy_holdout": {
+          "gain_mae": 3.700153350830078,
+          "mae": 2.325302839279175,
+          "n": 1850,
+          "phi0_mae": 2.251228094100952,
+          "phi90_mae": 2.0306437015533447,
+          "s11_mae": 2.9242568016052246
+        },
+        "profile_holdout": {
+          "gain_mae": 4.7017669677734375,
+          "mae": 2.9385478496551514,
+          "n": 40,
+          "phi0_mae": 2.9062955379486084,
+          "phi90_mae": 2.6928584575653076,
+          "s11_mae": 2.6631321907043457
+        },
+        "profile_train": {
+          "gain_mae": 0.37978866696357727,
+          "mae": 0.14407803118228912,
+          "n": 59,
+          "phi0_mae": 0.14355602860450745,
+          "phi90_mae": 0.0969172790646553,
+          "s11_mae": 0.16361035406589508
+        }
+      },
+      {
+        "legacy_holdout": {
+          "gain_mae": 4.532032012939453,
+          "mae": 2.7293622493743896,
+          "n": 1850,
+          "phi0_mae": 2.5392677783966064,
+          "phi90_mae": 2.552459955215454,
+          "s11_mae": 2.8912041187286377
+        },
+        "profile_holdout": {
+          "gain_mae": 4.944514274597168,
+          "mae": 3.0734310150146484,
+          "n": 40,
+          "phi0_mae": 3.0454981327056885,
+          "phi90_mae": 2.822535753250122,
+          "s11_mae": 2.694898843765259
+        },
+        "profile_train": {
+          "gain_mae": 0.3142954111099243,
+          "mae": 0.11241032183170319,
+          "n": 59,
+          "phi0_mae": 0.10669006407260895,
+          "phi90_mae": 0.07774736732244492,
+          "s11_mae": 0.12669417262077332
+        }
+      },
+      {
+        "legacy_holdout": {
+          "gain_mae": 6.935105323791504,
+          "mae": 3.897446393966675,
+          "n": 1850,
+          "phi0_mae": 3.438061237335205,
+          "phi90_mae": 3.6787495613098145,
+          "s11_mae": 4.4895243644714355
+        },
+        "profile_holdout": {
+          "gain_mae": 5.988718509674072,
+          "mae": 3.546626567840576,
+          "n": 40,
+          "phi0_mae": 3.4432592391967773,
+          "phi90_mae": 3.266681671142578,
+          "s11_mae": 3.156386137008667
+        },
+        "profile_train": {
+          "gain_mae": 0.32824796438217163,
+          "mae": 0.13007430732250214,
+          "n": 59,
+          "phi0_mae": 0.13125324249267578,
+          "phi90_mae": 0.08942826837301254,
+          "s11_mae": 0.1431656926870346
+        }
+      }
+    ],
+    "profile_holdout_ids": [
+      "00189b4a08209ae5263f8b6f0786f86b9a72a33e6a67154486a584918a6dfe77",
+      "0392daf10e3d7a8a1cf8b8d10afc0278bfbdf8eb25d8c5512fe8d3626fb8a3e2",
+      "0e1fab76a5e07779c1a15cf20e35ed594c32ee44f7098b413eb03a85e0cae0c5",
+      "1afdff715057ec4f3130c85f9e64e605c2b4df07020f1e75b742dba47894ebe8",
+      "26a4f6ef0f6b750fa6b748f5922c41f88cd8129ac20bdf72a70630ee6a59518c",
+      "29757a906c3f24ed8b7a88d7e0fb1ac95e4d6d0bb197277ee64d3baf5f96bd46",
+      "2abacc2f87422fe4a55a9182b74e40f1da43fe43c05b8bd9fd62dc9e55af882b",
+      "2bca7a9893a01349ca0c2cf9b8f500e65180cc8d4a827faa07480ca0b8eef19c",
+      "2bd7d467e43eaa1eee42938c12c07d2ad49d79fd98665d3b00e9a70541dfc4c1",
+      "2f4149a97c40684da8052e6a5daf8ff6d07542ca4dd03c90f03adbc110c4ed5e",
+      "38eed1262f03ab5794a7e0535a038d719b03012c92421284fb4a56a54da4f93d",
+      "4330b21f6926601c081945fa1c7c69f96d28b93cdfa518e5af5d33fe17a882ae",
+      "44439ec9f53bc5a32ea06d8c86976068993150dabf3211cf2a39e6ec5cc48ea1",
+      "4ba650e9baa0c0006b926ac66c5e581eec21b71f524b7154a18ad1ec3703f1f6",
+      "4e12bc2b7e88d939b231ab058351b605aa7336673683daee9b3e0c83e81063e8",
+      "60f07de827195e79637a576e6add4a63f4561bcbc3ade6b466b738b4601e13a0",
+      "6483075684772fa1b4818538ee72231f9865d80655445e361388c32086269628",
+      "696229f32ff075c55286e0e6f90d7e4bac61821716ee98d7f7f70315f546c2c4",
+      "6df2b2e584f1b75adde28f0b68946d8daf4937b9786103f4ecac4c4c73a40beb",
+      "7163b64a69f33234ea412ce170d3ff10679a48310752b4f974bcc25fcd7531b4",
+      "78badcd7b868fa7bf164674b3ce8559e00e651d7403cd444d9d110698407b4c9",
+      "87f40c67f5f542618ce0835b68551860669c10480120f752150c19e04649b7a1",
+      "a0ecee70b11dae0eb0a45247340aa26e9b1a57cffe13ca37edd66a2f90f877b5",
+      "aaf8df382a85cc1a1aa4b3d3e4f27d4d266682e225aff41d41436c14d865752a",
+      "ae545758fa8fce33844251512a6d52e7f0d4819402703596cf3c437654cfc08d",
+      "af5ae618d2bac3003fb5407886d694bb38913800dd5463f5ff050df9c9488b11",
+      "b7fb1ce3f6789e982f46ff5b52c62c680d12cada0381c0cc89adfd717f4a74c4",
+      "b9959b337f3d23b741c449de11372ee9db55ecc852797b9c04465da3885a0d4c",
+      "bbf517be4f1fb7bc54ffc20514d33d27afcdc565788dab6ac5911403a4e5300c",
+      "bdb705f48ea576bb58a5257c39f479cc202a93c91732fc3ceccfd4a649dafb01",
+      "c0d687185af9cc23f99eed12cc115c8fd0d707e7157e4b3c078fc1f0ef980976",
+      "c311ee5b41906c6dbd9c9fa09c20b95c6b72cae8533672113e2f8ab8b184138f",
+      "c9605d132096ffbd5f8f89507bcf0a35502803e1644429c0fc67a7775a32c815",
+      "cd5798901c7192961478313db38637611ee6a2bd86c97fbbb4387bcaa5ba7c2f",
+      "d043ed2942856bf768371963f6278616b5dbc87569444485051971ef2ced5457",
+      "e7c178f29f42875122ad94c94af96166548d694db5da8e538899d502a64f5989",
+      "eca84119299a055b62e7b6f68fa32d4c8278e0686ee86c2c631a5099cfdd3ea9",
+      "f05ec61e3bedf37a51a935de03c8c268c0d84a1fbc432c8b78a345770cbbd2f5",
+      "f8c1bada0fc655e316c0aa0c759691fc5777fed39ce86ad4d7da726a9ed87240",
+      "fca6e4f4e9b7933e06ae2e2490ffcd23e52b8a20bb259d8ded85a6b859540498"
+    ],
+    "profile_train_ids": [
+      "00bc98f5136abbfb1a26ba44f94b3ffa1fa4711905fa856635ee2e90a6c1ec33",
+      "03d489a0c5a6cbb7653270578277a61b82c87a3ef19374e9f5bf8630f8aeba07",
+      "0a9b29fc17238aee2213b5b716f29bec0bb86c33d0306411470f0b9e85135c45",
+      "0bc9ef788f95ac4ed59be5cdce5e5cf40883d70a74583e2be09fd7514003934b",
+      "119133d8a5392a715d29e85abdf9f43ef122b49c8ebbf17f810fc54966f52758",
+      "128fe7dbfe2d61a4ebbcfb4835cfa31591daec471c1d0d1b92193ca85df781d5",
+      "16e3172899b1957e8514c21a30b8fa8dc22aa2b31e0bcb0d1aedb7e9fe72669a",
+      "1a4e40b497b9f605da05df0f7ed57d705e1cd072772b73df7814cb1563fb36f0",
+      "1d49735b59eb42bf704e542557178c084d486669efedcd5897e28aa4f436b279",
+      "2028514988dff3518eb98e5c1ddcc7a143943478415c4d8aa4f818f4dc955714",
+      "244de56feb60e9770c48e82a85a050b38fe9cce67d1ca8682757163ac3e00af4",
+      "24b48b598734ccbca9bdb3d625dbaf4e85b766d40d8d5e4a0c19864a298aff17",
+      "2bd31fdfa90a04089636f09e5010ba3247e8c4f3029682def8f7b3911f1cf8f2",
+      "3addae652d1264c717a7328b7f9451197bbd30bbab1b0e8eebfe56bf9d76f725",
+      "3ed45e7fcef8c706255ca05bc21ad39aa6d47aa0eb152224f269e33e8f6890e4",
+      "4152740adce8081c2bb7a19dda30b06b4afe3b6fa0cf2b350fb8ab219f832fcf",
+      "43ecbd73cf8f826c454af06ab57a4d0403587a023947f3612606a4013ca029cd",
+      "48d15bc83182d47039f539527e17b44979fb0d0d45a18229433fec6aacd0c35d",
+      "4d6ec6b7c99630f63b101c22d0421d5d4025021dd884e97755a9dc2fe2471099",
+      "51d798e0ca04bee3bbd75876f1187df6d977715bcc5dcd56b3a263f553fbd703",
+      "51fa70981881584a98cf51875b311e0d2bacc56c537c31adaa1410d7f6c21893",
+      "5542c6f5a40207b174be5e80fdc767f2d0c944f2e9a053efee702f407c48605c",
+      "6591170a92cc592afff5eba75a192eefd6c6f9a66d706244bcdadc75dffbac14",
+      "6cec970c8ec028ea8c17460e7cddbc7e486df71411ac872c0f7fce07db8dc20b",
+      "726bd9d5bdc20284ec5990523a7ce9544e38d7e9f747526b6a863591e8d2ae0a",
+      "72a9da9f30d58a342af89dc4c1b16bf34333219796126782110690039fc669f9",
+      "78ad31b716fa5fc724e42e14d2c6109de184f67785a5f7ae9cbd0abe538cba80",
+      "7972a280b29d44a0df7a8db97a359a9f431ee649452ba8e39404763bfb5be29a",
+      "7ec547f66fad56f31ab71a572902dff1a408448264b1aeeebec2c76d5368b1b7",
+      "80d525216c0838f6b37e480d5e7038f4b12deddba60aad2d45c22fc7ea164930",
+      "8727de8683ca06299b14afacf9bf0351422a85b75ce46387bbe06979a2d4828a",
+      "89352487825c83ce0234d0093467e3f213996530aa543bf70acacbec00dc7844",
+      "948399b0247d268e2f3419af9af639562c82a315547cc4c5be3ca93e91c12c7d",
+      "94846ec55544020cc02ba6cd6a800a9f8c5a579fd8bfd03335f41202f9a1f95a",
+      "9d46b9c39150abbc06f2c7b1757e5338d029e2c9533d7472142e309d48bbd339",
+      "a65368b7724d22297f1c1eb7725fff8ec490ef8c4fd510023d11be4d6ab8efc0",
+      "a69d0bf9ab675ca7ce0c2a6d4d165e9c4f19a6300993f852f93cb5d11efa5094",
+      "bb852f0499d77af18d073632ebe3a89aaf5d1e90737786517b72c8071903bfce",
+      "bbbba134f33767e9aa295ecd2167b36c3bd32597c33966b3dba5f4cecf39f747",
+      "c10c9bcdfa07ce59dad5ffc9c092831655718dd04467dc587bd4e33be206d46d",
+      "c5997b42d7d8c952fd18914f6cfc2a5913b750e3bd6b850ed9e82f7424d26954",
+      "c610f924e1ec9d69149975f3b8840f723fdc608986c7a984941d05b56c6fad5c",
+      "c7a3aef15b4695ca6cb14ce42991347fb5dd2cc9341301ccc325d8b859941e7f",
+      "c86d08c9967802f71b7520c2bada1d02d631e816dc7a47b312a6fd5828ae0a71",
+      "d25a11872d0cb1b0e6498282dc29973e89cd0c5a60f0e6a879cf0605b19eeabb",
+      "d46db237e57c340813685ba7c8f13ac1320536ef7ca9136f6f14f520318220e1",
+      "d4c72a74d7156d16017e530e75d0769c4e55a4563255a5cd74a5179f2db12a4e",
+      "d62b27e355ce2a57ec54585a49087f36985467dfe7542443c8d385429bacb054",
+      "da120d61c6aaa002bfa5cd800a4a2d0e053452b1d9644bd9fb6cd4c60393895e",
+      "e211f8ba697c2ada30cd01ad69aa53735191557caeb403ed5f959284181fbfba",
+      "e6d36a0e05a715dae3a0bd66bfe1eda3b0ca7b3cd6d5facd45848400629e2be8",
+      "e8143ebc7c184e00a22f70d8407d066de0b9db779ffa9e353634ee8ad1807280",
+      "ebb1db87689aede414de5c364d62f526646e9560b524b4bd5da362aae105026b",
+      "ee2d28600e5e7b1fb7969a035e390ba84ee02af37e3aa5dd91a7ae01df69101f",
+      "eff5a1049dd0471268f2895148efe70776ec5a3bbc8b510a986ed094ae9105b5",
+      "f16488adff82b494df1b0dbdf8cabcde2f00fb14b6d41a78f3ca396f42a10519",
+      "fb9d9e7ac47b138c3ec5e49b4c08f8823f7702a3cb76086a9c55f585ee552844",
+      "fc347b98dee15f61017a26a6cce3390e75dc7762c9cda8c859bcb2aea3046729",
+      "ff75b51c6e90818c96f4e6d399760c9a920c31d3983eb1e3fd46cfd5ae4ad128"
+    ],
+    "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+    "schema_version": 2,
+    "validation_policy": "current_profile_holdout_only_no_early_stopping"
+  },
+  "pretrain_prediction_audit_sha256": "c8e35bdb64fe426bccddbc9e3fbbc5ac9ac97d81daf0cf9d352ca9f7e7bf86d0",
+  "pretrain_prediction_overall": {
+    "n": 50,
+    "prediction_complete": 30,
+    "prediction_missing": 20,
+    "prediction_explicitly_invalid": 14,
+    "prediction_missing_by_field": {
+      "predicted_s11": 20,
+      "predicted_gain": 20,
+      "predicted_radiation_phi0": 20,
+      "predicted_radiation_phi90": 20,
+      "predicted_radiation_theta": 20,
+      "factory_score": 20,
+      "navigation_score": 20
+    },
+    "components": {
+      "s11": {
+        "n": 30,
+        "prediction_missing": 20,
+        "mean_absolute_error": 2.7133240471429687
+      },
+      "gain": {
+        "n": 30,
+        "prediction_missing": 20,
+        "mean_absolute_error": 4.197415218821854
+      },
+      "radiation_phi0": {
+        "n": 30,
+        "prediction_missing": 20,
+        "mean_absolute_error": 2.679261012590701
+      },
+      "radiation_phi90": {
+        "n": 30,
+        "prediction_missing": 20,
+        "mean_absolute_error": 3.343816589773878
+      },
+      "full_vector": {
+        "n": 30,
+        "prediction_missing": 20,
+        "mean_absolute_error": 3.0814010617434198
+      }
+    },
+    "spearman": {
+      "factory_score": {
+        "n": 30,
+        "rho": 0.857174638487208
+      },
+      "navigation_score": {
+        "n": 30,
+        "rho": 0.8629588431590656
+      }
+    }
+  },
+  "prospective_by_model": [
+    {
+      "surrogate_generation": "historical-v108-cold-start",
+      "valid_observations_at_fit": 0,
+      "model_hash": "ed726c41d32c6dbc8917002290fef5d3dee1dc7dccb1dbe48f46cb03c2233fc4",
+      "n": 28,
+      "ids": [
+        "r80b2_00000_96b7ddd5",
+        "r80b2_00002_d7df3646",
+        "r80b2_00004_3e9bff5d",
+        "r80b2_00006_53d32d62",
+        "r80b2_00008_9a97124e",
+        "r80b2_00010_8c451eab",
+        "r80b2_00012_015d6f19",
+        "r80b2_00014_4298169b",
+        "r80b2_00016_e2dc6e86",
+        "r80b2_00018_16798118",
+        "r80b2_00020_56dacfc5",
+        "r80b2_00022_548f1318",
+        "r80b2_00024_946d7bdc",
+        "r80b2_00026_158aff99",
+        "r80b2_00028_c9efe0f2",
+        "r80b2_00030_39fb5a15",
+        "r80b2_00001_3ad1d154",
+        "r80b2_00003_adc874f0",
+        "r80b2_00005_3229ae0d",
+        "r80b2_00007_f51c28f2",
+        "r80b2_00009_7db53bed",
+        "r80b2_00011_fead6ce4",
+        "r80b2_00013_e3de41e0",
+        "r80b2_00015_b57d1ac9",
+        "r80b2_00017_b8b0bb5b",
+        "r80b2_00021_77fbc757",
+        "r80b2_00023_79bdc3e0",
+        "r80b2_00025_a593f5d6"
+      ],
+      "arms": {
+        "lcb_performance": 13,
+        "high_disagreement": 9,
+        "blind_random": 6
+      },
+      "mae": {
+        "s11": 2.7254867727296945,
+        "gain": 3.8739912613361542,
+        "radiation_phi0": 2.5757738210070933,
+        "radiation_phi90": 3.434927774198836,
+        "full_vector": 3.0516896839947174
+      },
+      "spearman": {
+        "factory_score": {
+          "n": 28,
+          "rho": 0.8680897646414888,
+          "undefined_reason": null
+        },
+        "navigation_score": {
+          "n": 28,
+          "rho": 0.8757525998905309,
+          "undefined_reason": null
+        }
+      }
+    },
+    {
+      "surrogate_generation": "data-v001",
+      "valid_observations_at_fit": 49,
+      "model_hash": "e4e38f7c933bf73de9d28e67a548ea24cb684f5f82e2e91ad6be8497d9268f65",
+      "n": 2,
+      "ids": [
+        "r80cbdb25da6g_00000_9344e297",
+        "r80cbdb25da6g_00003_55e7efeb"
+      ],
+      "arms": {
+        "lcb_performance": 2
+      },
+      "mae": {
+        "s11": 2.5430458889288063,
+        "gain": 8.72535062362166,
+        "radiation_phi0": 4.128081694761212,
+        "radiation_phi90": 2.0682600078244624,
+        "full_vector": 3.497360350225251
+      },
+      "spearman": {
+        "factory_score": {
+          "n": 2,
+          "rho": null,
+          "undefined_reason": "fewer_than_3_or_constant"
+        },
+        "navigation_score": {
+          "n": 2,
+          "rho": null,
+          "undefined_reason": "fewer_than_3_or_constant"
+        }
+      }
+    }
+  ],
+  "sm_pool_audit": {
+    "schema_version": 1,
+    "controller_only": true,
+    "hfss_run": false,
+    "surrogate_training": false,
+    "gpu_training": false,
+    "historical_data_discovery": false,
+    "historical_training_scope": null,
+    "predictor_model_role": "current_profile",
+    "historical_models_cold_start_only": false,
+    "surrogate_generation": "data-v002",
+    "valid_observations_at_fit": 99,
+    "predictor_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+      "data_version": 2,
+      "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d",
+      "cumulative_valid_unique": 99
+    },
+    "update_every_valid_points": 48,
+    "next_update_at_valid_observations": 147,
+    "pre_hfss_predictions_preserved_in_manifest": true,
+    "candidate_count": 10000,
+    "selected_count": 32,
+    "selected_arm_counts": {
+      "lcb_performance": 13,
+      "high_disagreement": 10,
+      "blind_random": 9
+    },
+    "unique_ancestries_selected": 17,
+    "factory_band_ghz": [
+      26.5,
+      29.5
+    ],
+    "factory_targets": {
+      "S11_max_db": -10.0,
+      "Gain_min_dbi": 4.0
+    },
+    "radiation_navigation": {
+      "window_deg": [
+        -45.0,
+        45.0
+      ],
+      "floor_from_boresight_db": 3.0,
+      "hard_acceptance_gate": false
+    },
+    "symmetry_performance_threshold": null,
+    "measurement_profile": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+    "diag_bridge_w_mm": 0.1,
+    "model_ids": [
+      {
+        "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v002\\member-0.pt",
+        "sha256": "37e2bd09a7087a5f63096722b525fa50870c422a8782fd302e2431fdd09c0ed4",
+        "architecture": "CurveMLP-216",
+        "source": "script.symmetry_training",
+        "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+        "data_version": "2",
+        "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d"
+      },
+      {
+        "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v002\\member-1.pt",
+        "sha256": "01b711f2bd106d50b5410f455d95d4ed6b4b79f41f26996c17570405ac59a571",
+        "architecture": "CurveMLP-216",
+        "source": "script.symmetry_training",
+        "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+        "data_version": "2",
+        "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d"
+      },
+      {
+        "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v002\\member-2.pt",
+        "sha256": "bb3dbae260141e1dd9d6f1d8d5e8dab887ac41fdff8fbaec6b46a5b29172dab5",
+        "architecture": "CurveMLP-216",
+        "source": "script.symmetry_training",
+        "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+        "data_version": "2",
+        "manifest_id": "0e5d4b2f1783164126e491542be14cee3594bef696f41c704a501f1f3642ff6d"
+      }
+    ],
+    "model_source_files": [
+      "antenna/models/surrogates.py",
+      "script/sm_invert.py"
+    ],
+    "legacy_geometry_limitation": null,
+    "elapsed_s": 0.0,
+    "scored_patterns_per_s": null,
+    "config": {
+      "profile_config": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+      "candidate_pool_size": 10000,
+      "selected_count": 32,
+      "id_prefix": "r80c91d71565g",
+      "initial_pool_size": 2500,
+      "generations": 3,
+      "parent_count": 256,
+      "min_mutation_flips": 2,
+      "max_mutation_flips": 48,
+      "max_per_ancestry": 24,
+      "diversity_weight": 0.35,
+      "radiation_weight": 0.2,
+      "uncertainty_weight": 0.1,
+      "seed": 80100703,
+      "prediction_batch_size": 256,
+      "update_every_valid_points": 48,
+      "valid_observations_at_fit": null,
+      "surrogate_generation": null,
+      "model_dir": null,
+      "response_models": [
+        "sm_reanchor108.pth",
+        "sm_ens108_1.pth",
+        "sm_ens108_2.pth"
+      ],
+      "radiation_model": "rad_head108.pth"
+    }
+  },
+  "limits": {
+    "max_guided_outstanding": 96,
+    "valid_plus_pending_plus_planned": 224
+  },
+  "guided_pending_before_dispatch": 61,
+  "new_pending_candidates": 32,
+  "next_scheduled_taipei": "2026-10-07 20:45:19",
+  "limitations": [
+    "99 unique is the completed-cycle snapshot, not all pending candidates.",
+    "The 30 complete predictions mix 28 historical-v108 and 2 data-v001 predictions; pooled rho does not prove new-model efficacy.",
+    "The data-v001 stratum has only 2 completed predictions; no rank-correlation claim.",
+    "Version 2 holdout has 40 rows, versus 17 in version 1; aggregate errors are not a matched before/after comparison.",
+    "HFSS errors in live jobs are retained for worker retries; no process restarted here.",
+    "R80 target and R81 positive-WM requirement remain incomplete."
+  ],
+  "archive": {
+    "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\sm_versions\\data-v002",
+    "file_count_including_manifest": 122,
+    "payload_bytes": 28906941,
+    "archive_manifest_sha256": "71fc9d8e3e389539aa6ce1ae28a83fc286b8883d687397cda3e17cdb65305297",
+    "all_payload_hashes_verified_after_publish": true,
+    "parent_archive_manifest_sha256": "11656931b1511e03d56695abf403a7d58f73c01a194b08f44a7af3dc966b45fd"
+  },
+  "recent_throughput": {
+    "from_utc": "2026-10-07T11:43:51.738185+00:00",
+    "to_utc": "2026-10-07T12:16:48.178484+00:00",
+    "new_unique": 29,
+    "elapsed_seconds": 1976.440299,
+    "unique_per_hour": 52.82223806751068,
+    "completion_date_prediction": null,
+    "note": "Short observation interval only; do not extrapolate a completion guarantee."
+  },
+  "independent_sol_review": {
+    "status": "PASS",
+    "v001_rows_preserved": 49,
+    "new_patterns": 50,
+    "old_new_overlap": 0,
+    "profile_train_rows": 59,
+    "profile_holdout_rows": 40,
+    "train_canonical_families": 52,
+    "holdout_canonical_families": 13,
+    "cross_split_families": 0,
+    "split_mismatches": 0,
+    "alias_mismatches": 0,
+    "legacy_training_holdout_overlap": 0,
+    "all_v001_v002_checkpoint_hashes_match": true,
+    "holdout_metrics_replayed_exactly": true,
+    "review_scope": "Read-only data/source/family/legacy split and actual three-model CPU holdout replay; no training or NAS writes."
+  }
+}
