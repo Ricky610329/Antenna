@@ -1,0 +1,649 @@
+{
+  "schema": "antenna-citation-reading-audit-v1",
+  "audited_on": "2026-10-07",
+  "manuscript": "docs/paper/manuscript-draft-2026-10.html",
+  "manuscript_version": "V8.1",
+  "prior_manuscript_commit": "6ee50fd",
+  "scope": "Nine current manuscript references and one internal figure-example source; source reading and claim attribution only, not reproduction of cited experiments.",
+  "provenance_note": "This records reading performed in the present audit. It does not retrospectively claim all sources were read for earlier drafts. Source PDFs and extracted copyrighted full text remain outside this commit; recorded local paths may be temporary or private.",
+  "summary": {
+    "original_content_read": 7,
+    "original_full_main_text_papers": [
+      "ref2",
+      "ref3",
+      "ref4"
+    ],
+    "original_full_help_topic": [
+      "ref9"
+    ],
+    "original_selected_sections": [
+      "ref5",
+      "ref7",
+      "ref8"
+    ],
+    "cached_original_excerpts_only": [
+      "ref6"
+    ],
+    "publisher_abstract_only": [
+      "ref1"
+    ],
+    "unresolved_access": [
+      "ref1 full text unavailable",
+      "ref6 original T: PDF unavailable; cached excerpts and page image used"
+    ],
+    "version_limits": [
+      "ref3 author-hosted publisher-formatted early-view PDF is not asserted identical to final issue",
+      "ref4 full reading uses arXiv v2, not the inaccessible IEEE conference PDF"
+    ],
+    "bibliography_result": "No wrong title/author/DOI/year found in the nine entries; add ref4 pagination and exact author version, refresh ref9 access date. Ref5 repository-cover pagination conflicts with author-institution metadata; retain 149–155."
+  },
+  "contribution_implication": "Acquisition batches, guided/random exploration and surrogate-assisted parallel search have prior examples. Novelty and efficacy of this work must depend on its specified mechanisms and direct evidence; no source establishes the current batch size, model-refresh cadence, agent benefit or weekly throughput.",
+  "verification": {
+    "local_artifact_hashes_checked": 14,
+    "check_meaning": "Hashes identify the files actually available, not peer review or validity of their experiments.",
+    "full_page_browser_or_print_layout_checked": false,
+    "new_hfss_or_training_experiments": false,
+    "independent_integration_review": {
+      "status": "passed_with_explicit_access_and_version_limits",
+      "reviewers": [
+        {
+          "agent": "citation_123_audit",
+          "model": "gpt-5.6-sol",
+          "scope": "Refs 1–3 original claim mapping, access/version provenance, nine-reference status summary and no retrospective reading claim",
+          "result": "PASS"
+        },
+        {
+          "agent": "citation_489_audit",
+          "model": "gpt-5.6-sol",
+          "scope": "Refs 4/8/9 original claim mapping, source versions, internal-results separation, benefit limits and artifact hashes",
+          "result": "PASS after correcting ref9 current access date"
+        }
+      ],
+      "conductor_checks": [
+        "Integrated source-specific claims and limits",
+        "Re-read central ref4 full main text, selected ref2/3/8 original methods, ref9 full help topic, ref5 and local thesis passages",
+        "Verified all 14 recorded local artifact hashes",
+        "HTML structure, internal/local links, SVG bindings and existing numerical checks",
+        "Seven embedded images and three frozen evidence Git blobs unchanged from V8"
+      ],
+      "limits": "No full-page browser or print-layout check; no reproduced cited experiments; ref1 full text and ref6 original PDF remain unavailable."
+    }
+  },
+  "references": [
+    {
+      "id": "ref1",
+      "reviewer": "citation_123_audit (gpt-5.6-sol), conductor integration",
+      "reading_status": "abstract_only",
+      "bibliography": "Q. Wu, W. Chen, C. Yu, H. Wang, and W. Hong, ‘Machine-Learning-Assisted Optimization for Antenna Geometry Design,’ IEEE Transactions on Antennas and Propagation, vol. 72, no. 3, pp. 2083–2095, 2024. DOI: 10.1109/TAP.2023.3346493.",
+      "bibliographic_check": {
+        "status": "verified",
+        "details": "IEEE publisher metadata and Crossref agree on title, Qi Wu / Weiqi Chen / Chen Yu / Haiming Wang / Wei Hong, IEEE Transactions on Antennas and Propagation, volume 72, issue 3, pages 2083–2095, 2024, and DOI 10.1109/TAP.2023.3346493."
+      },
+      "version_read": "IEEE Xplore publisher record: title, full publisher abstract, bibliographic metadata, and keywords. No legitimate full-text copy was found or accessed.",
+      "source_urls": [
+        "https://doi.org/10.1109/TAP.2023.3346493",
+        "https://ieeexplore.ieee.org/document/10379000"
+      ],
+      "sections_read": [
+        "Publisher abstract",
+        "Publisher bibliographic metadata"
+      ],
+      "artifacts": [],
+      "claim_checks": [
+        {
+          "location": "I",
+          "claim": "Prior antenna geometry optimization uses geometry–performance surrogate models.",
+          "support": "The publisher abstract states that the method combines CNN and Gaussian-process regression to build surrogate models between antenna geometry and performance, uses them to predict promising designs during optimization, and iteratively updates them with results verified by full-wave simulation. It reports three antenna design tasks and attributes advantages to convergence speed and antenna performance.",
+          "verdict": "supported-with-access-limitation"
+        }
+      ],
+      "limits": [
+        "This verifies the manuscript's broad statement that machine-learning-assisted antenna geometry optimization demonstrates a surrogate model's role in a design workflow. Because only the abstract was read, no claims about detailed architecture, training schedule, quantitative gains, implementation, or limitations should be attributed to this source without obtaining the full paper.",
+        "The official IEEE PDF endpoint returned HTTP 418 in this environment.",
+        "OpenAlex marked the work closed access and reported no repository full text; Crossref provided only an IEEE similarity-checking PDF URL, which was also inaccessible.",
+        "Third-party reposts were deliberately not used as substitutes for the original paper."
+      ],
+      "action": "Retain only a broad abstract-supported background claim; full text remains pending."
+    },
+    {
+      "id": "ref2",
+      "reviewer": "citation_123_audit (gpt-5.6-sol), conductor integration",
+      "reading_status": "original_full_main_text",
+      "bibliography": "E. A. Karahan, J. Zhou, Z. Liu, Z. Shao, S. Fisher, and K. Sengupta, ‘Deep Learning Enabled Design of RF/mmWave IC and Antennas,’ in 2024 IEEE 67th International Midwest Symposium on Circuits and Systems (MWSCAS), pp. 769–772. DOI: 10.1109/MWSCAS60917.2024.10658956.",
+      "bibliographic_check": {
+        "status": "verified",
+        "details": "The local IEEE version of record, IEEE publisher record, Princeton institutional record, and Crossref agree on title, six authors, MWSCAS 2024, pages 769–772, and DOI 10.1109/MWSCAS60917.2024.10658956."
+      },
+      "version_read": "IEEE publisher version of record. The PDF carries IEEE article ID 10658956, the DOI, copyright line, conference page numbers 769–772, and IEEE Xplore download footer.",
+      "source_urls": [
+        "https://doi.org/10.1109/MWSCAS60917.2024.10658956",
+        "https://ieeexplore.ieee.org/document/10658956/",
+        "https://collaborate.princeton.edu/en/publications/deep-learning-enabled-design-of-rfmmwave-ic-and-antennas/"
+      ],
+      "sections_read": [
+        "PDF page 1 / conference page 769: Abstract and Introduction",
+        "PDF page 2 / conference page 770: Section II.A and II.B",
+        "PDF page 3 / conference page 771: design examples and Section III",
+        "PDF page 4 / conference page 772: measurement results, Section IV Conclusion, references"
+      ],
+      "artifacts": [
+        {
+          "path": "docs/reference/2024-Deep_Learning_Enabled_Design_of_RF,mmWave_IC_and_Antennas_(Security_D).pdf",
+          "sha256": "8318cabe0f4173326fdcd6f6beff1283a0a7ad921a5fd4f0b4dca49b89a2297b",
+          "bytes": 5404301
+        }
+      ],
+      "claim_checks": [
+        {
+          "location": "I",
+          "claim": "CNN response prediction is coupled to optimization for pixelated RF components and antennas.",
+          "support": "The paper trains a convolutional forward model on simulated pixelated structures to predict S-parameters and radiation characteristics. During optimization, CNN predictions replace repeated electromagnetic simulations. The authors then use optimization over those predictions for filters, PA matching networks, and antennas, with synthesis examples and measurements. The conclusion explicitly characterizes the forward model as an electromagnetic-simulation emulator for rapid automated synthesis.",
+          "verdict": "strongly-supported"
+        }
+      ],
+      "limits": [
+        "A trained model can be reused for different cost functions and design goals within its modeled domain. The paper also states that moving to a different domain can require a new simulated dataset and a different CNN, so it does not establish one universal model spanning every RF structure.",
+        "This is a compact four-page conference paper that summarizes several designs and points to earlier papers for fuller technical detail.",
+        "The local copy is licensed-access material and must remain uncommitted and unredistributed."
+      ],
+      "action": "Name CNN response prediction and optimization explicitly."
+    },
+    {
+      "id": "ref3",
+      "reviewer": "citation_123_audit (gpt-5.6-sol), conductor integration",
+      "reading_status": "original_full_main_text",
+      "bibliography": "J. Jiang and J. A. Fan, ‘Simulator-based training of generative neural networks for the inverse design of metasurfaces,’ Nanophotonics, vol. 9, no. 5, pp. 1059–1069, 2020. DOI: 10.1515/nanoph-2019-0330.",
+      "bibliographic_check": {
+        "status": "verified-with-online-publication-note",
+        "details": "The publisher full-text HTML gives Jiaqi Jiang and Jonathan A. Fan, the exact title, Nanophotonics 9(5), pages 1059–1069, DOI 10.1515/nanoph-2019-0330, and issue year 2020. It also records first publication on 19 November 2019; citing the 2020 issue year, as the manuscript does, is correct."
+      },
+      "version_read": "Publisher full-text HTML plus a publisher-formatted De Gruyter ahead-of-print PDF hosted on the corresponding author's Stanford lab site. The PDF header says ‘Nanophotonics 2019; aop,’ uses internal printed pages 1–11, displays the DOI and CC BY 4.0 notice, and has a Stanford Libraries download footer dated 21 November 2019. It is not treated as proven byte-identical to the final 2020 issue version. The publisher HTML separately verifies the final citation as volume 9, issue 5, pages 1059–1069 (2020).",
+      "source_urls": [
+        "https://doi.org/10.1515/nanoph-2019-0330",
+        "https://www.degruyterbrill.com/document/doi/10.1515/nanoph-2019-0330/html",
+        "https://onlinelibrary.wiley.com/doi/pdf/10.1515/nanoph-2019-0330",
+        "https://fanlab.stanford.edu/wp-content/papercite-data/pdf/jiang2019simulator.pdf"
+      ],
+      "sections_read": [
+        "Ahead-of-print PDF internal pages 1–2: Abstract, Introduction, Related machine learning work, Problem setup",
+        "Ahead-of-print PDF internal pages 3–5: Section 4 Methods, including loss, forward/adjoint simulation, architecture, training, and topology-optimization comparison",
+        "Ahead-of-print PDF internal pages 5–8: Section 5 Numerical experiments, implementation, baseline, results, stability, and hyperparameters",
+        "Ahead-of-print PDF internal page 9: evolution-strategy comparison and Conclusions",
+        "Publisher full-text HTML: Abstract; Sections 1–5.2.5; bibliographic header with final volume/issue/pages. Final issue pages were not mapped one-for-one onto the ahead-of-print PDF."
+      ],
+      "artifacts": [
+        {
+          "path": "tmp/pdfs/citation_audit/ref3_jiang_fan_authorhosted_earlyview.pdf",
+          "sha256": "2908c7eafc8819b5939e1cdbff95d0eff12393f7f5df7cfd4e8200bd1990d994",
+          "bytes": 1414221
+        }
+      ],
+      "claim_checks": [
+        {
+          "location": "I",
+          "claim": "Forward/adjoint simulation and gradients directly train a generative design distribution.",
+          "support": "The generator maps random noise to a distribution of metagrating designs. At every training iteration, the generated devices are evaluated by forward and adjoint electromagnetic simulations; simulated efficiency and adjoint efficiency gradients define the loss used to update the generator. The paper emphasizes that no precomputed training set is required, and the trained distribution moves toward high-efficiency regions.",
+          "verdict": "strongly-supported-with-wording-correction"
+        }
+      ],
+      "limits": [
+        "The work concerns optical metagratings and direct simulator/adjoint-gradient training, not antennas, HFSS, a learned forward surrogate, or batch active learning. Calling its input merely 'simulation data' is directionally true but obscures the important fact that simulations run inside the training loop rather than supplying a fixed dataset.",
+        "The official publisher PDF endpoint was readable through the web source but returned HTTP 403/empty content to direct command-line download in this environment.",
+        "The downloaded copy is publisher-formatted ahead-of-print material hosted by the authors' Stanford lab; its internal pages 1–11 must not be relabeled as final journal pages 1059–1069, and it is not claimed to be byte-identical to the final issue version.",
+        "The paper's method and evidence are specific to one-dimensional periodic metagratings evaluated with Reticolo RCWA."
+      ],
+      "action": "Replace generic simulation-data wording by direct forward/adjoint-feedback training; remove interpretive prose from bibliography."
+    },
+    {
+      "id": "ref4",
+      "reviewer": "citation_489_audit (gpt-5.6-sol), conductor integration",
+      "reading_status": "original_full_main_text",
+      "bibliography": {
+        "title": "Data-Efficient Surrogate Modeling for Engineering Design: Ensemble-Free Batch-Mode Deep Active Learning for Regression",
+        "authors": [
+          "Sarthak Kapoor",
+          "Harsh Vardhan",
+          "Umesh Timalsina",
+          "Sumit Kumar",
+          "Peter Volgyesi",
+          "Janos Sztipanovits"
+        ],
+        "conference": "2025 6th International Conference on Computers and Artificial Intelligence Technology (CAIT)",
+        "conference_dates": "2025-12-12 to 2025-12-14",
+        "conference_location": "Huizhou, China",
+        "year": 2025,
+        "pages": "646-651",
+        "doi": "10.1109/CAIT68620.2025.11424920",
+        "conference_metadata_sources": [
+          "https://doi.org/10.1109/CAIT68620.2025.11424920",
+          "https://ieeexplore.ieee.org/document/11424920/",
+          "https://api.crossref.org/works/10.1109/CAIT68620.2025.11424920"
+        ],
+        "arxiv_identifier": "arXiv:2211.10360v2",
+        "arxiv_original_submission": "2022-11-16",
+        "arxiv_version_read": "v2, revised 2025-11-28",
+        "arxiv_urls": [
+          "https://arxiv.org/abs/2211.10360v2",
+          "https://arxiv.org/pdf/2211.10360v2",
+          "https://export.arxiv.org/api/query?id_list=2211.10360"
+        ],
+        "important_version_note": "The six-author arXiv v2 is the exact full text read. The earlier arXiv v1 metadata indexed four authors. IEEE/Crossref confirm the six-author conference record, title, venue, DOI and page range, and the IEEE abstract and section list agree with arXiv v2. The IEEE conference PDF was not obtained, so textual identity between arXiv v2 and the version of record is not assumed."
+      },
+      "version_read": {
+        "primary_full_text_scope": "full-main-text",
+        "primary_full_text": "arXiv:2211.10360v2 author manuscript",
+        "conference_version_scope": "abstract-only",
+        "conference_version_note": "IEEE Xplore metadata, abstract, document section list and the opening problem-statement equation were accessible; the IEEE PDF/full main text was not.",
+        "pdf_pages_read": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "sections_read": [
+          "Abstract",
+          "I. Problem Statement",
+          "II. Approach",
+          "II.A Batching",
+          "II.B Epsilon-weighted Hybrid Query Strategy",
+          "Algorithm 1",
+          "III. Experiments and Results",
+          "Table I",
+          "IV. Related Work",
+          "V. Conclusions",
+          "References"
+        ],
+        "visual_review": "All six pages of the downloaded arXiv v2 PDF were rendered and visually inspected."
+      },
+      "source_urls": [
+        "https://arxiv.org/abs/2211.10360v2",
+        "https://arxiv.org/pdf/2211.10360v2",
+        "https://export.arxiv.org/api/query?id_list=2211.10360",
+        "https://doi.org/10.1109/CAIT68620.2025.11424920",
+        "https://ieeexplore.ieee.org/document/11424920/",
+        "https://api.crossref.org/works/10.1109/CAIT68620.2025.11424920"
+      ],
+      "sections_read": [
+        "Abstract",
+        "I. Problem Statement",
+        "II. Approach",
+        "II.A Batching",
+        "II.B Epsilon-weighted Hybrid Query Strategy",
+        "Algorithm 1",
+        "III. Experiments and Results",
+        "Table I",
+        "IV. Related Work",
+        "V. Conclusions",
+        "References"
+      ],
+      "artifacts": [
+        {
+          "path": "tmp/pdfs/citation_audit/ref4_arxiv_2211.10360.pdf",
+          "role": "arXiv v2 full text",
+          "bytes": 390785,
+          "sha256": "C08AF1850CED2904E04949A9FF374C399CD16EF3408122EC2CB475D876B3BCA5"
+        },
+        {
+          "path": "tmp/citation-audit/ref4_arxiv_api.xml",
+          "role": "official arXiv metadata feed",
+          "bytes": 2641,
+          "sha256": "9B5AAD88EE4F899DCC045FF26FEF53E286957A6EB239334297894E03B1F99BF8"
+        },
+        {
+          "path": "tmp/citation-audit/ref4_crossref.json",
+          "role": "Crossref conference metadata",
+          "bytes": 5482,
+          "sha256": "D8DBC67A247C09895D07458883B9063866E2AB4EFB668AB6EE764162BB7562BE"
+        }
+      ],
+      "claim_checks": [
+        {
+          "location": "I",
+          "claim": "Pool-based batch simulation acquisition combines teacher-guided and random sampling, then updates models on cumulative data.",
+          "support": "Sec. II.A–B and Algorithm 1 acquire a batch of labels using a failure-probability teacher and random samples; Sec. III tests FEA, CFD and propeller regression.",
+          "verdict": "supported-with-clarification"
+        }
+      ],
+      "limits": [
+        "Here, 'batch-mode' means acquiring a batch of simulator labels per active-learning iteration. It does not establish anything about neural-network SGD minibatch size.",
+        "The source starts from a fixed unlabeled pool and uses a learned failure classifier plus epsilon-weighted sampling. The Antenna manuscript's multiple candidate-generating strategies, quota allocation, HFSS execution service and feedback schedule are distinct mechanisms.",
+        "The source retrains its student and teacher on the cumulative labeled data after each acquisition round. It does not validate the manuscript's specific service architecture, reuse rules or update cadence.",
+        "The paper supports the existence of simulation-labeled batch active learning for engineering regression, but it does not show that the Antenna framework is novel or that the Antenna framework inherits epsilon-HQS's accuracy or label-efficiency results.",
+        "The paper's reported benefits are specific to its FEA, CFD and propeller tasks, budgets, metric and acquisition policies; they should not be generalized to HFSS antenna/filter search without direct experiments.",
+        "Because the conference PDF was unavailable, cite the exact arXiv v2 when relying on details beyond the IEEE abstract and metadata."
+      ],
+      "action": "Add conference pp. 646–651 and pin the author manuscript link to v2; do not assume conference-PDF identity."
+    },
+    {
+      "id": "ref5",
+      "reviewer": "conductor",
+      "reading_status": "original_selected_sections",
+      "title": "Efficient global optimisation of microwave antennas based on a parallel surrogate model-assisted evolutionary algorithm",
+      "version_read": "Author repository manuscript, 8 PDF pages including repository cover; article internally numbered 1–7",
+      "source_urls": [
+        "https://doi.org/10.1049/iet-map.2018.5009",
+        "https://wrexham.repository.guildhe.ac.uk/17439/1/GURO_398_MAP-2018-5009-FINAL.pdf",
+        "https://khazna.ku.ac.ae/en/publications/efficient-global-optimisation-of-microwave-antennas-based-on-a-pa/"
+      ],
+      "artifacts": [
+        {
+          "path": "tmp/pdfs/timing_review/psadea.pdf",
+          "sha256": "4f199da3928696a78e9eea57b841db09ccda94df7ea6f3001a304974e7b9a34d"
+        }
+      ],
+      "sections_read": [
+        "Sections 1–5, PDF pp. 2–8; bibliography and mathematical appendix not independently validated",
+        "Fig. 3 and Fig. 5 visually inspected on PDF p. 6; Fig. 1 previously inspected"
+      ],
+      "bibliography": {
+        "status": "confirmed_with_cover_error",
+        "authors": [
+          "Bo Liu",
+          "Mobayode O. Akinsolu",
+          "Nazar Ali",
+          "Raed Abd-Alhameed"
+        ],
+        "year": 2019,
+        "volume": 13,
+        "issue": 2,
+        "pages": "149–155",
+        "note": "Repository cover incorrectly recommends pp. 93–105. Author institution publication metadata confirms pp. 149–155; retain current manuscript pagination."
+      },
+      "claim_checks": [
+        {
+          "location": "I; VI.B",
+          "claim": "PSADEA couples parallel candidate simulation, surrogate modelling and evolutionary search.",
+          "support": "Sec. 3.2–3.3 uses three DE mutation strategies, per-child local GP models and joint selection of n candidates for parallel EM simulation; experiments use n=3.",
+          "verdict": "supported"
+        },
+        {
+          "location": "I; VI.B",
+          "claim": "Design progress is shown against wall-clock time and EM evaluation count separately.",
+          "support": "Sec. 4 explicitly defines wall-clock time. Fig. 3(a)/5(a) use hours, Fig. 3(b)/5(b) use sequential EM simulation counts; initial 50 simulations are not a zero-time start.",
+          "verdict": "supported"
+        }
+      ],
+      "limits": [
+        "CST examples with GP surrogates are not an HFSS neural-model retraining study.",
+        "Does not establish our batch size, weekly capacity, agent benefit or superiority of frequent updates."
+      ],
+      "action": "Retain reference; separate proposed project cost accounting from PSADEA attribution."
+    },
+    {
+      "id": "ref6",
+      "reviewer": "conductor",
+      "reading_status": "cached_original_excerpts",
+      "title": "基於梯度估計網路設計貼片天線金屬圖形之研究",
+      "version_read": "Previously extracted 59-page thesis text and rendered original pages; original T: drive unavailable on this audit date",
+      "source_path": "T:/6G Team/碩論交換/陳廷茂_基於梯度估計網路設計貼片天線金屬圖形之研究.pdf",
+      "artifacts": [
+        {
+          "path": "tmp/paper-planning/chen2024.txt",
+          "sha256": "4c216efcd104dfd3484a361520d52ff8fb2834c05c775da88edf2792b1c59950"
+        },
+        {
+          "path": "tmp/paper-planning/chen2024-p28.png",
+          "sha256": "d008e643c0471349c1e933cbb134530a2ab9f60129a27c904aa19b9afbba835d"
+        },
+        {
+          "path": "tmp/paper-planning/source-index.json",
+          "sha256": "9e454191cbf7c89c0f8395f12919d6791d1b01959f07eff039bf0530c9119356"
+        },
+        {
+          "path": "tmp/paper-planning/extract_sources.py",
+          "sha256": "e964b1fe193d515e3d05bc35fdd551fc3061b6364477419fc0cc0becbdf73670"
+        }
+      ],
+      "sections_read": [
+        "Cached front matter: PDF pp. 1, 4, 6–8",
+        "Sec. 3.1: PDF pp. 27–28 / printed pp. 17–18",
+        "Sec. 3.3.2 and start of 3.4: PDF pp. 33–35 / printed pp. 23–25",
+        "Rendered PDF p. 28 / Fig. 3-1 visually inspected again"
+      ],
+      "bibliography": {
+        "status": "confirmed_from_cached_front_matter",
+        "author": "陳廷茂",
+        "year": 2024,
+        "month": 6,
+        "institution": "國立中正大學電機工程研究所",
+        "degree": "碩士論文"
+      },
+      "claim_checks": [
+        {
+          "location": "I",
+          "claim": "GEN approximates HFSS responses using online geometry–response samples.",
+          "support": "Sec. 3.1 and 3.3.2 describe pattern inputs, HFSS reflection/gain targets, storing new pairs and training GEN; then freezing GEN and backpropagating to MPGN.",
+          "verdict": "supported_by_cached_original_excerpts"
+        }
+      ],
+      "limits": [
+        "Original PDF was not reopened or hashed this audit because T: is not mounted; cached text and page image are the available evidence.",
+        "GEN denotes Gradient Estimation Network, not the metal-pattern generator MPGN.",
+        "Response fitting and gradient propagation do not prove generalization or accurate physical gradients; do not inherit the thesis claim of extremely high similarity as external validation."
+      ],
+      "action": "Retain bounded historical-method attribution, disclose cached-only audit scope."
+    },
+    {
+      "id": "ref7",
+      "reviewer": "conductor",
+      "reading_status": "original_selected_sections",
+      "title": "自適應循環策略與圖譜連通度損失函數於貼片天線金屬圖形生成之研究",
+      "version_read": "Local docs/Paper.pdf, 82 pages, title/date June 2026; no claim that final library-deposited version was checked",
+      "source_path": "docs/Paper.pdf",
+      "artifacts": [
+        {
+          "path": "docs/Paper.pdf",
+          "sha256": "9b51cf73187fe9d06dac36e68947adb53e91c4a5cb95e86132be2d19eb1f2d55"
+        }
+      ],
+      "sections_read": [
+        "Front matter PDF pp. 1–2, 5–9",
+        "Sec. 3.1, 3.2.1–3.2.5: PDF pp. 31–34, 36–40 / printed pp. 18–21, 23–27",
+        "Sec. 3.3.2: PDF pp. 43–45 / printed pp. 30–32",
+        "Sec. 3.5–3.6.1: PDF pp. 47–54 / printed pp. 34–41",
+        "Fig. 3-13 visually inspected; cached full text checked byte-for-text against current PDF extraction"
+      ],
+      "bibliography": {
+        "status": "confirmed_from_local_original_front_matter",
+        "author": "吳維文",
+        "year": 2026,
+        "month": 6,
+        "institution": "國立中正大學電機工程研究所",
+        "degree": "碩士論文"
+      },
+      "claim_checks": [
+        {
+          "location": "I",
+          "claim": "Prior work studies adaptive training schedules, connectivity losses and data reuse.",
+          "support": "Sec. 3.2 couples plateau-triggered learning-rate and temperature schedules (ACP); Sec. 3.3 defines a spectral connectivity loss; Sec. 3.5 filters accumulated simulation examples for surrogate retraining (DLF).",
+          "verdict": "supported_after_naming_training_schedule"
+        }
+      ],
+      "limits": [
+        "ACP is an optimizer learning-rate/temperature mechanism, not emforge worker scheduling or a measured model-refresh cadence benefit.",
+        "The cited thesis describes DLF with all-sample accumulation in Sec. 3.5, while Sec. 3.6.1 prose also describes quality-filtered storage; do not derive exact buffer semantics from the shorthand sentence.",
+        "This review validates attribution, not the thesis implementation, physical accuracy or reported experimental improvements.",
+        "No thesis performance values are imported into our manuscript as our results."
+      ],
+      "action": "Replace vague 自適應排程 by 自適應學習率與溫度調整 and place citation before our new-work sentence."
+    },
+    {
+      "id": "ref8",
+      "reviewer": "citation_489_audit (gpt-5.6-sol), conductor integration",
+      "reading_status": "original_selected_sections",
+      "bibliography": {
+        "title": "Multi-fidelity EM simulations and constrained surrogate modelling for low-cost multi-objective design optimisation of antennas",
+        "authors": [
+          "Slawomir Koziel",
+          "Ari T. Sigurðsson"
+        ],
+        "journal": "IET Microwaves, Antennas & Propagation",
+        "volume": "12",
+        "issue": "13",
+        "pages": "2025-2029",
+        "first_published": "2018-07-10",
+        "year": 2018,
+        "doi": "10.1049/iet-map.2018.5184",
+        "urls": [
+          "https://doi.org/10.1049/iet-map.2018.5184",
+          "https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/iet-map.2018.5184",
+          "https://api.crossref.org/works/10.1049/iet-map.2018.5184"
+        ]
+      },
+      "version_read": {
+        "primary_full_text_scope": "selected-sections",
+        "source_read": "publisher version-of-record HTML on Wiley/IET",
+        "sections_read": [
+          "Bibliographic header and abstract",
+          "1. Introduction",
+          "2.1 Surrogate-assisted MO with variable-fidelity models",
+          "2.2 Initial design space reduction",
+          "2.3 Constrained surrogate model domain",
+          "3. Verification example (model-fidelity setup and results)",
+          "Table 3 cost breakdown",
+          "4. Conclusion"
+        ],
+        "pdf_pages_read": [],
+        "pdf_access_note": "The publisher PDF and full-XML download endpoints returned Cloudflare challenge pages in the shell. The publisher's full article HTML was accessible through the browser, but no local version-of-record PDF was obtained."
+      },
+      "source_urls": [
+        "https://doi.org/10.1049/iet-map.2018.5184",
+        "https://ietresearch.onlinelibrary.wiley.com/doi/10.1049/iet-map.2018.5184",
+        "https://api.crossref.org/works/10.1049/iet-map.2018.5184"
+      ],
+      "sections_read": [
+        "Bibliographic header and abstract",
+        "1. Introduction",
+        "2.1 Surrogate-assisted MO with variable-fidelity models",
+        "2.2 Initial design space reduction",
+        "2.3 Constrained surrogate model domain",
+        "3. Verification example (model-fidelity setup and results)",
+        "Table 3 cost breakdown",
+        "4. Conclusion"
+      ],
+      "artifacts": [
+        {
+          "path": "tmp/citation-audit/ref8_crossref.json",
+          "role": "Crossref bibliographic metadata only; not article full text",
+          "bytes": 8763,
+          "sha256": "D52DC50F7121DF493F4DB41CF8665CEE7CDC69BC08E458C69F2C30DA5F01CCA3"
+        }
+      ],
+      "claim_checks": [
+        {
+          "location": "VI.C",
+          "claim": "CST low/high-fidelity EM models and constrained-domain kriging support multi-objective antenna optimization and selected-design refinement.",
+          "support": "Sec. 2.1–2.3 constructs a constrained kriging surrogate from low-fidelity samples and refines selected designs with the high-fidelity model; Sec. 3 uses differing CST mesh resolutions.",
+          "verdict": "background-only; do not use as direct validation of the internal HFSS sensitivity result"
+        }
+      ],
+      "limits": [
+        "The paper is not batch active learning: it constructs a kriging surrogate from a designed low-fidelity sample set, uses MOEA for Pareto-set search, and performs selected high-fidelity refinement.",
+        "Its fidelity distinction is based on CST model resolution and cost. It is not the Antenna manuscript's S0/S1 HFSS convergence-settings comparison and does not use the manuscript's multi-strategy candidate or feedback service.",
+        "Its reported data and compute savings concern constrained surrogate-domain construction for one UWB multi-objective case; they do not establish a benefit for the manuscript's learning/update mechanisms.",
+        "The paper does not test HFSS, Maximum Delta S, MaximumPasses or MinimumConvergedPasses.",
+        "It does not support the manuscript's numerical frequency-shift, margin-shift or pass/fail-change statistics; those remain internal experimental evidence.",
+        "It does not establish that using more mesh cells alone certifies convergence, nor that the manuscript's S1 settings are a high-fidelity ground truth.",
+        "No novelty or performance inference about the manuscript's selection, batching or retraining workflow follows from this citation."
+      ],
+      "action": "Give a specific CST multi-fidelity background sentence, separate from internal mesh-sensitivity results."
+    },
+    {
+      "id": "ref9",
+      "reviewer": "citation_489_audit (gpt-5.6-sol), conductor integration",
+      "reading_status": "original_full_main_text",
+      "bibliography": {
+        "corporate_author": "Ansys",
+        "title": "Adaptive Meshing Methods In HFSS",
+        "product_help": "Ansys Electromagnetics Suite / HFSS Help",
+        "release": "2026 R1",
+        "version_in_url": "v261",
+        "url": "https://ansyshelp.ansys.com/public/views/secured/electronics/v261/en/subsystems/HFSS/Content/HFSS/AdaptiveMeshingMethodsInHFSS.htm",
+        "manuscript_access_date": "2026-10-07",
+        "previous_manuscript_access_date": "2026-10-03"
+      },
+      "version_read": {
+        "primary_full_text_scope": "full-main-text",
+        "source_read": "official Ansys v261 HTML help topic",
+        "sections_read": [
+          "Introductory description",
+          "Single Solution Frequency",
+          "Broadband Frequency",
+          "Multi-Frequencies",
+          "2026 R1 footer"
+        ],
+        "pdf_pages_read": []
+      },
+      "source_urls": [
+        "https://ansyshelp.ansys.com/public/views/secured/electronics/v261/en/subsystems/HFSS/Content/HFSS/AdaptiveMeshingMethodsInHFSS.htm"
+      ],
+      "sections_read": [
+        "Introductory description",
+        "Single Solution Frequency",
+        "Broadband Frequency",
+        "Multi-Frequencies",
+        "2026 R1 footer"
+      ],
+      "artifacts": [
+        {
+          "path": "tmp/pdfs/citation_audit/ref9_ansys_v261.html",
+          "role": "official v261 help topic full HTML",
+          "bytes": 17211,
+          "sha256": "D3831AD90660F814322BA5397D8F8F0EF8737043F26412984A008652A99E9F9D"
+        }
+      ],
+      "claim_checks": [
+        {
+          "location": "VI.C",
+          "claim": "HFSS single-frequency adaptive meshing uses Delta S between successive solves and a configurable maximum number of passes.",
+          "support": "The Single Solution Frequency section defines Maximum Delta S as the change between consecutive solves and specifies Maximum Number of Passes.",
+          "verdict": "supported for the general HFSS adaptive-meshing background only"
+        }
+      ],
+      "limits": [
+        "This is solver documentation, not a surrogate-learning, acquisition-batching or optimization study.",
+        "It explains adaptive-pass controls and convergence criteria. It does not evaluate the manuscript's model-learning or candidate-source mechanisms.",
+        "This exact help topic does not document MinimumConvergedPasses, even though that internal setting appears in the manuscript's S0/S1 description.",
+        "It does not support the manuscript's 18-case sampling design, 0.985 GHz median frequency shift, 0.81 dB median margin change or three pass-to-fail transitions; those are internal results.",
+        "HFSS's statement that adaptive refinement generates accurate/reliable solutions should not be treated as independent empirical validation that either S0 or S1 is converged for the manuscript's structures.",
+        "The page does not imply that simply lowering Maximum Delta S or raising Maximum Number of Passes always produces materially different or ground-truth results."
+      ],
+      "action": "Attach the citation to solver controls only; refresh accessed date to 2026-10-07."
+    },
+    {
+      "id": "appendix-alvi2019",
+      "reviewer": "conductor",
+      "reading_status": "original_selected_sections",
+      "title": "Asynchronous Batch Bayesian Optimisation with Improved Local Penalisation",
+      "version_read": "PMLR 97 official conference PDF, 10 pages",
+      "source_urls": [
+        "https://proceedings.mlr.press/v97/alvi19a.html",
+        "https://proceedings.mlr.press/v97/alvi19a/alvi19a.pdf"
+      ],
+      "artifacts": [
+        {
+          "path": "tmp/pdfs/timing_review/alvi19a.pdf",
+          "sha256": "134050515d42d0fd730f7e4424c4baae5060dc93101bac69f517da1b25d53df7"
+        }
+      ],
+      "sections_read": [
+        "Section 4, PDF pp. 2–3; Fig. 1 visually inspected on p. 3"
+      ],
+      "claim_checks": [
+        {
+          "location": "Internal appendix figure comparison",
+          "claim": "The figure separates each worker’s processing and waiting intervals.",
+          "support": "Fig. 1 has three worker rows, processing/waiting colors and separate synchronous/asynchronous schematics.",
+          "verdict": "supported"
+        }
+      ],
+      "limits": [
+        "Illustrative schematic, not measured emforge execution.",
+        "This reading scope does not validate the entire paper, its method or benchmark results."
+      ],
+      "action": "Retain internal figure-design comparison; explicitly call the source figure a schematic."
+    }
+  ]
+}
