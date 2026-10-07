@@ -1,0 +1,167 @@
+{
+  "timestamp_utc": "2026-10-07T10:46:31.592804+00:00",
+  "scope": "symmetry_filter_20261007",
+  "dataset_root": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset",
+  "measurement_ids": [
+    "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526"
+  ],
+  "valid_unique_patterns": 20,
+  "audited_ok_including_repeats": 23,
+  "solver_time_median_s": 174.0,
+  "completed_stores": [
+    "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80repeat1",
+    "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80repeat2"
+  ],
+  "jobs": [
+    {
+      "store": "dedust_r80b1",
+      "input": "dedust_r80b1_input",
+      "prio": 1,
+      "expected": 48,
+      "audited_ok": 14,
+      "errors": {},
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:02:01.603646+00:00",
+          "payload": {
+            "machine": "140.123.106.218",
+            "at": "2026-10-07 18:02:01"
+          }
+        }
+      },
+      "results_sha256_after_audit": "c20a71b7ca307f68a08459e708ba20f349428dcc8bc7ee634576a2a087280354"
+    },
+    {
+      "store": "dedust_r80repeat1",
+      "input": "dedust_r80repeat1_input",
+      "prio": 1,
+      "expected": 2,
+      "audited_ok": 2,
+      "errors": {},
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:03:16.330784+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:00:56"
+          }
+        },
+        "done": {
+          "mtime_utc": "2026-10-07T10:10:29.158457+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:08:09",
+            "errors": 0,
+            "error_ids": []
+          }
+        }
+      },
+      "results_sha256_after_audit": "ff82111592686843015d0759d70727b719179872d49ff30934948a5f565ebf37"
+    },
+    {
+      "store": "dedust_r80repeat2",
+      "input": "dedust_r80repeat2_input",
+      "prio": 1,
+      "expected": 2,
+      "audited_ok": 2,
+      "errors": {},
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:10:29.193246+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:08:09"
+          }
+        },
+        "done": {
+          "mtime_utc": "2026-10-07T10:20:23.215429+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:18:03",
+            "errors": 0,
+            "error_ids": []
+          }
+        }
+      },
+      "results_sha256_after_audit": "bd8858fa0adec3c304498d4e9463eb2f4e7ea6f9e5e3c31b6b817952488506f3"
+    },
+    {
+      "store": "dedust_r80g00111",
+      "input": "dedust_r80g00111_input",
+      "prio": 6,
+      "expected": 16,
+      "audited_ok": 2,
+      "errors": {},
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:35:23.881045+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:33:04"
+          }
+        }
+      },
+      "results_sha256_after_audit": "f1693023754bc29133ca730dfbc8cbb6a9be887959aa02b1f189705531c55d91"
+    },
+    {
+      "store": "dedust_r80g00112",
+      "input": "dedust_r80g00112_input",
+      "prio": 6,
+      "expected": 16,
+      "audited_ok": 3,
+      "errors": {},
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:35:47.659232+00:00",
+          "payload": {
+            "machine": "140.123.106.37",
+            "at": "2026-10-07 18:35:46"
+          }
+        }
+      },
+      "results_sha256_after_audit": "b6e3c062dd2cecc32e255df549cf56b04c1d3f8e9b3681f4dce51013369c1229"
+    },
+    {
+      "store": "dedust_r80g00113",
+      "input": "dedust_r80g00113_input",
+      "prio": 6,
+      "expected": 16,
+      "audited_ok": 0,
+      "errors": {},
+      "markers": {},
+      "results_sha256_after_audit": null
+    },
+    {
+      "store": "dedust_r80g00114",
+      "input": "dedust_r80g00114_input",
+      "prio": 6,
+      "expected": 16,
+      "audited_ok": 0,
+      "errors": {},
+      "markers": {},
+      "results_sha256_after_audit": null
+    },
+    {
+      "store": "dedust_r80b2a",
+      "input": "dedust_r80b2a_input",
+      "prio": 1,
+      "expected": 16,
+      "audited_ok": 0,
+      "errors": {},
+      "markers": {},
+      "results_sha256_after_audit": null
+    },
+    {
+      "store": "dedust_r80b2b",
+      "input": "dedust_r80b2b_input",
+      "prio": 1,
+      "expected": 16,
+      "audited_ok": 0,
+      "errors": {},
+      "markers": {},
+      "results_sha256_after_audit": null
+    }
+  ],
+  "progress_limit": "Snapshot of saved artifacts; claims do not prove a live worker heartbeat.",
+  "status_alarms": []
+}

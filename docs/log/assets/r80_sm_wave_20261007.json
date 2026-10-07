@@ -1,0 +1,387 @@
+{
+  "pool": {
+    "schema_version": 1,
+    "controller_only": true,
+    "hfss_run": false,
+    "surrogate_training": false,
+    "gpu_training": false,
+    "historical_data_discovery": false,
+    "historical_training_scope": "This utility loads only the explicitly named checkpoint weights and does not discover or mix training rows. The checkpoint training history may contain non-symmetric designs; exact symmetry is enforced on every new candidate.",
+    "predictor_model_role": "historical_cold_start_only",
+    "historical_models_cold_start_only": true,
+    "surrogate_generation": "historical-v108-cold-start",
+    "valid_observations_at_fit": 0,
+    "update_every_valid_points": 48,
+    "next_update_at_valid_observations": 48,
+    "pre_hfss_predictions_preserved_in_manifest": true,
+    "candidate_count": 10000,
+    "selected_count": 32,
+    "selected_arm_counts": {
+      "lcb_performance": 13,
+      "high_disagreement": 10,
+      "blind_random": 9
+    },
+    "unique_ancestries_selected": 13,
+    "factory_band_ghz": [
+      26.5,
+      29.5
+    ],
+    "factory_targets": {
+      "S11_max_db": -10.0,
+      "Gain_min_dbi": 4.0
+    },
+    "radiation_navigation": {
+      "window_deg": [
+        -45.0,
+        45.0
+      ],
+      "floor_from_boresight_db": 3.0,
+      "hard_acceptance_gate": false
+    },
+    "symmetry_performance_threshold": null,
+    "measurement_profile": "configs\\single_r80_symmetry_factory.yaml",
+    "diag_bridge_w_mm": 0.1,
+    "model_ids": [
+      {
+        "file": "sm_reanchor108.pth",
+        "sha256": "0ba9caf35a1e815164a8e8b622888e869341ddb3d960c9ee4c7acef946b8af00",
+        "architecture": "HFSSNet",
+        "source": "antenna.models.surrogates"
+      },
+      {
+        "file": "sm_ens108_1.pth",
+        "sha256": "b1ff769b1c14924bfd6f6151dee0ba7e6a87161287bb9cba4f20ac685c68e22e",
+        "architecture": "ResCNNNet",
+        "source": "antenna.models.surrogates"
+      },
+      {
+        "file": "sm_ens108_2.pth",
+        "sha256": "507e3a818d32588ee2d286bc3dd83cf2f79af40a99801d12f911c9892a210286",
+        "architecture": "ResCNNNet",
+        "source": "antenna.models.surrogates"
+      },
+      {
+        "file": "rad_head108.pth",
+        "sha256": "477698f31d4f4fdb436f52107cfd8560583b393ee56c371cbff051baec1a6073",
+        "architecture": "legacy_rad_mlp_cosine_head",
+        "source": "script.sm_invert.Inverter"
+      }
+    ],
+    "model_source_files": [
+      "antenna/models/surrogates.py",
+      "script/sm_invert.py"
+    ],
+    "legacy_geometry_limitation": "Historical surrogate weights predate the 0.1 mm diagonal-bridge measurement geometry. Predictions and scores are navigation priors only; HFSS under the named measurement profile is the new truth.",
+    "elapsed_s": 17.02931150002405,
+    "scored_patterns_per_s": 587.2228011088926,
+    "config": {
+      "profile_config": "configs\\single_r80_symmetry_factory.yaml",
+      "candidate_pool_size": 10000,
+      "selected_count": 32,
+      "id_prefix": "r80b2",
+      "initial_pool_size": 2500,
+      "generations": 3,
+      "parent_count": 256,
+      "min_mutation_flips": 2,
+      "max_mutation_flips": 48,
+      "max_per_ancestry": 24,
+      "diversity_weight": 0.35,
+      "radiation_weight": 0.2,
+      "uncertainty_weight": 0.1,
+      "seed": 80100702,
+      "prediction_batch_size": 256,
+      "update_every_valid_points": 48,
+      "valid_observations_at_fit": 0,
+      "surrogate_generation": "historical-v108-cold-start",
+      "model_dir": "C:\\Users\\ricky\\antenna_nas_backup\\dataset",
+      "response_models": [
+        "sm_reanchor108.pth",
+        "sm_ens108_1.pth",
+        "sm_ens108_2.pth"
+      ],
+      "radiation_model": "rad_head108.pth"
+    }
+  },
+  "dispatch": {
+    "time_utc": "2026-10-07T10:45:19.444087+00:00",
+    "dataset": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset",
+    "stores": [
+      "dedust_r80b2a",
+      "dedust_r80b2b"
+    ],
+    "count": 32,
+    "priority": 1,
+    "duplicate_gate_sha256": "be204e500fa2aae458240ad3d99830be4320a2573dcac58bc9c1ae56007fd20b"
+  },
+  "duplicate_gate": {
+    "time_utc": "2026-10-07T10:43:03.958686+00:00",
+    "dataset": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset",
+    "counts": {
+      "dedust_r80b2a_input": 16,
+      "dedust_r80b2b_input": 16
+    },
+    "manifest_hashes": {
+      "dedust_r80b2a_input": "73e1c0a3c37cf17e797826eb07e6af2b031bbca1decc27a8a1403d03ced255ff",
+      "dedust_r80b2b_input": "71623d6b48df546904ad141ebf04de82a287421f6d3e929814d8c2b275d983d6"
+    }
+  },
+  "split": {
+    "schema_version": 1,
+    "canonical_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\sm_wave_002",
+    "canonical_manifest_sha256": "65de394e4b8a81c720b4ade525ce2eb608a4d0af6b94602abd13790f0bf049aa",
+    "canonical_metadata_sha256": {
+      "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+      "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+      "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+      "manifest.json": "65de394e4b8a81c720b4ade525ce2eb608a4d0af6b94602abd13790f0bf049aa"
+    },
+    "config_sha256": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "round_robin": true,
+    "shard_size": 16,
+    "shards": [
+      {
+        "name": "shard-001_input",
+        "ids": [
+          "r80b2_00000_96b7ddd5",
+          "r80b2_00002_d7df3646",
+          "r80b2_00004_3e9bff5d",
+          "r80b2_00006_53d32d62",
+          "r80b2_00008_9a97124e",
+          "r80b2_00010_8c451eab",
+          "r80b2_00012_015d6f19",
+          "r80b2_00014_4298169b",
+          "r80b2_00016_e2dc6e86",
+          "r80b2_00018_16798118",
+          "r80b2_00020_56dacfc5",
+          "r80b2_00022_548f1318",
+          "r80b2_00024_946d7bdc",
+          "r80b2_00026_158aff99",
+          "r80b2_00028_c9efe0f2",
+          "r80b2_00030_39fb5a15"
+        ],
+        "items": [
+          {
+            "id": "r80b2_00000_96b7ddd5",
+            "pattern_file": "r80b2_00000_96b7ddd5.pt",
+            "file_sha256": "7312dcdfd6b2f20da95463076c3b5c2a616b0b23d439d9e65a8d8c36e1ca2be4",
+            "pattern_sha256": "96b7ddd55ddb0ad790d37ee904aeff211838be4353fadbb9e938008eda6ef0a7"
+          },
+          {
+            "id": "r80b2_00002_d7df3646",
+            "pattern_file": "r80b2_00002_d7df3646.pt",
+            "file_sha256": "4e8f08272c0cbfa25f6616ae2537d8588b9706f75dd2e6d0434556478132bfbc",
+            "pattern_sha256": "d7df36468abc98a402914c30dc50e656049f6c4b2947c2f9500441dfc479474f"
+          },
+          {
+            "id": "r80b2_00004_3e9bff5d",
+            "pattern_file": "r80b2_00004_3e9bff5d.pt",
+            "file_sha256": "0bfec1616098f7b49b81f58e8a6eb350e9dbd155f9ca6f5b2b91d67d699be5ec",
+            "pattern_sha256": "3e9bff5db14e45c2211d8dcf6ec9e19e321cd6c3c0e9ff9f9af9d1ccf450d99d"
+          },
+          {
+            "id": "r80b2_00006_53d32d62",
+            "pattern_file": "r80b2_00006_53d32d62.pt",
+            "file_sha256": "30a2aed37f6d7a541df31be1e4de909e866005bcd5075253abbdd47b7b24676d",
+            "pattern_sha256": "53d32d625a6bf7e963dc0018c71ca476cb1d5161dbeff3ab0895155b14969f78"
+          },
+          {
+            "id": "r80b2_00008_9a97124e",
+            "pattern_file": "r80b2_00008_9a97124e.pt",
+            "file_sha256": "ff51f5dbf12c347e53a8090eb0fc9ec0a7268cb2468a336541ef1cc9961ef85b",
+            "pattern_sha256": "9a97124e5448fe2dc0972eb597ef393607fe10fd5f1c1c73221511b10729800f"
+          },
+          {
+            "id": "r80b2_00010_8c451eab",
+            "pattern_file": "r80b2_00010_8c451eab.pt",
+            "file_sha256": "c254f3cec650dda095b3702b361169eed0ab3b61c530707aa204cbd1bf86fc3b",
+            "pattern_sha256": "8c451eabd688f0ea9f3eaadc0939ec9e9f20017c3a8d75141c73bcb7e8df125a"
+          },
+          {
+            "id": "r80b2_00012_015d6f19",
+            "pattern_file": "r80b2_00012_015d6f19.pt",
+            "file_sha256": "0805b93c2bf07b05021da5585ed7984bc1bf648d7048a1ba74fbad04fd4567fb",
+            "pattern_sha256": "015d6f191adb2592537707aef9017d78afe189683d3e60cf45cc30800e819e0e"
+          },
+          {
+            "id": "r80b2_00014_4298169b",
+            "pattern_file": "r80b2_00014_4298169b.pt",
+            "file_sha256": "c23f62558c164d37fac7a39280360c9416cb93f4297a93dcffeb4d72f1e91936",
+            "pattern_sha256": "4298169bf056187331d10f82507231ba0cb9457173f613cde560ada74d064c30"
+          },
+          {
+            "id": "r80b2_00016_e2dc6e86",
+            "pattern_file": "r80b2_00016_e2dc6e86.pt",
+            "file_sha256": "67ba4db184dabdd25c8ef169fa6f6c79d37542df71d986053fe2e3af91a8b884",
+            "pattern_sha256": "e2dc6e86f30741567389e923b1b686a3ff805a07a315983214ee8a7f47452a8f"
+          },
+          {
+            "id": "r80b2_00018_16798118",
+            "pattern_file": "r80b2_00018_16798118.pt",
+            "file_sha256": "8991d08528bceceef248796a47d244decc7f923c249b3c1c44f9be1acb74c16f",
+            "pattern_sha256": "1679811816c3a71a61a73429bcc80dde4057e45ada0c24decf305c251b7fe0c6"
+          },
+          {
+            "id": "r80b2_00020_56dacfc5",
+            "pattern_file": "r80b2_00020_56dacfc5.pt",
+            "file_sha256": "f4786c297aed364f12f7673e627b8a88729adba41d6f35fc8fffd92b5ce449e6",
+            "pattern_sha256": "56dacfc54c09021531a7b79a0eb835aaee970666c74ebd4d9614fc721005d76e"
+          },
+          {
+            "id": "r80b2_00022_548f1318",
+            "pattern_file": "r80b2_00022_548f1318.pt",
+            "file_sha256": "e7ce21c4ee052025fc5590f218a4eba5bc9c9c92606eed4f5dc1956af225fe67",
+            "pattern_sha256": "548f13186f412d47695142f8af435e6fdaa86a60c86f0244a849a8b7361590b5"
+          },
+          {
+            "id": "r80b2_00024_946d7bdc",
+            "pattern_file": "r80b2_00024_946d7bdc.pt",
+            "file_sha256": "651a9fcf143fce7a6eb75f3efd3708566f0e9098770956ab78ecacd1fc2b0a56",
+            "pattern_sha256": "946d7bdcc6a4c183807581e181f16a029fd9528b26ee522f350cba6afc606945"
+          },
+          {
+            "id": "r80b2_00026_158aff99",
+            "pattern_file": "r80b2_00026_158aff99.pt",
+            "file_sha256": "e887bcdf145cb59f26b01d98bd91b7b4935f7e6f9807c23b2d9871f934111400",
+            "pattern_sha256": "158aff997b8d57b8020662a1e6509748a4234c9112193e35ca6985fdd1236a21"
+          },
+          {
+            "id": "r80b2_00028_c9efe0f2",
+            "pattern_file": "r80b2_00028_c9efe0f2.pt",
+            "file_sha256": "9c1213f6962e8dea4c0359685077317fb658999ad1fa42ea1d4e5a70d939d093",
+            "pattern_sha256": "c9efe0f22adfc93c62bd79629d82bad059df603d5d8548321c6b9c2b6e483150"
+          },
+          {
+            "id": "r80b2_00030_39fb5a15",
+            "pattern_file": "r80b2_00030_39fb5a15.pt",
+            "file_sha256": "d4cf178b589afb1104df6035af7833b230782a3b20dbb6a856b1ca0102193577",
+            "pattern_sha256": "39fb5a15ce604abeca21b0e490755d2f7ad02dd2e6572b876f5aa1f062be0b60"
+          }
+        ],
+        "manifest_sha256": "73e1c0a3c37cf17e797826eb07e6af2b031bbca1decc27a8a1403d03ced255ff"
+      },
+      {
+        "name": "shard-002_input",
+        "ids": [
+          "r80b2_00001_3ad1d154",
+          "r80b2_00003_adc874f0",
+          "r80b2_00005_3229ae0d",
+          "r80b2_00007_f51c28f2",
+          "r80b2_00009_7db53bed",
+          "r80b2_00011_fead6ce4",
+          "r80b2_00013_e3de41e0",
+          "r80b2_00015_b57d1ac9",
+          "r80b2_00017_b8b0bb5b",
+          "r80b2_00019_4117e03f",
+          "r80b2_00021_77fbc757",
+          "r80b2_00023_79bdc3e0",
+          "r80b2_00025_a593f5d6",
+          "r80b2_00027_eebafc71",
+          "r80b2_00029_56d27972",
+          "r80b2_00031_7268cffa"
+        ],
+        "items": [
+          {
+            "id": "r80b2_00001_3ad1d154",
+            "pattern_file": "r80b2_00001_3ad1d154.pt",
+            "file_sha256": "145197a6e9bbcf25c693f75a0406b694af2d13c470fbdf04dba72242b0b031bc",
+            "pattern_sha256": "3ad1d154c20470a50644964e0dec00bb842f95f2eda825fc25395bf80e4435e5"
+          },
+          {
+            "id": "r80b2_00003_adc874f0",
+            "pattern_file": "r80b2_00003_adc874f0.pt",
+            "file_sha256": "b38c1c66d621d7571f45e1fe0c197e882f61a55829484277521d2c859b99b76e",
+            "pattern_sha256": "adc874f0c7f858336cb3ed62dbe60e61da58dd913c4db1aa679c1e5bf7feba91"
+          },
+          {
+            "id": "r80b2_00005_3229ae0d",
+            "pattern_file": "r80b2_00005_3229ae0d.pt",
+            "file_sha256": "7320713e078cddfadf17408b5ec194a1e70ff9f7c48cdd1de69bbf40e4737295",
+            "pattern_sha256": "3229ae0d4b30fbae5044448da36670c5739abd5978359247999c9d52079de500"
+          },
+          {
+            "id": "r80b2_00007_f51c28f2",
+            "pattern_file": "r80b2_00007_f51c28f2.pt",
+            "file_sha256": "5a0556fffc250fc14e9512b157fd627a44edbf08b081151557ac9e4dad218494",
+            "pattern_sha256": "f51c28f22029f2b42184c4e3fb80159b53686c19690c37579e1d99b0503ef5dd"
+          },
+          {
+            "id": "r80b2_00009_7db53bed",
+            "pattern_file": "r80b2_00009_7db53bed.pt",
+            "file_sha256": "7d1d20471b24914ef86c8c232d165dbe887d509e2408420dec5686d4d4d853cd",
+            "pattern_sha256": "7db53bed767b18e50e6887edf3198ef415d32d6f7d2e1c3d950cda6e7463cb18"
+          },
+          {
+            "id": "r80b2_00011_fead6ce4",
+            "pattern_file": "r80b2_00011_fead6ce4.pt",
+            "file_sha256": "3709998c289dd1565df86fc3a0900d57ab828cfcf0a1067e18e9bde69d8160a2",
+            "pattern_sha256": "fead6ce43cc58c38c29f3c6714adb0da35001774fac4c4f44632d7d00588d01f"
+          },
+          {
+            "id": "r80b2_00013_e3de41e0",
+            "pattern_file": "r80b2_00013_e3de41e0.pt",
+            "file_sha256": "d1c438d8b0ce137c34b4ed9fba61a1b14e127705cb57b46f0648fa521369d2d1",
+            "pattern_sha256": "e3de41e0450739fe026680956ebd5a9f53734c56191515ba6b076e96c70af936"
+          },
+          {
+            "id": "r80b2_00015_b57d1ac9",
+            "pattern_file": "r80b2_00015_b57d1ac9.pt",
+            "file_sha256": "d6d75d95c774f16153700435e0036a4f12afba061af20813d7c5792706ca86ac",
+            "pattern_sha256": "b57d1ac9020c2097a2ba99c0727466b25f2f3695d0d6a311825b1d80f2164ef3"
+          },
+          {
+            "id": "r80b2_00017_b8b0bb5b",
+            "pattern_file": "r80b2_00017_b8b0bb5b.pt",
+            "file_sha256": "e314bbb5b67d2d128c70e93d87f4c2b3e337fbf143802645378bba7413077604",
+            "pattern_sha256": "b8b0bb5b851e217e4b38e9f58d02449db570125fa53f86ead3c8d427b8e843ca"
+          },
+          {
+            "id": "r80b2_00019_4117e03f",
+            "pattern_file": "r80b2_00019_4117e03f.pt",
+            "file_sha256": "7803cca9b7963ac0ed90e7406a4071f2c895080c79e32af2c0a504ac9cd665de",
+            "pattern_sha256": "4117e03f3140d35b749606bf3eb5c410dc54fd6783eb576f8a8a23e39da67c08"
+          },
+          {
+            "id": "r80b2_00021_77fbc757",
+            "pattern_file": "r80b2_00021_77fbc757.pt",
+            "file_sha256": "69ce1caf050810dc2e84964c5e3619db05426c9b2667f017b8a7c8019e3edcf5",
+            "pattern_sha256": "77fbc757133a01d05c36af18b8c54c3500e0d0622871c33c1703e954e6e653b6"
+          },
+          {
+            "id": "r80b2_00023_79bdc3e0",
+            "pattern_file": "r80b2_00023_79bdc3e0.pt",
+            "file_sha256": "24c9e1cb25339571686951f612628337eb18e4dd61702288168914df9622d4ab",
+            "pattern_sha256": "79bdc3e0c9ab9738a075bd004d94bc5585c292a7a5cc9a2c59585e8c46841f95"
+          },
+          {
+            "id": "r80b2_00025_a593f5d6",
+            "pattern_file": "r80b2_00025_a593f5d6.pt",
+            "file_sha256": "2e31f58c4672ae4d0d28e27e1333e2b92fe514c42cb6e2bce0614889de44c1a4",
+            "pattern_sha256": "a593f5d6cd86884337d40542a864ea371d77c00505a1d2ac4f0906ba79b09565"
+          },
+          {
+            "id": "r80b2_00027_eebafc71",
+            "pattern_file": "r80b2_00027_eebafc71.pt",
+            "file_sha256": "9e333455e8cdab48edbcb1f06bea31e2936ff3c944f1d903daa20a7a7bcd7dd1",
+            "pattern_sha256": "eebafc71e53a6ee2c2a14726a315b21535c7af5e39e69bfdac9a32942e00bf11"
+          },
+          {
+            "id": "r80b2_00029_56d27972",
+            "pattern_file": "r80b2_00029_56d27972.pt",
+            "file_sha256": "4ded4bf1751ad4b85096b9ec4eb7caf4c299ed074d9b1aa3ae475c6ee08f4cf2",
+            "pattern_sha256": "56d279729acb3ec2cd0e891cea73368e41c0ae1c7c8b7fab2c184727d34e148a"
+          },
+          {
+            "id": "r80b2_00031_7268cffa",
+            "pattern_file": "r80b2_00031_7268cffa.pt",
+            "file_sha256": "e3335a0ec207cd0209976472a59f5599c95c6a3bedd1568cfcfc42b4927e0ff4",
+            "pattern_sha256": "7268cffacd724d7dddb8bace7b960572bfd1b3bdc891c4e98cfaad8f45268f34"
+          }
+        ],
+        "manifest_sha256": "71623d6b48df546904ad141ebf04de82a287421f6d3e929814d8c2b275d983d6"
+      }
+    ]
+  },
+  "canonical_manifest_sha256": "65de394e4b8a81c720b4ade525ce2eb608a4d0af6b94602abd13790f0bf049aa"
+}

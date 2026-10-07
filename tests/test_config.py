@@ -52,7 +52,11 @@ def test_all_configs_load_and_valid():
         cfg = load_profile_config(p)
         if cfg is not None:
             from script.exploration import validate_exploration_config
-            validate_exploration_config(vars(cfg))
+            if cfg.exploration.get('mode') == 'symmetry_factory_v1':
+                from script.symmetry_factory import validate_factory_config
+                validate_factory_config(vars(cfg))
+            else:
+                validate_exploration_config(vars(cfg))
             simulator_kwargs(cfg)
         else:
             cfg = load_config(p)                                # 白名單/拼錯/缺 target → 這裡 raise

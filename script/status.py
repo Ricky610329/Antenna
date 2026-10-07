@@ -184,17 +184,27 @@ def _fmt(v, spec="{:.2f}"):
     return spec.format(v) if v is not None else "—"
 
 
-def _factory_scan(stale_min=30):
+def _factory_scan(stale_min=30, *, dataset_root=None, scope=None):
     """資料工廠哨兵（2026-07-10;零 token 純腳本層）：掃 NAS 佇列與批次進度,回 (狀態行, 警報)。
     警報條件：①jobs_state/*.fail 存在（worker 保險絲停機）②已認領 job 的 store 超過 stale_min
     分鐘沒新結果（=兩層 watchdog 的外層;內層單筆 timeout 在 dedust run）。"""
     import json as _json
+    from pathlib import Path
     from antenna.utils import DATASET_PATH
-    qp = DATASET_PATH.joinpath("jobs.json")
-    sd = DATASET_PATH.joinpath("jobs_state")
+    root = Path(str(DATASET_PATH)) if dataset_root is None else Path(dataset_root)
+    qp = root.joinpath("jobs.json")
+    sd = root.joinpath("jobs_state")
+    jobs = _json.loads(qp.read_text(encoding="utf-8")) if qp.exists() else []
+    if scope is not None:
+        from script.batch_scope import validate_scope
+        scope = validate_scope(scope)
+        jobs = [job for job in jobs if job.get("scope") == scope]
+    stores = {job["store"] for job in jobs}
     lines, alarms = [], []
     if sd.exists():
         for f in os.listdir(str(sd)):
+            if scope is not None and f.rsplit(".", 1)[0] not in stores:
+                continue
             if f.endswith(".fail"):
                 alarms.append(f"工廠停機: {f}（HFSS 疑壞死,修復後刪 .fail/.claim 重派）")
             elif f.endswith(".done"):
@@ -207,19 +217,21 @@ def _factory_scan(stale_min=30):
                     pass
     if not qp.exists():
         return lines, alarms
-    jobs = _json.load(open(str(qp), encoding="utf-8"))
     now = _time.time()
     for j in jobs:
         st = j["store"]
         if sd.joinpath(st + ".done").exists():
             continue
         claimed = sd.joinpath(st + ".claim").exists()
-        rp = DATASET_PATH.joinpath(st, "results.json")
-        mp = DATASET_PATH.joinpath(j["input"], "manifest.json")
+        rp = root.joinpath(st, "results.json")
+        mp = root.joinpath(j["input"], "manifest.json")
         total = len(_json.load(open(str(mp), encoding="utf-8"))) if mp.exists() else "?"
         if rp.exists():
             res = _json.load(open(str(rp), encoding="utf-8"))
-            done = sum(1 for v in res.values() if "wm" in v)
+            # Named observation-only profiles intentionally have no wm field.
+            # This is progress metadata; physical truth still requires validate_store.
+            done = sum(1 for v in res.values() if isinstance(v, dict) and
+                       "error" not in v and (v.get("status") == "ok" or "wm" in v))
             age = (now - os.path.getmtime(str(rp))) / 60
             lines.append(f"  job {st}: {done}/{total} 完成,最新結果 {age:.0f} 分前"
                          f"{'（已認領）' if claimed else '（未認領）'}")
@@ -245,12 +257,16 @@ def main():
                     help="監看模式：--match 到的 run 只要有一個不在跑 → 印警報、exit 1（給排程當 watchdog）")
     ap.add_argument("--factory", action="store_true",
                     help="資料工廠哨兵：掃 dedust 佇列進度＋卡住/停機偵測（配 --alert 推播;零 token 純腳本）")
+    ap.add_argument("--dataset-root", default=None, help="--factory 指定私人實驗 dataset")
+    ap.add_argument("--scope", default=None, help="--factory 只看指定 scope")
     ap.add_argument("--stale", type=int, default=30, help="--factory 判卡住的無進度分鐘數")
     ap.add_argument("--notify-topic", default=None, help="警報時推播到 ntfy.sh/<主題>（手機 ntfy app 訂閱同主題）")
     args = ap.parse_args()
+    if not args.factory and (args.dataset_root is not None or args.scope is not None):
+        ap.error("--dataset-root/--scope require --factory")
 
     if args.factory:
-        lines, alarms = _factory_scan(args.stale)
+        lines, alarms = _factory_scan(args.stale, dataset_root=args.dataset_root, scope=args.scope)
         print("資料工廠狀態:")
         for ln in lines or ["  （佇列空）"]:
             print(ln)
@@ -264,6 +280,8 @@ def main():
         elif args.alert and not args.match:
             print("✓ 工廠無警報")
             return
+        if args.dataset_root is not None or args.scope is not None:
+            return  # A scoped request must not fall through to the global run scan.
 
     prev = _load_snapshot()
     runs = scan(args.match, prev)
