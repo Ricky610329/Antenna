@@ -1,0 +1,198 @@
+{
+  "created_utc": "2026-10-07T17:12:30.332837+00:00",
+  "kind": "r80_first_mature_measured_performance_window",
+  "scope": "symmetry_filter_20261007",
+  "status": "progressing",
+  "notify_user": false,
+  "window": {
+    "generation_ids": [
+      "data-v001",
+      "data-v002",
+      "data-v003"
+    ],
+    "valid_unique_by_generation": [
+      48,
+      48,
+      80
+    ],
+    "valid_unique_total": 176,
+    "all_generations_terminal": true,
+    "all_generations_mature": true
+  },
+  "primary_baseline": {
+    "frozen_rows": 49,
+    "historical_repeat_only_in_baseline": 1,
+    "baseline_best_factory_db": -7.828050851821899
+  },
+  "sensitivity_baseline": {
+    "nonrepeat_rows": 48,
+    "same_verdict": true,
+    "same_best_and_exact_fronts": true,
+    "no_later_parent_substitution": true
+  },
+  "generations": [
+    {
+      "generation_id": "data-v001",
+      "valid_observations_at_fit": 49,
+      "valid_unique": 48,
+      "dispatched_unique": 48,
+      "terminal_errors": 0,
+      "mature": true,
+      "relevant_count": 10,
+      "material_progress": true,
+      "best_factory_delta_db": 1.4519519805908203,
+      "best_factory_margin_db": -6.376098871231079,
+      "new_2d_points": 3,
+      "new_3d_points": 4
+    },
+    {
+      "generation_id": "data-v002",
+      "valid_observations_at_fit": 99,
+      "valid_unique": 48,
+      "dispatched_unique": 48,
+      "terminal_errors": 0,
+      "mature": true,
+      "relevant_count": 15,
+      "material_progress": true,
+      "best_factory_delta_db": 6.129657983779907,
+      "best_factory_margin_db": -0.24644088745117188,
+      "new_2d_points": 4,
+      "new_3d_points": 4
+    },
+    {
+      "generation_id": "data-v003",
+      "valid_observations_at_fit": 155,
+      "valid_unique": 80,
+      "dispatched_unique": 80,
+      "terminal_errors": 0,
+      "mature": true,
+      "relevant_count": 0,
+      "material_progress": false,
+      "best_factory_delta_db": -4.024806976318359,
+      "best_factory_margin_db": -4.271247863769531,
+      "new_2d_points": 0,
+      "new_3d_points": 0
+    }
+  ],
+  "window_best": {
+    "id": "r80c91d71565g_00019_5a42476c",
+    "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+    "value_db": -0.24644088745117188
+  },
+  "no_progress_suffix": {
+    "generations": [
+      "data-v003"
+    ],
+    "valid_unique": 80,
+    "stall_requires_consecutive_mature_generations": 3,
+    "stall_requires_at_least_valid_unique": 96
+  },
+  "primary_receipt": {
+    "file_sha256": "a57d6e6abfec8c329e054934a6f8980f96ac693eb09df2bb25d4b2e2cd075f77",
+    "receipt_id": "895b9d4a5c12744264fd4205a2ee5c2e052b162dd23e70b566a22849d4e78d95",
+    "notification_window_id": "a83e924e5f558161abd6a93826cf8c7fdf6234d4509681f5da924d97efa33bd7"
+  },
+  "sensitivity_receipt": {
+    "file_sha256": "4202b97bcce13156793f8203f7910196763e60671601d6579b314cec58a899cc",
+    "receipt_id": "f4d2645994692befe44388fd14b6833e2435a5904ae52a02e77ab47e2c86cd45",
+    "notification_window_id": "cfaa9d5b43d0afc878f39b522f0657dd60410d56f59a0e857f3d1c817909e716"
+  },
+  "diagnostic_script_sha256": "f412469bbff6167b748e569f088675eb3bad0f4b6e5a36878e8643ad78ee7cdf",
+  "predeclared_policy_sha256": "6b60c0d120f33ad47290235541f0deea61590e336cbc50dc413def467d807842",
+  "private_archive": {
+    "archive": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\performance-window-v001-v003_20261008",
+    "manifest_sha256": "634ff5aca5ba4bf6fb86a42903d186f9594ab25b67375c1d1f9d8ac634ee183d",
+    "payload_file_count": 643,
+    "payload_bytes": 6382966,
+    "publication_hash_replay_passed": true
+  },
+  "verification": {
+    "created_utc": "2026-10-07T17:10:58.817583+00:00",
+    "canonical_run": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_performance_window_20261008\\run-009",
+    "primary_receipt_id": "895b9d4a5c12744264fd4205a2ee5c2e052b162dd23e70b566a22849d4e78d95",
+    "sensitivity_receipt_id": "f4d2645994692befe44388fd14b6833e2435a5904ae52a02e77ab47e2c86cd45",
+    "conductor_critical_raw_replays": [
+      {
+        "id": "single_r80_symmetry_expl_b01_022_122069dd",
+        "pattern_sha256": "122069dd5437ac01ab6d94d03db9a3148d18c8ff606669ba9d2b277ed0475917",
+        "exact_left_right_metal_mirror": true,
+        "sample_sha256": "f383898602e5173dc1bf1df57be499edc15df0c08254f9e09890e6c24e989218",
+        "rad_sha256": "6e9d26c5a3d3c6fdfd3112520dd4a1141edbbb6b9d9034e38bc2eaed172b07aa",
+        "s11_margin_db": -7.828050851821899,
+        "gain_margin_db": -4.929992735385895,
+        "factory_margin_db": -7.828050851821899,
+        "radiation_margin_db": -4.3661423325538635,
+        "radiation_margin_clipped_db": -4.3661423325538635,
+        "worst_s11_band_db": -2.1719491481781006,
+        "minimum_gain_band_dbi": -0.9299927353858948
+      },
+      {
+        "id": "r80cbdb25da6g_00005_e6d15dbf",
+        "pattern_sha256": "e6d15dbf28848ae772f436bce39fa26016cd983568ddcddc1403f9c74becb9f0",
+        "exact_left_right_metal_mirror": true,
+        "sample_sha256": "44c7c2f43ae41821dcba3112c3d3f1de8a3db8c5ded679e3719790d95648c99f",
+        "rad_sha256": "368e791cacc94ff270cb348405c7ddf72bce5c3d752c692c25685ff4049158e0",
+        "s11_margin_db": -6.376098871231079,
+        "gain_margin_db": -5.453257441520691,
+        "factory_margin_db": -6.376098871231079,
+        "radiation_margin_db": 0.15993785858154297,
+        "radiation_margin_clipped_db": 0.15993785858154297,
+        "worst_s11_band_db": -3.623901128768921,
+        "minimum_gain_band_dbi": -1.453257441520691
+      },
+      {
+        "id": "r80c91d71565g_00019_5a42476c",
+        "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+        "exact_left_right_metal_mirror": true,
+        "sample_sha256": "3894a2a8878a7f28bcaedf6524f47a2d2cb7b26eb434be12dac59e8477eb96a1",
+        "rad_sha256": "879595d5c0084b6be070daecae9d048ec69190eeb5f19effee4624a20a2b91e1",
+        "s11_margin_db": -0.2390899658203125,
+        "gain_margin_db": -0.24644088745117188,
+        "factory_margin_db": -0.24644088745117188,
+        "radiation_margin_db": 0.11250185966491699,
+        "radiation_margin_clipped_db": 0.11250185966491699,
+        "worst_s11_band_db": -9.760910034179688,
+        "minimum_gain_band_dbi": 3.753559112548828
+      },
+      {
+        "id": "r80c452a2930g_00019_e91ce82f",
+        "pattern_sha256": "e91ce82f720fc38cac93d4e21fd777dd8bc7c4c0c55156b2abff405e578bb663",
+        "exact_left_right_metal_mirror": true,
+        "sample_sha256": "4f5f721131cb272117dd4e0c23ec7cdbaf4073da0c1221e96a1a46ef169d031f",
+        "rad_sha256": "670ab630d1eb296e629caf5495a14be3406232a5af02858f1fdaf3a22744a463",
+        "s11_margin_db": -4.271247863769531,
+        "gain_margin_db": -1.0485718250274658,
+        "factory_margin_db": -4.271247863769531,
+        "radiation_margin_db": -2.1483370520872995,
+        "radiation_margin_clipped_db": -2.1483370520872995,
+        "worst_s11_band_db": -5.728752136230469,
+        "minimum_gain_band_dbi": 2.951428174972534
+      }
+    ],
+    "independent_review": {
+      "all_primary_rows_replayed": 225,
+      "all_sensitivity_rows_replayed": 224,
+      "final_revision_pass": true
+    },
+    "scope_limits": [
+      "One completed zero-error first window, not an automated notifier.",
+      "Current real evidence path requires complete successful stores; the general >=90% terminal-yield path remains unsupported.",
+      "Marker/result error validation compares counts, not exact error-ID sets; all actual 11 shards have zero errors.",
+      "Generated scalar checks do not establish end-to-end terminal-error acceptance.",
+      "The 48-row result was computed before correcting the baseline interpretation; root had not seen or published its outcomes.",
+      "The original policy permits the frozen repeat only as historical baseline truth; both 49/48 analyses are preserved.",
+      "Single-solve measured progression is not a certified record, spec pass, or causal symmetry effect."
+    ]
+  },
+  "generated_scalar_checks_passed": 15,
+  "immutable_bound_files": 146,
+  "stable_ids_across_fresh_run008_run009": true,
+  "science_scope": "Single-solve measured completed-cohort progression, not a certified record, new spec pass, model-accuracy improvement or causal symmetry effect.",
+  "task_state": {
+    "r80_target_unique": 5000,
+    "r80_complete": false,
+    "r81_dispatched": false,
+    "r81_positive_wm_and_independent_repeat_complete": false
+  },
+  "unchanged_background_controller_pid": 16556
+}
