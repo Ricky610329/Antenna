@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-07T11:22:37.342265+00:00",
+  "snapshot": "tmp\\r80_factory_20261007\\first_fit_snapshot",
+  "source_hashes": {
+    "manifest.json": "f439a07e344c6916a9831c2ec80fb33c5a827633f39df4f3ee6919675d7dda43",
+    "measurement.json": "439093feb9f4a49276d24df9972501d48d2c90416b52b40a9edaa826816e7d96",
+    "score_spec.json": "7cd051b4c2523cd7611a874dfdcab7fbb0d2f3d5b223f8adf01e8abf444d006b",
+    "results.json": "d712220990f8334d676ca7d8a7a1f97fe68505da132745d2b9993897f5a9dd4a"
+  },
+  "unique_n": 49,
+  "exact_metal_mirror_n": 49,
+  "arms": {
+    "random": 12,
+    "geometry": 10,
+    "blind_buffer": 26,
+    "repeat": 1
+  },
+  "gain_band_ge4_n": 0,
+  "s11_band_le_minus10_n": 0,
+  "both_band_n": 0,
+  "distribution": {
+    "gain28": {
+      "min": -21.557796478271484,
+      "p25": -9.348747253417969,
+      "median": -4.278112888336182,
+      "p75": -2.403033971786499,
+      "max": 1.932254433631897
+    },
+    "s11_28": {
+      "min": -10.434937477111816,
+      "p25": -3.9155519008636475,
+      "median": -2.4278314113616943,
+      "p75": -1.7761822938919067,
+      "max": -1.2624186277389526
+    },
+    "s11_margin": {
+      "min": -8.996982216835022,
+      "p25": -8.590713739395142,
+      "median": -8.164899587631226,
+      "p75": -7.827641725540161,
+      "max": -4.822835922241211
+    },
+    "gain_margin": {
+      "min": -41.41633987426758,
+      "p25": -20.230241775512695,
+      "median": -16.640820503234863,
+      "p75": -10.688477039337158,
+      "max": -4.929992735385895
+    },
+    "phi0_mirror_power_45": {
+      "min": 0.07096794764271859,
+      "p25": 0.19068611516407116,
+      "median": 0.2685183610612108,
+      "p75": 0.4209303898590698,
+      "max": 0.7734613218194576
+    },
+    "phi90_mirror_power_45": {
+      "min": 0.0012980087781929456,
+      "p25": 0.013086438442593771,
+      "median": 0.02091448047060394,
+      "p75": 0.04224892354085307,
+      "max": 0.5464318445255858
+    },
+    "phi0_mirror_power_90": {
+      "min": 0.06212179095948318,
+      "p25": 0.1851762945409706,
+      "median": 0.2571506574417131,
+      "p75": 0.342394946549549,
+      "max": 0.8155334115406366
+    },
+    "phi90_mirror_power_90": {
+      "min": 0.0007554843531454842,
+      "p25": 0.011116603132274886,
+      "median": 0.015622698645491463,
+      "p75": 0.04935062630987465,
+      "max": 0.5087517003948814
+    }
+  },
+  "limitations": [
+    "First partial batch; unbalanced generation arms and no matched asymmetric control.",
+    "No causal claim that metal symmetry improves field symmetry.",
+    "Gain frequency curve is RealizedGainTotal; radiation cuts are GainTotal.",
+    "Linear power residual is descriptive, not a new acceptance specification.",
+    "Left-right metal imbalance is identically zero; the historical map x-axis would collapse."
+  ]
+}
