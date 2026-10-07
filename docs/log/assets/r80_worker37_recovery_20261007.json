@@ -1,0 +1,67 @@
+{
+  "created_utc": "2026-10-07T15:35:15.505395+00:00",
+  "store": "dedust_r80c91d71565g02",
+  "complete_raw_replay": 16,
+  "original_15_successes_unchanged": true,
+  "recovered_id": "r80c91d71565g_00015_659f82ca",
+  "new_result": {
+    "status": "ok",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "labels": [
+      "S11",
+      "Gain"
+    ],
+    "freqs": [
+      24.0,
+      24.5,
+      25.0,
+      25.5,
+      26.0,
+      26.5,
+      27.0,
+      27.5,
+      28.0,
+      28.5,
+      29.0,
+      29.5,
+      30.0,
+      30.5,
+      31.0,
+      31.5,
+      32.0
+    ],
+    "pattern_sha256": "659f82caaa0ff11a4587d84ed340a44481f49fb364306ae0e9c50912554f8361",
+    "lineage_id": "r80c91d71565g_00015_659f82ca",
+    "sample_file": "7ec2a61723ed5c0d.pt",
+    "time_s": 207.0,
+    "geom": "single_v1",
+    "dbw": 0.1,
+    "gain28": -0.6006442308425903,
+    "s11_28": -3.55330491065979,
+    "rad_file": "rad/r80c91d71565g_00015_659f82ca.pt",
+    "performance_gate": false,
+    "sample_sha256": "e7d5209103ebd70bc5ff9f64d1aa3d05a9c5aa6072fd60d7a693b42e837e31ce",
+    "rad_sha256": "b3ca38cb6eb5e51f4be68959961cb3da2e8ce10ff48beee48216bd553d6a83aa"
+  },
+  "done": {
+    "machine": "140.123.106.218",
+    "at": "2026-10-07 23:15:11",
+    "errors": 0,
+    "error_ids": []
+  },
+  "claim": {
+    "machine": "140.123.106.218",
+    "at": "2026-10-07 23:11:26",
+    "prior_fail": [
+      "140.123.106.37"
+    ]
+  },
+  "fail_absent": true,
+  "no_live_state_changed_here": true,
+  "worker37_new_claim": {
+    "machine": "140.123.106.37",
+    "at": "2026-10-07 23:31:35"
+  },
+  "worker37_runtime_revision_unverified": true
+}
