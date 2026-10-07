@@ -1,0 +1,30 @@
+# User-authorized 2026-10-07 rolling data factory; supplements the immutable R80 pilot.
+name: single_r80_symmetry_factory
+port: single
+scope: symmetry_filter_20261007
+measurement:
+  name: single25_db100_rad28_v1
+  port: single
+  labels: [S11, Gain]
+  geometry: {geom: single_v1, pixel_count: 25, diag_bridge_w: 0.1}
+  sweep: {start_ghz: 24, stop_ghz: 32, step_ghz: 0.5, type: Interpolating}
+  solver: {setup_freq_ghz: 28, open_region_freq_ghz: 28, max_delta_s: 0.02, max_passes: 6, min_passes: 5, min_converged: 5}
+score_spec:
+  name: symmetry_observation_only_v1
+  bands: []
+runtime: {timeout: 1200}
+exploration:
+  mode: symmetry_factory_v1
+  target_valid_unique: 10240
+  seed: 80100701
+  wave_size: 48
+  shard_size: 16
+  update_every_valid_unique: 48
+  max_guided_outstanding: 96
+  prepared_blind_pool_size: 2048
+  guided_priority: 1
+  blind_priority: 6
+  selection_fractions: {performance_lcb: 0.4, disagreement: 0.3, blind: 0.3}
+  historical_data_role: pretraining_prior
+  historical_radiation_role: soft_signal_pending_prospective_validation
+  performance_gate: false

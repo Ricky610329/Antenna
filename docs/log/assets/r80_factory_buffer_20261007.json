@@ -1,0 +1,162 @@
+{
+  "preparation": {
+    "target_valid_unique": 10240,
+    "prepared_blind": 2048,
+    "initial_blind_dispatch": 64,
+    "shard_size": 16,
+    "priority": 6,
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "seed": 80100701,
+    "seed_count": 34,
+    "update_every_valid_unique": 48,
+    "policy": "New validated unique HFSS data feed batch SM updates; repeats never increase unique count.",
+    "config_sha256": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+    "pool_manifest_sha256": "db87a1a0ed772dde2167845e25ea7a1ea55210455ed10e37c3b347836e3de33e"
+  },
+  "dispatch": {
+    "time_utc": "2026-10-07T10:34:56.595086+00:00",
+    "dataset": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset",
+    "stores": [
+      "dedust_r80g00111",
+      "dedust_r80g00112",
+      "dedust_r80g00113",
+      "dedust_r80g00114"
+    ],
+    "count": 64,
+    "priority": 6,
+    "duplicate_gate_sha256": "343de199b3f1a431fff5e85ad9d188072e6f9bdeafcc424266c6c13683435062"
+  },
+  "duplicate_gate": {
+    "time_utc": "2026-10-07T10:34:42.889093+00:00",
+    "dataset": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset",
+    "counts": {
+      "dedust_r80g00111_input": 16,
+      "dedust_r80g00112_input": 16,
+      "dedust_r80g00113_input": 16,
+      "dedust_r80g00114_input": 16
+    },
+    "manifest_hashes": {
+      "dedust_r80g00111_input": "aa60053e3bd95ff4aea689237c311714edea2ee066cec48c10cf9d69c0b33ca9",
+      "dedust_r80g00112_input": "58efffd3e765d2db8c8f4c6c0becde1eac413deaf20369fc223897df3daab485",
+      "dedust_r80g00113_input": "d9acb9fa6386c9dc248a4cf05a46a0d464006fb06b0dd739a97201e7166274d8",
+      "dedust_r80g00114_input": "7e9252428b4926e766b8ea8e8ea3960065239a1f6defab0bbdad4a3d156f3c5a"
+    }
+  },
+  "manuscript_method": "docs/paper/manuscript-draft-2026-10.html#method",
+  "manuscript_sha256": "cc0ea28598ef2a5d99a2681c9b7410eedd1d85d43d75edf5eecaa677faf1701d",
+  "shards": [
+    {
+      "input": "dedust_r80g00111_input",
+      "count": 16,
+      "fresh": 8,
+      "variant": 8,
+      "files": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "manifest.json": "aa60053e3bd95ff4aea689237c311714edea2ee066cec48c10cf9d69c0b33ca9",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "r80g001_0000_40bd4b84.pt": "4a64ff95525608e2e51fdbeea193af161e28ce6202e166f2dc44b10dedfa1d6f",
+        "r80g001_0001_465bd63c.pt": "38dbc15b66f3f663346ad309f73b733c4dad1ce094fc79385975825c14ce0d1f",
+        "r80g001_0002_4c9f3012.pt": "fdf02b80a3cc0a475e8556a26906e8092e4dbd1dd3dc6ed53c73129bd83b8702",
+        "r80g001_0003_2b25f18b.pt": "824d4e25a4bc7fc6cb00a7e217f16d6e218696e6e374f0a7f47ce3334110547d",
+        "r80g001_0004_08603294.pt": "bf5d202780439310944a8fe515293f2d6a580a35e67036fac8d7ad028891fe65",
+        "r80g001_0005_dee5f6c9.pt": "c440640eed8125c40335acdee67c8352f748c1d6dae9f6b21ab6d5456f0f0311",
+        "r80g001_0006_31389f50.pt": "398f099b3bed5194b0c00ba71526e373dc8dd9b02a6993d953e3550dd2622057",
+        "r80g001_0007_fb1365b9.pt": "af3d9841c27e90b19e117f3478bfa99323e94678c86a77e9bd2f84bb46f72961",
+        "r80g001_1032_1387ad63.pt": "1521c49d0824bee31ccc4728121abe247652d89bf680a359ce84a5e113d7a2b5",
+        "r80g001_1033_6175db78.pt": "62a1900be415c715ba88daefc344455e5999bbda05078f988f2c5056a18e9b83",
+        "r80g001_1034_5c24682c.pt": "568ab81b7cff793242a9431f9d9dccf6586d45bd11f999f670ad88660a53f384",
+        "r80g001_1035_354f3f4b.pt": "3c7cdefc27f0481ba7394c38652ec2d6c44e799452615161902ff590edd54689",
+        "r80g001_1036_6e7b0d77.pt": "c6a4cbcd52f7912ac531867e4749b1565d9a48064ae781f2e3d1a68d1e170bf9",
+        "r80g001_1037_c4406adb.pt": "5cf68c4e732deb03ac99f94ff90f394c4c54d059699f579b4cfc130fd1601235",
+        "r80g001_1038_40eaa750.pt": "7d682f592ef77e02d060986aed3334ca38a5438276f122fbbb4783ff1a256a41",
+        "r80g001_1039_23133a9e.pt": "81de65c63da338340f2c55d29c19c4de38f38bf238f9d3ac42d3abbe87e8966f",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca"
+      }
+    },
+    {
+      "input": "dedust_r80g00112_input",
+      "count": 16,
+      "fresh": 8,
+      "variant": 8,
+      "files": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "manifest.json": "58efffd3e765d2db8c8f4c6c0becde1eac413deaf20369fc223897df3daab485",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "r80g001_0008_93f4fa4b.pt": "65b868a6a71795819ed510002f278be3ddfdbc9df6001c85a0b91592a141054c",
+        "r80g001_0009_14c4f19b.pt": "0ed8c874a591abf9beed8889a8fc4b1c3efa887d260afa2a829af84ba93fe808",
+        "r80g001_0010_97bf1bbd.pt": "710ee6d61bb2500cd166bb1ff14cc79cd581e680ef6b817970486143515ebf5a",
+        "r80g001_0011_9dae897f.pt": "e6a95d9f4a1a0b4470a8a293854a83fffdeb556a2a23fb93d5ab85926ec3efea",
+        "r80g001_0012_4bb72ad1.pt": "c8361ea5169aa833e1ee48d1437182444d66d3ecbd8f06186dacbd164aaf4163",
+        "r80g001_0013_d52bda8f.pt": "78806960acc688dd5836a4a6ed7830946d6a431d1e99496a6de7d511e560199a",
+        "r80g001_0014_40dfb8aa.pt": "a6ae9b235686f0de93496db72f3069e38dfd0942f2f0449b3e91927446147539",
+        "r80g001_0015_5e218d11.pt": "3a0a44211e04e81567e26fd8369d7c583b1c79ac4626a8814ba0b4b37988cd39",
+        "r80g001_1040_e5c8e2e1.pt": "24dbd59c18b5032ab576edfb8fa30600ecf2d02c351b5c0441a502eed9f4cb5e",
+        "r80g001_1041_680551b1.pt": "4a3dd39ef8c43f4a2986bd47410ba81ad2288a68b7c2ad69fe5fd972778718ae",
+        "r80g001_1042_c44bc7f2.pt": "d1fe4c32c53ece2dab2c7c8aa0598c696c7104256d2a08d7bb0a04095ea59f65",
+        "r80g001_1043_7a4faee0.pt": "0cdbf50b4687f1d44d3002cfa46ce6b977d94ca051625fbdbc177f85d570e059",
+        "r80g001_1044_d5a69673.pt": "d4f8b621657a114a1e028d93660a815f29da29c167512e5efc7628b62ac38f6e",
+        "r80g001_1045_2753ce6b.pt": "c0527a9e9e0128348d3c1d754ed5844210d8bf53bbce56b903548e5a4b8e5df1",
+        "r80g001_1046_23643355.pt": "01cb400ce8797770112a4796e7f391631fdef52bfe4e3f70d81834d47389f1a2",
+        "r80g001_1047_e48f1972.pt": "7ce74794515a8a6e06bfae5a738a536f5f7b47e29264ac764224529b0e85c3a6",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca"
+      }
+    },
+    {
+      "input": "dedust_r80g00113_input",
+      "count": 16,
+      "fresh": 8,
+      "variant": 8,
+      "files": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "manifest.json": "d9acb9fa6386c9dc248a4cf05a46a0d464006fb06b0dd739a97201e7166274d8",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "r80g001_0016_02207149.pt": "7e2771e34d270794ab320c9eda9e62d72f3ff8797bae5ed325636a636628822e",
+        "r80g001_0017_d1c0028d.pt": "bbd6f7e9a237076c78e9ffad0110ad8b503bbdf68e102edec1fc0017d63d6081",
+        "r80g001_0018_a7bc9ffd.pt": "cdc64b294d29863c17145938f0d4c50e45e3d43d59a53492c4f463daeadc82b0",
+        "r80g001_0019_a0846001.pt": "3e5f2008f9b47fa8e69332667a6a5c8b9339786c131ea926b10d94cb4a021aa1",
+        "r80g001_0020_76da6c00.pt": "c60bab41c2dd2dd34f0396d5aba2bf2cad43d71453de30232018ebf406cbdfa4",
+        "r80g001_0021_457ac7e3.pt": "2a4d31ddd4bb01988f0743b3ff2dca70f0281b03105a9d8e5c786e128befe450",
+        "r80g001_0022_847d53b4.pt": "61390e5b59c9953f1a8287331b74c8cb5e541f841325ff3e46dfc46359d241b4",
+        "r80g001_0023_a8689587.pt": "4ded027c0155b283b678703a23a32fbda50f1fcc051a6b4b367550e2a8313ea3",
+        "r80g001_1048_e3e16f99.pt": "b58b56ba93b3f033c60ec6dc5069f240cf50fe3a347476b0f6c76c8a15e8b392",
+        "r80g001_1049_5b97e1b8.pt": "e966f0b153fe7a4948a8a403d2dd5f0fb07929e21986cebc4921689d0c4dfdcc",
+        "r80g001_1050_763544ea.pt": "85556bc8255f99b4e19c6add286eecb5e90ca02a7777e26381c1a0a844a58bd6",
+        "r80g001_1051_fc23f2e8.pt": "fcbdb39f5ebf3b1afe42fe52a3cdf94ef2f1c1ad9c98f6f85f2215b469825567",
+        "r80g001_1052_f57d7611.pt": "3a5b9192b0050cdaf76263ebc476b036bf66e7d86e7cfb76da0c3d4b2684cd61",
+        "r80g001_1053_40f43b59.pt": "0f2920a17a1d5e198ce78f5748955dda9a43c69166b396c87aec408dd011cc12",
+        "r80g001_1054_6a2d9a7a.pt": "2e25bd48dd87756f497d4d01bd3ba61f63536328bcec351228b43e4919810ed5",
+        "r80g001_1055_f78c682e.pt": "7cf31ec44189ee679609ddde7c6a6ba1121327859aaad32452e48b79a687b84e",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca"
+      }
+    },
+    {
+      "input": "dedust_r80g00114_input",
+      "count": 16,
+      "fresh": 8,
+      "variant": 8,
+      "files": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "manifest.json": "7e9252428b4926e766b8ea8e8ea3960065239a1f6defab0bbdad4a3d156f3c5a",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "r80g001_0024_6fc27c12.pt": "d74991016a4d7c507ab10a3b211c146b273d33284cb94e9bc0fa12b82528629b",
+        "r80g001_0025_7187b5c1.pt": "8814e0fa92d9380688e3a8cabb29c80ccb642f38e297dac56f284b2127faf1ef",
+        "r80g001_0026_fc255a28.pt": "51efce019666de85ef444eaa5e1840cd5d8d438582c80c4013faabb069915f07",
+        "r80g001_0027_3d9f7789.pt": "0183ff33440cb25f86971e6050e4497aec4a3c58ae620d3f9aa695568f23d551",
+        "r80g001_0028_9e233a75.pt": "6b010b2d03376e683fddeec17b95c9a6cc8a38c317b1831018b90e19b6da315f",
+        "r80g001_0029_0de97fd4.pt": "082c13a1c4991c34643f6553f628948055018ee6b02afa8adc7ca06c5b17be6f",
+        "r80g001_0030_eebecbf7.pt": "abf3dd0134445c9cd41c069118056ba31323315f9da3f0828bb01794b171c77d",
+        "r80g001_0031_a5aff919.pt": "45f64b5ad0f9101e43f7062f2b19ba6c14c2547992bd1a1c2ae87e02c671c195",
+        "r80g001_1056_cbe87677.pt": "4241145632682a50e46fd9bab8cc19fe27e8ad78b99991f1cc881229e1041803",
+        "r80g001_1057_7ca74e55.pt": "839e63c040606f4da5a03e37dd72a1cfaa92d885850d09ad7af2df6d8ea23c4f",
+        "r80g001_1058_0317b110.pt": "c0741edbc2d074bd4d5d11108d8d9a75bf613f9eed2b739283bb335dd400cd3e",
+        "r80g001_1059_81eb9ea1.pt": "71d9b6058354ea13d72f6c69dd4367d6a1c94e81f1727c11788c750bb91680e7",
+        "r80g001_1060_1b2e3127.pt": "d5ce3fa2277a794ea0c09dc4fb2dba576d05e0e2ec234fe0bbb54fc9be128da1",
+        "r80g001_1061_9fc9e411.pt": "64f6590c6d6ed1d16b9157563c7e2a402314e5669007aeaa3391e809df0ef945",
+        "r80g001_1062_0ef0bb4a.pt": "d98fb50a53122383b8d794dafd73252e2b3c909189b04f1c8fac96bb999d360e",
+        "r80g001_1063_60c99957.pt": "97836b1bd52d7c15b5ed1e2299c790290665d73befb5793345e4adf40233d805",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca"
+      }
+    }
+  ],
+  "measured_count_from_buffer_not_yet_audited": null
+}

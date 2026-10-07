@@ -1,0 +1,195 @@
+{
+  "timestamp_utc": "2026-10-07T10:16:35.727587+00:00",
+  "dataset_root": "T:\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset",
+  "jobs": [
+    {
+      "store": "dedust_r80b1",
+      "input": "dedust_r80b1_input",
+      "scope": "symmetry_filter_20261007",
+      "expected": 48,
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:02:01.603646+00:00",
+          "payload": {
+            "machine": "140.123.106.218",
+            "at": "2026-10-07 18:02:01"
+          }
+        }
+      },
+      "results": 3,
+      "ok": 3,
+      "errors": [],
+      "last_results": [
+        [
+          "single_r80_symmetry_expl_b01_002_4b000154",
+          {
+            "status": "ok",
+            "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+            "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+            "labels": [
+              "S11",
+              "Gain"
+            ],
+            "freqs": [
+              24.0,
+              24.5,
+              25.0,
+              25.5,
+              26.0,
+              26.5,
+              27.0,
+              27.5,
+              28.0,
+              28.5,
+              29.0,
+              29.5,
+              30.0,
+              30.5,
+              31.0,
+              31.5,
+              32.0
+            ],
+            "pattern_sha256": "4b00015496a7db3ec042990d87e4753e2fc8447eb091eb22cf67e2bd0c87fc0e",
+            "lineage_id": "4b00015496a7db3ec042990d87e4753e2fc8447eb091eb22cf67e2bd0c87fc0e",
+            "sample_file": "03a3313ac7bd0f72.pt",
+            "time_s": 168.0,
+            "geom": "single_v1",
+            "dbw": 0.1,
+            "gain28": -7.100048065185547,
+            "s11_28": -10.434937477111816,
+            "rad_file": "rad/single_r80_symmetry_expl_b01_002_4b000154.pt",
+            "performance_gate": false,
+            "sample_sha256": "fc489cd836feff8a150356f5c865f7051aef5fe11a96bd406cdfd29e59b88074",
+            "rad_sha256": "fc0f7fc42a496e43e1be802b4ba8a896d4ded83ad6c376a8944d9ee238ab0393"
+          }
+        ]
+      ]
+    },
+    {
+      "store": "dedust_r80repeat1",
+      "input": "dedust_r80repeat1_input",
+      "scope": "symmetry_filter_20261007",
+      "expected": 2,
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:03:16.330784+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:00:56"
+          }
+        },
+        "done": {
+          "mtime_utc": "2026-10-07T10:10:29.158457+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:08:09",
+            "errors": 0,
+            "error_ids": []
+          }
+        }
+      },
+      "results": 2,
+      "ok": 2,
+      "errors": [],
+      "last_results": [
+        [
+          "dedust_r80repeat1_01_7897dc20",
+          {
+            "status": "ok",
+            "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+            "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+            "labels": [
+              "S11",
+              "Gain"
+            ],
+            "freqs": [
+              24.0,
+              24.5,
+              25.0,
+              25.5,
+              26.0,
+              26.5,
+              27.0,
+              27.5,
+              28.0,
+              28.5,
+              29.0,
+              29.5,
+              30.0,
+              30.5,
+              31.0,
+              31.5,
+              32.0
+            ],
+            "pattern_sha256": "7897dc207a5ebfd12709d043c9c6f72404763d7cc3ca8020635621385b57490a",
+            "lineage_id": "7897dc207a5ebfd12709d043c9c6f72404763d7cc3ca8020635621385b57490a",
+            "sample_file": "ba9a7c191e269f04.pt",
+            "time_s": 188.0,
+            "geom": "single_v1",
+            "dbw": 0.1,
+            "gain28": -12.526959419250488,
+            "s11_28": -9.262704849243164,
+            "rad_file": "rad/dedust_r80repeat1_01_7897dc20.pt",
+            "performance_gate": false,
+            "sample_sha256": "064686f0ad1a29f6ca5be5226f834e743172e313db880043c7f282df5a3e8b40",
+            "rad_sha256": "9b6147c76bef7d57fd2d0ffa1fdff89f5a5253ab2c90f548c745793569e74db6"
+          }
+        ]
+      ]
+    },
+    {
+      "store": "dedust_r80repeat2",
+      "input": "dedust_r80repeat2_input",
+      "scope": "symmetry_filter_20261007",
+      "expected": 2,
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:10:29.193246+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:08:09"
+          }
+        }
+      },
+      "results": 1,
+      "ok": 0,
+      "errors": [
+        {
+          "id": "dedust_r80repeat2_00_001c970d",
+          "error": "RPC_S_CALL_FAILED(HFSS 行程死亡) | (-2147023170, '遠端程序呼叫失敗。', None, None)"
+        }
+      ],
+      "last_results": [
+        [
+          "dedust_r80repeat2_00_001c970d",
+          {
+            "error": "RPC_S_CALL_FAILED(HFSS 行程死亡) | (-2147023170, '遠端程序呼叫失敗。', None, None)",
+            "attempts": 1
+          }
+        ]
+      ]
+    }
+  ],
+  "monitor_interval_minutes": 30,
+  "next_routine_check_utc": "2026-10-07T10:46:35Z",
+  "user_reported_workers": 3,
+  "claim_machines_observed": [
+    "140.123.106.216",
+    "140.123.106.218"
+  ],
+  "third_worker_status": "not independently observed; idle workers have no heartbeat in this scoped queue",
+  "completed_store_audit": {
+    "dedust_r80repeat1": {
+      "passed": true,
+      "results": 2,
+      "checks": "physical sample/radiation hashes and observation replay"
+    }
+  },
+  "execution_order": [
+    "R80 symmetry batches and repeat analysis",
+    "antenna spec reconciliation and R81 wide-filter engineering check",
+    "R81 bounded batches and final audited report"
+  ],
+  "worker_branch": "GAN",
+  "hfss_started_by_conductor": false
+}

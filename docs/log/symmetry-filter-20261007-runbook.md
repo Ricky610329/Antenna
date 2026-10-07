@@ -1,6 +1,6 @@
 # R80 操作：金屬對稱量測、有限批次、獨立 worker
 
-本次只執行 R80 金屬左右對稱量測。R81 的 smoke、Discrete、mesh 與所有其他 spec-change 實驗全部延後，不得加入目前佇列。worker 由使用者在正式機啟動；目前尚未啟動 HFSS，也沒有本輪量測結果。
+目前先執行 R80 金屬左右對稱量測；使用者已啟動worker，並於2026-10-07授權每30分鐘監看，完成對稱任務後接續spec調整與R81驗證。R81工程檢查及正式批次待R80完成才派送。最新量測狀態以[操作板](../../configs/ONGOING.md)為準。
 
 scope 固定為 `symmetry_filter_20261007`，worker 固定使用 `--selfgen 0 --poll 60 --stale 120`。啟動器會拒絕 scope 內任何 dual/filter job。
 
@@ -62,7 +62,7 @@ python -m script.exploration feedback --work-dir tmp/r80_symmetry_20261007_singl
 python -m script.exploration train --work-dir tmp/r80_symmetry_20261007_single/single --through-batch 1
 ```
 
-目前只備料並派送上述52次。R80第二、三批仍依原研究設計：先完成首批收檔、預測稽核與模型回填，再產生下一批；不能預先混入目前佇列。R81及其他規格變更實驗維持延後。
+上述52次是初始pilot，保留其不可變輸入。使用者後續擴大為至少10,000筆有效唯一對稱HFSS資料，新增獨立16筆factory jobs，不修改原pilot。先每48筆有效唯一新結果稽核並批次更新SM，再選下一波；另備大量盲選池補空檔。新policy見`configs/single_r80_symmetry_factory.yaml`及R80最新追加紀錄。R81接續對稱階段，先通過工程檢查再擴大量測。
 
 ## 可證明範圍
 
