@@ -14,6 +14,7 @@
 | --- | --- | --- | --- |
 | `single_r80_symmetry_explore.yaml` | 金屬精確左右鏡射下，研究兩切面場型及 S11/Gain | **目前唯一執行項目**；固定 0.1 mm 橋；首批48＋兩組各2次重測，共52次 | R80 |
 | `single_r80_symmetry_factory.yaml` | 使用者擴大為至少10,000有效唯一對稱量測；沿用R80完全相同量測身分 | 16筆小job；每48新真值批次更新SM；歷史先驗＋新資料、40/30/30配額、2,048盲選預備池；取代舊三批工廠停止上限，不改首批snapshot | R80 factory |
+| `symmetry_training.py` / [已凍結訓練protocol](../docs/log/assets/r80_factory_training_protocol_20261007.json) | 累積當前profile全曲線SM，每48–96個新唯一圖形更新 | 3 seeds；625–512–512–256–216 MLP；歷史預訓練30ep＋当前真值100ep；34個seed映至13家族；無HFSS驗證通過前不計實測 | R80 factory SM |
 | `dual_r81_wide_filter.yaml` | S21 26–30 ≥−3、16–20/36–40 ≤−20 dB | **延後**；smoke、Discrete、mesh、正式批次均不得排入目前佇列 | R81 |
 
 `script.prepare_symmetry_filter prepare` 預設 `--phase single`，只讀34個 R55 seeds；`--phase combined` 保留給後續 R81 階段。

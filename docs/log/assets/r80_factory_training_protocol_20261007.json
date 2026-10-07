@@ -1,0 +1,97 @@
+{
+  "frequencies_ghz": [
+    24.0,
+    24.5,
+    25.0,
+    25.5,
+    26.0,
+    26.5,
+    27.0,
+    27.5,
+    28.0,
+    28.5,
+    29.0,
+    29.5,
+    30.0,
+    30.5,
+    31.0,
+    31.5,
+    32.0
+  ],
+  "geometry_profile": "single_v1",
+  "lineage_aliases": {
+    "mapping": {
+      "seed_0000_d2a3ce10": "t07_top",
+      "seed_0001_e96d3f64": "t07_top",
+      "seed_0002_e3de891b": "t07_top",
+      "seed_0003_b6effce9": "t03_top",
+      "seed_0004_35e5fa3e": "t03_top",
+      "seed_0005_90de4aa7": "t03_top",
+      "seed_0006_1e018c59": "t05_top",
+      "seed_0007_154a21f0": "t05_top",
+      "seed_0008_6aae6747": "t05_top",
+      "seed_0009_3b4b7472": "e50b2_007_F6161",
+      "seed_0010_13731a29": "e50b2_007_F6161",
+      "seed_0011_15bc6e8d": "e50b2_007_F6161",
+      "seed_0012_f242a35b": "e50b2_000_F18644",
+      "seed_0013_33841f2e": "e50b2_000_F18644",
+      "seed_0014_d34cfb3d": "e50b2_000_F18644",
+      "seed_0015_13b8c652": "c8trip03_01",
+      "seed_0016_9a193a88": "c8trip03_01",
+      "seed_0017_3dfc5703": "c8trip03_01",
+      "seed_0018_43fbd969": "c41grp2p02_02",
+      "seed_0019_2c382852": "c41grp2p02_02",
+      "seed_0020_7380a228": "c41grp2p02_02",
+      "seed_0021_5b75bef2": "c48nq1p05_16",
+      "seed_0022_d7df3646": "c48nq1p05_16",
+      "seed_0023_4117e03f": "c48nq1p05_16",
+      "seed_0024_d4d2621e": "x52t07_add25",
+      "seed_0025_1f111ba8": "x52t07_add25",
+      "seed_0026_ce3bf516": "x52t07_add25",
+      "seed_0027_9bc21448": "x52t07_add50",
+      "seed_0028_c1ac23ab": "x52t07_add50",
+      "seed_0029_49efae25": "c53lot2p02_07",
+      "seed_0030_4b697893": "c53lot2p02_07",
+      "seed_0031_37a41565": "c53lot2p03_20",
+      "seed_0032_976720e4": "t09_top",
+      "seed_0033_69a7860b": "t09_top"
+    },
+    "source_sha256": "e384729a14428fe6c2868c29ecfeae00ef24dbba7ef26388bdeea55d8b50a78c"
+  },
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "model": {
+    "batch_size": 128,
+    "current_epochs": 100,
+    "ensemble_seeds": [
+      0,
+      1,
+      2
+    ],
+    "hidden_dims": [
+      512,
+      512,
+      256
+    ],
+    "learning_rate": 0.001,
+    "legacy_epochs": 30
+  },
+  "output_dim": 216,
+  "policy": {
+    "early_stopping": false,
+    "fresh_initialization_each_version": true,
+    "legacy_usage": "pretraining_prior_only",
+    "validation": "current_profile_holdout_only"
+  },
+  "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+  "schema_version": 2,
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "split": {
+    "fraction": 0.2,
+    "method": "sha256_lineage_threshold_v1",
+    "seed": 20261007
+  },
+  "updates": {
+    "max_new_valid": 96,
+    "min_new_valid": 48
+  }
+}
