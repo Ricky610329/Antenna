@@ -80,6 +80,8 @@ python -m script.symmetry_factory_watch --settings tmp/r80_factory_20261007/watc
 
 狀態位於`tmp/r80_factory_20261007/controller/watch_status.json`。該資料夾的`STOP`只在週期邊界停止controller，不會殺HFSS；NAS全域/本scope STOP也會阻止新的prepare/dispatch。正常worker寫入`results.json`造成快照競態時記deferred receipt，下個30分鐘重試；profile/hash損壞仍停止並保留診斷。達10,240唯一真值後只標記對稱資料蒐集完成，R81仍須依工程檢查流程接續，不會由此腳本直接啟動。
 
+使用者2026-10-07最新監看指示：平時讓背景流程掛著，HFSS依私人佇列工作、SM依設定的新資料批次慢慢更新。conductor每30分鐘只做健康檢查，確認原controller狀態／最近週期是否完成、佇列有工作及worker近期進展；一切正常且沒有需處理的結果時，不持續主動喚醒、不逐小批反覆重播預測／全量hash，也不送例行進度。出錯、停滯、研究結果需驗證或到達階段邊界才介入。controller原有snapshot、模型批次更新與派工收據仍自動保存，不因減少人工監看而停用。
+
 ## 凍結資料的對稱與頻率統計
 
 先選定 `snapshot_successes` 的完整凍結副本；不直接分析仍在寫入的原始 store，也不以性能篩掉低分有效資料。下列入口重播具名 profile、實體橋接/金屬鏡射與 sample/rad hashes，依量測身分＋實體圖形去重，優先保留非重測項目：
