@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-10-07T11:19:28.417642+00:00",
+  "role": "historical pretraining prior; not current-profile ground truth",
+  "source_manifest": "tmp\\r80_factory_20261007\\legacy_manifest.json",
+  "source_manifest_sha256": "3d904e05148fc1bf7a1d09bca70944dc91cdf2d65c370262dbfd1e0b74edd480",
+  "source_inventory": {
+    "counts": {
+      "accepted": 43846,
+      "ambiguous_or_missing_response": 31,
+      "missing_input_store": 5
+    },
+    "dataset_root": "C:\\Users\\ricky\\antenna_nas_backup\\dataset",
+    "eligible_before_cap": 43846,
+    "safety": "unique-pattern response match; finite 2x17; valid full radiation cuts",
+    "schema_version": 2,
+    "selected": 12000,
+    "selection": "sha256_stable_order_v1",
+    "stores_scanned": 791
+  },
+  "registered_manifest_sha256": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+  "registration": {
+    "manifest": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\legacy\\manifest.json",
+    "sha256": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+    "rows": 12000,
+    "elapsed_s": 61.13698050007224,
+    "training_started": false
+  },
+  "selected_rows": 12000,
+  "unique_patterns": 11254,
+  "lineages": 4323,
+  "registered_split_counts": {
+    "legacy_train": 10150,
+    "legacy_holdout": 1850
+  },
+  "training_protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+  "limitations": [
+    "Historical geometry/bridge/solver conditions differ or are unknown.",
+    "Nonmirror patterns are permitted only as the pretraining prior.",
+    "Current holdout pattern/family exclusions are applied per data version before training.",
+    "Registration itself contains no model fitting or efficacy result."
+  ]
+}

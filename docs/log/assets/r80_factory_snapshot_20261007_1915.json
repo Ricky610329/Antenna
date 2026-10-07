@@ -1,0 +1,256 @@
+{
+  "timestamp_utc": "2026-10-07T11:15:08.819382+00:00",
+  "scope": "symmetry_filter_20261007",
+  "dataset_root": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset",
+  "jobs_sha256": "4110ac9d7a3dbcae8a850e2d439b0edef51307d82982b2a8ffba101510a7f64a",
+  "measurement_ids": [
+    "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526"
+  ],
+  "valid_unique_patterns": 47,
+  "audited_ok_including_repeats": 50,
+  "solver_time_median_s": 175.0,
+  "completed_stores": [
+    "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80repeat1",
+    "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80repeat2"
+  ],
+  "jobs": [
+    {
+      "store": "dedust_r80b1",
+      "input": "dedust_r80b1_input",
+      "prio": 1,
+      "expected": 48,
+      "audited_ok": 22,
+      "errors": {
+        "single_r80_symmetry_expl_b01_016_49aac88c": {
+          "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+          "attempts": 1
+        },
+        "single_r80_symmetry_expl_b01_018_5d82bb2d": {
+          "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+          "attempts": 1
+        }
+      },
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:02:01.603646+00:00",
+          "payload": {
+            "machine": "140.123.106.218",
+            "at": "2026-10-07 18:02:01"
+          }
+        }
+      },
+      "input_metadata_sha256": {
+        "config.yaml": "6dc230084c7860cb4fbc3ebdfcba3ae961d1c8bef3d27e2f6d02b26fa5c9aa23",
+        "measurement.json": "439093feb9f4a49276d24df9972501d48d2c90416b52b40a9edaa826816e7d96",
+        "score_spec.json": "7cd051b4c2523cd7611a874dfdcab7fbb0d2f3d5b223f8adf01e8abf444d006b",
+        "manifest.json": "58f1e5c7b79d7c27fe1c580d2163f4b119efb97d80ec8a145a04624e46226c93"
+      },
+      "source_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "58f1e5c7b79d7c27fe1c580d2163f4b119efb97d80ec8a145a04624e46226c93",
+        "results.json": "ca6f3f5b61a723969afd7bdc95aeba49f355bde5a36293e0c29ce95fbd61226c"
+      }
+    },
+    {
+      "store": "dedust_r80repeat1",
+      "input": "dedust_r80repeat1_input",
+      "prio": 1,
+      "expected": 2,
+      "audited_ok": 2,
+      "errors": {},
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:03:16.330784+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:00:56"
+          }
+        },
+        "done": {
+          "mtime_utc": "2026-10-07T10:10:29.158457+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:08:09",
+            "errors": 0,
+            "error_ids": []
+          }
+        }
+      },
+      "input_metadata_sha256": {
+        "config.yaml": "6dc230084c7860cb4fbc3ebdfcba3ae961d1c8bef3d27e2f6d02b26fa5c9aa23",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "398d4e94831034d2194134444350a7a36c8958bed87149af041e9e7d73f92ba9"
+      },
+      "source_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "398d4e94831034d2194134444350a7a36c8958bed87149af041e9e7d73f92ba9",
+        "results.json": "ff82111592686843015d0759d70727b719179872d49ff30934948a5f565ebf37"
+      }
+    },
+    {
+      "store": "dedust_r80repeat2",
+      "input": "dedust_r80repeat2_input",
+      "prio": 1,
+      "expected": 2,
+      "audited_ok": 2,
+      "errors": {},
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:10:29.193246+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:08:09"
+          }
+        },
+        "done": {
+          "mtime_utc": "2026-10-07T10:20:23.215429+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:18:03",
+            "errors": 0,
+            "error_ids": []
+          }
+        }
+      },
+      "input_metadata_sha256": {
+        "config.yaml": "6dc230084c7860cb4fbc3ebdfcba3ae961d1c8bef3d27e2f6d02b26fa5c9aa23",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "0fc1a8595031f4eda7b7c080d0b953d85d1ba4a996021aed96d23d07e8de7bd2"
+      },
+      "source_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "0fc1a8595031f4eda7b7c080d0b953d85d1ba4a996021aed96d23d07e8de7bd2",
+        "results.json": "bd8858fa0adec3c304498d4e9463eb2f4e7ea6f9e5e3c31b6b817952488506f3"
+      }
+    },
+    {
+      "store": "dedust_r80g00111",
+      "input": "dedust_r80g00111_input",
+      "prio": 6,
+      "expected": 16,
+      "audited_ok": 13,
+      "errors": {},
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:35:23.881045+00:00",
+          "payload": {
+            "machine": "140.123.106.216",
+            "at": "2026-10-07 18:33:04"
+          }
+        }
+      },
+      "input_metadata_sha256": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "aa60053e3bd95ff4aea689237c311714edea2ee066cec48c10cf9d69c0b33ca9"
+      },
+      "source_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "aa60053e3bd95ff4aea689237c311714edea2ee066cec48c10cf9d69c0b33ca9",
+        "results.json": "888a97990d84d38f75e6a70ff649b2744cf2a18dd6951b858cad33ae855b00f2"
+      }
+    },
+    {
+      "store": "dedust_r80g00112",
+      "input": "dedust_r80g00112_input",
+      "prio": 6,
+      "expected": 16,
+      "audited_ok": 11,
+      "errors": {},
+      "markers": {
+        "claim": {
+          "mtime_utc": "2026-10-07T10:35:47.659232+00:00",
+          "payload": {
+            "machine": "140.123.106.37",
+            "at": "2026-10-07 18:35:46"
+          }
+        }
+      },
+      "input_metadata_sha256": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "58efffd3e765d2db8c8f4c6c0becde1eac413deaf20369fc223897df3daab485"
+      },
+      "source_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "58efffd3e765d2db8c8f4c6c0becde1eac413deaf20369fc223897df3daab485",
+        "results.json": "7a0153519ff8fd662b7b44cf2e8cdf8234a2010ccdf01e5f0ebb82a259ee07be"
+      }
+    },
+    {
+      "store": "dedust_r80g00113",
+      "input": "dedust_r80g00113_input",
+      "prio": 6,
+      "expected": 16,
+      "audited_ok": 0,
+      "errors": {},
+      "markers": {},
+      "input_metadata_sha256": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "d9acb9fa6386c9dc248a4cf05a46a0d464006fb06b0dd739a97201e7166274d8"
+      },
+      "source_metadata_sha256": null
+    },
+    {
+      "store": "dedust_r80g00114",
+      "input": "dedust_r80g00114_input",
+      "prio": 6,
+      "expected": 16,
+      "audited_ok": 0,
+      "errors": {},
+      "markers": {},
+      "input_metadata_sha256": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "7e9252428b4926e766b8ea8e8ea3960065239a1f6defab0bbdad4a3d156f3c5a"
+      },
+      "source_metadata_sha256": null
+    },
+    {
+      "store": "dedust_r80b2a",
+      "input": "dedust_r80b2a_input",
+      "prio": 1,
+      "expected": 16,
+      "audited_ok": 0,
+      "errors": {},
+      "markers": {},
+      "input_metadata_sha256": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "73e1c0a3c37cf17e797826eb07e6af2b031bbca1decc27a8a1403d03ced255ff"
+      },
+      "source_metadata_sha256": null
+    },
+    {
+      "store": "dedust_r80b2b",
+      "input": "dedust_r80b2b_input",
+      "prio": 1,
+      "expected": 16,
+      "audited_ok": 0,
+      "errors": {},
+      "markers": {},
+      "input_metadata_sha256": {
+        "config.yaml": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "71623d6b48df546904ad141ebf04de82a287421f6d3e929814d8c2b275d983d6"
+      },
+      "source_metadata_sha256": null
+    }
+  ],
+  "progress_limit": "Snapshot of saved artifacts; claims do not prove a live worker heartbeat.",
+  "status_alarms": []
+}

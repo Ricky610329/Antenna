@@ -9,10 +9,11 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
-- 🔵 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：18:46台北實體稽核23次有效量測、去重20個圖形；218主批14/48，216與37各認領一個16筆補池job且有新成果，三台皆已觀察到實測。RPC重試恢復，兩組重測均2/2、零殘留錯誤。單次solver time中位174秒，不含完整調度開銷。見[18:46收據](../docs/log/assets/r80_factory_snapshot_20261007_1846.json)。
+- 🔵 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：19:15台北實體稽核50次有效量測、47個唯一圖形；218主批22/48，216與37的補池分別13/16、11/16，兩組重測均2/2。三機持續產出，無錯誤警報。單次solver time中位175秒，不含完整調度開銷。見[19:15收據](../docs/log/assets/r80_factory_snapshot_20261007_1915.json)。
 - ⏭️ [R81 新濾波器規格](../docs/log/round-81-wide-filter.md)：使用者已授權對稱任務後接續spec調整與驗證；先做smoke、Discrete、mesh工程檢查，再依既定門檻放行有限批次。目前仍只派R80。
 - **最新授權覆蓋舊三批上限**：對稱資料目標至少10,000筆有效、唯一的實際HFSS資料，工廠目標10,240；約1.5週是吞吐目標，非已驗證工期。採16筆獨立小job，正式SM臂同tier並行，盲選候選池預備2,048筆。重測與預測不計入唯一實測數。
-- 監看間隔30分鐘；下次例行檢查19:16台北。依[論文工作稿§III](../docs/paper/manuscript-draft-2026-10.html#method)以新資料批次更新SM：先每48筆有效唯一新量測更新，保存更新前預測供前瞻稽核；歷史非對稱資料可作先驗，量測條件不同者不冒充本次真值。低分有效資料也保留。正式SM待跑量最多96，低優先補池小job維持利用率；更新頻率依實際訓練/求解成本另留紀錄調整。
+- 監看間隔30分鐘；下次例行檢查19:45台北。依[論文工作稿§III](../docs/paper/manuscript-draft-2026-10.html#method)以新資料批次更新SM：先每48筆有效唯一新量測更新，保存更新前預測供前瞻稽核；歷史非對稱資料可作先驗，量測條件不同者不冒充本次真值。低分有效資料也保留。正式SM待跑量最多96，低優先補池小job維持利用率；更新頻率依實際訓練/求解成本另留紀錄調整。
+- 歷史先驗12,000筆已登錄至本機`tmp/r80_factory_20261007/training_v2`，來自43,846個嚴格配對合格項目、11,254個唯一圖形。具名新profile資料另行保存/驗證；首個新資料版本等待至少48筆，尚未聲稱新SM更準。見[歷史登錄收據](../docs/log/assets/r80_factory_legacy_20261007.json)。
 - 18:34已派4×16盲選補池prio6；18:45已派2×16 SM選樣prio1（10,000候選→13性能/10分歧/9盲選，完整前瞻曲線保存）。不改原48長批或live worker；小job在批界交回排程，新SM接棒回填仍在接線驗證。
 - [啟動及回填指令](../docs/log/symmetry-filter-20261007-runbook.md)：開發與每台 worker 均使用 Git `GAN`；依序執行 `git checkout GAN`、`git pull --ff-only origin GAN`、`conda activate patch`，再以 `powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_scoped_worker.ps1` 啟動。
 - 啟動器自動解析私人 `ROOTDIR` 下的 `experiments/r80_symmetry_20261007/dataset`；加 `-CheckOnly` 只列出佇列並檢查single-port身分，不啟動HFSS。scope=`symmetry_filter_20261007`，固定 `--selfgen 0 --poll 60 --stale 120`，且拒絕dual jobs。
