@@ -9,14 +9,15 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
-- 🔵 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：20:45:32台北controller實體稽核130次有效量測、126個唯一圖形；比目前SM訓練集新增27，未到147唯一的更新門檻，沿用data-v002。三機持續產出，後續輕量狀態無警報；[第三輪收據](../docs/log/assets/r80_factory_cycle003_20261007.json)含派工與私人歸檔hash。
+- 🔵 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：21:17:22台北controller實體稽核160次有效量測、156個唯一圖形；本輪已以155唯一訓練data-v003，第156筆留待下次更新。21:30私人佇列status無警報；[第3版模型收據](../docs/log/assets/r80_factory_cycle_v003_20261007.json)含56筆新凍結真值、模型及派工hash。
 - ⏭️ [R81 新濾波器規格](../docs/log/round-81-wide-filter.md)：使用者19:55補充性能目標為**新版五段spec的實測WM > 0 dB**；改完程式/跑完批次不算達標，WM≤0仍未完成。對稱任務後接續，先做smoke、Discrete、mesh工程檢查再放行探索；正WM候選仍需重測確認。目前仍只派R80。
 - 首版49筆凍結資料已有[幾何地形／S11與Gain頻率圖及分析紀錄](../docs/log/round-80-symmetry-exploration.md#2009-首版資料的可重跑對稱與頻率圖)，完整分析存私人`analysis_versions/data-v001`。這是19:19資料的描述統計，不是最新累計數；尚無對稱改善性能的因果結論。
 - **最新授權覆蓋舊三批上限**：對稱資料目標至少10,000筆有效、唯一的實際HFSS資料，工廠目標10,240；約1.5週是吞吐目標，非已驗證工期。採16筆獨立小job，正式SM臂同tier並行，盲選候選池預備2,048筆。重測與預測不計入唯一實測數。
-- 30分鐘controller於19:45在開發機以hidden process啟動，PID13976，20:51仍存活且waiting；第三輪20:45:51完成，下次21:15:19台北。狀態`tmp/r80_factory_20261007/controller/watch_status.json`，設定`tmp/r80_factory_20261007/watch_settings.json`；不要重啟第二份。依[論文工作稿§III](../docs/paper/manuscript-draft-2026-10.html#method)，每48筆有效唯一新量測先做前瞻稽核再更新SM；低分也保留，正式SM待跑最多96，盲選池補空檔。此controller不是HFSS worker，不需重啟三台worker。
-- 歷史先驗12,000筆已登錄至本機`tmp/r80_factory_20261007/training_v2`，來自43,846個嚴格配對合格項目。data-v002已累積99唯一（新增50），59 train/40 holdout；三成員保留集重播通過，S11/Gain MAE2.66/5.06 dB。30筆完整前瞻是28筆舊v108＋2筆v001，尚不足證明新SM更準；下一更新門檻147唯一。見[第二輪收據](../docs/log/assets/r80_factory_cycle_v002_20261007.json)、[歷史登錄收據](../docs/log/assets/r80_factory_legacy_20261007.json)。
+- 30分鐘controller於19:45在開發機以hidden process啟動，PID13976，21:27仍存活；第四輪21:17:50完成，waiting，下次約21:45:23台北。狀態`tmp/r80_factory_20261007/controller/watch_status.json`，設定`tmp/r80_factory_20261007/watch_settings.json`；不要重啟第二份。依[論文工作稿§III](../docs/paper/manuscript-draft-2026-10.html#method)，每48筆有效唯一新量測先做前瞻稽核再更新SM；低分也保留，正式SM待跑最多96，盲選池補空檔。此controller不是HFSS worker，不需重啟三台worker。
+- 歷史先驗12,000筆已登錄至本機`tmp/r80_factory_20261007/training_v2`，來自43,846個嚴格配對合格項目。data-v003累積155唯一（新增56），100 train/55 holdout；模型與55筆實體sample/rad hash及保留集預測重播通過，S11/Gain MAE2.48/5.09 dB。保留集由40增至55，不能直接用總誤差比較版本進步；本輪45筆完整前瞻依原模型分為v108 4／v001 35／v002 6。下一更新門檻203唯一。見[模型收據](../docs/log/assets/r80_factory_cycle_v003_20261007.json)、[歷史登錄收據](../docs/log/assets/r80_factory_legacy_20261007.json)。
 - 18:34已派4×16盲選補池prio6；18:45派2×16 v108冷啟動SM選樣prio1。19:45已用data-v001新SM從10,000候選選48（19性能/15分歧/14盲選），逐片查重後加入3×16 prio1 jobs `dedust_r80cbdb25da6g01`–`g03`，共12 jobs；3片NAS bytes及queue均驗證。新候選未算入實測數。模型首版與派送收據另存私人NAS `sm_versions/data-v001`、`controller_receipts/bdb25da6...`，不改公共資料。
 - 20:17以data-v002選32、派兩片16筆prio1；模型與50筆新凍結資料保存私人`sm_versions/data-v002`，122檔hash核對。20:45再派`dedust_r80c28d601d2g01`一片16（6性能/5分歧/5盲選），總15 jobs；派送時guided待跑82≤96，實測＋全部待跑＋新派240。最新cycle輸入／收據保存私人`controller_receipts/28d601d2...`，46檔發布後hash一致；新派不計入126實測。
+- 21:17以data-v003再派`dedust_r80c452a2930g01`／`g02`各16筆prio1；guided待跑52＋32=84≤96，實測＋全部待跑＋新派272。模型、56筆凍結真值與收據存私人`sm_versions/data-v003`，135檔、29,192,207 bytes發布後hash核對；R80目標尚未完成，R81仍未派工。
 - R81備料工具已驗證：原件及重測嚴格WM>0確認入口（32相關tests），歷史三段margin／兩阻帶mask先驗API（41相關tests）。尚未導入真實dual歷史、串接訓練或派送R81；後續整鏈與工程檢查仍待完成。
 - [啟動及回填指令](../docs/log/symmetry-filter-20261007-runbook.md)：開發與每台 worker 均使用 Git `GAN`；依序執行 `git checkout GAN`、`git pull --ff-only origin GAN`、`conda activate patch`，再以 `powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_scoped_worker.ps1` 啟動。
 - 啟動器自動解析私人 `ROOTDIR` 下的 `experiments/r80_symmetry_20261007/dataset`；加 `-CheckOnly` 只列出佇列並檢查single-port身分，不啟動HFSS。scope=`symmetry_filter_20261007`，固定 `--selfgen 0 --poll 60 --stale 120`，且拒絕dual jobs。
