@@ -300,3 +300,13 @@ watcher在dispatch前驗證收據的worker名單及總額，只有有效唯一�
 conductor完整回歸**707 passed／319.69秒**、無warnings、golden未改；獨立Sol只讀審查及47項針對性回歸8.81秒通過，py_compile／pyflakes／diff通過。兩個決定性邊界測試都實際經過本地serialized profile／sample／rad驗證：4,999＋第一台fail→跨機接手→原圖形恢復，不派替代、恰好5,000；三台耗盡→查重後派不同單筆尾批→成功、恰好5,000。其餘4,999背景數量由測試fixture提供，未用HFSS實跑5,000或宣稱無條件容錯。
 
 [修正收據](assets/r80_exact_target_retry_fix_20261008.json)與四份最終source/tests、完整測試log、獨立審查及舊新settings／profile／protocol共13檔存私人`controller_handoffs/exact_target_fix_20261008/source_validation`；payload142,331 bytes，manifest SHA256 `63e9ba58195070bbbb7cda09ac152cde9f46269966aad83f85d4fee92fda7697`，發布後hash核對。這個里程碑先驗證並commit程式；舊PID16556仍使用先前載入的程式，實際交接另記。精確性限於三台綁定worker協定，不涵蓋全機終態後人工越過重試帳復活；遇此變更需重新對帳，不假裝超額完成。R80蒐集與R81正WM仍未完成。
+
+### 2026-10-08 05:14：新名額協定controller首輪通過，恢復30分鐘節奏
+
+修正已commit／push GAN `5922820`後，conductor以實際私人queue重播驗證532唯一、pending124、guided92，成功加預留656≤5,000。v009的507筆訓練manifest與三模型實體載入通過；profile／protocol bytes與修正前相同。舊controller完成05:01第14輪、稽核530唯一，waiting且沒有active cycle pointer；因此本次沒有刪或撤銷舊prepared/training收據。確認PID16556、creation time、command與唯一行程後，只在本機controller工作夾寫owned STOP；05:08:34正常退出並保存終態／attempt／舊logs，未殺行程或碰NAS worker STOP。
+
+確認舊PID不存在及本機零其他watcher後，05:09:52從`5922820`以新版settings隱藏啟動PID25924。05:12 Win32_Process確認只有這一份，creation unix ms `1791407392268`；新attempt保留完整舊terminal state及其SHA。新首輪05:09:54–05:11:03、69.109秒，完成idle／waiting，稽核535唯一、pending121、guided89，總預留656；SM仍v009／fit507，沒有本輪模型更新或新派工，既有工作量充足。收據明示綁定216／218／37，stderr空。下次controller tick約05:39:54，conductor例行健康檢查約05:40。
+
+05:14實際`script.status --factory --alert`回傳0／無警報，兩個current jobs3/16及6/16（最近更新5／2分鐘），另一批剛認領、尚無成功；不把claim當成新HFSS真值或worker process心跳。遠端runtime Git仍未獨立核對。交接期間原training state／manifest／receipt及三模型hash不變；worker結果、claims、重試帳、HFSS、SM選樣比例與測量spec均未由conductor改寫。
+
+[實際交接收據](assets/r80_retry_controller_handoff_20261008.json)保存舊新行程／settings、兩次watch狀態／attempt、首輪收據、status、v009模型與producer。33檔、payload28,748,467 bytes存私人`controller_handoffs/exact_target_fix_20261008/live_handoff`，manifest SHA256 `4b42bd504b92154ae47ddeb0a9b5c972090140390890bdaf4793ef1758581c75`，發布後逐檔核對。這是操作恢復與名額協定部署的驗證，不是性能提升或5,000蒐集／R81正WM已完成的證據；保持約30分鐘健康檢查，沒有新結果／故障／性能停滯事件就掛著。
