@@ -375,7 +375,9 @@ def _normalise_seeds(seed_rows: Sequence[Mapping[str, Any]], profile_cfg: Any,
             continue
         seen.add(sha)
         source_id = str(row.get("id", f"seed-{ordinal:05d}"))
-        out.append({"pattern": p, "pattern_sha256": sha, "ancestry_id": source_id,
+        ancestry_id = str(row.get("canonical_group_id") or row.get("lineage_id") or
+                          row.get("ancestry_id") or source_id)
+        out.append({"pattern": p, "pattern_sha256": sha, "ancestry_id": ancestry_id,
                     "source_id": source_id, "generation": 0, "proposal": "explicit_seed"})
     if not out:
         raise ValueError("all explicit seeds were duplicates or excluded")

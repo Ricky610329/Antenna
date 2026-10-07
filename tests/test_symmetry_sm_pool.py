@@ -125,6 +125,20 @@ def test_build_pool_is_finite_exact_symmetric_deduplicated_and_excluded():
     assert len({row["ancestry_id"] for row in selected}) >= 2
 
 
+def test_distinct_seed_bits_keep_shared_explicit_lineage():
+    seeds = _seed_rows(2)
+    seeds[0]["lineage_id"] = seeds[1]["lineage_id"] = "t07_top"
+    result = build_pool(_pool_config(candidate_pool_size=16, initial_pool_size=8,
+                                     selected_count=4, generations=1),
+                        seeds, [], predictor=FakePredictor())
+    explicit = [row for row in result["rows"] if row["proposal"] == "explicit_seed"]
+    assert len(explicit) == 2
+    assert {row["source_id"] for row in explicit} == {"history-0", "history-1"}
+    assert {row["ancestry_id"] for row in explicit} == {"t07_top"}
+    descendants = [row for row in result["rows"] if row["source_id"] in {"history-0", "history-1"}]
+    assert descendants and {row["ancestry_id"] for row in descendants} == {"t07_top"}
+
+
 def test_three_arm_counts_are_13_10_9_and_disagreement_obeys_p60_cut():
     result = build_pool(_pool_config(candidate_pool_size=128, initial_pool_size=40,
                                      selected_count=32),
