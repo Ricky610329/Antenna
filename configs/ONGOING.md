@@ -10,7 +10,7 @@
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
 - 🔵 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：19:44台北controller實體稽核73次有效量測、70個唯一圖形；主批26/48、兩補池均16/16、舊SM波8/16及3/16、重測兩組均2/2。三機持續產出；原始19:15為50次/47唯一，後續快照見[常駐啟動收據](../docs/log/assets/r80_factory_watch_launch_20261007.json)。
-- ⏭️ [R81 新濾波器規格](../docs/log/round-81-wide-filter.md)：使用者已授權對稱任務後接續spec調整與驗證；先做smoke、Discrete、mesh工程檢查，再依既定門檻放行有限批次。目前仍只派R80。
+- ⏭️ [R81 新濾波器規格](../docs/log/round-81-wide-filter.md)：使用者19:55補充性能目標為**新版五段spec的實測WM > 0 dB**；改完程式/跑完批次不算達標，WM≤0仍未完成。對稱任務後接續，先做smoke、Discrete、mesh工程檢查再放行探索；正WM候選仍需重測確認。目前仍只派R80。
 - **最新授權覆蓋舊三批上限**：對稱資料目標至少10,000筆有效、唯一的實際HFSS資料，工廠目標10,240；約1.5週是吞吐目標，非已驗證工期。採16筆獨立小job，正式SM臂同tier並行，盲選候選池預備2,048筆。重測與預測不計入唯一實測數。
 - 30分鐘controller已於19:45在開發機以hidden process啟動，PID13976；已完成第一輪派送並等待，下次20:15:19台北。狀態`tmp/r80_factory_20261007/controller/watch_status.json`，設定`tmp/r80_factory_20261007/watch_settings.json`；不要重啟第二份。依[論文工作稿§III](../docs/paper/manuscript-draft-2026-10.html#method)，每48筆有效唯一新量測先做前瞻稽核再更新SM；低分也保留，正式SM待跑最多96，盲選池補空檔。此controller不是HFSS worker，不需重啟三台worker。
 - 歷史先驗12,000筆已登錄至本機`tmp/r80_factory_20261007/training_v2`，來自43,846個嚴格配對合格項目、11,254個唯一圖形。19:19另凍結49個新profile唯一圖形，data-v001以32 train/17 holdout完成三成員CPU訓練162.895秒。保留集S11/Gain MAE1.96/3.77 dB，尚未證明新SM更準；前瞻預測有效筆數仍0。見[首版模型收據](../docs/log/assets/r80_factory_first_fit_20261007.json)、[歷史登錄收據](../docs/log/assets/r80_factory_legacy_20261007.json)。

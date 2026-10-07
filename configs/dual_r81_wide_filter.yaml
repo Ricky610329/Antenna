@@ -1,4 +1,6 @@
 # Initial finite engineering window; no claim below 16 or above 40 GHz.
+# User clarification 2026-10-07: filter target is measured worst_margin > 0 dB
+# across all five bands below. A completed batch or WM == 0 is not this target.
 name: dual_r81_wide_filter
 port: dual
 scope: symmetry_filter_20261007
