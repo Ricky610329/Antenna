@@ -11,6 +11,10 @@
 
 最後更新:2026-08-10
 
+2026-10-07 新入口：[analysis-18 歷史對稱普查](analysis-18-symmetry-census.md)、
+[R80 金屬對稱探索](round-80-symmetry-exploration.md)、[R81 寬頻濾波器](round-81-wide-filter.md)。
+R80/R81 尚無新 HFSS 結果；[worker 指令](symmetry-filter-20261007-runbook.md)。本次只在 Antenna 實作。
+
 ## 時間軸
 | Round | 主題 | 狀態 | 結論(一句) | 檔 |
 |---|---|---|---|---|

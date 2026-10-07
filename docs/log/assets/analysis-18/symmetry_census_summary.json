@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "created_local": "2026-10-07T16:52:58.010873+08:00",
+  "scope": "cache-level historical census; no new HFSS values",
+  "definitions": {
+    "geometry_mirror_A": "mean XOR over 25x12 left/right pixel pairs",
+    "symmetry_classes": {
+      "exact": "A=0",
+      "near": "0<A<=0.1",
+      "asymmetric": "A>0.1"
+    },
+    "field_mirror_power": "sum(abs(P(+theta)-P(-theta)))/sum(P(+theta)+P(-theta))",
+    "power_centroid": "linear-power centroid of peak-minus-3 dB samples within -90..90 degrees",
+    "front_back_imbalance": "(mean front linear power - mean back)/(sum of hemisphere means)"
+  },
+  "counts": {
+    "rows": 39111,
+    "symmetry_class": {
+      "near": 6510,
+      "asymmetric": 31571,
+      "exact": 1030
+    },
+    "valid_radiation_metrics": 35995,
+    "exact_with_radiation": 1021
+  },
+  "missing_counts": {
+    "metric_store": 3033,
+    "response": 3113,
+    "radiation": 3116,
+    "both_response_and_radiation": 3112,
+    "candidate_measurement_profile_unresolved": 3041
+  },
+  "field_mirror_power_distribution_by_geometry_class": {
+    "exact": {
+      "n": 1021,
+      "phi0_mirror_power_45": {
+        "median": 0.23866019518861897,
+        "p90": 0.49079502761734806
+      },
+      "phi0_mirror_power_90": {
+        "median": 0.22191593168307713,
+        "p90": 0.4325002908909308
+      },
+      "phi90_mirror_power_45": {
+        "median": 0.014329525124152268,
+        "p90": 0.05905328862858508
+      },
+      "phi90_mirror_power_90": {
+        "median": 0.012170692876598818,
+        "p90": 0.05053952349839949
+      }
+    },
+    "near": {
+      "n": 6426,
+      "phi0_mirror_power_45": {
+        "median": 0.1344082504146675,
+        "p90": 0.20408135379264658
+      },
+      "phi0_mirror_power_90": {
+        "median": 0.16939901963953247,
+        "p90": 0.23693210701528666
+      },
+      "phi90_mirror_power_45": {
+        "median": 0.06412557597368045,
+        "p90": 0.21527596979300304
+      },
+      "phi90_mirror_power_90": {
+        "median": 0.06873768204211314,
+        "p90": 0.24136045418862007
+      }
+    },
+    "asymmetric": {
+      "n": 28548,
+      "phi0_mirror_power_45": {
+        "median": 0.13103724732251082,
+        "p90": 0.32859742990841123
+      },
+      "phi0_mirror_power_90": {
+        "median": 0.15570851409606357,
+        "p90": 0.35178034304438294
+      },
+      "phi90_mirror_power_45": {
+        "median": 0.1407681568877191,
+        "p90": 0.3373541579052966
+      },
+      "phi90_mirror_power_90": {
+        "median": 0.1418224910488613,
+        "p90": 0.4293949822289004
+      }
+    }
+  },
+  "measurement_strata_candidate_metric_store": {
+    "standard_or_legacy_unspecified": 36071,
+    "unmeasured_or_unindexed": 3033,
+    "meshconv+solver=db037376": 7
+  },
+  "profile_metadata_audit": {
+    "stores_requested": 674,
+    "metadata_files_read": 675,
+    "metadata_bytes_read": 13052164,
+    "stores_with_any_metadata": 673
+  },
+  "raw_spot_checks": [],
+  "plane_contrast_representatives": {
+    "exact_geometry_largest_phi0_phi90_contrast": [
+      {
+        "id": "z50b22_286_grfn",
+        "phi0_mirror_power_90": 0.805051623800196,
+        "phi90_mirror_power_90": 0.004780407111465712,
+        "metric_store": "dedust_r50b22b"
+      },
+      {
+        "id": "z50b12_202_grfl",
+        "phi0_mirror_power_90": 0.748051150324288,
+        "phi90_mirror_power_90": 0.00849847968363639,
+        "metric_store": "dedust_r50b12b"
+      },
+      {
+        "id": "z50b12_111_eng",
+        "phi0_mirror_power_90": 0.6937572273374424,
+        "phi90_mirror_power_90": 0.007589916907434561,
+        "metric_store": "dedust_r50b12b"
+      },
+      {
+        "id": "z50b26_242_grfl",
+        "phi0_mirror_power_90": 0.6847063590553114,
+        "phi90_mirror_power_90": 0.004999689957902017,
+        "metric_store": "dedust_r50b26b"
+      },
+      {
+        "id": "z50b25_223_grfl",
+        "phi0_mirror_power_90": 0.7016002644903095,
+        "phi90_mirror_power_90": 0.024106416231670858,
+        "metric_store": "dedust_r50b25b"
+      }
+    ],
+    "asymmetric_geometry_low_phi90_mismatch": [
+      {
+        "id": "a216_02341",
+        "geometry_mismatch_fraction": 0.21,
+        "phi0_mirror_power_90": 0.136711493358385,
+        "phi90_mirror_power_90": 0.002101437194806144,
+        "metric_store": "dedust_auto216"
+      },
+      {
+        "id": "a216_02334",
+        "geometry_mismatch_fraction": 0.11666666666666667,
+        "phi0_mirror_power_90": 0.15345511410953885,
+        "phi90_mirror_power_90": 0.002362148400762529,
+        "metric_store": "dedust_auto216"
+      },
+      {
+        "id": "a218_01993",
+        "geometry_mismatch_fraction": 0.10333333333333333,
+        "phi0_mirror_power_90": 0.11524203205840784,
+        "phi90_mirror_power_90": 0.003143274806065526,
+        "metric_store": "dedust_auto218"
+      },
+      {
+        "id": "a218_02761",
+        "geometry_mismatch_fraction": 0.12333333333333334,
+        "phi0_mirror_power_90": 0.08364538607213864,
+        "phi90_mirror_power_90": 0.0035522970890348644,
+        "metric_store": "dedust_auto218"
+      },
+      {
+        "id": "v44b2_003_void",
+        "geometry_mismatch_fraction": 0.24333333333333335,
+        "phi0_mirror_power_90": 0.25778491837348805,
+        "phi90_mirror_power_90": 0.003669080840981176,
+        "metric_store": "dedust_r44b2b"
+      }
+    ]
+  },
+  "cache_provenance": {
+    "data_dir": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\application\\pattern_browser\\data",
+    "files": {
+      "patterns.npz": {
+        "bytes": 1666576,
+        "mtime_local": "2026-08-10T17:02:00.559070+08:00",
+        "sha256": "35c99869b09a9b5a648a7bf5649f6be9fa7307fe725255341c5a6b97c2616c23"
+      },
+      "meta.json": {
+        "bytes": 11545411,
+        "mtime_local": "2026-08-10T17:39:32.433219+08:00",
+        "sha256": "16bf0fec6ac81998a4c1927ba050e229b9232e6268db9c0c57a0c60b31c8f29c"
+      },
+      "resp.npz": {
+        "bytes": 2338862,
+        "mtime_local": "2026-08-10T17:39:27.941916+08:00",
+        "sha256": "21d5e5545689a1cb6fdc49686f96891934b647813dd3384100df04b9b3aa2afb"
+      },
+      "rad.npz": {
+        "bytes": 23072139,
+        "mtime_local": "2026-08-10T17:39:28.970890+08:00",
+        "sha256": "3b561fae1343419fb8d500c640ec546e308798f74599d4b8b63006d2adb01a68"
+      },
+      "curve_state.json": {
+        "bytes": 26774,
+        "mtime_local": "2026-08-10T17:39:31.494594+08:00",
+        "sha256": "dd54182e8127ae22f58b020772222ba31c57c5cbea2cbe4b64248aeeb226397a"
+      },
+      "variant_resp.json": {
+        "bytes": 20576409,
+        "mtime_local": "2026-08-10T17:39:31.494594+08:00",
+        "sha256": "4aac872d2f6088510336b9e0620f1da57b35bd2573a64e6f7f6f689482d60203"
+      }
+    },
+    "curve_state_store_count": 746,
+    "curve_state_snapshot_range_local": {
+      "min": "2026-07-03T22:43:51.376028+08:00",
+      "max": "2026-08-10T17:11:10.780286+08:00"
+    },
+    "curve_store_provenance": "unresolved_incremental_bare_id_carry_forward",
+    "interpretation": "2026-08-10 browser snapshot; not asserted complete or current history"
+  },
+  "limitations": [
+    "The cache producer can carry curves forward by bare id; curve-to-store provenance is unresolved.",
+    "Measurement strata describe the current meta.store candidate only and are not used for causal contrasts.",
+    "The browser snapshot is dated 2026-08-10 and is not asserted to contain later history.",
+    "No raw .pt spot check was included in the final low-load artifact.",
+    "Gain, S11 and radiation values are existing cached HFSS outputs; no new simulation was run."
+  ]
+}
