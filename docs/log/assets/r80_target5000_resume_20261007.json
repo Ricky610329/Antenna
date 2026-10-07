@@ -1,0 +1,105 @@
+{
+  "created_utc": "2026-10-07T14:20:49.149211+00:00",
+  "old_pid": 13976,
+  "old_watch_status_sha256": "75a821a9729a44a2e80cb9dc66c252c854820ae2f890519e85b898aaa6bbc185",
+  "old_target": 10240,
+  "new_target": 5000,
+  "old_profile_sha256": "9daa4c0aacf44866ff2d6b3f2676e164a746281285bce733bf567148cc200851",
+  "new_profile_sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+  "measurement_and_score_unchanged": true,
+  "old_cycle6_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller\\cycles\\9dfe3fc7aa20406216570144a63571e9194331d2b48aabe249e6d6a1432ae482\\action_receipt.json",
+  "old_cycle6_sha256": "908d3776c9f7d251b00fbdcaad4bb6b83a7748e9960cbec4d3b4c1fdddeea5a1",
+  "valid_unique_snapshot": 202,
+  "model_version": 3,
+  "preserved_training_bindings": {
+    "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\protocol.json": "01ec4d10362c02d5664760d6024fd44e32892cf01ee444048dea17e8e962c54c",
+    "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\state.json": "2532451d5104d79641d3449d0bb906cb18de67a2c19a798480c1020cf055656d",
+    "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v003\\member-0.pt": "a9327e9c2c085191ff52cc8964e7b6c4cfc2c697b298a5f3d66adfc71ced7771",
+    "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v003\\member-1.pt": "bd89352cdd95f2917c756ca651a7113500d9e001333e554ecec058b4ef9ad802",
+    "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_v2\\models\\data-v003\\member-2.pt": "c31bad991b9f4982dda4964815f8d57535af601c4c2bc7557bcd3b6729406a43"
+  },
+  "worker_restarted": false,
+  "hfss_process_stopped": false,
+  "restart_status": "verified_first_cycle_complete",
+  "verified_utc": "2026-10-07T14:35:35.919144+00:00",
+  "launch": {
+    "source_commit": "235a52e44a323aee38e0de182ec7b08730bbb588",
+    "pid": 16556,
+    "window": "Hidden",
+    "started_utc": "2026-10-07T14:31:03.4131289Z",
+    "settings": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings.json",
+    "old_pid": 13976,
+    "target_valid_unique": 5000,
+    "worker_restarted": false,
+    "hfss_started_here": false
+  },
+  "new_watch_status": {
+    "schema_version": 1,
+    "status": "waiting",
+    "started_utc": "2026-10-07T14:31:05.352759+00:00",
+    "launch_id": "1e4bc90a746e42f9a52ec0be7a29f324",
+    "attempt_record": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller\\watch_attempts\\1e4bc90a746e42f9a52ec0be7a29f324.json",
+    "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings.json",
+    "settings_sha256": "948a1456a681e7b9ee3453766f4e01ab35a8c45eba72084faecf4e6f1624379a",
+    "profile_binding": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+      "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+      "scope": "symmetry_filter_20261007"
+    },
+    "interval_seconds": 1800,
+    "completed_cycles": 1,
+    "hfss_started_here": false,
+    "cycle_started_utc": "2026-10-07T14:31:05.614118+00:00",
+    "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller\\cycles\\2e16eb6222d69fddedf39abe4553a5c1c456c2972b1e58c788a2a7b047de7590\\action_receipt.json",
+    "last_receipt_sha256": "66367ef358472e45bc5221a7a742f1a3417d4bb4288c768320c758adddcae194",
+    "last_cycle_seconds": 143.375,
+    "valid_unique": 212,
+    "latest_data_version": 4,
+    "last_completed_utc": "2026-10-07T14:33:28.987481+00:00",
+    "next_cycle_in_seconds": 1656.625
+  },
+  "first_action_sha256": "66367ef358472e45bc5221a7a742f1a3417d4bb4288c768320c758adddcae194",
+  "first_action": {
+    "cycle_id": "2e16eb6222d69fddedf39abe4553a5c1c456c2972b1e58c788a2a7b047de7590",
+    "status": "dispatched",
+    "valid_unique": 212,
+    "latest_data_version": 4,
+    "trained_this_cycle": true,
+    "target_valid_unique": 5000,
+    "pending_unique": 108,
+    "guided_pending_unique": 76,
+    "planned_jobs": [
+      {
+        "kind": "g",
+        "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller\\cycles\\2e16eb6222d69fddedf39abe4553a5c1c456c2972b1e58c788a2a7b047de7590\\guided_shards\\shard-001_input",
+        "input": "dedust_r80c2e16eb62g01_input",
+        "store": "dedust_r80c2e16eb62g01",
+        "prio": 1,
+        "count": 16,
+        "tree_sha256": "68d66d5a5309856679a0e6f97622f2bc034e115f51ac9232e7103f68b8a8108b",
+        "final_target_tail": false
+      }
+    ],
+    "limits": {
+      "max_guided_outstanding": 96,
+      "valid_plus_pending_plus_planned": 336
+    }
+  },
+  "existing_v003_models_and_protocol_hashes_unchanged": true,
+  "validation": {
+    "full_tests": 677,
+    "full_seconds": 370.14,
+    "additional_factory_cycle_watch_tests": 42,
+    "additional_seconds": 7.54,
+    "golden_changed": false
+  },
+  "performance_stall_policy_role": "conductor advisory only; no automated controller notifier",
+  "performance_stall_design_sha256": "6b60c0d120f33ad47290235541f0deea61590e336cbc50dc413def467d807842",
+  "archive": {
+    "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\controller_handoffs\\target5000_20261007",
+    "file_count_including_manifest": 14,
+    "payload_bytes": 83246,
+    "manifest_sha256": "47f7af521e1f630bfb1d4ab9f05d576b3ef302d6a16425a282dfee73e56b27dd",
+    "all_payload_hashes_verified_after_publish": true
+  }
+}
