@@ -34,3 +34,12 @@
 | `sm_dual.py` | **dual-port 排序器**（R58;`train`/`eval`/`rank`）：幾千張候選 → 挑 top-N 送 HFSS。鍋＝`harvest_dual`+`dedust_r57*` 去重 10,239 筆,尺＝`worst_margin_dual`。**排序走 margin 頭（直接回歸 m1..m4）而非「先預測響應再取極值」**（held-out ρ +0.47 vs +0.39）。權重＝NAS `sm_dual_v1_s{0,1,2}.pth` |
 
 接手導覽：先讀 `docs/log/README.md`（時間軸）→ `configs/ONGOING.md`（live）→ 該 round 檔。
+
+### 限定實驗的 worker（2026-10-07）
+
+新工作可在 `jobs-add`、`jobs-ls`、`worker` 使用相同 `--scope`。
+有 scope 的 job 必須明確帶 `--config`；worker 必須帶 `--selfgen 0`。
+不帶 scope 的新版 worker 只收歷史無 scope 工作；限定 worker 在碰 claim/fail 前先排除其他工作，
+且不做啟動時舊工作目錄清掃或歷史 probe。`jobs_state/STOP` 仍是全域停止，
+`jobs_state/STOP_<scope>` 可只停該實驗。正式啟動前先核對本輪佇列，不能直接恢復舊慢磨。
+CLI 的全域 `--dataset-root <path>` 必須放在子命令之前，供明確指定 NAS 或本機測試資料根。

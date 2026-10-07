@@ -6031,6 +6031,10 @@ def _jobs_lock_acquire(timeout=90.0, stale=180.0):
 
 def jobs_add(args):
     """把一個批次加進 NAS 派工佇列（round 檔照常開、check-dup 照常跑——佇列只管「誰去燒」）。"""
+    from script.batch_scope import validate_scope
+    scope = validate_scope(getattr(args, "scope", None))
+    if scope and not getattr(args, "config", None):
+        raise ValueError("限定 scope 的 job 必須明確提供 --config")
     qp, _ = _jobs_paths()
     if not DATASET_PATH.joinpath(args.input, "manifest.json").exists():
         raise SystemExit(f"{args.input} 無 manifest——先跑 select 與 check-dup")
@@ -6040,6 +6044,8 @@ def jobs_add(args):
         if any(j["store"] == args.store for j in jobs):
             raise SystemExit(f"{args.store} 已在佇列")
         job = dict(input=args.input, store=args.store, prio=args.prio)
+        if scope:
+            job["scope"] = scope
         if getattr(args, "machine", None):
             job["machine"] = args.machine                # 釘選:只有這台認領(同機三組對照等)
         if getattr(args, "config", None):
@@ -6580,6 +6586,8 @@ def worker(args):
     ②判死→寫 <store>.fail（JSON 記 machines 名單）並停機;③別台 worker 見 .fail 名單無自己
     →自動接管重跑（毒批收斂:全機敗過=永久 fail 等人工;舊純文字 .fail 不自動接管）。"""
     import time
+    from script.batch_scope import job_in_scope, validate_worker_scope
+    scope = validate_worker_scope(args)
     from antenna.utils.web import get_local_ip
     me = get_local_ip()
     qp, sd = _jobs_paths()
@@ -6588,7 +6596,8 @@ def worker(args):
     #  存量歷史（216 C 槽 0GB 的 78 個目錄）也靠這行:pull 新版重啟 worker 即清,免手動。
     import glob
     import shutil
-    junk = [d for d in glob.glob("_dedust_*") if os.path.isdir(d)]
+    # 限定實驗的 worker 不清除其他歷史任務的暫存，也不處理舊 probe。
+    junk = [] if scope else [d for d in glob.glob("_dedust_*") if os.path.isdir(d)]
     if junk:
         tot = sum(os.path.getsize(os.path.join(r, f))
                   for d in junk for r, _, fs in os.walk(d) for f in fs)
@@ -6598,14 +6607,19 @@ def worker(args):
               f"——正常兜底（跑完即刪管正常結束,這裡收 Ctrl-C/當機/讓位留下的）: {','.join(junk[:4])}")
     print(f"worker 上線 @ {me}（poll {args.poll}s / 單筆 timeout {args.timeout}s / stale {args.stale}m）")
     while True:
-        if sd.joinpath("STOP").exists():
+        if sd.joinpath("STOP").exists() or (scope and sd.joinpath(f"STOP_{scope}").exists()):
             print("STOP 檔存在,worker 收工")
             break
-        _probe_check(me, sd)                             # 機況探針（status/cleanup;空閒輪回應）
+        if not scope:
+            _probe_check(me, sd)                         # 限定實驗不執行歷史 cleanup 探針
         jobs = sorted(json.load(open(str(qp), encoding="utf-8")), key=lambda j: j.get("prio", 9)) \
             if qp.exists() else []
         picked = None
         for j in jobs:
+            if not job_in_scope(j, scope):
+                continue
+            if scope and not j.get("config"):
+                raise ValueError(f"scope={scope} 的 job 缺 config：{j.get('store')}")
             st = j["store"]
             _pin = str(j.get("machine") or "")
             #! 釘選比對:me=完整 IP(2026-08-03 實戰 bug:jobs-add 寫末段「216」等值比較永不匹配
@@ -6772,12 +6786,16 @@ def jobs_ls(args):
     """看佇列現況（人用;零 token）。預設隱藏已 done 的歷史 job（只列筆數）——接手降噪
     （2026-07-12,90 行→活躍區）;--all 列全部。"""
     import time
+    from script.batch_scope import job_in_scope, validate_scope
+    scope = validate_scope(getattr(args, "scope", None))
     qp, sd = _jobs_paths()
     if not qp.exists():
         print("（無 jobs.json）")
         return
     hidden = 0
     for j in sorted(json.load(open(str(qp), encoding="utf-8")), key=lambda j: j.get("prio", 9)):
+        if not job_in_scope(j, scope):
+            continue
         st = j["store"]
         state = "排隊中"
         for tag in ("fail", "done", "claim"):
@@ -6895,7 +6913,9 @@ def report(args):
 
 # ---------------------------------------------------------------- CLI
 def main():
+    global DATASET_PATH
     ap = argparse.ArgumentParser(description="Round-07 除塵驗證工具（select/sm-screen 開發機、run 正式機）")
+    ap.add_argument("--dataset-root", help="明確指定資料根目錄；預設仍使用既有 NAS")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("select", help="R7：挑家族代表+近標者、產除塵變體")
@@ -8358,6 +8378,7 @@ def main():
     s.set_defaults(fn=run)
 
     s = sub.add_parser("worker", help="資料工廠 worker：常駐認領 NAS 佇列 job（jobs.json）自動跑批")
+    s.add_argument("--scope", help="只認領此範圍的任務，必須搭配 --selfgen 0")
     s.add_argument("--config", default=DEFAULT_CFG,
                    help="預設尺（single）；job 自帶 config（jobs-add --config）時以批為準——同一台 worker 吃兩域")
     s.add_argument("--sweep", default=None, choices=["Interpolating", "Discrete", "Fast"],
@@ -8381,6 +8402,7 @@ def main():
     s.set_defaults(fn=worker)
 
     s = sub.add_parser("jobs-add", help="把批次加進派工佇列（select+check-dup 先跑完）")
+    s.add_argument("--scope", help="實驗範圍；有設定時 --config 必填")
     s.add_argument("--input", required=True)
     s.add_argument("--store", required=True)
     s.add_argument("--prio", type=int, default=5, help="小=先跑")
@@ -8390,6 +8412,7 @@ def main():
     s.set_defaults(fn=jobs_add)
 
     s = sub.add_parser("jobs-ls", help="看派工佇列現況（預設隱藏 done 歷史;--all 列全部）")
+    s.add_argument("--scope", help="只列此實驗範圍；未指定只列歷史無 scope 任務")
     s.add_argument("--all", action="store_true", help="連 done 歷史 job 一起列")
     s.set_defaults(fn=jobs_ls)
 
@@ -8413,6 +8436,9 @@ def main():
     s.set_defaults(fn=report)
 
     args = ap.parse_args()
+    if args.dataset_root:
+        from antenna.utils.utils import Path
+        DATASET_PATH = Path(args.dataset_root).resolve()
     args.fn(args)
 
 
