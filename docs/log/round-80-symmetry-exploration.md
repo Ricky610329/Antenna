@@ -290,3 +290,13 @@ v005新增`r80c961ec405g_00022_c64ecf92`（high_disagreement／seed_mutation）�
 [恢復收據](assets/r80_worker216_recovery_20261008.json)與原始16筆、job輸入、claim／done、前置snapshot metadata及producer共73檔存私人`operational_incidents/worker216_recovery_20261008_043453`；payload2,216,833 bytes，manifest SHA256 `9277abab421582b4884ab2e59aae5c6f8bca00e894c98e4ce7c79ceb3bd5a203`，發布後逐檔hash核對。第一次封存暫存路徑超過Windows長度限制，保留該暫存，改短stage／證據目錄後完成，未改NAS ACL或刪資料。
 
 04:50實際status無警報，current jobs15/16、9/16、2/16均有4分鐘內新結果。最新controller具名稽核仍是04:31的508唯一／v009（fit507）；新補測尚未納入該計數，不能由16/16直接推估最新唯一總量。遠端runtime Git仍未獨立核對。後續修正retryable fail與全機耗盡fail的派工名額差異，避免最後5,000筆邊界補派後原樣本跨機恢復造成超額；目前尚未部署此修正。R80與R81目標未完成。
+
+### 2026-10-08 05:05：修正跨機補測名額，精確5,000邊界回歸通過
+
+實際216補測事件顯示`.fail`是機台局部失敗，別台仍可接手；舊factory卻在第一個fail釋放名額。若發生於4,999附近，補派一筆後原圖形又恢復成功，可能累積5,001。修正不改worker重試行為，而由controller明示綁定216／218／37名單，fail機台集合精確涵蓋三台才釋放殘留名額；原失敗圖形仍永久排除，改補不同圖形。未知、空名單、重複或格式錯誤證據保守預留。claim／done／fail hash掃描前後變動轉正常deferred retry；派送逐片重新核對成功加預留總額。
+
+watcher在dispatch前驗證收據的worker名單及總額，只有有效唯一數精確等於目標且pending為零才完成；超額或成功加pending超額明示報錯。舊active prepared/training/dispatching收據缺少名單時拒絕重用，交接須先驗證並保存舊狀態；不默認猜測機台或改已發車收據。新本機設定`watch_settings_retry_v1.json`保留原設定、profile及training protocol bytes；沒有改HFSS、量測、SM配額、物理門檻或全失敗worker停機規則。
+
+conductor完整回歸**707 passed／319.69秒**、無warnings、golden未改；獨立Sol只讀審查及47項針對性回歸8.81秒通過，py_compile／pyflakes／diff通過。兩個決定性邊界測試都實際經過本地serialized profile／sample／rad驗證：4,999＋第一台fail→跨機接手→原圖形恢復，不派替代、恰好5,000；三台耗盡→查重後派不同單筆尾批→成功、恰好5,000。其餘4,999背景數量由測試fixture提供，未用HFSS實跑5,000或宣稱無條件容錯。
+
+[修正收據](assets/r80_exact_target_retry_fix_20261008.json)與四份最終source/tests、完整測試log、獨立審查及舊新settings／profile／protocol共13檔存私人`controller_handoffs/exact_target_fix_20261008/source_validation`；payload142,331 bytes，manifest SHA256 `63e9ba58195070bbbb7cda09ac152cde9f46269966aad83f85d4fee92fda7697`，發布後hash核對。這個里程碑先驗證並commit程式；舊PID16556仍使用先前載入的程式，實際交接另記。精確性限於三台綁定worker協定，不涵蓋全機終態後人工越過重試帳復活；遇此變更需重新對帳，不假裝超額完成。R80蒐集與R81正WM仍未完成。

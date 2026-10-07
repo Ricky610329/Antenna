@@ -10,6 +10,7 @@ from script.symmetry_factory_watch import run, _exclusive_watch
 
 REPO = Path(__file__).resolve().parents[1]
 PROFILE = REPO / 'configs' / 'single_r80_symmetry_factory.yaml'
+RETRY_WORKERS = ['140.123.106.216', '140.123.106.218', '140.123.106.37']
 
 
 def settings(tmp_path, interval=1800, *, name='settings.json', local='work', profile=PROFILE):
@@ -20,7 +21,8 @@ def settings(tmp_path, interval=1800, *, name='settings.json', local='work', pro
                                     dataset_root=str(tmp_path / 'dataset'),
                                     profile_config=str(profile),
                                     training_workdir=str(tmp_path / 'training'),
-                                    seed_inputs=['seed'], interval_seconds=interval)))
+                                    seed_inputs=['seed'], interval_seconds=interval,
+                                    expected_retry_workers=RETRY_WORKERS)))
     return path
 
 
@@ -33,7 +35,8 @@ def test_waits_30_minutes_and_dispatches_each_prepared_cycle(tmp_path):
         starts.append(clock[0])
         p = Path(kw['local_workdir']) / f'receipt{len(starts)}.json'
         p.write_text(json.dumps(dict(status='prepared', valid_unique=48 * len(starts),
-                                    target_valid_unique=10240, latest_data_version=len(starts))))
+                                    target_valid_unique=10240, latest_data_version=len(starts),
+                                    expected_retry_workers=RETRY_WORKERS)))
         clock[0] += 120
         return p
 
@@ -52,6 +55,20 @@ def test_waits_30_minutes_and_dispatches_each_prepared_cycle(tmp_path):
     assert starts == [0, 1800]
     assert len(dispatched) == 2 and max(sleeps) <= 30
     assert result['status'] == 'bounded_run_complete'
+
+
+@pytest.mark.parametrize('value', [None, [], ['worker', 'worker']])
+def test_watch_requires_explicit_nonempty_unique_retry_worker_roster(tmp_path, value):
+    path = settings(tmp_path)
+    payload = json.loads(path.read_text())
+    if value is None:
+        payload.pop('expected_retry_workers')
+    else:
+        payload['expected_retry_workers'] = value
+    path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match='expected_retry_workers'):
+        run(path, prepare=lambda **_: pytest.fail('invalid roster must not prepare'))
 
 
 def test_stop_and_failure_do_not_dispatch(tmp_path):
@@ -79,13 +96,68 @@ def test_stops_after_symmetry_collection_without_filter_dispatch(tmp_path):
     def prepare(**kw):
         p = Path(kw['local_workdir']) / 'receipt.json'
         p.write_text(json.dumps(dict(status='idle', valid_unique=10240,
-                                    target_valid_unique=10240, latest_data_version=210)))
+                                    target_valid_unique=10240, latest_data_version=210,
+                                    pending_unique=0,
+                                    expected_retry_workers=RETRY_WORKERS)))
         return p
 
     result = run(path, prepare=prepare, dispatch=lambda p: pytest.fail('unexpected dispatch'),
                  campaign_stop=lambda _: None)
     assert result['status'] == 'symmetry_collection_complete'
     assert result['completed_cycles'] == 1 and not result['hfss_started_here']
+
+
+def test_rejects_receipt_above_exact_target(tmp_path):
+    path = settings(tmp_path)
+    dispatched = []
+
+    def prepare(**kw):
+        receipt = Path(kw['local_workdir']) / 'receipt.json'
+        receipt.write_text(json.dumps({
+            'status': 'prepared', 'valid_unique': 5001, 'target_valid_unique': 5000,
+            'latest_data_version': 100, 'expected_retry_workers': RETRY_WORKERS,
+        }))
+        return receipt
+
+    with pytest.raises(ValueError, match='exceeds exact'):
+        run(path, prepare=prepare, dispatch=lambda receipt: dispatched.append(receipt),
+            campaign_stop=lambda _: None)
+    state = json.loads((tmp_path / 'work' / 'watch_status.json').read_text())
+    assert state['status'] == 'failed' and not dispatched
+
+
+def test_does_not_complete_exact_target_with_residual_pending(tmp_path):
+    path = settings(tmp_path)
+
+    def prepare(**kw):
+        receipt = Path(kw['local_workdir']) / 'receipt.json'
+        receipt.write_text(json.dumps({
+            'status': 'idle', 'valid_unique': 5000, 'pending_unique': 1,
+            'target_valid_unique': 5000, 'latest_data_version': 100,
+            'expected_retry_workers': RETRY_WORKERS,
+        }))
+        return receipt
+
+    with pytest.raises(ValueError, match='residual pending'):
+        run(path, prepare=prepare, campaign_stop=lambda _: None)
+
+
+def test_rejects_wrong_receipt_roster_before_dispatch(tmp_path):
+    path = settings(tmp_path)
+    dispatched = []
+
+    def prepare(**kw):
+        receipt = Path(kw['local_workdir']) / 'receipt.json'
+        receipt.write_text(json.dumps({
+            'status': 'prepared', 'valid_unique': 4999, 'target_valid_unique': 5000,
+            'latest_data_version': 100, 'expected_retry_workers': RETRY_WORKERS[:-1],
+        }))
+        return receipt
+
+    with pytest.raises(ValueError, match='roster differs'):
+        run(path, prepare=prepare, dispatch=lambda receipt: dispatched.append(receipt),
+            campaign_stop=lambda _: None)
+    assert not dispatched
 
 
 def test_rejects_frequent_polling(tmp_path):
@@ -179,7 +251,8 @@ def test_long_cycle_skips_missed_tick_without_immediate_catchup(tmp_path):
         receipt = Path(kw['local_workdir']) / f'receipt-{len(starts)}.json'
         receipt.write_text(json.dumps({'status': 'idle', 'valid_unique': len(starts),
                                        'target_valid_unique': 10240,
-                                       'latest_data_version': 0}))
+                                       'latest_data_version': 0,
+                                       'expected_retry_workers': RETRY_WORKERS}))
         clock[0] += 1900
         return receipt
 
@@ -198,7 +271,8 @@ def test_restart_attempt_preserves_prior_status_and_uses_new_launch_id(tmp_path)
         receipt = Path(kw['local_workdir']) / 'receipt.json'
         receipt.write_text(json.dumps({'status': 'idle', 'valid_unique': 1,
                                        'target_valid_unique': 10240,
-                                       'latest_data_version': 0}))
+                                       'latest_data_version': 0,
+                                       'expected_retry_workers': RETRY_WORKERS}))
         return receipt
 
     first = run(path, prepare=prepare, max_cycles=1, campaign_stop=lambda _: None)
@@ -221,7 +295,8 @@ def test_same_training_workdir_lock_blocks_second_local_watcher(tmp_path):
         receipt = Path(kw['local_workdir']) / 'receipt.json'
         receipt.write_text(json.dumps({'status': 'idle', 'valid_unique': 1,
                                        'target_valid_unique': 10240,
-                                       'latest_data_version': 0}))
+                                       'latest_data_version': 0,
+                                       'expected_retry_workers': RETRY_WORKERS}))
         return receipt
 
     run(first_path, prepare=prepare, max_cycles=1, campaign_stop=lambda _: None)
@@ -239,7 +314,8 @@ def test_live_snapshot_race_defers_exactly_one_tick_then_recovers(tmp_path):
         receipt = Path(kw['local_workdir']) / 'receipt.json'
         receipt.write_text(json.dumps({'status': 'prepared', 'valid_unique': 48,
                                        'target_valid_unique': 10240,
-                                       'latest_data_version': 1}))
+                                       'latest_data_version': 1,
+                                       'expected_retry_workers': RETRY_WORKERS}))
         return receipt
 
     def dispatch(receipt):

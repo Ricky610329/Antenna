@@ -72,17 +72,19 @@ python -m script.exploration train --work-dir tmp/r80_symmetry_20261007_single/s
 
 三台正式機只需執行原worker；SM/controller僅在開發機啟動一份。`symmetry_factory_cycle --once`先產生具名、hash綁定的action receipt，`--commit-receipt`再逐片查重及加入私人佇列。一般guided小批為16筆，接近總額時允許明記的最後不足16筆尾批。待跑guided最多96，原48長批及claim不改寫。新資料先稽核保存的前瞻曲線再訓練；沒有預測的初始盲選資料明示缺失。
 
-常駐入口讀取本機已準備的設定，設定內明確指定私人dataset、factory profile、seed快照、blind預備池及`training_v2`：
+常駐入口讀取本機已準備的設定，設定內明確指定私人dataset、factory profile、seed快照、blind預備池、`training_v2`及`expected_retry_workers`。2026-10-08的設定版本`watch_settings_retry_v1.json`沿用原工作區，增加固定名單`["140.123.106.216", "140.123.106.218", "140.123.106.37"]`；原設定保留作歷史證據。設定不得從目前少數claims推估名單：
 
 ```powershell
 $env:OMP_NUM_THREADS='4'
 $env:PYTHONUTF8='1'
-python -m script.symmetry_factory_watch --settings tmp/r80_factory_20261007/watch_settings.json
+python -m script.symmetry_factory_watch --settings tmp/r80_factory_20261007/watch_settings_retry_v1.json
 ```
 
 此指令為開發機恢复用，**不要在三台worker上另開controller**，也不要重新初始化已訓練的protocol。每1800秒按起始節奏檢查；長週期錯過時跳過過期tick，不立即連跑。模型訓練只用本機CPU，HFSS照原佇列運作。controller與NAS派送均有kernel lock，中斷後鎖自動釋放，原資料/收據保留；重啟另記attempt，不抹掉之前錯誤。
 
 狀態位於`tmp/r80_factory_20261007/controller/watch_status.json`。該資料夾的`STOP`只在週期邊界停止controller，不會殺HFSS；NAS全域/本scope STOP也會阻止新的prepare/dispatch。正常worker寫入`results.json`造成快照競態時記deferred receipt，下個30分鐘重試；profile/hash損壞仍停止並保留診斷。使用者已將唯一真值目標降為5,000；達額後只標記對稱資料蒐集完成，R81仍須依工程檢查流程接續，不會由此腳本直接啟動。目標不是16的倍數，既有最後尾批可少於16筆，不以補整批灌成5,008。
+
+`.fail`只代表已列名機台失敗，別台仍能接手；因此保留尚未成功圖形的名額，直到fail名單確實涵蓋全部指定worker才釋放，並永久排除原失敗圖形以補派不同圖形。未知／缺失／格式錯誤的名單不當作全機終態。掃描期間claim／done／fail有變動會延後重試，dispatch重新核對容量；只有有效唯一數精確等於5,000且無剩餘預留才標記蒐集完成，超額會報錯。新增機台或改名單前須在controller週期邊界停止、保存舊state，再以新的設定版本重啟一份；不重建protocol或修改live worker結果。
 
 使用者2026-10-07最新監看指示：平時讓背景流程掛著，HFSS依私人佇列工作、SM依設定的新資料批次慢慢更新。conductor每30分鐘只做健康檢查，確認原controller狀態／最近週期是否完成、佇列有工作及worker近期進展；一切正常且沒有需處理的結果時，不持續主動喚醒、不逐小批反覆重播預測／全量hash，也不送例行進度。出錯、停滯、研究結果需驗證或到達階段邊界才介入。controller原有snapshot、模型批次更新與派工收據仍自動保存，不因減少人工監看而停用。
 

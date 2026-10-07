@@ -102,6 +102,72 @@ def _dataset_lock(dataset_root: Path, scope: str) -> Path:
     return dataset_root / "jobs_state" / f"factory-controller-{suffix}.lock"
 
 
+def _normalize_retry_workers(values: Sequence[str] | None) -> tuple[str, ...]:
+    """Return a stable explicit roster; an empty roster never proves terminal failure."""
+
+    if values is None:
+        return ()
+    if isinstance(values, (str, bytes)):
+        raise ValueError("expected_retry_workers must be a sequence of worker identities")
+    workers = []
+    for value in values:
+        if not isinstance(value, str) or not value or value != value.strip():
+            raise ValueError("expected_retry_workers must contain nonempty normalized strings")
+        workers.append(value)
+    if len(set(workers)) != len(workers):
+        raise ValueError("expected_retry_workers must be unique")
+    return tuple(sorted(workers))
+
+
+def _marker_binding(path: Path) -> tuple[dict[str, Any], Any | None]:
+    try:
+        raw = path.read_bytes()
+    except FileNotFoundError:
+        return {"exists": False}, None
+    binding = {"exists": True, "sha256": hashlib.sha256(raw).hexdigest()}
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        binding["valid_json"] = False
+        return binding, None
+    binding["valid_json"] = True
+    return binding, payload
+
+
+def _job_state_binding(state_root: Path, store: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    bindings, payloads = {}, {}
+    for suffix in ("claim", "done", "fail"):
+        binding, payload = _marker_binding(state_root / f"{store}.{suffix}")
+        bindings[suffix] = binding
+        payloads[suffix] = payload
+    return bindings, payloads
+
+
+def _terminal_fail(payload: Any, expected_workers: tuple[str, ...]) -> bool:
+    """Only an exact, fully exhausted roster releases failed residual capacity."""
+
+    if not expected_workers or not isinstance(payload, dict):
+        return False
+    machines = payload.get("machines")
+    if (not isinstance(machines, list) or any(not isinstance(item, str) or not item
+                                               for item in machines) or
+            len(set(machines)) != len(machines)):
+        return False
+    observed = set(machines)
+    expected = set(expected_workers)
+    if not observed <= expected:
+        return False
+    return observed == expected
+
+
+def _require_state_bindings(state_root: Path, bindings: Sequence[Mapping[str, Any]]) -> None:
+    for item in bindings:
+        actual, _payloads = _job_state_binding(state_root, str(item["store"]))
+        if actual != item["markers"]:
+            raise LiveSnapshotChanged(
+                f"worker state changed during controller scan: {item['store']}")
+
+
 def _physical_snapshot(dataset: Path, scope: str) -> dict[str, Any]:
     try:
         return factory.snapshot(dataset, scope)
@@ -374,8 +440,11 @@ def _training_summary(root: Path, version: int) -> dict[str, Any] | None:
             "quality_threshold": None}
 
 
-def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any]) -> dict[str, Any]:
+def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any],
+                expected_retry_workers: Sequence[str] | None = None) -> dict[str, Any]:
     jobs_path = dataset_root / "jobs.json"
+    state_root = dataset_root / "jobs_state"
+    retry_workers = _normalize_retry_workers(expected_retry_workers)
     before = pb.file_sha256(jobs_path)
     jobs = _read(jobs_path)
     if not isinstance(jobs, list):
@@ -384,7 +453,8 @@ def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any]) -> dict
     wanted_sid = score_spec_id(cfg.score_spec)
     relevant, pending_hashes, guided_pending = [], set(), set()
     successful_hashes: set[str] = set()
-    pairs, pair_bindings = [], []
+    pairs, pair_bindings, state_bindings = [], [], []
+    retryable_failed_jobs, terminal_failed_jobs = [], []
     for job in jobs:
         if job.get("scope") != cfg.scope:
             continue
@@ -402,9 +472,16 @@ def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any]) -> dict
             raise ValueError(f"same-scope job config differs from factory profile: {input_dir}")
         rows = pb.validate_input(input_dir, input_cfg)
         store = _safe_child(dataset_root, job["store"])
-        fail = (dataset_root / "jobs_state" / f"{job['store']}.fail").exists()
-        done = (dataset_root / "jobs_state" / f"{job['store']}.done").exists()
-        terminal = fail or done
+        marker_binding, marker_payloads = _job_state_binding(state_root, job["store"])
+        state_bindings.append({"store": job["store"], "markers": marker_binding})
+        fail = marker_binding["fail"]["exists"]
+        done = marker_binding["done"]["exists"]
+        if fail and done:
+            raise ValueError(f"job has both fail and done markers: {job['store']}")
+        terminal_fail = fail and _terminal_fail(marker_payloads["fail"], retry_workers)
+        terminal = done or terminal_fail
+        if fail:
+            (terminal_failed_jobs if terminal_fail else retryable_failed_jobs).append(job["store"])
         if not terminal:
             hashes = {row["pattern_sha256"] for row in rows}
             pending_hashes.update(hashes)
@@ -453,10 +530,15 @@ def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any]) -> dict
                 raise ValueError(f"reserved input changed during exclusion scan: {input_dir}")
     if pb.file_sha256(jobs_path) != before:
         raise LiveSnapshotChanged("queue changed during controller scan; retry")
+    _require_state_bindings(state_root, state_bindings)
     return {"jobs_sha256": before, "jobs": relevant, "pairs": pairs,
             "pair_bindings": pair_bindings,
             "pending_hashes": pending_hashes, "guided_pending_hashes": guided_pending,
-            "successful_hashes": successful_hashes, "exclusion_hashes": exclusions}
+            "successful_hashes": successful_hashes, "exclusion_hashes": exclusions,
+            "expected_retry_workers": list(retry_workers),
+            "state_bindings": state_bindings,
+            "retryable_failed_jobs": retryable_failed_jobs,
+            "terminal_failed_jobs": terminal_failed_jobs}
 
 
 def _require_pair_bindings(bindings: Sequence[Mapping[str, Any]]) -> None:
@@ -570,11 +652,13 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                        profile_config: str | Path, training_workdir: str | Path,
                        seed_inputs: Sequence[str | Path],
                        prepared_blind_pool: str | Path | None = None,
-                       cold_start_predictor: Any | None = None) -> Path:
+                       cold_start_predictor: Any | None = None,
+                       expected_retry_workers: Sequence[str] | None = None) -> Path:
     """Prepare one recoverable cycle and return its reviewable action receipt."""
 
     local = Path(local_workdir).resolve(); dataset = Path(dataset_root).resolve()
     profile = Path(profile_config).resolve(); train_root = Path(training_workdir).resolve()
+    retry_workers = _normalize_retry_workers(expected_retry_workers)
     local.mkdir(parents=True, exist_ok=True)
     active = local / "active_cycle.json"
     recovered_training_receipt = None
@@ -586,9 +670,9 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
         if receipt.is_file():
             prior = _read(receipt)
             if prior.get("status") in {"prepared", "dispatching", "training"}:
-                expected = (str(dataset), str(profile), str(train_root))
+                expected = (str(dataset), str(profile), str(train_root), list(retry_workers))
                 actual = (prior.get("dataset_root"), prior.get("profile_config"),
-                          prior.get("training_workdir"))
+                          prior.get("training_workdir"), prior.get("expected_retry_workers"))
                 if actual != expected:
                     raise ValueError("active cycle belongs to different explicit inputs")
             if prior.get("status") == "training":
@@ -602,12 +686,18 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     _protocol, protocol_binding = _protocol_binding(train_root)
     with _exclusive_lock(_dataset_lock(dataset, cfg.scope)):
         audit = _physical_snapshot(dataset, cfg.scope)
-        queue = _queue_view(dataset, cfg, policy)
+        queue = _queue_view(dataset, cfg, policy, retry_workers)
         if audit["jobs_sha256"] != queue["jobs_sha256"]:
             raise LiveSnapshotChanged(
                 "queue changed between physical audit and controller scan; retry")
         _require_pair_bindings(queue["pair_bindings"])
     version, trained_hashes, trained_receipt = _trained(train_root)
+    initial_valid = len(queue["successful_hashes"])
+    initial_pending = len(queue["pending_hashes"] - queue["successful_hashes"])
+    if initial_valid > int(policy["target_valid_unique"]):
+        raise ValueError("audited valid unique exceeds target")
+    if initial_valid + initial_pending > int(policy["target_valid_unique"]):
+        raise ValueError("audited valid plus pending unique exceeds target")
     source_binding = queue["pair_bindings"]
     seed_bindings = [_path_binding(Path(value)) for value in seed_inputs]
     blind_binding = (_path_binding(Path(prepared_blind_pool))
@@ -618,7 +708,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                             "trained": trained_receipt, "profile": profile_sha256,
                             "training_protocol": protocol_binding,
                             "seeds": seed_bindings, "blind": blind_binding,
-                            "cold_predictor": cold_binding})
+                            "cold_predictor": cold_binding,
+                            "expected_retry_workers": retry_workers})
     cycle = local / "cycles" / cycle_id
     receipt_path = cycle / "action_receipt.json"
     cycle.mkdir(parents=True, exist_ok=True)
@@ -675,6 +766,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
             "cycle_id": cycle_id, "dataset_root": str(dataset), "scope": cfg.scope,
             "profile_config": str(profile), "training_workdir": str(train_root),
             "profile_sha256": profile_sha256,
+            "expected_retry_workers": list(retry_workers),
             "training_protocol": protocol_binding,
             "audited_source_bindings": source_binding,
             "pretrain_prediction_audit": prediction_audit_binding,
@@ -705,15 +797,19 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     # current queue.  Training deliberately does not hold the dataset lock.
     with _exclusive_lock(_dataset_lock(dataset, cfg.scope)):
         audit = _physical_snapshot(dataset, cfg.scope)
-        queue = _queue_view(dataset, cfg, policy)
+        queue = _queue_view(dataset, cfg, policy, retry_workers)
         if audit["jobs_sha256"] != queue["jobs_sha256"]:
             raise LiveSnapshotChanged(
                 "queue changed between final physical audit and controller scan; retry")
         _require_pair_bindings(queue["pair_bindings"])
 
     valid_unique = len(queue["successful_hashes"])
+    if valid_unique > int(policy["target_valid_unique"]):
+        raise ValueError("audited valid unique exceeds target")
     pending = queue["pending_hashes"] - queue["successful_hashes"]
     guided_pending = queue["guided_pending_hashes"] - queue["successful_hashes"]
+    if valid_unique + len(pending) > int(policy["target_valid_unique"]):
+        raise ValueError("audited valid plus pending unique exceeds target")
     remaining_budget = max(0, int(policy["target_valid_unique"]) - valid_unique - len(pending))
     planned_jobs: list[dict[str, Any]] = []
     planned_hashes: set[str] = set()
@@ -797,6 +893,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
         "cycle_id": cycle_id, "dataset_root": str(dataset), "scope": cfg.scope,
         "profile_config": str(profile), "training_workdir": str(train_root),
         "profile_sha256": profile_sha256,
+        "expected_retry_workers": list(retry_workers),
         "training_protocol": protocol_binding,
         "audited_source_bindings": source_binding,
         "seed_inputs": seed_bindings, "prepared_blind_pool": blind_binding,
@@ -812,6 +909,9 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
         "new_unique_available_before_training": len(new_order),
         "valid_unique": valid_unique, "pending_unique": len(pending),
         "guided_pending_unique": len(guided_pending), "target_valid_unique": policy["target_valid_unique"],
+        "prepared_queue_state_bindings": queue.get("state_bindings", []),
+        "retryable_failed_jobs": queue.get("retryable_failed_jobs", []),
+        "terminal_failed_jobs": queue.get("terminal_failed_jobs", []),
         "planned_jobs": planned_jobs, "dispatch_gate": "not_run",
         "limits": {"max_guided_outstanding": policy["max_guided_outstanding"],
                    "valid_plus_pending_plus_planned": valid_unique + len(pending | planned_hashes) +
@@ -826,7 +926,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
 def run_once(*, local_workdir: str | Path, dataset_root: str | Path,
              profile_config: str | Path, training_workdir: str | Path,
              seed_inputs: Sequence[str | Path], prepared_blind_pool: str | Path | None = None,
-             cold_start_predictor: Any | None = None) -> Path:
+             cold_start_predictor: Any | None = None,
+             expected_retry_workers: Sequence[str] | None = None) -> Path:
     local = Path(local_workdir).resolve()
     train_root = Path(training_workdir).resolve()
     local.mkdir(parents=True, exist_ok=True)
@@ -836,7 +937,8 @@ def run_once(*, local_workdir: str | Path, dataset_root: str | Path,
                 local_workdir=local, dataset_root=dataset_root, profile_config=profile_config,
                 training_workdir=train_root, seed_inputs=seed_inputs,
                 prepared_blind_pool=prepared_blind_pool,
-                cold_start_predictor=cold_start_predictor)
+                cold_start_predictor=cold_start_predictor,
+                expected_retry_workers=expected_retry_workers)
 
 
 single_cycle = run_once
@@ -855,8 +957,9 @@ def _dedust_add(dataset_root: Path, job: Mapping[str, Any], scope: str) -> None:
 
 
 def _check_dispatch_budget(dataset: Path, cfg: Any, policy: Mapping[str, Any],
-                           hashes: set[str], priority: int) -> None:
-    queue = _queue_view(dataset, cfg, policy)
+                           hashes: set[str], priority: int,
+                           expected_retry_workers: Sequence[str] | None = None) -> None:
+    queue = _queue_view(dataset, cfg, policy, expected_retry_workers)
     valid = queue["successful_hashes"]
     pending_hashes = queue["pending_hashes"] - valid
     guided = queue["guided_pending_hashes"] - valid
@@ -881,6 +984,9 @@ def _commit_dispatch_locked(path: Path, *,
     if pb.file_sha256(profile) != receipt.get("profile_sha256"):
         raise ValueError("profile config differs from prepared receipt")
     cfg, policy = _load_profile(profile)
+    if "expected_retry_workers" not in receipt:
+        raise ValueError("dispatch receipt lacks expected retry worker roster")
+    retry_workers = _normalize_retry_workers(receipt["expected_retry_workers"])
     if cfg.scope != receipt["scope"]:
         raise ValueError("receipt scope differs from bound profile")
     if _protocol_binding(Path(receipt["training_workdir"]).resolve())[1] != receipt.get(
@@ -902,7 +1008,8 @@ def _commit_dispatch_locked(path: Path, *,
             continue
         rows = _read(staged / "manifest.json")
         hashes = {row["pattern_sha256"] for row in rows}
-        _check_dispatch_budget(dataset, cfg, policy, hashes, int(planned["prio"]))
+        _check_dispatch_budget(dataset, cfg, policy, hashes, int(planned["prio"]),
+                               retry_workers)
         if receipt["status"] == "prepared":
             receipt["status"] = "dispatching"
             _write(path, receipt)
@@ -929,7 +1036,8 @@ def _commit_dispatch_locked(path: Path, *,
             if existing != expected:
                 raise ValueError(f"queue store collision after input copy: {planned['store']}")
             continue
-        _check_dispatch_budget(dataset, cfg, policy, hashes, int(planned["prio"]))
+        _check_dispatch_budget(dataset, cfg, policy, hashes, int(planned["prio"]),
+                               retry_workers)
         duplicate_check(destination, dataset)
         queue_add(dataset, planned, receipt["scope"])
     receipt["status"] = "dispatched"; receipt["dispatch_gate"] = "passed_per_shard"
@@ -963,6 +1071,7 @@ def main() -> None:
     parser.add_argument("--training-workdir", type=Path)
     parser.add_argument("--seed-input", type=Path, action="append")
     parser.add_argument("--prepared-blind-pool", type=Path)
+    parser.add_argument("--expected-retry-worker", action="append", default=[])
     parser.add_argument("--commit-receipt", type=Path)
     args = parser.parse_args()
     if args.commit_receipt:
@@ -975,7 +1084,8 @@ def main() -> None:
         result = run_once(local_workdir=args.local_workdir, dataset_root=args.dataset_root,
                           profile_config=args.profile_config,
                           training_workdir=args.training_workdir, seed_inputs=args.seed_input,
-                          prepared_blind_pool=args.prepared_blind_pool)
+                          prepared_blind_pool=args.prepared_blind_pool,
+                          expected_retry_workers=args.expected_retry_worker)
     print(result)
 
 

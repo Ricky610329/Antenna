@@ -64,6 +64,20 @@ def _require_campaign_binding(settings_file: Path, settings_sha256: str,
         raise ValueError('watch profile changed; restart explicitly with the new profile')
 
 
+def _validate_cycle_receipt(receipt: dict, retry_workers: tuple[str, ...]) -> None:
+    if receipt.get('expected_retry_workers') != list(retry_workers):
+        raise ValueError('controller receipt retry worker roster differs from watch binding')
+    valid = receipt.get('valid_unique')
+    target = receipt.get('target_valid_unique')
+    if (isinstance(valid, bool) or not isinstance(valid, int) or
+            isinstance(target, bool) or not isinstance(target, int)):
+        raise ValueError('controller receipt lacks integer valid-unique accounting')
+    if valid > target:
+        raise ValueError('controller receipt exceeds exact valid-unique target')
+    if valid == target and receipt.get('pending_unique') != 0:
+        raise ValueError('controller receipt reaches target with residual pending unique')
+
+
 def _write_state(state_file: Path, attempt_file: Path, attempt: dict, state: dict) -> None:
     pb.atomic_json(state_file, state)
     record = dict(attempt)
@@ -135,14 +149,20 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
         settings = dict(settings_snapshot)
         bound_settings_sha256 = str(settings_sha256)
     required = {'local_workdir', 'dataset_root', 'profile_config', 'training_workdir',
-                'seed_inputs', 'interval_seconds'}
+                'seed_inputs', 'interval_seconds', 'expected_retry_workers'}
     if not required <= settings.keys() or set(settings) - required - {'prepared_blind_pool'}:
-        raise ValueError('watch settings must name explicit controller inputs and interval')
+        raise ValueError(
+            'watch settings must name explicit controller inputs, interval, and '
+            'expected_retry_workers')
     interval = int(settings.pop('interval_seconds'))
     if interval < 1800:
         raise ValueError('routine controller interval must be at least 1800 seconds')
     if max_cycles is not None and max_cycles < 1:
         raise ValueError('max_cycles must be positive')
+    retry_workers = cycle._normalize_retry_workers(settings['expected_retry_workers'])
+    if not retry_workers:
+        raise ValueError('watch requires a nonempty expected_retry_workers roster')
+    settings['expected_retry_workers'] = list(retry_workers)
     work = Path(settings['local_workdir']).resolve()
     work.mkdir(parents=True, exist_ok=True)
     state_file = work / 'watch_status.json'
@@ -164,9 +184,10 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
                'prior_watch_status_sha256': prior_sha256}
     state = {'schema_version': 1, 'status': 'starting', 'started_utc': _utc(),
              'launch_id': launch_id, 'attempt_record': str(attempt_file),
-             'settings_path': str(settings_file), 'settings_sha256': bound_settings_sha256,
-             'profile_binding': profile_binding,
-             'interval_seconds': interval, 'completed_cycles': 0, 'hfss_started_here': False}
+              'settings_path': str(settings_file), 'settings_sha256': bound_settings_sha256,
+              'profile_binding': profile_binding,
+              'expected_retry_workers': list(retry_workers),
+              'interval_seconds': interval, 'completed_cycles': 0, 'hfss_started_here': False}
     _write_state(state_file, attempt_file, attempt, state)
     due = monotonic()
     try:
@@ -196,11 +217,13 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
                     state.update(status='stopped', stop_reason=stopped, finished_utc=_utc(),
                                  prepared_receipt=str(receipt_path.resolve()))
                     break
+                _validate_cycle_receipt(receipt, retry_workers)
                 if receipt['status'] in ('prepared', 'dispatching'):
                     # Preparation produces the concrete immutable proposal. The user
                     # already authorized continuing this bounded private campaign.
                     dispatch(receipt_path)
                     receipt = pb.read_json(receipt_path)
+                    _validate_cycle_receipt(receipt, retry_workers)
                 if receipt['status'] not in ('idle', 'dispatched'):
                     raise ValueError(f"controller did not complete: {receipt['status']}")
             except cycle.LiveSnapshotChanged as exc:
@@ -229,8 +252,8 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
                          last_cycle_seconds=monotonic() - started,
                          valid_unique=receipt['valid_unique'],
                          latest_data_version=receipt['latest_data_version'],
-                         status='waiting', last_completed_utc=_utc())
-            if receipt['valid_unique'] >= receipt['target_valid_unique']:
+                          status='waiting', last_completed_utc=_utc())
+            if receipt['valid_unique'] == receipt['target_valid_unique']:
                 state.update(status='symmetry_collection_complete', finished_utc=_utc(),
                              next_phase='R81 engineering checks remain; no filter jobs launched here')
                 break

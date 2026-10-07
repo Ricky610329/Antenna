@@ -16,6 +16,7 @@ from script import symmetry_training as training
 
 REPO = Path(__file__).resolve().parents[1]
 PROFILE = REPO / "configs" / "single_r80_symmetry_factory.yaml"
+RETRY_WORKERS = ["140.123.106.216", "140.123.106.218", "140.123.106.37"]
 
 
 class ColdPredictor:
@@ -128,6 +129,43 @@ def _dataset(root: Path) -> Path:
     return root
 
 
+def _queued_single_error(dataset: Path, *, start: int = 900) -> tuple[Path, Path, dict]:
+    input_dir = _bundle(dataset / "failed_input", 1, prefix="failed", start=start)
+    store = _complete(input_dir, dataset / "failed")
+    row = pb.read_json(input_dir / "manifest.json")[0]
+    successful_results = pb.read_json(store / "results.json")
+    pb.atomic_json(store / "results.json", {
+        row["id"]: {"error": "DISP_E_EXCEPTION 0x80070223",
+                    "error_kind": "hfss_simulation", "attempts": 3},
+    })
+    cfg = pb.load_profile_config(PROFILE)
+    pb.validate_store(store, require_complete=False)
+    pb.atomic_json(dataset / "jobs.json", [{
+        "input": input_dir.name, "store": store.name, "prio": 1,
+        "scope": cfg.scope, "config": f"{input_dir.name}/config.yaml",
+    }])
+    return input_dir, store, successful_results
+
+
+def _add_background_truth(monkeypatch, count: int = 4_999) -> set[str]:
+    background = {f"background-{index}" for index in range(count)}
+    original = cycle._queue_view
+
+    def queue_view(*args, **kwargs):
+        result = original(*args, **kwargs)
+        result["successful_hashes"].update(background)
+        result["exclusion_hashes"].update(background)
+        return result
+
+    monkeypatch.setattr(cycle, "_queue_view", queue_view)
+    monkeypatch.setattr(cycle, "_trained",
+                        lambda root: (1, background, {"manifest_id": "bound",
+                                                      "data_version": 1}))
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda root, version: ColdPredictor())
+    return background
+
+
 def _dispatch_receipt(path: Path, dataset: Path, train: Path,
                       jobs: list[dict], cycle_id: str) -> Path:
     path.parent.mkdir(parents=True)
@@ -136,6 +174,7 @@ def _dispatch_receipt(path: Path, dataset: Path, train: Path,
         "dataset_root": str(dataset), "scope": pb.load_profile_config(PROFILE).scope,
         "profile_config": str(PROFILE.resolve()), "profile_sha256": pb.file_sha256(PROFILE),
         "training_workdir": str(train.resolve()),
+        "expected_retry_workers": RETRY_WORKERS,
         "training_protocol": cycle._protocol_binding(train)[1], "planned_jobs": jobs,
     })
     return path
@@ -178,6 +217,26 @@ def test_prepare_once_is_local_idempotent_and_splits_guided_48(tmp_path, monkeyp
                           profile_config=PROFILE, training_workdir=train,
                           seed_inputs=[seeds], cold_start_predictor=ColdPredictor()) == receipt_path
     assert len(calls) == 1
+
+
+def test_active_pre_roster_receipt_is_not_reused_for_bound_campaign(tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 4)
+    _fake_pool(monkeypatch)
+    local = tmp_path / "cycle"
+    receipt_path = cycle.run_once(
+        local_workdir=local, dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds], cold_start_predictor=ColdPredictor())
+    receipt = pb.read_json(receipt_path)
+    receipt.pop("expected_retry_workers")
+    pb.atomic_json(receipt_path, receipt)
+
+    with pytest.raises(ValueError, match="active cycle belongs to different explicit inputs"):
+        cycle.run_once(local_workdir=local, dataset_root=dataset, profile_config=PROFILE,
+                       training_workdir=train, seed_inputs=[seeds],
+                       cold_start_predictor=ColdPredictor(),
+                       expected_retry_workers=RETRY_WORKERS)
 
 
 def test_prepare_once_uses_three_blind_shards_when_no_model(tmp_path):
@@ -424,6 +483,160 @@ def test_final_5000_target_tail_reserves_only_remaining_eight(tmp_path, monkeypa
     assert receipt["planned_jobs"][0]["final_target_tail"] is True
     assert receipt["target_valid_unique"] == 5000
     assert receipt["limits"]["valid_plus_pending_plus_planned"] == 5000
+
+
+def test_prepare_rejects_existing_valid_plus_pending_above_target(tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3)
+    successful = {f"ok-{index}" for index in range(4_999)}
+    pending = {"pending-a", "pending-b"}
+    jobs_hash = pb.file_sha256(dataset / "jobs.json")
+    monkeypatch.setattr(cycle.factory, "snapshot", lambda *args: {"jobs_sha256": jobs_hash})
+    monkeypatch.setattr(cycle, "_queue_view", lambda *args: {
+        "jobs_sha256": jobs_hash, "jobs": [], "pairs": [], "pair_bindings": [],
+        "pending_hashes": pending, "guided_pending_hashes": pending,
+        "successful_hashes": successful, "exclusion_hashes": successful | pending,
+    })
+    monkeypatch.setattr(cycle, "_trained",
+                        lambda root: (1, successful, {"manifest_id": "bound",
+                                                      "data_version": 1}))
+
+    with pytest.raises(ValueError, match="valid plus pending"):
+        cycle.run_once(local_workdir=tmp_path / "cycle", dataset_root=dataset,
+                       profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds],
+                       expected_retry_workers=RETRY_WORKERS)
+
+
+def test_retryable_fail_at_4999_stays_reserved_through_takeover_and_recovery(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3)
+    _input, store, successful_results = _queued_single_error(dataset)
+    _add_background_truth(monkeypatch)
+    fail = dataset / "jobs_state/failed.fail"
+    claim = dataset / "jobs_state/failed.claim"
+    pb.atomic_json(fail, {"machines": [RETRY_WORKERS[0]]})
+    pb.atomic_json(claim, {"machine": RETRY_WORKERS[0]})
+
+    first = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle-first", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds], expected_retry_workers=RETRY_WORKERS))
+    assert first["valid_unique"] == 4_999 and first["pending_unique"] == 1
+    assert first["planned_jobs"] == [] and first["retryable_failed_jobs"] == ["failed"]
+
+    fail.unlink(); claim.unlink()
+    pb.atomic_json(claim, {"machine": RETRY_WORKERS[1],
+                           "prior_fail": [RETRY_WORKERS[0]]})
+    takeover = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle-takeover", dataset_root=dataset,
+        profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds],
+        expected_retry_workers=RETRY_WORKERS))
+    assert takeover["valid_unique"] == 4_999 and takeover["pending_unique"] == 1
+    assert takeover["planned_jobs"] == []
+
+    pb.atomic_json(store / "results.json", successful_results)
+    claim.unlink()
+    pb.atomic_json(dataset / "jobs_state/failed.done", {"machine": RETRY_WORKERS[1],
+                                                         "errors": 0})
+    recovered = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle-recovered", dataset_root=dataset,
+        profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds],
+        expected_retry_workers=RETRY_WORKERS))
+    assert recovered["valid_unique"] == 5_000 and recovered["pending_unique"] == 0
+    assert recovered["planned_jobs"] == [] and recovered["status"] == "idle"
+
+
+def test_all_retry_workers_exhausted_at_4999_releases_one_distinct_exact_tail(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3)
+    failed_input, _failed_store, _successful_results = _queued_single_error(dataset)
+    _add_background_truth(monkeypatch)
+    _fake_pool(monkeypatch)
+    pb.atomic_json(dataset / "jobs_state/failed.fail", {"machines": RETRY_WORKERS})
+    pb.atomic_json(dataset / "jobs_state/failed.claim", {"machine": RETRY_WORKERS[-1],
+                                                          "prior_fail": RETRY_WORKERS[:-1]})
+
+    receipt_path = cycle.run_once(
+        local_workdir=tmp_path / "cycle-terminal", dataset_root=dataset,
+        profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds],
+        expected_retry_workers=RETRY_WORKERS)
+    receipt = pb.read_json(receipt_path)
+    assert receipt["valid_unique"] == 4_999 and receipt["pending_unique"] == 0
+    assert receipt["terminal_failed_jobs"] == ["failed"]
+    assert [job["count"] for job in receipt["planned_jobs"]] == [1]
+    assert receipt["limits"]["valid_plus_pending_plus_planned"] == 5_000
+
+    def add(root, job, scope):
+        queued = pb.read_json(root / "jobs.json")
+        queued.append({"input": job["input"], "store": job["store"],
+                       "prio": job["prio"], "scope": scope,
+                       "config": f"{job['input']}/config.yaml"})
+        pb.atomic_json(root / "jobs.json", queued)
+
+    cycle.commit_dispatch(receipt_path, queue_add=add)
+    tail_job = receipt["planned_jobs"][0]
+    tail_input = dataset / tail_job["input"]
+    failed_hash = pb.read_json(failed_input / "manifest.json")[0]["pattern_sha256"]
+    tail_hash = pb.read_json(tail_input / "manifest.json")[0]["pattern_sha256"]
+    assert tail_hash != failed_hash
+    _complete(tail_input, dataset / tail_job["store"])
+    pb.atomic_json(dataset / f"jobs_state/{tail_job['store']}.done",
+                   {"machine": RETRY_WORKERS[0], "errors": 0})
+
+    complete = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle-complete", dataset_root=dataset,
+        profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds],
+        expected_retry_workers=RETRY_WORKERS))
+    assert complete["valid_unique"] == 5_000 and complete["pending_unique"] == 0
+    assert complete["status"] == "idle" and complete["planned_jobs"] == []
+
+
+def test_queue_view_empty_or_unknown_fail_roster_never_releases_pending(tmp_path):
+    dataset = _dataset(tmp_path / "dataset")
+    _queued_single_error(dataset)
+    cfg = pb.load_profile_config(PROFILE)
+    policy = cycle.factory.validate_factory_config(vars(cfg))
+    fail = dataset / "jobs_state/failed.fail"
+
+    for roster, machines in (([], RETRY_WORKERS),
+                             (RETRY_WORKERS, RETRY_WORKERS + ["unknown-worker"]),
+                             (RETRY_WORKERS, "malformed")):
+        pb.atomic_json(fail, {"machines": machines})
+        queue = cycle._queue_view(dataset, cfg, policy, roster)
+        assert len(queue["pending_hashes"] - queue["successful_hashes"]) == 1
+        assert queue["terminal_failed_jobs"] == []
+        assert queue["retryable_failed_jobs"] == ["failed"]
+
+
+def test_queue_view_defers_when_fail_takeover_changes_markers_mid_scan(tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    _queued_single_error(dataset)
+    fail = dataset / "jobs_state/failed.fail"
+    claim = dataset / "jobs_state/failed.claim"
+    pb.atomic_json(fail, {"machines": [RETRY_WORKERS[0]]})
+    pb.atomic_json(claim, {"machine": RETRY_WORKERS[0]})
+    original = cycle._job_state_binding
+    calls = 0
+
+    def racing_binding(state_root, store):
+        nonlocal calls
+        result = original(state_root, store)
+        calls += 1
+        if calls == 1:
+            fail.unlink(); claim.unlink()
+            pb.atomic_json(claim, {"machine": RETRY_WORKERS[1],
+                                   "prior_fail": [RETRY_WORKERS[0]]})
+        return result
+
+    monkeypatch.setattr(cycle, "_job_state_binding", racing_binding)
+    cfg = pb.load_profile_config(PROFILE)
+    policy = cycle.factory.validate_factory_config(vars(cfg))
+    with pytest.raises(cycle.LiveSnapshotChanged, match="worker state changed"):
+        cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
 
 
 def test_atomic_bundle_publish_recovers_invalid_known_pending_directory(tmp_path):

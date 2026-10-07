@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-07T21:05:00.288841+00:00",
+  "problem": "A machine-local retryable fail released capacity before another worker could recover the original sample, permitting target overshoot",
+  "expected_retry_workers": [
+    "140.123.106.216",
+    "140.123.106.218",
+    "140.123.106.37"
+  ],
+  "fix": "Reserve retryable residuals; release only exact exhausted roster; bind settings and dispatch; reject valid or reserved overshoot; complete only exact target with zero pending",
+  "source_sha256": {
+    "script/symmetry_factory_cycle.py": "0d02873fdb67ce85b6f45db99e82588caf5aa1f4ca66b4ba9f999fb8d68d326c",
+    "script/symmetry_factory_watch.py": "a79621d97aced63365f3d04a652d5cdffbbde4635096e8ec3212c27cd1c810d9",
+    "tests/test_symmetry_factory_cycle.py": "282a937e4e9fa813dc3c78be85f13cb978b66a122b5f63207f4e5c866d9e7a7b",
+    "tests/test_symmetry_factory_watch.py": "362816c004cc33f878ba49335e57e66efe42ecca9b3aee703543d8348a356e93"
+  },
+  "tests": {
+    "full_passed": 707,
+    "full_seconds": 319.69,
+    "full_log_sha256": "8a7a46ab3cbc8bf311309ae5c380c75c12259137730fafacbdc5e5ffecd11ba1",
+    "warnings": 0,
+    "full_log_encoding": "utf-16",
+    "independent_focused_passed": 47,
+    "independent_focused_seconds": 8.81,
+    "independent_review_sha256": "89101e314baa7c7ae0a4fe1112d5ee3459b7449db292951a9070fcab1c2d3522",
+    "py_compile": "passed",
+    "pyflakes": "passed",
+    "golden_changed": false,
+    "physical_boundary": "One error serialized fixture plus 4999 total-count fixture, takeover and recovery; exhausted roster dispatches distinct singleton and validates its serialized raw truth"
+  },
+  "profile_sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+  "training_protocol_sha256": "01ec4d10362c02d5664760d6024fd44e32892cf01ee444048dea17e8e962c54c",
+  "training_protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+  "original_settings_sha256": "948a1456a681e7b9ee3453766f4e01ab35a8c45eba72084faecf4e6f1624379a",
+  "new_settings_sha256": "17993cb491215103d16fe34aa025c3deca62436bfa322c3c1ab6054a32bfec0c",
+  "controller_migrated_at_this_milestone": false,
+  "live_claim_results_or_retry_ledgers_changed_here": false,
+  "hfss_started_here": false,
+  "limits": [
+    "Tests use generated fixtures, not HFSS",
+    "Exactness assumes the bound three-worker retry protocol; no out-of-band manual resurrection after all-roster exhaustion",
+    "All-error worker shutdown safety is unchanged",
+    "5000 collection and R81 positive-WM requirement remain unfinished"
+  ],
+  "archive": {
+    "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\controller_handoffs\\exact_target_fix_20261008\\source_validation",
+    "files_including_manifest": 13,
+    "payload_bytes": 142331,
+    "manifest_sha256": "63e9ba58195070bbbb7cda09ac152cde9f46269966aad83f85d4fee92fda7697",
+    "all_payload_hashes_verified_after_publish": true
+  }
+}
