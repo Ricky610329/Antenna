@@ -16,7 +16,7 @@
 | `dual_r81_wide_filter.yaml` | S21 26–30 ≥−3、16–20/36–40 ≤−20 dB | **延後**；smoke、Discrete、mesh、正式批次均不得排入目前佇列 | R81 |
 
 `script.prepare_symmetry_filter prepare` 預設 `--phase single`，只讀34個 R55 seeds；`--phase combined` 保留給後續 R81 階段。
-目前操作與啟動方式見 [R80 操作說明](../docs/log/symmetry-filter-20261007-runbook.md)。程式由 Git `main` 交付，不使用舊 ZIP。
+目前操作與啟動方式見 [R80 操作說明](../docs/log/symmetry-filter-20261007-runbook.md)。程式由 Git `GAN` 交付，每台 worker 均使用 `GAN`，不使用舊 ZIP。
 
 ```bash
 conda activate patch          # 正式機才有 HFSS

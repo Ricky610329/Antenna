@@ -14,7 +14,7 @@
 2026-10-07 新入口：[analysis-18 歷史對稱普查](analysis-18-symmetry-census.md)、
 [R80 金屬對稱探索](round-80-symmetry-exploration.md)、[R81 寬頻濾波器](round-81-wide-filter.md)。
 目前只排R80首批48＋重測4，共52次；R81及所有spec-change實驗延後。兩者皆尚無新HFSS結果；
-[worker指令](symmetry-filter-20261007-runbook.md)由Git `main`交付，worker待使用者啟動。
+[worker指令](symmetry-filter-20261007-runbook.md)由Git `GAN`交付，每台worker均使用 `GAN`。
 
 ## 時間軸
 | Round | 主題 | 狀態 | 結論(一句) | 檔 |

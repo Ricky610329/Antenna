@@ -15,8 +15,8 @@ conda activate patch
 
 ```bash
 git fetch origin        # 抓遠端最新（只下載，不動檔案）
-git checkout GAN        # 切到 GAN 分支（要 main 就 git checkout main）
-git pull                # 更新目前分支到最新
+git checkout GAN        # 開發與每台正式機 worker 統一使用 GAN
+git pull --ff-only origin GAN
 git log --oneline -3    # 確認最新 commit
 ```
 

@@ -5,6 +5,7 @@
 
 > **快速開始**：訓練入口是 `python train.py configs/<實驗>.yaml`（由外部 YAML config 驅動）。
 > 環境啟用 / 切 branch / 執行指令一頁速查見 [`docs/quickstart.md`](docs/quickstart.md)。
+> **開發與所有正式機 worker 統一使用 `GAN`**，更新執行 `git pull --ff-only origin GAN`。
 
 文件
 ------

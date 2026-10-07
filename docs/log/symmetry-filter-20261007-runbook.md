@@ -24,11 +24,11 @@ T:\碩二_鄒穎麒's\antenna\experiments\r80_symmetry_20261007
 
 ## 正式機啟動
 
-程式已以 Git `main` 交付（worker 實作 `29a6834`），不需要 ZIP。使用者在 Antenna repo 根目錄執行：
+開發與每台正式機 worker 統一使用 Git `GAN`（使用者 2026-10-07 確認）；遠端已包含 worker 實作 `29a6834`，不需要 ZIP。在每台 Antenna repo 根目錄執行：
 
 ```powershell
-git switch main
-git pull --ff-only
+git checkout GAN
+git pull --ff-only origin GAN
 conda activate patch
 powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_scoped_worker.ps1 -CheckOnly
 powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_scoped_worker.ps1
@@ -66,6 +66,6 @@ python -m script.exploration train --work-dir tmp/r80_symmetry_20261007_single/s
 
 ## 可證明範圍
 
-完整回歸 **544 passed / 361.29 秒**（`OMP_NUM_THREADS=4`），golden 原始 bytes 不變；pyflakes 通過。worker 實作 `29a6834` 已推送並核對遠端 `main`。
+完整回歸 **544 passed / 361.29 秒**（`OMP_NUM_THREADS=4`），golden 原始 bytes 不變；pyflakes 通過。worker 實作 `29a6834` 已包含於遠端 `GAN`。部署收據中的 `main` 為首次交付的歷史紀錄；現行更新與啟動一律使用 `GAN`。
 
 程式測試、`-CheckOnly` 與部署稽核只能證明備料、佇列及啟動邊界，不能證明HFSS已執行或R80假設成立。目前私人NAS部署與52次single佇列檢查已完成；worker待使用者啟動，HFSS尚未開始。
