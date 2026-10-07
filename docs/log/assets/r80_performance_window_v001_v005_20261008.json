@@ -1,0 +1,281 @@
+{
+  "created_utc": "2026-10-07T18:47:10.934696+00:00",
+  "kind": "r80_mature_measured_performance_window_through_v005",
+  "scope": "symmetry_filter_20261007",
+  "status": "progressing",
+  "notify_user": false,
+  "window": {
+    "generation_ids": [
+      "data-v001",
+      "data-v002",
+      "data-v003",
+      "data-v004",
+      "data-v005"
+    ],
+    "valid_unique_by_generation": [
+      48,
+      48,
+      80,
+      48,
+      48
+    ],
+    "valid_unique_total": 272,
+    "all_generations_terminal": true,
+    "all_generations_mature": true
+  },
+  "primary_baseline_rows": 49,
+  "sensitivity_baseline_rows": 48,
+  "generations": [
+    {
+      "generation_id": "data-v001",
+      "valid_observations_at_fit": 49,
+      "valid_unique": 48,
+      "dispatched_unique": 48,
+      "terminal_errors": 0,
+      "mature": true,
+      "relevant_count": 10,
+      "material_progress": true,
+      "best_factory_delta_db": 1.4519519805908203,
+      "best_factory": {
+        "id": "r80cbdb25da6g_00005_e6d15dbf",
+        "pattern_sha256": "e6d15dbf28848ae772f436bce39fa26016cd983568ddcddc1403f9c74becb9f0",
+        "value_db": -6.376098871231079
+      },
+      "new_2d_points": 3,
+      "new_3d_points": 4
+    },
+    {
+      "generation_id": "data-v002",
+      "valid_observations_at_fit": 99,
+      "valid_unique": 48,
+      "dispatched_unique": 48,
+      "terminal_errors": 0,
+      "mature": true,
+      "relevant_count": 15,
+      "material_progress": true,
+      "best_factory_delta_db": 6.129657983779907,
+      "best_factory": {
+        "id": "r80c91d71565g_00019_5a42476c",
+        "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+        "value_db": -0.24644088745117188
+      },
+      "new_2d_points": 4,
+      "new_3d_points": 4
+    },
+    {
+      "generation_id": "data-v003",
+      "valid_observations_at_fit": 155,
+      "valid_unique": 80,
+      "dispatched_unique": 80,
+      "terminal_errors": 0,
+      "mature": true,
+      "relevant_count": 0,
+      "material_progress": false,
+      "best_factory_delta_db": -4.024806976318359,
+      "best_factory": {
+        "id": "r80c452a2930g_00019_e91ce82f",
+        "pattern_sha256": "e91ce82f720fc38cac93d4e21fd777dd8bc7c4c0c55156b2abff405e578bb663",
+        "value_db": -4.271247863769531
+      },
+      "new_2d_points": 0,
+      "new_3d_points": 0
+    },
+    {
+      "generation_id": "data-v004",
+      "valid_observations_at_fit": 211,
+      "valid_unique": 48,
+      "dispatched_unique": 48,
+      "terminal_errors": 0,
+      "mature": true,
+      "relevant_count": 0,
+      "material_progress": false,
+      "best_factory_delta_db": -5.620781898498535,
+      "best_factory": {
+        "id": "r80c2e16eb62g_00013_7bb71e0f",
+        "pattern_sha256": "7bb71e0f9a6b8462b0bcba6dcf88956f2bf8613f620e3d35d3055c2f58a31425",
+        "value_db": -5.867222785949707
+      },
+      "new_2d_points": 0,
+      "new_3d_points": 0
+    },
+    {
+      "generation_id": "data-v005",
+      "valid_observations_at_fit": 270,
+      "valid_unique": 48,
+      "dispatched_unique": 48,
+      "terminal_errors": 0,
+      "mature": true,
+      "relevant_count": 4,
+      "material_progress": true,
+      "best_factory_delta_db": -1.0005264282226562,
+      "best_factory": {
+        "id": "r80c961ec405g_00015_21d938fb",
+        "pattern_sha256": "21d938fbaadf1069b38ae9b9aabea61c5162bf16dc03d81b7f495c77c8278069",
+        "value_db": -1.2469673156738281
+      },
+      "new_2d_points": 1,
+      "new_3d_points": 1
+    }
+  ],
+  "cumulative_window_best_factory": {
+    "id": "r80c91d71565g_00019_5a42476c",
+    "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+    "value_db": -0.24644088745117188
+  },
+  "new_v005_frontier_point": {
+    "id": "r80c961ec405g_00022_c64ecf92",
+    "pattern_sha256": "c64ecf928bf893cd2815c1454eece1532f774c354fca76cb6accfc77fb8c3960",
+    "cohort": "data-v005",
+    "selection_arm": "high_disagreement",
+    "family": "seed_mutation",
+    "s11_margin_db": 0.4645423889160156,
+    "gain_margin_db": -1.335221767425537,
+    "factory_margin_db": -1.335221767425537,
+    "radiation_margin_db": 0.4247171878814697,
+    "radiation_margin_clipped_db": 0.4247171878814697,
+    "sample_sha256": "ca61b02282da0c179a76d78b9ae006a22dd68a842224cac6d1ef93137cb09f4e",
+    "rad_sha256": "c412262f9a52ff6c9ff16415a7e8f1d12ae39316fac6dc8968b3cf95b7314894"
+  },
+  "no_progress_suffix": {
+    "generations": [],
+    "valid_unique": 0,
+    "reset_at": "data-v005",
+    "previous_nonprogress_generations": [
+      "data-v003",
+      "data-v004"
+    ],
+    "stall_requires_consecutive_mature_generations": 3,
+    "stall_requires_at_least_valid_unique": 96
+  },
+  "primary_receipt": {
+    "file_sha256": "b2a7c3dd37ba2874a606bfe544f0db72d74bd0887e35b7db43b5784385e19baf",
+    "receipt_id": "7ff0b6208bd804b7089290a02994e82aed7cf9519a23660426d980d7cbe40f59",
+    "notification_window_id": "b84488ef92daa911e815dedab46ca2925dcb29e37e4f5816c5268e25d6b98ae9"
+  },
+  "sensitivity_receipt": {
+    "file_sha256": "25e7e2e2a94b3a07a9c4f73e67880fd57d8e88452eaca66fa3fe549602edd308",
+    "receipt_id": "c6d2b03c58c03fcd6008451bb756e8b6b36e62629a2853ced6cb3f3a74405d9c",
+    "notification_window_id": "7f89dcdb33098904addd39085f969deca110edeafbfa7b6e0127a75a973e0014",
+    "same_verdict_best_fronts_and_material_events": true
+  },
+  "diagnostic_script_sha256": "79f87dafe5da4936142c437380d0ff49dcd25bc375357a6e99ebfa5f59c08ed3",
+  "predeclared_policy_sha256": "6b60c0d120f33ad47290235541f0deea61590e336cbc50dc413def467d807842",
+  "metric_definition_id": "2d791a4a9983eaefda99b84018a75a8857158c81a8341906b2e5ac94c24c1839",
+  "prior_evidence_reuse": {
+    "prior_script_sha256": "f412469bbff6167b748e569f088675eb3bad0f4b6e5a36878e8643ad78ee7cdf",
+    "prior_primary_file_sha256": "a57d6e6abfec8c329e054934a6f8980f96ac693eb09df2bb25d4b2e2cd075f77",
+    "prior_primary_receipt_id": "895b9d4a5c12744264fd4205a2ee5c2e052b162dd23e70b566a22849d4e78d95",
+    "prior_sensitivity_file_sha256": "4202b97bcce13156793f8203f7910196763e60671601d6579b314cec58a899cc",
+    "prior_sensitivity_receipt_id": "f4d2645994692befe44388fd14b6833e2435a5904ae52a02e77ab47e2c86cd45",
+    "reused_generation_counts": {
+      "data-v001": 48,
+      "data-v002": 48,
+      "data-v003": 80
+    },
+    "reused_primary_baseline_count": 49,
+    "reused_sensitivity_baseline_count": 48,
+    "immutable_binding_count": 146,
+    "physical_local_store_replay": true,
+    "live_nas_v001_v003_raw_replay": false
+  },
+  "new_pass_immutable_bound_files": 92,
+  "generated_numerical_checks_passed": 21,
+  "stable_ids_across_run001_run002": true,
+  "private_archive": {
+    "archive": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\performance-window-v001-v005_20261008",
+    "manifest_sha256": "80a8ff60e67be3f0a0e720bddb9c284174d22a0dda3c32fb7a9dfe3ee3291eeb",
+    "payload_file_count": 223,
+    "payload_bytes": 5589448,
+    "prior_raw_archive": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\performance-window-v001-v003_20261008",
+    "publication_hash_replay_passed": true
+  },
+  "verification": {
+    "created_utc": "2026-10-07T18:45:03.487881+00:00",
+    "canonical_run": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_performance_window_v005_20261008\\run-002",
+    "primary_receipt_id": "7ff0b6208bd804b7089290a02994e82aed7cf9519a23660426d980d7cbe40f59",
+    "sensitivity_receipt_id": "c6d2b03c58c03fcd6008451bb756e8b6b36e62629a2853ced6cb3f3a74405d9c",
+    "fresh_metadata_bindings_checked": 234,
+    "conductor_new_critical_raw_replays": [
+      {
+        "id": "r80c2e16eb62g_00013_7bb71e0f",
+        "pattern_sha256": "7bb71e0f9a6b8462b0bcba6dcf88956f2bf8613f620e3d35d3055c2f58a31425",
+        "exact_left_right_metal_mirror": true,
+        "sample_sha256": "f8a62a4f3b8ec8edc1286c148a78354c7e2566b932f45305de055f2132654ab1",
+        "rad_sha256": "e7c67397e52f004003dda8fae848ff4c5e693057df32f3c0d5bc4d614e203627",
+        "s11_margin_db": -5.867222785949707,
+        "gain_margin_db": -2.0047162771224976,
+        "factory_margin_db": -5.867222785949707,
+        "radiation_margin_db": -0.4782412052154541,
+        "radiation_margin_clipped_db": -0.4782412052154541,
+        "worst_s11_band_db": -4.132777214050293,
+        "minimum_gain_band_dbi": 1.9952837228775024
+      },
+      {
+        "id": "r80c961ec405g_00015_21d938fb",
+        "pattern_sha256": "21d938fbaadf1069b38ae9b9aabea61c5162bf16dc03d81b7f495c77c8278069",
+        "exact_left_right_metal_mirror": true,
+        "sample_sha256": "c176ae53b63b199abacf699c2abe11554e710b35ca9ad33ce95b4e9811017543",
+        "rad_sha256": "2d6ef027b8b38dd657fed5da91442fcde13dad0a505bccfef93bbfd1782a0bba",
+        "s11_margin_db": -1.2469673156738281,
+        "gain_margin_db": -1.191352128982544,
+        "factory_margin_db": -1.2469673156738281,
+        "radiation_margin_db": -1.2626047134399414,
+        "radiation_margin_clipped_db": -1.2626047134399414,
+        "worst_s11_band_db": -8.753032684326172,
+        "minimum_gain_band_dbi": 2.808647871017456
+      },
+      {
+        "id": "r80c961ec405g_00022_c64ecf92",
+        "pattern_sha256": "c64ecf928bf893cd2815c1454eece1532f774c354fca76cb6accfc77fb8c3960",
+        "exact_left_right_metal_mirror": true,
+        "sample_sha256": "ca61b02282da0c179a76d78b9ae006a22dd68a842224cac6d1ef93137cb09f4e",
+        "rad_sha256": "c412262f9a52ff6c9ff16415a7e8f1d12ae39316fac6dc8968b3cf95b7314894",
+        "s11_margin_db": 0.4645423889160156,
+        "gain_margin_db": -1.335221767425537,
+        "factory_margin_db": -1.335221767425537,
+        "radiation_margin_db": 0.4247171878814697,
+        "radiation_margin_clipped_db": 0.4247171878814697,
+        "worst_s11_band_db": -10.464542388916016,
+        "minimum_gain_band_dbi": 2.664778232574463
+      }
+    ],
+    "conductor_scalar_frontier_check": {
+      "prior_rows": 273,
+      "prior_best_factory_margin_db": -0.24644088745117188,
+      "point_id": "r80c961ec405g_00022_c64ecf92",
+      "relevant": true,
+      "covering_2d_ids": [],
+      "covering_3d_ids": []
+    },
+    "independent_review": {
+      "new_raw_rows_replayed": 96,
+      "new_sample_and_rad_sha_checks": 192,
+      "new_semantic_pattern_hashes_checked": 96,
+      "cumulative_scalar_rows_replayed_primary": 321,
+      "cumulative_scalar_rows_replayed_sensitivity": 320,
+      "old_raw_rows_scope": "Reuse prior independent225/224 raw review with fresh cryptographic bindings; no new live NAS raw pass for v001-v003.",
+      "planned_jobs_inventoried": 17,
+      "dispatch_omissions": 0,
+      "fresh_run001_run002_stable_ids_pass": true,
+      "generated_numerical_checks_passed": 21,
+      "final_revision_pass": true
+    },
+    "scope_limits": [
+      "Old 225/224 rows reuse the previously reviewed first window with fresh cryptographic binding checks.",
+      "Independent review replays all96 new raw rows and all321/320 cumulative scalar rows; conductor raw replay covers only three new critical rows.",
+      "Single-solve frontier tradeoff; cumulative best factory margin remains negative and unchanged.",
+      "Current zero-error helper requires complete successful stores; general terminal-error maturity is unsupported.",
+      "Marker/result errors compare counts, not exact error-ID sets; actual17 shards have zero errors.",
+      "Numerical checks do not establish end-to-end partial-error acceptance or an automated notifier.",
+      "Prior first-window archive contains the reused raw snapshots; this publication references that archive without duplicating its raw payload."
+    ]
+  },
+  "science_scope": "Single-solve measured frontier tradeoff; best factory margin remains unchanged and negative. Window321 is not the latest408-row all-data best, a spec pass, radiation mirror proof or causal symmetry effect.",
+  "task_state": {
+    "r80_target_unique": 5000,
+    "r80_complete": false,
+    "r81_dispatched": false,
+    "r81_positive_wm_and_independent_repeat_complete": false
+  },
+  "unchanged_background_controller_pid": 16556
+}
