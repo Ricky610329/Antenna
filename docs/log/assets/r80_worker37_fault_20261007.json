@@ -1,0 +1,35 @@
+{
+  "created_utc": "2026-10-07T14:45:31.127888+00:00",
+  "job": {
+    "input": "dedust_r80c91d71565g02_input",
+    "store": "dedust_r80c91d71565g02",
+    "prio": 1,
+    "scope": "symmetry_filter_20261007",
+    "config": "dedust_r80c91d71565g02_input/config.yaml"
+  },
+  "successes_verified_from_raw": 15,
+  "errors": {
+    "r80c91d71565g_00015_659f82ca": {
+      "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+      "attempts": 3
+    }
+  },
+  "fail": {
+    "machines": [
+      "140.123.106.37"
+    ],
+    "last": "profile 完整性驗證失敗：profile 批次未完整成功：['r80c91d71565g_00015_659f82ca']",
+    "at": "2026-10-07 22:33:16"
+  },
+  "cause": "COM failure; disk-full hypothesis from history remains unverified",
+  "worker37_remote_disk_inventory": "DCOM authentication denied; no remote mutation",
+  "live_state_changed_here": false,
+  "retry_policy": "Existing other-machine takeover retries an error once even when attempts >= 3; no reset required",
+  "archive": {
+    "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\operational_incidents\\worker37_20261007_223316",
+    "files_including_manifest": 59,
+    "payload_bytes": 491104,
+    "manifest_sha256": "a25c1a599c5023dc797440126ec258ea5dbc8ab16b342ad183ee12a3f35946e3",
+    "all_payload_hashes_verified_after_publish": true
+  }
+}
