@@ -1,8 +1,7 @@
-"""Build the paper's learning, execution, and timing diagrams.
+"""Build the paper's learning and emforge execution architecture diagrams.
 
-The figures deliberately separate the research learning loop from emforge's
-execution contract. The timing graphic is a not-to-scale sequencing schematic;
-it does not assert measured or ideal worker scaling.
+The diagrams express module responsibilities and data dependencies, not timing
+or measured worker utilization.
 """
 
 from pathlib import Path
@@ -465,142 +464,7 @@ def build_emforge_architecture():
     save_figure(fig, "emforge-architecture")
 
 
-def build_execution_time():
-    fig, ax = plt.subplots(figsize=(10.2, 4.25))
-    fig.subplots_adjust(left=0.035, right=0.985, top=0.92, bottom=0.08)
-    ax.set(xlim=(0, 13.4), ylim=(0, 5.4))
-    ax.axis("off")
-
-    ax.text(0.36, 5.02, "BATCH EXECUTION AND SURROGATE UPDATE", color=INK, fontsize=13.5, weight="bold")
-    ax.text(13.02, 5.02, "NOT TO SCALE", ha="right", color=GRAY, fontsize=10.5, style="italic")
-
-    lane_y = {
-        "Candidate selection / control": 3.70,
-        "EM worker pool": 2.50,
-        "SM update": 1.25,
-    }
-    lane_start, lane_end = 2.48, 12.96
-    for label, y in lane_y.items():
-        display_label = "Candidate selection\n/ control" if label.startswith("Candidate") else label
-        ax.text(
-            2.16,
-            y,
-            display_label,
-            ha="right",
-            va="center",
-            color=INK,
-            fontsize=12.0,
-            weight="bold",
-            linespacing=0.95,
-        )
-        ax.plot([lane_start, lane_end], [y, y], color="#D5DDE1", linewidth=0.95, zorder=0)
-
-    arrow(ax, (lane_start, 4.46), (lane_end, 4.46), color=GRAY, width=1.05)
-    ax.text(7.72, 4.67, "execution sequence", ha="center", va="center", color=GRAY, fontsize=10.8)
-
-    def timeline_bar(x, y, w, text, *, face, edge, fontsize=12.0, h=0.50):
-        rounded_box(ax, x, y - h / 2, w, h, face=face, edge=edge, linewidth=1.15, radius=0.055, z=3)
-        bounded_text(
-            ax,
-            (x + 0.05, y - h / 2 + 0.04, w - 0.10, h - 0.08),
-            x + w / 2,
-            y,
-            text,
-            ha="center",
-            va="center",
-            color=INK,
-            fontsize=fontsize,
-            weight="bold",
-            zorder=5,
-        )
-
-    # Three columns illustrate the first, an intermediate, and the r-th batch;
-    # they do not prescribe r=3 or a fixed worker count.
-    batches = (
-        (2.64, "Batch 1"),
-        (5.45, "Batch 2"),
-        (9.18, "Batch r"),
-    )
-    completion_x = []
-    for x, label in batches:
-        ax.text(x + 0.625, 4.13, label, ha="center", va="center", color=BLUE, fontsize=11.8, weight="bold")
-        select_w = 1.25
-        timeline_bar(x, lane_y["Candidate selection / control"], select_w, "select B", face=TEAL_PALE, edge=TEAL)
-        em_x = x + 1.42
-        timeline_bar(em_x, lane_y["EM worker pool"], 1.15, "run EM", face=BLUE_PALE, edge=BLUE, fontsize=12.2)
-        done_x = x + 2.67
-        completion_x.append(done_x)
-        poly_arrow(
-            ax,
-            [
-                (x + select_w, lane_y["Candidate selection / control"]),
-                (x + 1.33, lane_y["Candidate selection / control"]),
-                (x + 1.33, lane_y["EM worker pool"]),
-                (em_x, lane_y["EM worker pool"]),
-            ],
-            color=TEAL,
-            width=1.2,
-            z=2,
-        )
-        ax.plot(
-            [done_x, done_x],
-            [0.98, lane_y["EM worker pool"]],
-            color=GRAY,
-            linewidth=1.05,
-            linestyle=(0, (2, 3)),
-            zorder=1,
-        )
-        ax.text(done_x, 2.10, "done", ha="center", va="center", color=GRAY, fontsize=10.5, weight="bold")
-
-    ax.text(8.28, 3.70, "...", ha="center", va="center", color=GRAY, fontsize=15.0, weight="bold")
-    ax.text(8.28, 2.50, "...", ha="center", va="center", color=GRAY, fontsize=15.0, weight="bold")
-
-    accumulation_x = completion_x[0] - 0.28
-    accumulation_right = completion_x[-1] + 0.03
-    accumulation_width = accumulation_right - accumulation_x
-    rounded_box(
-        ax,
-        accumulation_x,
-        0.54,
-        accumulation_width,
-        0.40,
-        face="#F6F7F8",
-        edge="#B7C0C6",
-        linewidth=0.9,
-        radius=0.045,
-        z=1,
-    )
-    bounded_text(
-        ax,
-        (accumulation_x + 0.10, 0.59, accumulation_width - 0.20, 0.30),
-        accumulation_x + accumulation_width / 2,
-        0.74,
-        "accumulate r completed batches",
-        ha="center",
-        va="center",
-        color=GRAY,
-        fontsize=12.0,
-        style="italic",
-        zorder=4,
-    )
-    update_x = 12.00
-    timeline_bar(update_x, lane_y["SM update"], 1.12, "update", face=TEAL_PALE, edge=TEAL, fontsize=11.8, h=0.58)
-    poly_arrow(
-        ax,
-        [
-            (accumulation_right, 0.74),
-            (accumulation_right, lane_y["SM update"]),
-            (update_x, lane_y["SM update"]),
-        ],
-        color=TEAL,
-        width=1.45,
-    )
-    ax.text(7.28, 0.19, "B is generic; worker count and durations are unspecified.", ha="center", va="center", color=GRAY, fontsize=10.4)
-    save_figure(fig, "execution-time")
-
-
 if __name__ == "__main__":
     build_learning_loop()
     build_emforge_architecture()
-    build_execution_time()
-    print("Wrote architecture, emforge-architecture, and execution-time as SVG and PNG.")
+    print("Wrote architecture and emforge-architecture as SVG and PNG.")

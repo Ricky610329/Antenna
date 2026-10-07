@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 BASE = Path(__file__).resolve().parent
 path = BASE / 'manuscript-draft-2026-10.html'
 s = path.read_text(encoding='utf-8')
-FIGURES = ('architecture', 'emforge-architecture', 'execution-time',
+FIGURES = ('architecture', 'emforge-architecture',
            'single-geometry', 'single-response', 'single-radiation',
            'candidate-geometry', 'candidate-response')
 for name in FIGURES:
@@ -57,8 +57,7 @@ for number, (name, figure) in enumerate(zip(FIGURES, a.figures), start=1):
     intro = re.search(rf'<p class="figure-intro">(?:(?!</p>).)*href="#{target}"(?:(?!</p>).)*</p>\s*<figure id="{target}"', s, re.S)
     assert intro, f'Missing first-use paragraph directly before {target}'
     assert re.search(rf'<figcaption id="{caption}">圖 {number}\s', s), caption
-assert not re.search(r'圖\s*3\([a-z]\)', s), 'Timing figure has no panels'
-assert '圖 4(a)' not in s and '圖 4(b)' not in s
+assert 'data-figure="execution-time"' not in s, 'Retired timing figure must not return'
 assert '@@' not in s, 'Unresolved manuscript placeholder'
 assert '@media(max-width:780px)' not in s, 'Mobile flow rules must not affect print'
 for img in a.images:
@@ -73,11 +72,11 @@ figure_numbers = {name: number for number, name in enumerate(FIGURES, start=1)}
 for target, number in re.findall(r'href="#fig-([a-z-]+)"[^>]*>圖\s*(\d+)', s):
     assert int(number) == figure_numbers[target], (target, number)
 headings = re.findall(r'<section id="[^"]+"><h2>([IVX]+)\.', s)
-assert headings == ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'], headings
+assert headings == ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'], headings
 equations = re.findall(r'<span class="eqno">\((\d+)\)</span>', s)
-assert equations == ['1', '2', '3', '4', '5', '6'], equations
+assert equations == ['1', '2', '3', '4', '5'], equations
 table_numbers = re.findall(r'<caption>表 ([IVX]+)\s', s)
-assert table_numbers == ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'], table_numbers
+assert table_numbers == ['I', 'II', 'III'], table_numbers
 data = json.loads((BASE / 'paper-evidence-data.json').read_text(encoding='utf-8'))
 assert round(data['history'][-1]['value'] - data['history'][0]['value'],2) == 3.51
 single = json.loads((BASE / 'single-port-evidence.json').read_text(encoding='utf-8'))
@@ -114,8 +113,6 @@ ideal = 3 * 604800 / 160
 assert ideal == 11340
 assert round(ideal * 0.50 * 0.95 * 0.90) == 4848
 assert round(ideal * 0.70 * 0.95 * 0.90) == 6787
-from math import ceil
-assert [ceil(90 / workers) * 160 / 60 for workers in (1, 2, 3)] == [240, 120, 80]
 assert 3 * 90 == 270
 path.write_text(s, encoding='utf-8')
 print(f'PASS: balanced HTML; {len(a.ids)} unique ids; internal/local targets resolve among {len(a.links)} links; {len(FIGURES)} numbered figures with first-use explanations; {len(a.images)} embedded SVGs match their source files; antenna and filter margins, failed filter points, and capacity examples independently recomputed; no external assets. External URLs are not fetched by this check.')
