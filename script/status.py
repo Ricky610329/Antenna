@@ -186,7 +186,7 @@ def _fmt(v, spec="{:.2f}"):
 
 def _factory_scan(stale_min=30, *, dataset_root=None, scope=None):
     """資料工廠哨兵（2026-07-10;零 token 純腳本層）：掃 NAS 佇列與批次進度,回 (狀態行, 警報)。
-    警報條件：①jobs_state/*.fail 存在（worker 保險絲停機）②已認領 job 的 store 超過 stale_min
+    警報條件：①jobs_state/*.fail 存在（批次失敗／worker 保險絲）②已認領 job 的 store 超過 stale_min
     分鐘沒新結果（=兩層 watchdog 的外層;內層單筆 timeout 在 dedust run）。"""
     import json as _json
     from pathlib import Path
@@ -201,12 +201,23 @@ def _factory_scan(stale_min=30, *, dataset_root=None, scope=None):
         jobs = [job for job in jobs if job.get("scope") == scope]
     stores = {job["store"] for job in jobs}
     lines, alarms = [], []
+    partial_failed_stores = set()
     if sd.exists():
         for f in os.listdir(str(sd)):
             if scope is not None and f.rsplit(".", 1)[0] not in stores:
                 continue
             if f.endswith(".fail"):
-                alarms.append(f"工廠停機: {f}（HFSS 疑壞死,修復後刪 .fail/.claim 重派）")
+                try:
+                    failure = _json.loads(sd.joinpath(f).read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    failure = {}
+                if scope and isinstance(failure, dict) and failure.get("failure_kind") == "incomplete_profile_hfss":
+                    partial_failed_stores.add(f[:-5])
+                    decision = ("原worker決定續跑佇列" if failure.get("worker_continues") is True
+                                else "原worker未記錄續跑；檢查機況")
+                    alarms.append(f"批次部分失敗: {f}（保留結果待跨機補測；{decision}，需另查近期進展）")
+                else:
+                    alarms.append(f"工廠停機: {f}（HFSS 疑壞死,修復後刪 .fail/.claim 重派）")
             elif f.endswith(".done"):
                 try:
                     d = _json.load(open(str(sd.joinpath(f)), encoding="utf-8"))
@@ -223,6 +234,7 @@ def _factory_scan(stale_min=30, *, dataset_root=None, scope=None):
         if sd.joinpath(st + ".done").exists():
             continue
         claimed = sd.joinpath(st + ".claim").exists()
+        waiting_recovery = st in partial_failed_stores
         rp = root.joinpath(st, "results.json")
         mp = root.joinpath(j["input"], "manifest.json")
         total = len(_json.load(open(str(mp), encoding="utf-8"))) if mp.exists() else "?"
@@ -235,11 +247,11 @@ def _factory_scan(stale_min=30, *, dataset_root=None, scope=None):
             age = (now - os.path.getmtime(str(rp))) / 60
             lines.append(f"  job {st}: {done}/{total} 完成,最新結果 {age:.0f} 分前"
                          f"{'（已認領）' if claimed else '（未認領）'}")
-            if claimed and age > stale_min:
+            if claimed and not waiting_recovery and age > stale_min:
                 alarms.append(f"job {st} 疑卡住: 已認領但 {age:.0f} 分無新結果（>{stale_min}）")
         else:
             ref = sd.joinpath(st + ".claim")
-            if claimed and (now - os.path.getmtime(str(ref))) / 60 > stale_min:
+            if claimed and not waiting_recovery and (now - os.path.getmtime(str(ref))) / 60 > stale_min:
                 alarms.append(f"job {st} 疑卡住: 認領 {(now - os.path.getmtime(str(ref))) / 60:.0f} 分仍零結果")
             lines.append(f"  job {st}: 0/{total}{'（已認領）' if claimed else '（排隊中）'}")
     return lines, alarms

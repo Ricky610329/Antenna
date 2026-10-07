@@ -38,6 +38,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_scoped_worker
 
 一台正式機只開一個本輪 worker，也不要同時執行其他 HFSS 任務。無工作時 worker 會等待；中斷後保留 results、tensor、markers 與 claim 狀態，供原機恢復或稽核。
 
+新版scoped worker對「本批每筆皆已有終態、部分成功經raw/sample/rad重播有效、殘留僅用盡重試的HFSS錯誤」保留`.fail`／claim／原結果後，跳過本機失敗批並續跑其他jobs；別台仍可依原機器名單補測。连续三批部分失敗、整批失敗、資料／profile驗證故障及原嚴重連敗保險絲仍停本機，`--once`也不把部分失敗回報成成功。狀態中的`worker_continues`僅是失敗當下的續跑決定，需要另查後續進展；不是活機心跳。此修正要在正式機pull後重啟worker才生效，不能熱套用在原行程。
+
+通過上述部分成功重播後，僅清理該job預設暫存`_dedust_<store>`：先確認resolved路徑是目前repo工作目錄的直接子目錄且名稱完全符合；自訂`--out`保留，其他歷史暫存不掃。HFSS已關閉後才清理；路徑不符或清理失敗會停本機並保留NAS結果，避免容錯續跑反而累積專案吃滿磁碟。
+
 ## 本機備料與 controller
 
 本次預設備料只做 single phase，只讀歷史 `dedust_r55sym_input` 的 34 個幾何 seeds：

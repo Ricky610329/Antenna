@@ -37,6 +37,11 @@
    0x80070223 連環保險絲的真兇=78 個 job 暫存吃光 C 槽;`--out` 自訂路徑不刪）。
    **機況探針**：`dedust probe --machine <IP末段> [--action status|cleanup]`——經 NAS 白名單指令,
    worker 空閒 poll 輪回應（磁碟/殘留/git 版/HFSS 行程;跑 job 中佔線最長 ~70 分才答）。
+   **R80 scoped例外（2026-10-07）**：僅完整入帳且有已重播成功的部分HFSS終態失敗，保留
+   fail／claim／raw後續跑其他jobs；連續三批部分失敗仍停本機。profile/schema/hash錯誤、全失敗、
+   缺紀錄、嚴重連敗與`--once`不放行；舊無scope worker維持停機。scoped worker不執行上述歷史probe／cleanup。
+   續跑前只清當前job已驗證的預設暫存（resolved parent=目前cwd、名稱完全相符）；路徑或清理錯誤停機，
+   自訂out／其他歷史目錄不碰，避免部分失敗殘留持續吃滿磁碟。
 6. 錨點注意：x00 是破對稱錨點（含 (4,18) 翻轉），x00 條目收尾用除塵不對稱化（`_finish` 語義），
    不要 `symmetrize`（round-16 §3 caveat）。
 7. **幾何/儀器變體批**（R52 網格起,R54-55 定型）：輸入夾放 `hfss_setup.json`（只收白名單鍵:

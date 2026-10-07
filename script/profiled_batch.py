@@ -9,7 +9,11 @@ import torch
 import yaml
 
 from antenna.measurement import (frequency_grid, measurement_id, score_response,
-                                score_spec_id, validate_measurement, validate_score_spec)
+                                 score_spec_id, validate_measurement, validate_score_spec)
+
+
+class IncompleteProfileBatch(SystemExit):
+    """A fully-accounted profile batch ended with exhausted HFSS sample errors."""
 
 
 def read_json(path):
@@ -244,6 +248,49 @@ def verify_completed(store_dir, cfg, *, require_complete=False):
             missing = sorted(set(rows) - completed)
             raise ValueError(f"profile 批次未完整成功：{missing[:20]}")
     return results
+
+
+def verify_incomplete_hfss_batch(store_dir, cfg, *, terminal_attempts=3):
+    """Verify a resumable partial batch without accepting data/config corruption.
+
+    Successful observations are replayed by :func:`verify_completed`.  Every
+    manifest id must then be either one of those verified observations or a
+    terminal HFSS simulation error.  Older workers did not write
+    ``error_kind``.  The older representation is accepted only when its text
+    starts with a known COM/watchdog tag emitted by ``dedust._errstr``.
+    """
+    root = Path(store_dir)
+    results = verify_completed(root, cfg, require_complete=False)
+    rows = {row["id"]: row for row in read_json(root / "manifest.json")}
+    if set(results) != set(rows):
+        missing = sorted(set(rows) - set(results))
+        unknown = sorted(set(results) - set(rows))
+        raise ValueError(f"partial profile ids 不完整：missing={missing[:20]} unknown={unknown[:20]}")
+
+    successes, errors = [], []
+    for name, entry in results.items():
+        if entry.get("status") == "ok" and "error" not in entry:
+            successes.append(name)
+            continue
+        if "error" not in entry:
+            raise ValueError(f"{name}: terminal entry 不是 verified ok 或 HFSS error")
+        kind = entry.get("error_kind")
+        legacy_text = str(entry["error"])
+        legacy_hfss = kind is None and legacy_text.startswith(
+            ("watchdog_timeout:", "RPC_E_", "RPC_S_", "DISP_E_", "0x")
+        )
+        if kind != "hfss_simulation" and not legacy_hfss:
+            raise ValueError(f"{name}: 非 HFSS simulation error，不可自動續 worker")
+        attempts = entry.get("attempts")
+        if isinstance(attempts, bool) or not isinstance(attempts, int) or attempts < terminal_attempts:
+            raise ValueError(f"{name}: HFSS error 尚未用盡 {terminal_attempts} 次嘗試")
+        errors.append(name)
+
+    if not successes:
+        raise ValueError("partial profile 沒有 verified success；可能是整機／設定故障")
+    if not errors:
+        raise ValueError("profile 沒有 terminal HFSS error")
+    return {"success_ids": successes, "error_ids": errors}
 
 
 def check_duplicates(input_dir, dataset_root):

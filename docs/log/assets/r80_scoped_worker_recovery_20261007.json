@@ -1,0 +1,57 @@
+{
+  "created_utc": "2026-10-07T15:15:13.900720+00:00",
+  "source_parent_commit": "43f22e26c1682b675d3b77e4b5e79e945f5eb730",
+  "source_hashes": {
+    "script/dedust.py": "4d203816826ca20179c2ae3a5c345dcc900117d33a671090d896db3c61ece05d",
+    "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+    "script/status.py": "984cb28d8797a028ba1e297796b6828880371dc68053742760392e908d57c8d6",
+    "tests/test_scoped_worker_recovery.py": "951864ea458a008790ce8392efeb5e481134f62130c46f0652431ccd57acc194",
+    "tests/test_status_factory_profile.py": "5a82e1cfba88d590e2279404ac1719bdbc0152cdc1fc4ad46a0569652d43911e"
+  },
+  "behavior": "continuous scoped worker may continue after verified partial HFSS batch, never false done; third consecutive partial or fatal data failure halts",
+  "validation": {
+    "full_tests": 695,
+    "full_seconds": 328.5,
+    "log_sha256": "e8c513aca5a22233440388d5804e0a7fa082c4fe076e84359959a2d8ad518d72",
+    "log_encoding": "utf16",
+    "recovery_tests": 10,
+    "related_regression_tests": 31,
+    "status_tests": 9,
+    "golden_changed": false,
+    "earlier_full_test_path_failures": 4,
+    "path_failures_resolved_in_short_temp": {
+      "factory_cycle_tests": 20,
+      "seconds": 6.64
+    }
+  },
+  "actual_fault_compatibility": {
+    "archive": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\operational_incidents\\worker37_20261007_223316",
+    "archive_manifest_sha256": "a25c1a599c5023dc797440126ec258ea5dbc8ab16b342ad183ee12a3f35946e3",
+    "verified_raw_successes": 15,
+    "terminal_hfss_errors": 1,
+    "live_state_changed": false
+  },
+  "independent_sol_review": {
+    "initial_temp_directory_leak": "fixed; current default path guarded before recursive removal",
+    "final_material_defects": [],
+    "review_was_read_only": true
+  },
+  "hfss_started_here": false,
+  "worker_deployment_verified": false,
+  "deployment_requirement": "git pull origin GAN and restart owned worker at job boundary; no remote management rights available",
+  "health_snapshot": {
+    "at_taipei": "2026-10-07 23:02",
+    "controller_pid": 16556,
+    "status": "waiting",
+    "valid_unique": 227,
+    "data_version": 4,
+    "target": 5000,
+    "next_health_taipei": "2026-10-07 23:31",
+    "other_active_batches_successes": [
+      12,
+      8
+    ],
+    "worker37_recovery_verified": false,
+    "routine_full_raw_replay": false
+  }
+}
