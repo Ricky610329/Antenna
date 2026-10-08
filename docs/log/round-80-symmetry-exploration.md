@@ -456,3 +456,13 @@ Conductor獨立重算767保存數值的唯一性／極值／計數及254集合�
 [實際恢復／派工收據](assets/r80_backlog_recovery_20261008.json)：push `7b18457`／803項全綠後，原failed local與訓練tree保存，同一工作目錄一次hidden start為sole PID16536，launch=`1744ed6a15cc42fc921468c0e2538e07`。交接原驗證讀到本來應視作runtime的`training_v2/factory-watch.lock`而報失敗；原failure保留，不再啟動程序，補列這個owned lock並逐一重核其他舊檔SHA與長度，狀態／attempt繼承與CIM身分通過。
 
 首次自動LOW事件已實派96筆／6片各16筆prio6，逐片canonical queue／config／manifest／marker／deterministic receipt metadata核對通過；未讀NAS result stores或raw、未取得controller鎖。本機凍結results／prediction receipts僅hash-read，明示不屬新的raw／模型稽核。LOW每90秒、自身低於48補向96，主線prio1可插隊；主線沿用每48新唯一真值更新SM。11:35 scoped健康檢查無警報，兩補池job各6/16、pilot5/16，最新結果皆1分鐘前。沒有重啟HFSS，queued候選不計實測；831凍結reference最佳仍−0.246441，R80／R81尚未完成。恢復約30分鐘健康檢查，正常時保持安靜。
+
+### 2026-10-08 12:19：15+1 pilot陰性；v013訓練與主線派工核對完成
+
+[結果收據](assets/r80_pilot_sm013_result_20261008.json)記錄一次性15+1 cohort全部16筆終態、零marker／result error。原15個d1金屬對稱鄰域點都落在relevance範圍，但相對準備時凍結的831唯一reference，四項固定改善條件（B增益至少0.30 dB、相關2D／3D epsilon前緣增量、reference首次非負）計數均0，判讀`shell_red`。最佳鄰域點`r80pfaaf5a1ds06_d3e91af6`單次factory margin−0.435846567 dB，比凍結B＝−0.246440887 dB低0.189405680 dB；其帶內最差S11−9.767018 dB、最低RealizedGainTotal3.564153 dBi，仍未達原雙門檻。blind對照−13.411412 dB，不參與pilot陽性判定。性能停滯已再次通知；不自動重跑pilot或放寬判準，所有有效低分真值保留，普通SM與LOW資料產線繼續推進5,000筆目標。
+
+獨立Sol重播16筆sample／rad hash、payload／幾何與角色及metrics；conductor另算全部16筆固定判準，並對最佳、鄰近候選與blind三筆原始量測重算。reference檔案SHA／content ID、831唯一及B算術均核對；沒有再次讀取全部831筆歷史raw，不宣稱campaign首次改善、場型鏡像對稱或重測公證。radiation window margin仍是原相對boresight的±45°／−3dB指標，不等同場型對稱。
+
+v013模型fit累積829唯一（新增96），當前profile590 train／239 holdout；歷史先驗10,150 train／1,850 holdout，家族與pattern分割重播零train–holdout交集。獨立Sol34項核對通過：三個模型byte與data／protocol binding、239保留集CPU預測及478個sample／rad SHA重播一致，615個凍結來源檔案前後穩定。S11／Gain／phi0／phi90 MAE＝2.1783／5.3709／3.6232／3.1447 dB；總MAE3.4454。v012保留集214筆、v013增至239筆，版本誤差不能當作模型性能提升。v013原receipt未綁Git commit，保留的觀測source SHA只證明audit runtime。三片各16筆prio1 jobs `dedust_r80cac599772g01`至`g03`的staged tree／canonical NAS input／實體profile驗證與queue rows一致，48圖形全唯一。其cycle snapshot為868唯一，與fit829及09:43獨立全量raw cutoff767分開記帳。
+
+模型、凍結保留集／輸入及兩份審查共628檔、52,276,669 bytes已封存私人`analysis_versions/pilot-sm013_20261008_v001`；manifest SHA256 `815b0736177674e6091e9f0c4d8464ffbae40a943225d5f1e6e71ee8bfc53bc9`，含manifest的629檔NAS readback全一致。第一次本機stage遇Windows長路徑失敗，保留v001；v002改用短路徑映射並保留原source binding後通過，未修改任何來源。此次只寫新私人歸檔與研究紀錄，沒有controller鎖、GPU訓練、HFSS／worker重啟或runtime算法變更。12:05已核對同一PID16536／creation／command，scoped健康無警報；主線三片及96筆LOW池仍有工作，下一routine健康約12:35。R80資料目標與R81正WM重測仍未完成。
