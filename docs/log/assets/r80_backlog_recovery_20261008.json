@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "status": "recovery_and_first_automatic_low_append_verified",
+  "verified_utc": "2026-10-08T03:35:47.940914+00:00",
+  "launch_commit": "7b18457302025d432a3770446fffa3ca9ff69027",
+  "process_id": 16536,
+  "creation_unix_ms": 1791430386626,
+  "new_launch_id": "1744ed6a15cc42fc921468c0e2538e07",
+  "same_local_workdir": true,
+  "single_hidden_start": true,
+  "worker_or_hfss_restarted": false,
+  "handoff_receipt_sha256": "201669750063e4839a7af413c8fc8a340388ee2b2724ebc9cbb8dd37a08e1546",
+  "append_proof_sha256": "bf51ffa11839528fa25dddf8271c964826843c751af5ac37e4e2391c2afb44c8",
+  "append_verifier_sha256": "23c5d28efa8fe2c30efd5a44965e1a115f19f91c7dadc95222047b5c3f62e180",
+  "source_gate_sha256": "3830e8eaa172334e9723bd733285972120213052f132e9313f066b98b6c124b7",
+  "first_automatic_append": {
+    "count": 96,
+    "jobs": [
+      {
+        "store": "dedust_r80k1a751feafab517e1",
+        "count": 16,
+        "priority": 6,
+        "commit_receipt_sha256": "e84869ebc8b3b1e61ff3b96ffbc40a56785e44359b6f8de7b46010678e749c34"
+      },
+      {
+        "store": "dedust_r80kbb55d2d40c0092be",
+        "count": 16,
+        "priority": 6,
+        "commit_receipt_sha256": "9ecfd5d35c511eb6fc49ba764378becb72635136db0ee2743f3788c54b0a6b9c"
+      },
+      {
+        "store": "dedust_r80ka19f8527be0c9be1",
+        "count": 16,
+        "priority": 6,
+        "commit_receipt_sha256": "4af2e0be6780bf62775088a1f4a61219763417eddddb7430fa0f83411c3cf286"
+      },
+      {
+        "store": "dedust_r80ka22a4abb3c70c41e",
+        "count": 16,
+        "priority": 6,
+        "commit_receipt_sha256": "d2ccfc160355257f539272cc73f1dec1aea1a73cb041dd278e76144bdfd7a5fc"
+      },
+      {
+        "store": "dedust_r80k478d6dd880ce18d8",
+        "count": 16,
+        "priority": 6,
+        "commit_receipt_sha256": "680d08ef29274daf1b8e96cab310f27b4a7ce40cdf33a83845c6fc13a412dc3b"
+      },
+      {
+        "store": "dedust_r80k5b51ed4c96914354",
+        "count": 16,
+        "priority": 6,
+        "commit_receipt_sha256": "1c4843e700a72f4446b8e063afd2ba064ccf2a9ec6eddf976ea5fcfc78190f6f"
+      }
+    ],
+    "event": "00000004-473e49b4c8c5762b.json",
+    "queue_cutoff_sha256": "248ab58167997d3ba598062046a9a09c19eb8cc0bb1cf5ae14174d3bbb71848e"
+  },
+  "low_policy": {
+    "poll_seconds": 90,
+    "low_watermark": 48,
+    "target_pending": 96,
+    "shard_size": 16,
+    "priority": 6,
+    "ranking": "deterministic blind reservoir; SM ranking remains mainline"
+  },
+  "mainline": {
+    "priority": 1,
+    "new_unique_truths_per_sm_update": 48
+  },
+  "preserved": {
+    "local_old_immutable_files": 232,
+    "training_old_immutable_files": 25487
+  },
+  "verification_correction": {
+    "failure_preserved_sha256": "15470737842f83ecc046af3879bac9d30f5b1df78b2057141099011e8471ee7a",
+    "cause": "Postlaunch check tried reading the active training factory-watch.lock.",
+    "correction": "Treat this watcher-owned runtime lock as mutable; rechecked all other old immutable files.",
+    "additional_start_or_stop": false
+  },
+  "health_1135_taipei": {
+    "scoped_cli_exit_code": 0,
+    "alarms": false,
+    "active_jobs": {
+      "dedust_r80c987251aab02": 6,
+      "dedust_r80c987251aab03": 6,
+      "dedust_r80pfaaf5a1dp01": 5
+    },
+    "latest_result_age_minutes": 1,
+    "limit": "Conductor scoped CLI observation; no remote process or runtime Git audit."
+  },
+  "limits": [
+    "Automatic queue/input metadata append proof; queued candidates are not new HFSS truths.",
+    "Legacy blind-pool rows omit optional predicted_before_hfss; verifier accepts omission only with null prediction/model_generation and preserves explicit-false validation when present.",
+    "Frozen pilot reference remains 831 unique with best margin -0.24644088745117188; no new full raw/performance audit.",
+    "All source gate local frozen result-summary/prediction receipts were hash-read; no NAS result store/raw/model replay in append verifier.",
+    "R80 target5000 and R81 positive-WM/repeat objectives remain incomplete."
+  ]
+}

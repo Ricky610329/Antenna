@@ -449,3 +449,10 @@ Conductor獨立重算767保存數值的唯一性／極值／計數及254集合�
 [修正與主線證據](assets/r80_backlog_history_compatibility_20261008.json)：實際LOW首次啟動拒絕初始`dedust_r80b1_input`的舊config；差異只在name／exploration，並非量測／solver／scope／port／score／timeout改動。PID32084在完成主線後於11:02:37自然failed，原事件與全部資料保留，沒有中止HFSS worker。早期非keeper輸入改核對物理等價性，仍保存／每輪重核其原config SHA；新LOW仍要求當前profile精確bytes。修正完整回歸803項通過，獨立Sol審查通過；實際56個輸入／896唯一預留的metadata-only preflight通過，26個歷史config兼容，未取得NAS鎖、未讀results／raw、未寫cache或NAS。第一次完整回歸802 pass／1 fail保留：既有八執行緒jobs_add測試遇到PermissionError，未捕捉精確throwing site。四輪原樣本機診斷32／32與單獨測試通過，佇列程式未改；後續全綠不代表原錯誤原因已證實或修正。
 
 主線4457本輪已實派`dedust_r80pfaaf5a1dp01`一片16筆prio1（15鄰域＋1盲選對照），完整分片／排重／budget閘門通過，active pointer依正常dispatched流程移除。使用data-v012（fit733）作annotation；prepare reference凍結831唯一實測，最佳仍−0.2464408875 dB。Conductor核對831唯一hash與全部min(S11margin,Gainmargin)，未重做全量raw replay，不將這個截止點稱為最新全量稽核或SM因果提升。背景程序恢復與首次自動LOW append仍待後續收據。
+
+
+### 2026-10-08 11:33：背景補池恢復與首次自動append
+
+[實際恢復／派工收據](assets/r80_backlog_recovery_20261008.json)：push `7b18457`／803項全綠後，原failed local與訓練tree保存，同一工作目錄一次hidden start為sole PID16536，launch=`1744ed6a15cc42fc921468c0e2538e07`。交接原驗證讀到本來應視作runtime的`training_v2/factory-watch.lock`而報失敗；原failure保留，不再啟動程序，補列這個owned lock並逐一重核其他舊檔SHA與長度，狀態／attempt繼承與CIM身分通過。
+
+首次自動LOW事件已實派96筆／6片各16筆prio6，逐片canonical queue／config／manifest／marker／deterministic receipt metadata核對通過；未讀NAS result stores或raw、未取得controller鎖。本機凍結results／prediction receipts僅hash-read，明示不屬新的raw／模型稽核。LOW每90秒、自身低於48補向96，主線prio1可插隊；主線沿用每48新唯一真值更新SM。11:35 scoped健康檢查無警報，兩補池job各6/16、pilot5/16，最新結果皆1分鐘前。沒有重啟HFSS，queued候選不計實測；831凍結reference最佳仍−0.246441，R80／R81尚未完成。恢復約30分鐘健康檢查，正常時保持安靜。
