@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "status": "both_private_archives_published_all_hashes_match",
+  "authorization": "使用者明確回覆：允許封存這兩份到上述私人資料夾",
+  "destination_policy": "鄒穎麒個人 antenna NAS，兩份指定的新資料夾；不覆寫既有歸檔",
+  "archives": [
+    {
+      "relative_to_personal_antenna_root": "experiments/r80_symmetry_20261007/analysis_versions/sm-common-v013-v015_20261008_v001",
+      "completed_utc": "2026-10-08T06:39:08.626959+00:00",
+      "payload_files": 28,
+      "payload_bytes": 97851539,
+      "readback_files_including_manifest": 29,
+      "manifest_sha256": "332d580561545d83a2c53de18e8e0079bb749faffc8f75b580dab734cdeb35ae",
+      "scientific_record": "r80_sm_common_v013_v015_20261008.json"
+    },
+    {
+      "relative_to_personal_antenna_root": "experiments/r80_symmetry_20261007/analysis_versions/profile-data-v015_20261008_v001",
+      "completed_utc": "2026-10-08T06:39:34.738456+00:00",
+      "payload_files": 2043,
+      "payload_bytes": 36915792,
+      "readback_files_including_manifest": 2044,
+      "manifest_sha256": "252a8a52a2644ef0c9e97e917ad9a6b03acbdedacb10a3505bf3f92f9ede8af2",
+      "scientific_record": "r80_profile_data_v015_20261008.json"
+    }
+  ],
+  "total_payload_files": 2071,
+  "total_payload_bytes": 134767331,
+  "total_readback_files_including_manifests": 2073,
+  "excluded": ["credentials", "live logs/state", "claims", "locks", "live controller", "legacy raw"],
+  "limits": [
+    "先前pending收據保留當時狀態；本檔只補記批准後的實際發布。",
+    "發布時逐一核對staged payload SHA並讀回NAS bytes；不宣稱再次重播模型或全部HFSS raw。",
+    "獨立970筆統計審查在本機另存，審查收據SHA綁於scientific_record；不擴大這次已批准的payload。",
+    "未取得controller/dataset/watch/training鎖，未重啟worker或HFSS，未改產線演算法。"
+  ]
+}

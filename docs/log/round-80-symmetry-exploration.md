@@ -496,3 +496,10 @@ v014相對v013總MAE下降0.047815 dB（131筆改善／108筆惡化）；v015相
 原分析consumer只收source_bindings v1，實際新factory已有v2；現在有限支持兩版並維持物理驗證。v2額外核對cutoff kind／SHA形狀、manifest選擇順序與唯一性、已驗證raw entry及canonical content ID、artifact hash、唯一source input/store及manifest/results association；summary保留原cutoff provenance。12份來源v1、3份v2；缺少原pair-proof，因此只保留／shape-check cutoff_id，不假稱重建原同輪proof。六項新回歸涵蓋合法v2、不寫source、entry／ID／selection／source篡改及未知schema。
 
 完整809項回歸通過（343.35秒，OMP／MKL4、CI未設定），三份golden SHA全未變；pyflakes及diff check通過。第一版較長basetemp造成15個261–264字元destination在shutil.copyfile open時FileNotFoundError，794通過；原失敗完整保留，source未改、只用較短fresh basetemp重跑後全綠，未改HFSS／worker程式或Windows全域設定。分析修正不需要重啟正在運作的controller／worker。新統計歸檔2043檔、36,915,792 bytes已staged核對，但NAS尚待先前提出的合併明確授權；不得當成已發布。
+
+
+### 2026-10-08 14:39：兩份新歸檔獲批准並實際發布
+
+使用者明確批准兩份指定payload後，[私人發布收據](assets/r80_sm_profile_archive_20261008.json)確認SM v013–v015比較與data-v015統計兩個create-only資料夾已落在本人NAS。共2071個payload檔、134,767,331 bytes，加兩份manifest共2073個檔，逐檔讀回SHA全一致；原staged/pending歷史與第一次自動審查拒絕均保留。沒有新增未批准檔案、沒有覆寫舊歸檔，也沒有再次跑模型／HFSS或全量raw稽核。
+
+14:39同一PID16536／creation／command再次核對為live，scoped health無警報；三個claimed jobs分別12/16、8/16、2/16，最新結果0–1分鐘前，另有兩片guided及六片LOW待跑。只證明結果／claim活動，不當成遠端runtime Git或OS行程稽核。下一例行健康約15:09；對稱5000筆與R81正WM重測仍未完成。
