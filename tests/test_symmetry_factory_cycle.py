@@ -726,19 +726,19 @@ def test_source_change_during_exact_training_snapshot_rejects_before_ingest(tmp_
     pb.atomic_json(dataset / "jobs_state/wave.done", {"ok": True})
     train = _training(tmp_path / "training")
     seeds = _bundle(tmp_path / "seeds", 2, start=200)
-    original = cycle.snapshot_successes
+    original = cycle._snapshot_successes_from_proofs
     called = []
 
-    def mutate_then_snapshot(pairs, output, **kwargs):
+    def mutate_then_snapshot(queue, output, selected, cfg):
         with (store / "results.json").open("a", encoding="utf-8") as stream:
             stream.write("\n")
-        return original(pairs, output, **kwargs)
+        return original(queue, output, selected, cfg)
 
-    monkeypatch.setattr(cycle, "snapshot_successes", mutate_then_snapshot)
+    monkeypatch.setattr(cycle, "_snapshot_successes_from_proofs", mutate_then_snapshot)
     monkeypatch.setattr(cycle.training, "ingest_profile_stores",
                         lambda *args, **kwargs: called.append("ingest"))
 
-    with pytest.raises(cycle.LiveSnapshotChanged, match="changed after physical audit"):
+    with pytest.raises(ValueError, match="terminal store results changed"):
         cycle.run_once(local_workdir=tmp_path / "cycle", dataset_root=dataset,
                        profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds])
     assert called == []
@@ -760,6 +760,288 @@ def test_store_manifest_change_is_fatal_not_a_retryable_results_race(tmp_path):
     with pytest.raises(ValueError, match="manifest.json") as caught:
         cycle._require_pair_bindings(bindings)
     assert not isinstance(caught.value, cycle.LiveSnapshotChanged)
+
+
+def test_ephemeral_proof_rechecks_all_success_raw_without_replaying_store(tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 3)
+    store = _complete(input_dir, dataset / "wave")
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 1, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    policy = cycle.factory.validate_factory_config(vars(cfg))
+    queue = cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
+    expected_order = cycle._success_order(queue["pairs"], set())
+    calls = []
+    original = pb.validate_store
+
+    def validate(path, *args, **kwargs):
+        calls.append(Path(path).resolve())
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(pb, "validate_store", validate)
+    assert cycle._recheck_queue_proof(dataset, queue) == set()
+    assert cycle._recheck_queue_proof(dataset, queue) == set()
+    assert cycle._success_order_from_proofs(queue, set()) == expected_order
+    assert calls == []
+
+
+def test_proof_audit_preserves_factory_snapshot_job_schema(tmp_path):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 1)
+    store = _complete(input_dir, dataset / "wave")
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 1, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    pb.atomic_json(dataset / "jobs_state/wave.done", {"machine": RETRY_WORKERS[0]})
+    queue = cycle._queue_view(
+        dataset, cfg, cycle.factory.validate_factory_config(vars(cfg)), RETRY_WORKERS)
+    proof_audit = cycle._audit_from_queue(dataset, cfg, queue)
+    legacy_audit = cycle.factory.snapshot(dataset, cfg.scope)
+
+    assert proof_audit["jobs"] == legacy_audit["jobs"]
+    for key in ("scope", "dataset_root", "jobs_sha256", "measurement_ids",
+                "valid_unique_patterns", "audited_ok_including_repeats",
+                "solver_time_median_s", "completed_stores", "progress_limit"):
+        assert proof_audit[key] == legacy_audit[key]
+
+
+@pytest.mark.parametrize("artifact_key", ["sample_file", "rad_file"])
+def test_ephemeral_proof_rejects_same_metadata_success_raw_mutation(tmp_path, artifact_key):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 1)
+    store = _complete(input_dir, dataset / "wave")
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 1, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    queue = cycle._queue_view(
+        dataset, cfg, cycle.factory.validate_factory_config(vars(cfg)), RETRY_WORKERS)
+    entry = next(iter(queue["pair_proofs"][0]["results"].values()))
+    with (store / entry[artifact_key]).open("ab") as stream:
+        stream.write(b"corrupt")
+
+    with pytest.raises(ValueError, match="frozen successful"):
+        cycle._recheck_queue_proof(dataset, queue)
+
+
+def test_active_cutoff_accepts_known_append_once_but_keeps_fixed_order_and_pending(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    first_input = _bundle(dataset / "first_input", 3, prefix="first")
+    first_store = _complete(first_input, dataset / "first")
+    full = pb.read_json(first_store / "results.json")
+    first_rows = pb.read_json(first_input / "manifest.json")
+    pb.atomic_json(first_store / "results.json", {first_rows[0]["id"]: full[first_rows[0]["id"]]})
+    second_input = _bundle(dataset / "second_input", 1, prefix="second", start=100)
+    second_store = _complete(second_input, dataset / "second")
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [
+        {"input": first_input.name, "store": first_store.name, "prio": 1,
+         "scope": cfg.scope, "config": f"{first_input.name}/config.yaml"},
+        {"input": second_input.name, "store": second_store.name, "prio": 6,
+         "scope": cfg.scope, "config": f"{second_input.name}/config.yaml"},
+    ])
+    queue = cycle._queue_view(
+        dataset, cfg, cycle.factory.validate_factory_config(vars(cfg)), RETRY_WORKERS)
+    cutoff_order = cycle._success_order_from_proofs(queue, set())
+    cutoff_pending = set(queue["pending_hashes"] - queue["successful_hashes"])
+    pb.atomic_json(first_store / "results.json", {
+        first_rows[0]["id"]: full[first_rows[0]["id"]],
+        first_rows[1]["id"]: full[first_rows[1]["id"]],
+    })
+    pb.atomic_json(dataset / "jobs_state/first.done", {"machine": RETRY_WORKERS[0]})
+    calls = []
+    original = pb.validate_store
+
+    def validate(path, *args, **kwargs):
+        calls.append(Path(path).resolve())
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(pb, "validate_store", validate)
+    deferred = cycle._recheck_queue_proof(dataset, queue)
+    assert deferred == {first_rows[1]["pattern_sha256"]}
+    assert cycle._recheck_queue_proof(dataset, queue) == deferred
+    assert calls == [first_store.resolve()]
+    assert cycle._success_order_from_proofs(queue, set()) == cutoff_order
+    assert queue["pending_hashes"] - queue["successful_hashes"] == cutoff_pending
+    snapshot = cycle._snapshot_successes_from_proofs(
+        queue, tmp_path / "snapshot", cutoff_order[:1], cfg)
+    assert [row["pattern_sha256"] for row in pb.read_json(snapshot / "manifest.json")] == [
+        cutoff_order[0]]
+
+
+def test_proof_distinguishes_fatal_success_and_schema_changes_from_retry_updates(tmp_path):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir, store, successful = _queued_single_error(dataset)
+    cfg = pb.load_profile_config(PROFILE)
+    policy = cycle.factory.validate_factory_config(vars(cfg))
+    error_queue = cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
+    pb.atomic_json(store / "results.json", successful)
+    with pytest.raises(cycle.LiveSnapshotChanged, match="retryable result entry"):
+        cycle._recheck_queue_proof(dataset, error_queue)
+
+    success_queue = cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
+    results = pb.read_json(store / "results.json")
+    name = next(iter(results))
+    results[name]["time_s"] += 1
+    pb.atomic_json(store / "results.json", results)
+    with pytest.raises(ValueError, match="frozen successful result"):
+        cycle._recheck_queue_proof(dataset, success_queue)
+
+    pb.atomic_json(store / "results.json", successful)
+    malformed_queue = cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
+    (store / "results.json").write_text("{stable-bad-json", encoding="utf-8")
+    with pytest.raises(ValueError, match="stably malformed") as caught:
+        cycle._recheck_queue_proof(dataset, malformed_queue)
+    assert not isinstance(caught.value, cycle.LiveSnapshotChanged)
+
+    pb.atomic_json(store / "results.json", successful)
+    unknown_queue = cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
+    unknown = dict(successful)
+    unknown["not-in-manifest"] = {"error": "invalid foreign row", "attempts": 1}
+    pb.atomic_json(store / "results.json", unknown)
+    with pytest.raises(ValueError, match="unknown manifest ids"):
+        cycle._recheck_queue_proof(dataset, unknown_queue)
+
+
+def test_terminal_cutoff_rejects_later_results_append(tmp_path):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 2)
+    store = _complete(input_dir, dataset / "wave")
+    full = pb.read_json(store / "results.json")
+    rows = pb.read_json(input_dir / "manifest.json")
+    pb.atomic_json(store / "results.json", {rows[0]["id"]: full[rows[0]["id"]]})
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 1, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    pb.atomic_json(dataset / "jobs_state/wave.done", {"machine": RETRY_WORKERS[0]})
+    queue = cycle._queue_view(
+        dataset, cfg, cycle.factory.validate_factory_config(vars(cfg)), RETRY_WORKERS)
+    pb.atomic_json(store / "results.json", full)
+    with pytest.raises(ValueError, match="terminal store results changed"):
+        cycle._recheck_queue_proof(dataset, queue)
+
+
+def test_terminal_cutoff_rejects_results_store_appearing_after_absence(tmp_path):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 1)
+    store = dataset / "wave"
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 1, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    pb.atomic_json(dataset / "jobs_state/wave.done", {"machine": RETRY_WORKERS[0]})
+    queue = cycle._queue_view(
+        dataset, cfg, cycle.factory.validate_factory_config(vars(cfg)), RETRY_WORKERS)
+    assert queue["pair_proofs"] == []
+    _complete(input_dir, store)
+
+    with pytest.raises(ValueError, match="terminal store results appeared"):
+        cycle._recheck_queue_proof(dataset, queue)
+
+
+def test_active_first_results_appearance_keeps_one_frozen_absence_decision(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    old_input = _bundle(dataset / "old_input", 1, prefix="old", start=30)
+    old_store = _complete(old_input, dataset / "old")
+    new_input = _bundle(dataset / "new_input", 1, prefix="new", start=31)
+    new_store = dataset / "new"
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [
+        {"input": old_input.name, "store": old_store.name, "prio": 1,
+         "scope": cfg.scope, "config": f"{old_input.name}/config.yaml"},
+        {"input": new_input.name, "store": new_store.name, "prio": 1,
+         "scope": cfg.scope, "config": f"{new_input.name}/config.yaml"},
+    ])
+    results_path = (new_store / "results.json").resolve()
+    original_is_file = Path.is_file
+    appeared = False
+
+    def racing_is_file(path):
+        nonlocal appeared
+        if path.resolve() == results_path and not appeared:
+            appeared = True
+            _complete(new_input, new_store)
+            return False
+        return original_is_file(path)
+
+    monkeypatch.setattr(Path, "is_file", racing_is_file)
+    queue = cycle._queue_view(
+        dataset, cfg, cycle.factory.validate_factory_config(vars(cfg)), RETRY_WORKERS)
+
+    assert appeared
+    assert [Path(proof["store"]) for proof in queue["pair_proofs"]] == [old_store.resolve()]
+    assert queue["result_absence_bindings"] == [{
+        "store": "new", "results_path": str(results_path), "terminal": False}]
+    new_audit = next(item for item in queue["audit_jobs"] if item["store"] == "new")
+    assert new_audit["audited_ok"] == 0
+    assert new_audit["errors"] == {}
+    assert new_audit["source_metadata_sha256"] is None
+    new_hash = pb.read_json(new_input / "manifest.json")[0]["pattern_sha256"]
+    assert new_hash in queue["pending_hashes"] - queue["successful_hashes"]
+    assert cycle._recheck_queue_proof(dataset, queue) == set()
+
+
+def test_proof_snapshot_keeps_normal_representative_when_repeat_appears_first(tmp_path):
+    dataset = _dataset(tmp_path / "dataset")
+    repeat_input = _bundle(dataset / "repeat_input", 1, prefix="repeat", start=7)
+    repeat_rows = pb.read_json(repeat_input / "manifest.json")
+    repeat_rows[0]["kind"] = "repeat"
+    pb.atomic_json(repeat_input / "manifest.json", repeat_rows)
+    repeat_store = _complete(repeat_input, dataset / "repeat")
+    normal_input = _bundle(dataset / "normal_input", 1, prefix="normal", start=7)
+    normal_store = _complete(normal_input, dataset / "normal")
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [
+        {"input": repeat_input.name, "store": repeat_store.name, "prio": 6,
+         "scope": cfg.scope, "config": f"{repeat_input.name}/config.yaml"},
+        {"input": normal_input.name, "store": normal_store.name, "prio": 6,
+         "scope": cfg.scope, "config": f"{normal_input.name}/config.yaml"},
+    ])
+    queue = cycle._queue_view(
+        dataset, cfg, cycle.factory.validate_factory_config(vars(cfg)), RETRY_WORKERS)
+    order = cycle._success_order_from_proofs(queue, set())
+    assert len(order) == 1
+    snapshot = cycle._snapshot_successes_from_proofs(
+        queue, tmp_path / "snapshot", order, cfg)
+    binding = next(iter(pb.read_json(snapshot / "source_bindings.json")["items"].values()))
+    assert Path(binding["source_store"]) == normal_store.resolve()
+    assert binding["cutoff_result_entry_id"] == cycle._content_id(
+        binding["cutoff_result_entry"])
+
+
+@pytest.mark.parametrize("tamper", ["result", "source_binding"])
+def test_existing_pre_receipt_snapshot_must_exactly_replay_cutoff_proof(tmp_path, tamper):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 1)
+    store = _complete(input_dir, dataset / "wave")
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 1, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    queue = cycle._queue_view(
+        dataset, cfg, cycle.factory.validate_factory_config(vars(cfg)), RETRY_WORKERS)
+    selected = cycle._success_order_from_proofs(queue, set())
+    snapshot = cycle._snapshot_successes_from_proofs(
+        queue, tmp_path / "training_snapshot", selected, cfg)
+    if tamper == "result":
+        results = pb.read_json(snapshot / "results.json")
+        next(iter(results.values()))["time_s"] += 1
+        pb.atomic_json(snapshot / "results.json", results)
+        message = "exact cutoff selection"
+    else:
+        binding = pb.read_json(snapshot / "source_bindings.json")
+        next(iter(binding["items"].values()))["cutoff_result_entry_id"] = "0" * 64
+        pb.atomic_json(snapshot / "source_bindings.json", binding)
+        message = "different physical cutoff"
+
+    with pytest.raises(ValueError, match=message):
+        cycle._snapshot_successes_from_proofs(queue, snapshot, selected, cfg)
 
 
 def test_guided_preparation_uses_only_remaining_outstanding_capacity(tmp_path, monkeypatch):
@@ -954,6 +1236,163 @@ def test_all_retry_workers_exhausted_at_4999_releases_one_distinct_exact_tail(
         expected_retry_workers=RETRY_WORKERS))
     assert complete["valid_unique"] == 5_000 and complete["pending_unique"] == 0
     assert complete["status"] == "idle" and complete["planned_jobs"] == []
+
+
+@pytest.mark.parametrize("done_before_cutoff", [False, True])
+def test_done_cutoff_at_4999_never_releases_capacity_from_a_frozen_active_job(
+        tmp_path, monkeypatch, done_before_cutoff):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3)
+    _queued_single_error(dataset)
+    done = dataset / "jobs_state/failed.done"
+    if done_before_cutoff:
+        pb.atomic_json(done, {"machine": RETRY_WORKERS[0]})
+    _add_background_truth(monkeypatch)
+    calls = _fake_pool(monkeypatch)
+    if not done_before_cutoff:
+        def load_current(_root, _version):
+            pb.atomic_json(done, {"machine": RETRY_WORKERS[0]})
+            return ColdPredictor()
+        monkeypatch.setattr(cycle.training, "load_current_predictor", load_current)
+
+    receipt = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds], expected_retry_workers=RETRY_WORKERS))
+
+    assert receipt["valid_unique"] == 4_999
+    if done_before_cutoff:
+        assert receipt["pending_unique"] == 0
+        assert [job["count"] for job in receipt["planned_jobs"]] == [1]
+        assert calls[0][0] == 1
+    else:
+        assert receipt["pending_unique"] == 1
+        assert receipt["planned_jobs"] == []
+        assert calls == []
+
+
+@pytest.mark.parametrize("already_ingested", [False, True])
+def test_training_recovery_reuses_frozen_cutoff_after_late_success(
+        tmp_path, monkeypatch, already_ingested):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 49)
+    store = _complete(input_dir, dataset / "wave")
+    full = pb.read_json(store / "results.json")
+    rows = pb.read_json(input_dir / "manifest.json")
+    pb.atomic_json(store / "results.json", {
+        row["id"]: full[row["id"]] for row in rows[:48]})
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 6, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 2, start=300)
+    _fake_pool(monkeypatch)
+    ingested = []
+
+    def crash_ingest(*_args, **_kwargs):
+        raise RuntimeError("fixture crash after immutable snapshot publication")
+
+    monkeypatch.setattr(cycle.training, "ingest_profile_stores", crash_ingest)
+    with pytest.raises(RuntimeError, match="fixture crash"):
+        cycle.run_once(local_workdir=tmp_path / "cycle", dataset_root=dataset,
+                       profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds])
+    active = pb.read_json(tmp_path / "cycle/active_cycle.json")
+    receipt_path = Path(active["receipt"])
+    training_receipt = pb.read_json(receipt_path)
+    frozen = Path(training_receipt["training_snapshot"]["path"])
+    frozen_manifest_sha = pb.file_sha256(frozen / "manifest.json")
+    assert len(pb.read_json(frozen / "manifest.json")) == 48
+
+    pb.atomic_json(store / "results.json", full)
+    pb.atomic_json(dataset / "jobs_state/wave.done", {"machine": RETRY_WORKERS[0]})
+
+    def recover_ingest(_root, stores, *, min_new, max_new):
+        recovered_rows = pb.read_json(Path(stores[0]) / "manifest.json")
+        ingested.append([row["pattern_sha256"] for row in recovered_rows])
+        assert len(recovered_rows) == 48
+        assert rows[48]["pattern_sha256"] not in ingested[-1]
+        output = Path(_root) / "data/data-v001"
+        output.mkdir(parents=True, exist_ok=True)
+        return output
+
+    if already_ingested:
+        frozen_hashes = {row["pattern_sha256"] for row in pb.read_json(
+            frozen / "manifest.json")}
+        monkeypatch.setattr(cycle, "_trained", lambda _root: (
+            1, frozen_hashes, {"manifest_id": "already-bound", "data_version": 1}))
+        monkeypatch.setattr(
+            cycle.training, "ingest_profile_stores",
+            lambda *_args, **_kwargs: pytest.fail("ingested snapshot must not be added twice"))
+    else:
+        monkeypatch.setattr(cycle.training, "ingest_profile_stores", recover_ingest)
+    monkeypatch.setattr(cycle.training, "train_version", lambda *_args: None)
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda *_args: ColdPredictor())
+    completed = cycle.run_once(local_workdir=tmp_path / "cycle", dataset_root=dataset,
+                               profile_config=PROFILE, training_workdir=train,
+                               seed_inputs=[seeds])
+    final = pb.read_json(completed)
+    assert completed == receipt_path
+    assert (ingested == [] if already_ingested else len(ingested[0]) == 48)
+    assert pb.file_sha256(frozen / "manifest.json") == frozen_manifest_sha
+    assert final["training_snapshot"] == training_receipt["training_snapshot"]
+    assert final["recovered_training_receipt"] == str(receipt_path)
+
+
+def test_post_training_receipt_and_planning_bind_fresh_append_while_snapshot_keeps_cutoff(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 49)
+    store = _complete(input_dir, dataset / "wave")
+    full = pb.read_json(store / "results.json")
+    rows = pb.read_json(input_dir / "manifest.json")
+    pb.atomic_json(store / "results.json", {
+        row["id"]: full[row["id"]] for row in rows[:48]})
+    cutoff_results_sha = pb.file_sha256(store / "results.json")
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 6, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 2, start=400)
+    _fake_pool(monkeypatch)
+    captured_training = []
+    original_write = cycle._write
+
+    def capture_write(path, value):
+        if isinstance(value, dict) and value.get("status") == "training":
+            captured_training.append(value)
+        original_write(path, value)
+
+    def ingest(root, stores, *, min_new, max_new):
+        assert len(pb.read_json(Path(stores[0]) / "manifest.json")) == 48
+        pb.atomic_json(store / "results.json", full)
+        output = Path(root) / "data/data-v001"
+        output.mkdir(parents=True, exist_ok=True)
+        return output
+
+    monkeypatch.setattr(cycle, "_write", capture_write)
+    monkeypatch.setattr(cycle.training, "ingest_profile_stores", ingest)
+    monkeypatch.setattr(cycle.training, "train_version", lambda *_args: None)
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda *_args: ColdPredictor())
+
+    final = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds]))
+    fresh_results_sha = pb.file_sha256(store / "results.json")
+    assert fresh_results_sha != cutoff_results_sha
+    assert captured_training[0]["audited_source_bindings"][0][
+        "store_metadata_sha256"]["results.json"] == cutoff_results_sha
+    assert final["audited_source_bindings"][0][
+        "store_metadata_sha256"]["results.json"] == fresh_results_sha
+    assert final["audit"]["jobs"][0][
+        "source_metadata_sha256"]["results.json"] == fresh_results_sha
+    snapshot_binding = pb.read_json(
+        Path(final["training_snapshot"]["path"]) / "source_bindings.json")
+    assert snapshot_binding["sources"][0][
+        "partial_source_results_sha256"] == cutoff_results_sha
 
 
 def test_queue_view_empty_or_unknown_fail_roster_never_releases_pending(tmp_path):
@@ -1359,6 +1798,74 @@ def test_commit_rechecks_budget_for_each_shard_under_dataset_lock(tmp_path, monk
         cycle.commit_dispatch(receipt_path, queue_add=add, duplicate_check=lambda *_: 2)
 
     assert len(pb.read_json(dataset / "jobs.json")) == 1
+    assert (dataset / jobs[0]["input"]).is_dir()
+    assert not (dataset / jobs[1]["input"]).exists()
+    assert pb.read_json(receipt_path)["status"] == "dispatching"
+
+
+def test_commit_reuses_one_physical_proof_across_shards(tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    existing_input = _bundle(dataset / "existing_input", 2, prefix="old", start=700)
+    existing_store = _complete(existing_input, dataset / "existing")
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{
+        "input": existing_input.name, "store": existing_store.name, "prio": 1,
+        "scope": cfg.scope, "config": f"{existing_input.name}/config.yaml"}])
+    train = _training(tmp_path / "training")
+    staged = [_bundle(tmp_path / f"staged-{index}", 2, prefix=f"new{index}",
+                      start=800 + 10 * index) for index in range(2)]
+    jobs = cycle._planned(staged, "g", 1, "9" * 64)
+    receipt_path = _dispatch_receipt(
+        tmp_path / "local/cycles/test/action_receipt.json", dataset, train, jobs, "9" * 64)
+    calls = []
+    original = pb.validate_store
+
+    def validate(path, *args, **kwargs):
+        calls.append(Path(path).resolve())
+        return original(path, *args, **kwargs)
+
+    def add(root, job, scope):
+        queued = pb.read_json(root / "jobs.json")
+        queued.append({"input": job["input"], "store": job["store"],
+                       "prio": job["prio"], "scope": scope,
+                       "config": f"{job['input']}/config.yaml"})
+        pb.atomic_json(root / "jobs.json", queued)
+
+    monkeypatch.setattr(pb, "validate_store", validate)
+    cycle.commit_dispatch(receipt_path, queue_add=add, duplicate_check=lambda *_: 2)
+
+    assert calls == [existing_store.resolve()]
+    assert len(pb.read_json(dataset / "jobs.json")) == 3
+
+
+@pytest.mark.parametrize("mutation", ["extra", "drop_prior"])
+def test_commit_rejects_non_append_queue_transition_before_next_shard(tmp_path, mutation):
+    dataset = _dataset(tmp_path / "dataset")
+    existing_input = _bundle(dataset / "existing_input", 1, prefix="old", start=900)
+    existing_store = _complete(existing_input, dataset / "existing")
+    cfg = pb.load_profile_config(PROFILE)
+    prior = {"input": existing_input.name, "store": existing_store.name, "prio": 1,
+             "scope": cfg.scope, "config": f"{existing_input.name}/config.yaml"}
+    pb.atomic_json(dataset / "jobs.json", [prior])
+    train = _training(tmp_path / "training")
+    staged = [_bundle(tmp_path / f"staged-{index}", 1, prefix=f"new{index}",
+                      start=910 + index) for index in range(2)]
+    jobs = cycle._planned(staged, "g", 1, "8" * 64)
+    receipt_path = _dispatch_receipt(
+        tmp_path / "local/cycles/test/action_receipt.json", dataset, train, jobs, "8" * 64)
+
+    def mutate(root, job, scope):
+        expected = {"input": job["input"], "store": job["store"], "prio": job["prio"],
+                    "scope": scope, "config": f"{job['input']}/config.yaml"}
+        if mutation == "extra":
+            changed = [prior, expected, {**expected, "store": "unrelated-extra"}]
+        else:
+            changed = [expected]
+        pb.atomic_json(root / "jobs.json", changed)
+
+    with pytest.raises(ValueError, match="exact append-only transition"):
+        cycle.commit_dispatch(receipt_path, queue_add=mutate, duplicate_check=lambda *_: 1)
+
     assert (dataset / jobs[0]["input"]).is_dir()
     assert not (dataset / jobs[1]["input"]).exists()
     assert pb.read_json(receipt_path)["status"] == "dispatching"

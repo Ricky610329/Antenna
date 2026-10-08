@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-08T01:29:32.754581+00:00",
+  "status": "verified_code_not_deployed",
+  "scope": "symmetry_filter_20261007",
+  "base_commit": "275cb1a621f4f436d39cdf4673a742954810b20b",
+  "source_sha256": {
+    "script/symmetry_incumbent_shell_pilot.py": "bbe91ce3895683b8fe7ed1a3ce10920b43007deaad7bb8e01756d4fb685b839f",
+    "script/symmetry_factory_cycle.py": "4bf1cfd22b3190eb0bba96f9d6266821173e594f390c874f3832484a8684b883",
+    "script/symmetry_factory_watch.py": "bbc315aa9a26315106b601832ac9164ded8190730323c843894c78f7840375ee",
+    "tests/test_symmetry_incumbent_shell_pilot.py": "9e2a8518c08588c7be3ef8a15b3c24ff6d569515ec34bc6f27392943db19b174",
+    "tests/test_symmetry_factory_cycle.py": "b4a12a837e249428900dd46271a2b509eb2c82211527512fe1d1dc1a13783bb2",
+    "tests/test_symmetry_factory_watch.py": "f290f52914cacff84609782b27742937d9562d01c97589a82920a378920728b5",
+    "script/README.md": "876d812a9ccc8945b1d8595dce2349a8e090a3ab5fc0c4316366b477133b20e3"
+  },
+  "behavior": [
+    "One invocation freezes physically validated queue, result rows, marker reservations and representative order; rechecks all counted successful sample/radiation SHA without re-deserializing unchanged stores.",
+    "Manifest-known appends validate only the changed store and remain deferred and reserved; late done/terminal-fail does not release unvalidated capacity.",
+    "Frozen successful entries/raw, identities, terminal results changes, unknown IDs, stable malformed JSON and conflicting done/fail remain fatal; ordinary retry and takeover changes remain typed retry.",
+    "Training copies the exact cutoff rows/results/provenance and recovers immutable pretrain snapshots; post-training planning and receipt bind one fresh proof.",
+    "Commit extends the same proof per shard only after the exact prior queue plus one canonical append, retaining the 5000-unique and guided96 gates."
+  ],
+  "validation": {
+    "full_suite_counts": {
+      "tests": 752,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "full_suite_seconds": 364.8999638000969,
+    "full_suite_log_sha256": "8c3c8da342b3f510eac198973159d2a867e20135d2838dd549a9d89607656c42",
+    "full_suite_junit_sha256": "0f303dc1f4e606431b3ae0f9ef49183aaeab0e6c30608fa197851ba5eacf84b4",
+    "threads": 4,
+    "ci": "unset",
+    "warnings_summary_present": false,
+    "source_and_golden_unchanged": true,
+    "golden_sha256": "c5fc5ed0db1bf51de2e81f6ac8681962d70e4a1b99508dbf7cad6cdfb7ec42fb",
+    "owner_focused_tests": 59,
+    "independent_focused_tests": 59,
+    "independent_review_verdict": "PASS",
+    "independent_review_sha256": "2a0fa620a5a6553ce91797bb53ef51065d50f26e29873cb74e2587c21e5437b4",
+    "static_checks": "py_compile, pyflakes and git diff --check passed",
+    "pilot_core_and_protocol_unchanged_sha256": {
+      "script/symmetry_incumbent_shell_pilot.py": "bbe91ce3895683b8fe7ed1a3ce10920b43007deaad7bb8e01756d4fb685b839f",
+      "docs/log/assets/r80_incumbent_shell_pilot_protocol_20261008.json": "e74221c63302b4beb1369f0e9d84c8028974c613a887444b325c12148ed07bd9"
+    }
+  },
+  "last_health_observation": {
+    "schema_version": 1,
+    "observed_utc": "2026-10-08T01:17:46.1978264+00:00",
+    "pid": 54448,
+    "creation_unix_ms": 1791419977381,
+    "command_line": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_shell_v1.json\" ",
+    "sole_watcher_verified": true,
+    "live_status_sha256": "084e5ceceefe19d716c7e2749b8feef64f6bc20d27cce7a710df33ffadef13ae",
+    "launch_id": "e9826e086f384ee88abdf233f457679c",
+    "status": "waiting",
+    "completed_cycles": 0,
+    "deferred_retry_count": 2,
+    "last_deferred_retry": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_shell_v1\\deferred_retries\\e9826e086f384ee88abdf233f457679c-0002.json",
+      "sha256": "2bedf58d7bb91910f53344ae8bda2661c63152973ce7d8c181ea36a9cc73a80a",
+      "schema_version": 1,
+      "event": "live_snapshot_changed",
+      "deferred_utc": "2026-10-08T01:11:06.410541+00:00",
+      "error": "store changed after physical audit; retry cycle: \\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80cbc5be279g02",
+      "exception_type": "LiveSnapshotChanged",
+      "cycle_started_utc": "2026-10-08T01:09:55.221799+00:00",
+      "controller_receipt": null
+    },
+    "scoped_health_observation": {
+      "observation_taipei_minute": "2026-10-08T09:13+08:00",
+      "command": "python -m script.status --factory --alert --dataset-root <personal R80 dataset> --scope symmetry_filter_20261007",
+      "exit_code": 0,
+      "alarms": false,
+      "output": "dedust_r80g00113 0/16 claimed; dedust_r80g00114 0/16 queued; dedust_r80ca7b80b03g01 14/16 latest 2 minutes claimed; dedust_r80cbc5be279g02 8/16 latest 3 minutes claimed; factory no alarms",
+      "origin": "Conductor actual scoped command output at 09:13, captured separately from this CIM observation."
+    },
+    "limits": [
+      "Saved artifact activity is not a remote worker process or runtime Git audit.",
+      "This capture does not replay raw or prove new pilot dispatch."
+    ]
+  },
+  "private_archive": {
+    "relative_path": "experiments/r80_symmetry_20261007/controller_fixes/cutoff_v001_20261008",
+    "payload_file_count": 40,
+    "payload_bytes": 618842,
+    "manifest_sha256": "27b09593d04db9552375068f4c597e9c45f8c64f65bacbed105172baf5dfe2d3",
+    "all_readback_hashes_verified": true
+  },
+  "limits": [
+    "Generated-fixture tests establish semantic regression behavior; no measured live NAS speedup or byte-reduction claim.",
+    "All counted successful raw SHA checks still read raw bytes; changed-store append validation and strict pilot freeze_reference remain physical checks.",
+    "Controller PID54448 loaded prior code at the saved 09:17 observation. A separately verified same-local handoff is required before deployment.",
+    "No actual 16-row pilot cohort, current predictor annotation, full reference or pilot dispatch is verified by this code milestone.",
+    "The saved scoped health was quiet but does not establish remote process or runtime Git identity; the user was given restart commands for216.",
+    "R80 5000 valid unique physical collection/final research and R81 positive measured WM with independent positive repeat remain incomplete."
+  ]
+}

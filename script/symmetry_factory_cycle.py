@@ -14,6 +14,7 @@ import json
 import os
 import socket
 import shutil
+import statistics
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -515,6 +516,210 @@ def _training_summary(root: Path, version: int) -> dict[str, Any] | None:
             "quality_threshold": None}
 
 
+def _input_physical_proof(input_dir: Path, cfg: Any,
+                          metadata: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """Physically validate one input and retain a same-invocation immutable proof."""
+
+    names = ("config.yaml", "measurement.json", "score_spec.json", "manifest.json")
+    hashes = dict(metadata) if metadata is not None else {
+        name: pb.file_sha256(input_dir / name) for name in names}
+    manifest_rows = _read(input_dir / "manifest.json")
+    pattern_files = {row["id"]: pb.file_sha256(input_dir / f"{row['id']}.pt")
+                     for row in manifest_rows}
+    rows = pb.validate_input(input_dir, cfg)
+    if rows != manifest_rows:
+        raise ValueError(f"input manifest changed during physical validation: {input_dir}")
+    if any(pb.file_sha256(input_dir / name) != digest for name, digest in hashes.items()):
+        raise ValueError(f"input changed during physical validation: {input_dir}")
+    if any(pb.file_sha256(input_dir / f"{name}.pt") != digest
+           for name, digest in pattern_files.items()):
+        raise ValueError(f"input pattern changed during physical validation: {input_dir}")
+    return {"input": str(input_dir), "rows": rows,
+            "input_metadata_sha256": hashes,
+            "input_pattern_file_sha256": pattern_files}
+
+
+def _successful_entries(results: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    return {name: entry for name, entry in results.items()
+            if isinstance(entry, dict) and entry.get("status") == "ok" and
+            "error" not in entry}
+
+
+def _safe_store_file(store: Path, relative: Any, label: str) -> Path:
+    if not isinstance(relative, str) or not relative:
+        raise ValueError(f"successful observation lacks {label}")
+    path = (store / relative).resolve()
+    try:
+        path.relative_to(store.resolve())
+    except ValueError as exc:
+        raise ValueError(f"successful observation {label} escapes store") from exc
+    if not path.is_file():
+        raise ValueError(f"successful observation lacks {label}: {path}")
+    return path
+
+
+def _recheck_success_raw(proof: Mapping[str, Any]) -> None:
+    """Rehash every counted cutoff success without deserializing/replaying it."""
+
+    store = Path(proof["store"])
+    for name, entry in _successful_entries(proof["results"]).items():
+        sample = _safe_store_file(store, entry.get("sample_file"), f"{name} sample")
+        if pb.file_sha256(sample) != entry.get("sample_sha256"):
+            raise ValueError(f"frozen successful sample changed: {store}: {name}")
+        rad_file = entry.get("rad_file")
+        if rad_file is not None:
+            radiation = _safe_store_file(store, rad_file, f"{name} radiation")
+            if pb.file_sha256(radiation) != entry.get("rad_sha256"):
+                raise ValueError(f"frozen successful radiation changed: {store}: {name}")
+
+
+def _recheck_input_proof(proof: Mapping[str, Any]) -> None:
+    root = Path(proof["input"])
+    changed = [name for name, digest in proof["input_metadata_sha256"].items()
+               if pb.file_sha256(root / name) != digest]
+    if changed:
+        raise ValueError(f"input changed after physical audit: {root}: {changed}")
+    changed_patterns = [name for name, digest in proof["input_pattern_file_sha256"].items()
+                        if pb.file_sha256(root / f"{name}.pt") != digest]
+    if changed_patterns:
+        raise ValueError(
+            f"input pattern bytes changed after physical audit: {root}: {changed_patterns[:20]}")
+
+
+def _recheck_pair_proof(proof: Mapping[str, Any],
+                        append_cache: dict[str, Any] | None = None) -> set[str]:
+    """Accept append-only results while retaining the original validated cutoff."""
+
+    store = Path(proof["store"])
+    for name, digest in proof["store_metadata_sha256"].items():
+        if name != "results.json" and pb.file_sha256(store / name) != digest:
+            raise ValueError(f"store identity changed after physical audit: {store}: {name}")
+    results_path = store / "results.json"
+    try:
+        before_bytes = results_path.read_bytes()
+    except FileNotFoundError as exc:
+        if results_path.is_file():
+            raise LiveSnapshotChanged(f"results appeared while rechecking proof: {store}") from exc
+        raise ValueError(f"physically audited results disappeared: {store}") from exc
+    try:
+        current = json.loads(before_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        if results_path.read_bytes() != before_bytes:
+            raise LiveSnapshotChanged(f"results changed while rechecking proof: {store}") from exc
+        raise ValueError(f"results.json is stably malformed after physical audit: {store}") from exc
+    if not isinstance(current, dict):
+        raise ValueError(f"results.json must contain an object: {store}")
+    frozen = proof["results"]
+    current_sha = hashlib.sha256(before_bytes).hexdigest()
+    if current_sha != proof["store_metadata_sha256"]["results.json"] and proof["terminal"]:
+        raise ValueError(f"terminal store results changed after physical audit: {store}")
+    removed = sorted(set(frozen) - set(current))
+    modified = sorted(name for name in frozen if current.get(name) != frozen[name])
+    frozen_ok = set(_successful_entries(frozen))
+    immutable = sorted((set(removed) | set(modified)) & frozen_ok)
+    if immutable:
+        raise ValueError(f"frozen successful result entry changed: {store}: {immutable[:20]}")
+    if removed or modified:
+        raise LiveSnapshotChanged(
+            f"retryable result entry changed after physical audit: {store}; retry cycle")
+    known = {row["id"] for row in proof["rows"]}
+    extras = sorted(set(current) - set(frozen))
+    unknown = sorted(set(extras) - known)
+    if unknown:
+        raise ValueError(f"results append has unknown manifest ids: {store}: {unknown[:20]}")
+    if extras:
+        cached = None if append_cache is None else append_cache.get(str(store))
+        if not isinstance(cached, dict) or cached.get("results_sha256") != current_sha:
+            try:
+                validated = pb.validate_store(store, require_complete=False)
+            except ValueError as exc:
+                if pb.file_sha256(results_path) != current_sha:
+                    raise LiveSnapshotChanged(
+                        f"results changed during appended-entry validation: {store}") from exc
+                raise
+            if pb.file_sha256(results_path) != current_sha:
+                raise LiveSnapshotChanged(
+                    f"results changed during appended-entry validation: {store}")
+            if any(validated.get(name) != current[name] for name in current):
+                raise LiveSnapshotChanged(f"validated results differ from append snapshot: {store}")
+            cached = {"results_sha256": current_sha, "results": current}
+            if append_cache is not None:
+                append_cache[str(store)] = cached
+        _recheck_success_raw({"store": str(store), "results": cached["results"]})
+    elif current_sha != proof["store_metadata_sha256"]["results.json"]:
+        raise LiveSnapshotChanged(f"results bytes changed after physical audit: {store}")
+    if hashlib.sha256(results_path.read_bytes()).hexdigest() != current_sha:
+        raise LiveSnapshotChanged(f"results changed after proof recheck: {store}")
+    _recheck_success_raw(proof)
+    rows = {row["id"]: row for row in proof["rows"]}
+    return {rows[name]["pattern_sha256"] for name in extras
+            if isinstance(current[name], dict) and current[name].get("status") == "ok" and
+            "error" not in current[name]}
+
+
+def _recheck_frozen_markers(state_root: Path, bindings: Sequence[Mapping[str, Any]]) -> None:
+    """Retain cutoff reservations while detecting unsafe or ambiguous marker changes."""
+
+    for item in bindings:
+        actual, _payloads = _job_state_binding(state_root, str(item["store"]))
+        if actual["done"]["exists"] and actual["fail"]["exists"]:
+            raise ValueError(f"job has both fail and done markers: {item['store']}")
+        frozen = item["markers"]
+        for suffix in ("claim", "done", "fail"):
+            if frozen[suffix]["exists"] and actual[suffix] != frozen[suffix]:
+                raise LiveSnapshotChanged(
+                    f"worker state changed after physical proof: {item['store']}; retry cycle")
+        if item["terminal"] and actual != frozen:
+            raise LiveSnapshotChanged(
+                f"terminal worker state changed after physical proof: {item['store']}; retry cycle")
+
+
+def _recheck_queue_proof(dataset_root: Path, queue: Mapping[str, Any]) -> set[str]:
+    """Recheck one ephemeral queue proof; appended successes remain reserved."""
+
+    jobs_path = dataset_root / "jobs.json"
+    if pb.file_sha256(jobs_path) != queue["jobs_sha256"]:
+        raise LiveSnapshotChanged("queue changed after physical proof; retry")
+    for proof in queue.get("input_proofs", []):
+        _recheck_input_proof(proof)
+    deferred = set()
+    append_cache = (queue.setdefault("append_validation_cache", {})
+                    if isinstance(queue, dict) else {})
+    for proof in queue.get("pair_proofs", []):
+        deferred.update(_recheck_pair_proof(proof, append_cache))
+    for binding in queue.get("result_absence_bindings", []):
+        if Path(binding["results_path"]).is_file() and binding["terminal"]:
+            raise ValueError(
+                f"terminal store results appeared after physical audit: {binding['store']}")
+    for binding in queue.get("exclusion_bindings", []):
+        root = Path(binding["input"])
+        if (pb.file_sha256(root / "measurement.json") != binding["measurement_sha256"] or
+                pb.file_sha256(root / "manifest.json") != binding["manifest_sha256"]):
+            raise ValueError(f"reserved input changed after physical proof: {root}")
+    _recheck_frozen_markers(dataset_root / "jobs_state", queue.get("state_bindings", []))
+    return deferred
+
+
+def _audit_from_queue(dataset_root: Path, cfg: Any, queue: Mapping[str, Any]) -> dict[str, Any]:
+    proofs = queue.get("pair_proofs", [])
+    times = [entry["time_s"] for proof in proofs
+             for entry in _successful_entries(proof["results"]).values()]
+    measurement_ids = sorted({measurement_id(cfg.measurement)} if queue["jobs"] else set())
+    return {
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(), "scope": cfg.scope,
+        "dataset_root": str(dataset_root), "jobs_sha256": queue["jobs_sha256"],
+        "measurement_ids": measurement_ids,
+        "valid_unique_patterns": len(queue["successful_hashes"]),
+        "audited_ok_including_repeats": len(times),
+        "solver_time_median_s": statistics.median(times) if times else None,
+        "completed_stores": [proof["store"] for proof in proofs
+                             if len(_successful_entries(proof["results"])) ==
+                             len(proof["rows"])],
+        "jobs": queue.get("audit_jobs", []),
+        "progress_limit": "Snapshot of saved artifacts; claims do not prove a live worker heartbeat.",
+    }
+
+
 def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any],
                 expected_retry_workers: Sequence[str] | None = None) -> dict[str, Any]:
     jobs_path = dataset_root / "jobs.json"
@@ -529,6 +734,7 @@ def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any],
     relevant, pending_hashes, guided_pending = [], set(), set()
     successful_hashes: set[str] = set()
     pairs, pair_bindings, state_bindings = [], [], []
+    input_proofs, pair_proofs, result_absence_bindings, audit_jobs = [], [], [], []
     retryable_failed_jobs, terminal_failed_jobs = [], []
     for job in jobs:
         if job.get("scope") != cfg.scope:
@@ -545,16 +751,19 @@ def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any],
                 measurement_id(input_cfg.measurement) != wanted_mid or
                 score_spec_id(input_cfg.score_spec) != wanted_sid):
             raise ValueError(f"same-scope job config differs from factory profile: {input_dir}")
-        rows = pb.validate_input(input_dir, input_cfg)
+        input_proof = _input_physical_proof(input_dir, input_cfg, input_hashes)
+        rows = input_proof["rows"]
+        input_proofs.append(input_proof)
         store = _safe_child(dataset_root, job["store"])
         marker_binding, marker_payloads = _job_state_binding(state_root, job["store"])
-        state_bindings.append({"store": job["store"], "markers": marker_binding})
         fail = marker_binding["fail"]["exists"]
         done = marker_binding["done"]["exists"]
         if fail and done:
             raise ValueError(f"job has both fail and done markers: {job['store']}")
         terminal_fail = fail and _terminal_fail(marker_payloads["fail"], retry_workers)
         terminal = done or terminal_fail
+        state_bindings.append({"store": job["store"], "markers": marker_binding,
+                               "terminal": terminal})
         if fail:
             (terminal_failed_jobs if terminal_fail else retryable_failed_jobs).append(job["store"])
         if not terminal:
@@ -562,7 +771,10 @@ def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any],
             pending_hashes.update(hashes)
             if int(job.get("prio", 9)) == int(policy["guided_priority"]):
                 guided_pending.update(hashes)
-        if (store / "results.json").is_file():
+        has_results = (store / "results.json").is_file()
+        results: Mapping[str, Any] = {}
+        store_hashes = None
+        if has_results:
             store_hashes = {name: pb.file_sha256(store / name) for name in
                             ("measurement.json", "score_spec.json", "manifest.json", "results.json")}
             pairs.append((input_dir, store))
@@ -584,16 +796,54 @@ def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any],
             pair_bindings.append({"input": str(input_dir), "store": str(store),
                                   "input_metadata_sha256": input_hashes,
                                   "store_metadata_sha256": store_hashes})
+            pair_proofs.append({
+                "input": str(input_dir), "store": str(store), "rows": rows,
+                "results": results, "terminal": terminal,
+                "input_metadata_sha256": input_hashes,
+                "input_pattern_file_sha256": input_proof["input_pattern_file_sha256"],
+                "store_metadata_sha256": store_hashes,
+            })
             successful_hashes.update(entry["pattern_sha256"] for entry in results.values()
                                      if isinstance(entry, dict) and entry.get("status") == "ok"
                                      and "error" not in entry)
+        else:
+            result_absence_bindings.append({
+                "store": job["store"], "results_path": str(store / "results.json"),
+                "terminal": terminal,
+            })
         if any(pb.file_sha256(input_dir / name) != digest for name, digest in input_hashes.items()):
             raise ValueError(f"input changed during queue scan: {input_dir}")
         relevant.append({**job, "terminal": terminal})
+        ok = _successful_entries(results)
+        audit_markers = {}
+        for suffix in ("claim", "done", "fail"):
+            if not marker_binding[suffix]["exists"]:
+                continue
+            marker_path = state_root / f"{job['store']}.{suffix}"
+            try:
+                mtime = marker_path.stat().st_mtime
+            except FileNotFoundError as exc:
+                raise LiveSnapshotChanged(
+                    f"worker state changed during controller scan: {job['store']}") from exc
+            audit_markers[suffix] = {
+                "mtime_utc": datetime.fromtimestamp(mtime, timezone.utc).isoformat(),
+                "payload": marker_payloads[suffix],
+            }
+        audit_jobs.append({
+            "store": job["store"], "input": job["input"], "prio": job["prio"],
+            "expected": len(rows), "audited_ok": len(ok),
+            "errors": {name: entry for name, entry in
+                       results.items()
+                       if isinstance(entry, dict) and "error" in entry},
+            "markers": audit_markers,
+            "input_metadata_sha256": input_hashes,
+            "source_metadata_sha256": store_hashes,
+        })
 
     # Every same-measurement input reserves its physical pattern forever,
     # including failed jobs; this is broader than the currently pending budget.
     exclusions = set()
+    exclusion_bindings = []
     for input_dir in sorted(dataset_root.glob("*_input")):
         marker = input_dir / "measurement.json"
         manifest = input_dir / "manifest.json"
@@ -601,17 +851,23 @@ def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any],
             marker_hash, manifest_hash = pb.file_sha256(marker), pb.file_sha256(manifest)
             rows = _read(manifest)
             exclusions.update(row["pattern_sha256"] for row in rows)
+            exclusion_bindings.append({"input": str(input_dir.resolve()),
+                                       "measurement_sha256": marker_hash,
+                                       "manifest_sha256": manifest_hash})
             if pb.file_sha256(marker) != marker_hash or pb.file_sha256(manifest) != manifest_hash:
                 raise ValueError(f"reserved input changed during exclusion scan: {input_dir}")
     if pb.file_sha256(jobs_path) != before:
         raise LiveSnapshotChanged("queue changed during controller scan; retry")
     _require_state_bindings(state_root, state_bindings)
-    return {"jobs_sha256": before, "jobs": relevant, "pairs": pairs,
+    return {"jobs_sha256": before, "all_jobs": jobs, "jobs": relevant, "pairs": pairs,
             "pair_bindings": pair_bindings,
             "pending_hashes": pending_hashes, "guided_pending_hashes": guided_pending,
             "successful_hashes": successful_hashes, "exclusion_hashes": exclusions,
             "expected_retry_workers": list(retry_workers),
             "state_bindings": state_bindings,
+            "input_proofs": input_proofs, "pair_proofs": pair_proofs,
+            "result_absence_bindings": result_absence_bindings,
+            "exclusion_bindings": exclusion_bindings, "audit_jobs": audit_jobs,
             "retryable_failed_jobs": retryable_failed_jobs,
             "terminal_failed_jobs": terminal_failed_jobs}
 
@@ -714,6 +970,153 @@ def _success_order(pairs: Sequence[tuple[Path, Path]], excluded: set[str]) -> li
     return [item[1] for item in sorted(choices.values())]
 
 
+def _proof_success_candidates(queue: Mapping[str, Any]) -> list[dict[str, Any]]:
+    candidates = []
+    for pair_index, proof in enumerate(queue.get("pair_proofs", [])):
+        for row_index, row in enumerate(proof["rows"]):
+            entry = proof["results"].get(row["id"])
+            if (not isinstance(entry, dict) or entry.get("status") != "ok" or
+                    "error" in entry):
+                continue
+            candidates.append({
+                "pair_index": pair_index, "row_index": row_index,
+                "input": Path(proof["input"]), "store": Path(proof["store"]),
+                "row": row, "entry": entry, "proof": proof,
+                "repeat": row.get("kind") in ("repeat", "notarize"),
+                "pattern_sha256": row["pattern_sha256"],
+            })
+    return candidates
+
+
+def _success_order_from_proofs(queue: Mapping[str, Any], excluded: set[str]) -> list[str]:
+    choices: dict[str, tuple[tuple[bool, int, int], str]] = {}
+    for item in _proof_success_candidates(queue):
+        digest = item["pattern_sha256"]
+        if digest in excluded:
+            continue
+        priority = (item["repeat"], item["pair_index"], item["row_index"])
+        if digest not in choices or priority < choices[digest][0]:
+            choices[digest] = (priority, digest)
+    return [item[1] for item in sorted(choices.values())]
+
+
+def _copy_proof_artifact(source: Path, destination: Path, digest: str) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if pb.file_sha256(source) != digest:
+        raise ValueError(f"frozen successful artifact changed: {source}")
+    shutil.copy2(source, destination)
+    if pb.file_sha256(destination) != digest or pb.file_sha256(source) != digest:
+        raise ValueError(f"frozen successful artifact changed during copy: {source}")
+
+
+def _snapshot_successes_from_proofs(queue: Mapping[str, Any], output: Path,
+                                    selected_hashes: Sequence[str], cfg: Any) -> Path:
+    """Publish an exact cutoff snapshot without rediscovering live representatives."""
+
+    selected = list(selected_hashes)
+    if not selected or len(set(selected)) != len(selected):
+        raise ValueError("proof snapshot requires nonempty unique pattern hashes")
+    winners: dict[str, tuple[tuple[bool, int, int], dict[str, Any]]] = {}
+    for item in _proof_success_candidates(queue):
+        digest = item["pattern_sha256"]
+        if digest not in set(selected):
+            continue
+        priority = (item["repeat"], item["pair_index"], item["row_index"])
+        if digest not in winners or priority < winners[digest][0]:
+            winners[digest] = (priority, item)
+    if set(winners) != set(selected):
+        raise ValueError("proof snapshot selection is absent from the physical cutoff")
+    chosen = [winners[digest][1] for digest in selected]
+    ids = [item["row"]["id"] for item in chosen]
+    if len(set(ids)) != len(ids):
+        raise ValueError("selected proof successes contain an id collision")
+    rows = [item["row"] for item in chosen]
+    results = {item["row"]["id"]: item["entry"] for item in chosen}
+    sources = [{
+        "input": proof["input"], "store": proof["store"],
+        "input_metadata_sha256": proof["input_metadata_sha256"],
+        "store_metadata_sha256": proof["store_metadata_sha256"],
+        "partial_source_results_sha256": proof["store_metadata_sha256"]["results.json"],
+        "cutoff_manifest_count": len(proof["rows"]),
+        "cutoff_successful_count": len(_successful_entries(proof["results"])),
+    } for proof in queue["pair_proofs"]]
+    items = {}
+    for item in chosen:
+        row, entry, proof = item["row"], item["entry"], item["proof"]
+        binding = {
+            "source_input": proof["input"], "source_store": proof["store"],
+            "source_manifest_sha256": proof["store_metadata_sha256"]["manifest.json"],
+            "partial_source_results_sha256": proof["store_metadata_sha256"]["results.json"],
+            "cutoff_result_entry": entry,
+            "cutoff_result_entry_id": _content_id(entry),
+            "source_sample_file": entry["sample_file"],
+            "source_sample_sha256": entry["sample_sha256"],
+        }
+        if entry.get("rad_file") is not None:
+            binding.update({"source_rad_file": entry["rad_file"],
+                            "source_rad_sha256": entry["rad_sha256"]})
+        items[row["id"]] = binding
+    source_bindings = {
+        "schema_version": 2, "partial_snapshot": True,
+        "source_batches_may_be_incomplete": True,
+        "cutoff_kind": "same_cycle_ephemeral_physical_proof",
+        "cutoff_id": _content_id(queue["pair_proofs"]),
+        "measurement_id": measurement_id(cfg.measurement),
+        "score_spec_id": score_spec_id(cfg.score_spec),
+        "selected_pattern_sha256": selected, "sources": sources,
+        "items": {name: items[name] for name in ids},
+    }
+
+    def validate_existing(root: Path) -> None:
+        pb.validate_store(root, require_complete=True)
+        if (_read(root / "manifest.json") != rows or
+                _read(root / "results.json") != results):
+            raise ValueError("existing proof snapshot differs from exact cutoff selection")
+        if _read(root / "source_bindings.json") != source_bindings:
+            raise ValueError("existing proof snapshot has a different physical cutoff")
+
+    output = output.resolve()
+    if output.exists():
+        validate_existing(output)
+        return output
+    pending = output.with_name(f".{output.name}.pending")
+    if pending.exists():
+        resolved = pending.resolve()
+        if resolved.parent != output.parent or resolved.name != f".{output.name}.pending":
+            raise RuntimeError(f"refusing unsafe pending cleanup: {resolved}")
+        shutil.rmtree(resolved)
+    pending.mkdir(parents=True)
+    try:
+        base = Path(queue["pair_proofs"][0]["input"])
+        for name in ("measurement.json", "score_spec.json", "config.yaml"):
+            _copy_proof_artifact(
+                base / name, pending / name,
+                queue["pair_proofs"][0]["input_metadata_sha256"][name])
+        pb.atomic_json(pending / "manifest.json", rows)
+        for item in chosen:
+            row, entry, proof = item["row"], item["entry"], item["proof"]
+            store = Path(proof["store"])
+            sample = _safe_store_file(store, entry.get("sample_file"), f"{row['id']} sample")
+            _copy_proof_artifact(sample, pending / entry["sample_file"], entry["sample_sha256"])
+            if entry.get("rad_file") is not None:
+                radiation = _safe_store_file(
+                    store, entry["rad_file"], f"{row['id']} radiation")
+                _copy_proof_artifact(
+                    radiation, pending / entry["rad_file"], entry["rad_sha256"])
+        pb.atomic_json(pending / "results.json", results)
+        pb.atomic_json(pending / "source_bindings.json", source_bindings)
+        pb.validate_store(pending, require_complete=True)
+        if output.exists():
+            raise FileExistsError(f"proof snapshot appeared during publication: {output}")
+        os.replace(pending, output)
+    except Exception:
+        if pending.exists():
+            shutil.rmtree(pending)
+        raise
+    validate_existing(output)
+    return output
+
+
 def _seed_rows(inputs: Sequence[str | Path]) -> list[dict[str, Any]]:
     rows = []
     for supplied in inputs:
@@ -808,6 +1211,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     recovered_training_receipt = None
     recovered_prediction_audit = None
     recovered_training_snapshot = None
+    recovered_training_path = None
+    recovered_cycle_id = None
     if active.is_file():
         receipt = Path(_read(active)["receipt"]).resolve()
         receipt.relative_to(local)
@@ -827,19 +1232,30 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                 recovered_training_receipt = str(receipt)
                 recovered_prediction_audit = prior.get("pretrain_prediction_audit")
                 recovered_training_snapshot = prior.get("training_snapshot")
+                recovered_training_path = receipt
+                recovered_cycle_id = prior.get("cycle_id")
             elif prior.get("status") in {"prepared", "dispatching"}:
                 return receipt
 
     cfg, policy = _load_profile(profile)
     _protocol, protocol_binding = _protocol_binding(train_root)
-    with _exclusive_lock(_dataset_lock(dataset, cfg.scope)):
-        audit = _physical_snapshot(dataset, cfg.scope)
-        queue = _queue_view(dataset, cfg, policy, retry_workers)
-        if audit["jobs_sha256"] != queue["jobs_sha256"]:
-            raise LiveSnapshotChanged(
-                "queue changed between physical audit and controller scan; retry")
-        _require_pair_bindings(queue["pair_bindings"])
     version, trained_hashes, trained_receipt = _trained(train_root)
+    seed_bindings = [_path_binding(Path(value)) for value in seed_inputs]
+    blind_binding = (_path_binding(Path(prepared_blind_pool))
+                     if prepared_blind_pool is not None else None)
+    cold_binding = list(getattr(cold_start_predictor, "model_ids", ()))
+    profile_sha256 = pb.file_sha256(profile)
+    with _exclusive_lock(_dataset_lock(dataset, cfg.scope)):
+        queue = _queue_view(dataset, cfg, policy, retry_workers)
+        if "pair_proofs" in queue:
+            audit = _audit_from_queue(dataset, cfg, queue)
+            _recheck_queue_proof(dataset, queue)
+        else:  # Compatibility for bounded callers that provide a synthetic queue view.
+            audit = _physical_snapshot(dataset, cfg.scope)
+            if audit["jobs_sha256"] != queue["jobs_sha256"]:
+                raise LiveSnapshotChanged(
+                    "queue changed between physical audit and controller scan; retry")
+            _require_pair_bindings(queue.get("pair_bindings", []))
     initial_valid = len(queue["successful_hashes"])
     initial_pending = len(queue["pending_hashes"] - queue["successful_hashes"])
     if initial_valid > int(policy["target_valid_unique"]):
@@ -847,11 +1263,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     if initial_valid + initial_pending > int(policy["target_valid_unique"]):
         raise ValueError("audited valid plus pending unique exceeds target")
     source_binding = queue["pair_bindings"]
-    seed_bindings = [_path_binding(Path(value)) for value in seed_inputs]
-    blind_binding = (_path_binding(Path(prepared_blind_pool))
-                     if prepared_blind_pool is not None else None)
-    cold_binding = list(getattr(cold_start_predictor, "model_ids", ()))
-    profile_sha256 = pb.file_sha256(profile)
+    training_source_binding = source_binding
     cycle_identity = {"jobs": audit["jobs_sha256"], "sources": source_binding,
                       "trained": trained_receipt, "profile": profile_sha256,
                       "training_protocol": protocol_binding,
@@ -861,8 +1273,16 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     if pilot_binding is not None:
         cycle_identity["pilot_request"] = pilot_binding
     cycle_id = _content_id(cycle_identity)
-    cycle = local / "cycles" / cycle_id
-    receipt_path = cycle / "action_receipt.json"
+    if recovered_training_path is not None:
+        if (not isinstance(recovered_cycle_id, str) or
+                recovered_training_path.parent.parent != (local / "cycles").resolve()):
+            raise ValueError("active training receipt has an invalid local cycle binding")
+        cycle_id = recovered_cycle_id
+        cycle = recovered_training_path.parent
+        receipt_path = recovered_training_path
+    else:
+        cycle = local / "cycles" / cycle_id
+        receipt_path = cycle / "action_receipt.json"
     cycle.mkdir(parents=True, exist_ok=True)
     _write(active, {"cycle_id": cycle_id, "receipt": str(receipt_path)})
 
@@ -870,38 +1290,75 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     trained_this_cycle = False
     prediction_audit_binding = recovered_prediction_audit
     training_snapshot_binding = recovered_training_snapshot
-    _require_pair_bindings(queue["pair_bindings"])
-    new_order = _success_order(queue["pairs"], trained_hashes)
-    _require_pair_bindings(queue["pair_bindings"])
-    if len(new_order) >= int(policy["update_every_valid_unique"]):
-        take = min(96, len(new_order))
+    if "pair_proofs" in queue:
+        _recheck_queue_proof(dataset, queue)
+        new_order = _success_order_from_proofs(queue, trained_hashes)
+        _recheck_queue_proof(dataset, queue)
+    else:
+        _require_pair_bindings(queue.get("pair_bindings", []))
+        new_order = _success_order(queue["pairs"], trained_hashes)
+        _require_pair_bindings(queue.get("pair_bindings", []))
+    recovering_training = recovered_training_path is not None
+    if recovering_training or len(new_order) >= int(policy["update_every_valid_unique"]):
+        if recovering_training:
+            if not isinstance(recovered_training_snapshot, dict):
+                raise ValueError("active training receipt lacks its immutable snapshot binding")
+            frozen = Path(recovered_training_snapshot.get("path", "")).resolve()
+            if frozen != (cycle / "training_snapshot").resolve() or not frozen.is_dir():
+                raise ValueError("active training snapshot path differs from its cycle")
+            frozen_rows = _read(frozen / "manifest.json")
+            take = len(frozen_rows)
+            if not int(policy["update_every_valid_unique"]) <= take <= 96:
+                raise ValueError("active training snapshot has an invalid frozen count")
+            actual_snapshot = {
+                "path": str(frozen), "count": take,
+                "manifest_sha256": pb.file_sha256(frozen / "manifest.json"),
+                "results_sha256": pb.file_sha256(frozen / "results.json"),
+                "source_bindings_sha256": pb.file_sha256(frozen / "source_bindings.json"),
+            }
+            if actual_snapshot != recovered_training_snapshot:
+                raise ValueError("active training snapshot bytes differ from its receipt")
+            pb.validate_store(frozen, require_complete=True)
+        else:
+            take = min(96, len(new_order))
+            frozen = cycle / "training_snapshot"
         omit = set(new_order[take:])
-        frozen = cycle / "training_snapshot"
         if not frozen.exists():
-            try:
-                snapshot_successes(queue["pairs"], frozen,
-                                   exclude_pattern_hashes=trained_hashes | omit)
-            except ValueError as exc:
-                message = str(exc)
-                if ("source store " in message and
-                        "metadata changed during operation: ['results.json']" in message):
-                    raise LiveSnapshotChanged(message) from exc
-                raise
-        _require_pair_bindings(queue["pair_bindings"])
+            if "pair_proofs" in queue:
+                _recheck_queue_proof(dataset, queue)
+                _snapshot_successes_from_proofs(queue, frozen, new_order[:take], cfg)
+            else:
+                try:
+                    snapshot_successes(queue["pairs"], frozen,
+                                       exclude_pattern_hashes=trained_hashes | omit)
+                except ValueError as exc:
+                    message = str(exc)
+                    if ("source store " in message and
+                            "metadata changed during operation: ['results.json']" in message):
+                        raise LiveSnapshotChanged(message) from exc
+                    raise
+        if "pair_proofs" in queue:
+            _recheck_queue_proof(dataset, queue)
+        else:
+            _require_pair_bindings(queue.get("pair_bindings", []))
         frozen_rows = _read(frozen / "manifest.json")
         frozen_hashes = [row["pattern_sha256"] for row in frozen_rows]
-        if len(frozen_hashes) != take or set(frozen_hashes) != set(new_order[:take]):
+        if (not recovering_training and
+                (len(frozen_hashes) != take or set(frozen_hashes) != set(new_order[:take]))):
             raise ValueError("frozen training snapshot differs from exact audited selection")
         frozen_binding = _read(frozen / "source_bindings.json")
-        expected_results = {
-            binding["store"]: binding["store_metadata_sha256"]["results.json"]
-            for binding in queue["pair_bindings"]
-        }
-        actual_results = {item["store"]: item["partial_source_results_sha256"]
-                          for item in frozen_binding["sources"]}
-        if actual_results != expected_results:
-            raise LiveSnapshotChanged(
-                "frozen training snapshot source hashes differ from physical audit")
+        if not recovering_training:
+            expected_results = {
+                binding["store"]: binding["store_metadata_sha256"]["results.json"]
+                for binding in queue["pair_bindings"]}
+            actual_results = {item["store"]: item["partial_source_results_sha256"]
+                              for item in frozen_binding["sources"]}
+            if actual_results != expected_results:
+                raise LiveSnapshotChanged(
+                    "frozen training snapshot source hashes differ from physical audit")
+        if (not recovering_training and "pair_proofs" in queue and
+                frozen_binding.get("cutoff_id") != _content_id(queue["pair_proofs"])):
+            raise ValueError("frozen training snapshot differs from physical cutoff proof")
         training_snapshot_binding = {
             "path": str(frozen), "count": len(frozen_rows),
             "manifest_sha256": pb.file_sha256(frozen / "manifest.json"),
@@ -912,6 +1369,9 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
             frozen, train_root, cycle / "pretrain_prediction_audit.json")
         prediction_audit_binding = {"path": str(prediction_audit_path),
                                     "sha256": pb.file_sha256(prediction_audit_path)}
+        if (recovering_training and
+                prediction_audit_binding != recovered_prediction_audit):
+            raise ValueError("active pretraining prediction audit differs from its receipt")
         training_receipt = {
             "schema_version": 1, "status": "training", "once": True,
             "cycle_id": cycle_id, "dataset_root": str(dataset), "scope": cfg.scope,
@@ -919,7 +1379,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
             "profile_sha256": profile_sha256,
             "expected_retry_workers": list(retry_workers),
             "training_protocol": protocol_binding,
-            "audited_source_bindings": source_binding,
+            "audited_source_bindings": training_source_binding,
             "pretrain_prediction_audit": prediction_audit_binding,
             "training_snapshot": training_snapshot_binding,
             "quality_gate": None,
@@ -927,10 +1387,27 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
         }
         if pilot_binding is not None:
             training_receipt["pilot_request"] = pilot_binding
-        _write(receipt_path, training_receipt)
-        version_dir = training.ingest_profile_stores(
-            train_root, [frozen], min_new=int(policy["update_every_valid_unique"]), max_new=96)
-        version = int(version_dir.name.removeprefix("data-v"))
+        if recovering_training:
+            existing_training_receipt = _read(receipt_path)
+            if (existing_training_receipt.get("profile_sha256") != profile_sha256 or
+                    existing_training_receipt.get("training_protocol") != protocol_binding or
+                    existing_training_receipt.get("training_snapshot") !=
+                    training_snapshot_binding or
+                    existing_training_receipt.get("pretrain_prediction_audit") !=
+                    prediction_audit_binding):
+                raise ValueError("active training receipt binding changed before recovery")
+        else:
+            _write(receipt_path, training_receipt)
+        already_ingested = set(frozen_hashes) <= trained_hashes
+        if recovering_training and already_ingested:
+            if version <= 0:
+                raise ValueError("active training snapshot is bound as ingested without a version")
+        else:
+            if recovering_training and set(frozen_hashes) & trained_hashes:
+                raise ValueError("active training snapshot is only partially present in training state")
+            version_dir = training.ingest_profile_stores(
+                train_root, [frozen], min_new=int(policy["update_every_valid_unique"]), max_new=96)
+            version = int(version_dir.name.removeprefix("data-v"))
         training.train_version(train_root, version)
         predictor = training.load_current_predictor(train_root, version)
         trained_this_cycle = True
@@ -947,15 +1424,24 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
             raise ValueError("historical cold start cannot be reused after guided jobs exist")
         predictor = cold_start_predictor
 
-    # Re-audit after model work so proposal capacity and exclusions reflect the
-    # current queue.  Training deliberately does not hold the dataset lock.
-    with _exclusive_lock(_dataset_lock(dataset, cfg.scope)):
-        audit = _physical_snapshot(dataset, cfg.scope)
-        queue = _queue_view(dataset, cfg, policy, retry_workers)
-        if audit["jobs_sha256"] != queue["jobs_sha256"]:
-            raise LiveSnapshotChanged(
-                "queue changed between final physical audit and controller scan; retry")
-        _require_pair_bindings(queue["pair_bindings"])
+    # Actual training can outlive the cutoff, so it starts one fresh proof.  All
+    # other work retains the original capacity/exclusion cutoff and only
+    # rechecks its bytes; late completions cannot release reservations.
+    if trained_this_cycle:
+        with _exclusive_lock(_dataset_lock(dataset, cfg.scope)):
+            queue = _queue_view(dataset, cfg, policy, retry_workers)
+            if "pair_proofs" in queue:
+                audit = _audit_from_queue(dataset, cfg, queue)
+                _recheck_queue_proof(dataset, queue)
+            else:
+                audit = _physical_snapshot(dataset, cfg.scope)
+                if audit["jobs_sha256"] != queue["jobs_sha256"]:
+                    raise LiveSnapshotChanged(
+                        "queue changed between final physical audit and controller scan; retry")
+                _require_pair_bindings(queue.get("pair_bindings", []))
+        source_binding = queue["pair_bindings"]
+    elif "pair_proofs" in queue:
+        _recheck_queue_proof(dataset, queue)
 
     valid_unique = len(queue["successful_hashes"])
     if valid_unique > int(policy["target_valid_unique"]):
@@ -1141,6 +1627,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
         raise ValueError("prepared blind pool changed during cycle preparation")
     if pilot_binding is not None:
         _require_pilot_request_binding(pilot_request, profile, pilot_binding)
+    if "pair_proofs" in queue:
+        _recheck_queue_proof(dataset, queue)
     receipt = {
         "schema_version": 1, "status": ("prepared" if planned_jobs else "idle"), "once": True,
         "cycle_id": cycle_id, "dataset_root": str(dataset), "scope": cfg.scope,
@@ -1219,6 +1707,11 @@ def _check_dispatch_budget(dataset: Path, cfg: Any, policy: Mapping[str, Any],
                            hashes: set[str], priority: int,
                            expected_retry_workers: Sequence[str] | None = None) -> None:
     queue = _queue_view(dataset, cfg, policy, expected_retry_workers)
+    _check_dispatch_budget_from_queue(queue, policy, hashes, priority)
+
+
+def _check_dispatch_budget_from_queue(queue: Mapping[str, Any], policy: Mapping[str, Any],
+                                      hashes: set[str], priority: int) -> None:
     valid = queue["successful_hashes"]
     pending_hashes = queue["pending_hashes"] - valid
     guided = queue["guided_pending_hashes"] - valid
@@ -1227,6 +1720,61 @@ def _check_dispatch_budget(dataset: Path, cfg: Any, policy: Mapping[str, Any],
     if (priority == int(policy["guided_priority"]) and
             len(guided | hashes) > int(policy["max_guided_outstanding"])):
         raise ValueError("dispatch would exceed guided outstanding budget")
+
+
+def _extend_queue_proof_after_add(dataset: Path, queue: dict[str, Any], cfg: Any,
+                                  policy: Mapping[str, Any], job: Mapping[str, Any],
+                                  input_proof: Mapping[str, Any]) -> None:
+    """Extend a locked same-commit proof after one canonical queue append."""
+
+    jobs_path = dataset / "jobs.json"
+    raw = jobs_path.read_bytes()
+    try:
+        current_jobs = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        if jobs_path.read_bytes() != raw:
+            raise LiveSnapshotChanged("queue changed after queue add; retry") from exc
+        raise ValueError("jobs.json is stably malformed after queue add") from exc
+    expected = {"input": job["input"], "store": job["store"], "prio": job["prio"],
+                "scope": cfg.scope, "config": f"{job['input']}/config.yaml"}
+    if current_jobs != [*queue["all_jobs"], expected]:
+        raise ValueError(
+            f"queue add was not one exact append-only transition: {job['store']}")
+    jobs_sha = hashlib.sha256(raw).hexdigest()
+    if pb.file_sha256(jobs_path) != jobs_sha:
+        raise LiveSnapshotChanged("queue changed after exact queue append; retry")
+    state_binding, _payloads = _job_state_binding(dataset / "jobs_state", job["store"])
+    if state_binding["done"]["exists"] and state_binding["fail"]["exists"]:
+        raise ValueError(f"job has both fail and done markers: {job['store']}")
+    rows = input_proof["rows"]
+    hashes = {row["pattern_sha256"] for row in rows}
+    queue["all_jobs"] = current_jobs
+    queue["jobs_sha256"] = jobs_sha
+    queue["jobs"].append({**expected, "terminal": False})
+    queue["input_proofs"].append(dict(input_proof))
+    queue["state_bindings"].append({"store": job["store"], "markers": state_binding,
+                                    "terminal": False})
+    queue.setdefault("result_absence_bindings", []).append({
+        "store": job["store"],
+        "results_path": str(_safe_child(dataset, job["store"]) / "results.json"),
+        "terminal": False,
+    })
+    queue["pending_hashes"].update(hashes)
+    if int(job["prio"]) == int(policy["guided_priority"]):
+        queue["guided_pending_hashes"].update(hashes)
+    queue["exclusion_hashes"].update(hashes)
+    root = Path(input_proof["input"])
+    queue["exclusion_bindings"].append({
+        "input": str(root),
+        "measurement_sha256": input_proof["input_metadata_sha256"]["measurement.json"],
+        "manifest_sha256": input_proof["input_metadata_sha256"]["manifest.json"],
+    })
+    queue["audit_jobs"].append({
+        "store": job["store"], "input": job["input"], "prio": job["prio"],
+        "expected": len(rows), "audited_ok": 0, "errors": {}, "markers": {},
+        "input_metadata_sha256": input_proof["input_metadata_sha256"],
+        "source_metadata_sha256": None,
+    })
 
 
 def _commit_dispatch_locked(path: Path, *,
@@ -1250,6 +1798,7 @@ def _commit_dispatch_locked(path: Path, *,
             "training_protocol"):
         raise ValueError("training protocol differs from prepared receipt")
     pilot = None
+    dispatch_queue = None
     pilot_binding = receipt.get("pilot_request")
     if pilot_binding is not None:
         if not isinstance(pilot_binding, dict) or "request_path" not in pilot_binding:
@@ -1295,8 +1844,8 @@ def _commit_dispatch_locked(path: Path, *,
                 _path_binding(Path(reference_binding.get("path", ""))) != reference_binding):
             raise ValueError("pilot frozen reference binding differs from prepared receipt")
         shell_pilot.recheck_reference(Path(reference_binding["path"]))
-        queue = _queue_view(dataset, cfg, policy, retry_workers)
-        queued = _queued_pilot_evidence(dataset, queue, pilot, cfg.scope)
+        dispatch_queue = _queue_view(dataset, cfg, policy, retry_workers)
+        queued = _queued_pilot_evidence(dataset, dispatch_queue, pilot, cfg.scope)
         if queued is not None and (queued["job"].get("input") != pilot_jobs[0]["input"] or
                                    queued["job"].get("store") != pilot_jobs[0]["store"]):
             raise ValueError("one-shot pilot_id is already consumed by another queued cohort")
@@ -1304,6 +1853,12 @@ def _commit_dispatch_locked(path: Path, *,
         raise ValueError("prepared pilot evidence lacks its pilot shard")
     if receipt.get("status") == "dispatched":
         return path
+    if dispatch_queue is None:
+        dispatch_queue = _queue_view(dataset, cfg, policy, retry_workers)
+    proof_dispatch = "pair_proofs" in dispatch_queue
+    legacy_initial_queue = None if proof_dispatch else dispatch_queue
+    if proof_dispatch:
+        _recheck_queue_proof(dataset, dispatch_queue)
     for planned in receipt["planned_jobs"]:
         staged = Path(planned["staged_input"]).resolve()
         if _content_id(_tree_hashes(staged)) != planned["tree_sha256"]:
@@ -1330,8 +1885,18 @@ def _commit_dispatch_locked(path: Path, *,
             continue
         rows = _read(staged / "manifest.json")
         hashes = {row["pattern_sha256"] for row in rows}
-        _check_dispatch_budget(dataset, cfg, policy, hashes, int(planned["prio"]),
-                               retry_workers)
+        if proof_dispatch:
+            _recheck_queue_proof(dataset, dispatch_queue)
+            _check_dispatch_budget_from_queue(
+                dispatch_queue, policy, hashes, int(planned["prio"]))
+        else:
+            if legacy_initial_queue is not None:
+                _check_dispatch_budget_from_queue(
+                    legacy_initial_queue, policy, hashes, int(planned["prio"]))
+                legacy_initial_queue = None
+            else:
+                _check_dispatch_budget(dataset, cfg, policy, hashes, int(planned["prio"]),
+                                       retry_workers)
         if receipt["status"] == "prepared":
             receipt["status"] = "dispatching"
             _write(path, receipt)
@@ -1360,9 +1925,16 @@ def _commit_dispatch_locked(path: Path, *,
             if existing != expected:
                 raise ValueError(f"queue store collision after input copy: {planned['store']}")
             continue
-        _check_dispatch_budget(dataset, cfg, policy, hashes, int(planned["prio"]),
-                               retry_workers)
+        if proof_dispatch:
+            _recheck_queue_proof(dataset, dispatch_queue)
+            _check_dispatch_budget_from_queue(
+                dispatch_queue, policy, hashes, int(planned["prio"]))
+        else:
+            _check_dispatch_budget(dataset, cfg, policy, hashes, int(planned["prio"]),
+                                   retry_workers)
         duplicate_check(destination, dataset)
+        input_proof = (_input_physical_proof(destination, cfg)
+                       if proof_dispatch else None)
         queue_add(dataset, planned, receipt["scope"])
         if planned.get("kind") == "p":
             queued_jobs = _read(jobs_path)
@@ -1371,6 +1943,10 @@ def _commit_dispatch_locked(path: Path, *,
             if queued != expected:
                 raise ValueError("pilot queue record differs immediately after queue add")
             shell_pilot.validate_bundle(destination, pilot)
+        if proof_dispatch:
+            _extend_queue_proof_after_add(
+                dataset, dispatch_queue, cfg, policy, planned, input_proof)
+            _recheck_queue_proof(dataset, dispatch_queue)
     receipt["status"] = "dispatched"; receipt["dispatch_gate"] = "passed_per_shard"
     _write(path, receipt)
     active = path.parents[2] / "active_cycle.json"

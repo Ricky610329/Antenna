@@ -393,3 +393,15 @@ Conductor完整回歸第二次732／732通過（304.825秒、4 threads、CI unse
 首輪08:39:45開始，08:40:49因既有job成功結果追加而LiveSnapshotChanged延期，completed cycles仍0、無action receipt；同一live process按原30分鐘節奏重試，不為觀察逾時重啟。08:40個人scope健康檢查0／無警報、既有jobs仍有新成功。尚未驗證實際16筆cohort、current-SM annotation、全量reference或dispatch；最後完整controller收據仍是07:42的668唯一／v011，不能冒充最新全量。下一routine健康檢查約09:10。
 
 [交接收據與限制](assets/r80_incumbent_shell_controller_handoff_20261008.json)及新舊初始／終態、helpers、審查原問題／final PASS、原request／實作綁定共37檔、payload260,058 bytes已存私人`controller_handoffs/incumbent_shell_v001_20261008/live_handoff`；manifest SHA256 `c1edc59f3f825da8baffc0af7aa5cd7b004041d11cfa156ef1df599902fe43a6`，發布後逐檔hash核對。新local從此固定，不能在terminal-unavailable或完成reference／bundle後輪換而丟失pre-queue的一次性證據。此為操作里程碑，未改score spec／raw／claims，未驗證三台runtime Git，也不宣稱性能推進、5,000研究完成或R81正WM達標。
+
+### 2026-10-08：同輪稽核修正驗證完成，controller待載入
+
+09:13個人scope健康檢查0／無警報，既有jobs持續產生成功；09:17:46 CIM核對sole PID54448／creation／command仍live、waiting、completed0。09:09:55–09:11:06第二cycle再次因既有結果追加而正常延期，無action receipt。這是已保存handle的操作狀態，沒有因觀察逾時重啟，也不把claims當作216重啟或三台runtime Git證明。
+
+只讀診斷指出未訓練的preparation至少反覆重播stores五次，pilot commit另有三次queue view。此次改為同一run／commit的ephemeral physical proof：首次完整驗證後固定rows／results／representative order及pending／guided預留，後续仍重核所有已計數成功sample／rad SHA；manifest-known追加只對changed store驗證，晚到done／terminal fail不釋放未稽核名額。既有成功／raw／identity／terminal results破壞及穩定壞JSON仍fatal，正常error重試／claim接力仍為typed retry。沒有跨cycle快取，也沒有量測NAS wall-time加速或讀取bytes減少；SHA重核仍須讀原raw。
+
+訓練以固定cutoff選擇並複製精確entry／raw及source_bindings v2，已發布快照的pre-receipt與active training恢復都核對原不可變內容，後來成功不重選原48–96筆。真正訓練完成後採一次fresh proof，final receipt與planner明示新的source bindings；原訓練快照保留舊cutoff。逐片commit只接受prior jobs＋一筆canonical append，in-memory union持續保護5,000／guided96。原pilot core、protocol及freeze_reference的嚴格construction邊界不變。
+
+Owner及獨立Sol各59／59 focused cases通過；conductor完整752／752 tests通過（364.900秒、4 threads／CI unset、無warning summary、source／golden bytes不變），compile／pyflakes／diff checks通過。案例涵蓋first-results出現不跨store誤歸、4,999晚到done仍保留名額、全成功raw hash、retry／terminal差異、固定normal／repeat代表、快照tamper／恢復、post-training provenance與multi-shard exact append。implementation v001收據只因JUnit父節點解析而誤記零tests，v002已明示修正；原JUnit／log未改。
+
+[修正收據及限制](assets/r80_same_cycle_cutoff_fix_20261008.json)與來源／full suite／focused logs／獨立審查／診斷／health共40檔、payload618,842 bytes封存私人`controller_fixes/cutoff_v001_20261008`；manifest SHA256 `27b09593d04db9552375068f4c597e9c45f8c64f65bacbed105172baf5dfe2d3`，發布後逐檔readback通過。此為已驗證code里程碑，PID54448在保存觀察時仍載入舊code；commit／push後另作同local交接，保留一次性request及所有durable pilot紀錄，不重啟HFSS worker。實際cohort／annotation／reference／dispatch、R80完整研究及R81正WM／獨立重測仍未完成。
