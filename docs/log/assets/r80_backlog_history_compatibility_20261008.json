@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "status": "history_compatibility_fix_verified_recovery_pending",
+  "failed_launch_id": "b743fd91f1774d398124d1925bf35fdb",
+  "failed_utc": "2026-10-08T03:02:37.393138+00:00",
+  "failed_state_sha256": "eca473db51b3a9600ba65d898953fa9976eb9a279e60835cc07b44eba841bfa1",
+  "failed_keeper_event_sha256": "476c562121adb08b18cc74143faffa9d7a2dc07021ded6c7aee35f0f81843355",
+  "failure": "LOW rejected historical input config bytes despite unchanged physical fidelity.",
+  "correction": "Prior nonkeeper configs may differ in name/exploration; port/scope/measurement/score/runtime/simulator must match. New keeper LOW config bytes remain exact.",
+  "source_sha256": {
+    "script/symmetry_factory_backlog.py": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84",
+    "script/symmetry_factory_cycle.py": "ea684172cd55954fca8cb163ef1c28cf70b62e8267a4eff5d8b32d55fdd118af",
+    "script/symmetry_factory_watch.py": "bbcb8bc7729d8f601577e4b8e8419baf7bfd8bba1863348c571dc1d88bc74a25",
+    "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+    "tests/test_symmetry_factory_backlog.py": "30027472be225a380d35158338c890b655c6d61dfb3a3a4ff3f01bbd6a5f3b5a",
+    "tests/test_symmetry_factory_cycle.py": "0a96f12eb8e33df557615af5a726b8c62095169b50136a155229fa7b11545bc2",
+    "tests/test_symmetry_factory_watch.py": "da7ad707016f1c1c965bf51f9689b0cbdab9acc46aee631d57eb726944147c4e",
+    "tests/test_symmetry_incumbent_shell_pilot.py": "3824c50e0bf7cb085bf408e77e8094605851e5954b38321381b2c3d72a6a219d",
+    "script/README.md": "b7c34428f179295f43864d8e6cb24eea3a18709895e4a91ad6f69e6e49781dc1"
+  },
+  "full_suite": {
+    "sha256": "307ee32f8d591406e52779ea6b8d9b257d42da2f5172fcfbc18ce6d4e95cdeb3",
+    "counts": {
+      "tests": 803,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elapsed_seconds": 373.7261375999078,
+    "threads": 4,
+    "ci": false,
+    "golden_unchanged": true
+  },
+  "independent_review_sha256": "2a042915ea6abbff85675ad637d0d3473ff9bc5470ca29a3cf955e61831ba35a",
+  "prior_failed_full_suite": {
+    "sha256": "25100e86aeefd7e09aa2d71e32d9b079b7d512d1587f162ffa906eab814ae39b",
+    "counts": {
+      "tests": 803,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "failure": "Existing eight-thread jobs_add test raised PermissionError; exact throwing site was not captured."
+  },
+  "bounded_lock_diagnosis": {
+    "sha256": "2bf3aaa52a842cef65aa3008ab1753a5b59faf2f47942fcaa4178cba83cec722",
+    "successful_additions": 32,
+    "isolated_test_passed": true,
+    "queue_source_changed": false,
+    "limit": "Rerun does not establish original cause or a fix; original failure is preserved."
+  },
+  "physical_metadata_preflight": {
+    "sha256": "783553812a1d1d51ad8dee65cf949255320cdbc07a31dbd0d6c1af0b5d7b8361",
+    "inputs": 56,
+    "reserved_unique": 896,
+    "compatible_historical_configs": 26,
+    "nas_lock_or_write": false,
+    "raw_or_results_read": false
+  },
+  "pilot_dispatch": {
+    "store": "dedust_r80pfaaf5a1dp01",
+    "count": 16,
+    "priority": 1,
+    "action_receipt_sha256": "c44e0d0c4acbd518621b7170f1adbf4e981c611f178df1924cff69d58a7111d6",
+    "data_version": 12,
+    "valid_unique_at_fit": 733
+  },
+  "pilot_reference": {
+    "sha256": "0d8760bd0c0cdf3cf0f9ffa1f0a95acdb5bf34ab803909bae3bf60e4f79e668b",
+    "created_utc": "2026-10-08T02:59:08.840754+00:00",
+    "valid_unique": 831,
+    "best_factory_margin_db": -0.24644088745117188,
+    "best_s11_margin_db": -0.2390899658203125,
+    "best_gain_margin_db": -0.24644088745117188
+  },
+  "limits": [
+    "Saved reference is a controller-validated physical cutoff, not a new independent full raw replay.",
+    "Conductor replayed all 831 saved scalar minima and unique hashes; no causal SM-performance claim.",
+    "The completed pilot queue append is separate from the failed LOW startup.",
+    "Background recovery and actual automatic LOW queue append still require a later live receipt.",
+    "Workers and HFSS were not stopped or restarted."
+  ]
+}

@@ -322,6 +322,81 @@ def test_routine_poll_rehashes_all_indexed_immutable_metadata(tmp_path, filename
             expected_profile_sha256=pb.file_sha256(PROFILE))
 
 
+def test_historical_nonkeeper_policy_profile_is_reserved_and_rehashed(tmp_path):
+    dataset = _dataset(tmp_path / "dataset")
+    source = keeper.generate_reservoir(
+        PROFILE, tmp_path / "source", seed=30, count=16, owner="historical")
+    historical = dataset / "dedust_r80b1_input"
+    shutil.copytree(source, historical)
+    config = (historical / "config.yaml").read_text(encoding="utf-8")
+    config = config.replace(
+        "name: single_r80_symmetry_factory", "name: single_r80_symmetry_explore")
+    config = config.replace("target_valid_unique: 5000", "target_valid_unique: 10240")
+    (historical / "config.yaml").write_text(config, encoding="utf-8")
+    historical_sha256 = pb.file_sha256(historical / "config.yaml")
+    assert historical_sha256 != pb.file_sha256(PROFILE)
+
+    cfg = pb.load_profile_config(PROFILE)
+    index = tmp_path / "index.json"
+    snapshot = keeper.fast_snapshot(
+        dataset, cfg, index, keeper.BacklogPolicy(), WORKERS,
+        force_rebuild=True, expected_profile_sha256=pb.file_sha256(PROFILE))
+    assert snapshot["reserved_unique"] == 16
+    assert snapshot["index"]["inputs"][historical.name]["metadata_sha256"][
+        "config.yaml"] == historical_sha256
+
+    # The compatible historical bytes are still immutable after indexing.
+    changed = config.replace("target_valid_unique: 10240", "target_valid_unique: 10241")
+    (historical / "config.yaml").write_text(changed, encoding="utf-8")
+    with pytest.raises(ValueError, match="indexed physical input metadata changed"):
+        keeper.fast_snapshot(
+            dataset, cfg, index, keeper.BacklogPolicy(), WORKERS,
+            expected_profile_sha256=pb.file_sha256(PROFILE))
+
+
+@pytest.mark.parametrize("old,new", [
+    ("scope: symmetry_filter_20261007", "scope: incompatible_scope"),
+    ("max_passes: 6", "max_passes: 7"),
+    ("name: symmetry_observation_only_v1", "name: incompatible_score"),
+    ("runtime: {timeout: 1200}", "runtime: {timeout: 1199}"),
+])
+def test_historical_nonkeeper_rejects_identity_or_fidelity_mismatch(
+        tmp_path, old, new):
+    dataset = _dataset(tmp_path / "dataset")
+    source = keeper.generate_reservoir(
+        PROFILE, tmp_path / "source", seed=35, count=16, owner="historical")
+    historical = dataset / "dedust_r80b1_input"
+    shutil.copytree(source, historical)
+    config_path = historical / "config.yaml"
+    config = config_path.read_text(encoding="utf-8")
+    assert old in config
+    config_path.write_text(config.replace(old, new), encoding="utf-8")
+    with pytest.raises(ValueError, match="historical physical input config is incompatible"):
+        keeper.fast_snapshot(
+            dataset, pb.load_profile_config(PROFILE), tmp_path / "index.json",
+            keeper.BacklogPolicy(), WORKERS, force_rebuild=True,
+            expected_profile_sha256=pb.file_sha256(PROFILE))
+
+
+@pytest.mark.parametrize("filename", ["measurement.json", "score_spec.json"])
+def test_historical_nonkeeper_rejects_physical_measurement_or_score_mismatch(
+        tmp_path, filename):
+    dataset = _dataset(tmp_path / "dataset")
+    source = keeper.generate_reservoir(
+        PROFILE, tmp_path / "source", seed=36, count=16, owner="historical")
+    historical = dataset / "dedust_r80b1_input"
+    shutil.copytree(source, historical)
+    path = historical / filename
+    payload = pb.read_json(path)
+    payload["name"] = "incompatible_physical_metadata"
+    pb.atomic_json(path, payload)
+    with pytest.raises(ValueError, match="different measurement|different score"):
+        keeper.fast_snapshot(
+            dataset, pb.load_profile_config(PROFILE), tmp_path / "index.json",
+            keeper.BacklogPolicy(), WORKERS, force_rebuild=True,
+            expected_profile_sha256=pb.file_sha256(PROFILE))
+
+
 def test_commit_rejects_changed_source_pool_and_preparation_receipt(tmp_path):
     dataset = _dataset(tmp_path / "dataset")
     pool = keeper.generate_reservoir(PROFILE, tmp_path / "pool", seed=31, count=32,

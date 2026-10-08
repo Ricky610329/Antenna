@@ -104,10 +104,32 @@ def _stable_json(path: Path) -> tuple[Any, str]:
 
 def _input_record(input_dir: Path, cfg: Any, *, owner: str | None = None,
                   expected_profile_sha256: str | None = None) -> dict[str, Any]:
-    config_sha = pb.file_sha256(input_dir / "config.yaml")
+    config_path = input_dir / "config.yaml"
+    config_sha = pb.file_sha256(config_path)
+    marker = input_dir / "backlog_job.json"
+    marker_sha = pb.file_sha256(marker) if marker.is_file() else None
+    # Keeper-owned LOW inputs are prepared under the frozen current profile and
+    # must retain its exact bytes.  Older non-keeper campaign inputs can carry
+    # earlier exploration policy/name values, but their physical fidelity and
+    # dataset identity must still be identical to the current campaign.
+    if marker.is_file():
+        if expected_profile_sha256 is not None and config_sha != expected_profile_sha256:
+            raise ValueError(
+                f"keeper physical input config differs from current bound profile: {input_dir}")
+    else:
+        historical = pb.load_profile_config(config_path)
+        if historical is None:
+            raise ValueError(f"historical physical input lacks a profile config: {input_dir}")
+        compatible = (
+            historical.port == cfg.port and historical.scope == cfg.scope and
+            measurement_id(historical.measurement) == measurement_id(cfg.measurement) and
+            score_spec_id(historical.score_spec) == score_spec_id(cfg.score_spec) and
+            historical.runtime == cfg.runtime and
+            pb.simulator_kwargs(historical) == pb.simulator_kwargs(cfg))
+        if not compatible:
+            raise ValueError(
+                f"historical physical input config is incompatible with current fidelity: {input_dir}")
     score, score_sha = _stable_json(input_dir / "score_spec.json")
-    if expected_profile_sha256 is not None and config_sha != expected_profile_sha256:
-        raise ValueError(f"physical input config differs from current bound profile: {input_dir}")
     if score_spec_id(score) != score_spec_id(cfg.score_spec):
         raise ValueError(f"keeper index input has a different score specification: {input_dir}")
     measurement, measurement_sha = _stable_json(input_dir / "measurement.json")
@@ -119,8 +141,6 @@ def _input_record(input_dir: Path, cfg: Any, *, owner: str | None = None,
     hashes = [str(row["pattern_sha256"]) for row in manifest]
     if len(hashes) != len(set(hashes)):
         raise ValueError(f"keeper index input contains duplicate patterns: {input_dir}")
-    marker = input_dir / "backlog_job.json"
-    marker_sha = pb.file_sha256(marker) if marker.is_file() else None
     metadata = pb.read_json(marker) if marker.is_file() else None
     if metadata is not None:
         required = {"schema_version", "owner", "tier", "priority", "scope",
@@ -189,12 +209,6 @@ def rebuild_index(dataset: Path, cfg: Any, index_path: Path,
             if name in job_by_input or name.startswith("dedust_r80k"):
                 raise ValueError(f"queued/keeper input is partial: {root}")
             continue
-        try:
-            if measurement_id(pb.read_json(root / "measurement.json")) != measurement_id(
-                    cfg.measurement):
-                continue
-        except (KeyError, TypeError, ValueError) as exc:
-            raise ValueError(f"invalid physical measurement metadata: {root}") from exc
         inputs[name] = _input_record(
             root, cfg, expected_profile_sha256=expected_profile_sha256)
     after = sorted(path.name for path in dataset.glob("*_input") if path.is_dir())
