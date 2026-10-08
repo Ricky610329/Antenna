@@ -1,5 +1,7 @@
 import json
+import hashlib
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -69,6 +71,85 @@ def test_watch_requires_explicit_nonempty_unique_retry_worker_roster(tmp_path, v
 
     with pytest.raises(ValueError, match='expected_retry_workers'):
         run(path, prepare=lambda **_: pytest.fail('invalid roster must not prepare'))
+
+
+def test_watch_rejects_present_null_pilot_request(tmp_path):
+    path = settings(tmp_path)
+    payload = json.loads(path.read_text())
+    payload['pilot_request'] = None
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match='explicit request path'):
+        run(path, prepare=lambda **_: pytest.fail('null request must not prepare'))
+
+
+def test_watch_binds_pilot_request_bytes_and_rejects_in_place_change_before_dispatch(
+        tmp_path, monkeypatch):
+    path = settings(tmp_path)
+    request_path = tmp_path / 'pilot-request.json'
+    request_path.write_text('{"version": 1}', encoding='utf-8')
+    payload = json.loads(path.read_text())
+    payload['pilot_request'] = str(request_path)
+    path.write_text(json.dumps(payload))
+    pilot_id = 'a' * 64
+
+    def load(value, _profile):
+        if value is None:
+            return None, None
+        supplied = Path(value).resolve()
+        binding = {'request_path': str(supplied),
+                   'request_sha256': hashlib.sha256(supplied.read_bytes()).hexdigest(),
+                   'pilot_id': pilot_id}
+        return SimpleNamespace(binding=binding, pilot_id=pilot_id), binding
+
+    monkeypatch.setattr(cycle, '_load_pilot_request', load)
+    dispatched = []
+
+    def prepare(**kw):
+        assert kw['pilot_request'] == str(request_path.resolve())
+        _, binding = load(request_path, PROFILE)
+        receipt = Path(kw['local_workdir']) / 'receipt.json'
+        receipt.write_text(json.dumps({
+            'status': 'prepared', 'valid_unique': 100, 'target_valid_unique': 5000,
+            'latest_data_version': 1, 'expected_retry_workers': RETRY_WORKERS,
+            'pilot_request': binding,
+        }))
+        request_path.write_text('{"version": 2}', encoding='utf-8')
+        return receipt
+
+    with pytest.raises(ValueError, match='pilot request presence or exact binding changed'):
+        run(path, prepare=prepare, dispatch=lambda receipt: dispatched.append(receipt),
+            campaign_stop=lambda _: None)
+    assert not dispatched
+    state = json.loads((tmp_path / 'work/watch_status.json').read_text())
+    assert state['status'] == 'failed' and state['pilot_request']['pilot_id'] == pilot_id
+
+
+def test_watch_rejects_receipt_that_drops_bound_pilot_before_dispatch(tmp_path, monkeypatch):
+    path = settings(tmp_path)
+    request_path = tmp_path / 'pilot-request.json'
+    request_path.write_text('{}', encoding='utf-8')
+    payload = json.loads(path.read_text())
+    payload['pilot_request'] = str(request_path)
+    path.write_text(json.dumps(payload))
+    binding = {'request_path': str(request_path.resolve()),
+               'request_sha256': hashlib.sha256(request_path.read_bytes()).hexdigest(),
+               'pilot_id': 'b' * 64}
+    monkeypatch.setattr(cycle, '_load_pilot_request', lambda value, profile: (
+        SimpleNamespace(binding=binding, pilot_id=binding['pilot_id']), dict(binding)))
+    dispatched = []
+
+    def prepare(**kw):
+        receipt = Path(kw['local_workdir']) / 'receipt.json'
+        receipt.write_text(json.dumps({
+            'status': 'prepared', 'valid_unique': 100, 'target_valid_unique': 5000,
+            'latest_data_version': 1, 'expected_retry_workers': RETRY_WORKERS,
+        }))
+        return receipt
+
+    with pytest.raises(ValueError, match='pilot request differs'):
+        run(path, prepare=prepare, dispatch=lambda receipt: dispatched.append(receipt),
+            campaign_stop=lambda _: None)
+    assert not dispatched
 
 
 def test_stop_and_failure_do_not_dispatch(tmp_path):

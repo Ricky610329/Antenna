@@ -365,3 +365,15 @@ conductor完整回歸**707 passed／319.69秒**、無warnings、golden未改；�
 最終Sol只讀審查PASS、無設計blocker；保留原CHANGES_REQUIRED證據與conductor addendum，不重複全量審查。20個來源／anchor tensor／profile gates核對，324個暫時d1幾何候選全部valid、分布15格，原blind池2,048個unique；這些是設計檢查，未選定／準備16筆cohort、未查詢新模型或執行HFSS。未完成實作、回歸或dispatch gates，故不把design PASS當作已派工。
 
 [設計審查收據](assets/r80_incumbent_shell_pilot_design_review_20261008.json)與protocol、原設計、addendum、兩次審查／原source共30檔、payload998,966 bytes已封存私人`pilot_protocols/incumbent_shell_v001/prelaunch_design_20261008`；manifest SHA256 `c7f169d4a1f6ef37d51a8480069db23b9922e582fb6bafebd80c9dd5f6ccc623`，發布後逐檔hash一致。protocol SHA256 `e74221c63302b4beb1369f0e9d84c8028974c613a887444b325c12148ed07bd9`，判準在結果前固定。下一步實作可選one-shot request接既有receipt／lock／排重／5,000與guided96名額；cohort成功或不可用後普通SM wave恢復，全部valid低分真值繼續入鍋，無自動第二批。原watcher／worker／queue仍未由此設計里程碑更動。
+
+### 2026-10-08 08:16：一次性鄰域介面驗證完成，交接等待原cycle恢復
+
+新增獨立`script/symmetry_incumbent_shell_pilot.py`，以可選request接入原cycle／watch。15個target保留原anchor血統，blind保留其原source family；圖形先固定再annotation。request bytes及原profile／measurement／score／training protocol全部綁定；完整bundle重播15格d1、固定control與保存預測標量。reference與atomically complete bundle是持久凍結邊界，寫action receipt前中斷後仍能跨cycle ID復用原16筆、模型預測與reference。完整canonical queue消耗one-shot，永久不可用或已消耗後普通派工／4,999→5,000尾批的真實commit回歸通過。沒有request時保留舊identity與planner。
+
+Conductor完整回歸第二次732／732通過（304.825秒、4 threads、CI unset、無warning summary、source／golden bytes不變）；獨立Sol source review及9個core＋17個高風險integration cases通過，其中5例Windows長路徑問題在獨立短路徑重跑成功。另以原NAS佳解的sample／rad重播一次新metric adapter，factory margin精確為−0.24644088745117188 dB；這只證明單筆原資料schema相容，尚非完整live frontier或actual predictor驗證。
+
+第一次完整回歸保留為731 pass／1 fail：舊`test_jobs_add_concurrent_lock`的八執行緒之一收到PermissionError，原測試沒有保留throwing line／filename。單獨回歸及三輪原樣診斷24／24通過，Windows sharing microprobe亦存證；精確原因仍未確定，沒有泛化吞掉PermissionError或修改佇列鎖程式。第二次全綠不冒充原錯誤因果已修正。
+
+[實作收據與限制](assets/r80_incumbent_shell_pilot_implementation_20261008.json)及source／tests／兩輪full suite／獨立審查／診斷46檔、payload1,182,554 bytes已封存私人`pilot_protocols/incumbent_shell_v001/implementation_20261008`；manifest SHA256 `a0986f84197c2d4dc07e327ed22f844085ceb230f89d88ef8e04294d4dec2ce4`，發布後逐檔hash核對。此封存綁定commit前已驗證worktree bytes；尚無實際request、prepared cohort、新模型query、dispatch或pilot HFSS結果。
+
+08:09:45個人scope健康檢查0／無警報，原PID25924／creation／command live。08:09 cycle於08:11遇既有job新結果追加，正常LiveSnapshotChanged延後至下一30分鐘tick；留下指向尚未生成action receipt的pointer，故不直接移除或交接。08:16再次核對原process仍live；最後完成收據仍是07:42的668唯一／v011，不能將其稱08:16全量現況。原HFSS工作照常，下次例行健康檢查約08:40；先恢復原cycle，再啟用已驗證介面。R80完整研究與R81正WM／獨立重測仍待完成。

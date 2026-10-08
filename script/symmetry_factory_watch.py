@@ -56,15 +56,20 @@ def _profile_binding(path: Path) -> tuple[object, dict[str, str]]:
 
 
 def _require_campaign_binding(settings_file: Path, settings_sha256: str,
-                              profile_binding: dict[str, str]) -> None:
+                              profile_binding: dict[str, str],
+                              pilot_binding: dict | None = None) -> None:
     if pb.file_sha256(settings_file) != settings_sha256:
         raise ValueError('watch settings changed; restart explicitly with the new settings')
     profile = Path(profile_binding['path'])
     if pb.file_sha256(profile) != profile_binding['sha256']:
         raise ValueError('watch profile changed; restart explicitly with the new profile')
+    if pilot_binding is not None:
+        cycle._require_pilot_request_binding(
+            pilot_binding['request_path'], profile, pilot_binding)
 
 
-def _validate_cycle_receipt(receipt: dict, retry_workers: tuple[str, ...]) -> None:
+def _validate_cycle_receipt(receipt: dict, retry_workers: tuple[str, ...],
+                            pilot_binding: dict | None = None) -> None:
     if receipt.get('expected_retry_workers') != list(retry_workers):
         raise ValueError('controller receipt retry worker roster differs from watch binding')
     valid = receipt.get('valid_unique')
@@ -76,6 +81,9 @@ def _validate_cycle_receipt(receipt: dict, retry_workers: tuple[str, ...]) -> No
         raise ValueError('controller receipt exceeds exact valid-unique target')
     if valid == target and receipt.get('pending_unique') != 0:
         raise ValueError('controller receipt reaches target with residual pending unique')
+    actual_pilot = receipt.get('pilot_request')
+    if actual_pilot != pilot_binding or (pilot_binding is None and 'pilot_request' in receipt):
+        raise ValueError('controller receipt pilot request differs from watch binding')
 
 
 def _write_state(state_file: Path, attempt_file: Path, attempt: dict, state: dict) -> None:
@@ -150,7 +158,8 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
         bound_settings_sha256 = str(settings_sha256)
     required = {'local_workdir', 'dataset_root', 'profile_config', 'training_workdir',
                 'seed_inputs', 'interval_seconds', 'expected_retry_workers'}
-    if not required <= settings.keys() or set(settings) - required - {'prepared_blind_pool'}:
+    if not required <= settings.keys() or set(settings) - required - {
+            'prepared_blind_pool', 'pilot_request'}:
         raise ValueError(
             'watch settings must name explicit controller inputs, interval, and '
             'expected_retry_workers')
@@ -169,6 +178,11 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
     stop_file = work / 'STOP'
     profile_path = Path(settings['profile_config']).resolve()
     _profile, profile_binding = _profile_binding(profile_path)
+    if 'pilot_request' in settings and settings['pilot_request'] is None:
+        raise ValueError('watch pilot_request must be an explicit request path when present')
+    _pilot, pilot_binding = cycle._load_pilot_request(settings.get('pilot_request'), profile_path)
+    if pilot_binding is not None:
+        settings['pilot_request'] = pilot_binding['request_path']
     stop_settings = dict(settings)
     stop_settings['_bound_scope'] = profile_binding['scope']
     launch_id = uuid.uuid4().hex
@@ -188,6 +202,9 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
               'profile_binding': profile_binding,
               'expected_retry_workers': list(retry_workers),
               'interval_seconds': interval, 'completed_cycles': 0, 'hfss_started_here': False}
+    if pilot_binding is not None:
+        attempt['pilot_request'] = pilot_binding
+        state['pilot_request'] = pilot_binding
     _write_state(state_file, attempt_file, attempt, state)
     due = monotonic()
     try:
@@ -199,7 +216,8 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
             if remaining > 0:
                 sleep(min(30.0, remaining))
                 continue
-            _require_campaign_binding(settings_file, bound_settings_sha256, profile_binding)
+            _require_campaign_binding(settings_file, bound_settings_sha256, profile_binding,
+                                      pilot_binding)
             stopped = campaign_stop(stop_settings)
             if stopped:
                 state.update(status='stopped', stop_reason=stopped, finished_utc=_utc())
@@ -211,19 +229,20 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
             try:
                 receipt_path = Path(prepare(**settings))
                 receipt = pb.read_json(receipt_path)
-                _require_campaign_binding(settings_file, bound_settings_sha256, profile_binding)
+                _require_campaign_binding(settings_file, bound_settings_sha256, profile_binding,
+                                          pilot_binding)
                 stopped = 'local_STOP' if stop_file.exists() else campaign_stop(stop_settings)
                 if stopped:
                     state.update(status='stopped', stop_reason=stopped, finished_utc=_utc(),
                                  prepared_receipt=str(receipt_path.resolve()))
                     break
-                _validate_cycle_receipt(receipt, retry_workers)
+                _validate_cycle_receipt(receipt, retry_workers, pilot_binding)
                 if receipt['status'] in ('prepared', 'dispatching'):
                     # Preparation produces the concrete immutable proposal. The user
                     # already authorized continuing this bounded private campaign.
                     dispatch(receipt_path)
                     receipt = pb.read_json(receipt_path)
-                    _validate_cycle_receipt(receipt, retry_workers)
+                    _validate_cycle_receipt(receipt, retry_workers, pilot_binding)
                 if receipt['status'] not in ('idle', 'dispatched'):
                     raise ValueError(f"controller did not complete: {receipt['status']}")
             except cycle.LiveSnapshotChanged as exc:

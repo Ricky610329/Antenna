@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "status": "verified_implementation_not_deployed_no_pilot_dispatch",
+  "scope": "symmetry_filter_20261007",
+  "protocol_record": "r80_incumbent_shell_pilot_protocol_20261008.json",
+  "protocol_sha256": "e74221c63302b4beb1369f0e9d84c8028974c613a887444b325c12148ed07bd9",
+  "source_sha256": {
+    "script/symmetry_incumbent_shell_pilot.py": "bbe91ce3895683b8fe7ed1a3ce10920b43007deaad7bb8e01756d4fb685b839f",
+    "script/symmetry_factory_cycle.py": "9bf6e1dc1fe591e21a3fa4458256f9a7aed974a90afce7aaec0e02c5ea290ffc",
+    "script/symmetry_factory_watch.py": "bbc315aa9a26315106b601832ac9164ded8190730323c843894c78f7840375ee",
+    "tests/test_symmetry_incumbent_shell_pilot.py": "9e2a8518c08588c7be3ef8a15b3c24ff6d569515ec34bc6f27392943db19b174",
+    "tests/test_symmetry_factory_cycle.py": "d9b8544fc13d0f7cf710dc84046acd6f01d56d6aa69f3d40b2e3659a0b6cd893",
+    "tests/test_symmetry_factory_watch.py": "f290f52914cacff84609782b27742937d9562d01c97589a82920a378920728b5",
+    "script/README.md": "81097877a11e61cd924efff18414e0c00ad54f1d9bc267af73f7d7fee7dcaa1a"
+  },
+  "behavior": {
+    "optional_request": true,
+    "ordinary_no_request_identity_and_planning_preserved": true,
+    "choice": "15 fixed spatial strata exact independent d1 neighbors plus original-manifest-first eligible blind control; chosen before current SM annotation",
+    "targeted_lineage": "fixed anchor ancestry c48nq1p05_16",
+    "blind_lineage": "original source family retained",
+    "request_bytes_bound_at_all_recovery_and_dispatch_boundaries": true,
+    "durable_freeze": "exact-request reference plus atomically completed validated bundle; reuse after a pre-receipt crash across changed cycle IDs",
+    "one_shot_consumption": "one complete canonical priority1 scoped queued manifest, including pending/done/retry-fail/terminal-fail states",
+    "budget": "same 5000 valid unique target, guided outstanding96, one count16 shard",
+    "ordinary_dispatch_after_consumed_or_unavailable": true,
+    "frozen_reference_accepts_new_successes_but_protects_old_entries_and_raw": true,
+    "cohort_bound_readout_control_cannot_make_shell_positive": true
+  },
+  "validation": {
+    "full_suite_final": {
+      "tests": 732,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": 304.8248530998826,
+      "threads": 4,
+      "ci": false,
+      "warnings_summary_present": false,
+      "source_and_golden_unchanged": true,
+      "golden_sha256": "c5fc5ed0db1bf51de2e81f6ac8681962d70e4a1b99508dbf7cad6cdfb7ec42fb"
+    },
+    "independent_review": {
+      "verdict": "PASS",
+      "blockers": [],
+      "core_cases": 9,
+      "selected_high_risk_integration_cases": 17,
+      "five_path_limited_cases_independently_rerun_at_short_path": true,
+      "review_json_sha256": "0739c0b5bbf9e8cf0623b72b00cf2b548897a0b0881c7336560d9a9aaf71e963",
+      "review_md_sha256": "e37438df18c2e912b6bd3d8fd21873b7158c972ba9b94e5e2ecad382badc8063"
+    },
+    "pyflakes_and_compile": "PASS",
+    "existing_physical_incumbent_adapter": "One original NAS sample/radiation pair and observation replay agrees exactly; factory margin -0.24644088745117188 dB",
+    "first_full_suite_failure_preserved": "731 passed, one pre-existing eight-thread jobs_add regression raised PermissionError; exact throwing site not captured",
+    "bounded_lock_diagnostic": "24/24 additions in three faithful rounds, plus isolated test pass; source queue code unchanged, original cause remains unproven"
+  },
+  "private_archive": {
+    "relative_path": "experiments/r80_symmetry_20261007/pilot_protocols/incumbent_shell_v001/implementation_20261008",
+    "payload_file_count": 46,
+    "payload_bytes": 1182554,
+    "manifest_sha256": "a0986f84197c2d4dc07e327ed22f844085ceb230f89d88ef8e04294d4dec2ce4",
+    "all_published_file_hashes_rechecked": true,
+    "source_binding": "reviewed worktree bytes before implementation commit"
+  },
+  "limits": [
+    "No actual pilot request, prepared 16-row cohort, prospective model call, dispatch or HFSS result exists at this milestone.",
+    "The full live preparation-time reference and actual current-model annotation remain unverified.",
+    "Independent code tests use generated raw and queue fixtures plus fake predictors; the real-NAS adapter check covers one incumbent only.",
+    "The first full-suite lock error is preserved and diagnosed; passing retries do not establish its cause or a production fix.",
+    "The running controller still has an unfinished pointer after a normal live-results snapshot race; safe handoff waits for its recovery.",
+    "R80 5000-point collection and later R81 measured positive-WM confirmation remain incomplete."
+  ]
+}

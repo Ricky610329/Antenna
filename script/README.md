@@ -26,8 +26,9 @@
 | `status.py` | NAS run 狀態掃描（`--md` 貼 ONGOING;`--alert --notify-topic` 當 watchdog） |
 | `status.py --factory --dataset-root ... --scope ...` | 私人具名profile佇列監看；成功observation不需wm欄位，且不混入全域舊run |
 | `symmetry_factory.py` | R80滾動資料工廠policy驗證與實體樣本/場型稽核快照；重測不增加唯一圖形計數 |
-| `symmetry_factory_cycle.py` | 單次可恢復controller：凍結新資料→前瞻稽核→累積SM更新→16筆分片；逐片查重/dispatch；以明示retry worker名單保留跨機補測名額，全機耗盡才釋放尾批容量 |
-| `symmetry_factory_watch.py` | 開發機唯一常駐controller，每1800秒執行一輪；綁定設定/訓練工作區及expected_retry_workers，精確達額才完成；保留重啟紀錄、STOP與live競態延後重試，不啟動HFSS |
+| `symmetry_factory_cycle.py` | 單次可恢復controller：凍結新資料→前瞻稽核→累積SM更新→16筆分片；逐片查重/dispatch；以明示retry worker名單保留跨機補測名額。可選一次性15+1鄰域request共用原名額與恢復閘門，永久無法成批時回到一般派工 |
+| `symmetry_factory_watch.py` | 開發機唯一常駐controller，每1800秒執行一輪；綁定設定/訓練工作區、expected_retry_workers及可選pilot request bytes，精確達額才完成；保留重啟紀錄、STOP與live競態延後重試，不啟動HFSS |
+| `symmetry_incumbent_shell_pilot.py` | R80一次性鄰域核心：固定錨點15格d1對稱變體＋1個blind對照，先選擇再保存當前SM預測；凍結準備時真值參考、核對原觀測並依固定判準讀出，不直接操作佇列 |
 | `symmetry_sm_pool.py` | 10,000對稱候選池，SM冷啟動或新資料更新模型選樣；40/30/30配額與完整前瞻預測保存 |
 | `symmetry_training.py` | 對稱工廠新真值按批累積、歷史非對稱曲線僅作預訓練；固定家族保留集、唯一圖形更新計數、epoch恢復及模型/資料版本綁定 |
 | `profiled_shards.py` | canonical輸入分為16筆獨立jobs；完成子批嚴格同一集合、hash驗證後合併；亦可將長批已成功量測凍結為明示partial的獨立子集合供SM更新 |

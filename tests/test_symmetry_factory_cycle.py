@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -22,6 +23,86 @@ RETRY_WORKERS = ["140.123.106.216", "140.123.106.218", "140.123.106.37"]
 class ColdPredictor:
     model_role = "historical_cold_start_only"
     model_ids = [{"file": "fixture", "sha256": "0" * 64}]
+
+
+class CurrentPredictor(ColdPredictor):
+    model_role = "current_profile"
+    binding = {"fixture": "current"}
+
+
+def _fake_pilot_request(tmp_path, monkeypatch, *, pilot_id="a" * 64):
+    request_path = tmp_path / "pilot_request.json"
+    request_path.write_text('{"fixture": true}', encoding="utf-8")
+    binding = {"request_path": str(request_path.resolve()),
+               "request_sha256": "b" * 64, "pilot_id": pilot_id,
+               "profile": {"path": str(PROFILE.resolve()),
+                           "sha256": pb.file_sha256(PROFILE)},
+               "protocol": {"path": "protocol", "sha256": "c" * 64},
+               "addendum": {"path": "addendum", "sha256": "d" * 64},
+               "training_protocol": {"path": "training", "sha256": "e" * 64}}
+    request = SimpleNamespace(binding=binding, pilot_id=pilot_id, priority=1, count=16)
+
+    def load(value, _profile):
+        if value is None:
+            return None, None
+        return request, dict(binding)
+
+    monkeypatch.setattr(cycle, "_load_pilot_request", load)
+    return request_path, request, binding
+
+
+def _fake_pilot_core(tmp_path, monkeypatch, request):
+    calls = []
+    ids = [f"pilot-{index:02d}" for index in range(16)]
+    hashes = [f"pilot-hash-{index:02d}" for index in range(16)]
+    role_counts = {cycle.shell_pilot.SHELL_ROLE: 15,
+                   cycle.shell_pilot.CONTROL_ROLE: 1}
+    selection = SimpleNamespace(rows=tuple(), hashes=tuple(hashes), role_counts=role_counts)
+    annotated = SimpleNamespace(
+        predictor_binding={"data_version": 1}, model_ids=({"sha256": "f" * 64},),
+        surrogate_generation="data-v001", valid_observations_at_fit=100)
+
+    def select(_request, exclusions):
+        calls.append(("select", set(exclusions)))
+        return selection
+
+    def freeze(_pairs, _bindings, _request, out):
+        calls.append(("freeze",))
+        pb.atomic_json(out, {"fixture": "reference", "pilot_id": request.pilot_id,
+                             "request_binding": request.binding})
+        return Path(out)
+
+    def annotate(_request, frozen, predictor):
+        calls.append(("annotate", frozen, predictor.model_role))
+        return annotated
+
+    def write(_request, _annotated, out):
+        calls.append(("write",))
+        bundle = _bundle(Path(out), 16, prefix="pilot")
+        rows = pb.read_json(bundle / "manifest.json")
+        for index, row in enumerate(rows):
+            row.update({"id": ids[index], "pattern_sha256": hashes[index],
+                        "pilot_id": request.pilot_id, "kind": "pilot"})
+        pb.atomic_json(bundle / "manifest.json", rows)
+        pb.atomic_json(bundle / "pilot_audit.json",
+                       {"fixture": True, "pilot_id": request.pilot_id})
+        pb.atomic_json(bundle / "pilot_bundle_complete.json", {"fixture": True})
+        return bundle
+
+    def validate(_out, _request):
+        return {"pilot_id": request.pilot_id, "ordered_ids": list(ids),
+                "ordered_hashes": list(hashes), "role_counts": dict(role_counts),
+                "predictor_binding": annotated.predictor_binding,
+                "model_ids": list(annotated.model_ids),
+                "surrogate_generation": annotated.surrogate_generation,
+                "valid_observations_at_fit": annotated.valid_observations_at_fit}
+
+    monkeypatch.setattr(cycle.shell_pilot, "select_rows", select)
+    monkeypatch.setattr(cycle.shell_pilot, "freeze_reference", freeze)
+    monkeypatch.setattr(cycle.shell_pilot, "annotate_selection", annotate)
+    monkeypatch.setattr(cycle.shell_pilot, "write_pilot_bundle", write)
+    monkeypatch.setattr(cycle.shell_pilot, "validate_bundle", validate)
+    return calls, ids, hashes, role_counts
 
 
 def _pattern(index: int) -> torch.Tensor:
@@ -180,6 +261,51 @@ def _dispatch_receipt(path: Path, dataset: Path, train: Path,
     return path
 
 
+def _pilot_dispatch_receipt(tmp_path, monkeypatch, dataset, train):
+    request_path, request, binding = _fake_pilot_request(tmp_path, monkeypatch)
+    staged = _bundle(tmp_path / "pilot-staged", 16, prefix="pilot")
+    rows = pb.read_json(staged / "manifest.json")
+    for row in rows:
+        row["pilot_id"] = request.pilot_id
+    pb.atomic_json(staged / "manifest.json", rows)
+    job = cycle._planned([staged], "p", 1, "f" * 64)[0]
+    store = f"dedust_r80p{request.pilot_id[:8]}p01"
+    job.update({"input": store + "_input", "store": store,
+                "pilot_id": request.pilot_id, "pilot_role": "incumbent_shell"})
+    receipt_path = _dispatch_receipt(
+        tmp_path / "local/cycles/test/action_receipt.json",
+        dataset, train, [job], "f" * 64)
+    reference = tmp_path / "pilot-reference.json"
+    pb.atomic_json(reference, {"fixture": "reference"})
+    proof = {"pilot_id": request.pilot_id,
+             "ordered_ids": [row["id"] for row in rows],
+             "ordered_hashes": [row["pattern_sha256"] for row in rows],
+             "role_counts": {cycle.shell_pilot.SHELL_ROLE: 15,
+                             cycle.shell_pilot.CONTROL_ROLE: 1},
+             "predictor_binding": {"data_version": 1},
+             "model_ids": [{"sha256": "f" * 64}],
+             "surrogate_generation": "data-v001",
+             "valid_observations_at_fit": 100}
+    receipt = pb.read_json(receipt_path)
+    receipt["pilot_request"] = binding
+    receipt["pilot"] = {"state": "prepared", "request": binding,
+                        "reference": cycle._path_binding(reference),
+                        "bundle": {"path": str(staged.resolve()),
+                                   "tree_sha256": cycle._content_id(
+                                       cycle._tree_hashes(staged)),
+                                   "proof": proof},
+                        "selection": {key: proof[key] for key in (
+                            "ordered_ids", "ordered_hashes", "role_counts")},
+                        "predictor_binding": proof["predictor_binding"],
+                        "model_ids": proof["model_ids"],
+                        "surrogate_generation": proof["surrogate_generation"],
+                        "valid_observations_at_fit": proof["valid_observations_at_fit"]}
+    pb.atomic_json(receipt_path, receipt)
+    monkeypatch.setattr(cycle.shell_pilot, "validate_bundle",
+                        lambda path, supplied: dict(proof))
+    return request_path, request, receipt_path, job, staged, reference, proof
+
+
 def _fake_pool(monkeypatch):
     calls = []
 
@@ -210,6 +336,7 @@ def test_prepare_once_is_local_idempotent_and_splits_guided_48(tmp_path, monkeyp
     receipt = pb.read_json(receipt_path)
 
     assert receipt["status"] == "prepared" and receipt["dispatch_gate"] == "not_run"
+    assert "pilot_request" not in receipt and "pilot" not in receipt
     assert [job["count"] for job in receipt["planned_jobs"]] == [16, 16, 16]
     assert {job["prio"] for job in receipt["planned_jobs"]} == {1}
     assert pb.read_json(dataset / "jobs.json") == []
@@ -217,6 +344,211 @@ def test_prepare_once_is_local_idempotent_and_splits_guided_48(tmp_path, monkeyp
                           profile_config=PROFILE, training_workdir=train,
                           seed_inputs=[seeds], cold_start_predictor=ColdPredictor()) == receipt_path
     assert len(calls) == 1
+
+
+def test_pending_pilot_uses_one_priority1_shard_and_suppresses_ordinary_planning(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 4)
+    request_path, request, binding = _fake_pilot_request(tmp_path, monkeypatch)
+    pilot_calls, ids, hashes, roles = _fake_pilot_core(tmp_path, monkeypatch, request)
+    ordinary_calls = _fake_pool(monkeypatch)
+
+    receipt = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds],
+        cold_start_predictor=CurrentPredictor(), pilot_request=request_path,
+        expected_retry_workers=RETRY_WORKERS))
+
+    assert receipt["pilot_request"] == binding
+    assert receipt["pilot"]["state"] == "prepared"
+    assert receipt["pilot"]["selection"] == {
+        "ordered_ids": ids, "ordered_hashes": hashes, "role_counts": roles}
+    assert [(job["kind"], job["prio"], job["count"], job["pilot_id"])
+            for job in receipt["planned_jobs"]] == [("p", 1, 16, request.pilot_id)]
+    assert receipt["limits"]["valid_plus_pending_plus_planned"] == 16
+    assert ordinary_calls == []
+    assert [item[0] for item in pilot_calls] == ["select", "freeze", "annotate", "write"]
+
+
+def test_completed_pilot_bundle_is_recovered_across_cycle_id_after_receipt_write_crash(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds1 = _bundle(tmp_path / "seeds-1", 3)
+    seeds2 = _bundle(tmp_path / "seeds-2", 3, start=100)
+    request_path, request, _binding = _fake_pilot_request(tmp_path, monkeypatch)
+    calls, ids, hashes, _roles = _fake_pilot_core(tmp_path, monkeypatch, request)
+    monkeypatch.setattr(cycle, "_trained",
+                        lambda root: (1, set(), {"manifest_id": "bound", "data_version": 1}))
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda root, version: CurrentPredictor())
+    monkeypatch.setattr(cycle.shell_pilot, "recheck_reference", lambda path: None)
+    original_write = cycle._write
+    crashed = False
+
+    def crash_after_complete_bundle(path, payload):
+        nonlocal crashed
+        if (not crashed and Path(path).name == "action_receipt.json" and
+                payload.get("pilot", {}).get("state") == "prepared"):
+            crashed = True
+            raise RuntimeError("fixture crash after completed bundle")
+        return original_write(path, payload)
+
+    monkeypatch.setattr(cycle, "_write", crash_after_complete_bundle)
+    with pytest.raises(RuntimeError, match="after completed bundle"):
+        cycle.run_once(
+            local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+            training_workdir=train, seed_inputs=[seeds1], pilot_request=request_path,
+            expected_retry_workers=RETRY_WORKERS)
+    first_bundle = next((tmp_path / "cycle/cycles").glob("*/pilot_bundle")).resolve()
+    assert (first_bundle / "pilot_bundle_complete.json").is_file()
+
+    monkeypatch.setattr(cycle.shell_pilot, "select_rows",
+                        lambda *_: pytest.fail("restart must not reselect"))
+    monkeypatch.setattr(cycle.shell_pilot, "annotate_selection",
+                        lambda *_: pytest.fail("restart must not reannotate"))
+    monkeypatch.setattr(cycle.shell_pilot, "write_pilot_bundle",
+                        lambda *_: pytest.fail("restart must not republish"))
+    receipt = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds2], pilot_request=request_path,
+        expected_retry_workers=RETRY_WORKERS))
+
+    assert receipt["pilot"]["completed_preparation_recovered"] is True
+    assert Path(receipt["pilot"]["bundle"]["path"]) == first_bundle
+    assert receipt["pilot"]["selection"]["ordered_ids"] == ids
+    assert receipt["pilot"]["selection"]["ordered_hashes"] == hashes
+    assert [item[0] for item in calls] == ["select", "freeze", "annotate", "write"]
+
+
+def test_pilot_final_remaining_below16_is_durable_and_legacy_tail_is_not_starved(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3)
+    request_path, request, binding = _fake_pilot_request(tmp_path, monkeypatch)
+    calls = _fake_pool(monkeypatch)
+    successful = {f"ok-{index}" for index in range(4_999)}
+    jobs_hash = pb.file_sha256(dataset / "jobs.json")
+    monkeypatch.setattr(cycle.factory, "snapshot", lambda *args: {"jobs_sha256": jobs_hash})
+    monkeypatch.setattr(cycle, "_queue_view", lambda *args: {
+        "jobs_sha256": jobs_hash, "jobs": [], "pairs": [], "pair_bindings": [],
+        "pending_hashes": set(), "guided_pending_hashes": set(),
+        "successful_hashes": successful, "exclusion_hashes": successful,
+    })
+    monkeypatch.setattr(cycle, "_trained",
+                        lambda root: (1, successful, {"manifest_id": "bound", "data_version": 1}))
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda root, version: CurrentPredictor())
+    monkeypatch.setattr(cycle.shell_pilot, "select_rows",
+                        lambda *_: pytest.fail("permanent capacity shortage must not select"))
+
+    receipt_path = cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds], pilot_request=request_path,
+        expected_retry_workers=RETRY_WORKERS)
+    receipt = pb.read_json(receipt_path)
+
+    assert receipt["pilot_request"] == binding and "pilot" not in receipt
+    assert calls[0][0] == 1
+    assert [(job["kind"], job["count"], job["final_target_tail"])
+            for job in receipt["planned_jobs"]] == [("g", 1, True)]
+    decision = pb.read_json(
+        tmp_path / f"cycle/pilot_decisions/{request.pilot_id}.json")
+    assert decision["status"] == "terminal_unavailable"
+    assert decision["code"] == "final_remaining_below_16"
+    assert decision["decision_id"] == cycle._content_id({
+        key: value for key, value in decision.items() if key != "decision_id"})
+
+    def add(root, supplied, scope):
+        pb.atomic_json(root / "jobs.json", [{
+            "input": supplied["input"], "store": supplied["store"],
+            "prio": supplied["prio"], "scope": scope,
+            "config": f"{supplied['input']}/config.yaml"}])
+
+    cycle.commit_dispatch(receipt_path, queue_add=add, duplicate_check=lambda *_: 1)
+    assert pb.read_json(receipt_path)["status"] == "dispatched"
+    assert len(pb.read_json(dataset / "jobs.json")) == 1
+
+    decision["detail"] = "rewritten"
+    pb.atomic_json(tmp_path / f"cycle/pilot_decisions/{request.pilot_id}.json", decision)
+    with pytest.raises(ValueError, match="decision content changed"):
+        cycle._existing_pilot_terminal_decision(tmp_path / "cycle", binding)
+
+
+@pytest.mark.parametrize("code", ["empty_stratum", "no_eligible_blind"])
+def test_permanent_pilot_selection_shortage_is_durable_and_ordinary_planning_resumes(
+        tmp_path, monkeypatch, code):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3)
+    request_path, request, _binding = _fake_pilot_request(tmp_path, monkeypatch)
+    calls = _fake_pool(monkeypatch)
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda root, version: CurrentPredictor())
+    monkeypatch.setattr(cycle, "_trained",
+                        lambda root: (1, set(), {"manifest_id": "bound", "data_version": 1}))
+
+    def unavailable(*_args):
+        raise cycle.shell_pilot.PilotUnavailable(code, f"fixture {code}")
+
+    monkeypatch.setattr(cycle.shell_pilot, "select_rows", unavailable)
+    receipt = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds], pilot_request=request_path,
+        expected_retry_workers=RETRY_WORKERS))
+
+    assert receipt["status"] == "prepared"
+    assert {job["kind"] for job in receipt["planned_jobs"]} == {"g"}
+    assert calls and calls[0][0] == 48
+    decision = pb.read_json(
+        tmp_path / f"cycle/pilot_decisions/{request.pilot_id}.json")
+    assert decision["code"] == code and decision["status"] == "terminal_unavailable"
+
+
+def test_pilot_waits_only_for_guided_capacity_but_historical_predictor_runs_legacy(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3)
+    request_path, _request, _binding = _fake_pilot_request(tmp_path, monkeypatch)
+    jobs_hash = pb.file_sha256(dataset / "jobs.json")
+    pending = {f"pending-{index}" for index in range(90)}
+    monkeypatch.setattr(cycle.factory, "snapshot", lambda *args: {"jobs_sha256": jobs_hash})
+    monkeypatch.setattr(cycle, "_queue_view", lambda *args: {
+        "jobs_sha256": jobs_hash, "jobs": [], "pairs": [], "pair_bindings": [],
+        "pending_hashes": pending, "guided_pending_hashes": pending,
+        "successful_hashes": set(), "exclusion_hashes": pending,
+    })
+    monkeypatch.setattr(cycle, "_trained",
+                        lambda root: (1, set(), {"manifest_id": "bound", "data_version": 1}))
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda root, version: CurrentPredictor())
+
+    waiting = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "waiting", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds], pilot_request=request_path,
+        expected_retry_workers=RETRY_WORKERS))
+    assert waiting["status"] == "idle" and waiting["planned_jobs"] == []
+    assert waiting["pilot"]["state"] == "waiting_guided_capacity"
+    assert waiting["pilot"]["guided_capacity"] == 6
+
+    monkeypatch.setattr(cycle, "_queue_view", lambda *args: {
+        "jobs_sha256": jobs_hash, "jobs": [], "pairs": [], "pair_bindings": [],
+        "pending_hashes": set(), "guided_pending_hashes": set(),
+        "successful_hashes": set(), "exclusion_hashes": set(),
+    })
+    monkeypatch.setattr(cycle, "_trained", lambda root: (0, set(), None))
+    calls = _fake_pool(monkeypatch)
+    legacy = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "legacy", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds], pilot_request=request_path,
+        cold_start_predictor=ColdPredictor(), expected_retry_workers=RETRY_WORKERS))
+    assert legacy["pilot"]["state"] == "waiting_current_profile_predictor"
+    assert {job["kind"] for job in legacy["planned_jobs"]} == {"g"}
+    assert calls and calls[0][0] == 48
 
 
 def test_active_pre_roster_receipt_is_not_reused_for_bound_campaign(tmp_path, monkeypatch):
@@ -237,6 +569,35 @@ def test_active_pre_roster_receipt_is_not_reused_for_bound_campaign(tmp_path, mo
                        training_workdir=train, seed_inputs=[seeds],
                        cold_start_predictor=ColdPredictor(),
                        expected_retry_workers=RETRY_WORKERS)
+
+
+def test_active_pilot_receipt_requires_exact_present_request_binding(tmp_path, monkeypatch):
+    local = tmp_path / "cycle"
+    receipt_path = local / "cycles/prior/action_receipt.json"
+    receipt_path.parent.mkdir(parents=True)
+    dataset = (tmp_path / "dataset").resolve()
+    train = (tmp_path / "training").resolve()
+    request_path, request, binding = _fake_pilot_request(tmp_path, monkeypatch)
+    pb.atomic_json(receipt_path, {
+        "status": "prepared", "dataset_root": str(dataset),
+        "profile_config": str(PROFILE.resolve()), "training_workdir": str(train),
+        "expected_retry_workers": RETRY_WORKERS, "pilot_request": binding,
+    })
+    pb.atomic_json(local / "active_cycle.json",
+                   {"cycle_id": "prior", "receipt": str(receipt_path.resolve())})
+
+    assert cycle.run_once(
+        local_workdir=local, dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[tmp_path / "seed"],
+        expected_retry_workers=RETRY_WORKERS, pilot_request=request_path) == receipt_path.resolve()
+
+    changed = dict(binding, request_sha256="0" * 64)
+    monkeypatch.setattr(cycle, "_load_pilot_request",
+                        lambda value, profile: (request, changed))
+    with pytest.raises(ValueError, match="different pilot request"):
+        cycle.run_once(local_workdir=local, dataset_root=dataset, profile_config=PROFILE,
+                       training_workdir=train, seed_inputs=[tmp_path / "seed"],
+                       expected_retry_workers=RETRY_WORKERS, pilot_request=request_path)
 
 
 def test_prepare_once_uses_three_blind_shards_when_no_model(tmp_path):
@@ -639,6 +1000,135 @@ def test_queue_view_defers_when_fail_takeover_changes_markers_mid_scan(tmp_path,
         cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
 
 
+def test_complete_queued_pilot_consumes_one_shot_across_worker_states(tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    request_path, request, _binding = _fake_pilot_request(tmp_path, monkeypatch)
+    store_name = f"dedust_r80p{request.pilot_id[:8]}p01"
+    input_name = store_name + "_input"
+    input_dir = _bundle(dataset / input_name, 16, prefix="pilot")
+    assert request_path.is_file()
+    rows = pb.read_json(input_dir / "manifest.json")
+    for row in rows:
+        row["pilot_id"] = request.pilot_id
+    pb.atomic_json(input_dir / "manifest.json", rows)
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{
+        "input": input_name, "store": store_name, "prio": 1, "scope": cfg.scope,
+        "config": f"{input_name}/config.yaml"}])
+    proof = {"pilot_id": request.pilot_id,
+             "ordered_ids": [row["id"] for row in rows],
+             "ordered_hashes": [row["pattern_sha256"] for row in rows],
+             "role_counts": {"incumbent_shell": 15, "pilot_blind_control": 1}}
+    monkeypatch.setattr(cycle.shell_pilot, "validate_bundle",
+                        lambda path, supplied: dict(proof))
+    policy = cycle.factory.validate_factory_config(vars(cfg))
+    state = dataset / "jobs_state"
+
+    for marker, payload in (
+            (None, None),
+            ("done", {"machine": RETRY_WORKERS[0], "errors": 0}),
+            ("fail", {"machines": [RETRY_WORKERS[0]]}),
+            ("fail", {"machines": RETRY_WORKERS})):
+        for suffix in ("claim", "done", "fail"):
+            path = state / f"{store_name}.{suffix}"
+            if path.exists():
+                path.unlink()
+        if marker is not None:
+            pb.atomic_json(state / f"{store_name}.{marker}", payload)
+        queue = cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
+        evidence = cycle._queued_pilot_evidence(dataset, queue, request, cfg.scope)
+        assert evidence is not None and evidence["proof"] == proof
+
+    shutil.copytree(input_dir, dataset / "wrong_input")
+    canonical = dict(queue["jobs"][0])
+    for field, value in (
+            ("input", "wrong_input"), ("store", "wrong_store"), ("prio", 2),
+            ("scope", "wrong_scope"), ("config", "wrong/config.yaml")):
+        changed_queue = dict(queue, jobs=[dict(canonical, **{field: value})])
+        with pytest.raises(ValueError, match="noncanonical queue record"):
+            cycle._queued_pilot_evidence(dataset, changed_queue, request, cfg.scope)
+
+
+def test_consumed_pilot_request_prepares_and_commits_ordinary_wave(tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    request_path, request, binding = _fake_pilot_request(tmp_path, monkeypatch)
+    store_name = f"dedust_r80p{request.pilot_id[:8]}p01"
+    input_name = store_name + "_input"
+    pilot_input = _bundle(dataset / input_name, 16, prefix="pilot", start=1_000)
+    rows = pb.read_json(pilot_input / "manifest.json")
+    for row in rows:
+        row["pilot_id"] = request.pilot_id
+    pb.atomic_json(pilot_input / "manifest.json", rows)
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{
+        "input": input_name, "store": store_name, "prio": 1, "scope": cfg.scope,
+        "config": f"{input_name}/config.yaml"}])
+    proof = {"pilot_id": request.pilot_id,
+             "ordered_ids": [row["id"] for row in rows],
+             "ordered_hashes": [row["pattern_sha256"] for row in rows],
+             "role_counts": {cycle.shell_pilot.SHELL_ROLE: 15,
+                             cycle.shell_pilot.CONTROL_ROLE: 1}}
+    monkeypatch.setattr(cycle.shell_pilot, "validate_bundle",
+                        lambda path, supplied: dict(proof))
+    monkeypatch.setattr(cycle.shell_pilot, "select_rows",
+                        lambda *_: pytest.fail("consumed pilot must not regenerate"))
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3)
+    calls = _fake_pool(monkeypatch)
+    monkeypatch.setattr(cycle, "_trained",
+                        lambda root: (1, set(), {"manifest_id": "bound", "data_version": 1}))
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda root, version: CurrentPredictor())
+
+    receipt_path = cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds],
+        pilot_request=request_path, expected_retry_workers=RETRY_WORKERS)
+    receipt = pb.read_json(receipt_path)
+    assert receipt["pilot_request"] == binding and "pilot" not in receipt
+    assert receipt["status"] == "prepared" and calls
+    assert receipt["planned_jobs"] and {
+        job["kind"] for job in receipt["planned_jobs"]} == {"g"}
+
+    added = []
+
+    def add(root, supplied, scope):
+        queued = pb.read_json(root / "jobs.json")
+        queued.append({"input": supplied["input"], "store": supplied["store"],
+                       "prio": supplied["prio"], "scope": scope,
+                       "config": f"{supplied['input']}/config.yaml"})
+        pb.atomic_json(root / "jobs.json", queued)
+        added.append(supplied["store"])
+
+    cycle.commit_dispatch(
+        receipt_path, queue_add=add,
+        duplicate_check=lambda input_dir, root: len(pb.read_json(input_dir / "manifest.json")))
+    assert pb.read_json(receipt_path)["status"] == "dispatched"
+    assert len(added) == len(receipt["planned_jobs"])
+
+
+def test_partial_queued_pilot_evidence_blocks_regeneration(tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    _request_path, request, _binding = _fake_pilot_request(tmp_path, monkeypatch)
+    store_name = f"dedust_r80p{request.pilot_id[:8]}p01"
+    input_name = store_name + "_input"
+    input_dir = _bundle(dataset / input_name, 2, prefix="pilot")
+    rows = pb.read_json(input_dir / "manifest.json")
+    rows[0]["pilot_id"] = request.pilot_id
+    pb.atomic_json(input_dir / "manifest.json", rows)
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{
+        "input": input_name, "store": store_name, "prio": 1, "scope": cfg.scope,
+        "config": f"{input_name}/config.yaml"}])
+    monkeypatch.setattr(cycle.shell_pilot, "validate_bundle",
+                        lambda *_: (_ for _ in ()).throw(
+                            cycle.shell_pilot.PilotError("partial fixture")))
+    queue = cycle._queue_view(
+        dataset, cfg, cycle.factory.validate_factory_config(vars(cfg)), RETRY_WORKERS)
+    with pytest.raises(ValueError, match="partial or conflicting"):
+        cycle._queued_pilot_evidence(dataset, queue, request, cfg.scope)
+
+
 def test_atomic_bundle_publish_recovers_invalid_known_pending_directory(tmp_path):
     output = tmp_path / "guided_bundle"
     pending = tmp_path / ".guided_bundle.pending"
@@ -741,6 +1231,64 @@ def test_commit_rejects_claimed_unqueued_store_without_copy_or_queue_mutation(tm
         cycle.commit_dispatch(receipt_path, queue_add=lambda *_: pytest.fail("must not queue"))
     assert not (dataset / job["input"]).exists()
     assert pb.read_json(dataset / "jobs.json") == []
+
+
+@pytest.mark.parametrize("recovery_point", ["post_copy", "post_queue"])
+def test_pilot_commit_recovers_exact_staged_cohort_after_copy_or_queue(
+        tmp_path, monkeypatch, recovery_point):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    (_request_path, _request, receipt_path, job, staged,
+     _reference, _proof) = _pilot_dispatch_receipt(tmp_path, monkeypatch, dataset, train)
+    destination = dataset / job["input"]
+    shutil.copytree(staged, destination)
+    expected = {"input": job["input"], "store": job["store"], "prio": job["prio"],
+                "scope": pb.load_profile_config(PROFILE).scope,
+                "config": f"{job['input']}/config.yaml"}
+    if recovery_point == "post_queue":
+        pb.atomic_json(dataset / "jobs.json", [expected])
+    added, rechecked = [], []
+    monkeypatch.setattr(cycle.shell_pilot, "recheck_reference",
+                        lambda path: rechecked.append(Path(path)))
+
+    def add(root, supplied, scope):
+        queued = pb.read_json(root / "jobs.json")
+        queued.append({"input": supplied["input"], "store": supplied["store"],
+                       "prio": supplied["prio"], "scope": scope,
+                       "config": f"{supplied['input']}/config.yaml"})
+        pb.atomic_json(root / "jobs.json", queued)
+        added.append(supplied["store"])
+
+    cycle.commit_dispatch(receipt_path, queue_add=add, duplicate_check=lambda *_: 16)
+
+    assert pb.read_json(dataset / "jobs.json") == [expected]
+    assert added == ([] if recovery_point == "post_queue" else [job["store"]])
+    assert rechecked and pb.read_json(receipt_path)["status"] == "dispatched"
+
+
+def test_pilot_commit_rechecks_request_and_frozen_reference_before_queue_mutation(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    train = _training(tmp_path / "training")
+    (request_path, request, receipt_path, job, _staged,
+     _reference, _proof) = _pilot_dispatch_receipt(tmp_path, monkeypatch, dataset, train)
+    monkeypatch.setattr(cycle.shell_pilot, "recheck_reference",
+                        lambda path: (_ for _ in ()).throw(
+                            cycle.shell_pilot.PilotError("frozen old entry changed")))
+    with pytest.raises(cycle.shell_pilot.PilotError, match="old entry"):
+        cycle.commit_dispatch(
+            receipt_path, queue_add=lambda *_: pytest.fail("must not queue"),
+            duplicate_check=lambda *_: pytest.fail("must not check duplicates"))
+    assert not (dataset / job["input"]).exists()
+
+    changed = dict(request.binding, request_sha256="0" * 64)
+    monkeypatch.setattr(cycle, "_load_pilot_request",
+                        lambda value, profile: (request, changed))
+    monkeypatch.setattr(cycle.shell_pilot, "recheck_reference",
+                        lambda path: pytest.fail("request mismatch must fail first"))
+    with pytest.raises(ValueError, match="request presence or exact binding changed"):
+        cycle.commit_dispatch(receipt_path, queue_add=lambda *_: pytest.fail("must not queue"))
+    assert request_path.is_file() and pb.read_json(dataset / "jobs.json") == []
 
 
 def test_commit_rechecks_total_budget_before_copy(tmp_path, monkeypatch):

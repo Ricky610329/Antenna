@@ -26,6 +26,7 @@ import torch
 from antenna.measurement import measurement_id, score_spec_id
 from script import profiled_batch as pb
 from script import symmetry_factory as factory
+from script import symmetry_incumbent_shell_pilot as shell_pilot
 from script import symmetry_sm_pool as sm
 from script import symmetry_training as training
 from script.profiled_shards import snapshot_successes, split_bundle
@@ -201,6 +202,80 @@ def _path_binding(path: Path) -> dict[str, str]:
     if path.is_dir():
         return {"path": str(path), "sha256": _content_id(_tree_hashes(path))}
     raise FileNotFoundError(path)
+
+
+def _load_pilot_request(pilot_request: str | Path | None,
+                        profile_config: str | Path) -> tuple[Any | None, dict[str, Any] | None]:
+    """Load the optional one-shot request and return its exact serialized binding."""
+
+    if pilot_request is None:
+        return None, None
+    request = shell_pilot.load_request(Path(pilot_request).resolve(),
+                                       Path(profile_config).resolve())
+    binding = dict(request.binding)
+    required = {"request_path", "request_sha256", "pilot_id"}
+    if not required <= binding.keys() or binding["pilot_id"] != request.pilot_id:
+        raise ValueError("pilot request lacks its exact path/SHA/pilot identity binding")
+    # Require a JSON-safe stable value before it enters cycle and receipt identities.
+    json.loads(json.dumps(binding, sort_keys=True, ensure_ascii=False))
+    return request, binding
+
+
+def _require_pilot_request_binding(pilot_request: str | Path | None,
+                                   profile_config: str | Path,
+                                   expected: Mapping[str, Any] | None) -> Any | None:
+    request, actual = _load_pilot_request(pilot_request, profile_config)
+    if actual != expected:
+        raise ValueError("pilot request presence or exact binding changed")
+    return request
+
+
+def _pilot_decision_path(local: Path, pilot_id: str) -> Path:
+    if (not isinstance(pilot_id, str) or len(pilot_id) != 64 or
+            any(character not in "0123456789abcdef" for character in pilot_id)):
+        raise ValueError("pilot_id must be a lowercase SHA-256 identity")
+    return local / "pilot_decisions" / f"{pilot_id}.json"
+
+
+def _pilot_terminal_decision(local: Path, binding: Mapping[str, Any], *,
+                             code: str, detail: str) -> dict[str, Any]:
+    """Create or validate the immutable exact-request terminal-unavailable decision."""
+
+    path = _pilot_decision_path(local, str(binding["pilot_id"]))
+    expected_identity = {"schema_version": 1, "status": "terminal_unavailable",
+                         "pilot_request": dict(binding), "pilot_id": binding["pilot_id"]}
+    if path.is_file():
+        return _validate_pilot_terminal_decision(_read(path), expected_identity)
+    decision = {**expected_identity, "code": code, "detail": detail}
+    decision["decision_id"] = _content_id(decision)
+    _write(path, decision)
+    if _read(path) != decision:
+        raise ValueError("pilot terminal decision publication differs")
+    return decision
+
+
+def _validate_pilot_terminal_decision(decision: Mapping[str, Any],
+                                      expected_identity: Mapping[str, Any]) -> dict[str, Any]:
+    if any(decision.get(key) != value for key, value in expected_identity.items()):
+        raise ValueError("existing pilot terminal decision has a different identity")
+    if decision.get("code") not in {
+            "final_remaining_below_16", "empty_stratum", "no_eligible_blind"}:
+        raise ValueError("existing pilot terminal decision has an invalid reason")
+    payload = {key: value for key, value in decision.items() if key != "decision_id"}
+    if decision.get("decision_id") != _content_id(payload):
+        raise ValueError("existing pilot terminal decision content changed")
+    return dict(decision)
+
+
+def _existing_pilot_terminal_decision(local: Path,
+                                      binding: Mapping[str, Any]) -> dict[str, Any] | None:
+    path = _pilot_decision_path(local, str(binding["pilot_id"]))
+    if not path.is_file():
+        return None
+    decision = _read(path)
+    expected = {"schema_version": 1, "status": "terminal_unavailable",
+                "pilot_request": dict(binding), "pilot_id": binding["pilot_id"]}
+    return _validate_pilot_terminal_decision(decision, expected)
 
 
 def _validate_bundle(path: Path, expected_cfg: Any) -> None:
@@ -541,6 +616,73 @@ def _queue_view(dataset_root: Path, cfg: Any, policy: Mapping[str, Any],
             "terminal_failed_jobs": terminal_failed_jobs}
 
 
+def _pilot_call(operation: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    try:
+        return operation(*args, **kwargs)
+    except shell_pilot.PilotSnapshotChanged as exc:
+        raise LiveSnapshotChanged(str(exc)) from exc
+
+
+def _queued_pilot_evidence(dataset_root: Path, queue: Mapping[str, Any],
+                           request: Any, scope: str) -> dict[str, Any] | None:
+    """Return the sole complete queued cohort; reject partial/conflicting evidence."""
+
+    matches = []
+    for job in queue["jobs"]:
+        input_dir = _safe_child(dataset_root, str(job["input"]))
+        rows = _read(input_dir / "manifest.json")
+        if not any(row.get("pilot_id") == request.pilot_id for row in rows):
+            continue
+        store = f"dedust_r80p{request.pilot_id[:8]}p01"
+        expected_job = {"input": store + "_input", "store": store,
+                        "prio": int(request.priority), "scope": scope,
+                        "config": f"{store}_input/config.yaml"}
+        if any(job.get(key) != value for key, value in expected_job.items()):
+            raise ValueError("queued pilot evidence has a noncanonical queue record")
+        try:
+            proof = shell_pilot.validate_bundle(input_dir, request)
+        except shell_pilot.PilotError as exc:
+            raise ValueError(
+                f"queued pilot evidence is partial or conflicting: {input_dir}: {exc}") from exc
+        matches.append({"input": str(input_dir), "store": job["store"],
+                        "job": dict(job), "proof": proof})
+    if len(matches) > 1:
+        raise ValueError("multiple queued cohorts claim the same one-shot pilot_id")
+    return matches[0] if matches else None
+
+
+def _recover_local_pilot_preparation(local: Path, request: Any) -> dict[str, Any] | None:
+    """Recover the sole completed request-bound bundle/reference across cycle IDs."""
+
+    cycles = local / "cycles"
+    if not cycles.is_dir():
+        return None
+    candidates = []
+    for cycle_dir in sorted(path for path in cycles.iterdir() if path.is_dir()):
+        reference = cycle_dir / "pilot_reference.json"
+        bundle = cycle_dir / "pilot_bundle"
+        reference_payload = _read(reference) if reference.is_file() else None
+        audit_path = bundle / "pilot_audit.json"
+        audit_payload = _read(audit_path) if audit_path.is_file() else None
+        reference_matches = (isinstance(reference_payload, dict) and
+                             reference_payload.get("pilot_id") == request.pilot_id)
+        audit_matches = (isinstance(audit_payload, dict) and
+                         audit_payload.get("pilot_id") == request.pilot_id)
+        if not reference_matches and not audit_matches:
+            continue
+        if not reference_matches or not bundle.is_dir():
+            raise ValueError("local pilot preparation is partial or conflicting")
+        if reference_payload.get("request_binding") != request.binding:
+            raise ValueError("local pilot reference has a different request binding")
+        proof = _pilot_call(shell_pilot.validate_bundle, bundle, request)
+        _pilot_call(shell_pilot.recheck_reference, reference)
+        candidates.append({"bundle": bundle.resolve(), "reference": reference.resolve(),
+                           "proof": proof})
+    if len(candidates) > 1:
+        raise ValueError("multiple completed local preparations claim the same pilot_id")
+    return candidates[0] if candidates else None
+
+
 def _require_pair_bindings(bindings: Sequence[Mapping[str, Any]]) -> None:
     for binding in bindings:
         for key, label in (("input_metadata_sha256", "input"),
@@ -653,12 +795,14 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                        seed_inputs: Sequence[str | Path],
                        prepared_blind_pool: str | Path | None = None,
                        cold_start_predictor: Any | None = None,
-                       expected_retry_workers: Sequence[str] | None = None) -> Path:
+                       expected_retry_workers: Sequence[str] | None = None,
+                       pilot_request: str | Path | None = None) -> Path:
     """Prepare one recoverable cycle and return its reviewable action receipt."""
 
     local = Path(local_workdir).resolve(); dataset = Path(dataset_root).resolve()
     profile = Path(profile_config).resolve(); train_root = Path(training_workdir).resolve()
     retry_workers = _normalize_retry_workers(expected_retry_workers)
+    pilot, pilot_binding = _load_pilot_request(pilot_request, profile)
     local.mkdir(parents=True, exist_ok=True)
     active = local / "active_cycle.json"
     recovered_training_receipt = None
@@ -675,6 +819,10 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                           prior.get("training_workdir"), prior.get("expected_retry_workers"))
                 if actual != expected:
                     raise ValueError("active cycle belongs to different explicit inputs")
+                prior_pilot = prior.get("pilot_request")
+                if prior_pilot != pilot_binding or (
+                        pilot_binding is None and "pilot_request" in prior):
+                    raise ValueError("active cycle belongs to different pilot request binding")
             if prior.get("status") == "training":
                 recovered_training_receipt = str(receipt)
                 recovered_prediction_audit = prior.get("pretrain_prediction_audit")
@@ -704,12 +852,15 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                      if prepared_blind_pool is not None else None)
     cold_binding = list(getattr(cold_start_predictor, "model_ids", ()))
     profile_sha256 = pb.file_sha256(profile)
-    cycle_id = _content_id({"jobs": audit["jobs_sha256"], "sources": source_binding,
-                            "trained": trained_receipt, "profile": profile_sha256,
-                            "training_protocol": protocol_binding,
-                            "seeds": seed_bindings, "blind": blind_binding,
-                            "cold_predictor": cold_binding,
-                            "expected_retry_workers": retry_workers})
+    cycle_identity = {"jobs": audit["jobs_sha256"], "sources": source_binding,
+                      "trained": trained_receipt, "profile": profile_sha256,
+                      "training_protocol": protocol_binding,
+                      "seeds": seed_bindings, "blind": blind_binding,
+                      "cold_predictor": cold_binding,
+                      "expected_retry_workers": retry_workers}
+    if pilot_binding is not None:
+        cycle_identity["pilot_request"] = pilot_binding
+    cycle_id = _content_id(cycle_identity)
     cycle = local / "cycles" / cycle_id
     receipt_path = cycle / "action_receipt.json"
     cycle.mkdir(parents=True, exist_ok=True)
@@ -761,7 +912,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
             frozen, train_root, cycle / "pretrain_prediction_audit.json")
         prediction_audit_binding = {"path": str(prediction_audit_path),
                                     "sha256": pb.file_sha256(prediction_audit_path)}
-        _write(receipt_path, {
+        training_receipt = {
             "schema_version": 1, "status": "training", "once": True,
             "cycle_id": cycle_id, "dataset_root": str(dataset), "scope": cfg.scope,
             "profile_config": str(profile), "training_workdir": str(train_root),
@@ -773,7 +924,10 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
             "training_snapshot": training_snapshot_binding,
             "quality_gate": None,
             "all_valid_observations_retained_for_training": True,
-        })
+        }
+        if pilot_binding is not None:
+            training_receipt["pilot_request"] = pilot_binding
+        _write(receipt_path, training_receipt)
         version_dir = training.ingest_profile_stores(
             train_root, [frozen], min_new=int(policy["update_every_valid_unique"]), max_new=96)
         version = int(version_dir.name.removeprefix("data-v"))
@@ -813,7 +967,103 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     remaining_budget = max(0, int(policy["target_valid_unique"]) - valid_unique - len(pending))
     planned_jobs: list[dict[str, Any]] = []
     planned_hashes: set[str] = set()
-    if predictor is not None and remaining_budget > 0:
+    pilot_receipt = None
+    pilot_blocks_ordinary = False
+    if pilot is not None:
+        pilot = _require_pilot_request_binding(pilot_request, profile, pilot_binding)
+        queued_pilot = _queued_pilot_evidence(dataset, queue, pilot, cfg.scope)
+        terminal_decision = _existing_pilot_terminal_decision(local, pilot_binding)
+        if queued_pilot is not None and terminal_decision is not None:
+            raise ValueError("pilot cannot be both queued and terminal-unavailable")
+        recovered_pilot = (None if queued_pilot is not None else
+                           _recover_local_pilot_preparation(local, pilot))
+        if recovered_pilot is not None and terminal_decision is not None:
+            raise ValueError("pilot cannot be both locally prepared and terminal-unavailable")
+        current_predictor = (predictor is not None and
+                             getattr(predictor, "model_role", None) == "current_profile")
+        guided_capacity = int(policy["max_guided_outstanding"]) - len(guided_pending)
+        if queued_pilot is None and terminal_decision is None:
+            if recovered_pilot is not None and remaining_budget < int(pilot.count):
+                raise ValueError("completed local pilot preparation no longer fits exact target")
+            if recovered_pilot is None and remaining_budget < int(pilot.count):
+                terminal_decision = _pilot_terminal_decision(
+                    local, pilot_binding, code="final_remaining_below_16",
+                    detail=(f"exact target has only {remaining_budget}/{pilot.count} "
+                            "unreserved slots; legacy final-tail planning resumes"))
+            elif recovered_pilot is None and not current_predictor:
+                # A historical cold-start model is never valid annotation provenance.
+                # Keep the request pending while the exact ordinary planner proceeds.
+                pilot_receipt = {"state": "waiting_current_profile_predictor",
+                                 "request": pilot_binding}
+            elif guided_capacity < int(pilot.count):
+                pilot_blocks_ordinary = True
+                pilot_receipt = {"state": "waiting_guided_capacity",
+                                 "request": pilot_binding,
+                                 "guided_capacity": guided_capacity,
+                                 "required_capacity": int(pilot.count),
+                                 "completed_preparation_recovered": recovered_pilot is not None}
+            else:
+                if recovered_pilot is not None:
+                    bundle = recovered_pilot["bundle"]
+                    reference = recovered_pilot["reference"]
+                    proof = recovered_pilot["proof"]
+                else:
+                    try:
+                        selection = _pilot_call(
+                            shell_pilot.select_rows, pilot, set(queue["exclusion_hashes"]))
+                    except shell_pilot.PilotUnavailable as exc:
+                        terminal_decision = _pilot_terminal_decision(
+                            local, pilot_binding, code=exc.code, detail=str(exc))
+                        selection = None
+                    if selection is not None:
+                        reference = _pilot_call(
+                            shell_pilot.freeze_reference, queue["pairs"],
+                            queue["pair_bindings"], pilot, cycle / "pilot_reference.json")
+                        annotated = _pilot_call(
+                            shell_pilot.annotate_selection, pilot, selection, predictor)
+                        bundle = _pilot_call(
+                            shell_pilot.write_pilot_bundle, pilot, annotated,
+                            cycle / "pilot_bundle")
+                        proof = _pilot_call(shell_pilot.validate_bundle, bundle, pilot)
+                if terminal_decision is None:
+                    hashes = tuple(proof["ordered_hashes"])
+                    if (len(hashes) != int(pilot.count) or len(set(hashes)) != len(hashes) or
+                            set(hashes) & set(queue["exclusion_hashes"])):
+                        raise ValueError("prepared pilot cohort violates exact count or exclusions")
+                    job = _planned([bundle], "p", int(pilot.priority), cycle_id)[0]
+                    store = f"dedust_r80p{pilot.pilot_id[:8]}p01"
+                    job.update({"input": store + "_input", "store": store,
+                                "pilot_id": pilot.pilot_id,
+                                "pilot_role": "incumbent_shell"})
+                    planned_jobs.append(job)
+                    planned_hashes.update(hashes)
+                    pilot_blocks_ordinary = True
+                    pilot_receipt = {
+                        "state": "prepared", "request": pilot_binding,
+                        "pilot_id": pilot.pilot_id,
+                        "selection": {"ordered_ids": proof["ordered_ids"],
+                                      "ordered_hashes": list(hashes),
+                                      "role_counts": proof["role_counts"]},
+                        "preparation_queue": {
+                            "jobs_sha256": queue["jobs_sha256"],
+                            "exclusion_count": len(queue["exclusion_hashes"]),
+                            "exclusion_sha256": _content_id(
+                                sorted(queue["exclusion_hashes"])),
+                            "valid_unique": valid_unique,
+                            "pending_unique": len(pending)},
+                        "reference": _path_binding(reference),
+                        "bundle": {"path": str(bundle.resolve()),
+                                   "tree_sha256": _content_id(_tree_hashes(bundle)),
+                                   "proof": proof},
+                        "predictor_binding": dict(proof["predictor_binding"]),
+                        "model_ids": list(proof["model_ids"]),
+                        "surrogate_generation": proof["surrogate_generation"],
+                        "valid_observations_at_fit": proof["valid_observations_at_fit"],
+                        "completed_preparation_recovered": recovered_pilot is not None,
+                        "one_shot": True, "replacement_after_freeze": False,
+                    }
+
+    if not pilot_blocks_ordinary and predictor is not None and remaining_budget > 0:
         shard_size = int(policy["shard_size"])
         capacity = min(int(policy["wave_size"]),
                        int(policy["max_guided_outstanding"]) - len(guided_pending),
@@ -868,7 +1118,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
 
     pending_after_guided = len(pending | planned_hashes)
     remaining_budget = max(0, int(policy["target_valid_unique"]) - valid_unique - pending_after_guided)
-    if prepared_blind_pool is not None and pending_after_guided < 48 and remaining_budget >= 32:
+    if (not pilot_blocks_ordinary and prepared_blind_pool is not None and
+            pending_after_guided < 48 and remaining_budget >= 32):
         need = max(32, ((48 - pending_after_guided + 15) // 16) * 16)
         count = min(64, need, remaining_budget)
         count = count // int(policy["shard_size"]) * int(policy["shard_size"])
@@ -888,6 +1139,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     if ((prepared_blind_pool is not None and
          _path_binding(Path(prepared_blind_pool)) != blind_binding)):
         raise ValueError("prepared blind pool changed during cycle preparation")
+    if pilot_binding is not None:
+        _require_pilot_request_binding(pilot_request, profile, pilot_binding)
     receipt = {
         "schema_version": 1, "status": ("prepared" if planned_jobs else "idle"), "once": True,
         "cycle_id": cycle_id, "dataset_root": str(dataset), "scope": cfg.scope,
@@ -917,6 +1170,10 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                    "valid_plus_pending_plus_planned": valid_unique + len(pending | planned_hashes) +
                    sum(job["count"] for job in planned_jobs if job["kind"] == "b")},
     }
+    if pilot_binding is not None:
+        receipt["pilot_request"] = pilot_binding
+    if pilot_receipt is not None:
+        receipt["pilot"] = pilot_receipt
     _write(receipt_path, receipt)
     if not planned_jobs and active.is_file():
         active.unlink()
@@ -927,7 +1184,8 @@ def run_once(*, local_workdir: str | Path, dataset_root: str | Path,
              profile_config: str | Path, training_workdir: str | Path,
              seed_inputs: Sequence[str | Path], prepared_blind_pool: str | Path | None = None,
              cold_start_predictor: Any | None = None,
-             expected_retry_workers: Sequence[str] | None = None) -> Path:
+             expected_retry_workers: Sequence[str] | None = None,
+             pilot_request: str | Path | None = None) -> Path:
     local = Path(local_workdir).resolve()
     train_root = Path(training_workdir).resolve()
     local.mkdir(parents=True, exist_ok=True)
@@ -938,7 +1196,8 @@ def run_once(*, local_workdir: str | Path, dataset_root: str | Path,
                 training_workdir=train_root, seed_inputs=seed_inputs,
                 prepared_blind_pool=prepared_blind_pool,
                 cold_start_predictor=cold_start_predictor,
-                expected_retry_workers=expected_retry_workers)
+                expected_retry_workers=expected_retry_workers,
+                pilot_request=pilot_request)
 
 
 single_cycle = run_once
@@ -974,9 +1233,7 @@ def _commit_dispatch_locked(path: Path, *,
                             queue_add: Callable[[Path, Mapping[str, Any], str], None],
                             duplicate_check: Callable[[Path, Path], int]) -> Path:
     path = path.resolve(); receipt = _read(path)
-    if receipt.get("status") == "dispatched":
-        return path
-    if receipt.get("status") not in {"prepared", "dispatching"}:
+    if receipt.get("status") not in {"prepared", "dispatching", "dispatched"}:
         raise ValueError("receipt is not dispatchable")
     dataset = Path(receipt["dataset_root"]).resolve()
     jobs_path = dataset / "jobs.json"
@@ -992,11 +1249,74 @@ def _commit_dispatch_locked(path: Path, *,
     if _protocol_binding(Path(receipt["training_workdir"]).resolve())[1] != receipt.get(
             "training_protocol"):
         raise ValueError("training protocol differs from prepared receipt")
+    pilot = None
+    pilot_binding = receipt.get("pilot_request")
+    if pilot_binding is not None:
+        if not isinstance(pilot_binding, dict) or "request_path" not in pilot_binding:
+            raise ValueError("dispatch receipt has an invalid pilot request binding")
+        pilot = _require_pilot_request_binding(
+            pilot_binding["request_path"], profile, pilot_binding)
+    elif "pilot_request" in receipt or "pilot" in receipt or any(
+            item.get("kind") == "p" for item in receipt.get("planned_jobs", [])):
+        raise ValueError("pilot dispatch data lacks an exact request binding")
+    pilot_jobs = [item for item in receipt.get("planned_jobs", [])
+                  if item.get("kind") == "p"]
+    if pilot_jobs:
+        if pilot is None:
+            raise ValueError("pilot shard lacks its exact request binding")
+        pilot_receipt = receipt.get("pilot")
+        if not isinstance(pilot_receipt, dict) or pilot_receipt.get("state") != "prepared":
+            raise ValueError("pilot dispatch receipt lacks prepared pilot evidence")
+        if pilot_receipt.get("request") != pilot_binding:
+            raise ValueError("prepared pilot evidence has a different request binding")
+        if len(pilot_jobs) != 1 or any(item.get("kind") != "p"
+                                      for item in receipt["planned_jobs"]):
+            raise ValueError("pilot receipt must dispatch exactly one pilot shard")
+        planned_pilot = pilot_jobs[0]
+        bundle_binding = pilot_receipt.get("bundle")
+        staged_pilot = Path(planned_pilot["staged_input"]).resolve()
+        if (not isinstance(bundle_binding, dict) or
+                Path(bundle_binding.get("path", "")).resolve() != staged_pilot or
+                bundle_binding.get("tree_sha256") != _content_id(_tree_hashes(staged_pilot))):
+            raise ValueError("pilot bundle binding differs from prepared shard")
+        prepared_proof = _pilot_call(shell_pilot.validate_bundle, staged_pilot, pilot)
+        if bundle_binding.get("proof") != prepared_proof:
+            raise ValueError("pilot bundle proof differs from prepared receipt")
+        proof_identity = {
+            "predictor_binding": prepared_proof["predictor_binding"],
+            "model_ids": prepared_proof["model_ids"],
+            "surrogate_generation": prepared_proof["surrogate_generation"],
+            "valid_observations_at_fit": prepared_proof["valid_observations_at_fit"],
+        }
+        if any(pilot_receipt.get(key) != value for key, value in proof_identity.items()):
+            raise ValueError("pilot predictor identity differs from prepared proof")
+        reference_binding = pilot_receipt.get("reference")
+        if (not isinstance(reference_binding, dict) or
+                _path_binding(Path(reference_binding.get("path", ""))) != reference_binding):
+            raise ValueError("pilot frozen reference binding differs from prepared receipt")
+        shell_pilot.recheck_reference(Path(reference_binding["path"]))
+        queue = _queue_view(dataset, cfg, policy, retry_workers)
+        queued = _queued_pilot_evidence(dataset, queue, pilot, cfg.scope)
+        if queued is not None and (queued["job"].get("input") != pilot_jobs[0]["input"] or
+                                   queued["job"].get("store") != pilot_jobs[0]["store"]):
+            raise ValueError("one-shot pilot_id is already consumed by another queued cohort")
+    elif isinstance(receipt.get("pilot"), dict) and receipt["pilot"].get("state") == "prepared":
+        raise ValueError("prepared pilot evidence lacks its pilot shard")
+    if receipt.get("status") == "dispatched":
+        return path
     for planned in receipt["planned_jobs"]:
         staged = Path(planned["staged_input"]).resolve()
         if _content_id(_tree_hashes(staged)) != planned["tree_sha256"]:
             raise ValueError(f"staged shard changed: {staged}")
         _validate_bundle(staged, cfg)
+        if planned.get("kind") == "p":
+            proof = shell_pilot.validate_bundle(staged, pilot)
+            expected_pilot = receipt["pilot"]["selection"]
+            actual_pilot = {"ordered_ids": proof["ordered_ids"],
+                            "ordered_hashes": proof["ordered_hashes"],
+                            "role_counts": proof["role_counts"]}
+            if actual_pilot != expected_pilot or planned.get("pilot_id") != pilot.pilot_id:
+                raise ValueError("staged pilot cohort differs from prepared receipt")
         current_jobs = _read(jobs_path)
         existing = next((job for job in current_jobs if job.get("store") == planned["store"]), None)
         expected = {"input": planned["input"], "store": planned["store"],
@@ -1005,6 +1325,8 @@ def _commit_dispatch_locked(path: Path, *,
         if existing is not None:
             if existing != expected:
                 raise ValueError(f"queue store collision: {planned['store']}")
+            if planned.get("kind") == "p":
+                shell_pilot.validate_bundle(_safe_child(dataset, planned["input"]), pilot)
             continue
         rows = _read(staged / "manifest.json")
         hashes = {row["pattern_sha256"] for row in rows}
@@ -1030,6 +1352,8 @@ def _commit_dispatch_locked(path: Path, *,
             if not pending.exists():
                 shutil.copytree(staged, pending)
             os.replace(pending, destination)
+        if planned.get("kind") == "p":
+            shell_pilot.validate_bundle(destination, pilot)
         current_jobs = _read(jobs_path)
         existing = next((job for job in current_jobs if job.get("store") == planned["store"]), None)
         if existing is not None:
@@ -1040,6 +1364,13 @@ def _commit_dispatch_locked(path: Path, *,
                                retry_workers)
         duplicate_check(destination, dataset)
         queue_add(dataset, planned, receipt["scope"])
+        if planned.get("kind") == "p":
+            queued_jobs = _read(jobs_path)
+            queued = next((job for job in queued_jobs
+                           if job.get("store") == planned["store"]), None)
+            if queued != expected:
+                raise ValueError("pilot queue record differs immediately after queue add")
+            shell_pilot.validate_bundle(destination, pilot)
     receipt["status"] = "dispatched"; receipt["dispatch_gate"] = "passed_per_shard"
     _write(path, receipt)
     active = path.parents[2] / "active_cycle.json"
@@ -1071,6 +1402,7 @@ def main() -> None:
     parser.add_argument("--training-workdir", type=Path)
     parser.add_argument("--seed-input", type=Path, action="append")
     parser.add_argument("--prepared-blind-pool", type=Path)
+    parser.add_argument("--pilot-request", type=Path)
     parser.add_argument("--expected-retry-worker", action="append", default=[])
     parser.add_argument("--commit-receipt", type=Path)
     args = parser.parse_args()
@@ -1085,7 +1417,8 @@ def main() -> None:
                           profile_config=args.profile_config,
                           training_workdir=args.training_workdir, seed_inputs=args.seed_input,
                           prepared_blind_pool=args.prepared_blind_pool,
-                          expected_retry_workers=args.expected_retry_worker)
+                          expected_retry_workers=args.expected_retry_worker,
+                          pilot_request=args.pilot_request)
     print(result)
 
 
