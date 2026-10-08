@@ -1,0 +1,33 @@
+{
+  "pdf": "output/pdf/extended-abstract-zh-2026-10.pdf",
+  "pages": 1,
+  "page_size_pt": [
+    0.0,
+    0.0,
+    595.2755737304688,
+    841.8897705078125
+  ],
+  "sha256": "b41b57a22550ba118f77a73d9b2a007ff0de922c94667ec9ea48d16028a6a587",
+  "source_sha256": "c89d8354c967f4fdecc298e1518fb1190dc3526b34e376e5237d3fd5ab3c98e6",
+  "characters": 1657,
+  "required_text_pass": true,
+  "embedded_chinese_fonts": [
+    "AAAAAA+MicrosoftJhengHeiRegular-0",
+    "AAAAAB+MicrosoftJhengHeiRegular-0",
+    "AAAAAA+MicrosoftJhengHeiBold-0"
+  ],
+  "reference_links": 5,
+  "text_within_page": true,
+  "renderer": "PyMuPDF 2x; Poppler was unavailable locally",
+  "visual_review": "Conductor inspected final 2x-rendered page: one A4 page; readable text, no missing glyphs, overlap or clipping.",
+  "scientific_review": "Independent gpt-5.6-sol final read-only review passed: configuration/history distinction, strategy-specific cadence, numerical results and evidence boundaries.",
+  "date": "2026-10-08",
+  "reference_reading_scope": "Three references reused from citation-audit-2026-10-07.json: Karahan full paper, Kapoor arXiv v2 full paper, Liu relevant original methods/results. No new external-paper reading in this milestone.",
+  "unchanged_inputs": {
+    "docs/paper/manuscript-draft-2026-10.html": "cc0ea28598ef2a5d99a2681c9b7410eedd1d85d43d75edf5eecaa677faf1701d",
+    "docs/paper/paper-evidence-data.json": "9eb770c02ac2e296064338b745655552639bc3b43c614be3e9b541190285c624",
+    "docs/paper/single-port-evidence.json": "a98532dd77db0331d318911482a4b7ddc1e9a0b8a0054821c0775ac6fbd78bfd",
+    "docs/paper/final-candidate-response.json": "8a672708afd2fc9484baa90ab5a0487d6fc5d05cc015ef67e09b00d3870f2636"
+  },
+  "scope": "Separate Chinese extended abstract; no experiments or edits to the full manuscript."
+}

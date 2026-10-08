@@ -1,0 +1,63 @@
+{
+  "title": "用於天線與濾波器設計的多策略批次代理學習框架",
+  "subtitle": "延伸摘要（Extended Abstract）｜中文討論稿｜2026 年 10 月 8 日",
+  "keywords": "電磁反向設計；批次代理學習；多策略探索；emforge",
+  "sections": [
+    {
+      "heading": "一、研究動機",
+      "paragraphs": [
+        "像素化天線與濾波器具有龐大的幾何搜尋空間，而全波電磁模擬的成本限制了可評估的候選數量。既有研究已使用神經網路預測射頻元件響應[1]，並探討批次主動學習[2]及多策略並行最佳化[3]。本文關注如何將持續產生的模擬資料回饋至候選選擇：以多策略探索供應候選，成批取得電磁響應，再以累積資料更新前向代理模型（surrogate model, SM），形成可持續執行的設計與學習流程。"
+      ]
+    },
+    {
+      "heading": "二、批次學習與執行框架",
+      "paragraphs": [
+        "天線與濾波器皆以 25 × 25 二值金屬圖形表示，分別定義輻射與反射、以及通帶與阻帶的設計判準。候選由局部結構變異、親本重組及隨機取樣產生；SM 快速預測其響應，選樣模組再結合性能導向、模型分歧與隨機探索配額，選取有限圖形送至 HFSS。有效響應經條件核對與去重後，在策略設定的更新時機與相容歷史資料共同用於訓練。未達規格的有效模擬亦提供學習標籤，使求解結果同時用於設計篩選與後續模型更新。",
+        "目前一個已實作的濾波器配置以三個多層感知器組成 SM ensemble，預測 S 參數與規格餘裕；每次由約 6,000 個候選選送 90 個圖形，性能、分歧及隨機配額分別為 36、27、27，每完成 3 個提交循環再呼叫重訓與評估。不同策略可另定回饋間隔。AI agent 在研究者設定的物理目標與判準下，協助提出及實作探索變體，拓展策略來源。emforge 將提交、排程、結果回收及相容結果重用整合為共用服務，使不同探索方法可共用既有求解流程；策略端則保有候選規則、模型與更新節奏。"
+      ]
+    },
+    {
+      "heading": "三、天線與濾波器模擬結果",
+      "paragraphs": [
+        "以下由既有搜尋紀錄整理代表設計，其探索配置與上述實作範例並不完全相同。兩案例以相對規格門檻的最差餘裕呈現性能，非負值表示指定採樣點通過對應判準。天線在 26.5 至 29.5 GHz、間隔 0.5 GHz 的採樣下，S11 不高於 -10 dB，正向實現增益不低於 4 dBi；28 GHz 的兩個正交切面另檢查正向 ±45° 窗口內、相對正向值下降不超過 3 dB 的條件。濾波器則檢查兩埠反射、通帶傳輸及阻帶抑制，結果列於表 1。"
+      ]
+    },
+    {
+      "heading": "四、結論與後續驗證",
+      "paragraphs": [
+        "本研究將策略多樣性、批次資料取得與代理更新組織為共同機制，並以 emforge 提供可重用的執行支援。現有證據涵蓋兩類元件的模擬成果與獨立服務驗收；完整 SM 策略與平台的端到端整合仍待驗證。後續將以等求解預算比較選樣配額與更新間隔，並補充代表設計的網格收斂及實作量測，以評估學習與工程整合對設計效率的貢獻。"
+      ]
+    }
+  ],
+  "table": {
+    "caption": "表 1　代表設計的模擬結果",
+    "headers": ["案例", "結果與判讀"],
+    "rows": [
+      ["天線", "帶內最差餘裕 +0.77 dB；方向圖窗口最差餘裕 +0.50 dB。兩切面為 φ = 0°、90°，窗口最外採樣為 ±44°。"],
+      ["濾波器", "固定幾何條件下，最差餘裕由 -5.90 改善至 -2.39 dB，提升 3.51 dB；仍有 6 個傳輸採樣點未達規格。"]
+    ]
+  },
+  "references": [
+    {
+      "id": 1,
+      "text": "E. A. Karahan et al., “Deep Learning Enabled Design of RF/mmWave IC and Antennas,” MWSCAS, pp. 769-772, 2024.",
+      "url": "https://doi.org/10.1109/MWSCAS60917.2024.10658956"
+    },
+    {
+      "id": 2,
+      "text": "S. Kapoor et al., “Data-Efficient Surrogate Modeling for Engineering Design: Ensemble-Free Batch-Mode Deep Active Learning for Regression,” arXiv:2211.10360v2, 2025.",
+      "url": "https://arxiv.org/abs/2211.10360v2"
+    },
+    {
+      "id": 3,
+      "text": "B. Liu et al., “Efficient global optimisation of microwave antennas based on a parallel surrogate model-assisted evolutionary algorithm,” IET Microwaves, Antennas & Propagation, vol. 13, no. 2, pp. 149-155, 2019.",
+      "url": "https://doi.org/10.1049/iet-map.2018.5009"
+    }
+  ],
+  "provenance": {
+    "manuscript": "docs/paper/manuscript-draft-2026-10.html",
+    "version": "V8.1, citation review 2026-10-07",
+    "citation_audit": "docs/paper/citation-audit-2026-10-07.json",
+    "scope": "Separate internal discussion draft. Historical physical results are not attributed to the current 6000/90 strategy configuration. No new simulation, training, measurements or conference submission."
+  }
+}
