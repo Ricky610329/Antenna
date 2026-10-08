@@ -520,3 +520,19 @@ v014相對v013總MAE下降0.047815 dB（131筆改善／108筆惡化）；v015相
 $archive = "\\140.123.106.219\temp\碩二_鄒穎麒's\antenna\experiments\r80_symmetry_20261007\analysis_versions\profile-data-v015_20261008_v001"
 python -m script.figs.symmetry_profile --analysis-json "$archive\analysis\analysis.json" --data-npz "$archive\analysis\arrays.npz" --sample-id r80c91d71565g_00019_5a42476c --out-dir docs/log/assets/round-80/best-symmetric-20261008-v002
 ```
+
+### 2026-10-08 16:29：依使用者要求沿用既有極座標方向圖
+
+使用者指定rad使用極座標並參考以前的腳本，因此R80圖卡直接呼叫`script/figs/report_r1r10_style.py:polar_rad_ax`；這也是既有`report_rad_polar.py`與`report_champion.py`使用的函式。沿用0°朝上、順時針角度、每圈5 dB、金色±45°窗及紅色G0−3 dB參考圈；兩截面共用−20至10 dBi刻度，藍線為原始HFSS、橘虛線為θ→−θ鏡射。參考圈不是新增硬spec。
+
+![R80 對稱樣本：沿用既有helper的28GHz極座標方向圖](assets/round-80/best-symmetric-polar-20261008-v002/sample_card.png)
+
+[極座標出圖收據](assets/round-80/best-symmetric-polar-20261008-v002/sample_plot_receipt.json)綁定未修改的歷史helper SHA、R80 producer、PNG與原凍結資料；14項既有樣本／raw hash／實測指標均與14:50圖一致，單次WM仍−0.246440887 dB。沿用歷史30 dB顯示範圍：phi0有5個低於−20 dBi的取樣在圖中截至圓心、phi90為0；原資料與鏡射殘差計算不截斷。原直角座標圖保留，這次沒有新增量測或重新判定全量最佳值。
+
+實際render後目檢刻度／角度／曲線／legend與中文排版通過；第一版文字重疊證據保留在本機ignored `tmp/r80_polar_layout_overlap_20261008_v001`，調整文字排版後以新目錄出圖。pyflakes／diff check通過；預設兩張970筆population圖重跑後SHA與原圖完全一致。此增量只驗證繪圖及凍結資料綁定，未重跑全套809測試，也未改controller／worker。
+
+重現沿用14:50的私人`$archive`，並選新的輸出資料夾：
+
+```powershell
+python -m script.figs.symmetry_profile --analysis-json "$archive\analysis\analysis.json" --data-npz "$archive\analysis\arrays.npz" --sample-id r80c91d71565g_00019_5a42476c --out-dir docs/log/assets/round-80/best-symmetric-polar-20261008-v003
+```

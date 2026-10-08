@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, LogNorm
 import numpy as np
 
+from script.figs.report_r1r10_style import polar_rad_ax
+
 
 INK, MUTED, GRID, SURF = '#171716', '#66645f', '#dedcd4', '#fcfcfb'
 BLUE, ORANGE = '#1c5cab', '#e36a32'
@@ -197,7 +199,7 @@ def render_sample(analysis: Path, npz: Path, out: Path, sample_id: str) -> dict:
     info = axes[1, 0]
     info.axis('off')
     mismatch = float(data['geometry_mismatch_fraction'][index])
-    info.text(.03, .96,
+    info_text = info.text(.03, .96,
               f'WM = min(S11 餘裕, Gain 餘裕)\n\n'
               f'單次 WM = {wm:+.6f} dB\n'
               f'雙門檻：{"通過" if wm >= 0 else "尚未通過"}\n\n'
@@ -207,20 +209,37 @@ def render_sample(analysis: Path, npz: Path, out: Path, sample_id: str) -> dict:
               '場型殘差計算範圍：±45°，0 越對稱\n'
               '帶內 spec：26.5–29.5 GHz\n'
               '單次 HFSS 模擬；尚未重測驗證',
-              va='top', fontsize=11, linespacing=1.5, color=INK)
+              va='top', fontsize=10, linespacing=1.25, color=INK)
     theta = data['radiation_theta_deg']
     if not np.array_equal(theta, -theta[::-1]):
         raise ValueError('sample plot requires the validated symmetric theta grid')
-    for ax, key, phi in ((axes[1, 1], 'phi0_db', 0), (axes[1, 2], 'phi90_db', 90)):
+    cuts = [data[key][index] for key in ('phi0_db', 'phi90_db')]
+    boresight = int(np.abs(theta).argmin())
+    g0 = max(float(curve[boresight]) for curve in cuts)
+    rmax = int(np.ceil((max(float(curve.max()) for curve in cuts) + .5) / 5) * 5)
+    rmin = int(max(np.floor(min(float(curve.min()) for curve in cuts) / 5) * 5, rmax - 30))
+    clipped = {}
+    for column, key, phi in ((1, 'phi0_db', 0), (2, 'phi90_db', 90)):
+        slot = axes[1, column].get_subplotspec()
+        axes[1, column].remove()
+        ax = fig.add_subplot(slot, projection='polar')
         curve = data[key][index]
-        ax.axvspan(-45, 45, color=GRID, alpha=.35)
-        ax.plot(theta, curve, color=BLUE, lw=2, label='HFSS 原始曲線')
-        ax.plot(theta, curve[::-1], color=ORANGE, lw=1.2, ls='--', label='θ → −θ 鏡射曲線')
-        ax.set(xlabel='θ（度）', ylabel='GainTotal（dBi）', xlim=(-180, 180),
-               title=f'28 GHz 方向圖 φ={phi}°')
-        ax.set_xticks([-180, -90, -45, 0, 45, 90, 180])
+        polar_rad_ax(ax, theta, [(curve, BLUE, 'HFSS 原始曲線', 2),
+                                (curve[::-1], ORANGE, 'θ → −θ 鏡射曲線', 1.2)],
+                     window=45, floor_db=3, rmin=rmin, rmax=rmax, g0_ref=g0)
+        for line in ax.lines:
+            if line.get_label() == 'θ → −θ 鏡射曲線':
+                line.set_linestyle('--')
+        ax.set_title(f'28 GHz 方向圖 φ={phi}°\nGainTotal（dBi）', fontsize=11, pad=16)
+        ax.set_rlabel_position(15)
         ax.grid(color=GRID, alpha=.65, lw=.7)
-        ax.legend(loc='lower left', fontsize=9)
+        ax.legend(loc='lower center', bbox_to_anchor=(.5, -.17), ncol=2,
+                  fontsize=8, frameon=False)
+        clipped[key] = int(np.count_nonzero(curve < rmin))
+    info_text.set_text(info_text.get_text() + '\n\n'
+                       '極座標沿用歷史圖：0°朝上、每圈5 dB\n'
+                       '金色：±45°；紅虛圈：G0−3 dB\n'
+                       f'顯示下限 {rmin} dBi；更深零點截至圓心')
     fig.suptitle(f'R80 金屬對稱樣本：單次 WM {wm:+.6f} dB\n{sample_id}', fontsize=15)
     fig.savefig(paths[0], dpi=160)
     plt.close(fig)
@@ -232,6 +251,14 @@ def render_sample(analysis: Path, npz: Path, out: Path, sample_id: str) -> dict:
                'geometry_mismatch_fraction': mismatch,
                'phi0_mirror_power_45': row['phi0_mirror_power_45'],
                'phi90_mirror_power_45': row['phi90_mirror_power_45'],
+               'radiation_plot': {'projection': 'polar',
+                                  'helper': 'script/figs/report_r1r10_style.py:polar_rad_ax',
+                                  'helper_sha256': _sha(Path(__file__).with_name('report_r1r10_style.py')),
+                                  'theta_zero': 'north', 'theta_direction': 'clockwise',
+                                  'radial_unit': 'dBi', 'radial_tick_step_db': 5,
+                                  'rmin_db': rmin, 'rmax_db': rmax, 'g0_ref_db': g0,
+                                  'window_deg': 45, 'reference_drop_db': 3,
+                                  'display_clipped_below_rmin': clipped},
                'producer_sha256': _sha(Path(__file__)), 'figure_sha256': _sha(paths[0]),
                'scope': 'one explicit frozen single HFSS solve; pixel view, frequency responses and GainTotal cuts; no repeat certification'}
     paths[1].write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')

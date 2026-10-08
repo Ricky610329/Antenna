@@ -42,4 +42,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 - `methodology_figs.py` — `docs/methodology.md` 兩張示意圖（§0.1 四角色一條環＋三層時間尺度／§0.3 決策權分配＋decisions.md 署名分布）→ `docs/assets/`；純 schematic 無外部資料，署名數字現場統計 decisions.md 標題不寫死
 - `diffsim_l1.py` — analysis-08 的 L1 診斷四圖（diffsim wm vs HFSS wm 分層散點／曲線實例／每頻點 ρ／通道歸因）→ `docs/log/assets/analysis-08/`；`--split val` 才是 gate 報數用的那張
 - `diffsim_final.py` — analysis-08 最終對比圖（5 個模型 × 5 個分層的 ρ 全景，含 gate 線）；數字寫死在檔內（gate 是「只跑一次」的讀數，不該每次畫圖重跑 val）
-- `symmetry_profile.py` — 具名 profile 凍結資料的幾何六角格與 S11/Gain 頻率分布；輸入 `symmetry_analysis profile` 的 hash-bound JSON/NPZ，固定幾何座標、無插值。加 `--sample-id <id>` 產生單一樣本的金屬像素／S11／Gain／28 GHz 方向圖卡，保留單次量測與描述統計限制。
+- `symmetry_profile.py` — 具名 profile 凍結資料的幾何六角格與 S11/Gain 頻率分布；輸入 `symmetry_analysis profile` 的 hash-bound JSON/NPZ，固定幾何座標、無插值。加 `--sample-id <id>` 產生單一樣本的金屬像素／S11／Gain／28 GHz 極座標方向圖卡，沿用 `polar_rad_ax`（0°朝上、每圈5 dB、±45°窗、G0−3 dB圈），兩截面共用刻度；顯示下限與截點數寫入收據，保留單次量測與描述統計限制。
