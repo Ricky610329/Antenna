@@ -902,7 +902,8 @@ def _frontier(rows: Sequence[Mapping[str, Any]], dimensions: tuple[str, ...]) ->
 
 def freeze_reference(pairs: Sequence[tuple[str | Path, str | Path]],
                      pair_bindings: Sequence[Mapping[str, Any]], request: PilotRequest,
-                     out: str | Path) -> Path:
+                     out: str | Path, *,
+                     validated_cutoff: Sequence[Mapping[str, Any]] | None = None) -> Path:
     """Freeze the preparation-time scalar frontier with physical raw bindings."""
 
     _recheck_request(request)
@@ -915,6 +916,8 @@ def freeze_reference(pairs: Sequence[tuple[str | Path, str | Path]],
         return destination
     if len(pairs) != len(pair_bindings) or not pairs:
         raise PilotError("reference pairs and bindings must be equal nonempty sequences")
+    if validated_cutoff is not None and len(validated_cutoff) != len(pairs):
+        raise PilotError("validated reference cutoff must match pair order and length")
 
     states = []
     candidates = []
@@ -924,32 +927,80 @@ def freeze_reference(pairs: Sequence[tuple[str | Path, str | Path]],
             before = _metadata_hashes(input_dir, store)
         except OSError as exc:
             raise PilotSnapshotChanged(f"reference pair disappeared: {store}") from exc
-        expected = {
-            "input": str(input_dir), "store": str(store),
-            "input_metadata_sha256": before["input"],
-            "store_metadata_sha256": before["store"],
-        }
-        if dict(supplied) != expected:
-            raise PilotSnapshotChanged(f"pair binding differs at index {pair_index}")
+        cutoff = None if validated_cutoff is None else validated_cutoff[pair_index]
+        if cutoff is None:
+            expected = {
+                "input": str(input_dir), "store": str(store),
+                "input_metadata_sha256": before["input"],
+                "store_metadata_sha256": before["store"],
+            }
+            if dict(supplied) != expected:
+                raise PilotSnapshotChanged(f"pair binding differs at index {pair_index}")
+        else:
+            required = {
+                "input", "store", "rows", "results", "terminal",
+                "input_metadata_sha256", "input_pattern_file_sha256",
+                "store_metadata_sha256",
+            }
+            if not isinstance(cutoff, Mapping) or set(cutoff) != required:
+                raise PilotError(f"validated cutoff proof schema differs at index {pair_index}")
+            if not isinstance(cutoff["terminal"], bool):
+                raise PilotError(f"validated cutoff terminal state differs at index {pair_index}")
+            cutoff_input = Path(cutoff["input"]).resolve()
+            cutoff_store = Path(cutoff["store"]).resolve()
+            if cutoff_input != input_dir or cutoff_store != store:
+                raise PilotError(f"validated cutoff pair path differs at index {pair_index}")
+            expected = {
+                "input": str(input_dir), "store": str(store),
+                "input_metadata_sha256": cutoff["input_metadata_sha256"],
+                "store_metadata_sha256": cutoff["store_metadata_sha256"],
+            }
+            if dict(supplied) != expected:
+                raise PilotError(f"validated cutoff binding differs at index {pair_index}")
+            if (not isinstance(cutoff["input_metadata_sha256"], Mapping) or
+                    not isinstance(cutoff["store_metadata_sha256"], Mapping) or
+                    not isinstance(cutoff["input_pattern_file_sha256"], Mapping) or
+                    not isinstance(cutoff["rows"], list) or
+                    any(not isinstance(row, Mapping) for row in cutoff["rows"]) or
+                    not isinstance(cutoff["results"], Mapping)):
+                raise PilotError(f"validated cutoff proof values differ at index {pair_index}")
+            for side in ("input", "store"):
+                for name, digest in expected[f"{side}_metadata_sha256"].items():
+                    if side == "store" and name == "results.json":
+                        continue
+                    if before[side].get(name) != digest:
+                        raise PilotError(
+                            f"validated cutoff {side} metadata changed: {name}")
         cfg = pb.load_profile_config(input_dir / "config.yaml")
         if (cfg is None or cfg.scope != request.profile.scope or
                 measurement_id(cfg.measurement) != measurement_id(request.profile.measurement) or
                 score_spec_id(cfg.score_spec) != score_spec_id(request.profile.score_spec)):
             raise PilotError("reference pair profile differs")
         manifest = pb.validate_input(input_dir, cfg)
+        if cutoff is not None and manifest != list(cutoff["rows"]):
+            raise PilotError("validated cutoff manifest differs from input")
         store_manifest = _read_json(store / "manifest.json")
         if store_manifest != manifest:
             raise PilotError("reference store manifest differs from input")
-        results = _read_json(store / "results.json")
+        results = (_read_json(store / "results.json") if cutoff is None
+                   else dict(cutoff["results"]))
         if not isinstance(results, dict):
             raise PilotError("reference results must be a mapping")
         manifest_ids = {row["id"] for row in manifest}
         if any(name not in manifest_ids or not isinstance(entry, Mapping)
                for name, entry in results.items()):
             raise PilotError("reference results contain an unknown or invalid entry")
-        states.append({"pair_index": pair_index, "input": str(input_dir), "store": str(store),
-                       "metadata_before": before,
-                       "physical_validation_proof": dict(supplied)})
+        state = {"pair_index": pair_index, "input": str(input_dir), "store": str(store),
+                 "metadata_before": (before if cutoff is None else {
+                     "input": dict(cutoff["input_metadata_sha256"]),
+                     "store": dict(cutoff["store_metadata_sha256"]),
+                 }),
+                 "physical_validation_proof": dict(supplied)}
+        if cutoff is not None:
+            state.update({"validated_cutoff": True,
+                          "cutoff_proof_id": _content_id(cutoff),
+                          "metadata_observed_before": before})
+        states.append(state)
         for row_index, row in enumerate(manifest):
             entry = results.get(row["id"])
             if (not isinstance(entry, Mapping) or entry.get("status") != "ok" or
@@ -987,12 +1038,42 @@ def freeze_reference(pairs: Sequence[tuple[str | Path, str | Path]],
     for state in states:
         after = _metadata_hashes(Path(state["input"]), Path(state["store"]))
         state["metadata_after"] = after
-        if after != state["metadata_before"]:
+        if state.get("validated_cutoff"):
+            for side in ("input", "store"):
+                for name, digest in state["metadata_before"][side].items():
+                    if side == "store" and name == "results.json":
+                        continue
+                    if after[side].get(name) != digest:
+                        raise PilotSnapshotChanged(
+                            f"pair identity changed during reference construction: "
+                            f"{state['store']}: {name}")
+        elif after != state["metadata_before"]:
             raise PilotSnapshotChanged(f"pair changed during reference construction: {state['store']}")
     for row in observations:
         if (pb.file_sha256(Path(row["sample_path"])) != row["sample_sha256"] or
                 pb.file_sha256(Path(row["rad_path"])) != row["rad_sha256"]):
             raise PilotSnapshotChanged(f"chosen raw file changed during construction: {row['id']}")
+    if validated_cutoff is not None:
+        live_results = {}
+        for index, state in enumerate(states):
+            path = Path(state["store"]) / "results.json"
+            raw = path.read_bytes()
+            try:
+                payload = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                if path.read_bytes() != raw:
+                    raise PilotSnapshotChanged(
+                        f"results changed while checking frozen entries: {state['store']}") from exc
+                raise PilotError(f"reference results became malformed: {state['store']}") from exc
+            if not isinstance(payload, dict):
+                raise PilotError("reference results must remain a mapping")
+            if path.read_bytes() != raw:
+                raise PilotSnapshotChanged(
+                    f"results changed while checking frozen entries: {state['store']}")
+            live_results[index] = payload
+        for row in observations:
+            if live_results[row["pair_index"]].get(row["id"]) != row["observation_entry"]:
+                raise PilotError(f"frozen observation entry changed: {row['id']}")
 
     best = max(float(row["factory_margin_db"]) for row in observations)
     reference = {
@@ -1015,6 +1096,8 @@ def freeze_reference(pairs: Sequence[tuple[str | Path, str | Path]],
                            "radiation_margin_clipped_db")),
         "pairs": states, "observations": observations,
     }
+    if validated_cutoff is not None:
+        reference["validated_cutoff_id"] = _content_id(validated_cutoff)
     reference["reference_id"] = _content_id(reference)
     pb.atomic_json(destination, reference)
     recheck_reference(destination)

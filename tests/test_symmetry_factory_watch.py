@@ -435,3 +435,118 @@ def test_non_live_snapshot_corruption_remains_fatal(tmp_path):
     assert status['status'] == 'failed'
     assert 'deferred_retry_count' not in status
     assert not dispatched
+
+
+def test_optional_low_keeper_coordinates_prepared_hash_until_dispatch(tmp_path):
+    path = settings(tmp_path)
+    payload = json.loads(path.read_text())
+    payload['prepared_blind_pool'] = str(tmp_path / 'blind')
+    payload['low_backlog'] = {'enabled': True, 'poll_seconds': 90,
+                              'low_watermark': 48, 'target_pending': 96,
+                              'max_refill': 96, 'min_refill': 48,
+                              'shard_size': 16, 'priority': 6,
+                              'owner': 'r80-low-backlog-v1',
+                              'reservoir_seed': 17, 'reservoir_size': 128}
+    path.write_text(json.dumps(payload))
+    lifecycle = []
+
+    class FakeMaintainer:
+        def __init__(self, *, settings, policy, coordinator):
+            self.coordinator = coordinator
+            lifecycle.append(('init', policy.poll_seconds, 'low_backlog' not in settings))
+        def start(self):
+            lifecycle.append(('start',))
+        def stop(self):
+            lifecycle.append(('stop',))
+        def raise_if_failed(self):
+            pass
+
+    def prepare(*, planning_guard, **kw):
+        staged = tmp_path / 'staged'
+        staged.mkdir()
+        (staged / 'manifest.json').write_text(json.dumps([{'pattern_sha256': 'main-hash'}]))
+        tree = cycle._content_id(cycle._tree_hashes(staged))
+        receipt = Path(kw['local_workdir']) / 'receipt.json'
+        receipt.write_text(json.dumps({
+            'status': 'prepared', 'valid_unique': 1, 'pending_unique': 0,
+            'target_valid_unique': 5000, 'latest_data_version': 0,
+            'expected_retry_workers': RETRY_WORKERS,
+            'planned_jobs': [{'staged_input': str(staged), 'tree_sha256': tree}],
+        }))
+        return receipt
+
+    def dispatch(receipt, *, coordinator):
+        assert coordinator.protected_hashes() == {'main-hash'}
+        value = json.loads(receipt.read_text())
+        value['status'] = 'dispatched'
+        receipt.write_text(json.dumps(value))
+        coordinator.release_receipt(receipt)
+
+    result = run(path, prepare=prepare, dispatch=dispatch, max_cycles=1,
+                 campaign_stop=lambda _: None, maintainer_factory=FakeMaintainer)
+    assert result['status'] == 'bounded_run_complete'
+    assert lifecycle == [('init', 90, True), ('start',), ('stop',)]
+
+
+def test_legacy_settings_do_not_construct_low_keeper(tmp_path):
+    path = settings(tmp_path)
+    def prepare(**kw):
+        receipt = Path(kw['local_workdir']) / 'receipt.json'
+        receipt.write_text(json.dumps({
+            'status': 'idle', 'valid_unique': 1, 'pending_unique': 0,
+            'target_valid_unique': 5000, 'latest_data_version': 0,
+            'expected_retry_workers': RETRY_WORKERS,
+        }))
+        return receipt
+    result = run(path, prepare=prepare, max_cycles=1, campaign_stop=lambda _: None,
+                 maintainer_factory=lambda **_: pytest.fail('legacy settings started keeper'))
+    assert result['status'] == 'bounded_run_complete'
+
+
+def test_low_keeper_startup_protects_completed_pilot_before_action_receipt(
+        tmp_path, monkeypatch):
+    path = settings(tmp_path)
+    request_path = tmp_path / 'pilot-request.json'
+    request_path.write_text('{}')
+    payload = json.loads(path.read_text())
+    payload.update(pilot_request=str(request_path), prepared_blind_pool=str(tmp_path / 'blind'),
+                   low_backlog={'enabled': True, 'poll_seconds': 90,
+                                'low_watermark': 48, 'target_pending': 96,
+                                'max_refill': 96, 'min_refill': 48,
+                                'shard_size': 16, 'priority': 6,
+                                'owner': 'r80-low-backlog-v1',
+                                'reservoir_seed': 17, 'reservoir_size': 128})
+    path.write_text(json.dumps(payload))
+    binding = {'request_path': str(request_path.resolve()),
+               'request_sha256': hashlib.sha256(request_path.read_bytes()).hexdigest(),
+               'pilot_id': 'c' * 64}
+    request = SimpleNamespace(binding=binding, pilot_id=binding['pilot_id'])
+    monkeypatch.setattr(cycle, '_load_pilot_request',
+                        lambda value, profile: (request, dict(binding)))
+    monkeypatch.setattr(cycle, '_recover_local_pilot_preparation', lambda local, pilot: {
+        'proof': {'ordered_hashes': ['pilot-control', 'pilot-shell']}})
+    observed = []
+
+    class FakeMaintainer:
+        def __init__(self, *, settings, policy, coordinator):
+            observed.append(coordinator.protected_hashes())
+        def start(self):
+            pass
+        def stop(self):
+            pass
+        def raise_if_failed(self):
+            pass
+
+    def prepare(**kw):
+        receipt = Path(kw['local_workdir']) / 'receipt.json'
+        receipt.write_text(json.dumps({
+            'status': 'idle', 'valid_unique': 1, 'pending_unique': 0,
+            'target_valid_unique': 5000, 'latest_data_version': 0,
+            'expected_retry_workers': RETRY_WORKERS, 'pilot_request': binding,
+            'planned_jobs': [],
+        }))
+        return receipt
+
+    run(path, prepare=prepare, max_cycles=1, campaign_stop=lambda _: None,
+        maintainer_factory=FakeMaintainer)
+    assert observed == [{'pilot-control', 'pilot-shell'}]

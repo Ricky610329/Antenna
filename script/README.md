@@ -27,7 +27,8 @@
 | `status.py --factory --dataset-root ... --scope ...` | 私人具名profile佇列監看；成功observation不需wm欄位，且不混入全域舊run |
 | `symmetry_factory.py` | R80滾動資料工廠policy驗證與實體樣本/場型稽核快照；重測不增加唯一圖形計數 |
 | `symmetry_factory_cycle.py` | 單次可恢復controller：同輪實體cutoff＋全量raw SHA重核，避免反覆反序列化歷史資料；新增結果保留名額至下輪。固定cutoff選擇訓練快照→前瞻稽核→累積SM更新→16筆分片／逐片查重，保留明示retry名單與5,000／guided96限制。可選一次性15+1鄰域request共用原閘門，永久無法成批時回到一般派工 |
-| `symmetry_factory_watch.py` | 開發機唯一常駐controller，每1800秒執行一輪；綁定設定/訓練工作區、expected_retry_workers及可選pilot request bytes，精確達額才完成；保留重啟紀錄、STOP與live競態延後重試，不啟動HFSS |
+| `symmetry_factory_watch.py` | 開發機唯一常駐controller，每1800秒執行主線；可選同程序LOW補池thread，在SM訓練時繼續供工、讓主線優先派送。綁定settings／profile／retry名單／pilot，保留重啟及STOP紀錄；不啟動HFSS |
+| `symmetry_factory_backlog.py` | LOW背景補池：每90秒讀佇列、輸入manifest及worker markers，不重播raw／SM。未終態預留低於48筆時，以16筆prio6小片補向96筆；每片釋放寫入優先權。排除已預留、失敗及主線準備中的圖形；保守名額不足時交回主線處理尾批 |
 | `symmetry_incumbent_shell_pilot.py` | R80一次性鄰域核心：固定錨點15格d1對稱變體＋1個blind對照，先選擇再保存當前SM預測；凍結準備時真值參考、核對原觀測並依固定判準讀出，不直接操作佇列 |
 | `symmetry_sm_pool.py` | 10,000對稱候選池，SM冷啟動或新資料更新模型選樣；40/30/30配額與完整前瞻預測保存 |
 | `symmetry_training.py` | 對稱工廠新真值按批累積、歷史非對稱曲線僅作預訓練；固定家族保留集、唯一圖形更新計數、epoch恢復及模型/資料版本綁定 |
@@ -45,6 +46,21 @@
 | `sm_dual.py` | **dual-port 排序器**（R58;`train`/`eval`/`rank`）：幾千張候選 → 挑 top-N 送 HFSS。鍋＝`harvest_dual`+`dedust_r57*` 去重 10,239 筆,尺＝`worst_margin_dual`。**排序走 margin 頭（直接回歸 m1..m4）而非「先預測響應再取極值」**（held-out ρ +0.47 vs +0.39）。權重＝NAS `sm_dual_v1_s{0,1,2}.pth` |
 
 接手導覽：先讀 `docs/log/README.md`（時間軸）→ `configs/ONGOING.md`（live）→ 該 round 檔。
+
+### R80 背景補池
+
+LOW 補池由唯一的 `symmetry_factory_watch` 程序啟動，不另開第二個 controller。
+在新的、具名 watch settings 中加入 `"low_backlog": {"enabled": true}` 即啟用固定的
+90 秒檢查、48 筆觸發、96 筆上限、16 筆分片及 prio6。主線仍每1800秒執行，
+並在每48筆新唯一實測後更新SM；實際訓練時釋放寫入優先權，LOW每片後讓出排程。
+
+待跑量按補池自身未終態 jobs 的預留筆數計算，包含正在跑及可重試失敗的工作。
+所有同量測實體輸入、失敗圖形及準備中的主線／pilot 候選均排重；保守名額不足48筆時，
+LOW停止補池，由主線處理有效唯一目標與替補／尾批。這個停止不代表5,000筆實測已完成。
+例行檢查不讀raw、results stores或SM權重；重啟會重新核對輸入索引與未入佇列的部分copy。
+keeper事件與恢復資料放在ignored local workdir，HFSS輸入及佇列只放指定私人dataset。
+更新 settings 必須另存版本並自然交接同一local；保留原training、pilot、pointer及receipt。
+唯讀健康／性能稽核不得取得dataset controller鎖。
 
 ### 限定實驗的 worker（2026-10-07）
 

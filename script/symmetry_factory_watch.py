@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Callable
 
 from script import profiled_batch as pb
+from script import symmetry_factory_backlog as backlog
 from script import symmetry_factory_cycle as cycle
 
 
@@ -148,6 +149,7 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
         dispatch: Callable = cycle.commit_dispatch, sleep: Callable = time.sleep,
         monotonic: Callable = time.monotonic, max_cycles: int | None = None,
         campaign_stop: Callable = _campaign_stop,
+        maintainer_factory: Callable = backlog.BacklogMaintainer,
         settings_snapshot: dict | None = None,
         settings_sha256: str | None = None) -> dict:
     settings_file = Path(settings_path).resolve()
@@ -159,7 +161,7 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
     required = {'local_workdir', 'dataset_root', 'profile_config', 'training_workdir',
                 'seed_inputs', 'interval_seconds', 'expected_retry_workers'}
     if not required <= settings.keys() or set(settings) - required - {
-            'prepared_blind_pool', 'pilot_request'}:
+            'prepared_blind_pool', 'pilot_request', 'low_backlog'}:
         raise ValueError(
             'watch settings must name explicit controller inputs, interval, and '
             'expected_retry_workers')
@@ -172,6 +174,10 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
     if not retry_workers:
         raise ValueError('watch requires a nonempty expected_retry_workers roster')
     settings['expected_retry_workers'] = list(retry_workers)
+    low_raw = settings.pop('low_backlog', None)
+    low_policy = backlog.BacklogPolicy.from_mapping(low_raw) if low_raw is not None else None
+    if low_policy is not None and not settings.get('prepared_blind_pool'):
+        raise ValueError('low_backlog requires prepared_blind_pool')
     work = Path(settings['local_workdir']).resolve()
     work.mkdir(parents=True, exist_ok=True)
     state_file = work / 'watch_status.json'
@@ -202,13 +208,53 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
               'profile_binding': profile_binding,
               'expected_retry_workers': list(retry_workers),
               'interval_seconds': interval, 'completed_cycles': 0, 'hfss_started_here': False}
+    if low_policy is not None:
+        state['low_backlog'] = dict(low_policy.__dict__)
     if pilot_binding is not None:
         attempt['pilot_request'] = pilot_binding
         state['pilot_request'] = pilot_binding
     _write_state(state_file, attempt_file, attempt, state)
+    coordinator = cycle.DatasetWriteCoordinator() if low_policy is not None else None
+    maintainer = None
+    recovered_pilot_reservation = None
+    try:
+        if coordinator is not None:
+            active = work / 'active_cycle.json'
+            if active.is_file():
+                active_value = pb.read_json(active)
+                active_receipt = Path(active_value.get('receipt', '')).resolve()
+                try:
+                    active_receipt.relative_to(work)
+                except ValueError as exc:
+                    raise ValueError('active cycle receipt escapes watcher workdir') from exc
+                if active_receipt.is_file():
+                    active_payload = pb.read_json(active_receipt)
+                    if active_payload.get('status') in {'prepared', 'dispatching'}:
+                        coordinator.protect(
+                            active_receipt, cycle.planned_receipt_hashes(active_receipt))
+            if _pilot is not None:
+                recovered = cycle._recover_local_pilot_preparation(work, _pilot)
+                if recovered is not None:
+                    recovered_pilot_reservation = work / 'recovered_pilot_reservation'
+                    hashes = recovered['proof'].get('ordered_hashes')
+                    if not isinstance(hashes, list) or len(hashes) != len(set(hashes)):
+                        raise ValueError('recovered pilot proof has invalid ordered hashes')
+                    coordinator.protect(recovered_pilot_reservation, hashes)
+            maintainer = maintainer_factory(
+                settings=settings, policy=low_policy, coordinator=coordinator)
+            maintainer.start()
+    except BaseException as exc:
+        state.update(status='failed', finished_utc=_utc(), error=repr(exc),
+                     traceback=traceback.format_exc())
+        _write_state(state_file, attempt_file, attempt, state)
+        if maintainer is not None:
+            maintainer.stop()
+        raise
     due = monotonic()
     try:
         while max_cycles is None or state['completed_cycles'] < max_cycles:
+            if maintainer is not None:
+                maintainer.raise_if_failed()
             if stop_file.exists():
                 state.update(status='stopped', stop_reason='local_STOP', finished_utc=_utc())
                 break
@@ -227,7 +273,17 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
             _write_state(state_file, attempt_file, attempt, state)
             receipt_path = None
             try:
-                receipt_path = Path(prepare(**settings))
+                if coordinator is None:
+                    receipt_path = Path(prepare(**settings))
+                else:
+                    with coordinator.planning_guard(1) as planning_guard:
+                        receipt_path = Path(prepare(
+                            **settings, planning_guard=planning_guard))
+                        planning_guard.reserve(
+                            receipt_path, cycle.planned_receipt_hashes(receipt_path))
+                        if recovered_pilot_reservation is not None:
+                            coordinator.release_receipt(recovered_pilot_reservation)
+                            recovered_pilot_reservation = None
                 receipt = pb.read_json(receipt_path)
                 _require_campaign_binding(settings_file, bound_settings_sha256, profile_binding,
                                           pilot_binding)
@@ -240,7 +296,10 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
                 if receipt['status'] in ('prepared', 'dispatching'):
                     # Preparation produces the concrete immutable proposal. The user
                     # already authorized continuing this bounded private campaign.
-                    dispatch(receipt_path)
+                    if coordinator is None:
+                        dispatch(receipt_path)
+                    else:
+                        dispatch(receipt_path, coordinator=coordinator)
                     receipt = pb.read_json(receipt_path)
                     _validate_cycle_receipt(receipt, retry_workers, pilot_binding)
                 if receipt['status'] not in ('idle', 'dispatched'):
@@ -287,6 +346,9 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
                      traceback=traceback.format_exc())
         _write_state(state_file, attempt_file, attempt, state)
         raise
+    finally:
+        if maintainer is not None:
+            maintainer.stop()
     _write_state(state_file, attempt_file, attempt, state)
     return state
 

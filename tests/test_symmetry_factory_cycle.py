@@ -66,8 +66,8 @@ def _fake_pilot_core(tmp_path, monkeypatch, request):
         calls.append(("select", set(exclusions)))
         return selection
 
-    def freeze(_pairs, _bindings, _request, out):
-        calls.append(("freeze",))
+    def freeze(_pairs, _bindings, _request, out, *, validated_cutoff=None):
+        calls.append(("freeze", validated_cutoff is not None))
         pb.atomic_json(out, {"fixture": "reference", "pilot_id": request.pilot_id,
                              "request_binding": request.binding})
         return Path(out)
@@ -370,6 +370,82 @@ def test_pending_pilot_uses_one_priority1_shard_and_suppresses_ordinary_planning
     assert receipt["limits"]["valid_plus_pending_plus_planned"] == 16
     assert ordinary_calls == []
     assert [item[0] for item in pilot_calls] == ["select", "freeze", "annotate", "write"]
+    assert pilot_calls[1] == ("freeze", True)
+
+
+def test_pilot_reference_accepts_known_late_success_from_validated_cutoff(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 2)
+    store = _complete(input_dir, dataset / "wave")
+    results = pb.read_json(store / "results.json")
+    late_id = sorted(results)[-1]
+    late_entry = results.pop(late_id)
+    pb.atomic_json(store / "results.json", results)
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 6, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3, start=100)
+    request_path, request, _binding = _fake_pilot_request(tmp_path, monkeypatch)
+    calls, _ids, _hashes, _roles = _fake_pilot_core(tmp_path, monkeypatch, request)
+    captured = {}
+
+    def freeze(_pairs, _bindings, _request, out, *, validated_cutoff=None):
+        assert validated_cutoff and late_id not in validated_cutoff[0]["results"]
+        captured["cutoff_id"] = cycle._content_id(validated_cutoff)
+        changed = pb.read_json(store / "results.json")
+        changed[late_id] = late_entry
+        pb.atomic_json(store / "results.json", changed)
+        pb.atomic_json(out, {"fixture": "reference", "pilot_id": request.pilot_id,
+                             "request_binding": request.binding,
+                             "validated_cutoff_id": cycle._content_id(validated_cutoff)})
+        calls.append(("freeze-late", late_id))
+        return Path(out)
+
+    monkeypatch.setattr(cycle.shell_pilot, "freeze_reference", freeze)
+    receipt = pb.read_json(cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+        training_workdir=train, seed_inputs=[seeds],
+        cold_start_predictor=CurrentPredictor(), pilot_request=request_path,
+        expected_retry_workers=RETRY_WORKERS))
+    reference = pb.read_json(Path(receipt["pilot"]["reference"]["path"]))
+    assert reference["validated_cutoff_id"] == captured["cutoff_id"]
+    assert ("freeze-late", late_id) in calls
+
+
+def test_pilot_reference_postcheck_rejects_frozen_success_mutation(
+        tmp_path, monkeypatch):
+    dataset = _dataset(tmp_path / "dataset")
+    input_dir = _bundle(dataset / "wave_input", 2)
+    store = _complete(input_dir, dataset / "wave")
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [{"input": input_dir.name, "store": store.name,
+                                             "prio": 6, "scope": cfg.scope,
+                                             "config": f"{input_dir.name}/config.yaml"}])
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 3, start=100)
+    request_path, request, _binding = _fake_pilot_request(tmp_path, monkeypatch)
+    _fake_pilot_core(tmp_path, monkeypatch, request)
+
+    def freeze(_pairs, _bindings, _request, out, *, validated_cutoff=None):
+        results = pb.read_json(store / "results.json")
+        first = sorted(results)[0]
+        results[first] = dict(results[first], time_s=float(results[first]["time_s"]) + 1.0)
+        pb.atomic_json(store / "results.json", results)
+        pb.atomic_json(out, {"fixture": "reference", "pilot_id": request.pilot_id,
+                             "request_binding": request.binding})
+        return Path(out)
+
+    monkeypatch.setattr(cycle.shell_pilot, "freeze_reference", freeze)
+    with pytest.raises(ValueError, match="frozen successful result entry changed"):
+        cycle.run_once(
+            local_workdir=tmp_path / "cycle", dataset_root=dataset, profile_config=PROFILE,
+            training_workdir=train, seed_inputs=[seeds],
+            cold_start_predictor=CurrentPredictor(), pilot_request=request_path,
+            expected_retry_workers=RETRY_WORKERS)
+    assert pb.read_json(dataset / "jobs.json")[0]["store"] == "wave"
 
 
 def test_completed_pilot_bundle_is_recovered_across_cycle_id_after_receipt_write_crash(

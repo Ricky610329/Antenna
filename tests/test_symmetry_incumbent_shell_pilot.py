@@ -328,6 +328,18 @@ def _pair_fixture(tmp_path):
     return (input_dir, store), binding, rows, pattern_b, response_b, rad, results
 
 
+def _validated_cutoff(pair, binding, rows, results):
+    input_dir, store = pair
+    return {
+        "input": str(input_dir.resolve()), "store": str(store.resolve()),
+        "rows": list(rows), "results": dict(results), "terminal": False,
+        "input_metadata_sha256": dict(binding["input_metadata_sha256"]),
+        "input_pattern_file_sha256": {
+            row["id"]: pb.file_sha256(input_dir / f"{row['id']}.pt") for row in rows},
+        "store_metadata_sha256": dict(binding["store_metadata_sha256"]),
+    }
+
+
 def test_reference_prefers_normal_and_accepts_append_only_success(tmp_path):
     request, _ = _request_fixture(tmp_path / "request")
     pair, binding, rows, pattern_b, response_b, rad, results = _pair_fixture(tmp_path / "pair")
@@ -341,6 +353,95 @@ def test_reference_prefers_normal_and_accepts_append_only_success(tmp_path):
                                              request.profile)
     _write(pair[1] / "results.json", results)
     pilot.recheck_reference(reference_path)
+
+
+def test_reference_validated_cutoff_accepts_append_during_construction_and_excludes_it(
+        tmp_path, monkeypatch):
+    request, _ = _request_fixture(tmp_path / "request")
+    pair, binding, rows, pattern_b, response_b, rad, results = _pair_fixture(
+        tmp_path / "pair")
+    cutoff = _validated_cutoff(pair, binding, rows, results)
+    original = pilot._metric_from_observation
+    appended = False
+
+    def metric(store, row, entry, cfg):
+        nonlocal appended
+        value = original(store, row, entry, cfg)
+        if not appended:
+            appended = True
+            current = dict(results)
+            current["pending"] = _observation_entry(
+                pair[1], rows[2], pattern_b, response_b, rad, request.profile)
+            _write(pair[1] / "results.json", current)
+        return value
+
+    monkeypatch.setattr(pilot, "_metric_from_observation", metric)
+    reference_path = pilot.freeze_reference(
+        [pair], [binding], request, tmp_path / "reference.json",
+        validated_cutoff=[cutoff])
+    reference = json.loads(reference_path.read_text(encoding="utf-8"))
+
+    assert appended
+    assert reference["valid_unique"] == 1
+    assert reference["B_factory_margin_db"] == pytest.approx(0.5)
+    assert reference["representative_order"] == [rows[1]["pattern_sha256"]]
+    assert [row["id"] for row in reference["observations"]] == ["normal-second"]
+    assert reference["pairs"][0]["metadata_before"]["store"]["results.json"] != (
+        reference["pairs"][0]["metadata_after"]["store"]["results.json"])
+    assert reference["validated_cutoff_id"] == pilot._content_id([cutoff])
+    pilot.recheck_reference(reference_path)
+
+
+@pytest.mark.parametrize("mutation", ["schema", "path", "manifest", "profile"])
+def test_reference_validated_cutoff_rejects_identity_mismatch(
+        tmp_path, monkeypatch, mutation):
+    request, _ = _request_fixture(tmp_path / "request")
+    pair, binding, rows, _pattern_b, _response_b, _rad, results = _pair_fixture(
+        tmp_path / "pair")
+    cutoff = _validated_cutoff(pair, binding, rows, results)
+    expected = ""
+    if mutation == "schema":
+        cutoff["unexpected"] = True
+        expected = "proof schema"
+    elif mutation == "path":
+        cutoff["store"] = str((tmp_path / "other-store").resolve())
+        expected = "pair path"
+    elif mutation == "manifest":
+        cutoff["rows"] = [dict(rows[0], id="different-id"), *rows[1:]]
+        expected = "manifest differs"
+    else:
+        original = pb.load_profile_config(pair[0] / "config.yaml")
+        wrong = type("WrongProfile", (), vars(original).copy())()
+        wrong.scope = "different-scope"
+        monkeypatch.setattr(pilot.pb, "load_profile_config", lambda _path: wrong)
+        expected = "profile differs"
+
+    with pytest.raises(pilot.PilotError, match=expected):
+        pilot.freeze_reference(
+            [pair], [binding], request, tmp_path / f"reference-{mutation}.json",
+            validated_cutoff=[cutoff])
+
+
+@pytest.mark.parametrize("mutation", ["entry", "raw"])
+def test_reference_validated_cutoff_rejects_frozen_observation_tamper(tmp_path, mutation):
+    request, _ = _request_fixture(tmp_path / "request")
+    pair, binding, rows, _pattern_b, _response_b, _rad, results = _pair_fixture(
+        tmp_path / "pair")
+    cutoff = _validated_cutoff(pair, binding, rows, results)
+    if mutation == "entry":
+        changed = dict(results)
+        changed["normal-second"] = {**changed["normal-second"], "time_s": 9.0}
+        _write(pair[1] / "results.json", changed)
+        expected = "frozen observation entry changed"
+    else:
+        sample = pair[1] / results["normal-second"]["sample_file"]
+        sample.write_bytes(sample.read_bytes() + b"tamper")
+        expected = "raw hash changed"
+
+    with pytest.raises((pilot.PilotError, pilot.PilotSnapshotChanged), match=expected):
+        pilot.freeze_reference(
+            [pair], [binding], request, tmp_path / f"reference-{mutation}.json",
+            validated_cutoff=[cutoff])
 
 
 def test_reference_rejects_frozen_entry_and_raw_mutation(tmp_path):

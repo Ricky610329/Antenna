@@ -9,12 +9,15 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import heapq
 import hashlib
+import itertools
 import json
 import os
 import socket
 import shutil
 import statistics
+import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,6 +38,118 @@ from script.profiled_shards import snapshot_successes, split_bundle
 
 class LiveSnapshotChanged(RuntimeError):
     """A worker advanced queue/results during a physical controller snapshot."""
+
+
+class DatasetLockBusy(LiveSnapshotChanged):
+    """Another process briefly owns the scope dataset mutation boundary."""
+
+
+class CoordinatorCancelled(RuntimeError):
+    """A waiting LOW transaction was cancelled during watcher shutdown."""
+
+
+class DatasetWriteCoordinator:
+    """Serialize one watcher's dataset transactions with priority and reservations.
+
+    The kernel lock still excludes other processes.  This coordinator prevents the
+    main cycle and its LOW maintainer thread from racing that non-blocking lock and
+    keeps prepared, not-yet-dispatched mainline hashes unavailable to LOW planning.
+    """
+
+    def __init__(self) -> None:
+        self._condition = threading.Condition()
+        self._sequence = itertools.count()
+        self._waiting: list[tuple[int, int]] = []
+        self._active: tuple[int, int] | None = None
+        self._protected: dict[str, frozenset[str]] = {}
+
+    def _acquire(self, priority: int,
+                 cancel_event: threading.Event | None = None) -> tuple[int, int]:
+        ticket = (int(priority), next(self._sequence))
+        with self._condition:
+            heapq.heappush(self._waiting, ticket)
+            while self._active is not None or self._waiting[0] != ticket:
+                if cancel_event is not None and cancel_event.is_set():
+                    self._waiting.remove(ticket)
+                    heapq.heapify(self._waiting)
+                    self._condition.notify_all()
+                    raise CoordinatorCancelled("dataset coordinator wait cancelled")
+                self._condition.wait(0.25 if cancel_event is not None else None)
+            if heapq.heappop(self._waiting) != ticket:
+                raise RuntimeError("dataset coordinator queue corruption")
+            self._active = ticket
+        return ticket
+
+    def _release(self, ticket: tuple[int, int]) -> None:
+        with self._condition:
+            if self._active != ticket:
+                raise RuntimeError("dataset coordinator released by a non-owner")
+            self._active = None
+            self._condition.notify_all()
+
+    @contextmanager
+    def turn(self, priority: int, *, cancel_event: threading.Event | None = None):
+        ticket = self._acquire(priority, cancel_event)
+        try:
+            yield
+        finally:
+            self._release(ticket)
+
+    def planning_guard(self, priority: int = 1) -> "_PlanningGuard":
+        return _PlanningGuard(self, priority)
+
+    def protect(self, receipt: str | Path, hashes: Sequence[str]) -> None:
+        key = str(Path(receipt).resolve())
+        values = frozenset(str(value) for value in hashes)
+        with self._condition:
+            prior = self._protected.get(key)
+            if prior is not None and prior != values:
+                raise ValueError("prepared mainline reservation changed for one receipt")
+            self._protected[key] = values
+
+    def release_receipt(self, receipt: str | Path) -> None:
+        with self._condition:
+            self._protected.pop(str(Path(receipt).resolve()), None)
+
+    def protected_hashes(self) -> set[str]:
+        with self._condition:
+            return set().union(*self._protected.values()) if self._protected else set()
+
+
+class _PlanningGuard:
+    """Priority turn that can yield only around the actual SM training call."""
+
+    def __init__(self, coordinator: DatasetWriteCoordinator, priority: int) -> None:
+        self._coordinator = coordinator
+        self._priority = int(priority)
+        self._ticket: tuple[int, int] | None = None
+
+    def __enter__(self) -> "_PlanningGuard":
+        if self._ticket is not None:
+            raise RuntimeError("planning guard entered twice")
+        self._ticket = self._coordinator._acquire(self._priority)
+        return self
+
+    def release_for_training(self) -> None:
+        if self._ticket is None:
+            raise RuntimeError("planning guard is not held")
+        ticket, self._ticket = self._ticket, None
+        self._coordinator._release(ticket)
+
+    def reacquire_after_training(self) -> None:
+        if self._ticket is not None:
+            raise RuntimeError("planning guard is already held")
+        self._ticket = self._coordinator._acquire(self._priority)
+
+    def reserve(self, receipt: str | Path, hashes: Sequence[str]) -> None:
+        if self._ticket is None:
+            raise RuntimeError("planning guard must be held while reserving a receipt")
+        self._coordinator.protect(receipt, hashes)
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        if self._ticket is not None:
+            ticket, self._ticket = self._ticket, None
+            self._coordinator._release(ticket)
 
 
 def _read(path: Path) -> Any:
@@ -102,6 +217,37 @@ def _exclusive_lock(path: Path):
 def _dataset_lock(dataset_root: Path, scope: str) -> Path:
     suffix = hashlib.sha256(scope.encode("utf-8")).hexdigest()[:16]
     return dataset_root / "jobs_state" / f"factory-controller-{suffix}.lock"
+
+
+@contextmanager
+def _dataset_exclusive_lock(dataset_root: Path, scope: str):
+    """Acquire the short dataset boundary, classifying contention as retryable."""
+
+    path = _dataset_lock(dataset_root, scope)
+    manager = _exclusive_lock(path)
+    try:
+        manager.__enter__()
+    except RuntimeError as exc:
+        if "another symmetry factory controller holds" not in str(exc):
+            raise
+        raise DatasetLockBusy(str(exc)) from exc
+    try:
+        yield
+    finally:
+        manager.__exit__(None, None, None)
+
+
+def _train_version_with_guard(train_root: Path, version: int,
+                              planning_guard: _PlanningGuard | None) -> None:
+    """Let LOW refill only while the expensive SM training call is active."""
+
+    if planning_guard is not None:
+        planning_guard.release_for_training()
+    try:
+        training.train_version(train_root, version)
+    finally:
+        if planning_guard is not None:
+            planning_guard.reacquire_after_training()
 
 
 def _normalize_retry_workers(values: Sequence[str] | None) -> tuple[str, ...]:
@@ -1172,6 +1318,23 @@ def _planned(shards: Sequence[Path], kind: str, priority: int, cycle_id: str,
     return jobs
 
 
+def planned_receipt_hashes(receipt_path: str | Path) -> set[str]:
+    """Return exact staged hashes protected between main preparation and dispatch."""
+
+    receipt = _read(Path(receipt_path).resolve())
+    hashes: set[str] = set()
+    for planned in receipt.get("planned_jobs", []):
+        staged = Path(planned["staged_input"]).resolve()
+        if _content_id(_tree_hashes(staged)) != planned.get("tree_sha256"):
+            raise ValueError(f"staged shard changed while reserving it: {staged}")
+        rows = _read(staged / "manifest.json")
+        values = {str(row["pattern_sha256"]) for row in rows}
+        if len(values) != len(rows) or hashes & values:
+            raise ValueError("prepared receipt contains duplicate pattern reservations")
+        hashes.update(values)
+    return hashes
+
+
 def _split_or_validate(bundle: Path, output: Path, shard_size: int, cfg: Any) -> list[Path]:
     if not output.exists():
         return split_bundle(bundle, output, shard_size)
@@ -1199,7 +1362,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                        prepared_blind_pool: str | Path | None = None,
                        cold_start_predictor: Any | None = None,
                        expected_retry_workers: Sequence[str] | None = None,
-                       pilot_request: str | Path | None = None) -> Path:
+                       pilot_request: str | Path | None = None,
+                       planning_guard: _PlanningGuard | None = None) -> Path:
     """Prepare one recoverable cycle and return its reviewable action receipt."""
 
     local = Path(local_workdir).resolve(); dataset = Path(dataset_root).resolve()
@@ -1245,7 +1409,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                      if prepared_blind_pool is not None else None)
     cold_binding = list(getattr(cold_start_predictor, "model_ids", ()))
     profile_sha256 = pb.file_sha256(profile)
-    with _exclusive_lock(_dataset_lock(dataset, cfg.scope)):
+    with _dataset_exclusive_lock(dataset, cfg.scope):
         queue = _queue_view(dataset, cfg, policy, retry_workers)
         if "pair_proofs" in queue:
             audit = _audit_from_queue(dataset, cfg, queue)
@@ -1408,14 +1572,14 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
             version_dir = training.ingest_profile_stores(
                 train_root, [frozen], min_new=int(policy["update_every_valid_unique"]), max_new=96)
             version = int(version_dir.name.removeprefix("data-v"))
-        training.train_version(train_root, version)
+        _train_version_with_guard(train_root, version, planning_guard)
         predictor = training.load_current_predictor(train_root, version)
         trained_this_cycle = True
     elif version > 0:
         try:
             predictor = training.load_current_predictor(train_root, version)
         except FileNotFoundError:
-            training.train_version(train_root, version)
+            _train_version_with_guard(train_root, version, planning_guard)
             predictor = training.load_current_predictor(train_root, version)
             trained_this_cycle = True
     elif predictor is None and cold_start_predictor is not None:
@@ -1428,7 +1592,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     # other work retains the original capacity/exclusion cutoff and only
     # rechecks its bytes; late completions cannot release reservations.
     if trained_this_cycle:
-        with _exclusive_lock(_dataset_lock(dataset, cfg.scope)):
+        with _dataset_exclusive_lock(dataset, cfg.scope):
             queue = _queue_view(dataset, cfg, policy, retry_workers)
             if "pair_proofs" in queue:
                 audit = _audit_from_queue(dataset, cfg, queue)
@@ -1502,9 +1666,19 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                             local, pilot_binding, code=exc.code, detail=str(exc))
                         selection = None
                     if selection is not None:
-                        reference = _pilot_call(
-                            shell_pilot.freeze_reference, queue["pairs"],
-                            queue["pair_bindings"], pilot, cycle / "pilot_reference.json")
+                        if "pair_proofs" in queue:
+                            _recheck_queue_proof(dataset, queue)
+                            reference = _pilot_call(
+                                shell_pilot.freeze_reference, queue["pairs"],
+                                queue["pair_bindings"], pilot,
+                                cycle / "pilot_reference.json",
+                                validated_cutoff=queue["pair_proofs"])
+                            _recheck_queue_proof(dataset, queue)
+                        else:
+                            reference = _pilot_call(
+                                shell_pilot.freeze_reference, queue["pairs"],
+                                queue["pair_bindings"], pilot,
+                                cycle / "pilot_reference.json")
                         annotated = _pilot_call(
                             shell_pilot.annotate_selection, pilot, selection, predictor)
                         bundle = _pilot_call(
@@ -1673,7 +1847,8 @@ def run_once(*, local_workdir: str | Path, dataset_root: str | Path,
              seed_inputs: Sequence[str | Path], prepared_blind_pool: str | Path | None = None,
              cold_start_predictor: Any | None = None,
              expected_retry_workers: Sequence[str] | None = None,
-             pilot_request: str | Path | None = None) -> Path:
+             pilot_request: str | Path | None = None,
+             planning_guard: _PlanningGuard | None = None) -> Path:
     local = Path(local_workdir).resolve()
     train_root = Path(training_workdir).resolve()
     local.mkdir(parents=True, exist_ok=True)
@@ -1685,7 +1860,7 @@ def run_once(*, local_workdir: str | Path, dataset_root: str | Path,
                 prepared_blind_pool=prepared_blind_pool,
                 cold_start_predictor=cold_start_predictor,
                 expected_retry_workers=expected_retry_workers,
-                pilot_request=pilot_request)
+                pilot_request=pilot_request, planning_guard=planning_guard)
 
 
 single_cycle = run_once
@@ -1957,16 +2132,25 @@ def _commit_dispatch_locked(path: Path, *,
 
 def commit_dispatch(receipt_path: str | Path, *,
                     queue_add: Callable[[Path, Mapping[str, Any], str], None] = _dedust_add,
-                    duplicate_check: Callable[[Path, Path], int] = pb.check_duplicates) -> Path:
+                    duplicate_check: Callable[[Path, Path], int] = pb.check_duplicates,
+                    coordinator: DatasetWriteCoordinator | None = None) -> Path:
     """Copy and enqueue a reviewed prepared receipt, idempotently per shard."""
 
     path = Path(receipt_path).resolve()
     receipt = _read(path)
     dataset = Path(receipt["dataset_root"]).resolve()
     scope = str(receipt["scope"])
-    with _exclusive_lock(_dataset_lock(dataset, scope)):
-        return _commit_dispatch_locked(path, queue_add=queue_add,
-                                       duplicate_check=duplicate_check)
+    boundary = coordinator.turn(0) if coordinator is not None else contextlib.nullcontext()
+    try:
+        with boundary:
+            with _dataset_exclusive_lock(dataset, scope):
+                return _commit_dispatch_locked(path, queue_add=queue_add,
+                                               duplicate_check=duplicate_check)
+    finally:
+        if coordinator is not None and path.is_file():
+            status = _read(path).get("status")
+            if status in {"dispatched", "idle"}:
+                coordinator.release_receipt(path)
 
 
 def main() -> None:

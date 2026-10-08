@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "status": "implementation_verified_not_yet_deployed",
+  "verification_finished_utc": "2026-10-08T02:52:43.573189+00:00",
+  "source_sha256": {
+    "script/symmetry_factory_backlog.py": "8286a134779ee158873161742e2e0adf1a695b8fae1d0d321d2828a8c34e209a",
+    "script/symmetry_factory_cycle.py": "ea684172cd55954fca8cb163ef1c28cf70b62e8267a4eff5d8b32d55fdd118af",
+    "script/symmetry_factory_watch.py": "bbcb8bc7729d8f601577e4b8e8419baf7bfd8bba1863348c571dc1d88bc74a25",
+    "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+    "tests/test_symmetry_factory_backlog.py": "b2615ddbd0b8c0be68dc7ffd5cacc12f11717d7ca6b62040ab233ee045d7fd6a",
+    "tests/test_symmetry_factory_cycle.py": "0a96f12eb8e33df557615af5a726b8c62095169b50136a155229fa7b11545bc2",
+    "tests/test_symmetry_factory_watch.py": "da7ad707016f1c1c965bf51f9689b0cbdab9acc46aee631d57eb726944147c4e",
+    "tests/test_symmetry_incumbent_shell_pilot.py": "3824c50e0bf7cb085bf408e77e8094605851e5954b38321381b2c3d72a6a219d",
+    "script/README.md": "b7c34428f179295f43864d8e6cb24eea3a18709895e4a91ad6f69e6e49781dc1"
+  },
+  "golden_sha256": "c5fc5ed0db1bf51de2e81f6ac8681962d70e4a1b99508dbf7cad6cdfb7ec42fb",
+  "full_suite": {
+    "local_relative_path": "tmp/r80_backlog_conductor_20261008/full_v003/result.json",
+    "sha256": "f9c4f5a6e11782aa15c2281a2381a404a915c8e482f7d41f0c702c41600451bb",
+    "counts": {
+      "tests": 796,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "elapsed_seconds": 374.66198139986955,
+    "threads": 4,
+    "ci": false,
+    "golden_unchanged": true
+  },
+  "independent_review": {
+    "local_relative_path": "tmp/r80_backlog_review_20261008/final_v004.json",
+    "sha256": "ee797feaa9b451816976ce5cb64b5c6bc1d2e78ba1e63fc515d9aec7b9111089"
+  },
+  "deployment_helper_review": {
+    "local_relative_path": "tmp/r80_backlog_handoff_review_20261008/review_v003.json",
+    "sha256": "6fa1069028ece1d3e48f71a88e153f838a53bf3b00ab9c62419765b860dfba96"
+  },
+  "deployment_helper_sha256": "ef172743b5e750c3e5a7bb3e12d5ead1eeeaee5984ee1778407953778f997087",
+  "preserved_cancelled_runs": [
+    {
+      "result": {
+        "local_relative_path": "tmp/r80_backlog_conductor_20261008/full_v001/result.json",
+        "sha256": "c8167617bd027e7486f84c8cb0c3697ff6c9ac4dc170553dda8e8341836ed42e"
+      },
+      "cancellation": {
+        "local_relative_path": "tmp/r80_backlog_conductor_20261008/full_v001/cancellation.json",
+        "sha256": "76ad13ef980c7bdb5e762e29d66cd475a2cdfa417703ab9b37450dd334553c8e"
+      },
+      "interpretation": "Intentionally cancelled after a concrete review blocker; not a passed full suite."
+    },
+    {
+      "result": {
+        "local_relative_path": "tmp/r80_backlog_conductor_20261008/full_v002/result.json",
+        "sha256": "247fd573e75b019a763bbf1715cd4ab993ff5f66dc16c2a19211caa848a49396"
+      },
+      "cancellation": {
+        "local_relative_path": "tmp/r80_backlog_conductor_20261008/full_v002/cancellation.json",
+        "sha256": "de891c2999ee12094befedf575e8ac944d4a91c91114fee220f6e046fceaf792"
+      },
+      "interpretation": "Intentionally cancelled after a concrete review blocker; not a passed full suite."
+    }
+  ],
+  "low_backlog": {
+    "poll_seconds": 90,
+    "low_watermark": 48,
+    "target_pending": 96,
+    "max_refill": 96,
+    "min_refill": 48,
+    "shard_size": 16,
+    "priority": 6
+  },
+  "mainline": {
+    "interval_seconds": 1800,
+    "update_every_valid_unique": 48,
+    "priority": 1,
+    "target_valid_unique": 5000
+  },
+  "verified_behavior": [
+    "One watcher with a non-daemon LOW thread and a shared priority-aware writer.",
+    "Routine polls rehash input metadata and read worker markers without raw results or SM.",
+    "Metadata cache rebuild, marker-first partial-copy recovery and queued cohort receipt reconstruction.",
+    "Every LOW shard yields to waiting mainline work; prepared mainline and pilot hashes remain protected.",
+    "A validated pilot cutoff accepts legal late results without changing its frozen reference.",
+    "STOP interrupts waits and joins active mutation to completion."
+  ],
+  "limits": [
+    "Deployment and actual automatic refill require a separate live receipt.",
+    "This milestone does not establish improved antenna performance.",
+    "LOW uses stable blind order; optional SM sorting is not enabled.",
+    "R80 5000-valid-unique and R81 positive-repeat WM objectives remain incomplete."
+  ]
+}
