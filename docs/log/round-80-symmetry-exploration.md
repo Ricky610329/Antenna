@@ -503,3 +503,20 @@ v014相對v013總MAE下降0.047815 dB（131筆改善／108筆惡化）；v015相
 使用者明確批准兩份指定payload後，[私人發布收據](assets/r80_sm_profile_archive_20261008.json)確認SM v013–v015比較與data-v015統計兩個create-only資料夾已落在本人NAS。共2071個payload檔、134,767,331 bytes，加兩份manifest共2073個檔，逐檔讀回SHA全一致；原staged/pending歷史與第一次自動審查拒絕均保留。沒有新增未批准檔案、沒有覆寫舊歸檔，也沒有再次跑模型／HFSS或全量raw稽核。
 
 14:39同一PID16536／creation／command再次核對為live，scoped health無警報；三個claimed jobs分別12/16、8/16、2/16，最新結果0–1分鐘前，另有兩片guided及六片LOW待跑。只證明結果／claim活動，不當成遠端runtime Git或OS行程稽核。下一例行健康約15:09；對稱5000筆與R81正WM重測仍未完成。
+
+### 2026-10-08 14:50：前述最佳單次WM對稱樣本的規格圖
+
+使用者要求渲染一張圖並存對應log，因此把14:09已驗證cutoff的最佳單次樣本`r80c91d71565g_00019_5a42476c`存為下圖。資料直接讀取剛發布私人data-v015歸檔的hash-bound analysis／NPZ，沒有新HFSS或SM預測；這是前述既有樣本，不把出圖時間當成新的全量最佳值查詢。圖含金屬像素俯視圖（第一索引向下、饋入在下緣）、26.5–29.5 GHz帶內S11／正向RealizedGainTotal，以及28 GHz兩個GainTotal方向圖與θ→−θ鏡射曲線。
+
+![R80 對稱樣本的金屬排列、帶內S11／Gain與28GHz方向圖；單次WM−0.246441 dB](assets/round-80/best-symmetric-20261008-v001/sample_card.png)
+
+單次WM仍−0.246440887 dB；最差S11−9.760910、最低Gain3.753559，尚未通過雙spec。金屬左右mismatch=0；±45°鏡射功率殘差phi0=0.091769、phi90=0.004225，場型精確對稱不由金屬對稱直接推出。圖片是25×25像素排列示意，並非完整3D橋接／材料／場景渲染。圖片與數字均未重測公證，不登錄換王紀錄。
+
+[出圖收據](assets/round-80/best-symmetric-20261008-v001/sample_plot_receipt.json)綁定原sample／radiation SHA、PNG SHA、producer SHA與原分析／NPZ SHA。目檢文字／曲線／legend／金屬方向無裁切或重疊；新增`--sample-id`只是具名profile圖表選項，原預設兩張970筆population圖重跑後PNG bytes完全一致。實際NAS讀取／render與原14:09樣本、raw hashes及margin交叉核對通過，pyflakes／diff check通過；未為這個純繪圖增量重跑全套809項測試，先前809結果只對應14:27分析相容修正。新圖依使用者這次明確要求存本log並隨GAN交付，完整資料及模型仍留私人NAS。
+
+從repo根目錄、ant環境重現；請用新的輸出資料夾，既有圖片不覆寫：
+
+```powershell
+$archive = "\\140.123.106.219\temp\碩二_鄒穎麒's\antenna\experiments\r80_symmetry_20261007\analysis_versions\profile-data-v015_20261008_v001"
+python -m script.figs.symmetry_profile --analysis-json "$archive\analysis\analysis.json" --data-npz "$archive\analysis\arrays.npz" --sample-id r80c91d71565g_00019_5a42476c --out-dir docs/log/assets/round-80/best-symmetric-20261008-v002
+```

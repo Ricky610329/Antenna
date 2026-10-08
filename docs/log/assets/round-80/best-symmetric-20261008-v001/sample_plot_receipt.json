@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "sample_id": "r80c91d71565g_00019_5a42476c",
+  "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+  "analysis_sha256": "b93e9af014224b5324b213fa4ef3db270e2a2ba1de00bf7824083aae6d5986dc",
+  "npz_sha256": "6fd761da111be9fb74d1627f14ca315b0ef2ee6098656e43793b355084fbe92b",
+  "sample_sha256": "3894a2a8878a7f28bcaedf6524f47a2d2cb7b26eb434be12dac59e8477eb96a1",
+  "radiation_sha256": "879595d5c0084b6be070daecae9d048ec69190eeb5f19effee4624a20a2b91e1",
+  "s11_margin_db": -0.2390899658203125,
+  "gain_margin_db": -0.24644088745117188,
+  "wm_db": -0.24644088745117188,
+  "geometry_mismatch_fraction": 0.0,
+  "phi0_mirror_power_45": 0.09176931028534725,
+  "phi90_mirror_power_45": 0.004224751071367147,
+  "producer_sha256": "f86707b59dfb284a3e9071bb487f7b047b65d4aed518e6471e3f8d5bd3e27e8a",
+  "figure_sha256": "290a36f3a301f2bbe571f86335a0ac6c854e9794ee8bd236b60babecc3b2c6cc",
+  "scope": "one explicit frozen single HFSS solve; pixel view, frequency responses and GainTotal cuts; no repeat certification"
+}

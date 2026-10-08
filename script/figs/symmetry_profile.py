@@ -9,7 +9,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
+from matplotlib.colors import ListedColormap, LogNorm
 import numpy as np
 
 
@@ -147,13 +147,109 @@ def render(analysis: Path, npz: Path, out: Path) -> dict:
     return receipt
 
 
+def render_sample(analysis: Path, npz: Path, out: Path, sample_id: str) -> dict:
+    """Render one explicit, hash-bound profile observation without NAS discovery."""
+    summary, data = _load(analysis, npz)
+    indices = np.flatnonzero(data['ids'] == sample_id)
+    if len(indices) != 1:
+        raise ValueError('sample id must identify exactly one frozen observation')
+    index = int(indices[0])
+    row = summary['rows'][index]
+    if row['id'] != sample_id or row['array_index'] != index:
+        raise ValueError('sample JSON/NPZ row alignment differs')
+    paths = [out / 'sample_card.png', out / 'sample_plot_receipt.json']
+    if any(path.exists() for path in paths):
+        raise FileExistsError('sample plot output already exists; choose a fresh directory')
+    out.mkdir(parents=True, exist_ok=True)
+    frequency = data['response_freqs_ghz']
+    band = (frequency >= 26.5) & (frequency <= 29.5)
+    s11, gain = data['responses'][index]
+    s11_margin = float(-10 - s11[band].max())
+    gain_margin = float(gain[band].min() - 4)
+    wm = min(s11_margin, gain_margin)
+    if (s11_margin != row['s11_band_margin_db']
+            or gain_margin != row['gain_band_margin_db']):
+        raise ValueError('sample plotted margins differ from validated analysis')
+    fig, axes = plt.subplots(2, 3, figsize=(14.4, 8.0), layout='constrained')
+    geometry = axes[0, 0]
+    geometry.imshow(data['patterns'][index].astype(bool), origin='upper',
+                    cmap=ListedColormap([SURF, BLUE]), vmin=0, vmax=1,
+                    interpolation='nearest')
+    geometry.axvline(12, color=ORANGE, lw=.8, ls='--', alpha=.8)
+    geometry.scatter([12], [24], marker='^', s=70, color=ORANGE, zorder=3)
+    geometry.set(xticks=[], yticks=[], xlabel='25 × 25 金屬像素；橘色標記為下緣饋入位置',
+                 title='金屬排列（像素俯視圖）')
+    for ax, curve, threshold, name, unit, margin, worst in (
+            (axes[0, 1], s11, -10, 'S11', 'dB', s11_margin, int(np.argmax(s11[band]))),
+            (axes[0, 2], gain, 4, '正向 RealizedGainTotal', 'dBi', gain_margin, int(np.argmin(gain[band])))):
+        ax.axvspan(26.5, 29.5, color=GRID, alpha=.35)
+        ax.plot(frequency, curve, color=BLUE, lw=2)
+        ax.plot([26.5, 29.5], [threshold, threshold], color=ORANGE,
+                ls='--', label=f'帶內要求 {threshold:g} {unit}')
+        point = np.flatnonzero(band)[worst]
+        ax.scatter(frequency[point], curve[point], color=ORANGE, zorder=3)
+        ax.annotate(f'{curve[point]:.5f} {unit}', (frequency[point], curve[point]),
+                    xytext=(0, 12), textcoords='offset points', ha='center', fontsize=9)
+        ax.set(xlabel='頻率（GHz）', ylabel=unit, xlim=(24, 32),
+               title=f'{name}\n帶內餘裕 {margin:+.5f} dB')
+        ax.grid(color=GRID, alpha=.65, lw=.7)
+        ax.legend(loc='lower left', fontsize=9)
+    info = axes[1, 0]
+    info.axis('off')
+    mismatch = float(data['geometry_mismatch_fraction'][index])
+    info.text(.03, .96,
+              f'WM = min(S11 餘裕, Gain 餘裕)\n\n'
+              f'單次 WM = {wm:+.6f} dB\n'
+              f'雙門檻：{"通過" if wm >= 0 else "尚未通過"}\n\n'
+              f'金屬左右 mismatch = {mismatch:.6f}\n'
+              f'φ=0° 鏡射功率殘差 = {row["phi0_mirror_power_45"]:.6f}\n'
+              f'φ=90° 鏡射功率殘差 = {row["phi90_mirror_power_45"]:.6f}\n\n'
+              '場型殘差計算範圍：±45°，0 越對稱\n'
+              '帶內 spec：26.5–29.5 GHz\n'
+              '單次 HFSS 模擬；尚未重測驗證',
+              va='top', fontsize=11, linespacing=1.5, color=INK)
+    theta = data['radiation_theta_deg']
+    if not np.array_equal(theta, -theta[::-1]):
+        raise ValueError('sample plot requires the validated symmetric theta grid')
+    for ax, key, phi in ((axes[1, 1], 'phi0_db', 0), (axes[1, 2], 'phi90_db', 90)):
+        curve = data[key][index]
+        ax.axvspan(-45, 45, color=GRID, alpha=.35)
+        ax.plot(theta, curve, color=BLUE, lw=2, label='HFSS 原始曲線')
+        ax.plot(theta, curve[::-1], color=ORANGE, lw=1.2, ls='--', label='θ → −θ 鏡射曲線')
+        ax.set(xlabel='θ（度）', ylabel='GainTotal（dBi）', xlim=(-180, 180),
+               title=f'28 GHz 方向圖 φ={phi}°')
+        ax.set_xticks([-180, -90, -45, 0, 45, 90, 180])
+        ax.grid(color=GRID, alpha=.65, lw=.7)
+        ax.legend(loc='lower left', fontsize=9)
+    fig.suptitle(f'R80 金屬對稱樣本：單次 WM {wm:+.6f} dB\n{sample_id}', fontsize=15)
+    fig.savefig(paths[0], dpi=160)
+    plt.close(fig)
+    receipt = {'schema_version': 1, 'sample_id': sample_id, 'pattern_sha256': row['pattern_sha256'],
+               'analysis_sha256': _sha(analysis), 'npz_sha256': _sha(npz),
+               'sample_sha256': row['raw_result']['sample_sha256'],
+               'radiation_sha256': row['raw_result']['rad_sha256'],
+               's11_margin_db': s11_margin, 'gain_margin_db': gain_margin, 'wm_db': wm,
+               'geometry_mismatch_fraction': mismatch,
+               'phi0_mirror_power_45': row['phi0_mirror_power_45'],
+               'phi90_mirror_power_45': row['phi90_mirror_power_45'],
+               'producer_sha256': _sha(Path(__file__)), 'figure_sha256': _sha(paths[0]),
+               'scope': 'one explicit frozen single HFSS solve; pixel view, frequency responses and GainTotal cuts; no repeat certification'}
+    paths[1].write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    return receipt
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--analysis-json', type=Path, required=True)
     parser.add_argument('--data-npz', type=Path, required=True)
     parser.add_argument('--out-dir', type=Path, required=True)
+    parser.add_argument('--sample-id', help='render one frozen sample card instead of population plots')
     args = parser.parse_args()
-    print(json.dumps(render(args.analysis_json, args.data_npz, args.out_dir), ensure_ascii=False))
+    if args.sample_id:
+        result = render_sample(args.analysis_json, args.data_npz, args.out_dir, args.sample_id)
+    else:
+        result = render(args.analysis_json, args.data_npz, args.out_dir)
+    print(json.dumps(result, ensure_ascii=False))
 
 
 if __name__ == '__main__':
