@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "status": "verified_interim_refill",
+  "prepared_utc": "2026-10-08T02:34:09.634928+00:00",
+  "source_commit": "1efe9c23191b60d49a88fa5fdbc4cb2aca2a24e5",
+  "action_receipt_sha256": "a22efc6b3102b58fac25c483d46a2a92a38a08e2fdf26e5f813980ecab47a6ad",
+  "stable_source_receipt_sha256": "6874bebdf002e1cea7fce7fe01611dd0e72e0befb02760215708684bcccd1d0f",
+  "rows": 48,
+  "priority": 6,
+  "shard_size": 16,
+  "conservative_reserved_before": 832,
+  "conservative_reserved_after": 880,
+  "jobs": [
+    {
+      "store": "dedust_r80c987251aab01",
+      "input": "dedust_r80c987251aab01_input",
+      "count": 16,
+      "prio": 6,
+      "tree_sha256": "5cfcb82a003bf34578e4e5d1776df3bf572b5bde846db4a49ce400c37e932e42"
+    },
+    {
+      "store": "dedust_r80c987251aab02",
+      "input": "dedust_r80c987251aab02_input",
+      "count": 16,
+      "prio": 6,
+      "tree_sha256": "9d7dc1e83dd9e10e40692225e0c74951e382a9d2bf99115794d59a55b08ad72b"
+    },
+    {
+      "store": "dedust_r80c987251aab03",
+      "input": "dedust_r80c987251aab03_input",
+      "count": 16,
+      "prio": 6,
+      "tree_sha256": "59fd00d266feac560700e16fdccb7ca43ef7e9bbd625fbdbb6acbed68d66c85a"
+    }
+  ],
+  "waiting_state_sha256": "e1021926f20dfa96b30cd2c43401ac8bc87e9bc5a34089b18e063e007f5fe3df",
+  "same_private_dataset": true,
+  "worker_or_hfss_restarted": false,
+  "limits": [
+    "Queued inputs are not new valid unique measurements.",
+    "The stable source matches 1efe9c2 except verified line-ending normalization.",
+    "The controller was waiting; its next mainline cycle had more than 20 minutes of margin.",
+    "This interim dispatch is separate from the not-yet-deployed automatic LOW keeper."
+  ]
+}
