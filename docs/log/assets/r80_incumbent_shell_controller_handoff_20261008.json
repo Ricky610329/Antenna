@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "status": "verified_controller_handoff_first_cycle_deferred_no_pilot_dispatch",
+  "scope": "symmetry_filter_20261007",
+  "implementation_commit": "9da2a3eca814ce1426c6023e7a5d543b6075e8a3",
+  "launch_commit": "724652e331f60a44c3cb3cf384ef08314cb72134",
+  "request_record": "r80_incumbent_shell_pilot_request_20261008.json",
+  "old_controller": {
+    "pid": 25924,
+    "creation_unix_ms": 1791407392268,
+    "launch_id": "dde0af92e8a84f64a1d712dc5dac1e38",
+    "stop_requested_utc": "2026-10-08T00:37:33.0197899Z",
+    "finished_utc": "2026-10-08T00:37:41.006695+00:00",
+    "final_status": "stopped",
+    "stop_reason": "local_STOP",
+    "process_exit_and_zero_watchers_verified_before_successor": true,
+    "process_killed": false,
+    "original_local_workdir_and_sterile_pointer_preserved": true
+  },
+  "new_controller": {
+    "pid": 54448,
+    "creation_unix_ms": 1791419977381,
+    "launch_id": "e9826e086f384ee88abdf233f457679c",
+    "launched_utc": "2026-10-08T00:39:37.5100569Z",
+    "settings_local_relative_path": "tmp/r80_factory_20261007/watch_settings_shell_v1.json",
+    "settings_sha256": "7e00993325ad06793df264e8be8d53de98dc42deeab7fd771f5b0e318b4fd74c",
+    "local_workdir_relative_path": "tmp/r80_factory_20261007/controller_shell_v1",
+    "local_workdir_must_remain_fixed_for_one_shot_recovery": true,
+    "request_sha256": "42a5f0bb25fad98a0f20e4e969bfc714d7a647492093d2f8ef61263e9194a6b5",
+    "pilot_id": "faaf5a1d1b9f886edfa25c6d17e32e84fb9ba7d10045b3ed41ac573c07b984a1",
+    "interval_seconds": 1800,
+    "sole_pid_creation_and_command_verified_utc": "2026-10-08T00:40:59.0874318Z",
+    "initial_status": "waiting",
+    "initial_completed_cycles": 0,
+    "initial_deferred_retry": "LiveSnapshotChanged after an existing worker appended a successful result; no controller receipt yet",
+    "initial_deferred_retry_sha256": "da57d5665b900feb73f1e55b861e82a1001f1389a6acf68bac358046150e520c",
+    "next_routine_health_taipei": "2026-10-08T09:10:00+08:00"
+  },
+  "validation": {
+    "independent_handoff_and_final_helper_review": "PASS",
+    "final_review_json_sha256": "b4aa370954711c8d4a2fcb47b5fe3cc7ab0dfa80eec62862dc4290e088245774",
+    "final_review_md_sha256": "8153285c7a24127d457d888d9478aa4a582c5293b136ff3935516e6ba2caf6b8",
+    "seven_implementation_source_hashes_unchanged": true,
+    "pushed_implementation_is_launch_commit_ancestor": true,
+    "settings_preparation_and_actual_stop_receipt_pinned": true,
+    "atomic_launch_intent_before_start_process": true,
+    "python_static_and_powershell_parse_and_actual_check_only": "PASS",
+    "scoped_health_taipei": "2026-10-08T08:40:06+08:00",
+    "scoped_health_exit_code": 0,
+    "scoped_health_alarms": false
+  },
+  "private_archive": {
+    "relative_path": "experiments/r80_symmetry_20261007/controller_handoffs/incumbent_shell_v001_20261008/live_handoff",
+    "payload_file_count": 37,
+    "payload_bytes": 260058,
+    "manifest_sha256": "c1edc59f3f825da8baffc0af7aa5cd7b004041d11cfa156ef1df599902fe43a6",
+    "all_published_file_hashes_rechecked": true
+  },
+  "limits": [
+    "The new controller is live with the reviewed pilot request; no prepared 16-row cohort, full reference, actual annotation or pilot dispatch was verified at this handoff milestone.",
+    "The first cycle was deferred by an existing store append; the same live process will retry on its normal 30-minute schedule, without a forced restart.",
+    "The old complete receipt's 668 unique observations and v011 are historical snapshots, not a new full current-data audit.",
+    "No HFSS or worker process was stopped or started here, and no claim, done, fail, input, raw or score spec was altered by the handoff.",
+    "Scoped raw activity is not a remote-worker process or runtime Git audit.",
+    "R80 5000-point collection, final research results and later R81 positive measured WM with independent repeat remain incomplete."
+  ]
+}

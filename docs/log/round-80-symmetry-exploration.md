@@ -383,3 +383,13 @@ Conductor完整回歸第二次732／732通過（304.825秒、4 threads、CI unse
 已push的介面`9da2a3e`建立私人`pilot_protocols/incumbent_shell_v001/request_v001/request.json`，嚴格schema及content-derived pilot ID載入通過。原protocol、addendum、anchor manifest／tensor、profile與training protocol按已驗證來源SHA固定；runtime blind池保留本機讀取路徑，完整2,048筆另存私人NAS，實體input重播及兩棵樹的hash完全一致。[request收據](assets/r80_incumbent_shell_pilot_request_20261008.json)保留request SHA與各綁定；封存2,060檔、payload10,447,968 bytes，manifest SHA256 `cb1a6e58083ffa10e32a75b3e28d3b919623f924d8bfe4f2ebe680180b01c1b0`，發布後逐檔readback hash核對。
 
 此里程碑只凍結request及可重跑的原blind庫，尚未選出實際16筆、呼叫current-SM predictor、驗證全量preparation-time reference或派工。原08:16實作收據保留當時「尚無request」的歷史狀態，不回改結論。08:28–08:31觀察以Win32_Process核對PID25924／creation／command仍live，個人scope健康檢查0／無警報、既有jobs有新成功結果。延期pointer仍保留，等待原controller恢復後才交接；檔案活動不等於216重啟或三台runtime Git已核對。R80蒐集／完整研究及R81正WM／獨立重測仍未完成。
+
+### 2026-10-08 08:43：一次性request controller交接完成，首輪延期待正常重試
+
+獨立審查確認原cycle在pre-receipt穩定性檢查前就寫active pointer；LiveSnapshotChanged正常延後時不移除它，因此「waiting且無pointer」不一定能成立。此次採最小操作交接：嚴格核對原pointer SHA、canonical receipt不存在及cycle目錄空，保留原整個local，而非移除pointer去滿足護欄。08:37:33只對已核對PID25924／creation／command的sole controller寫local STOP；08:37:41記錄正常`stopped/local_STOP`，其PID已不在、watcher數0，原pointer／空目錄／STOP仍保留，沒有停止HFSS或worker。
+
+新settings固定私人request及`controller_shell_v1`，dataset／profile／training／seed／blind池／retry roster不變。啟動綁定已push `724652e`，要求實作`9da2a3e`為其ancestor且七個已驗證source bytes相同。初次helper審查保留CHANGES_REQUIRED；補齊settings-preparation與actual STOP收據SHA／核心欄位、最後present或absent pointer檢查、atomic CreateNew launch intent及緊鄰StartProcess的old-PID／watcher0／newlocal檢查後，final Sol review PASS。08:39:37 hidden啟動新PID54448，08:40:59實體CIM核對sole PID／creation／command及新launch `e9826e086f384ee88abdf233f457679c`、request／settings／profile binding；這是controller實際啟用證據，不是pilot已派工。
+
+首輪08:39:45開始，08:40:49因既有job成功結果追加而LiveSnapshotChanged延期，completed cycles仍0、無action receipt；同一live process按原30分鐘節奏重試，不為觀察逾時重啟。08:40個人scope健康檢查0／無警報、既有jobs仍有新成功。尚未驗證實際16筆cohort、current-SM annotation、全量reference或dispatch；最後完整controller收據仍是07:42的668唯一／v011，不能冒充最新全量。下一routine健康檢查約09:10。
+
+[交接收據與限制](assets/r80_incumbent_shell_controller_handoff_20261008.json)及新舊初始／終態、helpers、審查原問題／final PASS、原request／實作綁定共37檔、payload260,058 bytes已存私人`controller_handoffs/incumbent_shell_v001_20261008/live_handoff`；manifest SHA256 `c1edc59f3f825da8baffc0af7aa5cd7b004041d11cfa156ef1df599902fe43a6`，發布後逐檔hash核對。新local從此固定，不能在terminal-unavailable或完成reference／bundle後輪換而丟失pre-queue的一次性證據。此為操作里程碑，未改score spec／raw／claims，未驗證三台runtime Git，也不宣稱性能推進、5,000研究完成或R81正WM達標。
