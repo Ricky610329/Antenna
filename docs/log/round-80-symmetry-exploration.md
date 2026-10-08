@@ -435,3 +435,10 @@ Conductor獨立重算767保存數值的唯一性／極值／計數及254集合�
 [驗證收據](assets/r80_backlog_implementation_20261008.json)綁定完整回歸796項通過、零error／failure／skip／warning；OMP／MKL4且CI未設定，golden bytes不變。獨立Sol審查通過。補池採唯一watcher內的非daemon thread，每90秒檢查自身未終態預留量，低於48時分16筆prio6補向96；主線寫入優先，SM訓練期間可供工。每輪核對metadata；實體manifest和canonical queue為權威，local index只是可重建cache。部分copy、已排隊而缺收據、STOP時進行中的交易都有恢復測試。pilot reference沿用已驗證cutoff，接受合法後到結果但保護原raw／entry／identity。
 
 初版審查找出的metadata／部分copy／收據重建／thread join缺口已修正；兩次未完成的full suite因具體審查blocker主动取消，原記錄保留，不稱通過。這是程式驗證里程碑，尚非live部署／性能提升或R80／R81完成；只用blind stable order補底池，主線仍每48筆新唯一真值更新SM。
+
+
+### 2026-10-08 10:54：背景補池controller實際同local交接
+
+[啟動收據](assets/r80_backlog_startup_20261008.json)核對push `992f7b3`、796項完整回歸及九檔獨立審查來源。PID21720只用owned STOP自然終止，208檔local tree、空資料夾與terminal state保存；新sole PID32084／`b743fd91f1774d398124d1925bf35fdb`從同一`controller_shell_v1`啟動。訓練、active cycle4457、pretrain audit、training snapshot及一次性pilot保留。新settings只增加low_backlog；沒有重啟HFSS worker。
+
+10:54:36新主線開始執行，LOW keeper_started事件已出現。本紀錄僅證明實際啟動／狀態繼承，首次自動補池append與本輪mainline／pilot派工仍待驗證；不得將程序啟動當成資料或性能結果。

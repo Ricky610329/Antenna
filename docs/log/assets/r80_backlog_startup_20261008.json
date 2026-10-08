@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "status": "live_startup_verified_refill_pending",
+  "verified_utc": "2026-10-08T02:54:34.5451100Z",
+  "launch_commit": "992f7b394a0d852d13df0aabcc1f68237a71fa85",
+  "process_id": 32084,
+  "creation_unix_ms": 1791428069242,
+  "old_launch_id": "e901b9207cca4fd9a16bea451ece98ea",
+  "new_launch_id": "b743fd91f1774d398124d1925bf35fdb",
+  "same_local_workdir": true,
+  "natural_stop_only": true,
+  "single_hidden_start": true,
+  "worker_or_hfss_restarted": false,
+  "low_backlog": {
+    "enabled": true,
+    "poll_seconds": 90,
+    "low_watermark": 48,
+    "target_pending": 96,
+    "max_refill": 96,
+    "min_refill": 48,
+    "shard_size": 16,
+    "priority": 6,
+    "owner": "r80-low-backlog-v1",
+    "reservoir_seed": 80100791,
+    "reservoir_size": 2048
+  },
+  "new_settings_sha256": "7662a0d3f5a344b2791f2bf06dfe6eb3e9d3755307a9134b5cc841b1507fc9b0",
+  "source_gate_sha256": "258f5042148f80179649541d8c689249db3e0e867a9793174554415fba573372",
+  "handoff_receipt_sha256": "7fbf11b25bae56c7601c17b4e32238a63ea4bc666d94eb6f59999b730745e801",
+  "terminal_manifest_sha256": "29a754298b586ee64027e49c86dd09d944f96f294bc8b6b09ed2a397213ccf8c",
+  "prior_watch_status_sha256": "807e15f344e90e6effa6d4a227501f5ab76a0844a0ef5b65103444dee55cbc51",
+  "initial_state_sha256": "82c5d5590bd9b803246dd793d46dc61a02b1f2b1e29226451e5b4cae2e9b6e22",
+  "initial_attempt_sha256": "8ad1618e5e3389faf48b234a1341c736395aaa4f0a9efe7ef1c8ee9af1492a8f",
+  "active_recovery_transition_sha256": "1be9ef6ffa907a651ec868bd725e1bca10ba49a82146e69bf4e2d322cf44f8a9",
+  "limits": [
+    "Saved startup process/inheritance proof, not a later live heartbeat.",
+    "First automatic LOW queue append and first resumed mainline receipt remain pending.",
+    "No new antenna performance improvement or objective completion is established."
+  ]
+}
