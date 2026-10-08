@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "status": "verified_saved_physical_cutoff",
+  "cutoff_taipei": "2026-10-08T09:43:39.692020+08:00",
+  "source_commit": "1efe9c23191b60d49a88fa5fdbc4cb2aca2a24e5",
+  "scope": "symmetry_filter_20261007",
+  "target_valid_unique": 5000,
+  "valid_unique_measured": 767,
+  "successful_including_repeats": 771,
+  "error_results": 1,
+  "pending_unique_at_cutoff": 17,
+  "best": {
+    "id": "r80c91d71565g_00019_5a42476c",
+    "factory_margin_db": -0.24644088745117188,
+    "s11_margin_db": -0.2390899658203125,
+    "gain_margin_db": -0.24644088745117188,
+    "worst_inband_s11_db": -9.760910034179688,
+    "minimum_inband_gain_dbi": 3.753559112548828,
+    "radiation_window_margin_db": 0.11250185966491699,
+    "unchanged_from_reviewed_v001_v008": true
+  },
+  "comparison": {
+    "reviewed_window_unique": 513,
+    "new_unique_set_difference": 254,
+    "new_set_best_factory_margin_db": -0.3223896026611328,
+    "new_set_best_delta_db": -0.07594871520996094,
+    "new_set_beats_prior_best": false
+  },
+  "verification": {
+    "owner_replayed_raw_unique": 767,
+    "conductor_saved_row_arithmetic": 767,
+    "conductor_original_raw_spot_checks": 3,
+    "conductor_check_sha256": "67d083c78ae7e2ec53c2bc8b692cec75f10ce22324a176d727965569de290dbd",
+    "progress_receipt_sha256": "9de69aed087a790e4129f3d3dc47a5733ad4ceb22c1e7350770110b15acb0405",
+    "operational_incident_sha256": "ddfe6c871c1dd430fcba2fc90b1d259e755978243ba808e64945a580f71ac9a5"
+  },
+  "private_archive": {
+    "relative_to_personal_antenna_root": "experiments/r80_symmetry_20261007/analysis_versions/current-progress_20261008_0943",
+    "payload_files": 11,
+    "payload_bytes": 1204770,
+    "payload_tree_sha256": "a42d4c5c66b640801e1bb4d2167b5d57d10e0b5164992788aab7d7370b1abeb0",
+    "publication_sha256": "7f3d239a77579d26506f5b7828b5c078ada09ee4c014fcab0f64f4630c9a6964"
+  },
+  "limits": [
+    "This is the saved 09:43 physical cutoff, not a later live count.",
+    "The 254-row difference is not a version-homogeneous or causal SM cohort.",
+    "Single solves do not establish a repeat certificate or field mirror symmetry.",
+    "The original receipt's no-controller-change claim is incorrect: its read-only audit acquired the dataset controller lock and caused the watcher to fail. The preserved incident receipt corrects this claim; future read-only audits must not acquire that lock.",
+    "R80 5000-row research and R81 strictly positive measured WM remain incomplete."
+  ]
+}

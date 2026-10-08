@@ -405,3 +405,14 @@ Conductor完整回歸第二次732／732通過（304.825秒、4 threads、CI unse
 Owner及獨立Sol各59／59 focused cases通過；conductor完整752／752 tests通過（364.900秒、4 threads／CI unset、無warning summary、source／golden bytes不變），compile／pyflakes／diff checks通過。案例涵蓋first-results出現不跨store誤歸、4,999晚到done仍保留名額、全成功raw hash、retry／terminal差異、固定normal／repeat代表、快照tamper／恢復、post-training provenance與multi-shard exact append。implementation v001收據只因JUnit父節點解析而誤記零tests，v002已明示修正；原JUnit／log未改。
 
 [修正收據及限制](assets/r80_same_cycle_cutoff_fix_20261008.json)與來源／full suite／focused logs／獨立審查／診斷／health共40檔、payload618,842 bytes封存私人`controller_fixes/cutoff_v001_20261008`；manifest SHA256 `27b09593d04db9552375068f4c597e9c45f8c64f65bacbed105172baf5dfe2d3`，發布後逐檔readback通過。此為已驗證code里程碑，PID54448在保存觀察時仍載入舊code；commit／push後另作同local交接，保留一次性request及所有durable pilot紀錄，不重啟HFSS worker。實際cohort／annotation／reference／dispatch、R80完整研究及R81正WM／獨立重測仍未完成。
+
+
+### 2026-10-08 09:43：767筆完整cutoff，最佳未提升；稽核鎖事故已恢復
+
+使用者詢問資料數與性能，完成一次完整原始量測重播：[進度收據](assets/r80_progress_767_20261008.json)固定09:43:39 cutoff，767有效唯一／5,000（15.34%），771成功含4重複、1 error；當時17個唯一預留未成功。固定26.5–29.5 GHz雙門檻下最佳仍`r80c91d71565g_00019_5a42476c`，factory margin−0.246440887 dB、最差S11−9.760910 dB、最低Gain3.753559 dBi，未達標。相對已審查v001–v008的513個patterns，精確新增254個的最佳−0.322389603 dB，沒有破紀錄；這個集合不是單一SM世代或因果比較。原receipt另有相對v008訓練439筆的328筆補集，不能冒充已審查窗口之後的新資料。
+
+Conductor獨立重算767保存數值的唯一性／極值／計數及254集合差，並重播3個代表點的原sample／rad與hash。單次量測、radiation窗餘裕均不證明重測合格或場型鏡射對稱。SM v012的三個實體模型已保存、累積訓練733筆；當時外層cycle未完成，不能以模型檔存在宣稱新候選已派工。11檔／1,204,770 bytes的原receipt、raw bindings、數值、model狀態、集合差、conductor核對及事故補充保存私人`analysis_versions/current-progress_20261008_0943`，payload tree與publication SHA列於收據，發布後hash核對。
+
+此次唯讀稽核錯誤取得dataset controller鎖，09:43:28令原PID54448重取鎖失敗。稽核退出後鎖釋放，原watcher與稽核PID均已不存在；這是我們的操作失誤，原receipt「未改controller」限制保留但由`operational_incident.json`明示更正。日後唯讀查進度不得取得controller鎖。原failed state、active training snapshot及模型未移除；09:59:32以獨立審查的helper從已push 1efe9c2同local啟動一次sole PID21720，精確繼承failed-state SHA與原training receipt，沒有重啟HFSS worker。完整恢復紀錄的NAS封存仍待自動審查要求的明確授權，已保留本機。
+
+使用者回報216空載並要求背景低tier補池，已先實派48筆、3×16 prio6 blind jobs `dedust_r80c4d53f5d1b01`–`b03`，784全體實體預留＋48≤5,000；不把候選計入767實測。派工後scoped health exit0／無警報，首片2／16成功、其餘兩片待跑，既有兩片guided仍有結果。這只證明保存結果／claim活動，未核對遠端worker Git或程序。自動48–96待跑補池與優先插隊實作另成里程碑；目前仍不宣稱已部署。
