@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "status": "paired_diagnostic_verified",
+  "created_local": "2026-10-08T14:17:20.473212+08:00",
+  "fixed_holdout_rows": 239,
+  "data_counts": {
+    "13": {
+      "manifest_count": 829,
+      "train_count": 590,
+      "holdout_count": 239,
+      "fixed_rows_retained_exact": 239
+    },
+    "14": {
+      "manifest_count": 895,
+      "train_count": 632,
+      "holdout_count": 263,
+      "fixed_rows_retained_exact": 239
+    },
+    "15": {
+      "manifest_count": 970,
+      "train_count": 669,
+      "holdout_count": 301,
+      "fixed_rows_retained_exact": 239
+    }
+  },
+  "mae_db": {
+    "13": {
+      "gain": 5.370923042297363,
+      "overall": 3.445430278778076,
+      "phi0": 3.6232011318206787,
+      "phi90": 3.1446692943573,
+      "s11": 2.1783037185668945
+    },
+    "14": {
+      "gain": 5.222440242767334,
+      "overall": 3.3976151943206787,
+      "phi0": 3.538484573364258,
+      "phi90": 3.1509034633636475,
+      "s11": 2.139352798461914
+    },
+    "15": {
+      "gain": 5.38620662689209,
+      "overall": 3.402437210083008,
+      "phi0": 3.524616003036499,
+      "phi90": 3.133911609649658,
+      "s11": 2.2020628452301025
+    }
+  },
+  "paired_changes": {
+    "v014_minus_v013": {
+      "gain": {
+        "delta_mae": -0.148481085896492,
+        "direction": "improved",
+        "rows_improved": 133,
+        "rows_tied": 0,
+        "rows_worsened": 106
+      },
+      "overall": {
+        "delta_mae": -0.04781525209546089,
+        "direction": "improved",
+        "rows_improved": 131,
+        "rows_tied": 0,
+        "rows_worsened": 108
+      },
+      "phi0": {
+        "delta_mae": -0.08471689373254776,
+        "direction": "improved",
+        "rows_improved": 136,
+        "rows_tied": 0,
+        "rows_worsened": 103
+      },
+      "phi90": {
+        "delta_mae": 0.006236373446881771,
+        "direction": "worsened",
+        "rows_improved": 123,
+        "rows_tied": 0,
+        "rows_worsened": 116
+      },
+      "s11": {
+        "delta_mae": -0.03895220533013344,
+        "direction": "improved",
+        "rows_improved": 134,
+        "rows_tied": 0,
+        "rows_worsened": 105
+      }
+    },
+    "v015_minus_v013": {
+      "gain": {
+        "delta_mae": 0.015284441411495209,
+        "direction": "worsened",
+        "rows_improved": 112,
+        "rows_tied": 0,
+        "rows_worsened": 127
+      },
+      "overall": {
+        "delta_mae": -0.04299305006861687,
+        "direction": "improved",
+        "rows_improved": 125,
+        "rows_tied": 0,
+        "rows_worsened": 114
+      },
+      "phi0": {
+        "delta_mae": -0.09858588874340057,
+        "direction": "improved",
+        "rows_improved": 133,
+        "rows_tied": 0,
+        "rows_worsened": 106
+      },
+      "phi90": {
+        "delta_mae": -0.010757354088127613,
+        "direction": "improved",
+        "rows_improved": 118,
+        "rows_tied": 0,
+        "rows_worsened": 121
+      },
+      "s11": {
+        "delta_mae": 0.023758521303534508,
+        "direction": "worsened",
+        "rows_improved": 120,
+        "rows_tied": 0,
+        "rows_worsened": 119
+      }
+    },
+    "v015_minus_v014": {
+      "gain": {
+        "delta_mae": 0.1637655347585678,
+        "direction": "worsened",
+        "rows_improved": 105,
+        "rows_tied": 0,
+        "rows_worsened": 134
+      },
+      "overall": {
+        "delta_mae": 0.004822195041924715,
+        "direction": "worsened",
+        "rows_improved": 115,
+        "rows_tied": 0,
+        "rows_worsened": 124
+      },
+      "phi0": {
+        "delta_mae": -0.013869003392755985,
+        "direction": "improved",
+        "rows_improved": 123,
+        "rows_tied": 0,
+        "rows_worsened": 116
+      },
+      "phi90": {
+        "delta_mae": -0.01699373684823513,
+        "direction": "improved",
+        "rows_improved": 128,
+        "rows_tied": 0,
+        "rows_worsened": 111
+      },
+      "s11": {
+        "delta_mae": 0.0627107247710228,
+        "direction": "worsened",
+        "rows_improved": 113,
+        "rows_tied": 0,
+        "rows_worsened": 126
+      }
+    }
+  },
+  "review": {
+    "owner_check_count": 16,
+    "owner_all_pass": true,
+    "conductor_scope": "independent NumPy float64 replay of 239 saved predictions/truth, per-row errors, paired deltas and counts; no model forward or raw response replay",
+    "conductor_checks_sha256": "bfca8884ac9d49fde7fe513375a792c0bd3460d2a1f80b1a0490e0f027613c66",
+    "original_receipt_sha256": "85017fada3658d2fb82ee3555de0fe076c730b196c8aa33bdddc5a1a01f4185d",
+    "paired_predictions_sha256": "ca7c1dec69a2b9d5a21a4812a93db0e2d7a414a3aee61beb616dae58b060fff0",
+    "producer_sha256": "ac0a6257b65a4e46ed685ae82f07f8224696f92fbd18dbb85d23efa37b811233",
+    "fixed_ids_sha256": "96cc07d5cbe402005b40568f5ba821c7a3f20e1fe974da97870896ad580a6f5b",
+    "fixed_truth_sha256": "41000e0e910481ef9dd152446340b8a11747f424acb0bab68a786d4cc48922f0"
+  },
+  "private_archive": {
+    "status": "staged_pending_user_approval_after_auto_review_rejection",
+    "relative_to_personal_antenna_root": "experiments/r80_symmetry_20261007/analysis_versions/sm-common-v013-v015_20261008_v001",
+    "payload_files": 28,
+    "payload_bytes": 97851539,
+    "manifest_sha256": "332d580561545d83a2c53de18e8e0079bb749faffc8f75b580dab734cdeb35ae",
+    "auto_review_reason": "New roughly 98 MB model/analysis payload was not explicitly covered by trusted authorization; no NAS write executed."
+  },
+  "limits": [
+    "All comparisons use the exact same 239 rows frozen as data-v013 profile_holdout.",
+    "Lower fixed-set prediction MAE is described as improvement and higher MAE as worsening only on this fixed set.",
+    "No causal, HFSS-performance, optimization, navigation, or generalization claim follows from these prediction errors.",
+    "No bootstrap or uncertainty interval was computed.",
+    "No legacy raw file or whole-current raw corpus was replayed; only legacy manifest metadata and the 239 fixed local rows were read.",
+    "No controller API, lock, process query, CUDA, training, dataset/watch mutation, NAS write, queue mutation, source/config edit, or Git mutation was used.",
+    "The live training state and controller were outside scope and were not read for stability claims.",
+    "Model versions have different training-data sizes; this comparison is descriptive on one fixed set.",
+    "Original model receipts do not bind a Git training commit; observed audit-runtime HEAD is not original training provenance.",
+    "Conductor replay uses saved NumPy arrays only, not a second model forward or raw replay."
+  ]
+}

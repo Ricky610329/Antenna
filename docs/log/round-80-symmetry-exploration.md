@@ -466,3 +466,18 @@ Conductor獨立重算767保存數值的唯一性／極值／計數及254集合�
 v013模型fit累積829唯一（新增96），當前profile590 train／239 holdout；歷史先驗10,150 train／1,850 holdout，家族與pattern分割重播零train–holdout交集。獨立Sol34項核對通過：三個模型byte與data／protocol binding、239保留集CPU預測及478個sample／rad SHA重播一致，615個凍結來源檔案前後穩定。S11／Gain／phi0／phi90 MAE＝2.1783／5.3709／3.6232／3.1447 dB；總MAE3.4454。v012保留集214筆、v013增至239筆，版本誤差不能當作模型性能提升。v013原receipt未綁Git commit，保留的觀測source SHA只證明audit runtime。三片各16筆prio1 jobs `dedust_r80cac599772g01`至`g03`的staged tree／canonical NAS input／實體profile驗證與queue rows一致，48圖形全唯一。其cycle snapshot為868唯一，與fit829及09:43獨立全量raw cutoff767分開記帳。
 
 模型、凍結保留集／輸入及兩份審查共628檔、52,276,669 bytes已封存私人`analysis_versions/pilot-sm013_20261008_v001`；manifest SHA256 `815b0736177674e6091e9f0c4d8464ffbae40a943225d5f1e6e71ee8bfc53bc9`，含manifest的629檔NAS readback全一致。第一次本機stage遇Windows長路徑失敗，保留v001；v002改用短路徑映射並保留原source binding後通過，未修改任何來源。此次只寫新私人歸檔與研究紀錄，沒有controller鎖、GPU訓練、HFSS／worker重啟或runtime算法變更。12:05已核對同一PID16536／creation／command，scoped健康無警報；主線三片及96筆LOW池仍有工作，下一routine健康約12:35。R80資料目標與R81正WM重測仍未完成。
+
+
+### 2026-10-08 14:17：SM v013–v015同一239筆保留集比較
+
+[固定保留集診斷](assets/r80_sm_common_v013_v015_20261008.json)使用v013的同一239筆圖形與完整216維真值，三版都仍屬保留集，原行metadata一致；家族／pattern／ID與當前訓練及歷史先驗無交集。三版資料量分別829／895／970唯一；各版自己的holdout總量239／263／301不拿來直接比較。獨立Sol以原supported predictor在CPU重播同一集合，三版9個模型SHA／summary binding及478個raw檔SHA核對通過，16項檢查全通過；conductor另用NumPy float64重算全部預測誤差、逐筆MAE、配對差與改善／惡化計數，容差2e-6 dB。Conductor沒有再做model forward或raw replay。
+
+| SM | S11 MAE | Gain MAE | phi0 MAE | phi90 MAE | 全216維MAE |
+|---|---:|---:|---:|---:|---:|
+| v013 | 2.178304 | 5.370923 | 3.623201 | 3.144669 | 3.445430 |
+| v014 | 2.139353 | 5.222440 | 3.538485 | 3.150903 | 3.397615 |
+| v015 | 2.202063 | 5.386207 | 3.524616 | 3.133912 | 3.402437 |
+
+v014相對v013總MAE下降0.047815 dB（131筆改善／108筆惡化）；v015相對v013下降0.042993 dB（125／114），但相對v014上升0.004822 dB（115／124）。v015相對v013的S11／Gain略差、兩個rad分量略好，不能寫成全面進步。這只是同一集合的prediction診斷，不證明SM讓HFSS最佳WM或優化效率提升；沒有bootstrap／不確定性區間／因果或泛化結論。v013原receipt未綁training Git，audit runtime HEAD不補作原訓練來源。
+
+九個模型與凍結比較證據28檔、97,851,539 bytes已在本機create-only stage，完整hash核對；NAS尚未寫入。自動審查認為這批新內容未獲明確授權，已合併970筆統計歸檔提出確認；先前339檔的批准與既有發布均不回改。14:09唯讀查詢為1,005唯一有效實測，242筆新raw重播＋767筆精確hash匹配舊metrics，單次最佳仍−0.246440887 dB，未公證。原37單筆COM error已不在此次results error集合；scoped health無警報，同一PID16536正常，未啟動第二controller或重啟HFSS。
