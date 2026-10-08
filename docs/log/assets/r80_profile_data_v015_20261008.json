@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "status": "frozen_profile_analysis_and_compatibility_verified",
+  "created_local": "2026-10-08T14:27:13.115315+08:00",
+  "counts": {
+    "source_stores": 15,
+    "validated_complete_source_rows": 970,
+    "valid_response_rows": 970,
+    "valid_radiation_rows": 970,
+    "unique_selected_rows": 970,
+    "duplicate_rows_removed": 0,
+    "repeat_or_notarize_candidates": 1,
+    "repeat_or_notarize_selected": 1,
+    "symmetry_class": {
+      "exact": 970
+    }
+  },
+  "data_cutoff": {
+    "version": 15,
+    "unique": 970,
+    "latest_live_count_claim": false,
+    "manifest_sha256": "f17a100feb59bb6e23a4f2b886ced7cc9611d60e921b405d22dae4a5cfa89a7d",
+    "data_receipt_sha256": "d0815afb5dacbdc9e2b21f2518c8eeccdc763c89f8365156ca7c759a54c78bc0"
+  },
+  "single_solve_spec_counts": {
+    "s11_pass": 1,
+    "gain_pass": 8,
+    "joint_pass": 0
+  },
+  "best_single_solve": {
+    "id": "r80c91d71565g_00019_5a42476c",
+    "s11_band_margin_db": -0.2390899658203125,
+    "gain_band_margin_db": -0.24644088745117188,
+    "phi0_mirror_power_45": 0.09176931028534725,
+    "phi90_mirror_power_45": 0.004224751071367147
+  },
+  "quantiles": {
+    "s11_band_margin_db": {
+      "finite_count": 970,
+      "q05": -8.889259940385818,
+      "q25": -8.654108613729477,
+      "q50": -8.335889160633087,
+      "q75": -7.6940765380859375,
+      "q95": -5.015368509292607
+    },
+    "gain_band_margin_db": {
+      "finite_count": 970,
+      "q05": -29.19112548828125,
+      "q25": -20.72052812576294,
+      "q50": -15.007365226745605,
+      "q75": -10.198766946792603,
+      "q95": -3.63974614441395
+    },
+    "phi0_mirror_power_45": {
+      "finite_count": 970,
+      "q05": 0.0870996390354953,
+      "q25": 0.16941409126295773,
+      "q50": 0.252119075493309,
+      "q75": 0.34147749075274664,
+      "q95": 0.5697355412455032
+    },
+    "phi90_mirror_power_45": {
+      "finite_count": 970,
+      "q05": 0.004601623730188998,
+      "q25": 0.011329492297275963,
+      "q50": 0.021490323854552254,
+      "q75": 0.046865559921897136,
+      "q95": 0.20266732600348597
+    },
+    "field_mirror_power_45": {
+      "finite_count": 970,
+      "q05": 0.054918950368825166,
+      "q25": 0.10459452609135256,
+      "q50": 0.14707443845017598,
+      "q75": 0.20177438650245552,
+      "q95": 0.318697070050796
+    }
+  },
+  "definitions": {
+    "geometry_mismatch_fraction": "mean XOR over 25x12 left/right pixel pairs",
+    "upper_lower_metal_imbalance": "upper metal fraction minus lower metal fraction; centre row omitted",
+    "field_mirror_power": "sum(abs(P(+theta)-P(-theta)))/sum(P(+theta)+P(-theta)) in linear power",
+    "band": "inclusive 26.5--29.5 GHz",
+    "s11_band_margin_db": "-10 dB minus the maximum S11 in band; descriptive only",
+    "gain_band_margin_db": "minimum Gain in band minus 4 dB; descriptive only",
+    "physical_validation": "profiled_batch.validate_store replay including actual bridge symmetry and artifact hashes"
+  },
+  "analysis_artifacts": {
+    "analysis_sha256": "b93e9af014224b5324b213fa4ef3db270e2a2ba1de00bf7824083aae6d5986dc",
+    "arrays_sha256": "6fd761da111be9fb74d1627f14ca315b0ef2ee6098656e43793b355084fbe92b",
+    "receipt_sha256": "a7dde202a9b38a00468ae8f4a4dcfadabd2ec0a5d7667e25c9c83c1087d75534",
+    "plots": {
+      "geometry_terrain.png": "c3363fcc3bd20f6b34b7732f73aa4123f0bca9cf58fcc7c55f996762daa233d2",
+      "frequency_responses.png": "67817082e8ff3327d9446f63d0b04a2ba2b20ec774441d0352a89da44a69dbe7"
+    },
+    "plot_receipt_sha256": "9c3cdb6a10e4addbaadea5057689f7f848e48d8908cd5cc682a29cb0fe0a1b37",
+    "visual_qa": "Both generated PNGs inspected; Chinese labels, axes, legends, sample count, geometric coordinate policy and single-solve/causal limits readable."
+  },
+  "review": {
+    "checks_passed": 29,
+    "raw_subset_count": 9,
+    "full_raw_replay_by_analysis": 970,
+    "independent_all_aligned_arrays_replayed": true,
+    "independent_receipt_sha256": "e91021e75bab3d40e0bba1ab3694b6c174b3391396f05b3b1d98a9cb41e43f13",
+    "independent_raw_subset_sha256": "acbb90a0cfb502b67d241160ea28f670c7e7f8fc644cf8638e089c4fd6f91b64",
+    "reviewer_sha256": "e9014e080c10efc0e8ea787780ef6d9e9a1eaeaa68424b977d0ee5d0ef68882f",
+    "raw_subset_scope": "declared deterministic extrema plus best WM; no independent second full raw replay",
+    "manifest_join_scope": "source observation id, pattern, measurement, score, source-store path and sample/radiation hashes; raw lineage labels are not equated to canonicalized training lineage ids"
+  },
+  "code_checks": {
+    "full_tests": 809,
+    "full_duration_seconds": 343.35,
+    "full_result_sha256": "2db0e64d436a304318921fde7b16878cf9ccbe362c8e07b9da7422ac46aa882a",
+    "full_junit_sha256": "532230aad6e53bbbf8f22639156dfd6879a971325305569b0409fdf78d52d4f1",
+    "full_log_sha256": "e363e14e6dfbcb5378a55ab1f3bce4a60865c1bc78900e02b441b0a46611d754",
+    "threads": 4,
+    "CI": null,
+    "golden_sha256_unchanged": {
+      "tests/golden.json": "c5fc5ed0db1bf51de2e81f6ac8681962d70e4a1b99508dbf7cad6cdfb7ec42fb",
+      "tests/golden_loop.json": "8b179a83cda6726a713efdbe529d0b40454c199ac1c8e1419e7d48c13f3b5598",
+      "tests/golden_loop_dual.json": "fb48587153fcbeae6ce4b34880be7ba88b042845e004b4388a0c16ef1518627e"
+    },
+    "pyflakes": "pass",
+    "diff_check": "pass",
+    "failed_first_full": {
+      "passed": 794,
+      "failed": 15,
+      "result_sha256": "d52dcdc6a4829627f24967d17b77fd7dc392c65212ebeb6e3ddc1f2f6f89acde",
+      "junit_sha256": "8711b8026f636fe8389acbc341b0d00e137c84d96ce3f81cd4f06ef927f01a29",
+      "log_sha256": "b818040c9cadf50c6482bd770d5839dc7f9c93d71e4831ca7a408032972648f0",
+      "observed_failure": "All 15 shutil.copyfile destination opens raised FileNotFoundError at Windows path lengths261–264. Fresh shorter basetemp with unchanged source passed all809; original failed artifacts preserved."
+    },
+    "method_sha256": {
+      "script/symmetry_analysis.py": "945b20ce399dab5dbf18e659d34d1860c28d5c5c21c0627d44c5ab5195e58571",
+      "script/figs/symmetry_profile.py": "737e3c9ba4aa76a8c56e2bac332836f64d4e0896cf718ed8db1a028652c2944b",
+      "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3"
+    },
+    "test_source_sha256": "958e3c24d1986b3f6dff0f84d179c4291bbae503ee0d9122bdb879de00567c47"
+  },
+  "private_archive": {
+    "status": "staged_pending_user_approval_after_auto_review_rejection",
+    "relative_to_personal_antenna_root": "experiments/r80_symmetry_20261007/analysis_versions/profile-data-v015_20261008_v001",
+    "payload_files": 2043,
+    "payload_bytes": 36915792,
+    "manifest_sha256": "252a8a52a2644ef0c9e97e917ad9a6b03acbdedacb10a3505bf3f92f9ede8af2",
+    "scope": "970 unique frozen data-v015 profile rows; 15 local immutable snapshots plus descriptive analysis and two figures; not latest live count"
+  },
+  "limits": [
+    "970 refers to the retained SM data cutoff, not the latest live R80 total.",
+    "All results are descriptive single solves, not causal metal-symmetry or selection-arm effects.",
+    "No controller locks, live source discovery, CUDA, HFSS, fitting, or queue mutation occurred.",
+    "This review covers the frozen 970-row data-v015 cutoff, not any later live state.",
+    "All aligned arrays are replayed; raw tensors are replayed only for the declared deterministic extrema subset.",
+    "The schema-v2 cutoff identifier is only shape-bound because the original pair-proof is unavailable.",
+    "No causal, optimization, HFSS-performance, or population-generalization conclusion is supported.",
+    "Schema-v2 cutoff IDs are preserved and shape-validated; the absent original pair-proof is not reconstructed.",
+    "This consumer-only compatibility fix does not change the running controller/HFSS/SM training or queue algorithm."
+  ]
+}

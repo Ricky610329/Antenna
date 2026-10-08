@@ -454,6 +454,114 @@ def _profile_source_provenance(root, entry_hashes):
     }
 
 
+def _canonical_content_id(value):
+    raw = json.dumps(value, sort_keys=True, separators=(",", ":"),
+                     ensure_ascii=False)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _is_sha256(value):
+    return (isinstance(value, str) and len(value) == 64
+            and all(char in "0123456789abcdef" for char in value))
+
+
+def _validate_profile_source_bindings(bindings_doc, manifest, results, mid, sid, root):
+    """Validate the two concrete snapshot_successes binding schemas."""
+    if not isinstance(bindings_doc, dict):
+        raise ValueError(f"invalid snapshot_successes source bindings: {root}")
+    bindings = bindings_doc.get("items")
+    manifest_ids = [row["id"] for row in manifest]
+    if (not isinstance(bindings, dict)
+            or bindings_doc.get("partial_snapshot") is not True
+            or bindings_doc.get("measurement_id") != mid
+            or bindings_doc.get("score_spec_id") != sid
+            or set(bindings) != set(manifest_ids)):
+        raise ValueError(f"invalid snapshot_successes source bindings: {root}")
+
+    schema = bindings_doc.get("schema_version")
+    provenance = {
+        "schema_version": schema,
+        "partial_snapshot": True,
+        "source_batches_may_be_incomplete": bindings_doc.get(
+            "source_batches_may_be_incomplete"),
+    }
+    if schema == 1:
+        return bindings, provenance
+    if schema != 2:
+        raise ValueError(f"unsupported snapshot_successes source bindings schema: {root}")
+
+    selected = bindings_doc.get("selected_pattern_sha256")
+    manifest_patterns = [row["pattern_sha256"] for row in manifest]
+    if (bindings_doc.get("source_batches_may_be_incomplete") is not True
+            or bindings_doc.get("cutoff_kind")
+            != "same_cycle_ephemeral_physical_proof"
+            or not _is_sha256(bindings_doc.get("cutoff_id"))
+            or not isinstance(selected, list)
+            or selected != manifest_patterns
+            or len(selected) != len(set(selected))
+            or not all(_is_sha256(value) for value in selected)):
+        raise ValueError(f"invalid schema-v2 snapshot_successes cutoff: {root}")
+
+    sources = bindings_doc.get("sources")
+    if not isinstance(sources, list) or not sources:
+        raise ValueError(f"invalid schema-v2 snapshot_successes sources: {root}")
+    source_records = []
+    source_keys = set()
+    for source in sources:
+        if not isinstance(source, dict):
+            raise ValueError(f"invalid schema-v2 snapshot_successes sources: {root}")
+        source_input, source_store = source.get("input"), source.get("store")
+        input_hashes = source.get("input_metadata_sha256")
+        store_hashes = source.get("store_metadata_sha256")
+        if (not isinstance(source_input, str) or not source_input
+                or not isinstance(source_store, str) or not source_store
+                or not isinstance(input_hashes, dict) or not input_hashes
+                or not isinstance(store_hashes, dict)
+                or not all(_is_sha256(value) for value in input_hashes.values())
+                or not all(_is_sha256(value) for value in store_hashes.values())):
+            raise ValueError(f"invalid schema-v2 snapshot_successes sources: {root}")
+        manifest_sha = store_hashes.get("manifest.json")
+        results_sha = store_hashes.get("results.json")
+        if (not _is_sha256(manifest_sha) or not _is_sha256(results_sha)
+                or source.get("partial_source_results_sha256") != results_sha):
+            raise ValueError(f"invalid schema-v2 snapshot_successes sources: {root}")
+        key = (source_input, source_store, manifest_sha, results_sha)
+        if key in source_keys:
+            raise ValueError(f"schema-v2 snapshot source record is not unique: {root}")
+        source_keys.add(key)
+        source_records.append((key, source))
+
+    for name in manifest_ids:
+        entry = results[name]
+        binding = bindings[name]
+        if (not isinstance(binding, dict)
+                or binding.get("cutoff_result_entry") != entry
+                or binding.get("cutoff_result_entry_id")
+                != _canonical_content_id(entry)
+                or binding.get("source_sample_file") != entry.get("sample_file")
+                or binding.get("source_sample_sha256") != entry.get("sample_sha256")
+                or binding.get("source_rad_file") != entry.get("rad_file")
+                or binding.get("source_rad_sha256") != entry.get("rad_sha256")):
+            raise ValueError(f"{name}: schema-v2 frozen binding differs from validated raw entry")
+        association = (
+            binding.get("source_input"), binding.get("source_store"),
+            binding.get("source_manifest_sha256"),
+            binding.get("partial_source_results_sha256"),
+        )
+        if sum(key == association for key, _ in source_records) != 1:
+            raise ValueError(f"{name}: schema-v2 source association is not unique")
+
+    provenance.update({
+        "cutoff_kind": bindings_doc["cutoff_kind"],
+        "cutoff_id": bindings_doc["cutoff_id"],
+        "cutoff_id_validation": "declared_sha256_shape_only",
+        "cutoff_id_reconstruction": "unavailable_original_pair_proof_absent",
+        "selected_pattern_sha256": selected,
+        "sources": sources,
+    })
+    return bindings, provenance
+
+
 def _write_profile_outputs(summary, arrays, out_json, out_npz):
     out_json, out_npz = Path(out_json), Path(out_npz)
     if out_json.resolve() == out_npz.resolve():
@@ -529,16 +637,8 @@ def analyze_profile_stores(stores, out_json, out_npz):
         if not bindings_path.is_file():
             raise ValueError(f"profile input is not a snapshot_successes frozen store: {root}")
         bindings_doc = pb.read_json(bindings_path)
-        if not isinstance(bindings_doc, dict):
-            raise ValueError(f"invalid snapshot_successes source bindings: {root}")
-        bindings = bindings_doc.get("items", {})
-        manifest_ids = {row["id"] for row in manifest}
-        if (bindings_doc.get("schema_version") != 1
-                or bindings_doc.get("partial_snapshot") is not True
-                or bindings_doc.get("measurement_id") != mid
-                or bindings_doc.get("score_spec_id") != sid
-                or set(bindings) != manifest_ids):
-            raise ValueError(f"invalid snapshot_successes source bindings: {root}")
+        bindings, bindings_provenance = _validate_profile_source_bindings(
+            bindings_doc, manifest, results, mid, sid, root)
         entry_hashes = []
         for row_index, manifest_row in enumerate(manifest):
             name = manifest_row["id"]
@@ -570,6 +670,7 @@ def analyze_profile_stores(stores, out_json, out_npz):
         source["manifest_rows"] = len(manifest)
         source["measurement_id"] = mid
         source["score_spec_id"] = sid
+        source["source_bindings_provenance"] = bindings_provenance
         provenance.append(source)
 
     winners = {}
@@ -732,7 +833,10 @@ def analyze_profile_stores(stores, out_json, out_npz):
             "Selection arms are provenance labels and are not interpreted as randomized treatments.",
             "No performance threshold was used to include, exclude, or deduplicate a row.",
             "Duplicate observations are retained in duplicate_rows as audit records but omitted from aligned arrays.",
-        ],
+        ] + ([
+            "For schema-v2 bindings, the original pair-proof is absent; the declared cutoff_id is retained and shape-validated but cannot be reconstructed by this analysis.",
+        ] if any(source["source_bindings_provenance"]["schema_version"] == 2
+                 for source in provenance) else []),
     }
     _write_profile_outputs(summary, arrays, out_json, out_npz)
     return summary

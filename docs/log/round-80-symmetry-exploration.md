@@ -481,3 +481,18 @@ v013模型fit累積829唯一（新增96），當前profile590 train／239 holdou
 v014相對v013總MAE下降0.047815 dB（131筆改善／108筆惡化）；v015相對v013下降0.042993 dB（125／114），但相對v014上升0.004822 dB（115／124）。v015相對v013的S11／Gain略差、兩個rad分量略好，不能寫成全面進步。這只是同一集合的prediction診斷，不證明SM讓HFSS最佳WM或優化效率提升；沒有bootstrap／不確定性區間／因果或泛化結論。v013原receipt未綁training Git，audit runtime HEAD不補作原訓練來源。
 
 九個模型與凍結比較證據28檔、97,851,539 bytes已在本機create-only stage，完整hash核對；NAS尚未寫入。自動審查認為這批新內容未獲明確授權，已合併970筆統計歸檔提出確認；先前339檔的批准與既有發布均不回改。14:09唯讀查詢為1,005唯一有效實測，242筆新raw重播＋767筆精確hash匹配舊metrics，單次最佳仍−0.246440887 dB，未公證。原37單筆COM error已不在此次results error集合；scoped health無警報，同一PID16536正常，未啟動第二controller或重啟HFSS。
+
+
+### 2026-10-08 14:27：970筆凍結資料的對稱／頻率圖與新版snapshot分析相容
+
+[分析與程式驗證收據](assets/r80_profile_data_v015_20261008.json)綁定data-v015的970唯一圖形，明確不是14:09之後的live累計。由cumulative manifest指定15個本機不可變source snapshots，全部970筆經profiled_batch實體store／bridge／raw hash驗證後納入；無性能過濾、無duplicate，2030個source檔前後SHA一致。全部970片的25×25金屬左右mismatch為0。26.5–29.5 GHz雙spec同時通過0片（S11單獨通過1、Gain8）；本cutoff最佳單次WM仍−0.246440887 dB，未公證、未達雙門檻。
+
+28 GHz GainTotal方向圖的±45°鏡射功率殘差採sum|P(+theta)−P(−theta)|／sum(P(+theta)+P(−theta))，P為線性功率、0越對稱，共22對2°至44°取樣。phi0／phi90／兩截面平均殘差中位數為0.252119／0.021490／0.147074；phi0截面的鏡射殘差通常較大，不能由金屬精確對稱推成場型精確對稱。沒有配對非對稱控制，這些分布不證明金屬對稱導致性能改善或惡化。場型GainTotal與spec正向RealizedGainTotal分開，既有±45°相對boresight window margin也不當作鏡射指標。
+
+已重跑既有繪圖器產生geometry_terrain與frequency_responses兩張圖，conductor目檢中文／座標／色階／legend／sample count／單次與因果限制均清楚。地形座標固定為金屬面積比例與上下金屬比例差，六角格取中位數、不插值；頻率圖以全部970片中位數／25–75%區間，加固定排序200條單次曲線，陰影不是confidence interval或單一可製作圖形。完整arrays／raw snapshots／圖只放本機staged與待確認的私人歸檔，未加入公共Git圖檔。
+
+獨立Sol29項review通過：970筆與training manifest按observation／pattern／measurement／score／source path及sample/rad hash對應；不將raw lineage label等同canonicalized training lineage。全部aligned arrays的幾何、帶內margin、鏡射殘差及quantiles重算通過；九個固定extrema（含最佳WM）再做raw tensor與SHA重播。鏡射指標最大差2.78e-16，quantile差8.33e-17；獨立審查沒有第二次全970 raw replay。
+
+原分析consumer只收source_bindings v1，實際新factory已有v2；現在有限支持兩版並維持物理驗證。v2額外核對cutoff kind／SHA形狀、manifest選擇順序與唯一性、已驗證raw entry及canonical content ID、artifact hash、唯一source input/store及manifest/results association；summary保留原cutoff provenance。12份來源v1、3份v2；缺少原pair-proof，因此只保留／shape-check cutoff_id，不假稱重建原同輪proof。六項新回歸涵蓋合法v2、不寫source、entry／ID／selection／source篡改及未知schema。
+
+完整809項回歸通過（343.35秒，OMP／MKL4、CI未設定），三份golden SHA全未變；pyflakes及diff check通過。第一版較長basetemp造成15個261–264字元destination在shutil.copyfile open時FileNotFoundError，794通過；原失敗完整保留，source未改、只用較短fresh basetemp重跑後全綠，未改HFSS／worker程式或Windows全域設定。分析修正不需要重啟正在運作的controller／worker。新統計歸檔2043檔、36,915,792 bytes已staged核對，但NAS尚待先前提出的合併明確授權；不得當成已發布。
