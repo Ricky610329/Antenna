@@ -416,3 +416,10 @@ Conductor獨立重算767保存數值的唯一性／極值／計數及254集合�
 此次唯讀稽核錯誤取得dataset controller鎖，09:43:28令原PID54448重取鎖失敗。稽核退出後鎖釋放，原watcher與稽核PID均已不存在；這是我們的操作失誤，原receipt「未改controller」限制保留但由`operational_incident.json`明示更正。日後唯讀查進度不得取得controller鎖。原failed state、active training snapshot及模型未移除；09:59:32以獨立審查的helper從已push 1efe9c2同local啟動一次sole PID21720，精確繼承failed-state SHA與原training receipt，沒有重啟HFSS worker。完整恢復紀錄的NAS封存仍待自動審查要求的明確授權，已保留本機。
 
 使用者回報216空載並要求背景低tier補池，已先實派48筆、3×16 prio6 blind jobs `dedust_r80c4d53f5d1b01`–`b03`，784全體實體預留＋48≤5,000；不把候選計入767實測。派工後scoped health exit0／無警報，首片2／16成功、其餘兩片待跑，既有兩片guided仍有結果。這只證明保存結果／claim活動，未核對遠端worker Git或程序。自動48–96待跑補池與優先插隊實作另成里程碑；目前仍不宣稱已部署。
+
+
+### 2026-10-08 10:12：恢復及48筆補池證據已封存
+
+使用者明確批准後，[恢復收據](assets/r80_failed_cutoff_handoff_20261008.json)所綁定的339檔、2,820,471 bytes已存私人`controller_handoffs/cutoff_failed_v001_20261008`；manifest SHA256 `f15d45ec09bda1d12d74ed2c4f096d12a4f00fee6d587ea87389d7156fa09903`，發布後逐檔readback通過。包含完整failed local、初始新舊process／state繼承、獨立審查及3片16筆prio6輸入，排除密碼、live logs與正在運作的controller tree。原自動審查拒絕与明確批准保留於對話；第一次copy遇Windows長路徑失敗，原stage保留，第二版用同一UNC目的地的長路徑拼法完成，不刪舊證據。
+
+10:03首輪恢復在reference construction遇`dedust_r80g00113`合法新結果追加而延期，completed0；sole watcher按原節奏等待，HFSS仍有低tier補池。診斷指出pilot的reference建立仍比較整份mutable results SHA，正在加入已驗證cutoff介面，以原成功raw／不可變identity保護參考，合法後到點留下一輪；尚未稱修正已部署或pilot已派工。

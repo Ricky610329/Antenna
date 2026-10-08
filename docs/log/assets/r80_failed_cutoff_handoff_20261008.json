@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "status": "verified_failed_boundary_handoff_and_refill",
+  "launch_commit": "1efe9c23191b60d49a88fa5fdbc4cb2aca2a24e5",
+  "verified_utc": "2026-10-08T01:59:32.5224313Z",
+  "new_pid": 21720,
+  "new_creation_unix_ms": 1791424767484,
+  "new_launch_id": "e901b9207cca4fd9a16bea451ece98ea",
+  "prior_launch_id": "e9826e086f384ee88abdf233f457679c",
+  "failed_state_sha256": "7c78a769745059292610a4261ad5e5054af10cc5af3776a78fc51b75c566103a",
+  "active_training_receipt_sha256": "0cef608580b42f1aa8cfcfe4acaf8759aff80b2e555e78710482a717f2c59811",
+  "same_local_workdir": true,
+  "preserved_failed_training_and_pilot": true,
+  "worker_or_hfss_changed": false,
+  "emergency_refill": {
+    "jobs": 3,
+    "rows": 48,
+    "shard_size": 16,
+    "priority": 6,
+    "action_receipt_sha256": "e3e9be9559e559b4f1402482d6d5f7f91016dee855d58e106a4d498ce1fcb764",
+    "reserved_before": 784,
+    "conservative_reserved_after": 832
+  },
+  "private_archive": {
+    "relative_to_personal_antenna_root": "experiments/r80_symmetry_20261007/controller_handoffs/cutoff_failed_v001_20261008",
+    "manifest_sha256": "f15d45ec09bda1d12d74ed2c4f096d12a4f00fee6d587ea87389d7156fa09903",
+    "payload_files": 339,
+    "payload_bytes": 2820471,
+    "readback_hash_passed": true
+  },
+  "limits": [
+    "Process proof is the saved 09:59 startup, not a later live heartbeat.",
+    "This handoff does not establish completed mainline or pilot dispatch.",
+    "48 queued inputs are not 48 new valid unique measurements.",
+    "The original read-only audit caused a lock collision; see the progress incident record.",
+    "First publication stage failed due to Windows path length and remains preserved; identical approved destination succeeded using long UNC paths."
+  ]
+}
