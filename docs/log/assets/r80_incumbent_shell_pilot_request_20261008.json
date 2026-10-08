@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "status": "verified_private_request_no_prepared_cohort_or_dispatch",
+  "scope": "symmetry_filter_20261007",
+  "implementation_commit": "9da2a3eca814ce1426c6023e7a5d543b6075e8a3",
+  "implementation_record": "r80_incumbent_shell_pilot_implementation_20261008.json",
+  "protocol_record": "r80_incumbent_shell_pilot_protocol_20261008.json",
+  "request": {
+    "relative_path": "experiments/r80_symmetry_20261007/pilot_protocols/incumbent_shell_v001/request_v001/request.json",
+    "sha256": "42a5f0bb25fad98a0f20e4e969bfc714d7a647492093d2f8ef61263e9194a6b5",
+    "pilot_id": "faaf5a1d1b9f886edfa25c6d17e32e84fb9ba7d10045b3ed41ac573c07b984a1",
+    "profile_sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+    "protocol_sha256": "e74221c63302b4beb1369f0e9d84c8028974c613a887444b325c12148ed07bd9",
+    "addendum_sha256": "69e72bf1d38bc7750ca7b678f4aac726adc36eaa1d0f6e194b6f4f5455a63e95",
+    "training_protocol_sha256": "01ec4d10362c02d5664760d6024fd44e32892cf01ee444048dea17e8e962c54c",
+    "runtime_blind_pool_sha256": "3022d822c22ec01a690e869aa30f99472518018244285434247af52b7f6379b6"
+  },
+  "private_archive": {
+    "relative_path": "experiments/r80_symmetry_20261007/pilot_protocols/incumbent_shell_v001/request_v001",
+    "manifest_sha256": "cb1a6e58083ffa10e32a75b3e28d3b919623f924d8bfe4f2ebe680180b01c1b0",
+    "payload_file_count": 2060,
+    "payload_bytes": 10447968,
+    "blind_pool_backup_rows": 2048,
+    "all_published_file_hashes_rechecked": true
+  },
+  "validation": {
+    "audited_utc": "2026-10-08T00:24:11.660467+00:00",
+    "strict_request_loading": "PASS",
+    "private_blind_backup_physical_input_validation": "2048/2048 PASS",
+    "private_blind_backup_equals_bound_runtime_tree": true,
+    "anchor_and_six_metadata_bindings": "PASS"
+  },
+  "prepared_cohort": false,
+  "model_prediction": false,
+  "dispatch": false,
+  "limits": [
+    "The request and its private backup are frozen, but no actual 16-row choice, current-model annotation or preparation-time reference has been validated yet.",
+    "The original PID25924 controller remains live with a deferred pre-receipt pointer; controller handoff is not complete.",
+    "The scoped queue check during the 08:28-08:31 observation reports no alarms and recent raw activity; this is not a remote process or runtime Git audit.",
+    "R80 5000 valid unique measurements, final research analysis and R81 positive measured WM with independent repeat remain incomplete."
+  ]
+}

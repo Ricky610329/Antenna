@@ -377,3 +377,9 @@ Conductor完整回歸第二次732／732通過（304.825秒、4 threads、CI unse
 [實作收據與限制](assets/r80_incumbent_shell_pilot_implementation_20261008.json)及source／tests／兩輪full suite／獨立審查／診斷46檔、payload1,182,554 bytes已封存私人`pilot_protocols/incumbent_shell_v001/implementation_20261008`；manifest SHA256 `a0986f84197c2d4dc07e327ed22f844085ceb230f89d88ef8e04294d4dec2ce4`，發布後逐檔hash核對。此封存綁定commit前已驗證worktree bytes；尚無實際request、prepared cohort、新模型query、dispatch或pilot HFSS結果。
 
 08:09:45個人scope健康檢查0／無警報，原PID25924／creation／command live。08:09 cycle於08:11遇既有job新結果追加，正常LiveSnapshotChanged延後至下一30分鐘tick；留下指向尚未生成action receipt的pointer，故不直接移除或交接。08:16再次核對原process仍live；最後完成收據仍是07:42的668唯一／v011，不能將其稱08:16全量現況。原HFSS工作照常，下次例行健康檢查約08:40；先恢復原cycle，再啟用已驗證介面。R80完整研究與R81正WM／獨立重測仍待完成。
+
+### 2026-10-08：私人一次性request與完整blind備份驗證
+
+已push的介面`9da2a3e`建立私人`pilot_protocols/incumbent_shell_v001/request_v001/request.json`，嚴格schema及content-derived pilot ID載入通過。原protocol、addendum、anchor manifest／tensor、profile與training protocol按已驗證來源SHA固定；runtime blind池保留本機讀取路徑，完整2,048筆另存私人NAS，實體input重播及兩棵樹的hash完全一致。[request收據](assets/r80_incumbent_shell_pilot_request_20261008.json)保留request SHA與各綁定；封存2,060檔、payload10,447,968 bytes，manifest SHA256 `cb1a6e58083ffa10e32a75b3e28d3b919623f924d8bfe4f2ebe680180b01c1b0`，發布後逐檔readback hash核對。
+
+此里程碑只凍結request及可重跑的原blind庫，尚未選出實際16筆、呼叫current-SM predictor、驗證全量preparation-time reference或派工。原08:16實作收據保留當時「尚無request」的歷史狀態，不回改結論。08:28–08:31觀察以Win32_Process核對PID25924／creation／command仍live，個人scope健康檢查0／無警報、既有jobs有新成功結果。延期pointer仍保留，等待原controller恢復後才交接；檔案活動不等於216重啟或三台runtime Git已核對。R80蒐集／完整研究及R81正WM／獨立重測仍未完成。
