@@ -616,3 +616,17 @@ Conductor與獨立Sol全池座標／hash／feed／mirror／Hamming／排重／�
 [離線判讀備料收據](assets/r80_local_variation_readout_ready_20261009.json)綁定final-dispatch v2 wrapper、既有metric／mirror／Spearman函式及兩片最終immutable receipt。兩片均須`dispatched`，16＋16筆sample／rad全部成功重播、profile／pattern／family／rank一致且raw／metadata在讀取前後不變，才輸出WM最大值、超過固定anchor的比例及選中32筆的預測／實測相關；partial／failed不能當完整試驗。準備版v1對第二片prepared receipt的綁定已由新v2覆蓋，原v1與證據不改；v2明確拒絕舊prepared收據。
 
 Conductor source review及11項本機synthetic fixture測試通過；Sol implementer另11項通過，不宣稱額外獨立審查。沒有讀取這32筆實際結果或改主線／queue／訓練。helper、tests、synthetic fixture、固定輸入與final receipts等94檔（含manifest）、payload1,384,437 bytes封存本人私人`local_variations/readout_handoffs/selected32_final_dispatch_v002_20261009`，逐檔SHA讀回一致；所有fixture均標示非HFSS真值。一次發布preflight因兩份測試收據schema欄位不同而在建立stage／NAS前退出，修正schema核對後才發布，原失敗保留。此里程碑僅證明判讀備料完成，沒有新性能結果。
+
+### 2026-10-09 12:37：局部變體產生新最佳，重新查詢並渲染極座標圖
+
+依使用者要求，12:32:59–12:34:04再次唯讀核對144個queue jobs的逐store截點，原始sample／rad重播2,182次成功，去重後2,178個pattern。未套用SM預測或舊排名；所有成功觀測的最大WM與去重後最大值一致。截點另外有一筆主線HFSS COM error、attempts=1，排除於有效成功數，沒有把失敗算成低分真值；掃描後的新結果不包含在本次數字。沒有取得live鎖、改queue／claims、重啟controller／worker或啟動本機HFSS。
+
+新最佳為首局部片`dedust_r80c83e6601eg01`的`r80localv1_00026_f6ffb938`，即推論前固定的v031全域LCB **rank27**。單次WM **+0.021682262 dB**，比固定anchor −0.246440887提高 **0.268123150 dB**；26.5–29.5 GHz格點最差S11 **−10.096088409 dB**、最低正向RealizedGainTotal **4.021682262 dBi**，兩項門檻均通過，但餘裕很小且**尚未獨立重測**。28 GHz正向RealizedGainTotal 5.833917 dBi，±45°方向窗餘裕+0.370928 dB。只確認這個已完成樣本的推進，完整32筆終態統計、預測／實測相關及成熟世代前緣判讀仍待；不以此宣稱SM校準修復或整池排序有效。
+
+![目前2,178個唯一實測中的最佳單次對稱樣本：WM+0.021682dB、金屬排列、S11／Gain及28GHz極座標方向圖](assets/round-80/best-symmetric-polar-20261009-v002/sample_card.png)
+
+圖沿用未修改的`script.figs.symmetry_profile --sample-id`與歷史`polar_rad_ax`。金屬精確左右鏡射、中心饋入固定在下緣；與anchor僅四個實體像素不同（獨立半格座標`[13,3]`與`[24,9]`及其鏡射）。±45°鏡射功率殘差phi0=0.102705、phi90=0.027582，不把金屬對稱或WM改善當成場型更對稱。保留原家族`c48nq1p05_16`與既有holdout分割，不改成獨立訓練家族；此具名結果已被搜尋觸及，不是未觸及保留集驗證。
+
+[本次排名／私人封存收據](assets/round-80/best-symmetric-polar-20261009-v002/best_query_receipt.json)與[出圖收據](assets/round-80/best-symmetric-polar-20261009-v002/sample_plot_receipt.json)綁定raw、analysis／NPZ、PNG及原腳本SHA。Conductor另用凍結NPZ重算頻率網格、兩項margin／WM、完整theta網格、金屬鏡射／四格變動與固定rank27 metadata，全量計數及最大值亦核對通過。2304×1280圖卡目檢中文、下緣饋入、曲線／legend與極座標均可讀；共用−20..10 dBi，每圈5 dB，phi0六點僅顯示截於圓心，原資料／指標未截斷。這是像素俯視示意，並非完整HFSS 3D模型；未改繪圖程式，不重跑既有817項回歸，也未宣稱額外獨立審查。
+
+完整查詢cutoff／raw最佳快照／分析／圖／驗證helper共155個payload、25,919,829 bytes加manifest，create-only封存本人私人NAS `analysis_versions/best-query-20261009_v002`，156檔逐檔SHA讀回一致；Git只交付使用者要求的圖、薄收據與log。原v001圖與陰性pilot保留，沒有登錄重測公證或宣稱R80的5,000筆／R81任務完成。主線與按批次更新SM繼續，每30分鐘健康檢查不變，下一約12:58。

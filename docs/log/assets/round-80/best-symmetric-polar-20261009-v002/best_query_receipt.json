@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-09T04:32:59.700943+00:00",
+  "completed_utc": "2026-10-09T04:34:04.791941+00:00",
+  "status": "read_only_query_complete",
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "unique_successful_patterns": 2178,
+  "successful_including_repeats": 2182,
+  "raw_replayed_this_query": 2182,
+  "exact_prior_metrics_reused": 0,
+  "reported_best_independently_raw_replayed": true,
+  "best": {
+    "id": "r80localv1_00026_f6ffb938",
+    "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+    "s11_margin_db": 0.09608840942382812,
+    "gain_margin_db": 0.021682262420654297,
+    "factory_margin_db": 0.021682262420654297,
+    "radiation_margin_db": 0.3709280490875244,
+    "radiation_margin_clipped_db": 0.3709280490875244,
+    "store": "dedust_r80c83e6601eg01",
+    "sample_sha256": "f79add39e27605d2f54ab48a36a7e206d6bef672ca407efdfe8d0a237d1bca0c",
+    "rad_sha256": "e11aee92cc03340a6bebfd97ef713059904598fbc6f8fb39b0822184e5249b40",
+    "repeat": false,
+    "pair_index": 137,
+    "row_index": 13,
+    "worst_inband_s11_db": -10.096088409423828,
+    "minimum_inband_gain_dbi": 4.021682262420654
+  },
+  "result_errors": [
+    {
+      "store": "dedust_r80cda826ac6g01",
+      "id": "r80cda826ac6g_00030_06d7c3c8",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      }
+    }
+  ],
+  "jobs_sha256_at_scan_start": "2677e85ccf499df30970f98ff47263b7ae9ad6e18df79b2f5e668c846c2c2ecf",
+  "rows_sha256": "552346d3950dd2e001b7b9e75fb50f48ede1afc21c2dc6f9739c2cfe90c7d778",
+  "pair_proofs_sha256": "fb1c5b8f921f70e7fd1678f38b8253d72d407066b2c7abcd072c0bfff5ac1e7e",
+  "query_script_sha256": "da6a0034241d4d6f22ecfd1ce0272b4dbd06ec252737278b0539b4bec2b631ac",
+  "controller_locks_acquired": false,
+  "queue_or_source_mutation": false,
+  "limits": [
+    "Each store has its own saved cutoff; later worker results or queue additions are excluded.",
+    "Unique representatives prefer nonrepeat observations, then queue/manifest order.",
+    "Single HFSS solve performance, not repeat certification or field-symmetry proof."
+  ],
+  "query_evidence_sha256": "ca339ae6be06132c74e9dcd3e24b5d258be1c2f7a649f8367e27a05bd390b997",
+  "analysis_sha256": "61063ea932d377b945f10e5bddce368303b3c802467e744786f31d4e75702166",
+  "npz_sha256": "6f17aaf4f3f111b2e871a6166c819d251689cc674a074ebac4f66b20e22f5890",
+  "sample_plot_receipt_sha256": "68eef35f412e81a23acc0023efb57e2f6255d0436adc242e200fa4208f04cbc5",
+  "figure_sha256": "8ed863e67ff052e991cbc5c6c907e37dbc86a57a8622a314147af34bf356e964",
+  "validation": {
+    "schema_version": 1,
+    "status": "passed",
+    "validated_utc": "2026-10-09T04:36:31.541972+00:00",
+    "all_cutoff_success_maximum_check": true,
+    "counts_and_hashes_checked": true,
+    "independent_npz_margin_and_geometry_check": true,
+    "exact_selected_rank_and_lineage_check": true,
+    "selection_rank": 27,
+    "changed_physical_cells": [
+      [
+        13,
+        3
+      ],
+      [
+        13,
+        21
+      ],
+      [
+        24,
+        9
+      ],
+      [
+        24,
+        15
+      ]
+    ],
+    "previous_best_id": "r80c91d71565g_00019_5a42476c",
+    "previous_best_wm_db": -0.24644088745117188,
+    "wm_improvement_db": 0.26812314987182617,
+    "visual_qa": "Image inspected: Chinese labels, lower-edge feed, frequency thresholds, two polar cuts and legends are readable without overlaps.",
+    "figure_pixels": [
+      2304,
+      1280
+    ],
+    "actual_full_selected32_outcome_readout": false,
+    "repeat_certification": false,
+    "tracked_renderer_changed": false
+  },
+  "validation_sha256": "cf8c4d98ee35afeb936019df9a4953f7655b850bb8afc2b56baed66720d109da",
+  "private_archive": {
+    "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\best-query-20261009_v002",
+    "payload_files": 155,
+    "files_including_manifest": 156,
+    "payload_bytes": 25919829,
+    "manifest_sha256": "ad90df864cd6bdf2a9c4087b31e3f3c0cbd5f46b38632e1adc240e02eba695cd",
+    "all_payload_sha256_readback_match": true
+  },
+  "scope": "Current per-store cutoff best single HFSS solve; not the complete32 trial result or repeat certification."
+}
