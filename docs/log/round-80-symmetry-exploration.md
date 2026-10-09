@@ -1172,3 +1172,10 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10 06:13：原生換行窄修與同32筆再固定
 
 publisher v9只修實際writer的換行雜湊與版本namespace；既有dedust.jobs_add／pb.atomic_json本機實際寫入回歸1項通過，獨立來源review及pool來源續接通過，不重跑廣泛測試。兩份v9本機action／派工前seal已實際產生，全部32筆選樣、owner配额、模型、雙預測與v8完全相同；修正後prepared action雜湊與實際file bytes一致。[準備收據](assets/r80_currentonly_prospective_v010_publisher_native_fix_20261010.json)。舊失敗、action、原始佇列cutoff保留；未派HFSS／改queue，接續仍需當下capacity、duplicate與最終window驗證。
+
+
+### 2026-10-10 06:26：使用者查詢的最新實測核對
+
+逐 store cutoff 重讀 sample/rad：3,086 個有效唯一對稱圖形，3,091 次成功實測含重測，比05:04增加71個。沒有新最佳；最佳 WM +0.0216822624 dB。[實測紀錄](assets/r80_best_status_20261010_0626.json)。
+
+06:26三個已認領工作皆有新結果，scope沒有警報；主線reported SM v013，持續批次更新及多策略補池。固定32筆雙scorer對照的第一批16筆已完成安全入列，第二批仍prepared，尚無這批對照的性能結果，也未採用新模型替换主線。安全容量驗證可以讀已完成原始資料，並非全流程盲讀；32筆選樣與預測早已凍結。目前資料持續增加，但尚未突破原最佳；R80 5000筆與R81新spec任務均未完成。例行健康檢查維持約30分鐘。
