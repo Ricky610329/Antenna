@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "readout_revision": 2,
+  "status": "terminal_v006_first32_saved_prediction_truth_readout",
+  "observed_utc": "2026-10-09T16:17:08.919972+00:00",
+  "cycle_id": "4b5e0d7e981967e63c52479f78b745caf05091d19866c443ef4d6ba9f2398639",
+  "action_receipt_sha256": "408efecb8c2466ddf2fb23fb8446211e08a75b393626937e8477c5c98054bda9",
+  "predictor_binding_at_dispatch": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 6,
+    "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+    "cumulative_valid_unique": 2641
+  },
+  "denominators": {
+    "all_proposed": 32,
+    "terminal_attempts": 32,
+    "successful_valid_unique": 32,
+    "terminal_error_attempts": 0
+  },
+  "actual_valid_subset": {
+    "valid_count": 32,
+    "actual_positive_count": 0,
+    "actual_best_wm_db": -2.101229190826416,
+    "actual_median_wm_db": -17.32370901107788,
+    "actual_min_wm_db": -26.695926666259766
+  },
+  "saved_prediction_comparisons_valid_subset": {
+    "live_v006": {
+      "valid_count": 32,
+      "factory_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.3174486803519061
+      },
+      "lcb_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.313782991202346
+      },
+      "predicted_factory_positive_count": 0,
+      "predicted_lcb_positive_count": 0,
+      "predicted_factory_best_db": -2.2467172940572104,
+      "predicted_factory_median_db": -8.25459897518158,
+      "predicted_lcb_best_db": -2.620675704884419,
+      "predicted_lcb_median_db": -8.841446676085901,
+      "band_s11_mae_db": 2.5491479012582983,
+      "band_gain_mae_db": 5.912113564039048,
+      "response_full_curve_mae_db": 3.901678073543521,
+      "radiation_phi0_mae_db": 3.647190864614903,
+      "radiation_phi90_mae_db": 3.3830903482759904,
+      "radiation_full_curve_mae_db": 3.515140606445447,
+      "full_vector_216_mae_db": 3.5759844670071805
+    },
+    "current_only_mlp": {
+      "valid_count": 32,
+      "factory_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.4098240469208211
+      },
+      "lcb_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.3951612903225806
+      },
+      "predicted_factory_positive_count": 0,
+      "predicted_lcb_positive_count": 0,
+      "predicted_factory_best_db": -3.9352439244588218,
+      "predicted_factory_median_db": -9.45058286190033,
+      "predicted_lcb_best_db": -4.078605119646853,
+      "predicted_lcb_median_db": -10.710477966469142,
+      "band_s11_mae_db": 2.3410030140408447,
+      "band_gain_mae_db": 5.700516592274653,
+      "response_full_curve_mae_db": 3.9735007133250986,
+      "radiation_phi0_mae_db": 3.4651483793199485,
+      "radiation_phi90_mae_db": 3.4795132937268205,
+      "radiation_full_curve_mae_db": 3.4723308365233847,
+      "full_vector_216_mae_db": 3.551218687501432
+    },
+    "cnn_shadow": {
+      "valid_count": 32,
+      "factory_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.16165689149560114
+      },
+      "lcb_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.10740469208211142
+      },
+      "predicted_factory_positive_count": 0,
+      "predicted_lcb_positive_count": 0,
+      "predicted_factory_best_db": -3.6477267742156982,
+      "predicted_factory_median_db": -11.397862672805786,
+      "predicted_lcb_best_db": -5.221813905266141,
+      "predicted_lcb_median_db": -12.543698787689323,
+      "band_s11_mae_db": 2.0355029740437334,
+      "band_gain_mae_db": 5.264759319402011,
+      "response_full_curve_mae_db": 3.7029114072818845,
+      "radiation_phi0_mae_db": 3.298680288390637,
+      "radiation_phi90_mae_db": 3.2927393672707996,
+      "radiation_full_curve_mae_db": 3.295709827830718,
+      "full_vector_216_mae_db": 3.3598063727443277
+    },
+    "weighted_loss_mlp": {
+      "valid_count": 32,
+      "factory_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.3416422287390029
+      },
+      "lcb_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.2785923753665689
+      },
+      "predicted_factory_positive_count": 0,
+      "predicted_lcb_positive_count": 0,
+      "predicted_factory_best_db": -4.868252118428548,
+      "predicted_factory_median_db": -8.929953654607136,
+      "predicted_lcb_best_db": -5.082996242957314,
+      "predicted_lcb_median_db": -9.691659540291276,
+      "band_s11_mae_db": 2.461899397628648,
+      "band_gain_mae_db": 6.020236617624895,
+      "response_full_curve_mae_db": 4.102952213707367,
+      "radiation_phi0_mae_db": 3.66237789217503,
+      "radiation_phi90_mae_db": 3.384188794374385,
+      "radiation_full_curve_mae_db": 3.5232833432747075,
+      "full_vector_216_mae_db": 3.614527517324293
+    }
+  },
+  "prediction_timing_interpretation": {
+    "live_v006": "The original dispatch-bundle prediction is prospective and predates HFSS.",
+    "three_shadows": "Current-only MLP, CNN, and weighted-loss MLP predictions were saved before their own evaluators read selected32 truth, but predicted_before_hfss=false. Physical HFSS may already have completed and an external root query had read some raw truth; this report does not relabel them prospective."
+  },
+  "training_exclusion": {
+    "manifest_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v006\\manifest.json",
+    "manifest_sha256": "e0e288f91f0dd747d94271180de45db60c31caeec32071a31da02732a5c08ad5",
+    "rows": 2641,
+    "selected32_overlap_count": 0
+  },
+  "input_bundle_bindings": {
+    "guided_manifest_sha256": "3c7303f0e0d6e7d6b1e0b537832c3afaa315461261ba7fb6351f31e0799397fd",
+    "factory_bundle_complete_sha256": "ece63758464327a08c1946c8f40ffa64f28927b5f71cad18e2046d8902e566f4",
+    "diversity_search_audit_sha256": "2c53ad51e0de574128538df11e200afd100e936385004516449273a33df29c9c",
+    "sm_pool_audit_sha256": "6761a633cccefede3f8f5e48e480313dab57a61b95d90b45b23e626ef16a2d3a",
+    "split_receipt_sha256": "26d0782651d63a48b0670f7446b8cf6c9aa83683409658f3102c2e23c954bf8f",
+    "frozen_shard_manifest_sha256": [
+      "3096120ecb574b563d1d1858a71f5c0111adfeb19d48cb2203276dc3fd5a0389",
+      "5f517f7fd16cd820fd26518b6f71d460eeb46f284085e19e634fb180791236d9"
+    ]
+  },
+  "order_fix_lineage": {
+    "v1_source_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_v006_first32_truth_20261009_v001\\readout.py",
+    "v1_source_sha256": "04689c96de5e608f1aec55faae8e2e773b07bb5302dc3332c248c239787b8dd6",
+    "v1_preserved_unchanged": true,
+    "prior_v1_rejection": {
+      "message": "two physical input shards do not concatenate to guided manifest order",
+      "v1_source_line": 485,
+      "observed_after_terminal_raw_read": true,
+      "cause": "V1 assumed concatenation, while the factory split receipt declares round_robin=true.",
+      "formal_outputs_written": false
+    },
+    "v2_narrow_change": "Bind both frozen shard manifests and split receipt; verify each complete frozen and physical input tree; reconstruct guided order by shard index plus shard_position*2; align metrics, failures, predictions, and shadows to original guided IDs.",
+    "round_robin": true,
+    "reconstructed_guided_ids_sha256": "0a9d82d9965c682d1c07aff8f66ca142d84566f1c49b98c937693162b17eb256"
+  },
+  "source_before_after_equal": true,
+  "NAS_queue_claim_raw_mutation": false,
+  "execution_scope": "one terminal read; no forward, rescore, model load, training, HFSS dispatch, queue mutation, or broad dataset scan",
+  "limits": [
+    "All-proposed denominator is 32. Terminal HFSS failures retain IDs, attempt counts, and error hashes but receive no fabricated WM, curve error, or rank metric.",
+    "All rho, MAE, positive-count, best, and median summaries use only hash-verified successful observations and state their valid N.",
+    "The three shadow predictors share frozen v006 manifest identity and selected32 exclusion, but only the original live-v006 dispatch prediction is predicted_before_hfss=true.",
+    "This is one development cohort. It is not an independent generalization result, a causal architecture/loss comparison, or authority to replace the live factory model."
+  ],
+  "best": {
+    "id": "r80c4b5e0d7eg_00001_46a9ce06",
+    "pattern_sha256": "46a9ce0635a78bb8f31e6ea13af098c54087a8cf291980131dc95f62e477eca4",
+    "s11_margin_db": -2.101229190826416,
+    "gain_margin_db": -0.7969133853912354,
+    "factory_margin_db": -2.101229190826416,
+    "radiation_margin_db": -1.70537868142128,
+    "radiation_margin_clipped_db": -1.70537868142128,
+    "selection_arm": "parent_lcb",
+    "candidate_group": "parent_variant",
+    "sample_sha256": "41300287e4fade168198238b56795ed9fe7d65b27fc9d4a4f564ddf5bcf9f61e",
+    "rad_sha256": "6a3554caa8acfc13375ae13e853581d87e67c16a95fec312794d4e13d97a9e91"
+  },
+  "independent_replay": {
+    "status": "passed_independent_raw_json_replay_v006_first32",
+    "helper_sha256": "05589ccf9eb1b720f9ab0ff4a1b805e8b068f7afb955da2faa45fcc57f86a92b",
+    "report_sha256": "db6f86241a83ba8e92887dd0a1bf802f07a99007ead22b5bebc376ec86d163e0",
+    "geometry": {
+      "all_exact_lr_symmetric": true,
+      "canonical_group_max_count": 2,
+      "maximum_pairwise_hamming": 362,
+      "minimum_pairwise_hamming": 84,
+      "pair_count": 496,
+      "proposed_count": 32,
+      "training_overlap_count": 0
+    },
+    "review_scope": {
+      "no_broad_tests": true,
+      "no_forward": true,
+      "no_hfss_or_queue_action": true,
+      "no_model_checkpoint_load": true,
+      "no_nas": true,
+      "no_new_scoring": true,
+      "no_project_metric_helpers": true,
+      "no_training": true,
+      "numpy_json_and_frozen_observation_tensors_only": true
+    },
+    "limits": [
+      "Every metric and correlation uses only the successful-valid subset and states its valid N.",
+      "Terminal failures retain lineage and attempt metadata but receive no fabricated WM, MAE, or rank value.",
+      "Only live_v006 is labeled predicted_before_hfss=true; the three shadow predictions remain false.",
+      "This is one development cohort and does not establish causal model superiority, deployment authority, or generalization."
+    ]
+  },
+  "source_artifact_sha256": {
+    "report.json": "37d1b7bd94ee9aee4ac2dcaed936f92d07dc766aa3be7579346f6c384535ca91",
+    "rows.json": "ef1c06330cc4cc9c8475388a22e10f4e4c02e91db64bfe09ac27921cdb88d767",
+    "failures.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "readout.py": "04689c96de5e608f1aec55faae8e2e773b07bb5302dc3332c248c239787b8dd6",
+    "readout_v2.py": "48381fb5b4c9ac825c923892f68305471dea8a69a926f706158b55a9d5b5ad75"
+  },
+  "adoption_decision": "No live replacement from one development cohort. Current-only ranks better on these32; CNN lowers curve error but ranks worse; weighted loss does not beat live LCB ranking and worsens Gain error.",
+  "global_reference": {
+    "query_taipei": "2026-10-09 23:51",
+    "unique": 2756,
+    "wm_db": 0.021682262420654297,
+    "new_global_census_performed": false
+  },
+  "additional_v006_tail16_included": false,
+  "additional_HFSS_dispatched": false,
+  "model_training_or_live_policy_changed": false,
+  "conductor_record_script_sha256": "ef72a141adf65ec077b5005ba18ea39c5180352c205cb579b387dbead2ab80f7"
+}

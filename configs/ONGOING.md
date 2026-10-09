@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **v006 first32終態真值及四SM比較完成**：32/32有效唯一／exactLR／0terminal error／0正WM，最佳−2.101229、median−17.323709；非新最佳。[結果](../docs/log/assets/r80_diverse_sm_v006_first32_result_20261010.json)。LCBρ live0.3138／current-only0.3952／CNN0.1074／weighted0.2786；CNN曲線誤差較低但排名較差，加權loss未改善本批Gain或LCB。先保留主線，不憑單批替換；32原預測prospective、三shadow仍false。窄round-robin讀回修正與独立raw重播已核對，v1保留；v006另16不混入，00:38下次routine。
+
 - **10/10 00:08健康通過／首次RPC樣本已重試成功**：原PID15944身分不變，scope零警報，三片claimed最新4／2／2分鐘。v008已完成cycle（fit/model實體完整核對待做），正常waiting30分鐘；v006兩片於正確jobs_state皆done、原失敗樣本status ok。[健康及恢復](../docs/log/assets/r80_health_20261010_0008.json)。first32判讀工具因round-robin/concatenation順序假設拒絕，窄adapter審查中，不改原始資料或派工。下一routine00:38。
 
 - **v007完整20k保存排名獨立核對通過**：10k fresh＋10k parent，strict11／11／10選32，26家族／cap2／minHamming66；兩個staged16與action／completion／fit2691吻合。[補充收據](../docs/log/assets/r80_diverse_sm_v007_selection_review_20261010.json)。只驗派工來源與幾何，不是新HFSS性能或SM改善；00:08再查終態，live流程未改。

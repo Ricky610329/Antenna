@@ -990,3 +990,19 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-10 00:01：v005 多樣SM世代48圖表封存
 
 以既有 symmetry profile 與凍結本機 store 產生本代48筆的幾何地形、頻率響應及單筆樣本圖；一次性本機 recorder 逐一核對48個exact ID、48個金屬圖形左右精確對稱、48組sample/radiation檔案雜湊，並直接由arrays.npz的26.5--29.5 GHz頻帶重算WM，與既有v005 generation結果及兩份plot receipt一致。本代最佳為r80ceec7d671g_00001_7f75af40，WM−0.637783 dB，仍為負值；它只代表本代48筆最佳，非全域最佳，既有全域最佳仍為+0.021682 dB。三張圖雜湊已封存，資料夾名稱日期不替代收據中的實際UTC／台北時間。[薄收據](assets/r80_diverse_sm_v005_generation_plots_20261010.json)、[幾何地形](assets/round-80/diverse-sm-v005-generation48-20261010-v001/geometry_terrain.png)、[頻率響應](assets/round-80/diverse-sm-v005-generation48-20261010-v001/frequency_responses.png)、[本代最佳樣本](assets/round-80/diverse-sm-v005-best-20261010-v001/sample_card.png)。未讀NAS、未執行HFSS／訓練／模型更新，也未修改queue、config或ONGOING。
+
+
+### 2026-10-10：v006首32筆完整真值與四SM保存預測比較
+
+兩個16筆job均於正確jobs_state完成，32有效唯一／金屬exactLR／0terminal error，原RPC失敗樣本已恢復成功。最佳WM−2.101229、median−17.323709、0正WM，未超過既有全域+.021682；v006另16筆不同cycle未混入。原readout v1把round-robin shards誤當concatenation，讀raw後在順序gate拒絕、沒有正式輸出；v1完整保留，新的v2綁split_receipt及兩完整input tree/hash、逐整列interleave回原guided次序，再對齊metrics與四套predictions。Root單次readout及不同Sol的本機raw／NumPy獨立重播一致。[結果／lineage](assets/r80_diverse_sm_v006_first32_result_20261010.json)。
+
+| 保存預測模型 | factory對真WMρ | LCB對真WMρ | 帶內S11 MAE(dB) | 帶內Gain MAE(dB) |
+|---|---:|---:|---:|---:|
+| 原live v006 | .3174 | .3138 | 2.5491 | 5.9121 |
+| current-only MLP | .4098 | .3952 | 2.3410 | 5.7005 |
+| CNN | .1617 | .1074 | 2.0355 | 5.2648 |
+| weighted-loss MLP | .3416 | .2786 | 2.4619 | 6.0202 |
+
+全部分母32；只有原live dispatch prediction在HFSS前保存，三shadow均維持predicted_before_hfss=false，其評估器未先讀selected32 truth，但root較早全量查詢已讀部分真值，不偽裝完整前瞻試驗。四模型均排除此32於固定v006全部2641訓練資料之外；這是原live挑出的單一development cohort，較好ρ不证明換模型會產生較佳候選。CNN低MAE沒有轉成較好排名，固定加權loss在此batch未改善LCB／Gain；current-only排名改善只作後續可測假說，主線模型／選擇政策不在此替換。v004/v005/v006多樣探索仍未找到新的正WM，全域最佳薄餘裕保留；不把最佳不同或誤差改進稱作穩定性能推進。R80 5000及後續R81未完成，三台／LOW補池／新資料批次SM更新繼續，下次routine00:38。
+
+讀回v2及獨立重播entry的窄靜態審查亦通過：[靜態審閱](assets/r80_diverse_sm_v006_first32_static_review_20261010.json)。具體分工為：不同Sol先前編寫獨立raw／NumPy算式，root產生僅換版本綁定的v2 adapter並單次執行，另一輪Sol靜態核對十個算術函式AST完全不變；不把root adapter冒称独立重新實作。
