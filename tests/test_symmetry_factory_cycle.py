@@ -955,9 +955,13 @@ def test_proof_distinguishes_fatal_success_and_schema_changes_from_retry_updates
     cfg = pb.load_profile_config(PROFILE)
     policy = cycle.factory.validate_factory_config(vars(cfg))
     error_queue = cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
+    row = pb.read_json(input_dir / "manifest.json")[0]
+    cutoff_successful = set(error_queue["successful_hashes"])
+    cutoff_pending = set(error_queue["pending_hashes"])
     pb.atomic_json(store / "results.json", successful)
-    with pytest.raises(cycle.LiveSnapshotChanged, match="retryable result entry"):
-        cycle._recheck_queue_proof(dataset, error_queue)
+    assert cycle._recheck_queue_proof(dataset, error_queue) == {row["pattern_sha256"]}
+    assert error_queue["successful_hashes"] == cutoff_successful
+    assert error_queue["pending_hashes"] == cutoff_pending
 
     success_queue = cycle._queue_view(dataset, cfg, policy, RETRY_WORKERS)
     results = pb.read_json(store / "results.json")

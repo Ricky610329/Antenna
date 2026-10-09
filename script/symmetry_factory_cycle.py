@@ -779,7 +779,7 @@ def _recheck_input_proof(proof: Mapping[str, Any]) -> None:
 
 def _recheck_pair_proof(proof: Mapping[str, Any],
                         append_cache: dict[str, Any] | None = None) -> set[str]:
-    """Accept append-only results while retaining the original validated cutoff."""
+    """Accept validated nonterminal progress while retaining the original cutoff."""
 
     store = Path(proof["store"])
     for name, digest in proof["store_metadata_sha256"].items():
@@ -810,15 +810,13 @@ def _recheck_pair_proof(proof: Mapping[str, Any],
     immutable = sorted((set(removed) | set(modified)) & frozen_ok)
     if immutable:
         raise ValueError(f"frozen successful result entry changed: {store}: {immutable[:20]}")
-    if removed or modified:
-        raise LiveSnapshotChanged(
-            f"retryable result entry changed after physical audit: {store}; retry cycle")
     known = {row["id"] for row in proof["rows"]}
     extras = sorted(set(current) - set(frozen))
     unknown = sorted(set(extras) - known)
     if unknown:
         raise ValueError(f"results append has unknown manifest ids: {store}: {unknown[:20]}")
-    if extras:
+    retryable_changes = sorted((set(removed) | set(modified)) - frozen_ok)
+    if extras or retryable_changes:
         cached = None if append_cache is None else append_cache.get(str(store))
         if not isinstance(cached, dict) or cached.get("results_sha256") != current_sha:
             try:
@@ -843,7 +841,8 @@ def _recheck_pair_proof(proof: Mapping[str, Any],
         raise LiveSnapshotChanged(f"results changed after proof recheck: {store}")
     _recheck_success_raw(proof)
     rows = {row["id"]: row for row in proof["rows"]}
-    return {rows[name]["pattern_sha256"] for name in extras
+    late_names = set(extras) | (set(modified) - set(removed))
+    return {rows[name]["pattern_sha256"] for name in late_names
             if isinstance(current[name], dict) and current[name].get("status") == "ok" and
             "error" not in current[name]}
 
