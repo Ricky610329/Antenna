@@ -1,0 +1,448 @@
+{
+  "schema_version": 1,
+  "status": "completed_CNN_shadow_descriptive_error_improvement_rank_still_weak_not_adopted",
+  "started_utc": "2026-10-09T14:59:02.292772+00:00",
+  "completed_utc": "2026-10-09T15:02:17.215518+00:00",
+  "elapsed_seconds": 194.922746,
+  "source_counts": {
+    "manifest": 2641,
+    "train": 1773,
+    "development_holdout": 868
+  },
+  "actual_holdout_positives": 0,
+  "comparison": {
+    "actual_positive_holdout": 0,
+    "architecture_protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+    "fixed_development_holdout_truth_read": true,
+    "holdout_arrays_sha256": "020668815a965d246d72cb692086e4dd82d6e53d5fac1d6a1d26d0e0c22fc993",
+    "limits": [
+      "Historical CNN/two results used different data, targets, wrappers, and reports; their efficacy does not transfer to this R80 shadow.",
+      "The same 868-row development holdout is descriptive and cannot independently authorize deployment.",
+      "This preparation makes no claim that CNNNet improves current-only MLP or live SM v006."
+    ],
+    "n_holdout": 868,
+    "nas_access": false,
+    "published_to_live_factory": false,
+    "results": {
+      "current_only_cnn": {
+        "binding": {
+          "cumulative_valid_unique": 2641,
+          "data_version": 6,
+          "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+          "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+          "protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+          "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+        },
+        "metrics": {
+          "gain_mae": 5.327264742448828,
+          "mae": 3.5821782293118787,
+          "phi0_mae": 3.7467558875705897,
+          "phi90_mae": 3.368667631324229,
+          "s11_mae": 2.0990268641357117
+        },
+        "model_ids": [
+          {
+            "architecture": "CNNNet-flat216",
+            "data_version": "6",
+            "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_cnn_shadow_v006_20261009_v001\\models\\data-v006\\member-0.pt",
+            "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+            "protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+            "sha256": "722b21108e6547732defecba0072f64b540f06bb83cee09a78571dc97132e45f",
+            "source": "isolated_r80_sm_cnn_shadow"
+          },
+          {
+            "architecture": "CNNNet-flat216",
+            "data_version": "6",
+            "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_cnn_shadow_v006_20261009_v001\\models\\data-v006\\member-1.pt",
+            "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+            "protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+            "sha256": "745171098eda2d92600ba482855a286f0cc3f0fb7045a7ba59d3d9485efd81a6",
+            "source": "isolated_r80_sm_cnn_shadow"
+          },
+          {
+            "architecture": "CNNNet-flat216",
+            "data_version": "6",
+            "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_cnn_shadow_v006_20261009_v001\\models\\data-v006\\member-2.pt",
+            "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+            "protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+            "sha256": "28ed871bdebb67e2317588248ded9ad90bc27cca93e77b8e58a3a4c391ce02c7",
+            "source": "isolated_r80_sm_cnn_shadow"
+          }
+        ],
+        "ranking": {
+          "factory_score": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.07828585542955223
+            }
+          },
+          "lcb_score": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.07705422314308648
+            }
+          },
+          "wm_of_ensemble_mean": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.057899286825435624
+            }
+          }
+        }
+      },
+      "current_only_mlp": {
+        "binding": {
+          "cumulative_valid_unique": 2641,
+          "data_version": 6,
+          "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+          "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+          "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+          "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+        },
+        "metrics": {
+          "gain_mae": 5.573624945262795,
+          "mae": 3.7589723552335084,
+          "phi0_mae": 3.939856063605319,
+          "phi90_mae": 3.5014295117579675,
+          "s11_mae": 2.3546716060535995
+        },
+        "model_ids": [
+          {
+            "architecture": "CurveMLP-216",
+            "data_version": "6",
+            "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v006_20261009_v001\\training\\models\\data-v006\\member-0.pt",
+            "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+            "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+            "sha256": "4ac3f277bae4629add122083c69a1543444f862053fc384e934c2d9f1dad985f",
+            "source": "script.symmetry_training"
+          },
+          {
+            "architecture": "CurveMLP-216",
+            "data_version": "6",
+            "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v006_20261009_v001\\training\\models\\data-v006\\member-1.pt",
+            "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+            "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+            "sha256": "ae4358e4d70c418396b62a1318b4c3fac845577fb5aaccca0c900d0fed338d1d",
+            "source": "script.symmetry_training"
+          },
+          {
+            "architecture": "CurveMLP-216",
+            "data_version": "6",
+            "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v006_20261009_v001\\training\\models\\data-v006\\member-2.pt",
+            "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+            "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+            "sha256": "bcc6952378d4c55d9dccc153b0a906ed11550111a061bee83441feb12c3981b3",
+            "source": "script.symmetry_training"
+          }
+        ],
+        "ranking": {
+          "factory_score": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.07485572253763775
+            }
+          },
+          "lcb_score": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.06723850594733562
+            }
+          },
+          "wm_of_ensemble_mean": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.0751296061732777
+            }
+          }
+        }
+      }
+    },
+    "schema_version": 1,
+    "selected32_predictions_sha256": "75ca646c8fff9f1fd538dbd273539060e88290f3852d5059c8dd7c5e3611523d",
+    "selected32_truth_read": false,
+    "source_immutable_hashes_unchanged": true,
+    "status": "completed_fixed_cnn_architecture_shadow_comparison_not_published"
+  },
+  "live_v006_anchor": {
+    "metrics": {
+      "mae": 3.6057678336562082,
+      "s11_mae": 2.135740733459944,
+      "gain_mae": 5.5594091746194945,
+      "phi0_mae": 3.743791777922775,
+      "phi90_mae": 3.3773983718837157
+    },
+    "ranking": {
+      "wm_of_ensemble_mean": {
+        "spearman": {
+          "n": 868,
+          "rho": 0.07183689218443887
+        },
+        "predicted_positive": 0,
+        "false_predicted_positive": 0
+      },
+      "factory_score": {
+        "spearman": {
+          "n": 868,
+          "rho": 0.0725785212144308
+        },
+        "predicted_positive": 0,
+        "false_predicted_positive": 0
+      },
+      "lcb_score": {
+        "spearman": {
+          "n": 868,
+          "rho": 0.06448383403033349
+        },
+        "predicted_positive": 0,
+        "false_predicted_positive": 0
+      }
+    },
+    "comparison_sha256": "5bc33c9c2d85296a78e1b963ac000bbf9e5973cc8e2f2405878a489bff4b858f"
+  },
+  "physical_checkpoint_check": {
+    "schema_version": 1,
+    "status": "completed_CNN_models_terminal_norm_and_optimizer_metadata_verified",
+    "members": [
+      {
+        "seed": 0,
+        "sha256": "722b21108e6547732defecba0072f64b540f06bb83cee09a78571dc97132e45f",
+        "epochs": 100,
+        "Adam_steps": 1400,
+        "Adam_parameter_states": 13,
+        "finite_model_optimizer": true,
+        "nonzero_Adam_moments": true,
+        "norm_equal_to_frozen_MLP": true
+      },
+      {
+        "seed": 1,
+        "sha256": "745171098eda2d92600ba482855a286f0cc3f0fb7045a7ba59d3d9485efd81a6",
+        "epochs": 100,
+        "Adam_steps": 1400,
+        "Adam_parameter_states": 13,
+        "finite_model_optimizer": true,
+        "nonzero_Adam_moments": true,
+        "norm_equal_to_frozen_MLP": true
+      },
+      {
+        "seed": 2,
+        "sha256": "28ed871bdebb67e2317588248ded9ad90bc27cca93e77b8e58a3a4c391ce02c7",
+        "epochs": 100,
+        "Adam_steps": 1400,
+        "Adam_parameter_states": 13,
+        "finite_model_optimizer": true,
+        "nonzero_Adam_moments": true,
+        "norm_equal_to_frozen_MLP": true
+      }
+    ],
+    "terminal_sha256": "6b5c0b2266ee89424393cdc09527f1a6db989202e53170436995459c2f70f2b0",
+    "summary_sha256": "3ac6b6a4e7554e75c1b0c711e8ab2e7baa49aefd070e102bb649d1d69ea0e14e",
+    "helper_sha256": "f86a3fd1db073691d111d96fb53245ab46ebf933a1b95561b0577da7b37c58b7",
+    "model_forward_or_new_training": false,
+    "NAS_access": false,
+    "scope": "Physical local checkpoints/finite tensors/optimizer/norms and producer bindings; not independent reconstruction of CNN SGD trajectory."
+  },
+  "physical_check_sha256": "e0b1d89d668dd0f4a9e5510c9c2a8b7dade8340496023c484736b8a155c8774f",
+  "saved_output_arithmetic_review": {
+    "conclusion_limits": [
+      "The replay validates saved-output arithmetic and cross-file identity only.",
+      "It does not independently validate model forward execution, training code, checkpoint tensors, or optimizer/norm state.",
+      "The 868 rows are the fixed development holdout; the result is not an independent prospective HFSS validation or deployment authorization.",
+      "Historical CNN efficacy remains untransferred; this report makes no live-model publication claim."
+    ],
+    "factory_binding": {
+      "cumulative_valid_unique": 2641,
+      "data_version": 6,
+      "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+    },
+    "holdout": {
+      "actual_positive": 0,
+      "cnn": {
+        "metrics": {
+          "gain_mae": 5.327264742448828,
+          "mae": 3.5821782293118787,
+          "phi0_mae": 3.7467558875705897,
+          "phi90_mae": 3.368667631324229,
+          "s11_mae": 2.0990268641357117
+        },
+        "ranking": {
+          "factory_score": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.07828585542955223
+            }
+          },
+          "lcb_score": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.07705422314308648
+            }
+          },
+          "wm_of_ensemble_mean": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.057899286825435624
+            }
+          }
+        }
+      },
+      "cnn_minus_mlp": {
+        "gain_mae": -0.24636020281396664,
+        "mae": -0.17679412592162969,
+        "phi0_mae": -0.1931001760347293,
+        "phi90_mae": -0.13276188043373827,
+        "s11_mae": -0.2556447419178878
+      },
+      "count": 868,
+      "current_only_mlp": {
+        "metrics": {
+          "gain_mae": 5.573624945262795,
+          "mae": 3.7589723552335084,
+          "phi0_mae": 3.939856063605319,
+          "phi90_mae": 3.5014295117579675,
+          "s11_mae": 2.3546716060535995
+        },
+        "ranking": {
+          "factory_score": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.07485572253763775
+            }
+          },
+          "lcb_score": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.06723850594733562
+            }
+          },
+          "wm_of_ensemble_mean": {
+            "false_predicted_positive": 0,
+            "predicted_positive": 0,
+            "spearman": {
+              "n": 868,
+              "rho": 0.0751296061732777
+            }
+          }
+        }
+      }
+    },
+    "input_sha256": {
+      "comparison": "0e82229f1f8b5b34f5539d985efa1fc920f6f4fd8e976c67bd98282688178ae2",
+      "config": "0b38e2f7d238d2adb304ba4cf3ad2e4aea61a3ade5df9391fdeb2b8759955595",
+      "execute_entry": "d5b686ac05aa176db94f2a25cd9eb4fbf47f3a2d4b4e76aa801c6bcd8d89a975",
+      "execution_terminal": "6b5c0b2266ee89424393cdc09527f1a6db989202e53170436995459c2f70f2b0",
+      "holdout_arrays": "020668815a965d246d72cb692086e4dd82d6e53d5fac1d6a1d26d0e0c22fc993",
+      "member_0": "722b21108e6547732defecba0072f64b540f06bb83cee09a78571dc97132e45f",
+      "member_1": "745171098eda2d92600ba482855a286f0cc3f0fb7045a7ba59d3d9485efd81a6",
+      "member_2": "28ed871bdebb67e2317588248ded9ad90bc27cca93e77b8e58a3a4c391ce02c7",
+      "model_summary": "3ac6b6a4e7554e75c1b0c711e8ab2e7baa49aefd070e102bb649d1d69ea0e14e",
+      "selected32_predictions": "75ca646c8fff9f1fd538dbd273539060e88290f3852d5059c8dd7c5e3611523d"
+    },
+    "review_scope": {
+      "independence": "Arithmetic was replayed through a new NumPy/JSON-only script, but the reviewer also implemented the training adapter. This is not a fully independent code review. A separate Sol agent performed the prelaunch static review.",
+      "no_broad_tests": true,
+      "no_checkpoint_tensor_load": true,
+      "no_forward": true,
+      "no_nas": true,
+      "no_rescore": true,
+      "no_retrain": true,
+      "reviewer_role": "training_implementer_and_saved_output_arithmetic_reviewer"
+    },
+    "review_script_sha256": "b270e20d205edebaeff8482fa182a71b3ec1a871c3d8a673112fb8781a8870ef",
+    "schema_version": 1,
+    "selected32": {
+      "count": 32,
+      "factory_binding_match": true,
+      "finite_curve_values_per_row": 216,
+      "ordered_id_hash_match": true,
+      "predicted_before_hfss": false,
+      "score_ranges": {
+        "factory_score": [
+          -20.516662915547688,
+          -3.6477267742156982
+        ],
+        "lcb_score": [
+          -24.25154372995257,
+          -5.221813905266141
+        ],
+        "navigation_score": [
+          -21.63363743299758,
+          -3.862416635754428
+        ]
+      },
+      "selected32_truth_read": false
+    },
+    "status": "passed_saved_output_numpy_json_arithmetic_review",
+    "terminal": {
+      "completed_utc": "2026-10-09T15:02:17.215518+00:00",
+      "exit_code": 0,
+      "published_to_live_factory": false,
+      "started_utc": "2026-10-09T14:59:02.292772+00:00",
+      "status": "completed",
+      "three_members": [
+        {
+          "file": "member-0.pt",
+          "member_seed": 0,
+          "sha256": "722b21108e6547732defecba0072f64b540f06bb83cee09a78571dc97132e45f"
+        },
+        {
+          "file": "member-1.pt",
+          "member_seed": 1,
+          "sha256": "745171098eda2d92600ba482855a286f0cc3f0fb7045a7ba59d3d9485efd81a6"
+        },
+        {
+          "file": "member-2.pt",
+          "member_seed": 2,
+          "sha256": "28ed871bdebb67e2317588248ded9ad90bc27cca93e77b8e58a3a4c391ce02c7"
+        }
+      ]
+    }
+  },
+  "arithmetic_review_sha256": "1381263de96555afe046747c9f60ce619a412b4cb1231f2e13b885712d8666bc",
+  "arithmetic_helper_sha256": "b270e20d205edebaeff8482fa182a71b3ec1a871c3d8a673112fb8781a8870ef",
+  "validation_helper_sha256": "4540a002d04bf47b4a224365c6e8e087331bb870b674702f195df59b8c2d03d4",
+  "reviewer_scope": "Training implementer also performed saved NumPy arithmetic review; distinct Sol agent independently reviewed frozen code/prelaunch. Root inspected physical checkpoint norms/Adam/finite tensors.",
+  "artifact_sha256": {
+    "execution_terminal.json": "6b5c0b2266ee89424393cdc09527f1a6db989202e53170436995459c2f70f2b0",
+    "comparison.json": "0e82229f1f8b5b34f5539d985efa1fc920f6f4fd8e976c67bd98282688178ae2",
+    "selected32_cnn_predictions.json": "75ca646c8fff9f1fd538dbd273539060e88290f3852d5059c8dd7c5e3611523d",
+    "holdout_cnn_comparison.npz": "020668815a965d246d72cb692086e4dd82d6e53d5fac1d6a1d26d0e0c22fc993",
+    "cnn_shadow.py": "04bee5ac554a000eede844fe39207315d91bfb17216d650f0d3ab83f0272d128",
+    "run.py": "b39c62ed800f77bbf323de9de06c6111b1b832316e5eeebdd9c76bb688765768",
+    "execute.py": "d5b686ac05aa176db94f2a25cd9eb4fbf47f3a2d4b4e76aa801c6bcd8d89a975"
+  },
+  "decision": "No live replacement from tiny development rank change. Retain saved32 to compare actual cohort truth without new HFSS solves.",
+  "NAS_access": false,
+  "HFSS_queue_claim_mutation": false,
+  "live_model_changed": false,
+  "limits": [
+    "CNN reduces all five curve MAEs versus current-only MLP; versus live v006 fullMAE changes3.606 to3.582 and Gain5.559 to5.327, not prospective HFSS efficacy.",
+    "Factory rho .07486 to .07829 remains weak; WM-of-ensemble-mean rho decreases .07513 to .05790. No positive holdout examples, so zero false positives proves no useful positive detection.",
+    "Saved32 predictions were produced before this CNN evaluator read their truth, but predicted_before_hfss=false; global status query had already read some partial actual results.",
+    "Local checkpoint inspection does not independently reconstruct the SGD trajectory or prove interrupted recovery equivalence."
+  ]
+}

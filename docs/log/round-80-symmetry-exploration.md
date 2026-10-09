@@ -942,3 +942,10 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-09 22:59：CNN背景對照單次啟動
 
 固定配方commit d91f5ec之後，hidden CPU wrapper62684／creation1791557942230／完整argv與啟動receipt核對；真實Adam epoch checkpoint已保存，尚無terminal比較。[啟動收據](assets/r80_sm_cnn_shadow_launch_20261009.json)。首次PowerShell布林token拼寫拒絕發生在attempt寫檔／Start-Process之前，確認三項absence後修正一次，未重複啟動。只使用CPU4threads、原凍結資料；live HFSS／SM／queue不變。下一HFSS routine仍約23:08。
+
+
+### 2026-10-09 23:02：CNN對照完整結果，暫不採用
+
+三fresh模型100epochs／Adam各1,400 steps，CPU4threads單次完成194.923秒、exit0／wrapper已消失、stderr空。Root實體三PT核對producer、norm與凍結MLP完全一致、finite模型與Adam moments、互異hash、complete100；實作者另以NumPy-only重播868真WM／五MAE／平均tie Spearman與32保存預測身分，另有先前不同Sol的prelaunch碼審查，明示不把同一實作者的算術核對稱完全獨立訓練驗證。[完整結果](assets/r80_sm_cnn_shadow_result_20261009.json)。
+
+相同current-only MLP對照：fullMAE3.758972→3.582178、S11 2.354672→2.099027、Gain5.573625→5.327265、phi0 3.939856→3.746756、phi90 3.501430→3.368668。live v006的full3.605768／Gain5.559409也略降，但factoryρ只有0.074856→0.078286、LCBρ0.067239→0.077054；mean-WMρ0.075130→0.057899下降。868真值全負，兩模型全部predicted positives0不證明正樣本辨識。只屬development描寫，未採用live；32CNN預測先保存再由此evaluator評估holdout，其HFSS preflag為false，global查詢先前已讀部分raw結果，不冒稱prospective。保留供後續實際cohort對照、不加HFSS解算。R80/R81仍未完成。
