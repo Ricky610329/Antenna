@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "status": "weighted_loss_MLP_fixed_recipe_actual_first128_and_independent_review_passed_not_launched",
+  "config_path": "configs/r80_sm_weighted_loss_shadow_v006.json",
+  "training_protocol_id": "c13c7c5e84e12ba62d5ccebdac8ed57e78dabd289322bba67a44f4448339f5de",
+  "loss_policy_id": "8a212b83f6632c901d3268bcd8816c8a5b538ef33e1682fd7e16d1235996ffe2",
+  "loss_policy": {
+    "schema_version": 1,
+    "name": "normalized_specband_five_group_mse_v1",
+    "reduction": "weighted_sum_of_within_group_means_then_inverse_family_row_weighted_batch_mean",
+    "groups": [
+      {
+        "name": "s11_factory_band",
+        "indices": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "coefficient": 0.35
+      },
+      {
+        "name": "gain_factory_band",
+        "indices": [
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28
+        ],
+        "coefficient": 0.35
+      },
+      {
+        "name": "response_outside_factory_band",
+        "indices": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          29,
+          30,
+          31,
+          32,
+          33
+        ],
+        "coefficient": 0.1
+      },
+      {
+        "name": "radiation_phi0",
+        "indices_inclusive": [
+          34,
+          124
+        ],
+        "coefficient": 0.1
+      },
+      {
+        "name": "radiation_phi90",
+        "indices_inclusive": [
+          125,
+          215
+        ],
+        "coefficient": 0.1
+      }
+    ],
+    "target_space": "coordinatewise_normalized_216_output",
+    "coefficient_sum": 1.0
+  },
+  "source_counts": {
+    "manifest": 2641,
+    "profile_holdout": 868,
+    "profile_train": 1773
+  },
+  "reviewed_sha256": {
+    "config": "0e1d4f675133c9945cbd7ea0d4c245d0d14260dab0788ac13999b0d0b6111b96",
+    "module": "1f4ff93bd988640f787be97d2eb51497ef552c7844e7a746d605dfdc4710c560",
+    "preflight": "c16cb034ee69ba9295a5afdd825215e4bea73bfc973a0184f21d3bdf9c44a0ff",
+    "readiness": "866c781e61d091cf3a47dd425c74f78fee807a81114a0d4661ce1d7e7007ed99",
+    "runner": "dd0a64eb476c5b8ee4d479912aebdf754ccc9ecb87c023095ca52448cee6ffba"
+  },
+  "actual_preflight": {
+    "config_sha256": "0e1d4f675133c9945cbd7ea0d4c245d0d14260dab0788ac13999b0d0b6111b96",
+    "counts": {
+      "manifest": 2641,
+      "profile_holdout": 868,
+      "profile_train": 1773
+    },
+    "cpu_threads": 4,
+    "data_version": 6,
+    "device": "cpu",
+    "first_batch": {
+      "all_gradients_finite": true,
+      "epoch": 0,
+      "gradient_tensor_count": 8,
+      "loss": 0.8774569034576416,
+      "member_seed": 0,
+      "nonzero_gradient_tensor_count": 8,
+      "order_sha256": "e8cbd6865785b2ba13824f4a3038ab0808ae1c3a1da24e85f21f03ffb1d79a9b",
+      "output_shape": [
+        128,
+        216
+      ],
+      "phase_index": 0,
+      "size": 128,
+      "unweighted_component_means": {
+        "gain_factory_band": 0.9239447712898254,
+        "radiation_phi0": 1.0450056791305542,
+        "radiation_phi90": 1.0163105726242065,
+        "response_outside_factory_band": 0.9515548348426819,
+        "s11_factory_band": 0.9881752133369446
+      }
+    },
+    "fixed_holdout_truth_read": false,
+    "formal_initialization_reused": false,
+    "formal_training_launched": false,
+    "fully_prospective_claim": false,
+    "limits": [
+      "The selected32 shadow predictions are not fully prospective because physical HFSS may be complete and an external status query already read part of their raw truth; this evaluator does not read that truth before saving predictions.",
+      "The same 868-row development holdout is descriptive and cannot independently authorize deployment.",
+      "The fixed coefficients are not tuned here; report the single comparison regardless of sign and do not search neighboring recipes.",
+      "This preparation makes no claim that the weighted loss improves current-only MLP, CNN, or live SM v006."
+    ],
+    "loss_policy_id": "8a212b83f6632c901d3268bcd8816c8a5b538ef33e1682fd7e16d1235996ffe2",
+    "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+    "model_parameters": 770008,
+    "module_sha256": "1f4ff93bd988640f787be97d2eb51497ef552c7844e7a746d605dfdc4710c560",
+    "nas_access": false,
+    "permitted_final_output_mib": 45,
+    "runner_sha256": "dd0a64eb476c5b8ee4d479912aebdf754ccc9ecb87c023095ca52448cee6ffba",
+    "schema_version": 1,
+    "selected32_evaluator_truth_read": false,
+    "selected32_external_raw_truth_may_have_been_read": true,
+    "source_binding_id": "ffa7f3e4a6df2875c8abda319ef7d9c0cbff01e291789e52fdcd99da8dab2cb8",
+    "status": "prepared_actual_frozen_minibatch_check_passed_formal_training_not_launched",
+    "training_protocol_id": "c13c7c5e84e12ba62d5ccebdac8ed57e78dabd289322bba67a44f4448339f5de"
+  },
+  "independent_review": {
+    "actual_first128": {
+      "device": "cpu",
+      "finite_nonzero_gradient_tensors": 8,
+      "loss": 0.8774569034576416,
+      "output_shape": [
+        128,
+        216
+      ],
+      "parameter_count": 770008,
+      "threads": 4,
+      "unweighted_component_means": {
+        "gain_factory_band": 0.9239447712898254,
+        "radiation_phi0": 1.0450056791305542,
+        "radiation_phi90": 1.0163105726242065,
+        "response_outside_factory_band": 0.9515548348426819,
+        "s11_factory_band": 0.9881752133369446
+      }
+    },
+    "formal_outputs_absent": true,
+    "limits": [
+      "This seals launch readiness and recovery identity; it does not establish weighted-loss accuracy or efficacy.",
+      "The 868-row development holdout is already exposed and supports only a descriptive fixed comparison.",
+      "The selected32 predictions will not be fully prospective because external raw truth may already have been read; the evaluator timing remains explicit.",
+      "The fixed coefficients must be reported regardless of sign and must not be tuned on this holdout."
+    ],
+    "loss_policy": {
+      "coefficients": {
+        "gain_factory_band": 0.35,
+        "radiation_phi0": 0.1,
+        "radiation_phi90": 0.1,
+        "response_outside_factory_band": 0.1,
+        "s11_factory_band": 0.35
+      },
+      "groups_partition_all_216_coordinates_exactly_once": true,
+      "row_reduction": "weighted_sum_of_within_group_means_then_inverse_family_row_weighted_batch_mean",
+      "target_space": "coordinatewise_normalized_216_output"
+    },
+    "loss_policy_id": "8a212b83f6632c901d3268bcd8816c8a5b538ef33e1682fd7e16d1235996ffe2",
+    "manual_static_findings": {
+      "checkpoint_recovery_binds_config_module_runner_preflight": true,
+      "fresh_seeds_0_1_2_and_epoch_order_phase0_preserved": true,
+      "live_factory_or_NAS_publication_path_present": false,
+      "loss_policy_bound_by_training_protocol_checkpoint_and_producer_signature": true,
+      "only_training_objective_differs_from_currentonly_shadow_recipe": true,
+      "selected32_not_claimed_fully_prospective": true,
+      "selected32_predictions_written_before_evaluator_holdout_read": true,
+      "train_only_normalization_and_inverse_family_weights_preserved": true
+    },
+    "reviewed_sha256": {
+      "config": "0e1d4f675133c9945cbd7ea0d4c245d0d14260dab0788ac13999b0d0b6111b96",
+      "module": "1f4ff93bd988640f787be97d2eb51497ef552c7844e7a746d605dfdc4710c560",
+      "preflight": "c16cb034ee69ba9295a5afdd825215e4bea73bfc973a0184f21d3bdf9c44a0ff",
+      "readiness": "866c781e61d091cf3a47dd425c74f78fee807a81114a0d4661ce1d7e7007ed99",
+      "runner": "dd0a64eb476c5b8ee4d479912aebdf754ccc9ecb87c023095ca52448cee6ffba"
+    },
+    "schema_version": 1,
+    "scope": {
+      "NAS_access": false,
+      "broad_tests": false,
+      "holdout_truth_read": false,
+      "model_tensor_or_gradient_replay": false,
+      "selected32_truth_read": false,
+      "training_launched": false
+    },
+    "selected32_training_overlap_count": 0,
+    "source_counts": {
+      "manifest": 2641,
+      "profile_holdout": 868,
+      "profile_train": 1773
+    },
+    "status": "pass_prelaunch_read_only",
+    "training_protocol_id": "c13c7c5e84e12ba62d5ccebdac8ed57e78dabd289322bba67a44f4448339f5de"
+  },
+  "independent_report_sha256": "8ac0bdd8e33fac44e7c16c00e7c69098de73a208452d5af4a84b8bd2e06eb56d",
+  "independent_helper_sha256": "8d16b788e8e90829fa3cc19ac30720f984da81a878d5c456e262fd552cfc5f9f",
+  "fixed_recipe_reason": "Flat normalized MSE allocates14/216=6.48 percent of loss coordinates to exact spec-band S11/Gain and182/216=84.26 percent to radiation. Fixed five-group weighting tests this allocation; not evidence it causes weak ranking.",
+  "formal_command": "ant python tmp/r80_sm_weighted_loss_shadow_v006_20261009_v001/run.py full",
+  "live_model_publication": false,
+  "NAS_HFSS_queue_claim_mutation": false,
+  "validation_helper_sha256": "9e1a1bffc4896c90cf5239602172b5cbcaf3b36cae6695ca014c03b14dc3d296",
+  "limits": [
+    "The selected32 shadow predictions are not fully prospective because physical HFSS may be complete and an external status query already read part of their raw truth; this evaluator does not read that truth before saving predictions.",
+    "The same 868-row development holdout is descriptive and cannot independently authorize deployment.",
+    "The fixed coefficients are not tuned here; report the single comparison regardless of sign and do not search neighboring recipes.",
+    "This preparation makes no claim that the weighted loss improves current-only MLP, CNN, or live SM v006."
+  ]
+}

@@ -961,3 +961,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-09：v007模型與實際32派工核對
 
 沿用pin住的既有實際verifier、manual target/norm及role helper，檢查新的v007實體產物而不重跑訓練／broadtests。新增50、fit2,691，旧2,641 rows完全保留；1,812 train／879 development hold、reference roles保留、c48dev131。三fresh模型legacy30＋current100、Adam各3,900steps、effective-train-only四norm tensors逐位吻合；兩片各16私人NAS input tree與唯一queue row吻合、32互斥pattern及保存17／17／91／91曲線重播max5.722046e−6＜2e−5。[模型派工收據](assets/r80_diverse_sm_cycle_v007_20261009.json)。dispatch saved scan2,702不是模型fit2,691；不把差11當新訓練列，真新增由新舊manifest差50核對。root僅核對新資料／模型／派工與32預測，未做新一輪完整20k獨立排名重播，未讀候選HFSS或宣稱性能改善。較晚全量query2,713和best+.021682仍以22:54報告為準。原SM recipe/source不變，current-only/CNN shadows未發布。
+
+
+### 2026-10-09：固定spec-band加權MLP背景對照
+
+歷史與當前碼核對：現有216-coordinate normalized MSE有182rad coordinates（84.26%）、精確spec-band S11／Gain各7（合6.48%）。這是loss維度分配事實，不等於已證明弱排名的原因。沿用既有current-only MLP625-[512,512,256]-216、2641資料／1773train／868hold、三fresh seeds／Adam.001／batch128／100epochs／phase0／原norm與familyrowweights；唯一變更per-row objective為.35 S11band mean＋.35 Gainband mean＋.10其餘response20 mean＋.10 phi0 mean＋.10 phi90 mean。保留全部216outputs，不加WM heads或改scorer。loss policy綁新protocol／signature／checkpoint；actual frozen first128 CPU4 gate loss.877457、8/8 finite/nonzero gradients、770008參數。獨立一次prelaunch審查通過、formal產物尚不存在。[準備收據](assets/r80_sm_weighted_loss_shadow_prepared_20261009.json)。先commit固定coefficients再訓練，不依已知868結果調權重；32預測先保存，其timing明示非完整prospective，不新增HFSS解算、不發布live。
