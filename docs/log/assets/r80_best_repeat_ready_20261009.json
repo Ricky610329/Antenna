@@ -1,0 +1,38 @@
+{
+  "schema_version": 3,
+  "status": "reviewed_ready_not_dispatched",
+  "parent_id": "r80localv1_00026_f6ffb938",
+  "original_wm_db": 0.021682262420654297,
+  "repeat_id": "r80bestrep01_f6ffb938",
+  "maximum_fresh_repeats": 1,
+  "new_unique_delta": 0,
+  "automatic_repeat": false,
+  "confirmation": "original WM > 0 and first fresh repeat WM > 0; two observations, not three-observation certification",
+  "preserve_first_terminal_failure_or_negative": true,
+  "family": "c48nq1p05_16",
+  "training_eligible": false,
+  "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+  "helper_sha256": "7b9b16b1134c6d07f784c46d664ad3c48d881a3fc07aab7ddd986d5a174ba085",
+  "contract_sha256": "2769c00211597b37f05919f07dd07afeb8e91d7c26cb15f9cc158e08facbbcf6",
+  "preparation_receipt_sha256": "4f3036823c02529fcde03f7e6aff0b70a6c9094a28d1bae2ef2d1934aa24789a",
+  "input_tree_sha256": "a9df158b05174a20ceb35aa7fae11ea9e775e8234e88ff5a122f379d73c14698",
+  "review_report_sha256": "3a8c9894921f82a57f6604052741a9c1a3afecc8391951bf0fa09c6bd06378c8",
+  "review_result_sha256": "cb8fcadba5658a5d0521793b7e5f566fb81e43d49be0b5ad39fcae92cb5dd56b",
+  "review_tests_sha256": "9bb1f5f916719de65b7d058be74059566dbed42a619bae4bfc15f86f868e0963",
+  "checks": {
+    "conductor_source_review": "passed",
+    "conductor_actual_verify_local": "passed; zero unique rows",
+    "conductor_generated_tests": "7 passed in 0.407 s",
+    "independent_package_review": "PASS",
+    "independent_generated_tests": "5 passed; no live access",
+    "actual_live_dispatch": "not executed",
+    "hfss_result": "not available"
+  },
+  "dispatch_requirements": [
+    "exact controller creation and command; normal waiting window",
+    "sole dataset lock; physical parent, capacity, queue and STOP rechecks",
+    "durable authorized single append with interrupted-dispatch recovery"
+  ],
+  "readout": "resumable immutable first-terminal raw freeze; unrelated queue growth allowed while exact own row remains once",
+  "limits": "Readiness only. No NAS input published or queue row appended by this milestone. Worker host is not pinned. R80 5000 and R81 remain incomplete."
+}

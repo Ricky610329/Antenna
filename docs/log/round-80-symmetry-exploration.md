@@ -648,3 +648,9 @@ Conductor source review及11項本機synthetic fixture測試通過；Sol impleme
 v033對舊anchor預測WM分數−11.847624，與實測−0.246441差−11.601184 dB；新變體預測−10.813041，與實測+0.021682差−10.834723 dB。兩版都把這兩點的新變體排在舊anchor前面，但絕對偏差仍大，不把這個兩點方向一致擴大成完整候選池排序有效或SM整體改善。v033的新變體member WM標準差0.800178 dB也不能當HFSS誤差界限；v031原較小的0.062247 dB並未代表其預測準確。
 
 本次只確認後續仍須把SM用作相對導航、靠HFSS真值及獨立重測確認達標；原selected32的事前v031排序、門檻與完整終態後才判讀的方案不變。完整兩點曲線與綁定報告留在本機ignored診斷資料夾，沒有NAS發布或額外獨立審查宣稱。
+
+### 2026-10-09：最佳單次樣本的獨立重測準備通過審查
+
+[單次重測準備收據](assets/r80_best_repeat_ready_20261009.json)綁定v003 helper、input／contract及獨立Sol審查。Conductor讀取完整程式、實際verify-local通過，7項generated恢復／終態測試通過；獨立5項測試及來源審查PASS。先前v001／v002被攔下的草稿與證據保留；v003分開綁定live與凍結results的序列化hash，追加前重核queue及controller／STOP，第一終態raw凍結可中斷恢復。
+
+僅準備對目前WM+0.021682 dB樣本做一次相同profile、新store的獨立HFSS重跑，尚未發布input或派工；13:23主controller正處理cycle，等待正常空窗。保留同一家族與holdout，重測不算5,000筆新唯一或SM訓練資料。判讀原次及新次WM都嚴格大於0才確認；首個陰性或永久失敗照錄，不自動重跑。這是兩次觀測，未聲稱歷史三次觀測公證或穩定達標。
