@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "status": "publisher_v6_static_pass_pending_actual_pool_and_live_capacity_gates",
+  "readiness": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_readiness_v6.json",
+    "sha256": "d767822429fab4bf636c35f14b863746e5dd82fa2ac05f5452890814f19f757d"
+  },
+  "independent_review": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_review_v6.json",
+    "sha256": "d9256ea4cb432c661388a742f86f43c7a2a40bc60f6b4d9c731cd18b6e18dda8",
+    "status": "passed_publisher_v6_no_execution"
+  },
+  "versioned_files": {
+    "publisher_v6.py": "fbc193d38c1410ea2aac980b0e0234815afc73d3364e5861dda6d02ffca44318",
+    "seal_readout_v6.py": "e0f31ff58f438b6074b78ec15dba012805c165fc7f8cde34481ad228843c8b0f",
+    "truth_readout_v6.py": "5765ad21b7cc29d80b80bc9aa6c5325dbc0652f6b4009867efc3b2d000715dc9",
+    "test_publisher_v6.py": "59477068f7bec5eb0c73920a7fcc788e1c76b9d15f57503d729bf6522b20a53d"
+  },
+  "review_request": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_review_request_v6.json",
+    "sha256": "4258b32ee3effcbfd0366e2929ff0e9326ad65d4fb67e121d7df5809492c8366"
+  },
+  "focused_validation": {
+    "test_file_sha256": "59477068f7bec5eb0c73920a7fcc788e1c76b9d15f57503d729bf6522b20a53d",
+    "result": "7 passed in 2.02s",
+    "compile": "publisher_v6, seal_readout_v6 and truth_readout_v6 passed"
+  },
+  "execution_ready_at_static_review": false,
+  "execution_order_after_all_gates": [
+    "validate frozen publisher_v6 static review",
+    "validate prepared_v5 and independent pool review",
+    "prepare both deterministic phase-v6 action trees idempotently",
+    "dispatch one 16-row phase at a time through the unchanged factory transaction and exact live/capacity guards",
+    "seal only two exact proof-bound dispatch readbacks",
+    "read proposed truth only after both jobs are terminal; capture partial terminal failure without invented metrics"
+  ],
+  "repairs": [
+    "Exact per-owner scorer/prediction/manifest/shard provenance is bound before any action or candidate truth.",
+    "Exact live-controller identity, stable wait origin/status, >=180-second final append guard.",
+    "Separate all-main reservations for global5000 and priority1-main reservations for guided96.",
+    "Receipt-owned pending-copy and exact-existing recovery retain deterministic verified queue readbacks.",
+    "Capacity proof, action-before, jobs-before to exactly one append, jobs-after and seal relations verified."
+  ],
+  "pipeline_source_or_worker_changed": false,
+  "NAS_read_or_write_by_validation": false,
+  "publisher_or_HFSS_executed": false,
+  "proposed_candidate_truth_read": false,
+  "static_review_limits": [
+    "Actual prepared_v5 full-pool replay and independent pool_review_v5 remain required.",
+    "Frozen publisher v6 must not be executed merely because its static review passed; runtime capacity/duplicate/window and both per-phase gates remain mandatory.",
+    "Blocked publisher v5 is never an execution entry."
+  ]
+}

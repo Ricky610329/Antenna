@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **v010兩片16前瞻派工鏈靜態驗證通過／未執行**：versioned publisher v6綁每筆model／prediction及immutable shards，global5000／guided96分開計main保留量，append前exact CIM／等待窗口再檢；partial-copy／exact-existing recovery與seal／capacity／queue轉移來源補齊，7窄測試及獨立review通過。[準備](../docs/log/assets/r80_currentonly_prospective_v010_publisher_ready_20261010.json)。actual prepared_v5／full20k replay／獨立pool review仍必需；未派HFSS、未改queue／主線source。原guard20232仍只準備CPU排名，下一routine04:08；最新全量03:20的2,930／+.021682。
+
 - **03:38 routine健康通過**：原PID15944 exact／running_cycle，三台claimed13/16、13/16、8/16，最新結果3／2／2分鐘，scope零警報；completed14／reported v011，新guided兩片16排隊。[健康](../docs/log/assets/r80_health_20261010_0338.json)。watch fit2,921不是新全量census；03:20全量2,930／最佳+.021682維持。一次性guard20232已啟動、03:44 native確認仍等待main窗口／無CPUchild；其兩模型固定v010，與目前main v011區分。下一routine04:08，不重啟／清claim，R80/R81未完成。
 
 - **03:34:43 一次性CPU排名guard實際啟動**：PID20232／creation1791574483613／argv現場吻合，03:44 native process核對為等待原main窗口、只有console host、無CPU準備child／stderr；guard v5獨立PASS後只讀本機狀態、最多等2小時，單child600秒＋bounded cleanup，不自動publish或派HFSS。[啟動](../docs/log/assets/r80_currentonly_prospective_v010_guard_launch_20261010.json)。原main仍持續SM／HFSS；準備結果需另replay後派兩片16，各owner8+8；global5000／guided96不變。03:38 routine已通過，下一04:08；最新全量仍03:20的2,930及+.021682。
