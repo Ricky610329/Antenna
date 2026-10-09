@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "status": "second_diverse_48_actual_raw_and_independent_arithmetic_verified",
+  "actual_readout_utc": "2026-10-09T13:58:58.975447+00:00",
+  "action_receipt_sha256": "d789020194f0a1c3d6216023f381f1d6ac0d8e198e1e605f6f1599428e3b78b7",
+  "predictor_binding_at_dispatch": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 4,
+    "manifest_id": "df9a6821dfcc4ff83a3d1fd5ca0fdf2392c9274898daed7f29224ffb5029e188",
+    "cumulative_valid_unique": 2500
+  },
+  "cohort": {
+    "n": 48,
+    "best": {
+      "id": "r80ce172293bg_00013_b5897b16",
+      "pattern_sha256": "b5897b16788c2630eb7522894cac5a1802f992e0190fdd42145d9bf0c818b3ff",
+      "selection_arm": "parent_lcb",
+      "candidate_group": "parent_variant",
+      "wm_db": -5.102278709411621,
+      "s11_margin_db": -5.102278709411621,
+      "gain_margin_db": -2.1884719133377075
+    },
+    "median_wm_db": -12.183969020843506,
+    "min_wm_db": -32.326799392700195,
+    "positive_wm_count": 0,
+    "cited_existing_best_wm_db": 0.021682262420654297,
+    "above_cited_existing_best_count": 0,
+    "physical_hamming": {
+      "min": 70,
+      "median": 309.0,
+      "max": 374
+    }
+  },
+  "selection_arms": {
+    "global_lcb": {
+      "count": 16,
+      "best_wm_db": -7.62295937538147,
+      "median_wm_db": -14.196725368499756,
+      "min_wm_db": -32.326799392700195,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": 0.18235294117647058,
+      "saved_lcb_vs_actual_wm_spearman": -0.3911764705882353
+    },
+    "high_disagreement": {
+      "count": 16,
+      "best_wm_db": -7.710284233093262,
+      "median_wm_db": -13.09984827041626,
+      "min_wm_db": -31.393850326538086,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": 0.3735294117647059,
+      "saved_lcb_vs_actual_wm_spearman": 0.37941176470588234
+    },
+    "parent_lcb": {
+      "count": 16,
+      "best_wm_db": -5.102278709411621,
+      "median_wm_db": -10.871109962463379,
+      "min_wm_db": -29.05137825012207,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": -0.15294117647058825,
+      "saved_lcb_vs_actual_wm_spearman": 0.0
+    }
+  },
+  "candidate_origins": {
+    "fresh_random": {
+      "count": 23,
+      "best_wm_db": -7.62295937538147,
+      "median_wm_db": -14.230484962463379,
+      "min_wm_db": -32.326799392700195,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": 0.11363636363636365,
+      "saved_lcb_vs_actual_wm_spearman": -0.13636363636363635
+    },
+    "parent_variant": {
+      "count": 25,
+      "best_wm_db": -5.102278709411621,
+      "median_wm_db": -10.617501258850098,
+      "min_wm_db": -31.393850326538086,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": 0.025384615384615387,
+      "saved_lcb_vs_actual_wm_spearman": 0.11923076923076922
+    }
+  },
+  "saved_prospective_prediction_readout": {
+    "dispatch_model_data_version": 4,
+    "completed_cohort_readout_timing": "posthoc_after_possible_live_ingest_into_v005_or_v006",
+    "correlations": {
+      "lcb_vs_actual_wm_spearman": 0.10377768128528006,
+      "factory_vs_actual_wm_spearman": 0.11669561441597916,
+      "navigation_vs_actual_navigation_spearman": 0.11213634389926183
+    },
+    "curve_mae": {
+      "s11": 2.1115641489478887,
+      "gain": 5.209754175837517,
+      "radiation_phi0": 3.1642258890483173,
+      "radiation_phi90": 2.979810665673373,
+      "full_vector": 3.1646747129677117
+    }
+  },
+  "source_artifact_sha256": {
+    "report.json": "67ccaeeee217134cff2e0b1a328e2b730e668a86731d205e4dea21df9891c32d",
+    "rows.json": "0a3a59484b368c41911b06fef98f76131d1760fb63bc699ad8eb991754306317",
+    "saved_prediction_helper_audit.json": "9dba4d16bdcaccc4a23704b86c4dd21e36d006085180eb24cbafe5b4e9c08afb",
+    "frozen_store/source_bindings.json": "50af32759798fb03003499ba6bd36749a1db1e6a52cd75d1baa39ca196543527",
+    "frozen_store/manifest.json": "7ecf949cee00bcaed7e5aee0dcc8be636e60ed9b3410b89575b4d99d727a361e",
+    "frozen_store/results.json": "f9f832bb29025a742d61f5d210558a0f6754146d4f8f6eb408451371a9fc3d8d"
+  },
+  "root_readout_helper_sha256": "4487e83869fb639c77a13a5de5e9582b6640649b44e03e0a9a24e32a6d9436da",
+  "independent_report_sha256": "cf11518fac57043b8b6efb6ea6a19cf764794e269ddbf21586f51dfe8afdedf1",
+  "independent_helper": {
+    "path": "tmp/r80_diverse_second_cohort_independent_20261009_v001/replay.py",
+    "sha256": "21124c1784ccf2b7e60dcb2d2d6bc8977602c7daf9e6a8445afebf646f782bcc"
+  },
+  "independent_scope": "Independent arithmetic from the local frozen second-cohort samples, radiation tensors, manifest predictions, and hashes; no project metric or summary helper imported.",
+  "all_metals_exact_LR": true,
+  "NAS_queue_claim_raw_mutation": false,
+  "limits": [
+    "First and second diverse48 both use v004 fit2500, not two fresh SM generations.",
+    "Saved predictions are prospective; completed readout is posthoc after possible later ingestion.",
+    "Zero positive patterns in these96 is a descriptive result, not a causal or multi-generation plateau conclusion."
+  ]
+}

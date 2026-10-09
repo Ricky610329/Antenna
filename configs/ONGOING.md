@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/09 22:09：全量實測重播，最佳未變**。2,675唯一成功圖形／2,680成功觀測，較20:17新增83；WM仍 **+0.021682 dB**，既有獨立重測 **+0.036434 dB**。[查詢收據](../docs/log/assets/r80_best_status_20261009_2210.json)。第二批多樣48獨立核對完成，最佳−5.102279／median−12.183969／0正WM；兩批96皆由同v004提出，非兩代迭代或停滯定論。[第二批收據](../docs/log/assets/r80_diverse_sm_second_cohort_result_20261009.json)。SM v006 summary新增63／fit2,641，完整模型派工審查尚待；PID15944身分不變、三台有claimed jobs／scope零警報。約30分鐘例行檢查，R80 5,000及R81未完成。
+
 - 現況 **10/09 21:28：首批多樣48真值／獨立算術核對完成**。全有效唯一／精確LR／零error，最佳WM **−4.820067**、median **−12.214764**，0正WM／0超過既有全域參考+0.021682。Hamming min65；保存LCB對WMρ0.151324、Gain MAE4.556437，排序仍弱。[結果](../docs/log/assets/r80_diverse_sm_first_cohort_result_20261009.json)／[頻率圖](../docs/log/assets/round-80/diverse-sm-first48-20261009-v001/frequency_responses.png)。僅單cohort，非因果改善／三代停滯；完整讀回posthoc、原預測prospective。原PID15944／零警報／stderr空，後續批次及SM持續；下一routine **21:58**。R80 5,000與R81未完成。
 
 - 現況 **10/09：v005三fresh SM及實際16筆補派核對通過**。新增78、fit **2,578**，train1,720／hold858；舊2,500列保留，norm／Adam3,800／16保存預測重播通過。獨立20k排名與strict selection核對：global6／parent5／disagreement5、13家族、cap2、min Hamming72；私人NAS單片20-file tree／queue一致。[薄收據](../docs/log/assets/r80_diverse_sm_cycle_v005_20261009.json)。容量限制只補16；首批48於20:28仍未完整，無性能改善宣稱。Controller原PID15944 live／零警報／stderr空，下一routine **20:58**；最新已完成全量raw query為20:17的2,592，最佳未變。

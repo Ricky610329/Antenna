@@ -889,3 +889,10 @@ Cycle `205a8627...`於20:20:23完成。新增78有效唯一真值、累積fit **
 已用既有 `script.symmetry_analysis profile` 與 `script.figs.symmetry_profile` 畫出[首批48幾何／指標圖](assets/round-80/diverse-sm-first48-20261009-v001/geometry_terrain.png)及[首批48頻率響應](assets/round-80/diverse-sm-first48-20261009-v001/frequency_responses.png)，兩圖均視覺核對；不加點、不插值、不挑性能子集。這些圖僅為這48筆，並非全部R80。幾何圖的rad是純量鏡射殘差，不是角度場型；既有最佳的場型極座標圖保留原樣。
 
 保存的v004預測是在送測前產生，但本次完整cohort判讀是在部分真值可能已進v005之後的posthoc讀回；shared prediction helper的固定before-training文字不作本次時序證據。獨立審查v1把全域參考誤標為previous-familydev-best，僅作hash-bound v2文字／欄名修正，原v1/算術helper保留，數字與tensorchecks未改。只有一個完整多樣cohort，不宣稱三代停滯或穩定提升；按原48–96新真值更新SM，接續批次仍跑。Controller PID15944／身分不變、completed_cycles6、stderr空、scope無警報；不為負WM候選補跑最佳認證重測，不更動queue/claims/raw。下一routine21:58；R80 5,000與R81仍待完成。
+
+
+### 2026-10-09 22:09：最新最佳查詢與第二批多樣48核對
+
+既有只讀query原樣重用，逐store固定cutoff並重播sample/rad，共2,675唯一成功圖形、2,680成功觀測。較20:17多83，最佳pattern/sample/rad/WM與前版完全一致：WM+0.0216822624 dB、帶內最差S11−10.0960884 dB、最低Gain4.0216823 dBi；既有獨立重測+0.0364336967 dB。沿用原極座標圖。[最新查詢](assets/r80_best_status_20261009_2210.json)。cutoff保留3筆首次HFSS/RPC/COM error，不計成功；目前job仍claimed、未達3連敗毒樣本判定，沿用worker重試，不清claim/done。
+
+第二批48全有效唯一／exactLR／零error，獨立Sol從凍結raw與保存預測重算WM、curve MAE、Spearman和Hamming；root確認全部source hashes及算術與判讀一致。最佳WM−5.1022787094、中位−12.1839690208、最低−32.3267993927，0正WM／0超過既有最佳；Hamming70／309／374。LCB對真實WMρ0.1037776813，Gain MAE5.209754 dB，排序仍弱。[第二批完整數字與binding](assets/r80_diverse_sm_second_cohort_result_20261009.json)。兩批96同用v004 fit2500；不可稱兩代fresh SM，更不可當成多代停滯證據。SM目前v006已新增63、fit2,641，summary只作更新觀察，完整模型／派工審查仍待。三台claimed工作、scope零警報、唯一PID15944精確身分不變；不改queue/claims/worker、不中斷收資料。R80 5,000與R81仍未完成。
