@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "status": "two_search_touched_anchor_cpu_inference_only",
+  "completed_utc": "2026-10-09T05:12:54.170049+00:00",
+  "report_sha256": "3ba306e3aaa396ccc2cfd2e7955e410d671193afc70dfcc64e1c184967949788",
+  "helper_sha256": "c253964505fc023747ba569432834749a773969fef3750e3e7fa14b0baea62ef",
+  "predictor": "script.symmetry_training.load_current_predictor",
+  "score": "script.symmetry_sm_pool.score_predictions",
+  "cpu_threads": 4,
+  "cuda_initialized": false,
+  "training_performed": false,
+  "hfss_started": false,
+  "queue_mutated": false,
+  "live_lock_acquired": false,
+  "source_and_model_hashes_unchanged_after_inference": true,
+  "family": "c48nq1p05_16",
+  "canonical_family_split_in_both_versions": "profile_holdout",
+  "anchors": [
+    {
+      "role": "previous_anchor",
+      "id": "r80c91d71565g_00019_5a42476c",
+      "actual_single_wm_db": -0.24644088745117188,
+      "v031": {
+        "predicted_factory_score_db": -12.16160806020101,
+        "predicted_minus_actual_db": -11.915167172749838,
+        "factory_member_std_db": 0.19400847623960735,
+        "present_in_model_data": true,
+        "split": "profile_holdout"
+      },
+      "v033": {
+        "predicted_factory_score_db": -11.84762446085612,
+        "predicted_minus_actual_db": -11.601183573404947,
+        "factory_member_std_db": 0.6313387452933609,
+        "present_in_model_data": true,
+        "split": "profile_holdout"
+      }
+    },
+    {
+      "role": "positive_local_variant",
+      "id": "r80localv1_00026_f6ffb938",
+      "actual_single_wm_db": 0.021682262420654297,
+      "v031": {
+        "predicted_factory_score_db": -10.972058614095053,
+        "predicted_minus_actual_db": -10.993740876515707,
+        "factory_member_std_db": 0.062247114839015,
+        "present_in_model_data": false,
+        "split": null
+      },
+      "v033": {
+        "predicted_factory_score_db": -10.813041051228842,
+        "predicted_minus_actual_db": -10.834723313649496,
+        "factory_member_std_db": 0.8001779845688715,
+        "present_in_model_data": true,
+        "split": "profile_holdout"
+      }
+    }
+  ],
+  "limitations": [
+    "These two previously selected/search-touched anchors are not an independent quality benchmark.",
+    "Predicted factory score is the existing mean of member worst margins, not WM of the mean response.",
+    "Both versions order these two points correctly, but substantial absolute bias remains; no full-pool ranking claim follows.",
+    "The small member spread is not an HFSS error bound; model version growth does not prove calibration or quality improved.",
+    "The prospective selected32 rankings remain frozen to v031; this post hoc diagnostic does not re-rank that cohort."
+  ]
+}

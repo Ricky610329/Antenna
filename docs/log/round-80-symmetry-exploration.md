@@ -640,3 +640,11 @@ Conductor source review及11項本機synthetic fixture測試通過；Sol impleme
 12:54主線原PID54712完成下一cycle並自動訓練v033，新增59筆、累積2,173筆profile真值（1,321 train／852 holdout），歷史先驗另計；該cycle實體cutoff為2,178唯一。完成收據綁定模型summary與新16筆prio1 job，不以版本增加或變動保留集MAE宣稱SM性能改善。12:56 exact CIM／creation／settings command與有效scope檢查通過，三個claimed工作均有近期新結果、無警報；下一routine健康約13:26。
 
 最佳候選的同profile一次獨立重跑正在隔離備料。獨立審查攔下草稿的controller身份、派工中斷恢復及終態讀取缺口，尚未複製重跑input或加入queue；修正版完成並驗證後才提交。單次WM+0.021682 dB的渲染與原始證據保留，重測不算新增唯一樣本，R80／R81目標仍未完成。
+
+### 2026-10-09 13:13：兩個已選anchor的最新SM絕對偏差仍大
+
+[兩點診斷薄收據](assets/r80_two_anchor_sm_check_20261009.json)以未修改的current-profile CPU predictor及既有member最差margin評分，重播v031／v033各三個模型對舊anchor和新正WM變體的預測；不重訓、改queue或啟動HFSS。兩個anchor原始真值、六個模型與source／summary hashes在讀取前後一致。原家族在兩版均為holdout；新變體尚未出現在v031資料、已出現在v033 holdout，不能把已搜尋觸及的這兩點當作獨立保留集驗證。
+
+v033對舊anchor預測WM分數−11.847624，與實測−0.246441差−11.601184 dB；新變體預測−10.813041，與實測+0.021682差−10.834723 dB。兩版都把這兩點的新變體排在舊anchor前面，但絕對偏差仍大，不把這個兩點方向一致擴大成完整候選池排序有效或SM整體改善。v033的新變體member WM標準差0.800178 dB也不能當HFSS誤差界限；v031原較小的0.062247 dB並未代表其預測準確。
+
+本次只確認後續仍須把SM用作相對導航、靠HFSS真值及獨立重測確認達標；原selected32的事前v031排序、門檻與完整終態後才判讀的方案不變。完整兩點曲線與綁定報告留在本機ignored診斷資料夾，沒有NAS發布或額外獨立審查宣稱。
