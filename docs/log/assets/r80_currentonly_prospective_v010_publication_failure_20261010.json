@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "status": "actual_pre_staging_dispatch_failure_preserved_native_newline_bug_identified",
+  "driver_result_binding": {
+    "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_dispatch_phase1_v8_result.json",
+    "sha256": "fe93f1bad80d183c7d5bbc1c293e7d7d104851859d70b423d92b8fc50c93cab9"
+  },
+  "driver_result": {
+    "automatic_retry": false,
+    "claim": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8_claim.json",
+      "sha256": "da52dd2d8383b3a8e630ec7d3ab7105b38894999775b70139f017d2cb7251b6e"
+    },
+    "dispatch_attempts": 1,
+    "driver": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8.py",
+      "sha256": "4ba04dce461ddd5d91cff3e5ecf777c89fd8b6425ba0ea4c464aa66eea1e8c77"
+    },
+    "exception": {
+      "message": "jobs changed after locked queue scan",
+      "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8.py\", line 250, in run\n    action_path = publisher.dispatch_phase(\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\publisher_v8.py\", line 887, in dispatch_phase\n    raise cycle.LiveSnapshotChanged(\"jobs changed after locked queue scan\")\nscript.symmetry_factory_cycle.LiveSnapshotChanged: jobs changed after locked queue scan\n",
+      "type": "LiveSnapshotChanged"
+    },
+    "finished_utc": "2026-10-09T22:01:00.691795+00:00",
+    "phase": 1,
+    "process_identity": {
+      "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -B -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8.py\" run",
+      "creation_unix_ms": 1791581986675,
+      "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+      "pid": 9960
+    },
+    "schema_version": 1,
+    "started_utc": "2026-10-09T21:39:48.890062+00:00",
+    "status": "dispatch_failed",
+    "trigger": {
+      "controller_cim": {
+        "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\"",
+        "creation_unix_ms": 1791541659267,
+        "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+        "pid": 15944
+      },
+      "cycle_started_utc": "2026-10-09T21:27:44.937902+00:00",
+      "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+      "status_binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+        "sha256": "7adab4a3a675aa381cc34a84aa87d24e5eb4294a069f7a03d8ba82c796d7f111"
+      },
+      "wait_clock": {
+        "announced_seconds": 1745.25,
+        "elapsed_seconds": 22.738344,
+        "origin_field": "last_completed_utc",
+        "origin_utc": "2026-10-09T21:58:39.696599+00:00",
+        "remaining_seconds": 1722.511656
+      }
+    }
+  },
+  "driver_absent_confirmed": true,
+  "queue_diagnosis_binding": {
+    "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/queue_serializer_diagnosis_v8.json",
+    "sha256": "4e5f5c06036d95781d3a98d1143f5f33803496c3247c39ec506669c4e670bd2a"
+  },
+  "queue_diagnosis": {
+    "schema_version": 1,
+    "status": "read_only_queue_serialization_diagnosis",
+    "observed_utc": "2026-10-09T22:05:24.201590+00:00",
+    "queue_path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\jobs.json",
+    "queue_sha256": "6c3bdcb1fae9be1a1b64b4dd1f9139710d9741fd4254c6dfcf2219ef929946b6",
+    "queue_bytes": 40800,
+    "job_count": 202,
+    "CRLF_count": 1415,
+    "LF_count": 1415,
+    "same_bytes_after_diagnosis": true,
+    "serializer_variants": [
+      {
+        "indent": null,
+        "ensure_ascii": false,
+        "newline": "LF",
+        "sha256": "c91e86ed54ef16131cc830abaa0b3ddbbe414d428de07394f280062b05315b3c",
+        "exact_byte_match": false
+      },
+      {
+        "indent": null,
+        "ensure_ascii": false,
+        "newline": "CRLF",
+        "sha256": "c91e86ed54ef16131cc830abaa0b3ddbbe414d428de07394f280062b05315b3c",
+        "exact_byte_match": false
+      },
+      {
+        "indent": null,
+        "ensure_ascii": true,
+        "newline": "LF",
+        "sha256": "c91e86ed54ef16131cc830abaa0b3ddbbe414d428de07394f280062b05315b3c",
+        "exact_byte_match": false
+      },
+      {
+        "indent": null,
+        "ensure_ascii": true,
+        "newline": "CRLF",
+        "sha256": "c91e86ed54ef16131cc830abaa0b3ddbbe414d428de07394f280062b05315b3c",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 1,
+        "ensure_ascii": false,
+        "newline": "LF",
+        "sha256": "b835795d378254d96da724a9c41dfc6734efe5e5cc10774d08b01204f02152f9",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 1,
+        "ensure_ascii": false,
+        "newline": "CRLF",
+        "sha256": "6c3bdcb1fae9be1a1b64b4dd1f9139710d9741fd4254c6dfcf2219ef929946b6",
+        "exact_byte_match": true
+      },
+      {
+        "indent": 1,
+        "ensure_ascii": true,
+        "newline": "LF",
+        "sha256": "b835795d378254d96da724a9c41dfc6734efe5e5cc10774d08b01204f02152f9",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 1,
+        "ensure_ascii": true,
+        "newline": "CRLF",
+        "sha256": "6c3bdcb1fae9be1a1b64b4dd1f9139710d9741fd4254c6dfcf2219ef929946b6",
+        "exact_byte_match": true
+      },
+      {
+        "indent": 2,
+        "ensure_ascii": false,
+        "newline": "LF",
+        "sha256": "d6e72f50eec6b64227bd2a7914564c3c9387bc063da8a301ad9ba38efbe58733",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 2,
+        "ensure_ascii": false,
+        "newline": "CRLF",
+        "sha256": "c24620a8a7dc3931dc675b8bb16bf18697e938b23af28feb34f5cbcf8a8de12f",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 2,
+        "ensure_ascii": true,
+        "newline": "LF",
+        "sha256": "d6e72f50eec6b64227bd2a7914564c3c9387bc063da8a301ad9ba38efbe58733",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 2,
+        "ensure_ascii": true,
+        "newline": "CRLF",
+        "sha256": "c24620a8a7dc3931dc675b8bb16bf18697e938b23af28feb34f5cbcf8a8de12f",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 4,
+        "ensure_ascii": false,
+        "newline": "LF",
+        "sha256": "c8a4662498795dad9582bf84aa0fa630b7eafdfc1e16d138427140f34f3f2f6b",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 4,
+        "ensure_ascii": false,
+        "newline": "CRLF",
+        "sha256": "0b774fffa149c07bcf5ea0f987f8142e3f7e2e8bf1f98d6a3458fcdc0650ca64",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 4,
+        "ensure_ascii": true,
+        "newline": "LF",
+        "sha256": "c8a4662498795dad9582bf84aa0fa630b7eafdfc1e16d138427140f34f3f2f6b",
+        "exact_byte_match": false
+      },
+      {
+        "indent": 4,
+        "ensure_ascii": true,
+        "newline": "CRLF",
+        "sha256": "0b774fffa149c07bcf5ea0f987f8142e3f7e2e8bf1f98d6a3458fcdc0650ca64",
+        "exact_byte_match": false
+      }
+    ],
+    "failed_driver_result_sha256": "fe93f1bad80d183c7d5bbc1c293e7d7d104851859d70b423d92b8fc50c93cab9",
+    "action_statuses": {
+      "1": "prepared",
+      "2": "prepared"
+    },
+    "capacity_proof_created": false,
+    "mutation": false,
+    "sample_rad_or_selected_truth_read": false
+  },
+  "health_binding": {
+    "path": "tmp/r80_diverse_sm_handoff_20261009_v001/health_20261010_0603.json",
+    "sha256": "227fbf85a0a6c9b97494bd05fb6fc9d5a413da1e48cfd6071a276518b1f10920"
+  },
+  "health_observed_utc": "2026-10-09T22:03:11.6334216Z",
+  "controller_argv_matches": true,
+  "controller_status": "waiting",
+  "controller_completed_cycles": 18,
+  "controller_reported_data_version": 13,
+  "controller_cached_valid_unique": 3052,
+  "cached_count_is_not_global_census": true,
+  "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c8f61dc08g02: 10/16 完成,最新結果 14 分前（已認領）\r\n  job dedust_r80c8f61dc08g03: 10/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80c0418df9fg01: 8/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80c0418df9fg02: 0/16（排隊中）\r\n  job dedust_r80ccd26614dg01: 0/16（排隊中）\r\n  job dedust_r80ccd26614dg02: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+  "scoped_status_exit": 0,
+  "phase8_new_HFSS_dispatch": false,
+  "model_or_selection_changed": false,
+  "failure_scope": "workflow serialization validation; not a HFSS performance or surrogate plateau result",
+  "next_routine_health_taipei": "2026-10-10 06:33",
+  "goal_complete": false,
+  "limits": [
+    "The failed path stops before capacity proof creation, staging and queue append; both original actions remain prepared.",
+    "The later queue-byte cutoff establishes native CRLF serialization and unchanged bytes during that diagnosis; it is not a complete historical no-mutation proof across the earlier failed scan.",
+    "A versioned native-writer hash correction is next; all physical-byte, capacity, source and final-window checks remain required."
+  ]
+}
