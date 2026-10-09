@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "status": "prospective_cohort_fixed_with_explicit_capacity_read_disclosure",
+  "seal_binding": {
+    "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/predispatch_cohort_scope_seal_v1.json",
+    "sha256": "2b40c6cd40c96e4dd20c8772def6488ebd41a543cf8b6479805f39ef98bb7153"
+  },
+  "independent_review_binding": {
+    "path": "tmp/r80_currentonly_prospective_review_20261010_v001/predispatch_cohort_scope_review_v1.json",
+    "sha256": "215a5ec516534986c643c18e57e8e2400de53a8e4bd31831bcddde983da27b32"
+  },
+  "predispatch_scope_seal": {
+    "schema_version": 1,
+    "status": "cohort_and_predictions_frozen_before_dispatch_not_a_blind_capacity_contract",
+    "created_utc": "2026-10-09T21:45:53.942587+00:00",
+    "creator": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\seal_predispatch_cohort_scope_v1.py",
+      "sha256": "0958b7e5eb50ba939bcd12e6080362f079bb88bbbfef33ef984053a39a4f34c2"
+    },
+    "preparation_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\preparation_receipt.json",
+      "sha256": "3f5d667236f61bd6a25b6349cfb4f4488c4d1244a0802a155b0f899ea02bfa73"
+    },
+    "prepared_tree": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6",
+      "tree_sha256": "3a66687980e61fdcc9f889696c0a0400280e123f4e2d8c6ebf8c7c84895eb9df"
+    },
+    "publisher_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_review_v8.json",
+      "sha256": "8d78e21280f209cf215630a150304f7d1879e621e0850d4ade354f6340c234f1"
+    },
+    "pool_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\pool_review_v6.json",
+      "sha256": "5f6ccc47689cddf447d8e7eaee562079d93f1c2512ffa3c075f2bdcd33145304"
+    },
+    "prepared_replay": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\prepared_v6_replay.json",
+      "sha256": "7232a1457040ef6f34ba3015e3387dcc0a2645283edcc4211435040bb82a4e7c"
+    },
+    "implementation_sha256": {
+      "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+      "script/dedust.py": "4d203816826ca20179c2ae3a5c345dcc900117d33a671090d896db3c61ece05d",
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+      "script/symmetry_factory_backlog.py": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84",
+      "script/symmetry_factory_cycle.py": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e",
+      "script/symmetry_factory_watch.py": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+      "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/audit_prepared_v7.py": "a9d58a9b1dc9b107aeae65a1494eda6aa56ecfc9b09aa072bfd851aaa3d0b982",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_prepare_guard_config_v6.json": "923c55e610b43e101e5cf96a1af32205b0b4285572df77fd154d0e80d9a75a94",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_prepare_guard_v6.ps1": "019fadc2538735deec508f21482e13ab175c7b36207cca29b5c5ceb77bb4bcd3",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/launch_deferred_prepare_guard_v6.ps1": "ab9f334c55efc55f24b9f62a2005a4d1d014506f2574599e87cc9f5e5330cb65",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_audit_v5.py": "dffe1d6e4f354846aabdaa7506c41def8f178bfd15762b35915d9027c07bf3ac",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_config.json": "b86178a94ea5aba11b0240b2afdb61df59d7de593f10c8dfe96b9a881cccd206",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_logic.py": "6f11b968d9949d5c934a83b026684a10c8a16c30f1131254c7a8888c76133eaa",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_provenance_v3.py": "04553fe699c07dab8671bf11c85a9564c0d20ce89b543ac102c865c7e000cec8",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/prepare_pilot_v6.py": "cc8cf07d549cfec0fbd0f152c4d8491d5ae6ea39546198681916666d033f8085",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/publisher_v8.py": "3b155b8780c5a4baae9b697af802d65bf9d22564c9cb950a1c5fa50156a13d30",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/scoring_gate_v6.py": "d9658f72abb9121192a558a5c004093fbc9acbaa82afdaaf0926fa8e691a8563",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/seal_readout_v8.py": "24c2df961c444d19e80bec036147a638e4acd49c537a9dfaadd196c979eb887f",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/truth_readout.py": "2a5149ac2960439d25d38c10beef6b520c51c29468866d9026e219ee80ccdcfc",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/truth_readout_v8.py": "4163fa41561f364a8413ad29fd4b476caafcde2a8de17e0fb9b9b357c8b2332b",
+      "tmp/r80_currentonly_prospective_review_20261010_v001/deferred_guard_review_v6.json": "a9821a031d6b1a8925eff55f9cf2cee39f9ca8436fa29ac630eb0615d0db60bd",
+      "tmp/r80_currentonly_prospective_review_20261010_v001/scoring_review_v6.json": "cafa8039c1b3cb7357fe74f45919c1ae7acf375ff7f4a6833224d84427f1ad44",
+      "tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+    },
+    "predictions": {
+      "live_predictions.json": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\live_predictions.json",
+        "sha256": "0ba0ef29db17988699fa0e801df23ff57d4a74e75e54c723ede5cf7d0c7b3cc5"
+      },
+      "current_only_predictions.json": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\current_only_predictions.json",
+        "sha256": "3ce7204ea372331f9a21732a0a626cf79053d872666bec7f98f30a0dc95bd890"
+      }
+    },
+    "scorer_registry": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\scorer_registry.json",
+      "sha256": "715ee588e1145ac3c0246d544726aae4010f88acdcb4eb1289e785d6ed37e0c3"
+    },
+    "manifest": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\bundle\\manifest.json",
+      "sha256": "a24a1cc22ac1d2acd6a2ac82bbb35745fb188c62211d4bb9b61abe366dc7afc8"
+    },
+    "shards": [
+      {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\shards\\shard-001_input",
+        "tree_sha256": "675bbdf3210fac76f03ec23908007fba018073d5544b2c80af3e69997aaf6b45"
+      },
+      {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\shards\\shard-002_input",
+        "tree_sha256": "f43bcc4ff661d4c1443f221817410ec2eadc92c3fb15f90bcc62073063c57563"
+      }
+    ],
+    "prepared_actions": [
+      {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v8-01\\action_receipt.json",
+        "sha256": "fb40ab78e6617b9fbdad52f0aa5e9d494ac08fd85afc1ca92a890f6cf4541267"
+      },
+      {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v8-02\\action_receipt.json",
+        "sha256": "42cabd660535618e2ad39ebc9f133620be151225ec0a61c8c427c0a3afa624fc"
+      }
+    ],
+    "selected_ids_and_owners": [
+      {
+        "id": "r80p10_00000_f479bf0e",
+        "pattern_sha256": "f479bf0efa3d8b79497e249095932d5d3bbc5edd4a613577ab55abcfcb6053b8",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00001_3066f7dc",
+        "pattern_sha256": "3066f7dcd542d482148a0b98a78b538f99e3e777bee05e2d55c5a4450712d9cc",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00002_830b29d9",
+        "pattern_sha256": "830b29d94e2f2074d4f3a206ed0cc062fb4cde39375afc969370d659c401023e",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00003_33e7dc4c",
+        "pattern_sha256": "33e7dc4c90a665b06ed38d1a8407c44f9fce48cf807ab063c63b3b846b8793f3",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00004_d2b791dd",
+        "pattern_sha256": "d2b791dd404e7d15ff953c405776cd453eda283d516bd0ac023dd88006d4ccd1",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00005_c60554b3",
+        "pattern_sha256": "c60554b3171705d3b2521a6ee8351038a27a48c0f965421d7bb0d70fc4e9a9fd",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00006_4b6a1c10",
+        "pattern_sha256": "4b6a1c10780c6a92e4cb877835eba1303ab96f49ac5d2fc61117f0d05fff0db8",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00007_c6e47b74",
+        "pattern_sha256": "c6e47b74526fcabf4528b47984529732c3f4ae4216435f764c1c9962aa74c2e9",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00008_6099f09f",
+        "pattern_sha256": "6099f09f36852c132614784202965680e0dcb46ffcdfe03f5b5f70e8ba020a01",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00009_b1816354",
+        "pattern_sha256": "b181635454998246a648ad86c352d5fed1e563909fb83ec1e4ee6a6eeb91c005",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00010_8ac237ac",
+        "pattern_sha256": "8ac237accbf7bb136550c7a3b96758fc6908c20a4f5db2bbb150d9e622d949e3",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00011_f31e3539",
+        "pattern_sha256": "f31e3539cb07be50043e000ae9e9011d3b48ed997a8478c8ff02c7eb2d13bba7",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00012_0d45579d",
+        "pattern_sha256": "0d45579d52c157eda818beda0442b1995239fd69ab128438de3fcf1f189d7553",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00013_ac5af4c1",
+        "pattern_sha256": "ac5af4c1b5b739e55ed25ee063169b4d2b97d0d0d976cffe94f2a0a90725f858",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00014_24576174",
+        "pattern_sha256": "24576174c306f0404a95ae908988f8c29136c06de0a8cffdd59089de751ef94c",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00015_eab27db7",
+        "pattern_sha256": "eab27db70c2221643138d39390c7b2d90837051e71c79ec0efcd4b83aa101f9e",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00016_333237b8",
+        "pattern_sha256": "333237b8c16c0149fd3315140e4a57fe906816c291e35d3e27c737746a107a77",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00017_521cd50a",
+        "pattern_sha256": "521cd50a31c80e74aee3f5d0c33af095798637fd52e93b6f71a3665cae0d9dfa",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00018_17f55a2d",
+        "pattern_sha256": "17f55a2da7dc31f19018aba6a60bc0f804f319925811ed3339e77a02f1f1b9d5",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00019_99448974",
+        "pattern_sha256": "994489745c780f114996080e0ac14cb7baee5c598036a57803668eea2fbcd749",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00020_e134ca5d",
+        "pattern_sha256": "e134ca5ddb34f977032a0844476dc2d43e43076157624df7783530f5014d3204",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00021_05d0aef8",
+        "pattern_sha256": "05d0aef886cee82d0e96b8326042997c9c172848270dc83f668a713a4f0f7b33",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00022_6e5e7f7f",
+        "pattern_sha256": "6e5e7f7ffc3f1421833fe40ca55275d490c5dc1199541c6c6ccb16a4134bb9d4",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00023_e9e3c277",
+        "pattern_sha256": "e9e3c277b644a53839792f7ad1cde1553fa7f2b10fb42e3efa36623a3ea5b1eb",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00024_4080d34a",
+        "pattern_sha256": "4080d34a5b03fafbd5713aa8668e2433b175a0fd6d5ef8e3a448ef31f3528719",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00025_e61894a6",
+        "pattern_sha256": "e61894a68181967066e48894eea61f2efecd0df5c044cf5995bf3aa2da9dd692",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00026_650a5d79",
+        "pattern_sha256": "650a5d79b5706fd5b4824efd55a1ca35df4b9feae6d15a294c62925c8c53d3e2",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00027_75eae660",
+        "pattern_sha256": "75eae660209bf70fa5303e3f0b7ec31143bca1899cdda8dbc9bcae4844f22100",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00028_d7974a77",
+        "pattern_sha256": "d7974a77fe867c4c20e8307224dc6ca6daa84cbe92cd32d8395d6564f67fbded",
+        "selection_owner": "live"
+      },
+      {
+        "id": "r80p10_00029_8d07054e",
+        "pattern_sha256": "8d07054ef473bb19808203264d95f872ee07de58dd2309f69a0ec1c230894c1b",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00030_fa9d1a2e",
+        "pattern_sha256": "fa9d1a2e36abd4684a1a2531b2dccb460c6e86d5650ab22a535bf2623e99131c",
+        "selection_owner": "current_only"
+      },
+      {
+        "id": "r80p10_00031_049c36dc",
+        "pattern_sha256": "049c36dcef26043ae7229214c390f19de34aa074062cf252d16dbac18c826b30",
+        "selection_owner": "live"
+      }
+    ],
+    "new_cohort_truth_read_by_seal_creator": false,
+    "NAS_access_by_seal_creator": false,
+    "scope": [
+      "All32 choices, owner quotas, model attribution and two full predictions are fixed before dispatch.",
+      "Existing factory capacity and duplicate verification may physically load early completed cohort sample/rad; continuous main training may also consume them.",
+      "Such reads must be disclosed and must not be called raw-unread or blind until the later seal.",
+      "The later two-dispatch seal precedes explicit comparative performance readout; it is not proof that no capacity validator or main controller previously loaded any cohort raw file.",
+      "Frozen cohort/model/prediction bindings must remain unchanged; no scores, owner quotas or choices may be recomputed from early results.",
+      "No claim of HFSS dispatch, results, surrogate superiority or automatic adoption is made here."
+    ]
+  },
+  "prepared_action_identity": [
+    {
+      "phase": 1,
+      "file_binding_at_seal": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v8-01\\action_receipt.json",
+        "sha256": "fb40ab78e6617b9fbdad52f0aa5e9d494ac08fd85afc1ca92a890f6cf4541267"
+      },
+      "canonical_prepared_action_sha256": "53e86e2dbab012d494f74b0ee22ef9e6a4d2371706b823ab0f5baa1810c59cf6",
+      "selected_pattern_hashes_sha256": "a23e36e16259fecc9b10c565d4db9bcc67480c29ae944c2036ebbf4533d1d3f7",
+      "cycle_id": "5da55257ab3a90a8529f17b2246fdcdecb4fe0ceffe293439d1c4167284d5d8c",
+      "source_shard_tree_sha256": "675bbdf3210fac76f03ec23908007fba018073d5544b2c80af3e69997aaf6b45"
+    },
+    {
+      "phase": 2,
+      "file_binding_at_seal": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v8-02\\action_receipt.json",
+        "sha256": "42cabd660535618e2ad39ebc9f133620be151225ec0a61c8c427c0a3afa624fc"
+      },
+      "canonical_prepared_action_sha256": "b874ecfa5af91d0cb7d5a9924462009471757fe30dddfc6fc296f0c3181798ab",
+      "selected_pattern_hashes_sha256": "3a1c0b7f0ace7c3c554502cca15fa5a0dce5fe3086bf4ed1d1294422799c7dc7",
+      "cycle_id": "521e04445fa9cee2ab90fde1a7788869114bf0d4773e0654ffd090190aa08280",
+      "source_shard_tree_sha256": "f43bcc4ff661d4c1443f221817410ec2eadc92c3fb15f90bcc62073063c57563"
+    }
+  ],
+  "source_evidence": [
+    {
+      "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/publisher_v8.py",
+      "function": "dispatch_phase",
+      "line": 856,
+      "finding": "Each phase calls cycle._queue_view before capacity and dispatch."
+    },
+    {
+      "path": "script/symmetry_factory_cycle.py",
+      "function": "_queue_view",
+      "lines": [
+        964,
+        1022
+      ],
+      "finding": "The queue scan calls pb.validate_store(store, require_complete=False) for every same-scope store with results."
+    },
+    {
+      "path": "script/profiled_batch.py",
+      "function": "verify_completed",
+      "lines": [
+        206,
+        226,
+        238
+      ],
+      "finding": "Store validation hashes and torch-loads each successful sample tensor and, for this single-port profile, its radiation tensor before replaying the observation."
+    },
+    {
+      "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/seal_readout_v8.py",
+      "function": "build_seal",
+      "lines": [
+        37,
+        93
+      ],
+      "finding": "The final seal itself reads no result/store payload and records results_or_stores_read=false; that flag describes the seal operation, not all earlier capacity scans."
+    },
+    {
+      "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/truth_readout_v8.py",
+      "function": "main",
+      "lines": [
+        166,
+        187
+      ],
+      "finding": "Explicit comparative readout occurs only after validate_seal and terminal checks, when the preserved legacy readout is invoked."
+    }
+  ],
+  "truthful_scope": [
+    "All 32 selected patterns, the 16/16 owner quota, per-owner model attribution, and both complete 32-row prediction files were frozen before either HFSS dispatch.",
+    "The prepared action receipts deterministically bind the exact even/odd 16-row shards, cycle IDs, planned stores, frozen predictions, registry, preparation, publisher review, pool review, and implementation hashes.",
+    "A later dispatched action may change only status and add dispatch_gate. Replacing status with prepared and removing dispatch_gate must reproduce the recorded canonical prepared-action hash and publisher_v8._expected_action.",
+    "The pipeline is prospective with respect to cohort selection and saved predictions, but it is not an end-to-end raw-unread or blind pipeline.",
+    "Before phase 2 dispatch, the capacity scan can physically load successful phase 1 sample and radiation tensors. The continuous main controller may also consume early phase 1 results for its own training.",
+    "Those incidental validation or controller reads do not authorize changing the frozen cohort, owner assignments, scorer/model attribution, predictions, shard membership, or planned comparison.",
+    "The later two-dispatch seal occurs before explicit comparative performance readout. It does not establish that no earlier capacity validator or continuous controller physically read cohort raw data.",
+    "selected_truth_read=false in the prepared action is valid for selection/preparation provenance; it must not be reported as a claim that every later capacity scan remained physically raw-unread."
+  ],
+  "required_later_verification": [
+    "Normalize each final dispatched action by setting status to prepared and removing dispatch_gate; require equality to publisher_v8._expected_action and to the recorded canonical prepared-action identity.",
+    "Require exactly one valid dispatch readback for each action and exact immutable input-tree hashes before creating the final readout seal.",
+    "Cite this predispatch scope seal and review in the final evidence so incidental capacity/controller reads are not conflated with the explicit comparative truth readout.",
+    "Do not recompute scores, owner quotas, predictions, or candidate choices from phase 1 results."
+  ],
+  "no_NAS_or_selected_truth_access_by_this_record_creator": true
+}

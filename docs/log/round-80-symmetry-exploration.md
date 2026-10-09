@@ -1157,3 +1157,8 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10 05:40：phase1本機等待driver實際啟動
 
 - **10/10 05:40 前瞻phase1背景等待已實際啟動**：driver PID9960／creation1791581986675／argv／claim现场吻合，原main15944仍exact live；只讀本機狀態，每30秒、最多2小時，剩餘窗口至少360秒才單次呼叫原publisher v8。不自動重試／殺程序／改模型；所有global5000／guided96、來源、duplicate及append前180秒guard照舊。[啟動](assets/r80_currentonly_prospective_v010_deferred_publication_launch_20261010.json)。尚未派HFSS／改queue，phase2之後接續；05:33三台健康、舊三筆HFSS錯誤已由既有worker重試成ok。最新全量05:04的3,015、WM+.021682。下一routine06:03；R80/R81未完成。
+
+
+### 2026-10-10 05:49：32筆派工前固定與讀取範圍補充
+
+兩片action尚為原始prepared時，已把全部32筆選樣／owner／模型來源／雙預測／shards做create-only固定，獨立本機來源核對通過。[範圍與來源](assets/r80_currentonly_prospective_v010_predispatch_scope_20261010.json)。既有capacity與duplicate檢查會驗證全部已完成sample/rad；phase1有早期結果時，phase2檢查可能實際載入它們，主線SM也可能使用它們。因此流程不能稱全程盲化／raw-unread；selected_truth_read=false是選樣準備階段的來源紀錄，最終seal只是在明確性能比較讀回之前。所有32筆選樣、owner配额、模型歸屬與保存預測仍固定，不按早期結果改第二片；不更動publisher、背景driver、queue或主線SM。後續需驗證dispatched action正規化後等於本次固定版本並引用此範圍紀錄；沒有新HFSS性能／模型勝出結論。
