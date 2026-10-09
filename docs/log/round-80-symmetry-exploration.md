@@ -805,3 +805,11 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 ![目前最佳：對稱金屬排列、S11與Gain、28GHz兩切面極座標場型](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)
 
 沿用`script/figs/symmetry_profile.py`與歷史`polar_rad_ax`，沒有另造繪圖程式。核對全量唯一排名、raw／analysis／圖檔hash、WM重算與金屬鏡射通過，圖面文字與圖例可讀；最佳raw未變，因此PNG與前版相同。[最新查詢及出圖收據](assets/round-80/best-symmetric-polar-20261009-v006/best_query_receipt.json)保留截點的一筆首次HFSS COM失敗（`dedust_r80c0f16d531g01`、attempts=1），未列作成功資料，不能視為最終毒樣本或worker停機。查詢未取得controller鎖或修改NAS queue／raw，沒有新NAS bulk歸檔。金屬完全左右對稱，場型殘差仍非零；正WM餘裕很小，兩次正觀測不證明連續頻率、網格獨立或多次穩定達標。
+
+### 2026-10-09 17:49：第二輪SM批次學習與48筆派工核對
+
+自動cycle `0f16d531...`於17:34:16完成，耗時1,870.640秒，自然回waiting、completed_cycles=2。v003凍結training新增75、累積**2,419**；effective train1,583／hold836，reference train1,462／hold957，c48仍全121筆effective train。原v002的2,344列逐列完整保留。三member fresh initialization／legacy30＋current100 epochs、八個Adam states各3,700步，從1,583 effective train實體sample/rad重建的四norm tensors與三checkpoint完全相同；六欄模型binding與原action receipt一致。
+
+[第二輪薄收據](assets/r80_family_development_cycle_v003_20261009.json)記錄Conductor重播既有獨立role／manual norm helpers（並非新一次獨立agent審查），與本機bound files before/after不變。私人NAS三個`dedust_r80c0f16d531g01`–`g03`的完整60-file tree、唯一queue row與profile/input驗證通過；48個pattern互斥，每筆保存17／17／91／91預測曲線，沒有改queue／claim。固定dispatch截點2,431晚於fit截點2,419，不能用dispatch minus previous-fit推算本版訓練增量。人工audit初稿的87推算在寫通過收據前被assert拒絕，原稿保留；改以實體manifest差75驗證後通過，controller與模型本身沒有失敗。
+
+派工完成不代表HFSS完成或性能提升。使用者隨後明確授權維持SM排名、開始尋找更多不同潛力的對稱圖形；新探索將以前瞻候選／模型／去重／幾何分散紀錄另立批次，保留原已派批次與陰性結果。R80 5,000與R81仍未完成，健康檢查維持約30分鐘。

@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "status": "automatic_familydev_v003_model_and_actual_NAS_dispatch_verified",
+  "observed_utc": "2026-10-09T09:49:49.605333+00:00",
+  "action_receipt_sha256": "5c32753c0cbaf5d55f8bc3690d5f85a8b7ea41463ebb51f3e43aa3538a9dab6f",
+  "cycle_id": "0f16d531c9d6270ad8a43dce86cbbd99aceded0b21175902ccb6781a1048204a",
+  "binding": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 3,
+    "manifest_id": "063eb0b013c9c18456b9446068470089427f57f78c20aaab83514bb8984d2a4b",
+    "cumulative_valid_unique": 2419
+  },
+  "data_new_unique": 75,
+  "previous_manifest_rows_preserved": true,
+  "failed_draft_sha256": "6b610ddd06e6436939a262fcb5f638b9cbd239f36864320628cf4098b5d37353",
+  "failed_draft_reason": "Inferred fit increment from later dispatch cutoff (2431), rather than earlier frozen training snapshot (2419). No controller/model failure.",
+  "counts": {
+    "legacy_holdout": 1850,
+    "legacy_train": 10150,
+    "profile_holdout": 836,
+    "profile_train": 1583
+  },
+  "effective_roles": {
+    "profile_train": 1583,
+    "profile_holdout": 836
+  },
+  "reference_roles": {
+    "profile_train": 1462,
+    "profile_holdout": 957
+  },
+  "c48_development_rows": 121,
+  "members": [
+    {
+      "seed": 0,
+      "sha256": "095a7345e6049c38591d080c170748e8b5e909dd30cf840cc9afbcd4981b9f9f",
+      "optimizer_steps": 3700,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 1,
+      "sha256": "d8d229fd8991af52ad0aa9756c82f39834b6a14407e847e71f8a6a21a55ce9e0",
+      "optimizer_steps": 3700,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 2,
+      "sha256": "ab83d498787e156f07480772cfc45af4edb29e35a242948c22507e15a2160450",
+      "optimizer_steps": 3700,
+      "norms_exact_effective_train": true
+    }
+  ],
+  "source_bindings_before_after_equal": true,
+  "source_bindings": {
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\state.json": "4bda6371ba68d16608b327fe7231909c8736c8882c1d55c30930a69d9319d028",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v003\\manifest.json": "82061afd7155c42abedb14140d4583657d777a04392ddd486a6dd0fced97cec6",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v003\\receipt.json": "6f7b3f087fa9b214c7309a57bf2dfa2a6b9eb656ac7f9657169f2251b1a42161",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v003\\summary.json": "ba0a017872795864499a6e3b29325488a1e74a054b31ca81e0cb1e86c7a0c163",
+    "tmp\\r80_factory_20261007\\controller_familydev_v1\\cycles\\0f16d531c9d6270ad8a43dce86cbbd99aceded0b21175902ccb6781a1048204a\\action_receipt.json": "5c32753c0cbaf5d55f8bc3690d5f85a8b7ea41463ebb51f3e43aa3538a9dab6f",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v003\\member-0.pt": "095a7345e6049c38591d080c170748e8b5e909dd30cf840cc9afbcd4981b9f9f",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v003\\member-1.pt": "d8d229fd8991af52ad0aa9756c82f39834b6a14407e847e71f8a6a21a55ce9e0",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v003\\member-2.pt": "ab83d498787e156f07480772cfc45af4edb29e35a242948c22507e15a2160450",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v002\\manifest.json": "e902d51b496da2a80afd8119b8146703457dc6afd1c3b5f0804df584af413288",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v002\\receipt.json": "52e5864137b369046489f3f3d6d234ceda0dcb0b926544981133e8b09a3487ab",
+    "tmp\\r80_sm_input_review_20261009_v001\\review.py": "9a0185d3f621bc936daba3c1df554a2c17150fb95bb01be95a69242eb3b8a517"
+  },
+  "published": [
+    {
+      "job": {
+        "input": "dedust_r80c0f16d531g01_input",
+        "store": "dedust_r80c0f16d531g01",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c0f16d531g01_input/config.yaml"
+      },
+      "input_tree_sha256": "87784a409fe87e374b4a835c87589cf9c34f03217bcd321b02e75244055b8c54",
+      "files": 20,
+      "count": 16
+    },
+    {
+      "job": {
+        "input": "dedust_r80c0f16d531g02_input",
+        "store": "dedust_r80c0f16d531g02",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c0f16d531g02_input/config.yaml"
+      },
+      "input_tree_sha256": "81de4c10e81a038e3df93c34a748c6ee6b524493d13eca2000af430f7066b2f0",
+      "files": 20,
+      "count": 16
+    },
+    {
+      "job": {
+        "input": "dedust_r80c0f16d531g03_input",
+        "store": "dedust_r80c0f16d531g03",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c0f16d531g03_input/config.yaml"
+      },
+      "input_tree_sha256": "073f1cda232b3938ba6eebac4f5c04172032246bf289eba21203c9b8ae77a961",
+      "files": 20,
+      "count": 16
+    }
+  ],
+  "pretrain_prediction_audit": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1\\cycles\\0f16d531c9d6270ad8a43dce86cbbd99aceded0b21175902ccb6781a1048204a\\pretrain_prediction_audit.json",
+    "sha256": "2a3ddac890fbe2ac5918a3462c3da94dc4e7a004b6a1d6447886d13bdad75e0c"
+  },
+  "dispatch_valid_unique_cutoff": 2431,
+  "NAS_queue_input_or_claim_mutation": false,
+  "limits": [
+    "Root replay reused pinned independent role helper and recorded manual norm helper; this is not a fresh independent-agent review.",
+    "No HFSS outcome or model performance improvement claim.",
+    "Dispatch cutoff is not a live census; target5000 and R81 remain incomplete."
+  ],
+  "producer_sha256": "c11f9d51bc3e21e20d3e1f4d338bfe8c862a7c31201564507f42407e5d33c036",
+  "watch": {
+    "status": "waiting",
+    "launch_id": "555a4dbe6a7d474e8ffc70a97e555de7",
+    "completed_cycles": 2,
+    "cycle_started_utc": "2026-10-09T09:03:06.075160+00:00",
+    "last_completed_utc": "2026-10-09T09:34:16.716511+00:00",
+    "last_cycle_seconds": 1870.6400000001304,
+    "interval_seconds": 1800
+  },
+  "local_review_sha256": "e4e7e17cd4d251b8cc9d252a9cf87b2dbb4e6181641f62d92fae1be00a4e6e11"
+}
