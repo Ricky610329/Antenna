@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "status": "single_diverse_controller_launch_and_initial_cycle_verified",
+  "launch": {
+    "schema_version": 1,
+    "status": "launched_identity_verified",
+    "observed_utc": "2026-10-09T10:27:39.4254862Z",
+    "pid": 15944,
+    "creation_unix_ms": 1791541659267,
+    "exact_argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\" ",
+    "source_commit": "5802b799d27b7a657f400798f44bd4d301ee2e64",
+    "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+    "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+    "training_workdir": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1",
+    "controller_workdir": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1",
+    "stdout": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_sm_handoff_20261009_v001\\watch_stdout.txt",
+    "stderr": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_sm_handoff_20261009_v001\\watch_stderr.txt",
+    "old_terminal_utc": "2026-10-09T10:01:46.753087+00:00",
+    "hfss_started_here": false,
+    "worker_restart_or_claim_mutation": false
+  },
+  "actual_CIM": {
+    "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\" ",
+    "pid": 15944,
+    "creation": 1791541659267,
+    "watcher_count": 1
+  },
+  "watch_launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+  "initial_state_status": "running_cycle",
+  "initial_completed_cycles": 0,
+  "cycle_started_utc": "2026-10-09T10:27:41.081772+00:00",
+  "policy_binding": {
+    "schema_version": 1,
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\r80_diverse_sm_search_v1.json",
+    "sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+    "policy_id": "27937e8f03647431256a31ad47acf4124fc30f8b7195afb1f731d079d6e01d75",
+    "policy": {
+      "arm_order": [
+        "global_lcb",
+        "parent_lcb",
+        "high_disagreement"
+      ],
+      "arm_weights": [
+        1,
+        1,
+        1
+      ],
+      "candidate_pool_size": 20000,
+      "disagreement_mean_percentile": 60,
+      "dispatch": "existing factory transaction, same priority1 and 16-pattern shards, existing 96 outstanding and 5000 valid-plus-reserved limits",
+      "limits": [
+        "Predictions guide candidate selection; HFSS remains the truth.",
+        "This changes pool generation and arm allocation together; it is not a single-factor causal diversity comparison.",
+        "Top-quartile parent descriptors are development information, not independent model-validation evidence.",
+        "LOW blind backlog remains enabled and unchanged.",
+        "No bridge-width, frequency, score-spec, emforge or worker runtime change.",
+        "First new cohort must be evaluated by origin, saved prediction error, actual WM and geometry coverage before claiming improvement."
+      ],
+      "max_parents_per_canonical_group": 2,
+      "max_selected_per_canonical_group": 2,
+      "measurement_changes": false,
+      "measurement_profile": "configs/single_r80_symmetry_factory.yaml",
+      "min_parent_groups": 8,
+      "min_parent_physical_hamming": 64,
+      "min_selected_physical_hamming": 64,
+      "name": "r80_diverse_sm_v1",
+      "parent_count": 32,
+      "parent_ranking": "actual WM top quartile; highest-WM first, then existing maxmin_hamming_indices with canonical-group cap",
+      "parent_top_fraction": 0.25,
+      "ranking": "descending score, then pattern_sha256; greedily take the highest feasible candidate under whole-cohort constraints",
+      "schema_version": 1,
+      "seed": 80100956,
+      "source_pool_fractions": {
+        "fresh_random": 0.5,
+        "parent_variant": 0.5
+      },
+      "strict_no_relaxation": true,
+      "training_protocol_changes": false
+    }
+  },
+  "interval_seconds": 1800,
+  "low_backlog": {
+    "poll_seconds": 90,
+    "low_watermark": 48,
+    "target_pending": 96,
+    "max_refill": 96,
+    "min_refill": 48,
+    "shard_size": 16,
+    "priority": 6,
+    "owner": "r80-low-backlog-v1",
+    "reservoir_seed": 80100791,
+    "reservoir_size": 2048
+  },
+  "source_bindings_sha256": "27cf1ef17b1ccd6a49db433509b58d4bb237d8678effaa945cd4d4106a389923",
+  "launch_receipt_sha256": "f98fe0892bdfe8c969dabd7b8bc7440be3eac34278b0f2bd2210447cc98344e6",
+  "launch_script_sha256": "6fcd25b06618485c31daa258f72e7d99f10f914524794502bb5f30e0bda60e81",
+  "initial_stderr_empty": true,
+  "next_routine_health_taipei": "2026-10-09 18:58",
+  "limits": "Initial launch only. First live training/cohort/dispatch and HFSS performance still pending. Preview is not a dispatched cohort."
+}

@@ -840,3 +840,10 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 既有cycle/watch已加入opt-in搜尋配方，原無配方與LOW流程保留。獨立27項focused checks及最後一項arm-count regression通過；修正親本最多32的語義、sample/rad讀取前後hash、完整六欄predictor binding及新臂計數。Root實際controller環境focused tests通過，並使用v003真實三模型、2,419筆凍結實測、NAS唯讀2,592排除pattern，產生並評分20,000候選；10,000全域新圖＋10,000不同親本變體，32親本／31家族。
 
 凍結bit圖形／SHA／合法LR對稱、排序及三臂greedy selection另行重播；48候選再以真實模型評分核對。Global-LCB／parent-LCB／high-disagreement各16，入選37家族、每家族最多2、pairwise最小65／625，無門檻放寬。[薄實作與pool收據](assets/r80_diverse_sm_implementation_20261009.json)保留來源與模型binding；完整20k排名、48本機bundle與read-only exclusions存本機tmp。這是v003的本機preview，未寫NAS／queue；live controller可能先吃新真值並訓練v004，因此不宣稱preview48等於未來派工或性能改善。下一步以同training root、新controller root單次接手；HFSS原queue持續工作。
+
+
+### 2026-10-09 18:28：多樣SM自動controller單次接手
+
+實作與實體pool里程碑`5802b79`已push GAN。經create-only launcher核對舊controller正常stop、全機watcher為0、HEAD等於origin/GAN、14個source／v003模型binding與本機preview通過後，18:27:39以hidden Start-Process單次啟動PID **15944**／creation **1791541659267**，launch **42afe91c263f4bacb74f6d6c5c6bbcb7**。再以實體CIM核對完整argv／creation及唯一watcher；新status為running_cycle、completed_cycles0、stderr空白。
+
+[新controller啟動薄收據](assets/r80_diverse_sm_controller_launch_20261009.json)保存政策與身份。新工作根`controller_diverse_sm_v1`，沿用`training_familydev_v1`、主線1800秒、LOW90秒。背景仍按48–96新唯一真值重訓三個fresh SM，再從多樣pool選子代／原factory派工；原HFSS worker無需重啟。第一live fit／候選／NAS派送尚待terminal核對，不能把v003 preview或初始running狀態當已派工；下一routine健康約18:58，無警報時掛著。
