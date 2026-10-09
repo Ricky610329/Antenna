@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "status": "verified_live_routine_health",
+  "observed_utc": "2026-10-09T16:38:55.0333883Z",
+  "physical_pid": 15944,
+  "creation_unix_ms": 1791541659267,
+  "argv_matches": true,
+  "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+  "controller_status": "running_cycle",
+  "completed_cycles": 10,
+  "latest_completed_data_version": 8,
+  "cycle_receipt_sha256": "3c18fcc2ac40ebe57ac70a5df01e82875b39a070850c8b13b08cc0128cd79d4b",
+  "source_health_sha256": "985019e8d7914c1503e9000db60ec3c2ff867d290a0f616f6810c7cf9944b426",
+  "scoped_status_output": "資料工廠狀態:\n  job dedust_r80k1d1e587fde8167b2: 0/16（排隊中）\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\n  job dedust_r80c2e4d6525g02: 14/16 完成,最新結果 4 分前（已認領）\n  job dedust_r80c7e26901fg01: 12/16 完成,最新結果 2 分前（已認領）\n  job dedust_r80c7e26901fg02: 3/16 完成,最新結果 3 分前（已認領）\n  job dedust_r80c7e26901fg03: 0/16（排隊中）\n✓ 工廠無警報",
+  "v007_correct_jobs_state_markers": [
+    {
+      "job": "dedust_r80c2e4d6525g01",
+      "done": true,
+      "fail": false
+    },
+    {
+      "job": "dedust_r80c2e4d6525g02",
+      "done": false,
+      "fail": false
+    }
+  ],
+  "v008_physical_model_and_dispatch_receipt_sha256": "896f30d539f2f57d2c3346ffbe6e8ed9d40152a6dd1bc89f4d2824379120a059",
+  "v008_independent_selection_receipt_sha256": "9386f872f153793725aa5255e93c7b05dbcac492e86c36618bb82cdb59e7ffbe",
+  "next_health_taipei": "2026-10-10 01:08",
+  "worker_or_queue_restarted_or_mutated": false,
+  "limits": [
+    "Three claimed jobs have recent result entries; entries are not verified unique successes.",
+    "v007g02 remains nonterminal, so no full32 truth summary is claimed.",
+    "Latest full raw census remains2756 at23:51; no newer total or global best claim.",
+    "Original live legacy30/current100 and LOW backlog remain unchanged."
+  ]
+}
