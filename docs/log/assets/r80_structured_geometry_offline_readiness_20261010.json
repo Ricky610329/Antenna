@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "status": "passed_offline_geometry_readiness_only",
+  "observed_utc": "2026-10-09T23:42:31.628086+00:00",
+  "history_audit_sha256": "def972401cd1793fff917c689a90e1dbbd5a5aef4042dd0e2263ffc37583ae98",
+  "history_notes_sha256": "02d2cc14a2d00f2b2ddf92cc2b4445b2e3b3c38139e5cfd6897fa85c7bb8af7d",
+  "historical_source_bindings_checked": 12,
+  "synthetic_unary_candidate_count": 3,
+  "unary_operators": [
+    "add_block",
+    "resize_component",
+    "grp_grow"
+  ],
+  "prototype_sha256": "047301a9e0f2bf22324a05cbc9c0e182bf477fc2b8e869354726ec7ced9500f7",
+  "geometry_receipt_sha256": "6b0820987dbc27045c49c67c0c41c2fa6817f432c0062f898a08db31b78ba8d8",
+  "root_saved_review_sha256": "1fdb9a7e445de2422b4df3ba342104b654eb7c78a3375c426a0725fa61005394",
+  "nonzero_bridge_receipt_sha256": "416aed891ea6db9d8a44841f58370503dc81f956d3143a985ac60fdd60594332",
+  "nonzero_bridge_site_count": 2,
+  "record_validator_sha256": "35a89304a6d8c4581733e3448a2af9f03e6a2542b5f2b696a27e3acba59e9a94",
+  "source_and_parent_metadata": {
+    "in_memory_pool_row": {
+      "supplemental_fields_checked": [
+        "generator_origin",
+        "operator",
+        "operator_params",
+        "candidate_seed",
+        "candidate_index",
+        "parent_id",
+        "parent_pattern_sha256",
+        "lineage_id",
+        "canonical_group_id",
+        "parent_origin",
+        "raw_pattern_sha256",
+        "projection_diff_px"
+      ],
+      "supplemental_fields_present": true
+    },
+    "dispatched_manifest": {
+      "reviewed_writer_lines": "script/symmetry_sm_pool.py:655-671",
+      "source_fields_removed": [
+        "pattern"
+      ],
+      "supplemental_fields_survive_static_projection": true,
+      "note": "This is a read-only projection of write_bundle, not an actual dispatch or bundle write."
+    },
+    "diversity_audit_identity": {
+      "reviewed_lines": "script/symmetry_diverse_sm.py:467-485,508-526",
+      "lineage_and_canonical_bound": true,
+      "supplemental_origin_and_operator_bound": false
+    },
+    "feedback_parent_reload": {
+      "reviewed_lines": "script/exploration.py:511-521",
+      "lineage_and_canonical_preserved": true,
+      "supplemental_origin_operator_and_parent_hash_preserved": false
+    },
+    "unary_parent_identity": {
+      "lineage_value": "synthetic-lineage-a",
+      "canonical_group_value": "synthetic-family-a",
+      "origin_value": "historical_component_edit",
+      "rule": "inherit the single named parent's lineage/canonical identity"
+    },
+    "integration_gap": "Supplemental origin/operator fields are present in the pool row and would survive write_bundle into the dispatched manifest, but they are not bound by the diversity audit identity and are dropped when feedback parents are reloaded by exploration.py."
+  },
+  "production_integration": false,
+  "current_parent_yield_measured": false,
+  "model_execution_or_training": false,
+  "nas_access": false,
+  "hfss_run": false,
+  "queue_or_controller_mutation": false,
+  "current_frozen32_comparison_changed": false,
+  "limits": [
+    "Synthetic geometry and source audit only; no SM/HFSS efficacy or current-parent yield claim.",
+    "Original three candidates have no diagonal bridges; a separate disconnected fixture exercises two nonzero symmetric sites.",
+    "Current dispatch writer preserves supplemental fields statically; audit identity and feedback reload do not retain/bind all of them.",
+    "R32 crossover and R48 single-step graft have historical negative gates; neither is prototyped or adopted.",
+    "Future structured pool composition is a proposal, not the live search policy."
+  ]
+}

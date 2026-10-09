@@ -1208,3 +1208,10 @@ controller exact身分通過、running_cycle、completed18／reported v013；三
 逐 store cutoff 重讀 sample/rad，共 3,150 個有效唯一對稱圖形、3,155 次成功實測含重測；比06:27增加64個。沒有新最佳，最佳 WM +0.0216822624 dB。[核對紀錄](assets/r80_best_status_20261010_0733.json)。
 
 07:32工廠無警報，三個已認領工作最新結果皆在1分鐘內；主線SM v014，下一輪已開始。固定32筆雙scorer對照已全數入列，第一批8/16、第二批排隊；未做完整對照truth readout或採用current-only模型。完整census會重讀完成原始資料，不宣稱全流程盲讀；對照選樣與預測維持凍結。R80 5000筆與R81新spec均未完成，例行健康檢查維持約30分鐘。
+
+
+### 2026-10-10：歷史幾何方法與離線接續準備
+
+核對R14/R15元件空間、R41群組變異，以及R32/R48的歷史負結果後，在本機tmp重用既有add_block、resize_component、_group_mutate做3個synthetic候選。左右對稱、feed、現行profile與packed-bit identity核對通過；另以獨立synthetic fixture實測兩個0.10mm鏡射橋接點。root重新核對保存陣列、單一parent lineage/canonical與來源雜湊。[離線準備紀錄](assets/r80_structured_geometry_offline_readiness_20261010.json)。
+
+這是離線準備，尚未測目前parent的產出率、排名或HFSS性能，也未整合進主線。現行bundle writer靜態上會保留origin/operator，但diversity audit及feedback reload沒有完整綁定／保留這些欄位；正式接續前需補足來源追蹤。32筆模型對照、主線模型／選樣／queue均未改動。
