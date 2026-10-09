@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "status": "automatic_diverse_v008_model_and_actual_NAS_dispatch_verified",
+  "observed_utc": "2026-10-09T16:33:50.903956+00:00",
+  "cycle_id": "7e26901fe1a65c1ecbd0a5dc9616ea20374441bf85ecbbe5f110ab7821e067c7",
+  "action_receipt_sha256": "3c18fcc2ac40ebe57ac70a5df01e82875b39a070850c8b13b08cc0128cd79d4b",
+  "binding": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 8,
+    "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+    "cumulative_valid_unique": 2739
+  },
+  "data_new_unique": 48,
+  "previous_manifest_rows_preserved": true,
+  "counts": {
+    "legacy_holdout": 1850,
+    "legacy_train": 10150,
+    "profile_holdout": 884,
+    "profile_train": 1855
+  },
+  "effective_roles": {
+    "profile_train": 1855,
+    "profile_holdout": 884
+  },
+  "reference_roles": {
+    "profile_train": 1720,
+    "profile_holdout": 1019
+  },
+  "c48_development_rows": 135,
+  "members": [
+    {
+      "seed": 0,
+      "sha256": "470f07cbb065abe9c726b2e84f0e7e5fe11179ad87f634be4cd72baed4cd8e30",
+      "optimizer_steps": 3900,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 1,
+      "sha256": "68b7dc4798919da9c80fdb87a5593ed6df1d4944331868a3ebf88d255ad25dac",
+      "optimizer_steps": 3900,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 2,
+      "sha256": "dbbe67490ce88e1ea421f71609f87bcbe36df3c8f2d8e64c59c4e340130ff102",
+      "optimizer_steps": 3900,
+      "norms_exact_effective_train": true
+    }
+  ],
+  "immutable_source_bindings_before_after_equal": true,
+  "live_state_excluded_from_hash_snapshot": true,
+  "published": [
+    {
+      "job": {
+        "input": "dedust_r80c7e26901fg01_input",
+        "store": "dedust_r80c7e26901fg01",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c7e26901fg01_input/config.yaml"
+      },
+      "input_tree_sha256": "d23dfa760908b04a2abcb135f0adf3095d7c01302f60a81731ebeb6f06bdfc28",
+      "files": 20,
+      "count": 16
+    },
+    {
+      "job": {
+        "input": "dedust_r80c7e26901fg02_input",
+        "store": "dedust_r80c7e26901fg02",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c7e26901fg02_input/config.yaml"
+      },
+      "input_tree_sha256": "4bf0390a47a803dd0d05d6b951db042a57735f3b9fff8ba3a9c099c66bbf3df3",
+      "files": 20,
+      "count": 16
+    },
+    {
+      "job": {
+        "input": "dedust_r80c7e26901fg03_input",
+        "store": "dedust_r80c7e26901fg03",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c7e26901fg03_input/config.yaml"
+      },
+      "input_tree_sha256": "0cd63add40f40fb67b3bbd97bedff19c658a211401604cf9b9c40638d1760b7a",
+      "files": 20,
+      "count": 16
+    }
+  ],
+  "pretrain_prediction_audit": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\7e26901fe1a65c1ecbd0a5dc9616ea20374441bf85ecbbe5f110ab7821e067c7\\pretrain_prediction_audit.json",
+    "sha256": "e7feda4e6785d52e12831260369dedf2ec70dc0657002383bdf8142b8c5db493"
+  },
+  "dispatch_valid_unique_cutoff": 2749,
+  "NAS_queue_input_or_claim_mutation": false,
+  "limits": [
+    "Root replay reused pinned independent role helper and recorded manual norm helper; this is not a fresh independent-agent review.",
+    "No HFSS outcome or model performance improvement claim; frozen v008 is checked while the watcher continues, so live state.json is not required immutable.",
+    "Dispatch cutoff is not a live census; target5000 and R81 remain incomplete."
+  ],
+  "root_review_sha256": "63094fcd59ef5518708a703de67068799ca48c31e333d0dd060204656e632aa1",
+  "root_verifier_sha256": "8331a2a99890651f6207e9116c4a37a3c7dc0e502a165c5e1b2e5398bc2aa145",
+  "reused_v007_verifier_sha256": "a02dc651a58622faa3a8f32f1bb049b3cd4df153ec3ad1d0576dba985032120a",
+  "prediction_replay": {
+    "schema_version": 1,
+    "status": "actual_saved_selected_predictions_replayed",
+    "rows": 48,
+    "predictor_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 8,
+      "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+      "cumulative_valid_unique": 2739
+    },
+    "manifest_sha256": "f1de2bc662a9cbaed668dc3219b8fe3574a6594ced81af033b2522276b528385",
+    "max_abs_error": {
+      "factory_score": 2.384185791015625e-06,
+      "lcb_score": 5.588430031622238e-06,
+      "navigation_mean_score": 2.3961067210365172e-06,
+      "response_disagreement": 4.038709266573903e-06,
+      "predicted_s11": 2.86102294921875e-06,
+      "predicted_gain": 4.649162292480469e-06,
+      "predicted_radiation_phi0": 2.86102294921875e-06,
+      "predicted_radiation_phi90": 1.9073486328125e-06
+    },
+    "tolerance": 2e-05,
+    "limits": "Same actual trained predictor replay; not independent implementation or HFSS truth."
+  },
+  "prediction_replay_sha256": "1341022790e366493de853728313791c7ddcb4ccf9173171ccc3dbeeb8a64ca7",
+  "replay_helper_sha256": "1d07b72c349c4d5345651e52c3adc01e0a8913e43f815207e4068dca80ea4475",
+  "source_bindings": {
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v008\\manifest.json": "1260a66ee30beceb4fff04dbc6fbec20feb29652ea48a24a7e485a96f509c12a",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v008\\receipt.json": "7e0b3d77dd8c3b5c1cc36a4c44909ddd3b7eb3f106dad59c39546e96d7e635b5",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v008\\summary.json": "d24c20d6d156af60fbfb0eb1092df4426f56dc7440253324c88322aef42eec1c",
+    "tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\7e26901fe1a65c1ecbd0a5dc9616ea20374441bf85ecbbe5f110ab7821e067c7\\action_receipt.json": "3c18fcc2ac40ebe57ac70a5df01e82875b39a070850c8b13b08cc0128cd79d4b",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v008\\member-0.pt": "470f07cbb065abe9c726b2e84f0e7e5fe11179ad87f634be4cd72baed4cd8e30",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v008\\member-1.pt": "68b7dc4798919da9c80fdb87a5593ed6df1d4944331868a3ebf88d255ad25dac",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v008\\member-2.pt": "dbbe67490ce88e1ea421f71609f87bcbe36df3c8f2d8e64c59c4e340130ff102",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v007\\manifest.json": "12a3739ac957a8885acec935861e478c0b1758fd846ff3266fe03c76978b2c20",
+    "tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v007\\receipt.json": "90a0e4e05ac2c035e3c1cd059b3888ec5b54d31f97500b75f967a6ab8850f269",
+    "tmp\\r80_sm_input_review_20261009_v001\\review.py": "9a0185d3f621bc936daba3c1df554a2c17150fb95bb01be95a69242eb3b8a517"
+  },
+  "scope": "Actual v008 accumulated data/roles/current-train norms/three fresh models/Adam3900 and three NAS input trees/queue/readback48 verified. Pinned prior helper reused; independent full20k selection replay is separately pending; no HFSS outcome claim.",
+  "limits_additional": [
+    "Fit2739, dispatch2749 and last global raw census2756 at23:51 have separate cutoffs.",
+    "Current-only/CNN/weighted shadows have not replaced live legacy30/current100."
+  ]
+}

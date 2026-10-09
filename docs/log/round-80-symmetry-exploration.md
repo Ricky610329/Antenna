@@ -1006,3 +1006,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 全部分母32；只有原live dispatch prediction在HFSS前保存，三shadow均維持predicted_before_hfss=false，其評估器未先讀selected32 truth，但root較早全量查詢已讀部分真值，不偽裝完整前瞻試驗。四模型均排除此32於固定v006全部2641訓練資料之外；這是原live挑出的單一development cohort，較好ρ不证明換模型會產生較佳候選。CNN低MAE沒有轉成較好排名，固定加權loss在此batch未改善LCB／Gain；current-only排名改善只作後續可測假說，主線模型／選擇政策不在此替換。v004/v005/v006多樣探索仍未找到新的正WM，全域最佳薄餘裕保留；不把最佳不同或誤差改進稱作穩定性能推進。R80 5000及後續R81未完成，三台／LOW補池／新資料批次SM更新繼續，下次routine00:38。
 
 讀回v2及獨立重播entry的窄靜態審查亦通過：[靜態審閱](assets/r80_diverse_sm_v006_first32_static_review_20261010.json)。具體分工為：不同Sol先前編寫獨立raw／NumPy算式，root產生僅換版本綁定的v2 adapter並單次執行，另一輪Sol靜態核對十個算術函式AST完全不變；不把root adapter冒称独立重新實作。
+
+
+### 2026-10-10：v008三fresh模型與48實際派工核對
+
+新的v008新增48、fit2,739，舊2,691 manifest列完全保留；effective1,855train／884hold、c48dev135、reference roles保留。三fresh模型legacy30＋current100、Adam各3,900，四train-only norm tensors以既有independent/manual helper逐位重算吻合。三私人NAS片各16、完整20-file tree及唯一priority1 queue row吻合，48互斥圖形及17／17／91／91保存曲線重播max5.588430e−6＜2e−5，所有固定source hashes前後不變。[模型／派工收據](assets/r80_diverse_sm_cycle_v008_20261010.json)。這是新的實際資料／模型產物核對而非重訓／broadtests；完整20k選擇獨立重播另處理，候選HFSS性能未在此判讀。dispatch2,749／fit2,739與23:51全量2,756各自截點，不混成新的性能或資料量。current-only後續新資料背景對照準備中，original live source與模型recipe不變；R80 5,000與R81仍未完成。
