@@ -745,3 +745,11 @@ Conductor已核對實際v2設定及方案來源；實作在`tmp/r80_sm_developme
 實際來源核對另外發現：舊cache的一筆普通train代表`dedust_r80repeat1_00_001c970d`可由ID與sample／rad／pattern hashes證明來自repeat-kind觀測，位於c48以外。此次原樣繼承這個既有唯一pattern代表，沒有新引入repeat label或增加唯一筆數；不能把舊cache說成全無repeat來源。另外兩筆只共享repeat geometry，來源ID及結果hash不同，不能推定repeat來源。
 
 15:27:16–15:28:55以CPU4完成三成員fresh initialization、歷史30＋current100 epochs，wall 99.062秒。實際train／holdout為1,469／779，legacy 10,150／1,850，模型binding載入通過且metadata／程式SHA不變；獨立正規化／推論稽核尚在進行，尚未切換controller或宣稱模型／HFSS性能改善。15:29精確PID54712仍存活，三台worker有工作，LOW排隊64筆、無工廠警報；主cycle再因retry結果在稽核期間更新而defer（共8次），正在隔離研究保留成功真值與容量截點下的修正，不停止HFSS。
+
+### 2026-10-09：新SM實際正規化、模型與推論稽核通過
+
+[新模型薄收據](assets/r80_family_development_actual_model_20261009.json)綁定三個實際checkpoint、99.062秒訓練收據及獨立manual replay。從1,469筆effective train原始資料獨立重建625維輸入與216維target，四個norm tensors在三模型皆精確一致；4,496個sample／rad檔案SHA及程式／metadata／模型before-after不變。模型架構、六欄binding、role metadata、signature、兩階段終態及Adam八個參數state的3,600步都核對通過。Manual forward與既有predictor最大差7.629e−6，最佳點WM分數差1.907e−6 dB，照實記錄CPU rounding，沒有宣稱逐bit一致。
+
+在**完全相同的779筆未升級角色cohort**上，216維MAE從舊v034的3.699170至新版本3.637540（−0.061630）；S11／Gain／兩個rad切面MAE均略降。這些資料早已用於development holdout監看，因此只是描述性的同資料回歸比較，不能宣稱未觸及驗證或泛化。110筆c48之新MAE 1.042525及最佳點預測WM約−1.567980、與真值差−1.589663 dB則是**訓練擬合診斷**，不可拿來驗證新模型，也不能以此宣稱新HFSS候選會更好。
+
+新模型可載入並通過實際契約稽核；live controller仍使用舊training_v2。既有retryable結果變動所造成的batch更新延後修正還在隔離審查，待通過後於正常cycle邊界切換唯一controller，再用事前鎖定的新候選與HFSS真值確認導航效果。最佳實測WM及兩次確認不因這次model fit而改寫，5,000筆目標／R81尚未完成。

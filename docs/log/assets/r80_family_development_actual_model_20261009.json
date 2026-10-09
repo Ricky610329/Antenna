@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "verdict": "PASS",
+  "source_bindings_before_after_equal": true,
+  "source_binding_set_sha256": "4320bca10721c3144a036ee4694ee9e34b32c7478df17c0184655dc6efc5782d",
+  "profile_payloads_rehashed_before_after": 4496,
+  "profile_payload_binding_sha256": "a0128f966a86596d39b68ee1aa84db17f53be4cc00eeb560c8ae78cf37d8f2dc",
+  "frozen_parent": {
+    "data_version": 34,
+    "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+    "manifest_id": "fbd49f5a38dd2f532722b151a284be99a47f3fc9ff34d5e5d5de7e65e9dc5533"
+  },
+  "data_contract": {
+    "profile_rows": 2248,
+    "effective_split_counts": {
+      "profile_train": 1469,
+      "profile_holdout": 779
+    },
+    "reference_split_counts": {
+      "profile_train": 1359,
+      "profile_holdout": 889
+    },
+    "development_family_rows": 110,
+    "train_input_shape": [
+      1469,
+      625
+    ],
+    "train_target_shape": [
+      1469,
+      216
+    ],
+    "all_three_norms_exact": true,
+    "legacy_counts": {
+      "train": 10150,
+      "holdout": 1850
+    }
+  },
+  "manual_vs_existing_predictor": {
+    "new": {
+      "response_members": {
+        "array_equal": false,
+        "max_abs": 7.62939453125e-06
+      },
+      "response_mean": {
+        "array_equal": false,
+        "max_abs": 3.814697265625e-06
+      },
+      "radiation_mean": {
+        "array_equal": false,
+        "max_abs": 2.86102294921875e-06
+      }
+    },
+    "old_v034": {
+      "response_members": {
+        "array_equal": false,
+        "max_abs": 7.62939453125e-06
+      },
+      "response_mean": {
+        "array_equal": false,
+        "max_abs": 3.814697265625e-06
+      },
+      "radiation_mean": {
+        "array_equal": false,
+        "max_abs": 3.337860107421875e-06
+      }
+    }
+  },
+  "identical_unpromoted_holdout_descriptive_only": {
+    "definition": "779 rows that remain effective profile_holdout in the child; identical IDs/truths are evaluated by both frozen ensembles",
+    "old_v034": {
+      "n": 779,
+      "mae": 3.699169874191284,
+      "s11_mae": 2.143540620803833,
+      "gain_mae": 5.696279048919678,
+      "phi0_mae": 3.8318140506744385,
+      "phi90_mae": 3.48405122756958
+    },
+    "new_familydev_v1": {
+      "n": 779,
+      "mae": 3.637540102005005,
+      "s11_mae": 2.0754952430725098,
+      "gain_mae": 5.629137992858887,
+      "phi0_mae": 3.769710063934326,
+      "phi90_mae": 3.4251222610473633
+    },
+    "new_minus_old": {
+      "mae": -0.0616297721862793,
+      "s11_mae": -0.06804537773132324,
+      "gain_mae": -0.06714105606079102,
+      "phi0_mae": -0.062103986740112305,
+      "phi90_mae": -0.0589289665222168
+    },
+    "claim_scope": "descriptive regression only; not untouched validation or generalization evidence"
+  },
+  "development_family_fit_only": {
+    "rows": 110,
+    "old_v034_heldout_metrics": {
+      "n": 110,
+      "mae": 3.4725019931793213,
+      "s11_mae": 3.3707938194274902,
+      "gain_mae": 6.369843006134033,
+      "phi0_mae": 3.546119451522827,
+      "phi90_mae": 2.876622200012207
+    },
+    "new_familydev_training_fit_metrics": {
+      "n": 110,
+      "mae": 1.0425245761871338,
+      "s11_mae": 1.712620496749878,
+      "gain_mae": 2.25140118598938,
+      "phi0_mae": 1.0265413522720337,
+      "phi90_mae": 0.7074910402297974
+    },
+    "best_pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+    "best_actual_factory_margin_db": 0.021682262420654297,
+    "best_new_member_factory_margins_db": [
+      -1.3360490798950195,
+      -1.9607806205749512,
+      -1.4071111679077148
+    ],
+    "best_new_mean_member_factory_score_db": -1.5679802894592285,
+    "best_existing_score_predictions_factory_score_db": -1.5679783821105957,
+    "manual_existing_score_abs_difference_db": 1.9073486328125e-06,
+    "best_new_predicted_minus_actual_db": -1.5896625518798828,
+    "claim_scope": "FIT diagnostic on promoted training family; not independent validation"
+  },
+  "limits": [
+    "The 779-row comparison is a descriptive same-data regression comparison; those rows were used as holdout metrics during model development.",
+    "The c48 family and best-pattern residual are training-fit diagnostics after the declared promotion and cannot support independent validation or generalization claims.",
+    "Fresh initialization is supported by the one-attempt pre-start receipt plus checkpoint flags and state; this audit did not rerun training."
+  ],
+  "new_model": {
+    "data_version": 1,
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "manifest_id": "b1d9d75e0e42c9b369998fc04b5dd050c5ea8b17ca5c317fafb73cdaa29d8498",
+    "summary_sha256": "90d5894677a5bd1d896ab90add8f4837aca3bd82375732afb3ab77a681b5d500",
+    "wall_seconds_recorded": 99.06199999991804,
+    "checkpoint_results": [
+      {
+        "file": "member-0.pt",
+        "sha256": "b3f457dc5984c2f656614ebb961c29eae1b5a5601dc209286272512f8b9de4d2",
+        "seed": 0,
+        "complete": true,
+        "fresh_initialization": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "terminal_phase": 2,
+        "terminal_epoch": 0,
+        "model_state_all_finite": true,
+        "norm_tensors_exact": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "optimizer_parameter_states": 8,
+        "optimizer_step": 3600
+      },
+      {
+        "file": "member-1.pt",
+        "sha256": "b7eaa33931f33d7a766d41b42b5da9dc79903354a6570cbea24282d5456a2b21",
+        "seed": 1,
+        "complete": true,
+        "fresh_initialization": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "terminal_phase": 2,
+        "terminal_epoch": 0,
+        "model_state_all_finite": true,
+        "norm_tensors_exact": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "optimizer_parameter_states": 8,
+        "optimizer_step": 3600
+      },
+      {
+        "file": "member-2.pt",
+        "sha256": "4cc84ba3ebaa788069ac0894c9b16012eef5c1e28c30d2e990c5011d42b7b624",
+        "seed": 2,
+        "complete": true,
+        "fresh_initialization": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "terminal_phase": 2,
+        "terminal_epoch": 0,
+        "model_state_all_finite": true,
+        "norm_tensors_exact": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "optimizer_parameter_states": 8,
+        "optimizer_step": 3600
+      }
+    ],
+    "fresh_models_before_start_receipt": true,
+    "phases": {
+      "legacy_epochs": 30,
+      "current_epochs": 100,
+      "optimizer_steps": 3600
+    },
+    "architecture": [
+      625,
+      512,
+      512,
+      256,
+      216
+    ]
+  },
+  "independent_actual_audit_sha256": "95fd28df29db9cb3595208bf6469b723474122ec42fa76d3cc2f884843bdc6f4",
+  "independent_actual_auditor_sha256": "215b52cb5594b9078f8a9aa3e456e27635b0d17b74228158dc5fb8afc85bfead",
+  "actual_training_receipt_sha256": "1366cd5e0b319018c014489c4acd758634a87ac84691bd66e9a5c570514168eb",
+  "actual_training_runner_sha256": "c486f6cb1b7b596db80edded52d50cf379c979dd214b27aaca5df85952d4f897",
+  "recipe_sha256": "97326946ab7ddcf22a01a2721110b3724dc531fafedab343b7e13cc59cd95f4a",
+  "started_utc": "2026-10-09T07:27:16.497438+00:00",
+  "completed_utc": "2026-10-09T07:28:55.570696+00:00",
+  "binding": {
+    "cumulative_valid_unique": 2248,
+    "data_version": 1,
+    "manifest_id": "b1d9d75e0e42c9b369998fc04b5dd050c5ea8b17ca5c317fafb73cdaa29d8498",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+  },
+  "source_sha256": {
+    "script/symmetry_development_migration.py": "b619403ac35b3e6c029c258ca34bb66fa1e7bd1e99058b6409e3b7716d09dcf6",
+    "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+  },
+  "actual_cpu_training_performed": true,
+  "new_hfss_points": 0,
+  "controller_transition_performed": false,
+  "new_nas_archive_created": false
+}
