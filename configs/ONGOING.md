@@ -9,7 +9,9 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
-- 🔵 **10/09 18:28：多樣SM controller已單次啟動**。已push source `5802b79`；唯一實體PID15944／creation1791541659267／launch42afe91c263f4bacb74f6d6c5c6bbcb7，exact CIM／argv、政策、14來源模型binding及初始running_cycle核對通過，stderr空白。[啟動收據](../docs/log/assets/r80_diverse_sm_controller_launch_20261009.json)。新controller root、同familydev training root，維持48–96新真值重訓／LOW補池；三台原worker續跑。第一live fit與派送尚待完成，不把preview算已派工。下一routine **18:58**，約30分鐘健康；R80 5,000與R81仍待完成。
+- 🔵 **10/09 19:04：多樣SM首輪v004／48實際派工核對通過**。新增81、fit **2,500**（1,653 train／847 hold），原2,419列保留；三fresh模型norm／Adam3,700與48 saved prediction重播通過。獨立20k幾何／strict排名重播：32親本／30家族，三臂各16、37入選家族、cap2／min距離65；私人NAS三片16完整input tree／queue核對。[薄收據](../docs/log/assets/r80_diverse_sm_first_dispatch_20261009.json)。較晚dispatch cutoff2,508分開記帳；HFSS未完整，不宣稱性能提升。18:58實體PID15944 live、下一cycle運作、三台有新結果／零警報，下一routine **19:28**。
+
+- 🔵 **10/09 18:28：多樣SM controller已單次啟動**。已push source `5802b79`；唯一實體PID15944／creation1791541659267／launch42afe91c263f4bacb74f6d6c5c6bbcb7，exact CIM／argv、政策、14來源模型binding及初始running_cycle核對通過，stderr空白。[啟動收據](../docs/log/assets/r80_diverse_sm_controller_launch_20261009.json)。新controller root、同familydev training root，維持48–96新真值重訓／LOW補池；三台原worker續跑。初始啟動時第一live fit／派送未完成；現已另驗首輪v004。原18:58 checkpoint已完成，繼續約30分鐘健康；R80 5,000與R81仍待完成。
 
 - ✅ **多樣SM實作／實體20k pool通過（啟動前核對）**。三臂各16選48，32親本／31家族，入選37家族、最多2同家族、最小距離65；v003真實模型與凍結圖形／排序／選樣重播通過。[收據](../docs/log/assets/r80_diverse_sm_implementation_20261009.json)。獨立focused27＋narrow1通過；候選preview不算實測或已派工，保持原worker／LOW，下一步單次接手。18:20 scoped health零警報，三台12/16、9/16、7/16持續有結果，另五片LOW排隊。
 

@@ -847,3 +847,12 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 實作與實體pool里程碑`5802b79`已push GAN。經create-only launcher核對舊controller正常stop、全機watcher為0、HEAD等於origin/GAN、14個source／v003模型binding與本機preview通過後，18:27:39以hidden Start-Process單次啟動PID **15944**／creation **1791541659267**，launch **42afe91c263f4bacb74f6d6c5c6bbcb7**。再以實體CIM核對完整argv／creation及唯一watcher；新status為running_cycle、completed_cycles0、stderr空白。
 
 [新controller啟動薄收據](assets/r80_diverse_sm_controller_launch_20261009.json)保存政策與身份。新工作根`controller_diverse_sm_v1`，沿用`training_familydev_v1`、主線1800秒、LOW90秒。背景仍按48–96新唯一真值重訓三個fresh SM，再從多樣pool選子代／原factory派工；原HFSS worker無需重啟。第一live fit／候選／NAS派送尚待terminal核對，不能把v003 preview或初始running狀態當已派工；下一routine健康約18:58，無警報時掛著。
+
+
+### 2026-10-09 19:04：首輪多樣SM更新與48筆實際派工核對
+
+新controller第一cycle`50b9234d...`於18:57:21完成，使用新v004模型，不是先前v003 preview。新真值81、累積fit **2,500**；原2,419 manifest列逐列保留，effective train1,653／hold847、c48全121筆train。三個fresh member legacy30＋current100、Adam各3,700步，四norm tensors由實體effective train完整重建並逐member一致。48筆保存曲線與navigation quantities以實際v004重播，最大差3.815e−6、小於固定2e−5。
+
+[首輪派工薄收據](assets/r80_diverse_sm_first_dispatch_20261009.json)綁定原action／模型與獨立review。Sol另行重播完整20k packed geometry／SHA／LCB排序與strict greedy，確認10k新圖＋10k親本變體，32親本／30家族；三臂各16選48、37入選家族、同家族最多2、最小幾何距離65。三個`dedust_r80c50b9234dg01`–`g03`私人NAS input各20檔、queue row、profile／互斥pattern與source tree逐片讀回一致。獨立review驗證frozen selection與bindings，root另驗raw norm／checkpoint及NAS，沒有把獨立binding檢查誇大成獨立tensor重播。
+
+較晚dispatch截點 **2,508** 不等於較早fit2,500或最新live census。18:58精確CIM PID15944／creation／argv持續live，completed_cycles1、18:57:41下一cycle開始、stderr空白；scope無警報，三台各有新結果，首48尚在queue等待批次交替。按原48–96真值批次繼續fresh SM學習及LOW補池。第一多樣cohort尚無完整HFSS真值，不宣稱性能改善／停滯；下一routine約19:28，沒有新NAS bulk歸檔或worker重啟。R80 5,000與R81仍未完成。

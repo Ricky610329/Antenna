@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "status": "first_actual_diverse_sm_cycle_model_selection_and_NAS_dispatch_verified",
+  "observed_taipei": "2026-10-09T19:04:39.430135+08:00",
+  "loaded_source_commit": "5802b799d27b7a657f400798f44bd4d301ee2e64",
+  "cycle_id": "50b9234d83868e5e53dde0f611f27c59f5ab53e8636b887de0f044cec13df16b",
+  "cycle_completed_taipei": "2026-10-09 18:57:21",
+  "model_binding": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 4,
+    "manifest_id": "df9a6821dfcc4ff83a3d1fd5ca0fdf2392c9274898daed7f29224ffb5029e188",
+    "cumulative_valid_unique": 2500
+  },
+  "new_valid_unique": 81,
+  "counts": {
+    "legacy_holdout": 1850,
+    "legacy_train": 10150,
+    "profile_holdout": 847,
+    "profile_train": 1653
+  },
+  "effective_roles": {
+    "profile_train": 1653,
+    "profile_holdout": 847
+  },
+  "reference_roles": {
+    "profile_train": 1532,
+    "profile_holdout": 968
+  },
+  "c48_development_rows": 121,
+  "members": [
+    {
+      "seed": 0,
+      "sha256": "3de6ef16c8f09085d897a9c12d22ddc16544a59f22baf7df4ceb2f8f43496b1b",
+      "optimizer_steps": 3700,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 1,
+      "sha256": "c485d377610d90d87f2584effe2949ff930147a0f8755f4ed33df4b2e14981ca",
+      "optimizer_steps": 3700,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 2,
+      "sha256": "640783215fcdd61b94bf9a3a887a68f8c7fc0aec37924908b97dc924bb7a10b2",
+      "optimizer_steps": 3700,
+      "norms_exact_effective_train": true
+    }
+  ],
+  "previous_manifest_rows_preserved": true,
+  "dispatch_valid_unique_cutoff": 2508,
+  "published": [
+    {
+      "job": {
+        "input": "dedust_r80c50b9234dg01_input",
+        "store": "dedust_r80c50b9234dg01",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c50b9234dg01_input/config.yaml"
+      },
+      "input_tree_sha256": "cb9b9abf68848302b5f22bc106c18ae6e3da755c3485761963a0af42ed022b24",
+      "files": 20,
+      "count": 16
+    },
+    {
+      "job": {
+        "input": "dedust_r80c50b9234dg02_input",
+        "store": "dedust_r80c50b9234dg02",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c50b9234dg02_input/config.yaml"
+      },
+      "input_tree_sha256": "914bc258d51a14c322be4484d19b9b316e0c184d924f94e646f01c66104c4ed6",
+      "files": 20,
+      "count": 16
+    },
+    {
+      "job": {
+        "input": "dedust_r80c50b9234dg03_input",
+        "store": "dedust_r80c50b9234dg03",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c50b9234dg03_input/config.yaml"
+      },
+      "input_tree_sha256": "4987b7d21699c5af2ebf91ba9f0686b07d624ea872c3d9c8989699407f525b94",
+      "files": 20,
+      "count": 16
+    }
+  ],
+  "root_physical_review_sha256": "0887a207739b7c2770763862d559f0dbe09c7ab28c467b20123d7222d8d85f73",
+  "root_prediction_replay": {
+    "schema_version": 1,
+    "status": "actual_saved_selected_predictions_replayed",
+    "rows": 48,
+    "predictor_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 4,
+      "manifest_id": "df9a6821dfcc4ff83a3d1fd5ca0fdf2392c9274898daed7f29224ffb5029e188",
+      "cumulative_valid_unique": 2500
+    },
+    "manifest_sha256": "e863dad0763a795a21d043038e5d863350d636b71caaa86956a2f6bbb57e903f",
+    "max_abs_error": {
+      "factory_score": 1.8278757725198602e-06,
+      "lcb_score": 3.396937344302131e-06,
+      "navigation_mean_score": 2.1139780672640995e-06,
+      "response_disagreement": 3.4923047758095294e-06,
+      "predicted_s11": 2.86102294921875e-06,
+      "predicted_gain": 3.814697265625e-06,
+      "predicted_radiation_phi0": 3.337860107421875e-06,
+      "predicted_radiation_phi90": 1.9073486328125e-06
+    },
+    "tolerance": 2e-05,
+    "limits": "Same actual trained predictor replay; not independent implementation or HFSS truth."
+  },
+  "independent_frozen_selection_review": {
+    "schema_version": 1,
+    "status": "passed",
+    "cycle_id": "50b9234d83868e5e53dde0f611f27c59f5ab53e8636b887de0f044cec13df16b",
+    "review_scope": "local frozen cohort artifacts only; no NAS, training raw, model tensor, queue, or process access",
+    "replay_script_sha256": "0906204bf1f8e89c3e0e8e2cbc7987a0ccdf3b2f91447a78fe5155ff65616e0b",
+    "artifact_sha256": {
+      "diversity_search_audit.json": "b2d5628447b1d34815d9d3f469c20de875369fea7c18a8ed46a9f99eaff3d589",
+      "sm_pool_audit.json": "17eec66b9c1555ea0c46d445e1a9eba0e09e82140a5f0f5f191792cb7ac59804",
+      "manifest.json": "e863dad0763a795a21d043038e5d863350d636b71caaa86956a2f6bbb57e903f",
+      "factory_bundle_complete.json": "4fb5a565e9b6d2ffb409004df700665e848e2b1baf5ba57f80ab12d4c8e276f0",
+      "action_receipt.json": "8e69592bc4ec76fa7c79714307c2638eeff2394e68ecdf50b7753d131dbe9709"
+    },
+    "candidate_count": 20000,
+    "candidate_origin_counts": {
+      "fresh_random": 10000,
+      "parent_variant": 10000
+    },
+    "selected_count": 48,
+    "selected_arm_counts": {
+      "global_lcb": 16,
+      "parent_lcb": 16,
+      "high_disagreement": 16
+    },
+    "selected_canonical_group_count": 37,
+    "selected_max_per_canonical_group": 2,
+    "selected_min_physical_hamming": 65,
+    "disagreement_mean_p60": -12.018339134852091,
+    "parent_count": 32,
+    "parent_group_count": 30,
+    "parent_max_per_canonical_group": 2,
+    "predictor_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 4,
+      "manifest_id": "df9a6821dfcc4ff83a3d1fd5ca0fdf2392c9274898daed7f29224ffb5029e188",
+      "cumulative_valid_unique": 2500
+    },
+    "model_sha256": [
+      "3de6ef16c8f09085d897a9c12d22ddc16544a59f22baf7df4ceb2f8f43496b1b",
+      "c485d377610d90d87f2584effe2949ff930147a0f8755f4ed33df4b2e14981ca",
+      "640783215fcdd61b94bf9a3a887a68f8c7fc0aec37924908b97dc924bb7a10b2"
+    ],
+    "planned_shard_tree_sha256": [
+      "cb9b9abf68848302b5f22bc106c18ae6e3da755c3485761963a0af42ed022b24",
+      "914bc258d51a14c322be4484d19b9b316e0c184d924f94e646f01c66104c4ed6",
+      "4987b7d21699c5af2ebf91ba9f0686b07d624ea872c3d9c8989699407f525b94"
+    ],
+    "checks": {
+      "full_20k_packed_geometry_and_hashes": true,
+      "full_20k_lcb_order_and_sha_tie_break": true,
+      "candidate_pool_hash_replayed": true,
+      "p60_and_strict_round_robin_greedy_selection_replayed": true,
+      "saved_48_tensors_and_manifest_replayed": true,
+      "whole_cohort_distance_and_group_cap": true,
+      "completion_action_and_shard_hashes": true,
+      "parent_descriptor_and_model_identity_bindings": true
+    },
+    "limits": [
+      "Exclusion sets were verified through saved counts and SHA-256 bindings, not independently reconstructed from NAS.",
+      "Parent training samples, radiation files, normalization tensors, and checkpoint weights were not reopened; their claims were checked as immutable bindings.",
+      "This validates selection provenance and geometry, not HFSS performance or SM improvement."
+    ]
+  },
+  "independent_review_sha256": "fb9a3dbe18748f4dd98be7f5cb6198cce5dc5a9f5886436a6be3f5e84f133e6d",
+  "health_checkpoint": {
+    "observed_taipei": "2026-10-09 18:58",
+    "PID": 15944,
+    "creation_unix_ms": 1791541659267,
+    "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+    "completed_cycles": 1,
+    "next_cycle_started_taipei": "2026-10-09 18:57:41",
+    "stderr_empty": true,
+    "scoped_alerts": 0,
+    "next_routine_taipei": "2026-10-09 19:28"
+  },
+  "limits": [
+    "Actual v004 cohort differs from earlier v003 preview; neither predictions nor dispatch are HFSS outcome evidence.",
+    "Frozen fit2500 and later dispatch2508 are distinct cutoffs, not latest live census.",
+    "Independent agent replay covers frozen geometry/selection/bindings; root separately replayed raw train-only norms, model state and actual NAS input trees.",
+    "Root reused prior role and normalization verifiers; not a fresh independent tensor replay.",
+    "No new NAS bulk archive, worker restart, queue or raw mutation during review.",
+    "R80 target5000, prospective performance and R81 remain incomplete."
+  ]
+}
