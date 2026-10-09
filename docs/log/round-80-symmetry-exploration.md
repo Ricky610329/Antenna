@@ -592,3 +592,11 @@ python -m script.figs.symmetry_profile --analysis-json tmp/r80_best_render_20261
 Conductor與獨立Sol全池座標／hash／feed／mirror／Hamming／排重／排名重算通過；Sol亦核對全部幾何bridge、曲線與manifest／兩分片、固定模型／recipe hash。完整120個payload檔、81,909,809 bytes加manifest已create-only封存本人私人NAS `local_variations/incumbent_radius12_sm_v001_20261009`，121檔逐檔SHA讀回一致；含全池分數／曲線、32輸入、三模型、原anchor、審查與helper。原本機CPU重算因每圈重解壓NPZ而中止，僅精確停止owned PID34628，改為一次載入後3.2秒核對通過；未影響HFSS／controller，原失敗亦記於私人證據。
 
 目前僅備料，尚未派工或取得這32筆實測。每次最多一片16筆prio1，以既有dispatch函式重新做實體查重、5,000總額及96 guided容量檢查，額外保留主線尚未入queue的planned hashes；競態／鎖忙時保留receipt並延後，不能擠停主線。全部終態後重播原sample／rad，比較最佳WM、超過固定anchor的比例及選中32筆的預測／實測相關；這是受選樣範圍限制的診斷，不推論整個候選池或重測合格。10:20同一controller PID54712 live、scope無警報、三台claimed持續供工；v031已完成，主線1800秒／LOW90秒不變，下一routine健康約10:50。未改tracked程式，不重跑既有817回歸。
+
+### 2026-10-09 10:56：局部排名首16筆完成派工回讀
+
+沿用已審核v1 helper，第一片`dedust_r80c83e6601eg01`於10:50:34完成`dispatched`／`passed_per_shard`，prio1、16筆，全域奇數名次1／3／…／31。[首片派工薄收據](assets/r80_local_variation_phase01_dispatch_20261009.json)綁定實際action／preflight／readback與NAS input tree；獨立唯讀再驗證16筆supported profile、selected hashes及唯一相符queue row通過，沒有重新enqueue。10:44實體preflight算得guided含本片55／96、有效加預留含本片2,208／5,000；這是派工容量截點，不是當前有效實測累計。
+
+原prepared私人歸檔保留不改；新派工證據另存本人私人`local_variations/dispatch_handoffs/incumbent_radius12_sm_v001_20261009_phase01_v001`，7個payload加manifest共8檔逐檔SHA讀回一致。剩餘16筆尚未派工，待主線完成後重新檢查安全窗口與容量。v1逐檔查核耗時約8分鐘，這次只有兩片，取消另造v2的方案，不刪既有實體驗證或改controller／HFSS。
+
+10:54健康檢查同一PID54712／creation／command live、scope exit0無警報；LOW首片8／16、主線前兩片15／16及1／16 claimed，最新結果均1–2分鐘前，另有四片LOW待跑。主線10:50:51照原週期進入下一輪，沒有停機、worker重啟或新的最佳WM查詢。下一routine健康約11:24；本次16筆只證明派工完成，尚不宣稱HFSS性能改善，原32筆固定評估方案與同家族holdout限制不變。

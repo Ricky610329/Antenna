@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "status": "completed_dispatch_read_back",
+  "phase": 1,
+  "job": {
+    "input": "dedust_r80c83e6601eg01_input",
+    "store": "dedust_r80c83e6601eg01",
+    "prio": 1,
+    "scope": "symmetry_filter_20261007",
+    "config": "dedust_r80c83e6601eg01_input/config.yaml"
+  },
+  "count": 16,
+  "completed_utc": "2026-10-09T02:50:34.874632+00:00",
+  "observed_utc": "2026-10-09T02:56:14.569433+00:00",
+  "immutable_input_tree_sha256": "393731916563293affee849b15a4ab8093efe273ae5f5f34f3370d67452d147c",
+  "action_receipt_sha256": "b2937699bb57ca649d2160d8241b8233cbfab9c7cf8d9d4f7b996578b20e599e",
+  "dispatch_readback_sha256": "ecb06aac632563f80e125992876c06aa139bb633a048bce253553f1b37b282b2",
+  "preflight_sha256": "51e7681551e36b62c6e9d84f015a992f5dd61f59f9fcf43c3fb3b55a776afd0d",
+  "guided_with_protected_and_local": 55,
+  "valid_plus_reserved_with_local": 2208,
+  "main_launch_id": "b126f3badf3649a9bc9c4ea0f28ab37f",
+  "main_preflight_waiting": true,
+  "rank_shard": "odd_global_ranks",
+  "hfss_result_claim": false,
+  "observer_acquired_live_lock": false,
+  "private_archive": {
+    "destination": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\local_variations\\dispatch_handoffs\\incumbent_radius12_sm_v001_20261009_phase01_v001",
+    "payload_files": 7,
+    "published_files": 8,
+    "manifest_sha256": "c70edc5458e754f5a9c386ea5829f58612b7e6aa1232d7f7dbff1448780e45dd",
+    "all_sha256_read_back": true
+  },
+  "prepared_record": "r80_local_variation_prepare_20261009.json",
+  "limitations": [
+    "Queue dispatch is not HFSS performance evidence.",
+    "Second shard of 16 is not dispatched in this record.",
+    "Model ranking is only relative; incumbent absolute WM prediction error is about 11.92 dB.",
+    "Existing c48nq1p05_16 holdout lineage is retained."
+  ]
+}
