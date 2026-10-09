@@ -1053,3 +1053,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 獨立 replay 只讀本機 frozen sample/radiation tensors 與 JSON，以 NumPy 重算 WM、MAE、average-tie Spearman、正值計數及幾何。48 個幾何皆為 exact LR symmetric；1,128 個 pair 的最小 Hamming distance 為 71，36 個 canonical groups 的最大重複數為 2，三個 selection arms 各 16，與 v008 訓練 manifest 的 overlap 為 0。current-only 的排名相關與 band MAE 稍好，但 full-216 MAE 稍差，而且其 `predicted_before_hfss=false`，因此不能據此替換 live model 或宣稱因果改善。這項結果只支持準備一個範圍有限、真正 prospective 的 pilot。
 
 本節沒有重做全域 census。引用的全域最佳 +0.0216822624 dB 與 2,810 valid unique 僅是 00:51 cutoff（receipt SHA-256 `21472f8619a2911ee9a28718064e33d3fe83770e39c5fee21c778c463c28674d`），不代表 02:08 或目前的最新總數；也沒有額外 NAS、HFSS、模型 forward、訓練、rescore 或 queue 動作。
+
+
+### 2026-10-10 02:20：最新全量實測及最佳核對
+
+沿用既有唯讀query逐store cutoff重播sample/rad：2,879唯一有效圖形／2,884成功觀測含重測，較00:51新增69唯一有效。沒有新最佳，最佳WM +0.0216822624 dB；本次不更動NAS、queue、claims、controller或模型。02:08原controller exact身分通過，三台近期有結果／scope零警報，報v010；這不是新的獨立v010模型完整審計。[全量收據](assets/r80_best_status_20261010_0220.json)。v00848最近完成0正WM，兩套保存prediction比較中current-only排名稍好但fullMAE略差；有限前瞻pilot準備中，未dispatch／adopt。資料持續增加不等於最佳性能改善，R80 5,000及後續R81 spec／正WM驗證仍未完成。下一routine02:38。

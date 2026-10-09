@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **10/10 02:20 使用者詢問現況／全量raw核對**：2,879/5,000唯一有效實測（較00:51 +69），沒有新最佳，最佳WM +0.021682 dB。[收據](../docs/log/assets/r80_best_status_20261010_0220.json)。02:08三台有近期結果／scope零警報，controller報v010；v00848全數有效但0正WM。current-only排名稍好，準備有限前瞻對照、尚未派工或換live。下一routine02:38，R80/R81未完成。
+
 - **01:38 routine健康通過／等v008最後1筆**：原PID15944 exact／running_cycle，三台claimed最新0／0／1分鐘、scope零警報；controller已報v009／11cycles。v008g01/g02 done，g03尚15/16且非terminal；同48 live/current-only讀回及獨立replay已備好／未執行。[健康](../docs/log/assets/r80_health_20261010_0138.json)。不補假真值、不追加解算／清claims；最新全量仍00:51的2,810／+.021682，下一routine02:08。
 
 - **v007 first32真值及獨立raw重播完成**：32/32有效唯一／exactLR／0terminal error／0正WM；best−3.558715、median−10.154610，非新最佳。[結果](../docs/log/assets/r80_diverse_sm_v007_first32_result_20261010.json)。LCBρ0.0550、GainbandMAE3.9779，性能推進及排名仍弱；496對Hammingmin66、26canonical／cap2。只比原live v007，不混不同候選v006 shadow；v1/v2未執行、讀回gate/command窄修已核對。2810仍以00:51全量為準、不再加32；v00848待終態，01:38 routine。
