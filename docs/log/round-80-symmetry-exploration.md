@@ -813,3 +813,11 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 [第二輪薄收據](assets/r80_family_development_cycle_v003_20261009.json)記錄Conductor重播既有獨立role／manual norm helpers（並非新一次獨立agent審查），與本機bound files before/after不變。私人NAS三個`dedust_r80c0f16d531g01`–`g03`的完整60-file tree、唯一queue row與profile/input驗證通過；48個pattern互斥，每筆保存17／17／91／91預測曲線，沒有改queue／claim。固定dispatch截點2,431晚於fit截點2,419，不能用dispatch minus previous-fit推算本版訓練增量。人工audit初稿的87推算在寫通過收據前被assert拒絕，原稿保留；改以實體manifest差75驗證後通過，controller與模型本身沒有失敗。
 
 派工完成不代表HFSS完成或性能提升。使用者隨後明確授權維持SM排名、開始尋找更多不同潛力的對稱圖形；新探索將以前瞻候選／模型／去重／幾何分散紀錄另立批次，保留原已派批次與陰性結果。R80 5,000與R81仍未完成，健康檢查維持約30分鐘。
+
+### 2026-10-09：前瞻多樣對稱搜尋配方固定（尚未執行）
+
+依使用者新授權，先固定[diverse SM v1配方](../../configs/r80_diverse_sm_search_v1.json)，在既有factory加opt-in分支，不另造queue writer。候選池20,000個：沿用`exploration.generate_candidates`，一半全域合法對稱新圖，一半來自不同實測親本的變體。親本使用當版凍結manifest的hash-valid實測，實際WM前四分位內，以既有maxmin Hamming取最多32個、每canonical家族最多2個、至少8家族，親本間實體距離至少64／625；最高WM只佔一個起點。
+
+48筆標準批次改為global-LCB／parent-LCB／high-disagreement各16，第三臂須在predicted mean的p60以上。每臂按SM分數降序／pattern SHA tie排序，逐一選最高可行候選，整批共同限制距離至少64／625、每canonical家族最多2筆；不足即拒絕，不放寬門檻或偷偷換盲選。小於48的容量按等權largest-remainder分配。既有LOW盲選補池、48–96新真值學習、三模型與所有HFSS/spec不變。新批仍透過原priority1／16筆分片／96 outstanding／5,000 valid-plus-reserved gates；原已派候選不改。
+
+這個決策參考既有d1/d2試驗的低幾何距離與弱SM排序，以及[Claude-era R11–14](../report/progress-r11-r14.md)的有界多策略經驗；不把舊add-block成功套到本profile，也不復活無差別大幅翻轉。此次同時改pool與臂分配，屬前瞻探索策略，不是單因素因果比較。實作、獨立review、實際本機pool核對與正常waiting-state controller交接仍待完成，尚無新多樣性派工或性能結果。

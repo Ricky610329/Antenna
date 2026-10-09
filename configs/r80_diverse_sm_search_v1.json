@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "name": "r80_diverse_sm_v1",
+  "candidate_pool_size": 20000,
+  "parent_top_fraction": 0.25,
+  "parent_count": 32,
+  "max_parents_per_canonical_group": 2,
+  "min_parent_groups": 8,
+  "min_parent_physical_hamming": 64,
+  "min_selected_physical_hamming": 64,
+  "max_selected_per_canonical_group": 2,
+  "arm_order": ["global_lcb", "parent_lcb", "high_disagreement"],
+  "arm_weights": [1, 1, 1],
+  "disagreement_mean_percentile": 60,
+  "source_pool_fractions": {"fresh_random": 0.5, "parent_variant": 0.5},
+  "ranking": "descending score, then pattern_sha256; greedily take the highest feasible candidate under whole-cohort constraints",
+  "parent_ranking": "actual WM top quartile; highest-WM first, then existing maxmin_hamming_indices with canonical-group cap",
+  "strict_no_relaxation": true,
+  "measurement_profile": "configs/single_r80_symmetry_factory.yaml",
+  "measurement_changes": false,
+  "training_protocol_changes": false,
+  "dispatch": "existing factory transaction, same priority1 and 16-pattern shards, existing 96 outstanding and 5000 valid-plus-reserved limits",
+  "seed": 80100956,
+  "limits": [
+    "Predictions guide candidate selection; HFSS remains the truth.",
+    "This changes pool generation and arm allocation together; it is not a single-factor causal diversity comparison.",
+    "Top-quartile parent descriptors are development information, not independent model-validation evidence.",
+    "LOW blind backlog remains enabled and unchanged.",
+    "No bridge-width, frequency, score-spec, emforge or worker runtime change.",
+    "First new cohort must be evaluated by origin, saved prediction error, actual WM and geometry coverage before claiming improvement."
+  ]
+}
