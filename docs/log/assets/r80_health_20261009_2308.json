@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "status": "verified_live_routine_health",
+  "physical_health": {
+    "observed_utc": "2026-10-09T15:08:54.2865740Z",
+    "physical_pid": 15944,
+    "creation_unix_ms": 1791541659267,
+    "argv_matches": true,
+    "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+    "controller_status": "waiting",
+    "completed_cycles": 9,
+    "latest_data_version": 7,
+    "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\2e4d6525736e05b3bae54c6c371edba7da7af1fda4c83218479406ead6f1e800\\action_receipt.json",
+    "last_receipt_sha256": "1b62ac59b805597c78e93e94482d6f9fd1d3fa53a25a541547f2e8f718769f70",
+    "scoped_status_output": [
+      "資料工廠狀態:",
+      "  job dedust_r80k1d1e587fde8167b2: 0/16（排隊中）",
+      "  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）",
+      "  job dedust_r80kf9839e61a70045af: 0/16（排隊中）",
+      "  job dedust_r80ka00bff601d27501e: 0/16（排隊中）",
+      "  job dedust_r80k5f7985239fe04028: 0/16（排隊中）",
+      "  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）",
+      "  job dedust_r80c4b5e0d7eg01: 10/16 完成,最新結果 3 分前（已認領）",
+      "  job dedust_r80c4b5e0d7eg02: 6/16 完成,最新結果 1 分前（已認領）",
+      "  job dedust_r80c5f196a41g01: 7/16 完成,最新結果 1 分前（已認領）",
+      "  job dedust_r80c2e4d6525g01: 0/16（排隊中）",
+      "  job dedust_r80c2e4d6525g02: 0/16（排隊中）",
+      "✓ 工廠無警報"
+    ],
+    "next_routine_taipei": "2026-10-09 23:38"
+  },
+  "source_receipt_sha256": "477dc063c1eb08313d834607cf3cc57f8e4a8efc0167a1ec09a94971111d9e0c",
+  "new_model_update_metadata": {
+    "binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 7,
+      "manifest_id": "8b0e71cd3347e51afd149c65dae3ae2c7d72f4ee4c76e9c181221719647ee7b2",
+      "cumulative_valid_unique": 2691
+    },
+    "trained_this_cycle": true,
+    "planned_jobs": [
+      {
+        "kind": "g",
+        "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\2e4d6525736e05b3bae54c6c371edba7da7af1fda4c83218479406ead6f1e800\\guided_shards\\shard-001_input",
+        "input": "dedust_r80c2e4d6525g01_input",
+        "store": "dedust_r80c2e4d6525g01",
+        "prio": 1,
+        "count": 16,
+        "tree_sha256": "6d941293fa871fb999282a43ea79d054260f8a913c3c07c3cfc8b64d2fde75cd",
+        "final_target_tail": false
+      },
+      {
+        "kind": "g",
+        "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\2e4d6525736e05b3bae54c6c371edba7da7af1fda4c83218479406ead6f1e800\\guided_shards\\shard-002_input",
+        "input": "dedust_r80c2e4d6525g02_input",
+        "store": "dedust_r80c2e4d6525g02",
+        "prio": 1,
+        "count": 16,
+        "tree_sha256": "0828eb0d51e33e8d8f92fed32f4cdf36a8b6b53c1eab1ffd67492330125842d5",
+        "final_target_tail": false
+      }
+    ]
+  },
+  "limits": [
+    "New v007 observed through terminal action metadata; full physical model/ranking/NAS-tree audit remains next.",
+    "Claimed result-entry counts10/6/7 are not valid unique counts or complete-cohort evidence.",
+    "Latest global raw census remains2713 at22:54.",
+    "No worker restart, claims/queue/raw/live-model mutation by this audit."
+  ]
+}

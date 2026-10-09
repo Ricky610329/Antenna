@@ -1,0 +1,630 @@
+{
+  "schema_version": 1,
+  "observed_utc": "2026-10-09T15:09:00.358429+00:00",
+  "generation_definition": {
+    "model_data_version": 5,
+    "fit_cumulative_valid_unique": 2578,
+    "predictor_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 5,
+      "manifest_id": "ef3b33f24f9fe1f08e25125a806a686defc163811a6f075a34e6727d66e4e4d5",
+      "cumulative_valid_unique": 2578
+    },
+    "model_sha256": [
+      "0b97e9142fe1044e0c6fd36df8f0471c696f036b4bb83ee5fa1c35ebff4762aa",
+      "c6b7fe37e45fde98baed1c01f3967b2ae6de855feb85c27b9d6ec41aba3c65ee",
+      "5a10b2879dc6ffbc9df526a114999283dae57e83fd4bff5ec844ed04281278be"
+    ],
+    "distinct_action_receipts": {
+      "205a8627877656627cffa60675afadfd79a7c34b03c64791f5e781b9e0ddba96": "1f4fc8df55db5785acedce407d4f59ae138f590a04967d2a7174ff8f64ec12c5",
+      "eec7d671847d4adc7263f8869aa715e105d5eb08b3ef5a30f5a29ce1dd8c47ec": "376705801177ce8ab75cf8c71e1ac70d04acfda5dbfaa21fb277f5c77c0ca851",
+      "8b2c869c039b54fadd5ee3ecac60d4b5dcde2f8bd8045bc9c11ad20c796586ca": "1800aa3f1441af3c731facd124ff04d387749336ef7be4f59df58274c9c20a49"
+    },
+    "distinct_cycle_lineage": {
+      "205a8627877656627cffa60675afadfd79a7c34b03c64791f5e781b9e0ddba96": {
+        "manifest_sha256": "7c4da96c5c933eb1b8fb581896f122d361ee55de8f1aa8dd0174078d25ace3c4",
+        "sm_pool_audit_sha256": "0732a5e2513c16d0536fbd2ffa196320d6a901c7ef245ff34a293e468421577a",
+        "diversity_search_audit_sha256": "a3da1e0e4cd50f9f0697c2aef05cedb96836f675bca8edeb94021359225e0c1b",
+        "generation_input_sha256": "b494ae5cfdd8af75f9ae35c3da18e856b3b68e183ebe554ce79d09e7f19a3937",
+        "candidate_pool_sha256": "37b3f66d75183bbbf747faccea65bef76e8e581c236265e4a0eb5e2eb91c285d",
+        "selected_cohort_sha256": "843612ceccddd0db26fa6b7912049465c708105343e3ee1db552d5de4ec3e3f9",
+        "selected_arm_counts": {
+          "global_lcb": 6,
+          "high_disagreement": 5,
+          "parent_lcb": 5
+        },
+        "selected_min_physical_hamming": 72,
+        "frozen_lcb_ranks_sha256": "34f0600e04ac796ec8490f17b500145c8d6db3ebd325e6b63e9724f59e6283cf",
+        "selected_frozen_ranks": [
+          258,
+          1,
+          17177,
+          499,
+          15,
+          14752,
+          650,
+          64,
+          14847,
+          794,
+          83,
+          13630,
+          880,
+          92,
+          11606,
+          1042
+        ]
+      },
+      "eec7d671847d4adc7263f8869aa715e105d5eb08b3ef5a30f5a29ce1dd8c47ec": {
+        "manifest_sha256": "95103fd5fcabf05f1b313465061cb761e907a2135677641b715761e46309f4d9",
+        "sm_pool_audit_sha256": "9ffe2c75cbec712df925e21fc5f886f092a49edee372861b3d1ae22886267301",
+        "diversity_search_audit_sha256": "91ea22711e0d87aa6abb555884a456d65468392becc0ae77623d3f7364fdbdb1",
+        "generation_input_sha256": "35cf8ab110ec2772bb2629405c5b483896d2b66a5d2746372c217bd8dce8dc67",
+        "candidate_pool_sha256": "a7a010eddc7b1dbb638028a31f4cf2381053124ebdae3ee9c33f3743365ad0ee",
+        "selected_cohort_sha256": "0d0384093381096b33ac8e3bb1f273b52efdd0618ad44de5768ea868ec2b10f2",
+        "selected_arm_counts": {
+          "global_lcb": 6,
+          "high_disagreement": 5,
+          "parent_lcb": 5
+        },
+        "selected_min_physical_hamming": 75,
+        "frozen_lcb_ranks_sha256": "0cc93774d935bd13551073c16fcaaf3719d89ba8250490831445376f9bf0838a",
+        "selected_frozen_ranks": [
+          1047,
+          1,
+          14352,
+          1081,
+          24,
+          12181,
+          1101,
+          76,
+          11902,
+          1157,
+          96,
+          14142,
+          1167,
+          102,
+          13607,
+          1170
+        ]
+      },
+      "8b2c869c039b54fadd5ee3ecac60d4b5dcde2f8bd8045bc9c11ad20c796586ca": {
+        "manifest_sha256": "4f71d90a4dc048949fbde98e68bc557e169954b923bf0b76d480e10838e94dc5",
+        "sm_pool_audit_sha256": "c0fe19bb744120bac8eb07e733c775c9d5b606b19b9399dec10cd3adb047a8d3",
+        "diversity_search_audit_sha256": "9e4f8c131eb7148ddb4bd907d5ec7a70df0843750e827e1e6c160241e6d9d365",
+        "generation_input_sha256": "97a714154f489ada2df6e9bf58e0762d0470c19632c7429e70ac2c5ad21b37c1",
+        "candidate_pool_sha256": "e976909de668289e6806667926ae2a8716df6c983861281f8eda6fb9b1294c78",
+        "selected_cohort_sha256": "24421726d467e64b4cc2853e74665c592a634b6ae2ed2992cbf5b1f94c67ecf6",
+        "selected_arm_counts": {
+          "global_lcb": 6,
+          "high_disagreement": 5,
+          "parent_lcb": 5
+        },
+        "selected_min_physical_hamming": 64,
+        "frozen_lcb_ranks_sha256": "a9e3443323bdbc17b988c58140806f41a0fa78bc78f726fa30b22ca5dc1531e7",
+        "selected_frozen_ranks": [
+          1188,
+          1,
+          13968,
+          1194,
+          20,
+          14001,
+          1208,
+          84,
+          11841,
+          1255,
+          90,
+          14079,
+          1273,
+          100,
+          13301,
+          1277
+        ]
+      }
+    },
+    "v005_training_manifest": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v005\\manifest.json",
+      "sha256": "9bb595baca8744828b1849b9a6207e2664c3c0c89e71c0dff0351574a9f70603",
+      "row_count": 2578,
+      "selected_overlap_count": 0
+    },
+    "interpretation": "Three separate 16-pattern action cycles proposed by the same frozen v005 predictor; not one combined action and not three fresh model generations."
+  },
+  "denominators": {
+    "proposed": 48,
+    "terminal_attempts": 48,
+    "successful_valid_unique": 48,
+    "terminal_error_attempts": 0
+  },
+  "valid_subset": {
+    "successful_count": 48,
+    "best_wm_db": -0.6377830505371094,
+    "median_wm_db": -12.49029016494751,
+    "min_wm_db": -37.73188018798828,
+    "positive_wm_count": 0,
+    "above_cited_existing_best_count": 0,
+    "saved_lcb_actual_wm_spearman": {
+      "n": 48,
+      "rho": 0.06708640903169778
+    },
+    "saved_factory_actual_wm_spearman": {
+      "n": 48,
+      "rho": 0.00900998697351281
+    },
+    "saved_gain_mae": {
+      "n": 48,
+      "prediction_missing": 0,
+      "mean_absolute_error": 5.5966530007529345
+    }
+  },
+  "best": {
+    "id": "r80ceec7d671g_00001_7f75af40",
+    "pattern_sha256": "7f75af40a584f05ec518ac9b4cf4ff367528ef2c9d732b6493a38a8defbb9b7c",
+    "s11_margin_db": -0.5889873504638672,
+    "gain_margin_db": -0.6377830505371094,
+    "factory_margin_db": -0.6377830505371094,
+    "radiation_margin_db": 0.46913957595825195,
+    "radiation_margin_clipped_db": 0.46913957595825195,
+    "source_cycle_id": "eec7d671847d4adc7263f8869aa715e105d5eb08b3ef5a30f5a29ce1dd8c47ec",
+    "selection_arm": "parent_lcb",
+    "proposal": "parent_variant",
+    "candidate_group": "parent_variant",
+    "canonical_group_id": "c48nq1p05_16",
+    "ancestry_id": "c48nq1p05_16",
+    "predicted_factory_score": -1.3396883010864258,
+    "saved_lcb_score": -1.8972340017206604,
+    "frozen_lcb_rank": 1,
+    "sample_sha256": "92194162907811d6be9101c28c80238c471eb34c067b983e429c62d4e5a6fbd8",
+    "rad_sha256": "ca1bb37aff8b35e318213604dc080d790489d83cd7feb7aeb3bc9602ee04fc82",
+    "saved_prediction_mae": {
+      "s11": 1.0700477572048412,
+      "gain": 1.879139285753755,
+      "radiation_phi0": 0.8213416202464602,
+      "radiation_phi90": 0.5076790277610769,
+      "full_vector": 0.7920234199026944
+    }
+  },
+  "cited_existing_best_wm_db": 0.021682262420654297,
+  "per_cycle": {
+    "205a8627877656627cffa60675afadfd79a7c34b03c64791f5e781b9e0ddba96": {
+      "proposed_count": 16,
+      "successful_count": 16,
+      "terminal_error_count": 0,
+      "valid_subset": {
+        "successful_count": 16,
+        "best_wm_db": -1.7674064636230469,
+        "median_wm_db": -12.68154001235962,
+        "min_wm_db": -25.279510498046875,
+        "positive_wm_count": 0,
+        "above_cited_existing_best_count": 0,
+        "saved_lcb_actual_wm_spearman": {
+          "n": 16,
+          "rho": 0.09705882352941177
+        },
+        "saved_factory_actual_wm_spearman": {
+          "n": 16,
+          "rho": 0.16764705882352943
+        },
+        "saved_gain_mae": {
+          "n": 16,
+          "prediction_missing": 0,
+          "mean_absolute_error": 4.636661002015257
+        }
+      }
+    },
+    "8b2c869c039b54fadd5ee3ecac60d4b5dcde2f8bd8045bc9c11ad20c796586ca": {
+      "proposed_count": 16,
+      "successful_count": 16,
+      "terminal_error_count": 0,
+      "valid_subset": {
+        "successful_count": 16,
+        "best_wm_db": -2.252167820930481,
+        "median_wm_db": -15.68446159362793,
+        "min_wm_db": -29.01450538635254,
+        "positive_wm_count": 0,
+        "above_cited_existing_best_count": 0,
+        "saved_lcb_actual_wm_spearman": {
+          "n": 16,
+          "rho": -0.2764705882352941
+        },
+        "saved_factory_actual_wm_spearman": {
+          "n": 16,
+          "rho": -0.2058823529411765
+        },
+        "saved_gain_mae": {
+          "n": 16,
+          "prediction_missing": 0,
+          "mean_absolute_error": 6.49378308386761
+        }
+      }
+    },
+    "eec7d671847d4adc7263f8869aa715e105d5eb08b3ef5a30f5a29ce1dd8c47ec": {
+      "proposed_count": 16,
+      "successful_count": 16,
+      "terminal_error_count": 0,
+      "valid_subset": {
+        "successful_count": 16,
+        "best_wm_db": -0.6377830505371094,
+        "median_wm_db": -11.134746074676514,
+        "min_wm_db": -37.73188018798828,
+        "positive_wm_count": 0,
+        "above_cited_existing_best_count": 0,
+        "saved_lcb_actual_wm_spearman": {
+          "n": 16,
+          "rho": 0.12941176470588234
+        },
+        "saved_factory_actual_wm_spearman": {
+          "n": 16,
+          "rho": 0.023529411764705882
+        },
+        "saved_gain_mae": {
+          "n": 16,
+          "prediction_missing": 0,
+          "mean_absolute_error": 5.659514916375937
+        }
+      }
+    }
+  },
+  "per_arm": {
+    "global_lcb": {
+      "proposed_count": 18,
+      "successful_count": 18,
+      "terminal_error_count": 0,
+      "valid_subset": {
+        "successful_count": 18,
+        "best_wm_db": -7.651267766952515,
+        "median_wm_db": -14.639461517333984,
+        "min_wm_db": -29.01450538635254,
+        "positive_wm_count": 0,
+        "above_cited_existing_best_count": 0,
+        "saved_lcb_actual_wm_spearman": {
+          "n": 18,
+          "rho": 0.4117647058823529
+        },
+        "saved_factory_actual_wm_spearman": {
+          "n": 18,
+          "rho": -0.05675954592363261
+        },
+        "saved_gain_mae": {
+          "n": 18,
+          "prediction_missing": 0,
+          "mean_absolute_error": 5.324847653623841
+        }
+      }
+    },
+    "high_disagreement": {
+      "proposed_count": 15,
+      "successful_count": 15,
+      "terminal_error_count": 0,
+      "valid_subset": {
+        "successful_count": 15,
+        "best_wm_db": -5.682622909545898,
+        "median_wm_db": -8.606515288352966,
+        "min_wm_db": -37.73188018798828,
+        "positive_wm_count": 0,
+        "above_cited_existing_best_count": 0,
+        "saved_lcb_actual_wm_spearman": {
+          "n": 15,
+          "rho": 0.22142857142857136
+        },
+        "saved_factory_actual_wm_spearman": {
+          "n": 15,
+          "rho": 0.22142857142857136
+        },
+        "saved_gain_mae": {
+          "n": 15,
+          "prediction_missing": 0,
+          "mean_absolute_error": 5.848736820296915
+        }
+      }
+    },
+    "parent_lcb": {
+      "proposed_count": 15,
+      "successful_count": 15,
+      "terminal_error_count": 0,
+      "valid_subset": {
+        "successful_count": 15,
+        "best_wm_db": -0.6377830505371094,
+        "median_wm_db": -13.246240615844727,
+        "min_wm_db": -23.566362380981445,
+        "positive_wm_count": 0,
+        "above_cited_existing_best_count": 0,
+        "saved_lcb_actual_wm_spearman": {
+          "n": 15,
+          "rho": 0.1607142857142857
+        },
+        "saved_factory_actual_wm_spearman": {
+          "n": 15,
+          "rho": 0.11785714285714284
+        },
+        "saved_gain_mae": {
+          "n": 15,
+          "prediction_missing": 0,
+          "mean_absolute_error": 5.670735597763868
+        }
+      }
+    }
+  },
+  "per_origin": {
+    "fresh_random": {
+      "proposed_count": 22,
+      "successful_count": 22,
+      "terminal_error_count": 0,
+      "valid_subset": {
+        "successful_count": 22,
+        "best_wm_db": -5.682622909545898,
+        "median_wm_db": -12.856369495391846,
+        "min_wm_db": -37.73188018798828,
+        "positive_wm_count": 0,
+        "above_cited_existing_best_count": 0,
+        "saved_lcb_actual_wm_spearman": {
+          "n": 22,
+          "rho": 0.2614342179559571
+        },
+        "saved_factory_actual_wm_spearman": {
+          "n": 22,
+          "rho": -0.03557312252964427
+        },
+        "saved_gain_mae": {
+          "n": 22,
+          "prediction_missing": 0,
+          "mean_absolute_error": 5.361472399651327
+        }
+      }
+    },
+    "parent_variant": {
+      "proposed_count": 26,
+      "successful_count": 26,
+      "terminal_error_count": 0,
+      "valid_subset": {
+        "successful_count": 26,
+        "best_wm_db": -0.6377830505371094,
+        "median_wm_db": -9.822627305984497,
+        "min_wm_db": -32.24508094787598,
+        "positive_wm_count": 0,
+        "above_cited_existing_best_count": 0,
+        "saved_lcb_actual_wm_spearman": {
+          "n": 26,
+          "rho": 0.12136752136752137
+        },
+        "saved_factory_actual_wm_spearman": {
+          "n": 26,
+          "rho": 0.05367521367521367
+        },
+        "saved_gain_mae": {
+          "n": 26,
+          "prediction_missing": 0,
+          "mean_absolute_error": 5.795651970915833
+        }
+      }
+    }
+  },
+  "pairwise_physical_hamming_valid_subset": {
+    "n_pairs": 1128,
+    "min": 20,
+    "median": 308.5,
+    "max": 372
+  },
+  "pairwise_physical_hamming_all_proposed": {
+    "n_pairs": 1128,
+    "min": 20,
+    "median": 308.5,
+    "max": 372,
+    "scope": "proposal geometry only; includes terminal-error candidates without assigning them HFSS metrics"
+  },
+  "saved_prediction_summary_valid_subset": {
+    "n": 48,
+    "prediction_complete": 48,
+    "prediction_missing": 0,
+    "prediction_explicitly_invalid": 0,
+    "prediction_missing_by_field": {
+      "predicted_s11": 0,
+      "predicted_gain": 0,
+      "predicted_radiation_phi0": 0,
+      "predicted_radiation_phi90": 0,
+      "predicted_radiation_theta": 0,
+      "factory_score": 0,
+      "navigation_score": 0
+    },
+    "components": {
+      "s11": {
+        "n": 48,
+        "prediction_missing": 0,
+        "mean_absolute_error": 2.370619823097014
+      },
+      "gain": {
+        "n": 48,
+        "prediction_missing": 0,
+        "mean_absolute_error": 5.5966530007529345
+      },
+      "radiation_phi0": {
+        "n": 48,
+        "prediction_missing": 0,
+        "mean_absolute_error": 3.3754083732431126
+      },
+      "radiation_phi90": {
+        "n": 48,
+        "prediction_missing": 0,
+        "mean_absolute_error": 3.507974038617675
+      },
+      "full_vector": {
+        "n": 48,
+        "prediction_missing": 0,
+        "mean_absolute_error": 3.526997395762874
+      }
+    },
+    "spearman": {
+      "factory_score": {
+        "n": 48,
+        "rho": 0.00900998697351281
+      },
+      "navigation_score": {
+        "n": 48,
+        "rho": 0.01715154146765089
+      }
+    }
+  },
+  "cycle_terminal_status": {
+    "205a8627877656627cffa60675afadfd79a7c34b03c64791f5e781b9e0ddba96": {
+      "action_receipt_sha256": "1f4fc8df55db5785acedce407d4f59ae138f590a04967d2a7174ff8f64ec12c5",
+      "store": "dedust_r80c205a8627g01",
+      "proposed": 16,
+      "successful": 16,
+      "terminal_errors": 0,
+      "done_marker": true,
+      "terminal_fail_marker": false,
+      "input_metadata_sha256": {
+        "config.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "7c4da96c5c933eb1b8fb581896f122d361ee55de8f1aa8dd0174078d25ace3c4"
+      },
+      "store_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "7c4da96c5c933eb1b8fb581896f122d361ee55de8f1aa8dd0174078d25ace3c4",
+        "results.json": "5b84173f4df8b07a3f5fa2fbc53fbdfef69ed6c854e5cad6ebd442bf6aa316a4"
+      }
+    },
+    "eec7d671847d4adc7263f8869aa715e105d5eb08b3ef5a30f5a29ce1dd8c47ec": {
+      "action_receipt_sha256": "376705801177ce8ab75cf8c71e1ac70d04acfda5dbfaa21fb277f5c77c0ca851",
+      "store": "dedust_r80ceec7d671g01",
+      "proposed": 16,
+      "successful": 16,
+      "terminal_errors": 0,
+      "done_marker": true,
+      "terminal_fail_marker": false,
+      "input_metadata_sha256": {
+        "config.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "95103fd5fcabf05f1b313465061cb761e907a2135677641b715761e46309f4d9"
+      },
+      "store_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "95103fd5fcabf05f1b313465061cb761e907a2135677641b715761e46309f4d9",
+        "results.json": "4c8260721833bba0c21e417c914fc690f7a9b37aaf7dfa6751e4044191454761"
+      }
+    },
+    "8b2c869c039b54fadd5ee3ecac60d4b5dcde2f8bd8045bc9c11ad20c796586ca": {
+      "action_receipt_sha256": "1800aa3f1441af3c731facd124ff04d387749336ef7be4f59df58274c9c20a49",
+      "store": "dedust_r80c8b2c869cg01",
+      "proposed": 16,
+      "successful": 16,
+      "terminal_errors": 0,
+      "done_marker": true,
+      "terminal_fail_marker": false,
+      "input_metadata_sha256": {
+        "config.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "4f71d90a4dc048949fbde98e68bc557e169954b923bf0b76d480e10838e94dc5"
+      },
+      "store_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "4f71d90a4dc048949fbde98e68bc557e169954b923bf0b76d480e10838e94dc5",
+        "results.json": "1e7d90e7a2f5490ab3533541bb6cb539b5a53753dd888a0ce893e08f91756ef2"
+      }
+    }
+  },
+  "terminal_marker_bindings": {
+    "dedust_r80c205a8627g01": {
+      "claim": {
+        "exists": true,
+        "sha256": "8311863787ff1f71f3e8a8175d3a30c57d5648a9e934034ffb79aa44acace4df",
+        "valid_json": true
+      },
+      "done": {
+        "exists": true,
+        "sha256": "4f7fbb9bb639839aca8ddfe1ac8403e959bd4543f6f01821393df22eeb45e27e",
+        "valid_json": true
+      },
+      "fail": {
+        "exists": false
+      }
+    },
+    "dedust_r80ceec7d671g01": {
+      "claim": {
+        "exists": true,
+        "sha256": "40f06eaf7ee562f6032a9f70ebde0e25ed43d64c66f373309f947f8a0fe9f151",
+        "valid_json": true
+      },
+      "done": {
+        "exists": true,
+        "sha256": "029c39248fa95bfd7f1f2d0cb2250d77ff2a3f715b8629e479e37d4e68309d11",
+        "valid_json": true
+      },
+      "fail": {
+        "exists": false
+      }
+    },
+    "dedust_r80c8b2c869cg01": {
+      "claim": {
+        "exists": true,
+        "sha256": "6eadcc02326c9e0a513c3428f09843f93d1ffda1bcb7ea2d715be69b86a843c3",
+        "valid_json": true
+      },
+      "done": {
+        "exists": true,
+        "sha256": "e97ccd59c95d4379672386cad43d2d1d5d8abd17e988699563c82896afe043e7",
+        "valid_json": true
+      },
+      "fail": {
+        "exists": false
+      }
+    }
+  },
+  "NAS_queue_claim_raw_mutation": false,
+  "source_before_after_equal": true,
+  "actual_prediction_audit_timing": "posthoc_terminal_generation_readout_after_possible_live_ingest; saved v005 predictions only, no model rescore",
+  "limits": [
+    "Failed terminal candidates have no fabricated WM, curve error, rank, or geometry-response metric; all such summaries use only verified successful observations.",
+    "The three cycles share one v005 predictor generation but remain three independently bound action cutoffs.",
+    "The saved-prediction helper's static pretraining-order label does not describe this post-hoc readout.",
+    "This is descriptive development evidence, not a causal strategy comparison, multi-generation plateau, or complete global R80 best query."
+  ],
+  "status": "v005_generation_48_actual_raw_and_independent_arithmetic_verified",
+  "root_report_sha256": "d7f7e2c16e223c2fec5a6cc3fd295625666c398afe862b77abf10dba18723f92",
+  "root_readout_helper_sha256": "2d3194a3480fab8a4037c1b862b17ee20f85500b71d26248c251b477ebe533e2",
+  "independent_report_sha256": "ea20aecf7c68354a17a90369abf55121ab0f5c5e6fe3409ce72bde0c992db47d",
+  "independent_helper_sha256": "140250f72b75ecaa6df8c1f6e1a13395d083dc549d453a2a7447c4871a73dea3",
+  "source_artifact_sha256": {
+    "failures.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "report.json": "d7f7e2c16e223c2fec5a6cc3fd295625666c398afe862b77abf10dba18723f92",
+    "rows.json": "bf5222db0004fdaa312e8497d3fc0d9c7c597547dd2c7f5efd91535e49cf3568",
+    "saved_prediction_helper_audit.json": "331c0718c1431aa1737eb5f0d2458e7f5197de98ab192996bc7d4a73a7bab5bd"
+  },
+  "independent_scope": {
+    "NAS_access": false,
+    "model_load_or_rescore": false,
+    "project_metric_or_summary_helper_import": false,
+    "raw_local_frozen_tensor_read": true,
+    "training_or_queue_or_process_access": false
+  },
+  "independent_checks": {
+    "48_proposals_unique_and_excluded_from_v005_training": true,
+    "all_proposed_and_valid_subset_geometry_recomputed": true,
+    "average_tie_spearman_recomputed_without_project_metric_helpers": true,
+    "failed_candidates_have_no_fabricated_HFSS_metrics": true,
+    "frozen_20k_rank_lineage_replayed_per_cycle": true,
+    "local_sources_unchanged_during_replay": true,
+    "per_cycle_arm_origin_denominators_and_valid_summaries_recomputed": true,
+    "shared_exact_v005_fit2578_predictor_and_three_model_hashes": true,
+    "three_distinct_action_receipts_and_cutoffs": true,
+    "valid_raw_sample_and_radiation_hashes_verified": true,
+    "wm_and_saved_curve_mae_recomputed_from_raw": true
+  },
+  "independent_scientific_limits": [
+    "The three actions share one v005 fit2578 model generation; they are three cutoffs rather than one combined action or three fresh model generations.",
+    "HFSS summaries and prediction errors use only successful valid observations; terminal failures remain a separate denominator.",
+    "Saved v005 predictions are prospective, while this terminal readout is post-hoc after possible live ingestion into later models.",
+    "This development readout does not establish a causal strategy effect, repeat stability, a multi-generation plateau, or a complete global R80 best query.",
+    "Original NAS sources and terminal markers are bound by the frozen readout report but are not reopened by this independent replay."
+  ],
+  "validation_helper_sha256": "8e34f84127f2c3a5b43d7ae4a1b79e7a28ac8b9c5660de54db037f03f92085bd",
+  "interpretation": "No new global best; nearest new v005 parent variant remains negative. Two fresh model generations v004/v005 read, not three generations and not proof of algorithmic plateau.",
+  "geometry_limit": "Each16 proposal enforces Hamming>=64 within its own cycle; across combined three cycles the48 min is20, so no global48>=64 guarantee."
+}
