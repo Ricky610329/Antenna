@@ -1,0 +1,50 @@
+{
+    "schema_version":  1,
+    "status":  "normal_waiting_state_handoff_stop_verified",
+    "stop_request":  {
+                         "schema_version":  1,
+                         "status":  "local_STOP_requested_not_yet_terminal",
+                         "requested_utc":  "2026-10-09T10:01:20.4499746Z",
+                         "old_pid":  60956,
+                         "old_creation_unix_ms":  1791532984209,
+                         "old_exact_argv":  "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_familydev_v1.json\" ",
+                         "old_launch_id":  "555a4dbe6a7d474e8ffc70a97e555de7",
+                         "completed_cycles":  2,
+                         "last_receipt_sha256":  "5c32753c0cbaf5d55f8bc3690d5f85a8b7ea41463ebb51f3e43aa3538a9dab6f",
+                         "review_sha256":  "e4e7e17cd4d251b8cc9d252a9cf87b2dbb4e6181641f62d92fae1be00a4e6e11",
+                         "stop_file":  "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1\\STOP",
+                         "stop_sha256":  "4b5bb8e50e454a37dd234484b9213cdf2c92f6320995e4bbbbbcf8f1bce29ef1",
+                         "script_sha256":  "ee47f8392cc9566177b83e8f25708faf6bc1dbd9ba4cbc3b0fc495ad6cc8b6a3",
+                         "process_signals_sent":  false,
+                         "worker_queue_claim_raw_mutation":  false,
+                         "new_controller_started":  false
+                     },
+    "terminal":  {
+                     "schema_version":  1,
+                     "status":  "normal_controller_stop_verified",
+                     "observed_utc":  "2026-10-09T10:02:23.1501099Z",
+                     "finished_utc":  "2026-10-09T10:01:46.753087+00:00",
+                     "old_pid":  60956,
+                     "old_creation_unix_ms":  1791532984209,
+                     "launch_id":  "555a4dbe6a7d474e8ffc70a97e555de7",
+                     "completed_cycles":  2,
+                     "stop_reason":  "local_STOP",
+                     "actual_CIM_old_pid_absent":  true,
+                     "actual_CIM_factory_watcher_count":  0,
+                     "watch_status_sha256":  "2cceca2bc71bea959ded5edb7f8ac062a2e7f3bb457da1ceb191babb155cc802",
+                     "stop_request_sha256":  "d01ecdb546fa7d2f1b2b1a8f811e5c1837a85a6291d918106317b4b65f58a317",
+                     "last_action_receipt_sha256":  "5c32753c0cbaf5d55f8bc3690d5f85a8b7ea41463ebb51f3e43aa3538a9dab6f",
+                     "live_HFSS_jobs_changed":  false,
+                     "process_signals_sent":  false,
+                     "next_action":  "review and integrate opt-in diverse search; same training root, new controller root; no worker restart",
+                     "not_goal_pause":  true
+                 },
+    "prospective_policy":  "configs/r80_diverse_sm_search_v1.json",
+    "prospective_policy_sha256":  "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+    "HFSS_health_before_stop":  "2026-10-09 18:00 Taipei, scoped status exit0/no alarms; three claimed jobs 6/16,3/16,0/16 and five queued 16-row LOW jobs",
+    "limits":  [
+                   "Controller source handoff only; no user pause or goal completion.",
+                   "HFSS runtime, queue, claims and raw were not modified.",
+                   "New diversity source remains under review and has not been launched."
+               ]
+}

@@ -821,3 +821,9 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 48筆標準批次改為global-LCB／parent-LCB／high-disagreement各16，第三臂須在predicted mean的p60以上。每臂按SM分數降序／pattern SHA tie排序，逐一選最高可行候選，整批共同限制距離至少64／625、每canonical家族最多2筆；不足即拒絕，不放寬門檻或偷偷換盲選。小於48的容量按等權largest-remainder分配。既有LOW盲選補池、48–96新真值學習、三模型與所有HFSS/spec不變。新批仍透過原priority1／16筆分片／96 outstanding／5,000 valid-plus-reserved gates；原已派候選不改。
 
 這個決策參考既有d1/d2試驗的低幾何距離與弱SM排序，以及[Claude-era R11–14](../report/progress-r11-r14.md)的有界多策略經驗；不把舊add-block成功套到本profile，也不復活無差別大幅翻轉。此次同時改pool與臂分配，屬前瞻探索策略，不是單因素因果比較。實作、獨立review、實際本機pool核對與正常waiting-state controller交接仍待完成，尚無新多樣性派工或性能結果。
+
+### 2026-10-09 18:02：正常等待邊界交接，HFSS工作保留
+
+18:00私人scope status exit0／零警報，三片已認領為6/16、3/16、0/16，另五片16筆LOW排隊；metadata顯示119筆待跑。為切換已授權的新候選策略，核對精確PID60956／creation1791532984209／argv／settings、waiting且已完成第二cycle、原action SHA與v003實體稽核後，18:01:20只在`controller_familydev_v1`建立create-only本機STOP。Controller於18:01:46自然退出；18:02 CIM確認原PID absent與全機watcher數0，沒有送process signal。
+
+[交接停止薄收據](assets/r80_diverse_sm_controller_stop_20261009.json)保存request／terminal／policy hash；HFSS worker、queue、claims、raw與原模型完全保留。新實作仍在隔離worktree，審查與實際pool核對後才以新controller工作根、同一training根單次啟動；此刻不能聲稱新多樣候選已派工。這是短暫controller源碼交接，不是使用者暫停研究或完成goal。既有worker繼續消化預備工作，routine健康檢查下一約18:30。

@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 🔵 **10/09 18:02：多樣搜尋controller交接中，HFSS續跑原佇列**。新配方已固定／push `3cf381c`，實作在隔離worktree審查中。精確PID60956／creation／argv與完成cycle核對後，18:01:20只寫其本機STOP；18:01:46正常退出，18:02 CIM核對舊PID消失、全機watcher數0，[交接收據](../docs/log/assets/r80_diverse_sm_controller_stop_20261009.json)。18:00 scope零警報；三台有已認領6/16、3/16、0/16與五片LOW待跑，共119筆metadata待跑，供交接期間持續工作。未kill／重啟worker或改queue／claims；新controller尚未啟動，完成review／實體pool核對後以同training root、新controller root單次接手。下一routine約18:30。
+
 - 🔵 **10/09 17:49：第二輪SM更新／私人NAS派工核對通過**。自動cycle於17:34:16完成；v003新增75、累積fit **2,419**（1,583 train／836 hold），原2,344列完整保留。三個fresh member為legacy30＋current100 epochs／Adam3,700 steps，effective-train-only四norm tensors完全吻合；3×16 prio1私人input tree、唯一queue row、互斥48pattern及17／17／91／91預測曲線讀回通過。[薄收據](../docs/log/assets/r80_family_development_cycle_v003_20261009.json)。固定派工截點2,431與較早fit2,419分開；初版人工audit誤把兩截點之差當新增fit，在寫通過收據前拒絕，已用實體新舊manifest差75修正，並非controller失敗。HFSS結果仍待整批真值判讀。使用者新授權：維持SM排名並嘗試更多不同潛力對稱幾何，正準備前瞻批次，不改既有完成批次。
 
 - ✅ **10/09 17:46：最新最佳渲染已完成**。只讀raw重播為 **2,458唯一成功pattern／2,463成功觀測**；最佳仍`r80localv1_00026_f6ffb938`，原次WM **+0.021682 dB**、已核對獨立重跑 **+0.036434 dB**。沿用既有renderer及極座標helper，金屬／S11／Gain／rad圖與raw排名核對通過；[最新圖](../docs/log/assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)／[收據](../docs/log/assets/round-80/best-symmetric-polar-20261009-v006/best_query_receipt.json)。截點保留一筆首次COM失敗，未計成功，尚非最終毒樣本判定；最佳未變不等於性能停滯。背景SM／HFSS流程繼續，routine維持30分鐘；R80 5,000與R81未完成。
