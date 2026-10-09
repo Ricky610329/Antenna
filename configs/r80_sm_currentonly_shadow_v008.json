@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "name": "r80_sm_currentonly_shadow_v008",
+  "status": "fixed_preparation_only_training_not_launched",
+  "purpose": "Background revalidation of the unchanged current-only CurveMLP protocol on the completed frozen v008 dataset. The prior v006 first32 LCB ranking was better than live on one cohort only; this does not authorize deployment, and CNN/weighted-loss branches are not continued.",
+  "output_root": "tmp/r80_sm_currentonly_shadow_v008_20261010_v001",
+  "training_workdir": "tmp/r80_sm_currentonly_shadow_v008_20261010_v001/training",
+  "source": {
+    "training_workdir": "tmp/r80_factory_20261007/training_familydev_v1",
+    "data_version": 8,
+    "cumulative_valid_unique": 2739,
+    "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "lineage_alias_count": 346,
+    "files": {
+      "measurement.json": "439093feb9f4a49276d24df9972501d48d2c90416b52b40a9edaa826816e7d96",
+      "score_spec.json": "7cd051b4c2523cd7611a874dfdcab7fbb0d2f3d5b223f8adf01e8abf444d006b",
+      "protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "state.json": "a1e57b3305fa4870d640417b240351dbf22d80b92125a13a8b53591b96ecccfa",
+      "data/data-v008/manifest.json": "1260a66ee30beceb4fff04dbc6fbec20feb29652ea48a24a7e485a96f509c12a",
+      "data/data-v008/receipt.json": "7e0b3d77dd8c3b5c1cc36a4c44909ddd3b7eb3f106dad59c39546e96d7e635b5",
+      "models/data-v008/summary.json": "d24c20d6d156af60fbfb0eb1092df4426f56dc7440253324c88322aef42eec1c",
+      "models/data-v008/member-0.pt": "470f07cbb065abe9c726b2e84f0e7e5fe11179ad87f634be4cd72baed4cd8e30",
+      "models/data-v008/member-1.pt": "68b7dc4798919da9c80fdb87a5593ed6df1d4944331868a3ebf88d255ad25dac",
+      "models/data-v008/member-2.pt": "dbbe67490ce88e1ea421f71609f87bcbe36df3c8f2d8e64c59c4e340130ff102"
+    },
+    "live_model_physical_audit": {
+      "commit": "c111fe4",
+      "path": "docs/log/assets/r80_diverse_sm_cycle_v008_20261010.json",
+      "sha256": "896f30d539f2f57d2c3346ffbe6e8ed9d40152a6dd1bc89f4d2824379120a059",
+      "git_blob_sha256": "f0eb22e7bae538df5ed0f47cbe2cbbe6e6bdc4f56fbdcc2bb69e0f3b9aed5e71",
+      "status": "completed_before_shadow_training",
+      "verified_facts": "All three bound v008 checkpoints have 3900 optimizer steps and norms exactly matching the 1855 effective profile_train rows. The audit also replays the 48 saved live predictions without reading HFSS truth.",
+      "limit": "This tracked audit is provenance for the existing live scorer. The future shadow comparison still performs its own checkpoint/state/norm gates before prediction."
+    }
+  },
+  "shadow_protocol": {
+    "expected_protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+    "derivation": "Take the exact frozen source protocol and change only model.legacy_epochs from 30 to 0 before recomputing protocol_id.",
+    "architecture": "script.exploration.CurveMLP(625,[512,512,256],216)",
+    "ensemble_seeds": [0, 1, 2],
+    "optimizer": {"class": "torch.optim.Adam", "learning_rate": 0.001},
+    "batch_size": 128,
+    "legacy_epochs": 0,
+    "current_epochs": 100,
+    "phase_index": 0,
+    "fresh_initialization_each_version": true,
+    "early_stopping": false,
+    "normalization": "Fit input and all 216 target coordinates on exactly the 1855 frozen profile_train rows only, using script.symmetry_training._fit_norm.",
+    "group_weights": "Use existing inverse canonical-group frequency weights from script.symmetry_training._weights.",
+    "split": {"method": "sha256_lineage_threshold_v1", "seed": 20261007, "fraction": 0.2},
+    "development_train_groups": ["c48nq1p05_16"],
+    "comparison_to_v006": "Same current-only protocol, architecture, seeds, Adam settings, 100 current epochs, phase index 0, group weighting, and train-only normalization rule; the frozen dataset version is the only intended recipe input change."
+  },
+  "frozen_data": {
+    "manifest_rows": 2739,
+    "profile_train": 1855,
+    "profile_holdout": 884,
+    "canonical_groups": 828,
+    "sample_files": 2739,
+    "radiation_files": 2739,
+    "expected_cache_bytes": 22344298,
+    "copy_policy": "Copy only manifest-referenced local files into the isolated shadow root and verify every source and destination SHA256 against the frozen manifest. Preserve v008 manifest/receipt bytes; no NAS discovery.",
+    "legacy_registered": false,
+    "warm_start": false,
+    "live_model_files_copied_into_shadow_training_root": false
+  },
+  "selected48_background_comparison": {
+    "cycle_id": "7e26901fe1a65c1ecbd0a5dc9616ea20374441bf85ecbbe5f110ab7821e067c7",
+    "action_receipt_sha256": "3c18fcc2ac40ebe57ac70a5df01e82875b39a070850c8b13b08cc0128cd79d4b",
+    "source_directory": "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/7e26901fe1a65c1ecbd0a5dc9616ea20374441bf85ecbbe5f110ab7821e067c7/guided_bundle",
+    "selected_count": 48,
+    "manifest_sha256": "f1de2bc662a9cbaed668dc3219b8fe3574a6594ced81af033b2522276b528385",
+    "factory_bundle_complete_sha256": "12c248fc8e5fa4858020fb07ba7c71b45b679673bd60499f6f63d965315f3789",
+    "sm_pool_audit_sha256": "27a91108a8d39eb5a05f0093a04dca15e90e14ddca52050771ddc5797647b915",
+    "diversity_search_audit_sha256": "b7070e03857188d8a738dc66218a805fbace80851a5d052ea083f38f01b6a969",
+    "required_training_exclusion": "All 48 selected pattern hashes must be absent from the 2739-row frozen training manifest.",
+    "future_shadow_prediction_flag": false,
+    "future_shadow_prediction_timing": "Save all 48 current-only shadow curves and existing-scorer outputs before this shadow evaluator reads selected48 truth. Do not claim fully prospective timing: root had already read aggregate data and some v008 HFSS had run.",
+    "truth_policy": "Preparation and the future train/predict helper must not open selected48 HFSS result stores, reports, rows, failures, or frozen truth."
+  },
+  "predeclared_evaluation": {
+    "same_884_profile_holdout": {
+      "metrics": ["full_vector_mae", "s11_mae", "gain_mae", "phi0_mae", "phi90_mae"],
+      "rank_metrics": ["Spearman(wm_of_ensemble_mean,actual_wm)", "Spearman(factory_score,actual_wm)", "Spearman(lcb_score,actual_wm)"],
+      "classification_diagnostics": ["predicted positive counts", "false predicted positive counts"],
+      "selection_policy": "Descriptive frozen development holdout only; no tuning, early stopping, or automatic adoption."
+    },
+    "same_selected48": {
+      "pre_truth_output": "Save 48 predictions in exact frozen guided-manifest order with predicted_before_hfss=false and selected48_truth_read=false.",
+      "truth_evaluation_now": false
+    },
+    "claim_limit": "A newer-data background revalidation is not an independent generalization result, a one-factor causal efficacy estimate, or authority to deploy. CNN and weighted-loss branches are not retuned."
+  },
+  "execution_policy": {
+    "preparation_only_now": true,
+    "training_launched": false,
+    "prediction_or_rescore_run": false,
+    "future_cpu_threads": 4,
+    "gpu": false,
+    "hfss": false,
+    "nas_read": false,
+    "nas_write": false,
+    "live_controller_or_queue_mutation": false,
+    "root_must_commit_fixed_config_before_actual_run": true,
+    "implementation": "Reuse script.symmetry_training.train_version and load_current_predictor without source edits."
+  },
+  "implementation_bindings": {
+    "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+    "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+    "script/symmetry_sm_pool.py": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8",
+    "configs/r80_family_development_training_v1.json": "97326946ab7ddcf22a01a2721110b3724dc531fafedab343b7e13cc59cd95f4a",
+    "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+    "docs/log/assets/r80_diverse_sm_cycle_v008_20261010.json": "896f30d539f2f57d2c3346ffbe6e8ed9d40152a6dd1bc89f4d2824379120a059",
+    "docs/log/assets/r80_diverse_sm_v008_selection_review_20261010.json": "9386f872f153793725aa5255e93c7b05dbcac492e86c36618bb82cdb59e7ffbe"
+  },
+  "implementation_git_blob_bindings": {
+    "docs/log/assets/r80_diverse_sm_cycle_v008_20261010.json": "f0eb22e7bae538df5ed0f47cbe2cbbe6e6bdc4f56fbdcc2bb69e0f3b9aed5e71",
+    "docs/log/assets/r80_diverse_sm_v008_selection_review_20261010.json": "502bb2f6af6635621ae0576dbba0e661d11cd33fcb3d25ee259b072edca79f09"
+  },
+  "historical_context": {
+    "v006_first32_lcb_spearman": {"live": 0.3138, "current_only": 0.3952},
+    "interpretation": "One completed cohort favored current-only ranking, while CNN and weighted-loss did not improve ranking. Keep live unchanged and revalidate only current-only on frozen v008."
+  }
+}

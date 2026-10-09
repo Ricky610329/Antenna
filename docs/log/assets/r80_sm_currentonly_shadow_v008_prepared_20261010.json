@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "status": "fixed_prepared_and_independently_reviewed_before_actual_cpu_run",
+  "recorded_utc": "2026-10-09T16:53:52.902749+00:00",
+  "config_path": "configs/r80_sm_currentonly_shadow_v008.json",
+  "config_sha256": "474b46db5a47c0cfe37c0970856747db8518b38234327dbb123bb3f459ca0a90",
+  "readiness_sha256": "9a503dbd40b2d368362ffc25442d8e6e82f69350e4cb43dcc762b5ba597a1203",
+  "preparation_receipt_sha256": "e8e2c36b85eee10009a72cafebd4b41e92e3eede7b446e05f8b567d1f62cf8aa",
+  "helper_sha256": {
+    "compare_and_save.py": "2140b249b936cded2db0a300b66ace645e0132699711f3ce6500972eace3d082",
+    "frozen_norms.npz": "11c6b58b7931e8a2b702a70ba0c014732652771481979ae88daaacbd31f3c1c4",
+    "preflight_metadata.json": "a36a94bfae6e6379358676519e7b073063ac8bfe2214b71fbee78c4695102533",
+    "prepare.py": "2bafea08afb03eb26368dc0828102187de8f46a712add2e02972d5957c0d455e",
+    "prepare_receipt.json": "e8e2c36b85eee10009a72cafebd4b41e92e3eede7b446e05f8b567d1f62cf8aa",
+    "run.py": "c58cf1ab0626ba263efdaedf2af734b2fad0120fd10597f534e5f7e8bee0e7cd",
+    "train.py": "84b1f9a5b871329b82a61a5f865a8fffc39c2bf39d696cef0ed13f08987671fe"
+  },
+  "independent_review_path": "tmp/r80_sm_currentonly_shadow_v008_independent_review_20261010_v001/review.json",
+  "independent_review_sha256": "d36616092a98bcc17866fea35acd03ab5d1c01ddd15b48e84d737bfc58ed04cd",
+  "independent_checks": 41,
+  "frozen_data": {
+    "cache_bytes": 22344298,
+    "cache_files": 5478,
+    "expected_adam_steps_per_member": 1500,
+    "formal_outputs_absent": true,
+    "lineage_aliases": 346,
+    "roles": {
+      "profile_holdout": 884,
+      "profile_train": 1855
+    },
+    "rows": 2739,
+    "same_currentonly_protocol_as_v006": true,
+    "selected_count": 48,
+    "selected_training_overlap": 0,
+    "shadow_protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544"
+  },
+  "source": {
+    "action_id": "7e26901fe1a65c1ecbd0a5dc9616ea20374441bf85ecbbe5f110ab7821e067c7",
+    "action_receipt_sha256": "3c18fcc2ac40ebe57ac70a5df01e82875b39a070850c8b13b08cc0128cd79d4b",
+    "data_version": 8,
+    "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+    "profile_holdout": 884,
+    "profile_train": 1855,
+    "rows": 2739
+  },
+  "cpu_threads": 4,
+  "training_started": false,
+  "prediction_or_rescore_run": false,
+  "selected48_truth_read": false,
+  "predicted_before_hfss": false,
+  "fully_prospective": false,
+  "live_model_or_queue_or_nas_or_hfss_mutation": false,
+  "fixed_recipe": "Same v006 current-only CurveMLP/seeds0,1,2/Adam1e-3/b128/current100/phase0/train-only normalization and group weights; dataset version changes to v008.",
+  "next_action": "Commit fixed config first; run the create-only CPU runner once; verify physical checkpoints and saved arithmetic before reporting results.",
+  "limits": [
+    "Descriptive development holdout, not unseen validation or deployment authority.",
+    "Legacy30 to0 also changes current-training phase index from1 to0, so no pure pretraining-only causal claim.",
+    "The live legacy30/current100 scorer and HFSS queue remain unchanged.",
+    "No CNN or weighted-loss tuning."
+  ]
+}

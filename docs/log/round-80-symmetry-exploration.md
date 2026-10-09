@@ -1016,3 +1016,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-10 00:51：使用者詢問最新最佳
 
 既有唯讀查詢逐store cutoff重播sample/rad，2,810有效唯一圖形、2,815成功觀測（含重測），较23:51增加54。最佳pattern/sample/rad/WM與上一截點一致，仍+0.0216822624 dB；既有独立重測+0.0364336967 dB，餘裕很薄。三台worker有claimed工作及近期結果，scope零警報；SM最新完成v008，資料批次更新及LOW補池仍開啟。controller因worker狀態在掃描中改變安全延後一輪，未殺程序、清claims或改queue。current-only v008背景對照只完成準備及獨立審查，尚未train/adopt；已完成多樣性批次仍未超過最佳，不能把資料增加或模型更新當成性能改善。[收據](assets/r80_best_status_20261010_0051.json)。下一routine01:08；R80 5,000與後續R81 spec／正WM驗證均未完成。
+
+
+### 2026-10-10：current-only v008固定新資料對照
+
+沿用v006 current-only CurveMLP、三seeds、Adam1e−3、batch128／100epochs／phase0、canonical group weights及train-only normalization，唯一新資料輸入為v008的2,739筆、1,855train／884hold。5,478 cache files／22,344,298 bytes逐檔SHA核對，48原guided候選全部排除於訓練。41項獨立metadata/static檢查通過，固定config與helper／receipt seal相符；先前暫態config seal不一致已在任何actual training前修正，最終固定config474b46...0a90。先commit再一次create-only CPU執行，物理checkpoint及保存算術核對後才記結果。48shadow預測不宣稱prospective／獨立泛化，也不凭單批自動替換live。legacy30→0會讓current phase1→0，故並非純預訓練單因子因果比較；不重試CNN／weighted coefficients、不改HFSS或queue。[準備收據](assets/r80_sm_currentonly_shadow_v008_prepared_20261010.json)。
