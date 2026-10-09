@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/09 23:38：routine健康通過，first32仍待終態**。原PID15944精確身分不變／running_cycle，scope零警報；v006兩片各14/16、最新1／0分鐘，第三台已認領v007。32讀回因尚未terminal拒絕、未產真值報告，保留現場不重啟／清claims。[健康](../docs/log/assets/r80_health_20261009_2338.json)。背景weighted-loss結果已保存且未adopt；全量最佳仍以22:54的2,713／+0.021682為準。下一routine **10/10 00:08**。
+
 - 現況 **10/09 23:24：帶內加權SM背景對照完成**。固定current-only MLP只改loss，CPU54.91秒／三fresh100epochs／Adam1,400，實體norm/optimizer與獨立NPZ核對通過。factoryρ0.0749→0.1302／LCBρ0.0672→0.1175，但GainbandMAE5.5318→5.5920變差，仍未採用。[結果](../docs/log/assets/r80_sm_weighted_loss_shadow_result_20261009.json)。32預測已保存待HFSS真值對照，不加解算／不調coefficients；原SM/佇列續跑。下一routine23:38，最新全量2,713／最佳+0.021682。
 
 - 現況 **10/09：v007實體模型／32派工核對通過**。新增50／fit2,691（1,812 train／879 hold），舊2,641完整保留；三fresh legacy30＋current100／Adam3,900，train-only norm與32保存預測重播通過，兩私人NAS input tree／queue吻合。[收據](../docs/log/assets/r80_diverse_sm_cycle_v007_20261009.json)。dispatch截點2,702與較早fit2,691分开記帳；latest全量仍22:54的2,713／最佳+0.021682。只核對資料／模型／派工，無新增完整20k獨立排名或HFSS性能宣稱。下一routine23:38；weighted-loss背景對照備料中。

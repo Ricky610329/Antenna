@@ -973,3 +973,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 固定配方422cb95後hidden單次wrapper52240／creation1791559387027啟動，54.908秒exit0／程序已消失／stderr空。三fresh MLP100epochs／Adam各1,400，root檢查實體三checkpoint finite tensors/nonzero moments／八parameter states、norm與凍結current-only MLP相同、loss-policy及producerbinding；不同Sol再以獨立NumPy/JSON重播868真WM／七MAE／average-tieρ／32ID/hash/有限curve值／terminal模型hash，不forward/rescore或重訓。[完整結果](assets/r80_sm_weighted_loss_shadow_result_20261009.json)。
 
 對相同current-only基線，fullMAE3.758972→3.737744、S11band2.438553→2.232216改善，Gain5.573625→5.595082及Gainband5.531811→5.592033卻變差。factory-scoreρ0.074856→0.130230、LCBρ0.067239→0.117539、mean-WMρ0.075130→0.126117，排序改善但仍弱；868全負與全部pred-positive0不證明正樣本辨識／HFSS有效性。只一份固定development比較，未調coefficients／發布live；保存32不同shadow預測，候選HFSS真值對照將一次讀回，不加HFSS解算。主線v007及worker續跑，下一routine23:38；全量與最佳仍以22:54為準，R80/R81尚未完成。
+
+
+### 2026-10-09 23:38：健康通過，first32等待實際終態
+
+精確CIM同PID15944／creation／argv／launch、running_cycle、completed9，scope零警報。v006 g01/g02各14/16 result entries、最新1／0分鐘；第三台已認領v007g01，另v007g02和六片LOW排隊。[健康收據](assets/r80_health_20261009_2338.json)。沿用凍結first32 readout單次嘗試，在第一job的terminal-marker gate拒絕（job is not terminal），report／rows／failures／frozen_store均未產生；未讀回完整cohort或製造部分性能結論。這是仍有新結果的正常等待，不是timeout／停機／三代性能停滯，不重啟worker或刪claim。四套保存prediction和獨立replay helper已備妥，等00:08正常檢查終態後讀回；原SM更新／LOW補池繼續。最新全量2,713及最佳+.021682仍屬22:54截點，R80 5,000及R81尚未完成。
