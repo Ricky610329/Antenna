@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **v010前瞻對照SM實際CPU訓練完成**：dfb6fe6固定後單次session53209 exit0，02:40:47–02:41:24／36.830秒；三fresh seeds100epochs／Adam各1600，independent1944rawtrain-only normalization逐位吻合、有限參數／nonzero moments、兩frozen來源不變。[模型收據](../docs/log/assets/r80_currentonly_prospective_v010_training_20261010.json)。未做candidate pool prediction／NAS／HFSS派工，future scoring/publish另review；不把訓練完成當性能改善。下一routine03:08，全量仍02:20的2,879／+.021682。
+
 - **02:38健康與v010有限前瞻對照準備通過**：原controller exact／running_cycle，三台claimed／scope零警報（結果最新2／15／2分鐘），未重啟／清claim。[健康](../docs/log/assets/r80_health_20261010_0238.json)。固定同2,840 frozen資料／1944train896hold、同20k候選池、16live+16current-only／joint Ham64／cap2，五窄邏輯測試及独立inventory/pretrain review通過；先固定commit再單次CPU，不自動採用。[準備](../docs/log/assets/r80_currentonly_prospective_v010_prepared_20261010.json)。尚未train/predict/dispatch，futurepublish需另review；global cap5000和guided96不變。最新全量仍02:20的2,879／+.021682；下一routine03:08，R80/R81未完成。
 
 - **10/10 02:20 使用者詢問現況／全量raw核對**：2,879/5,000唯一有效實測（較00:51 +69），沒有新最佳，最佳WM +0.021682 dB。[收據](../docs/log/assets/r80_best_status_20261010_0220.json)。02:08三台有近期結果／scope零警報，controller報v010；v00848全數有效但0正WM。current-only排名稍好，準備有限前瞻對照、尚未派工或換live。下一routine02:38，R80/R81未完成。

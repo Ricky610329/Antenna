@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "status": "completed_current_only_v010_cpu_training_physically_verified",
+  "producer_fixed_recipe_commit": "dfb6fe6",
+  "actual_exec_session_id": 53209,
+  "actual_os_exit_code": 0,
+  "actual_os_exit_code_source": "root observed final exec session53209 result",
+  "started_utc": "2026-10-09T18:40:47.656497+00:00",
+  "completed_utc": "2026-10-09T18:41:24.486374+00:00",
+  "elapsed_seconds": 36.829877,
+  "training_launch_receipt_sha256": "dcbc4ada991702c3fad340a04640a06b3ca5550ce3b164d6107dff4f0d5c97fb",
+  "training_completion_sha256": "ba0892ba2f160d5837c4c8bf5da8da54c050639749f9649e3f359a17d9c479f6",
+  "independent_model_review_sha256": "96b8a1f73bbbc14421f3a0c06bbbd8dd41a6dacd81c6f1a224c18ef57a918e75",
+  "independent_model_review_helper_sha256": "69bad40f043134a3f1ac90045c70e8dc4354a10cb31dd1371341254dd32ae434",
+  "independent_model_review": {
+    "NAS_or_queue_or_HFSS_access": false,
+    "counts": {
+      "legacy_holdout": 0,
+      "legacy_train": 0,
+      "profile_holdout": 896,
+      "profile_train": 1944
+    },
+    "current_nonmodel_inventory_unchanged_from_launch": true,
+    "execution": {
+      "completion_sha256": "ba0892ba2f160d5837c4c8bf5da8da54c050639749f9649e3f359a17d9c479f6",
+      "completion_utc": "2026-10-09T18:41:24.486374+00:00",
+      "launch_sha256": "dcbc4ada991702c3fad340a04640a06b3ca5550ce3b164d6107dff4f0d5c97fb",
+      "launch_started_utc": "2026-10-09T18:40:47.656497+00:00",
+      "os_exit_code": 0,
+      "os_exit_code_source": "reported by root from actual exec session 53209; not independently observed by this helper",
+      "pretrain_review_sha256": "2261445dc7ad21681055a38f76947344c17ba7e8d828b016ed23b24c8b00b1d9"
+    },
+    "future_candidate_pool_prediction_or_rescore_performed_by_review": false,
+    "future_prepare_publish_status": "not_reviewed_not_authorized",
+    "identity": {
+      "cumulative_valid_unique": 2840,
+      "data_version": 10,
+      "manifest_id": "8f7d8cfcebcf75970db3ed11396eb1a5881a7c8449f92238a7bda46a3976805e",
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+    },
+    "live_inventory_unchanged_from_launch": true,
+    "live_three_model_and_summary_hashes_unchanged": true,
+    "manual_train_only_norm_replay": {
+      "bitwise_equal_all_three_checkpoints": true,
+      "input_norm_sha256": [
+        "e2080580b145593d9e704aefb0ebbc53b09c6d8fa731e5ec05b14412278ef656",
+        "639481f5b042ca3ecbce157c09e04b9553412e9a02b6d2c22ec934bec2058b68"
+      ],
+      "input_shapes": [
+        [
+          625
+        ],
+        [
+          625
+        ]
+      ],
+      "raw_holdout_rows_loaded": 0,
+      "raw_train_rows_loaded": 1944,
+      "target_norm_sha256": [
+        "ebc832ef2ef23e8fea13327fad41ad1100486673c719548657f1da85788d6b3f",
+        "38be3b48f3a5423711ab4752175847f7f0990658ebb67585d97ffb09d08bf496"
+      ],
+      "target_shapes": [
+        [
+          216
+        ],
+        [
+          216
+        ]
+      ]
+    },
+    "members": [
+      {
+        "adam_state_count": 8,
+        "adam_steps": [
+          1600
+        ],
+        "all_adam_moments_finite_and_nonzero": true,
+        "checkpoint_sha256": "5bd5cd55657ab4bb5195ead28180d6b90492b5ddddf76c4b67b23f1c5ecc875c",
+        "complete": true,
+        "model_state_sha256": "cad16df965b4c7ed0484d8f5fc89d150f43509ff4f006286bc04124acc7bf4d3",
+        "parameter_count": 770008,
+        "phase_names": [
+          "current_profile"
+        ],
+        "seed": 0,
+        "terminal_epoch_cursor": 0,
+        "terminal_phase_cursor": 1
+      },
+      {
+        "adam_state_count": 8,
+        "adam_steps": [
+          1600
+        ],
+        "all_adam_moments_finite_and_nonzero": true,
+        "checkpoint_sha256": "e39c279b83c9cd561726b933f1d1ebd49e50f5fe532198681b67fa4d12b865b2",
+        "complete": true,
+        "model_state_sha256": "9d1a28b27b60744d6d90ac17e30d978e9f36687ab31486aec008614af4d516b3",
+        "parameter_count": 770008,
+        "phase_names": [
+          "current_profile"
+        ],
+        "seed": 1,
+        "terminal_epoch_cursor": 0,
+        "terminal_phase_cursor": 1
+      },
+      {
+        "adam_state_count": 8,
+        "adam_steps": [
+          1600
+        ],
+        "all_adam_moments_finite_and_nonzero": true,
+        "checkpoint_sha256": "2a054b4dfe859dc0831aa4c87352dea26e92914dc2eb3f9492ef63c1ea9328e3",
+        "complete": true,
+        "model_state_sha256": "18988018e9885a8b10cfe74377daaa24ccd6daad340ed648340bc38c32952920",
+        "parameter_count": 770008,
+        "phase_names": [
+          "current_profile"
+        ],
+        "seed": 2,
+        "terminal_epoch_cursor": 0,
+        "terminal_phase_cursor": 1
+      }
+    ],
+    "model_forward_performed_by_review": false,
+    "schema_version": 1,
+    "scientific_limit": "This verifies physical training artifacts and train-only normalization. It is not HFSS performance, a prospective pilot result, or evidence that current-only ranking is better.",
+    "status": "passed_terminal_current_only_v010_physical_model_audit_no_forward",
+    "summary_holdout_metrics_independently_recomputed": false,
+    "summary_holdout_metrics_present_from_training_forward": true,
+    "summary_sha256": "01b3a2b8186d09cc662ab4dec1ec205ac9a6554cbd3ad783d4c28af80e6276d6"
+  },
+  "training_completion": {
+    "schema_version": 1,
+    "status": "current_only_v010_training_complete_prediction_not_run",
+    "completed_utc": "2026-10-09T18:41:24.486374+00:00",
+    "launch_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\training_launch_receipt_v3.json",
+      "sha256": "dcbc4ada991702c3fad340a04640a06b3ca5550ce3b164d6107dff4f0d5c97fb"
+    },
+    "review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\pretrain_review_v3.json",
+      "sha256": "2261445dc7ad21681055a38f76947344c17ba7e8d828b016ed23b24c8b00b1d9"
+    },
+    "data_version": 10,
+    "manifest_id": "8f7d8cfcebcf75970db3ed11396eb1a5881a7c8449f92238a7bda46a3976805e",
+    "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+    "model_files": {
+      "models/data-v010/member-0.pt": "5bd5cd55657ab4bb5195ead28180d6b90492b5ddddf76c4b67b23f1c5ecc875c",
+      "models/data-v010/member-1.pt": "e39c279b83c9cd561726b933f1d1ebd49e50f5fe532198681b67fa4d12b865b2",
+      "models/data-v010/member-2.pt": "2a054b4dfe859dc0831aa4c87352dea26e92914dc2eb3f9492ef63c1ea9328e3",
+      "models/data-v010/summary.json": "01b3a2b8186d09cc662ab4dec1ec205ac9a6554cbd3ad783d4c28af80e6276d6"
+    },
+    "live_source_before_after_equal": true,
+    "current_only_nonmodel_source_before_after_equal": true,
+    "prediction_or_rescore_run": false,
+    "HFSS_or_NAS_or_queue": false
+  },
+  "recipe": {
+    "derivation": "Change only model.legacy_epochs from 30 to 0 in the exact v010 protocol and recompute protocol_id.",
+    "architecture": "CurveMLP(625,[512,512,256],216)",
+    "ensemble_seeds": [
+      0,
+      1,
+      2
+    ],
+    "optimizer": "Adam(lr=0.001)",
+    "batch_size": 128,
+    "legacy_epochs": 0,
+    "current_epochs": 100,
+    "expected_adam_steps_per_member": 1600,
+    "phase_index": 0,
+    "normalization": "train-only input and all 216 target coordinates",
+    "group_weights": "existing inverse canonical-group-frequency weights",
+    "warm_start": false,
+    "early_stopping": false
+  },
+  "configuration_physical_sha256": "b86178a94ea5aba11b0240b2afdb61df59d7de593f10c8dfe96b9a881cccd206",
+  "candidate_pool_prediction_run": false,
+  "NAS_HFSS_queue_controller_mutation": false,
+  "live_recipe_changed": false,
+  "future_scoring_publication_review_complete": false,
+  "limits": [
+    "The existing trainer performed internal holdout forward/evaluation to produce summary.json; its holdout metrics are not independently recomputed or interpreted here.",
+    "The independent audit loaded frozen raw training observation tensors and checkpoint states, with no model forward, NAS, candidate prediction or HFSS.",
+    "The first audit helper attempt stopped on a development-policy label expectation and produced no report; a narrow corrected helper passed without retraining.",
+    "These are physical training results only, not prospective selection performance, a new HFSS best, or adoption authority.",
+    "Latest whole global raw census remains2879 with best+.021682 at02:20; no extra count is inferred from model data version."
+  ]
+}

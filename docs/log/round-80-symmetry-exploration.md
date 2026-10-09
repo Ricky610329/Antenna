@@ -1065,3 +1065,10 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 已凍結本機v010同2,840資料／1,944train896hold／875canonical groups；兩根各5,680cache檔案與三live模型hash核對，不載入模型或讀NAS。原live legacy30/current100保持，對照fresh current100／phase0／Adam預期1,600步每member；共同20k池固定16+16，兩scorer各6global／5parent／5disagreement，固定alternatingturn解重疊，整體Ham≥64／canonical cap2無放寬。五窄選擇tests與獨立byte-only inventory/pretrain review通過。舊WIP的binary cast／hash及共同來源驗證、unguarded entry和v2不完整inventory gate均已在任何training前窄修並保留原版本；舊入口停用且指向v3。[準備紀錄](assets/r80_currentonly_prospective_v010_prepared_20261010.json)。
 
 先固定config commit，才執行單次CPU訓練；目前尚未train/forward/predict/dispatch。future scoring／publication／readout需另review，三台原watcher及LOW不變，5000valid+reserved和guided96必須使用現有交易lock與main active reservation。這是posthoc診斷後的有限prospective policy探索，不是模型優越性／因果／automatic adoption證明。02:38 exact原PID／creation／argv與scope健康通過，三台claimed最新2／15／2分鐘；15分鐘的那片仍無stale警報，下次scheduled再查，不殺HFSS或清claims。[健康](assets/r80_health_20261010_0238.json)。03:08下一routine；全量仍02:20的2,879，R80/R81未完成。
+
+
+### 2026-10-10 02:41：v010 current-only前瞻對照SM實際訓練完成
+
+dfb6fe6固定配方後只執行一次CPU session53209，exit0；02:40:47.656–02:41:24.486／36.829877秒。三fresh CurveMLP seeds0/1/2、current100／phase0、Adam各1,600；三model state不同、每member770,008 finite參數及8個finite/nonzero optimizer moment states。Independent helper以1,944 frozen training sample/rad pairs（不含holdout）重算625input／216target四normalization tensors，與三checkpoint逐位相同；live三models+summary與整個liveinventory／currentnonmodelinventory不變。[結果與hashchain](assets/r80_currentonly_prospective_v010_training_20261010.json)。
+
+Existing trainer自身會做holdout forward產summary；此刻不獨立重算或解讀summary MAE，independent model audit不forward、不讀NAS、沒有future20k prediction/派工。第一audit helper在development-policy label expectation停止且沒有report，修正metadata expectation後通過，沒有重訓。下一stage只在精確review/model/source gate通過後做同池兩scorer排名；futurepublish/readout仍另review，原live與LOW不改。這不是新HFSS最佳或prospective性能結論。03:08routine；R80 5000/R81未完成。
