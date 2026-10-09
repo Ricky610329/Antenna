@@ -978,3 +978,10 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-09 23:38：健康通過，first32等待實際終態
 
 精確CIM同PID15944／creation／argv／launch、running_cycle、completed9，scope零警報。v006 g01/g02各14/16 result entries、最新1／0分鐘；第三台已認領v007g01，另v007g02和六片LOW排隊。[健康收據](assets/r80_health_20261009_2338.json)。沿用凍結first32 readout單次嘗試，在第一job的terminal-marker gate拒絕（job is not terminal），report／rows／failures／frozen_store均未產生；未讀回完整cohort或製造部分性能結論。這是仍有新結果的正常等待，不是timeout／停機／三代性能停滯，不重啟worker或刪claim。四套保存prediction和獨立replay helper已備妥，等00:08正常檢查終態後讀回；原SM更新／LOW補池繼續。最新全量2,713及最佳+.021682仍屬22:54截點，R80 5,000及R81尚未完成。
+
+
+### 2026-10-09 23:51：最新全量最佳核對
+
+沿用原始查詢逐store cutoff重播sample/rad，2,756唯一有效圖形／2,761成功觀測，較22:54增加43；best pattern/sample/rad/WM完全相同。WM+0.0216822624 dB，帶內最差S11−10.0960884 dB／最低Gain4.0216823 dBi，既有獨立重測+0.0364336967 dB，極座標圖繼續適用。[收據](assets/r80_best_status_20261009_2351.json)。23:50精確controller身分通過、scope零警報；v006g01 result entries14/16，v007g01/g02各4/16與1/16，entries不作有效unique計數。SM v007完整核對已完成，下一更新仍running_cycle；保存的三種背景SM對照未採用。未改HFSS、claims、佇列或live模型；多樣探索尚未超過incumbent，排名仍弱，不能宣稱性能穩定改善。R80 5,000及後續R81仍未完成，下一routine00:08。
+
+本次cutoff另有1筆HFSS RPC/watchdog失敗，attempts=1，尚非三次用盡的terminal failure；已排除有效筆數與最佳比較，保留原claim及既有重試流程，於下一健康檢查確認恢復。零scope警報不代表所有個別解算均成功。

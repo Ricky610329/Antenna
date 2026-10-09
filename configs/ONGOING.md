@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/09 23:51：依使用者詢問全量 raw 核對**。2,756/5,000唯一有效實測，較22:54增加43；最佳WM仍 **+0.021682 dB**，既有獨立重測+0.036434。[收據](../docs/log/assets/r80_best_status_20261009_2351.json)。23:50精確PID15944／零警報，三片claimed有待跑工作；SM最近完成v007、持續更新中。CNN及weighted-loss背景對照未adopt；R80與R81未完成，下一routine00:08。
+
 - 現況 **10/09 23:38：routine健康通過，first32仍待終態**。原PID15944精確身分不變／running_cycle，scope零警報；v006兩片各14/16、最新1／0分鐘，第三台已認領v007。32讀回因尚未terminal拒絕、未產真值報告，保留現場不重啟／清claims。[健康](../docs/log/assets/r80_health_20261009_2338.json)。背景weighted-loss結果已保存且未adopt；全量最佳仍以22:54的2,713／+0.021682為準。下一routine **10/10 00:08**。
 
 - 現況 **10/09 23:24：帶內加權SM背景對照完成**。固定current-only MLP只改loss，CPU54.91秒／三fresh100epochs／Adam1,400，實體norm/optimizer與獨立NPZ核對通過。factoryρ0.0749→0.1302／LCBρ0.0672→0.1175，但GainbandMAE5.5318→5.5920變差，仍未採用。[結果](../docs/log/assets/r80_sm_weighted_loss_shadow_result_20261009.json)。32預測已保存待HFSS真值對照，不加解算／不調coefficients；原SM/佇列續跑。下一routine23:38，最新全量2,713／最佳+0.021682。
