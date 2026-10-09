@@ -956,3 +956,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 三個不同action／不同20k池與保存cutoff，各片16使用同v005 fit2,578；done marker／全部sample/rad／exactLR／來源before-after一致，48有效唯一、terminal error0。讀回posthoc，保存原前瞻v005預測與每cycle／arm／origin分母；不同Sol準備的獨立NumPy＋raw helper由root單次執行，真WM／rad／MAE／平均tie Spearman／全1,128pair Hamming及原報告hash通過。[真值結果](assets/r80_diverse_sm_v005_generation_result_20261009.json)。最佳r80ceec7d671g_00001_7f75af40為parent_lcb／rank1，WM−0.637783、S11margin−0.588987／Gainmargin−0.637783／radmargin+0.469140；中位−12.490290、min−37.731880，0正WM、0超過全域+0.021682。較v004兩批best−4.820067／−5.102279更接近合格但不同候選不能當因果代際改善；factoryρ0.009010、LCBρ0.067086、GainMAE5.596653仍弱。每片16內Hamming至少64，合併48卻min20／median308.5，不把單片約束冒稱全48約束。此前205片COM一次error已在原worker重試完成；不清claims／改raw。已核對v004/v005兩fresh generations，尚無三代停滯判定，探索5,000未完成。
 
 23:08實體CIM確認同一PID15944／creation／argv、9cycles waiting、scope零警報；三片v006 claimed entries10／6／7，最新3／1／1分鐘。v007 terminal action已訓練並補派兩片16，但此處只作metadata觀察，完整checkpoint／rank／NAS-tree核對待做。最新全量raw census仍22:54的2,713／最佳不變。[健康收據](assets/r80_health_20261009_2308.json)。下一routine23:38，不重啟worker或controller。
+
+
+### 2026-10-09：v007模型與實際32派工核對
+
+沿用pin住的既有實際verifier、manual target/norm及role helper，檢查新的v007實體產物而不重跑訓練／broadtests。新增50、fit2,691，旧2,641 rows完全保留；1,812 train／879 development hold、reference roles保留、c48dev131。三fresh模型legacy30＋current100、Adam各3,900steps、effective-train-only四norm tensors逐位吻合；兩片各16私人NAS input tree與唯一queue row吻合、32互斥pattern及保存17／17／91／91曲線重播max5.722046e−6＜2e−5。[模型派工收據](assets/r80_diverse_sm_cycle_v007_20261009.json)。dispatch saved scan2,702不是模型fit2,691；不把差11當新訓練列，真新增由新舊manifest差50核對。root僅核對新資料／模型／派工與32預測，未做新一輪完整20k獨立排名重播，未讀候選HFSS或宣稱性能改善。較晚全量query2,713和best+.021682仍以22:54報告為準。原SM recipe/source不變，current-only/CNN shadows未發布。

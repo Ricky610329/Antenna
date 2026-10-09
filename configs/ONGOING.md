@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/09：v007實體模型／32派工核對通過**。新增50／fit2,691（1,812 train／879 hold），舊2,641完整保留；三fresh legacy30＋current100／Adam3,900，train-only norm與32保存預測重播通過，兩私人NAS input tree／queue吻合。[收據](../docs/log/assets/r80_diverse_sm_cycle_v007_20261009.json)。dispatch截點2,702與較早fit2,691分开記帳；latest全量仍22:54的2,713／最佳+0.021682。只核對資料／模型／派工，無新增完整20k獨立排名或HFSS性能宣稱。下一routine23:38；weighted-loss背景對照備料中。
+
 - 現況 **10/09 23:09：v005 generation48完整實測核對**。三個不同cycle各16、同SM v005 fit2,578；全48有效唯一／exactLR／零terminal error，最佳WM−0.637783、median−12.490290、0正WM／0超過全域最佳。[結果](../docs/log/assets/r80_diverse_sm_v005_generation_result_20261009.json)。本代接近合格但尚非新最佳；combined48 minHamming20（各自16內≥64），LCBρ0.0671／GainMAE5.5967。23:08三台claimed有新結果／零警報，原PID15944不變；自動v007更新已觀察、完整核對待做。[健康](../docs/log/assets/r80_health_20261009_2308.json)。最新全量仍2,713／最佳+0.021682；下一routine23:38。
 
 - 現況 **10/09 23:02：CNN背景對照完成**。三fresh current100／Adam各1,400、CPU194.92秒；同868保留集fullMAE3.759→3.582／Gain5.574→5.327，比live v006 Gain5.559也略低。factoryρ0.0749→0.0783仍弱、mean-WM排名反降，未採用。[結果](../docs/log/assets/r80_sm_cnn_shadow_result_20261009.json)。實體checkpoint／保存算術核對通過，32候選預測已保存；不用追加HFSS。最新全量仍22:54的2,713／最佳+0.021682；原controller及worker續跑。
