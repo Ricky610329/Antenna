@@ -1030,3 +1030,12 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 同884 development holdout，live→current-only：fullMAE3.604496→3.727660（較差）、S11 2.072514→2.364376（較差）、Gain5.560413→5.489680（略降）、phi0 3.737319→3.881628／phi90 3.392477→3.499202（較差）。factory-scoreρ0.086172→0.109115、LCBρ0.076811→0.113779、mean-WMρ0.065724→0.107035，仍弱；真值及三score正WM counts均0，不能認證正例辨識。獨立Sol從保存NPZ/JSON重算WM、五MAE、average-tie Spearman/counts與所有884 IDs/order，並查六checkpoint file hashes／48排除與timing，七gate全通過；未載入PT或forward，沒有讀48HFSS真值。
 
 這是新資料上的混合診斷，不支持目前採用；保留original live legacy30/current100。48shadow predictions已保存，明示predicted_before_hfss=false／truth_read=false，待原本48實測終態後再對照，不加HFSS、不調係數、不續跑CNN/weighted。latest全量仍00:51的2,810／+.021682，R80／R81未完成，01:08健康檢查。
+
+
+### 2026-10-10 01:11：v007 first32完成真值核對
+
+01:08正確jobs_state確認兩片done、無fail；經獨立static審查後只執行final readout_v3一次，exit0。32 proposed／32有效唯一／0terminal errors／0正WM；本批最佳r80c2e4d6525g_00001_506c067e為−3.5587148964 dB，median−10.1546103954、min−32.6372337341，未超過全域+.021682。原live v007保存預測factoryρ0.093109／LCBρ0.054985，帶內S11MAE1.942887／Gain3.977923、full216 3.111073 dB；排名仍弱，多樣探索尚未突破incumbent。[結果](assets/r80_diverse_sm_v007_first32_result_20261010.json)。
+
+獨立Sol使用本機frozen observation/sample/rad tensors與自有NumPy算術重算32raw WM、所有曲線誤差、average-tie ranks/denoms及496幾何距離：全部exactLR、min/maxHamming66/388、26canonical groups／max2、訓練overlap0；70個frozen raw-store檔案及report/rows/failures前後不變。沒有載入模型checkpoint／forward／rescore／train／NAS／queue操作。讀回v1錯把candidate_group（19parent／13fresh來源標籤）當canonical cap2；v2 config command仍指錯v1。兩者均在任何執行/真值前被獨立review拒絕且原檔保留，finalv3 canonical_group_id gate与command/config/helper seals一致，round-robin還原沿用v006修正。
+
+只核對這32原live prospective predictions，不混入不同候選的v006三shadow。這32可能已在00:51全量2810內，不能再相加；v00848尚未terminal，current-only v008已保存non-prospective預測待對照。保留live與LOW補池，性能卡點已通知，資料收集及批次SM更新持續；R80/R81未完成，下一routine01:38。

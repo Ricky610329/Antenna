@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "status": "completed_v007_first32_live_truth_independently_verified",
+  "observed_utc": "2026-10-09T17:11:37.431308+00:00",
+  "cycle_id": "2e4d6525736e05b3bae54c6c371edba7da7af1fda4c83218479406ead6f1e800",
+  "action_receipt_sha256": "1b62ac59b805597c78e93e94482d6f9fd1d3fa53a25a541547f2e8f718769f70",
+  "denominators": {
+    "all_proposed": 32,
+    "terminal_attempts": 32,
+    "successful_valid_unique": 32,
+    "terminal_error_attempts": 0
+  },
+  "actual_valid_subset": {
+    "valid_count": 32,
+    "actual_positive_count": 0,
+    "actual_best_wm_db": -3.558714896440506,
+    "actual_median_wm_db": -10.154610395431519,
+    "actual_min_wm_db": -32.63723373413086
+  },
+  "best_in_cohort": {
+    "id": "r80c2e4d6525g_00001_506c067e",
+    "pattern_sha256": "506c067eb2cbd0ceb341f87e79e99efc51e110e03a218f009da1b55c5934d1ac",
+    "s11_margin_db": -2.6764330863952637,
+    "gain_margin_db": -3.558714896440506,
+    "factory_margin_db": -3.558714896440506,
+    "radiation_margin_db": -0.9344176054000854,
+    "radiation_margin_clipped_db": -0.9344176054000854,
+    "selection_arm": "parent_lcb",
+    "candidate_group": "parent_variant",
+    "sample_sha256": "ff89a06228a1c3ea1573259357601a5faddf9fb267a92fbe3f65a3dbb0d85bc1",
+    "rad_sha256": "14aa3ba571a4bfdb7995d10a4e2a5a64a80d7ea0583be325d41e6a5465d3d1ac",
+    "saved_prediction_comparison": {
+      "live_v007": {
+        "factory_score": -1.8801623980204265,
+        "lcb_score": -2.477204599191908,
+        "band_s11_mae_db": 2.666823591504778,
+        "band_gain_mae_db": 0.8565652753625598,
+        "response_full_curve_mae_db": 2.1994850725373802,
+        "full_vector_216_mae_db": 1.5920894954254403
+      }
+    }
+  },
+  "saved_prediction_comparisons_valid_subset": {
+    "live_v007": {
+      "valid_count": 32,
+      "factory_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.09310850439882698
+      },
+      "lcb_vs_actual_wm_spearman": {
+        "n": 32,
+        "rho": 0.05498533724340175
+      },
+      "predicted_factory_positive_count": 0,
+      "predicted_lcb_positive_count": 0,
+      "predicted_factory_best_db": -1.8801623980204265,
+      "predicted_factory_median_db": -8.594293673833212,
+      "predicted_lcb_best_db": -2.477204599191908,
+      "predicted_lcb_median_db": -8.917481026287323,
+      "band_s11_mae_db": 1.9428870880178042,
+      "band_gain_mae_db": 3.9779231374351576,
+      "response_full_curve_mae_db": 2.913025461286666,
+      "radiation_phi0_mae_db": 3.0271159321754975,
+      "radiation_phi90_mae_db": 3.269026431994342,
+      "radiation_full_curve_mae_db": 3.14807118208492,
+      "full_vector_216_mae_db": 3.111073244551861
+    }
+  },
+  "geometry": {
+    "all_exact_lr_symmetric": true,
+    "canonical_group_count": 26,
+    "canonical_group_max_count": 2,
+    "maximum_pairwise_hamming": 388,
+    "minimum_pairwise_hamming": 66,
+    "pair_count": 496,
+    "proposed_count": 32,
+    "training_overlap_count": 0
+  },
+  "predictor_binding_at_dispatch": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 7,
+    "manifest_id": "8b0e71cd3347e51afd149c65dae3ae2c7d72f4ee4c76e9c181221719647ee7b2",
+    "cumulative_valid_unique": 2691
+  },
+  "training_exclusion": {
+    "manifest_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v007\\manifest.json",
+    "manifest_sha256": "12a3739ac957a8885acec935861e478c0b1758fd846ff3266fe03c76978b2c20",
+    "rows": 2691,
+    "selected32_overlap_count": 0
+  },
+  "prediction_timing_interpretation": {
+    "live_v007": "The original dispatch-bundle prediction is prospective and predates HFSS. No shadow prediction from v006 or any other candidate cohort is loaded."
+  },
+  "shards": {
+    "dedust_r80c2e4d6525g01": {
+      "proposed": 16,
+      "successful": 16,
+      "terminal_errors": 0,
+      "done_marker": true,
+      "terminal_fail_marker": false,
+      "input_metadata_sha256": {
+        "config.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "1c260a407aca84980d5fdd1ef0999d9f1d5029f5b62f3bb2af35eac32c441f67"
+      },
+      "store_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "1c260a407aca84980d5fdd1ef0999d9f1d5029f5b62f3bb2af35eac32c441f67",
+        "results.json": "aad405406f99301ae12e5da71cff16cd191c5366bd14781f9181b0329ab0d2bc"
+      }
+    },
+    "dedust_r80c2e4d6525g02": {
+      "proposed": 16,
+      "successful": 16,
+      "terminal_errors": 0,
+      "done_marker": true,
+      "terminal_fail_marker": false,
+      "input_metadata_sha256": {
+        "config.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "f6a7f299be1d082d19e29ae28da179ce85befde4320a7cf599b5ed558ba9672b"
+      },
+      "store_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "f6a7f299be1d082d19e29ae28da179ce85befde4320a7cf599b5ed558ba9672b",
+        "results.json": "ef05e94a7f1fd09d57784990fe3be5bdcb219bd5fa14c8afd80ceb082e43023d"
+      }
+    }
+  },
+  "order_fix_lineage": {
+    "base_v006_readout_v2_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_v006_first32_truth_20261009_v001\\readout_v2.py",
+    "base_v006_readout_v2_sha256": "48381fb5b4c9ac825c923892f68305471dea8a69a926f706158b55a9d5b5ad75",
+    "round_robin": true,
+    "narrow_v007_change": "Replace cycle/action/training/shard bindings and retain only the 32 live v007 dispatch predictions; preserve exact frozen/physical shard tree verification and guided_index = job_index + shard_position*2 reconstruction.",
+    "v007_gate_correction": {
+      "original_helper_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_v007_first32_truth_20261010_v001\\readout.py",
+      "original_helper_sha256": "01f344db42dc920183280bda43d894170e0ea0b67667a13ff040fd65b724bdfa",
+      "defect": "The original v007 helper counted candidate_group origin labels for the canonical cap-2 gate.",
+      "fix": "Require nonempty canonical_group_id and count its multiplicity for cap 2.",
+      "v2_metadata_discrepancy": "prep_config_v2.future_command pointed to readout.py while readiness_v2 pointed to readout_v2.py; neither helper was executed.",
+      "v3_metadata_fix": "prep_config_v3, readout_v3, and readiness_v3 use one consistent command and embedded config binding.",
+      "v2_readout_sha256": "0a1823084271c3bee8f63b2fe3f5860de3477161e6499e143fc01ceaad133c79"
+    },
+    "reconstructed_guided_ids_sha256": "a700a938ca56f85756e7e2895a98c8b245fa435029ff8b2829987be75cce252f"
+  },
+  "source_report_sha256": "dbd76fec786183222b5e2cfe3b53465f43be7faccf44c17372e14fcedccbfcdd",
+  "rows_sha256": "2ea1928623f8c81dc8033806a8da797f428eeac1ec71ccb3d758a0b276c5e869",
+  "failures_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "frozen_source_bindings_sha256": "bf0f79fce87533e924d96a222d1c07861171648f986b4e11f49ea5e205cab58b",
+  "producer_sha256": "0ee98f3723b812098635b52869df33f668ad2109bc4553c4a9890f0ea96fb524",
+  "final_prep_config_sha256": "e8d983288f3405be6322477b73fc51bf74860fb0fe8e33037266dceaa0be66f5",
+  "final_readiness_sha256": "94e49bc55ca8dc890c2c80c8d95388ae78eec7d2ef75a06670c1ded5c3c10a3e",
+  "independent_static_review_sha256": "b60372a109b26d7a56f879f4f1f23e16555a9fa7de2f29ee3254e28b301cb533",
+  "independent_result_review_sha256": "3967896b08f00754be74d185d58750bb9d4d42387d3c9a95bf6532fc0a165d8d",
+  "independent_replay_helper_sha256": "fd2aa7f6343c6b032e2d0b947bebefec96e86054570ad31bc7f719e92695b3c2",
+  "independent_replay_scope": {
+    "local_frozen_observation_tensors_and_numpy_json_only": true,
+    "no_broad_tests": true,
+    "no_model_checkpoint_load_or_forward": true,
+    "no_nas": true,
+    "no_project_metric_helpers": true,
+    "no_training_rescore_hfss_or_queue_action": true
+  },
+  "source_before_after_equal": true,
+  "new_global_best": false,
+  "global_census_recomputed_here": false,
+  "latest_global_census_receipt_sha256": "21472f8619a2911ee9a28718064e33d3fe83770e39c5fee21c778c463c28674d",
+  "known_global_best_wm_db": 0.021682262420654297,
+  "known_global_valid_unique": 2810,
+  "NAS_queue_claim_raw_mutation": false,
+  "actual_readout_exit_code": 0,
+  "readout_attempts": {
+    "v1": 0,
+    "v2": 0,
+    "v3": 1
+  },
+  "decision": "Keep live recipe and collect data. This32 cohort adds no positive WM or new global best; saved prediction ranking remains weak. No extra HFSS or model adoption follows from it.",
+  "limits": [
+    "All-proposed denominator is 32. Terminal HFSS failures retain IDs, attempt counts, and error hashes but receive no fabricated WM, curve error, or rank metric.",
+    "All rho, MAE, positive-count, best, and median summaries use only hash-verified successful observations and state their valid N.",
+    "Only the original live-v007 dispatch prediction is evaluated; v006 current-only, CNN, and weighted-loss shadows use different candidates and are deliberately excluded.",
+    "This is one development cohort. It is not an independent generalization result or authority to replace the live factory model.",
+    "These32 observations may already be included in the00:51 full census; do not add32 to2810.",
+    "v00848 remains nonterminal at01:08; no current-only v008 truth comparison is claimed.",
+    "Only original v007 live predictions are evaluated; v006 shadows are different candidates."
+  ]
+}
