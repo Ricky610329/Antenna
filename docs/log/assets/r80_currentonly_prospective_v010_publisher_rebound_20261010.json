@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "status": "passed_versioned_publisher_rebinding_static_readiness_only",
+  "observed_utc": "2026-10-09T20:44:32.799643+00:00",
+  "publisher_review_sha256": "e707aab6edaf58284008ae3c0af29361fd64b0f4f99cc36a468f962ac3b3a770",
+  "review_request_sha256": "66a94906de9611ea44cbc4acc8e34b742732bd8cd5a9cd188bb030a29c721ded",
+  "reviewed_bindings": {
+    "implementation_sha256": {
+      "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+      "script/dedust.py": "4d203816826ca20179c2ae3a5c345dcc900117d33a671090d896db3c61ece05d",
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+      "script/symmetry_factory_backlog.py": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84",
+      "script/symmetry_factory_cycle.py": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e",
+      "script/symmetry_factory_watch.py": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+      "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/audit_prepared_v6.py": "4fa0f7b43e97fde79d35193df7a0c8ef6325275e4872696c99eb62ef23c02534",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_prepare_guard_config_v6.json": "923c55e610b43e101e5cf96a1af32205b0b4285572df77fd154d0e80d9a75a94",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_prepare_guard_v6.ps1": "019fadc2538735deec508f21482e13ab175c7b36207cca29b5c5ceb77bb4bcd3",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/launch_deferred_prepare_guard_v6.ps1": "ab9f334c55efc55f24b9f62a2005a4d1d014506f2574599e87cc9f5e5330cb65",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_audit_v5.py": "dffe1d6e4f354846aabdaa7506c41def8f178bfd15762b35915d9027c07bf3ac",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_config.json": "b86178a94ea5aba11b0240b2afdb61df59d7de593f10c8dfe96b9a881cccd206",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_logic.py": "6f11b968d9949d5c934a83b026684a10c8a16c30f1131254c7a8888c76133eaa",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_provenance_v3.py": "04553fe699c07dab8671bf11c85a9564c0d20ce89b543ac102c865c7e000cec8",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/prepare_pilot_v6.py": "cc8cf07d549cfec0fbd0f152c4d8491d5ae6ea39546198681916666d033f8085",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/publisher_v7.py": "579ecb78679db0ec4d1b58a12aa37ec1d1272d362619cdf4b5a8f9eb3588abcd",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/scoring_gate_v6.py": "d9658f72abb9121192a558a5c004093fbc9acbaa82afdaaf0926fa8e691a8563",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/seal_readout_v7.py": "8b51c200b72fa1eafe89a9e60880ba9b9f9f506c82a361f2deb1508ea013e02a",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/truth_readout.py": "2a5149ac2960439d25d38c10beef6b520c51c29468866d9026e219ee80ccdcfc",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/truth_readout_v7.py": "2ed692bf9eacb39df221d3c61ed20af04304e9c812671837fe180aa065bb5cd3",
+      "tmp/r80_currentonly_prospective_review_20261010_v001/deferred_guard_review_v6.json": "a9821a031d6b1a8925eff55f9cf2cee39f9ca8436fa29ac630eb0615d0db60bd",
+      "tmp/r80_currentonly_prospective_review_20261010_v001/scoring_review_v6.json": "cafa8039c1b3cb7357fe74f45919c1ae7acf375ff7f4a6833224d84427f1ad44",
+      "tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+    },
+    "focused_test": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\test_publisher_v7.py",
+      "sha256": "bcb8febd8845b99f8a3c3605e930c7f5196284db2dc63ef92b1c67c0192959ac"
+    },
+    "scoring_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\scoring_review_v6.json",
+      "sha256": "cafa8039c1b3cb7357fe74f45919c1ae7acf375ff7f4a6833224d84427f1ad44"
+    },
+    "controller_contract": {
+      "pid": 15944,
+      "creation_unix_ms": 1791541659267,
+      "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+      "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\"",
+      "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+      "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+      "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+      "watcher_source_sha256": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+      "interval_seconds": 1800
+    }
+  },
+  "focused_validation": {
+    "command": "python -m pytest -q tmp/r80_currentonly_prospective_pilot_20261010_v001/test_publisher_v7.py",
+    "result": "8 passed in 2.15s",
+    "scope": "v6 publisher regression plus exact prepared_v6/scoring-review identity and terminal replay/guard no-execution binding"
+  },
+  "duplicate_tests_run_by_conductor": false,
+  "exact_static_review_validator_accepted": true,
+  "prepared_root": "prepared_v6",
+  "publisher_version": 7,
+  "terminal_auditor_static_review_sha256": "7c3721395a3647dff9e93815f3fcbb104f59a77d57405a8175178e7a3d0d2d1f",
+  "terminal_replay_required": true,
+  "independent_pool_review_required": true,
+  "HFSS_dispatch": false,
+  "NAS_or_queue_mutation": false,
+  "model_forward_or_training": false,
+  "actual_preparation_outputs_read": false,
+  "execution_ready": false,
+  "algorithm_or_capacity_policy_changes": false,
+  "old_v5_failure_preserved": true,
+  "last_actual_health_receipt": "docs/log/assets/r80_health_20261010_0438.json",
+  "next_routine_health_taipei": "2026-10-10 05:08",
+  "limits": [
+    "Static consumer rebinding only; preparation and pool replay/review remain actual-runtime gates.",
+    "No prospective HFSS result or model-superiority claim."
+  ]
+}
