@@ -863,3 +863,12 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 重用既有 `query_and_freeze.py`，在新的本機 v007 目錄逐一核對所有成功 sample/rad raw，共2,592個唯一圖形、2,597次成功觀測；較17:46多134個唯一圖形，沒有新的最佳。最佳仍是 `r80localv1_00026_f6ffb938`，WM +0.0216822624 dB、帶內最差S11 −10.0960884 dB、最低Gain 4.0216823 dBi；既有獨立重測 +0.0364336967 dB。best pattern/sample/rad SHA與前次已審查收據一致，重新凍結的response與幾何核對通過，因此沿用既有極座標圖，不重新產生相同圖片。
 
 [查詢收據](assets/r80_best_status_20261009_2017.json)保留來源cutoff及hash。首批多樣性48仍未全數完成；raw cutoff內一筆一次COM例外尚在既有重試機制，未當作成功資料。20:15 scope無警報，PID15944/creation/完整argv與原launch相符、stderr空。v005 summary與state顯示新增78、fit2,578；這是觀察到的訓練binding，並非已完成新的完整模型/派工審查，本輪terminal receipt尚未產生。圖形資料累計、模型fit cutoff與排隊量分開記錄；不以未完成的首批判定提升或性能停滯。NAS/queue/claim/raw均未更改，維持約30分鐘檢查。
+
+
+### 2026-10-09：多樣SM v005重訓及容量限制16筆派工核對
+
+Cycle `205a8627...`於20:20:23完成。新增78有效唯一真值、累積fit **2,578**；原2,500 manifest列逐列保留，effective train1,720／hold858，c48 development train123。三fresh模型legacy30＋current100、Adam各3,800步；四個norm tensors由實體effective train完整重建，逐模型一致。已派16筆保存預測以實際v005重播，最大差4.768e−6，低於固定2e−5。
+
+[完整核對薄收據](assets/r80_diverse_sm_cycle_v005_20261009.json)綁定模型、原action及獨立review。獨立Sol重播全部20k幾何／來源／SHA／LCB排序及strict round-robin greedy；容量16的equal-largest-remainder配額為global6／parent5／disagreement5，13家族、同家族最多2、最小Hamming72。32親本來自30家族；本機bundle與staged shard各16個tensor全部核對。Root另讀私人NAS單片20-file input tree及唯一queue row，與原action tree相同。準備派工時guided待跑69／上限96，故只補一片16，不放寬政策或塞滿48。
+
+20:28實體CIM controller PID15944／creation／完整argv不變、completed_cycles4、下一cycle20:27:41開始、stderr空，scope無警報。首批多樣48當時三片結果entry數16／12／8，仍未全數完成；完整cohort真值判讀尚未執行。fit2,578、較早dispatch snapshot2,587與另外20:17全量查詢2,592分開記錄；最佳仍以最新已完成raw query為準。驗證不更動NAS/queue/claim/raw，不重啟worker，不宣稱性能提升或停滯。下一routine20:58；R80 5,000與R81仍未完成。

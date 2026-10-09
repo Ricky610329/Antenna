@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "status": "diverse_v005_fresh_training_and_capacity_limited_actual_dispatch_verified",
+  "observed_taipei": "2026-10-09T20:34:54.418098+08:00",
+  "loaded_source_commit": "5802b799d27b7a657f400798f44bd4d301ee2e64",
+  "cycle_id": "205a8627877656627cffa60675afadfd79a7c34b03c64791f5e781b9e0ddba96",
+  "cycle_completed_taipei": "2026-10-09 20:20:23",
+  "action_receipt_sha256": "1f4fc8df55db5785acedce407d4f59ae138f590a04967d2a7174ff8f64ec12c5",
+  "model_binding": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 5,
+    "manifest_id": "ef3b33f24f9fe1f08e25125a806a686defc163811a6f075a34e6727d66e4e4d5",
+    "cumulative_valid_unique": 2578
+  },
+  "new_valid_unique": 78,
+  "counts": {
+    "legacy_holdout": 1850,
+    "legacy_train": 10150,
+    "profile_holdout": 858,
+    "profile_train": 1720
+  },
+  "effective_roles": {
+    "profile_train": 1720,
+    "profile_holdout": 858
+  },
+  "reference_roles": {
+    "profile_train": 1597,
+    "profile_holdout": 981
+  },
+  "c48_development_rows": 123,
+  "members": [
+    {
+      "seed": 0,
+      "sha256": "0b97e9142fe1044e0c6fd36df8f0471c696f036b4bb83ee5fa1c35ebff4762aa",
+      "optimizer_steps": 3800,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 1,
+      "sha256": "c6b7fe37e45fde98baed1c01f3967b2ae6de855feb85c27b9d6ec41aba3c65ee",
+      "optimizer_steps": 3800,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 2,
+      "sha256": "5a10b2879dc6ffbc9df526a114999283dae57e83fd4bff5ec844ed04281278be",
+      "optimizer_steps": 3800,
+      "norms_exact_effective_train": true
+    }
+  ],
+  "previous_2500_manifest_rows_preserved": true,
+  "root_physical_review_sha256": "2e7bae9d8a94bd36f5494e44ae126b87d0b11c226e3db92b87a461c6ab4b66ae",
+  "root_prediction_replay": {
+    "schema_version": 1,
+    "status": "actual_saved_selected_predictions_replayed",
+    "rows": 16,
+    "predictor_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 5,
+      "manifest_id": "ef3b33f24f9fe1f08e25125a806a686defc163811a6f075a34e6727d66e4e4d5",
+      "cumulative_valid_unique": 2578
+    },
+    "manifest_sha256": "7c4da96c5c933eb1b8fb581896f122d361ee55de8f1aa8dd0174078d25ace3c4",
+    "max_abs_error": {
+      "factory_score": 2.225240071318524e-06,
+      "lcb_score": 3.0664707537653157e-06,
+      "navigation_mean_score": 2.129872639589081e-06,
+      "response_disagreement": 2.2161111550289547e-06,
+      "predicted_s11": 2.86102294921875e-06,
+      "predicted_gain": 4.76837158203125e-06,
+      "predicted_radiation_phi0": 2.86102294921875e-06,
+      "predicted_radiation_phi90": 2.86102294921875e-06
+    },
+    "tolerance": 2e-05,
+    "limits": "Same actual trained predictor replay; not independent implementation or HFSS truth."
+  },
+  "independent_review_sha256": "20ebec081c267af6fe6528805c095de52b12fe4e5e78836f9bef645de6e5c6b4",
+  "independent_frozen_selection_review": {
+    "schema_version": 1,
+    "status": "passed",
+    "cycle_id": "205a8627877656627cffa60675afadfd79a7c34b03c64791f5e781b9e0ddba96",
+    "scope": "Independent local frozen-artifact replay of the v005 capacity-limited guided cohort; no NAS, raw training data, model tensors, processes, queues, or HFSS results accessed.",
+    "helper": {
+      "path": "tmp/r80_diverse_v005_independent_20261009_v001/replay.py",
+      "sha256": "21b2214d3ff3ca2b0d989c1a8b34b303c54dac76a1d19df853fefb40dc435a44"
+    },
+    "artifact_sha256": {
+      "action_receipt.json": "1f4fc8df55db5785acedce407d4f59ae138f590a04967d2a7174ff8f64ec12c5",
+      "factory_bundle_complete.json": "09b78867a67dd5c322ffad1fa569c1f96a0a4168663245e6484110f1751ae438",
+      "manifest.json": "7c4da96c5c933eb1b8fb581896f122d361ee55de8f1aa8dd0174078d25ace3c4",
+      "sm_pool_audit.json": "0732a5e2513c16d0536fbd2ffa196320d6a901c7ef245ff34a293e468421577a",
+      "diversity_search_audit.json": "a3da1e0e4cd50f9f0697c2aef05cedb96836f675bca8edeb94021359225e0c1b"
+    },
+    "replayed_identity": {
+      "policy_id": "27937e8f03647431256a31ad47acf4124fc30f8b7195afb1f731d079d6e01d75",
+      "frozen_lcb_ranks_sha256": "34f0600e04ac796ec8490f17b500145c8d6db3ebd325e6b63e9724f59e6283cf",
+      "candidate_pool_sha256": "37b3f66d75183bbbf747faccea65bef76e8e581c236265e4a0eb5e2eb91c285d",
+      "selected_cohort_sha256": "843612ceccddd0db26fa6b7912049465c708105343e3ee1db552d5de4ec3e3f9",
+      "guided_shard_tree_sha256": "c627d5a0f8c3b9c0b41d997ba795a387697f6f50e9a0f099311d4c26277ba724"
+    },
+    "pool_and_selection": {
+      "candidate_count": 20000,
+      "candidate_origin_counts": {
+        "fresh_random": 10000,
+        "parent_variant": 10000
+      },
+      "selected_count": 16,
+      "capacity_limited": true,
+      "quota_method": "Equal weights and deterministic largest remainder in policy arm order.",
+      "arm_quotas_and_actual": {
+        "global_lcb": 6,
+        "parent_lcb": 5,
+        "high_disagreement": 5
+      },
+      "disagreement_mean_p60": -12.05079381942749,
+      "selected_min_physical_hamming": 72,
+      "selected_canonical_group_count": 13,
+      "selected_max_per_canonical_group": 2,
+      "parent_count": 32,
+      "parent_group_count": 30,
+      "parent_max_per_canonical_group": 2
+    },
+    "predictor_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 5,
+      "manifest_id": "ef3b33f24f9fe1f08e25125a806a686defc163811a6f075a34e6727d66e4e4d5",
+      "cumulative_valid_unique": 2578
+    },
+    "model_sha256": [
+      "0b97e9142fe1044e0c6fd36df8f0471c696f036b4bb83ee5fa1c35ebff4762aa",
+      "c6b7fe37e45fde98baed1c01f3967b2ae6de855feb85c27b9d6ec41aba3c65ee",
+      "5a10b2879dc6ffbc9df526a114999283dae57e83fd4bff5ec844ed04281278be"
+    ],
+    "checks": {
+      "all_20000_packed_geometries_hashes_scores_ranks_and_origins": true,
+      "descending_lcb_then_sha_order": true,
+      "candidate_pool_hash": true,
+      "p60_and_equal_largest_remainder_quotas": true,
+      "strict_round_robin_greedy_sequence": true,
+      "whole_cohort_distance64_and_canonical_cap2": true,
+      "all_16_bundle_tensors": true,
+      "all_16_local_staged_shard_tensors_and_tree": true,
+      "parent_descriptor_bounds_and_hashes": true,
+      "six_field_training_predictor_binding": true,
+      "model_ids_completion_action_common_audit": true,
+      "completion_manifest_audit_action_hash_chain": true,
+      "files_unchanged_across_replay": true
+    },
+    "limits": [
+      "Exclusion sets were checked through saved counts and SHA-256 bindings, not reconstructed from NAS.",
+      "v005 training samples, radiation files, normalization tensors, and checkpoint tensors were not reopened; training and model conclusions here are identity-binding checks.",
+      "The single 16-pattern shard reflects the action's capacity limit and is not treated as a 48-pattern cohort.",
+      "No HFSS outcome, surrogate accuracy, or performance improvement is claimed; the first 48-pattern diverse cohort is still incomplete."
+    ]
+  },
+  "published": [
+    {
+      "job": {
+        "input": "dedust_r80c205a8627g01_input",
+        "store": "dedust_r80c205a8627g01",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c205a8627g01_input/config.yaml"
+      },
+      "input_tree_sha256": "c627d5a0f8c3b9c0b41d997ba795a387697f6f50e9a0f099311d4c26277ba724",
+      "files": 20,
+      "count": 16
+    }
+  ],
+  "dispatch_valid_unique_cutoff": 2587,
+  "prepared_guided_pending_unique_before_dispatch": 69,
+  "new_guided_patterns": 16,
+  "guided_pending_cap": 96,
+  "health_checkpoint": {
+    "observed_taipei": "2026-10-09 20:28",
+    "physical_controller_PID": 15944,
+    "creation_unix_ms": 1791541659267,
+    "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+    "full_argv_matches_launch": true,
+    "completed_cycles": 4,
+    "new_cycle_started_taipei": "2026-10-09 20:27:41",
+    "stderr_empty": true,
+    "scoped_alerts": 0,
+    "first_diverse_48_cohort_complete": false,
+    "first_diverse_shards_observed_result_entries": [
+      16,
+      12,
+      8
+    ],
+    "next_routine_taipei": "2026-10-09 20:58"
+  },
+  "limits": [
+    "Fit2578, dispatch snapshot2587 and the separate20:17 live query2592 are different cutoffs.",
+    "Independent replay covers frozen pool/ranking/geometry/model identities and local staged tensors; root separately rebuilt train-only norms and read actual NAS publication.",
+    "Selected16 is capacity-limited and not the first48 complete HFSS cohort.",
+    "No surrogate performance improvement, new best, HFSS cohort improvement or plateau claim.",
+    "No new NAS bulk archive, queue/claim/raw mutation during verification or worker restart.",
+    "R80 target5000 and R81 remain incomplete."
+  ]
+}
