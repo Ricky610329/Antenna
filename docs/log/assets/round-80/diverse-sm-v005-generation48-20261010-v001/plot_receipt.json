@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "analysis_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_v005_generation_truth_20261009_v001\\analysis\\analysis.json",
+  "analysis_sha256": "7e53a295f3b121830bd0f5f11c1b110afa190d3e54e5821b497ce8ab8067a7ba",
+  "npz_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_v005_generation_truth_20261009_v001\\analysis\\arrays.npz",
+  "npz_sha256": "b474391c4685de70a8b644bcd516ffeb747df95b1723183b92f9c652fd55a86b",
+  "unique_patterns": 48,
+  "geometry_extent": [
+    0.0,
+    1.0,
+    -1.0,
+    1.0
+  ],
+  "hex_gridsize": [
+    24,
+    24
+  ],
+  "hex_reduction": "median, mincnt=1; no interpolation",
+  "coordinate_policy": "fixed geometric metal fraction and upper-minus-lower fraction; no response embedding",
+  "frequency_quantiles": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "scope": {
+    "descriptive_only": true,
+    "causal_claim": false,
+    "performance_filter_applied": false,
+    "hfss_or_training_run": false,
+    "input_discovery": false,
+    "dedup_key": [
+      "measurement_id",
+      "pattern_sha256"
+    ],
+    "duplicate_preference": "nonrepeat_then_explicit_store_and_manifest_order"
+  },
+  "figures": {
+    "geometry_terrain.png": "207b6c02cc81aad9cd0359640d201673f044f0ea7d6383c9e5417a195b44e40f",
+    "frequency_responses.png": "b564553a0c73b31591b78ab0f6f95cbc088c5c44a22d8236c6069be40a0d9c64"
+  }
+}

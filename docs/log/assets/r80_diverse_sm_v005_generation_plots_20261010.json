@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "status": "v005_generation_48_local_plots_verified",
+  "recorded_utc": "2026-10-09T16:01:47.653200+00:00",
+  "recorded_taipei": "2026-10-10T00:01:47.653200+08:00",
+  "artifact_name_date_note": "The 20261010 directory suffix is an artifact name; recorded_utc and recorded_taipei are the actual record times.",
+  "scope": {
+    "local_only": true,
+    "nas_read": false,
+    "hfss_run": false,
+    "training_or_model_change": false,
+    "best_scope": "best among this audited v005 generation of 48 only",
+    "global_best_claim": false
+  },
+  "source_sha256_before_after_equal": true,
+  "sources": {
+    "analysis_json": {
+      "path": "tmp/r80_diverse_v005_generation_truth_20261009_v001/analysis/analysis.json",
+      "sha256": "7e53a295f3b121830bd0f5f11c1b110afa190d3e54e5821b497ce8ab8067a7ba"
+    },
+    "arrays_npz": {
+      "path": "tmp/r80_diverse_v005_generation_truth_20261009_v001/analysis/arrays.npz",
+      "sha256": "b474391c4685de70a8b644bcd516ffeb747df95b1723183b92f9c652fd55a86b"
+    },
+    "tracked_generation_result": {
+      "path": "docs/log/assets/r80_diverse_sm_v005_generation_result_20261009.json",
+      "sha256": "7a49f7a9d9409e98625c5089b55633d46365700fb430e7d21af4355049684176"
+    },
+    "generation_plot_receipt": {
+      "path": "docs/log/assets/round-80/diverse-sm-v005-generation48-20261010-v001/plot_receipt.json",
+      "sha256": "9dc3cfba4dda942a411969fb1f7bb3ea26c612fa6150cf8e910ec2e11fb6e67a"
+    },
+    "best_sample_plot_receipt": {
+      "path": "docs/log/assets/round-80/diverse-sm-v005-best-20261010-v001/sample_plot_receipt.json",
+      "sha256": "64737601b40eea33f9ef7fd1352667a310878958e6e0bcf94b1ad24a176c5d65"
+    },
+    "geometry_terrain_png": {
+      "path": "docs/log/assets/round-80/diverse-sm-v005-generation48-20261010-v001/geometry_terrain.png",
+      "sha256": "207b6c02cc81aad9cd0359640d201673f044f0ea7d6383c9e5417a195b44e40f"
+    },
+    "frequency_responses_png": {
+      "path": "docs/log/assets/round-80/diverse-sm-v005-generation48-20261010-v001/frequency_responses.png",
+      "sha256": "b564553a0c73b31591b78ab0f6f95cbc088c5c44a22d8236c6069be40a0d9c64"
+    },
+    "sample_card_png": {
+      "path": "docs/log/assets/round-80/diverse-sm-v005-best-20261010-v001/sample_card.png",
+      "sha256": "3e4752265611b8f381e58df30cd435dfdf4c29fbdb4ce35b9395870c8a23c8e3"
+    }
+  },
+  "validation": {
+    "exact_id_count": 48,
+    "exact_ids_sha256": "cba565dce29029d19decf18630ac10a69ea3d9a76a73f6395505ca1c965b513c",
+    "exact_lr_symmetric_count": 48,
+    "band_ghz_inclusive": [
+      26.5,
+      29.5
+    ],
+    "band_frequency_count": 7,
+    "direct_npz_wm_count": 48,
+    "direct_npz_matches_analysis_rows": true,
+    "direct_npz_matches_tracked_result_summary": true,
+    "raw_sample_hash_count": 48,
+    "raw_radiation_hash_count": 48,
+    "raw_bindings_sha256": "a28219c28db9b9e9e73a62977502bb6899a65930f28cf1d1c9dbdb87b4548407",
+    "generation_plot_receipt_verified": true,
+    "best_sample_plot_receipt_verified": true,
+    "image_hash_count": 3
+  },
+  "generation_best": {
+    "id": "r80ceec7d671g_00001_7f75af40",
+    "pattern_sha256": "7f75af40a584f05ec518ac9b4cf4ff367528ef2c9d732b6493a38a8defbb9b7c",
+    "s11_margin_db": -0.5889873504638672,
+    "gain_margin_db": -0.6377830505371094,
+    "wm_db": -0.6377830505371094,
+    "label": "v005 generation-48 best; negative WM; not the global best"
+  },
+  "cited_existing_global_best_wm_db": 0.021682262420654297,
+  "producer": {
+    "path": "tmp/r80_diverse_v005_generation_plots_record_20261010_v001/record.py",
+    "sha256": "f852d81bbb339582bec378779faa413e16110c9635b6e5224f54af85b585492b",
+    "numpy_version": "1.26.4"
+  }
+}

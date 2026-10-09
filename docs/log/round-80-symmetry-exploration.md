@@ -985,3 +985,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 沿用原始查詢逐store cutoff重播sample/rad，2,756唯一有效圖形／2,761成功觀測，較22:54增加43；best pattern/sample/rad/WM完全相同。WM+0.0216822624 dB，帶內最差S11−10.0960884 dB／最低Gain4.0216823 dBi，既有獨立重測+0.0364336967 dB，極座標圖繼續適用。[收據](assets/r80_best_status_20261009_2351.json)。23:50精確controller身分通過、scope零警報；v006g01 result entries14/16，v007g01/g02各4/16與1/16，entries不作有效unique計數。SM v007完整核對已完成，下一更新仍running_cycle；保存的三種背景SM對照未採用。未改HFSS、claims、佇列或live模型；多樣探索尚未超過incumbent，排名仍弱，不能宣稱性能穩定改善。R80 5,000及後續R81仍未完成，下一routine00:08。
 
 本次cutoff另有1筆HFSS RPC/watchdog失敗，attempts=1，尚非三次用盡的terminal failure；已排除有效筆數與最佳比較，保留原claim及既有重試流程，於下一健康檢查確認恢復。零scope警報不代表所有個別解算均成功。
+
+
+### 2026-10-10 00:01：v005 多樣SM世代48圖表封存
+
+以既有 symmetry profile 與凍結本機 store 產生本代48筆的幾何地形、頻率響應及單筆樣本圖；一次性本機 recorder 逐一核對48個exact ID、48個金屬圖形左右精確對稱、48組sample/radiation檔案雜湊，並直接由arrays.npz的26.5--29.5 GHz頻帶重算WM，與既有v005 generation結果及兩份plot receipt一致。本代最佳為r80ceec7d671g_00001_7f75af40，WM−0.637783 dB，仍為負值；它只代表本代48筆最佳，非全域最佳，既有全域最佳仍為+0.021682 dB。三張圖雜湊已封存，資料夾名稱日期不替代收據中的實際UTC／台北時間。[薄收據](assets/r80_diverse_sm_v005_generation_plots_20261010.json)、[幾何地形](assets/round-80/diverse-sm-v005-generation48-20261010-v001/geometry_terrain.png)、[頻率響應](assets/round-80/diverse-sm-v005-generation48-20261010-v001/frequency_responses.png)、[本代最佳樣本](assets/round-80/diverse-sm-v005-best-20261010-v001/sample_card.png)。未讀NAS、未執行HFSS／訓練／模型更新，也未修改queue、config或ONGOING。
