@@ -1,0 +1,392 @@
+{
+  "schema_version": 1,
+  "status": "both_fixed_cohorts_dispatched_and_sealed_before_comparative_readout",
+  "phase2_finished_utc": "2026-10-09T23:10:21.850205+00:00",
+  "review_sha256": "4780d8269b47807c5035ddc7635550faac0a1ab4ff2b0430b2cc113e2104ebbb",
+  "review": {
+    "schema_version": 1,
+    "status": "passed_phase2_dispatch_and_combined32_v9_saved_evidence_no_live_access",
+    "reviewed_bindings": {
+      "publisher_source": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\publisher_v9.py",
+        "sha256": "38af0483fa4d15b80fbd910d5b93700cbcf451c2d9054d964935b415d3da5ddb"
+      },
+      "driver_source": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9.py",
+        "sha256": "39d6abe8b76d46b0ed6e51f0b7da8819c0a5a20f34ecb254e2882788a9e16da4"
+      },
+      "driver_static_review": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_review.json",
+        "sha256": "7754cffbe89e97cb8c0c87f1c7ce777666324576ad5423b1ebf8237c2f511b16"
+      },
+      "driver_launch": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_launch.json",
+        "sha256": "5abb075d352bea5ffca91443edb503147a15541eebb9eee303a1f5f8fcd995dd"
+      },
+      "driver_claim": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_claim.json",
+        "sha256": "814a6358236fdcb0ce93645e1709d663c703980e58ee9e4aab2376c3c64f2a73"
+      },
+      "driver_result": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_result.json",
+        "sha256": "f12fdd062330b32cf12e21e936dab51a28e1e2aefa00c32614200f5c50ae8968"
+      },
+      "driver_log": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_log.jsonl",
+        "sha256": "6cb1491e3e5ae46d1e27a7e4f2df7523832114d897b2ea544e1b440a313ba50b"
+      },
+      "predispatch_seal": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\predispatch_cohort_scope_seal_v9.json",
+        "sha256": "5b0211fb6b5ad7910adef8e0296431b2014f29ce13acd69d570a9dcd94cdae59"
+      },
+      "two_dispatch_pretruth_seal": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\readout_seal_v9.json",
+        "sha256": "931db5d8a7f5573c5390f3725e1173b9691870f82ca546197b430cbc09719471"
+      },
+      "phase1_saved_review": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\phase1_dispatch_review_v9.json",
+        "sha256": "e6157fb259a5c960ec4b89e926487e92dfce96ee3ddbca0a5143bdfc7226389b"
+      },
+      "phase1_action": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-01\\action_receipt.json",
+        "sha256": "07fa4c373784e74af7d719d4200ffa060fa2b388b97aaffb1995e94a4d107a9a"
+      },
+      "phase1_capacity_proof": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-01\\capacity-proof-v9-20261009T221517199640.json",
+        "sha256": "c6ed59e6aadf7cd2f95112d9833fd67b73d07e4d3d765c127c41e517fd8699f5"
+      },
+      "phase1_readback": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-01\\dispatch-readback-v9-20261009T221517199640.json",
+        "sha256": "32e25262b51d52bd9bf5d9fd1bdfd36253d93a1696a2141666a7627c821e6697"
+      },
+      "phase2_action": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-02\\action_receipt.json",
+        "sha256": "bd06eee5c52d3880518d35b72e7031d95d8aa1ced76a979ffb8a512a1b29bdcd"
+      },
+      "phase2_capacity_proof": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-02\\capacity-proof-v9-20261009T230141055253.json",
+        "sha256": "7a46d45b098a6ba1fa40294ca6d7f58a40d7e76b040349e6bcab6d6601cbf243"
+      },
+      "phase2_readback": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-02\\dispatch-readback-v9-20261009T230141055253.json",
+        "sha256": "423d2599c5c01d0cdb16a79bc7aa22736dbae3a06f7f3f719204eacf0706111e"
+      },
+      "phase1_manifest": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\shards\\shard-001_input\\manifest.json",
+        "sha256": "47df791f44703b2b0ef8cc619fc0e2fff2cc743f88e1ee40076a3abc61fa41ce"
+      },
+      "phase2_manifest": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\shards\\shard-002_input\\manifest.json",
+        "sha256": "bdd8e2152737f3ad6c0f62c8e0ce30e5ecc08d137f0f628b159496c6247b034e"
+      },
+      "predictions": {
+        "live_predictions_sha256": "0ba0ef29db17988699fa0e801df23ff57d4a74e75e54c723ede5cf7d0c7b3cc5",
+        "current_only_predictions_sha256": "3ce7204ea372331f9a21732a0a626cf79053d872666bec7f98f30a0dc95bd890",
+        "scorer_registry_sha256": "715ee588e1145ac3c0246d544726aae4010f88acdcb4eb1289e785d6ed37e0c3"
+      }
+    },
+    "driver_result_replay": {
+      "status": "dispatch_finished",
+      "phase": 2,
+      "started_utc": "2026-10-09T22:33:16.044581+00:00",
+      "finished_utc": "2026-10-09T23:10:21.850205+00:00",
+      "dispatch_attempts": 1,
+      "automatic_retry": false,
+      "claim_binding_exact": true,
+      "driver_binding_exact": true,
+      "action_after_binding_exact": true,
+      "process_identity_equals_claim": true,
+      "pid_creation_executable_equal_launch": true,
+      "trigger_controller_cim_equals_frozen_contract": true,
+      "trigger_remaining_seconds": 1690.329805999808,
+      "saved_log_event_counts": {
+        "claimed": 1,
+        "static_self_check_passed": 1,
+        "local_poll": 53,
+        "dispatch_started": 1,
+        "dispatch_finished": 1,
+        "failure_timeout_or_retry": 0
+      }
+    },
+    "phase2_dispatch_replay": {
+      "normalized_prepared_action_sha256": "9902d56337117895bc48939a9e0d36e0310ca60daf984c61f168cbdf1c97ea6f",
+      "normalized_action_equals_predispatch_seal_and_capacity_proof": true,
+      "dispatched_action_sha256": "bd06eee5c52d3880518d35b72e7031d95d8aa1ced76a979ffb8a512a1b29bdcd",
+      "only_allowed_postprepare_fields_observed": [
+        "status",
+        "dispatch_gate"
+      ],
+      "dispatch_gate": "passed_per_shard",
+      "selected_count": 16,
+      "selected_unique": 16,
+      "owner_counts": {
+        "current_only": 8,
+        "live": 8
+      },
+      "manifest_order_equals_action_and_predispatch_seal": true,
+      "source_tree_equals_action_plan_and_readback": true,
+      "predictions_saved_before_hfss": true,
+      "selected_truth_read": false,
+      "hfss_started_here": false,
+      "proof_status": "final_locked_capacity_preflight_before_copy",
+      "proof_wait_remaining_seconds": 1564.2134279998081,
+      "proof_controller_cim_and_launch_exact": true,
+      "capacity": {
+        "successful_unique": 3120,
+        "nonterminal_pending_unique": 144,
+        "active_main_all_unique": 0,
+        "active_main_guided_unique": 0,
+        "phase_unique": 16,
+        "global_total": 3280,
+        "global_limit": 5000,
+        "guided_total": 80,
+        "guided_limit": 96
+      },
+      "jobs_before_count": 205,
+      "expected_job_absent_before": true,
+      "jobs_before_sha256": "e6b203805217dd3bb6363e4645bb5275c80bf581515bc72bf3dd03db13390bc3",
+      "jobs_before_native_hash_exact": true,
+      "readback_status": "dispatched",
+      "readback_completed_utc": "2026-10-09T23:10:21.826836+00:00",
+      "action_and_proof_bindings_exact": true,
+      "jobs_after_is_exact_single_append": true,
+      "jobs_after_count": 206,
+      "jobs_after_sha256": "97503e7014e398886ca96236a9da4796df947ffb8d6f433f826bcd4b0d792c1b",
+      "jobs_after_native_hash_exact": true
+    },
+    "combined32_replay": {
+      "reconstruction": "round-robin interleave shard-001 and shard-002 manifests",
+      "selected_count": 32,
+      "selected_unique": 32,
+      "owner_counts": {
+        "current_only": 16,
+        "live": 16
+      },
+      "ids_hashes_and_owners_equal_predispatch_seal": true,
+      "phase1_and_phase2_each_exact_8_plus_8": true,
+      "both_full_prediction_file_hashes_equal_predispatch_seal": true,
+      "scorer_registry_hash_equals_predispatch_seal": true,
+      "model_selection_or_source_changed": false
+    },
+    "two_dispatch_pretruth_seal_replay": {
+      "schema_version": 2,
+      "status": "sealed_v9_after_dispatch_before_truth_read",
+      "action_count": 2,
+      "both_action_bindings_exact": true,
+      "both_dispatch_readback_bindings_exact": true,
+      "planned_jobs_and_source_tree_hashes_equal_reviewed_actions": true,
+      "preparation_manifest_split_scorer_prediction_and_review_bindings_exact": true,
+      "implementation_map_equals_predispatch_seal": true,
+      "selected_truth_read": false,
+      "models_loaded_or_predictions_recomputed": false,
+      "results_or_stores_read": false
+    },
+    "scope": {
+      "saved_local_evidence_only": true,
+      "NAS_access_or_new_queue_scan": false,
+      "live_process_or_controller_query": false,
+      "new_dispatch_or_retry": false,
+      "model_forward_training_or_rescore": false,
+      "HFSS_or_selected_truth_read": false,
+      "seal_cli_rerun_by_reviewer": false,
+      "source_or_evidence_mutation": false
+    },
+    "limits": [
+      "The durable dispatch_finished result, exact claim/action bindings, and saved event log establish a successful one-attempt driver outcome; the driver process exit code itself was not captured.",
+      "The separately observed process-handle terminal state and observer-shell PID 97925 exit 0 are contextual observations, not a driver exit-code claim and are not rebound here.",
+      "This PASS validates saved local evidence and does not independently observe the live NAS queue after either readback.",
+      "No claim is made about HFSS execution, result availability, comparative truth, or downstream performance."
+    ],
+    "blockers": []
+  },
+  "actual_seal_cli_exit_code": 0,
+  "seal_sha256": "931db5d8a7f5573c5390f3725e1173b9691870f82ca546197b430cbc09719471",
+  "seal": {
+    "schema_version": 2,
+    "status": "sealed_v9_after_dispatch_before_truth_read",
+    "preparation_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\preparation_receipt.json",
+      "sha256": "3f5d667236f61bd6a25b6349cfb4f4488c4d1244a0802a155b0f899ea02bfa73"
+    },
+    "prepared_tree": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6",
+      "tree_sha256": "3a66687980e61fdcc9f889696c0a0400280e123f4e2d8c6ebf8c7c84895eb9df"
+    },
+    "publisher_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_review_v9.json",
+      "sha256": "465f1d14e50069a69e6e73789020c1d5a7e8de219f592e8a1394bf8a7d8e942d"
+    },
+    "pool_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\pool_review_v9.json",
+      "sha256": "eca141283f26ec310f9b5ec72d5d8aad318b69ecf3fb6392bec29aba7831e263"
+    },
+    "implementation_sha256": {
+      "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+      "script/dedust.py": "4d203816826ca20179c2ae3a5c345dcc900117d33a671090d896db3c61ece05d",
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+      "script/symmetry_factory_backlog.py": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84",
+      "script/symmetry_factory_cycle.py": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e",
+      "script/symmetry_factory_watch.py": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+      "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/audit_prepared_v7.py": "a9d58a9b1dc9b107aeae65a1494eda6aa56ecfc9b09aa072bfd851aaa3d0b982",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_prepare_guard_config_v6.json": "923c55e610b43e101e5cf96a1af32205b0b4285572df77fd154d0e80d9a75a94",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_prepare_guard_v6.ps1": "019fadc2538735deec508f21482e13ab175c7b36207cca29b5c5ceb77bb4bcd3",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/launch_deferred_prepare_guard_v6.ps1": "ab9f334c55efc55f24b9f62a2005a4d1d014506f2574599e87cc9f5e5330cb65",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_audit_v5.py": "dffe1d6e4f354846aabdaa7506c41def8f178bfd15762b35915d9027c07bf3ac",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_config.json": "b86178a94ea5aba11b0240b2afdb61df59d7de593f10c8dfe96b9a881cccd206",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_logic.py": "6f11b968d9949d5c934a83b026684a10c8a16c30f1131254c7a8888c76133eaa",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/pilot_provenance_v3.py": "04553fe699c07dab8671bf11c85a9564c0d20ce89b543ac102c865c7e000cec8",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/prepare_pilot_v6.py": "cc8cf07d549cfec0fbd0f152c4d8491d5ae6ea39546198681916666d033f8085",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/publisher_v9.py": "38af0483fa4d15b80fbd910d5b93700cbcf451c2d9054d964935b415d3da5ddb",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/scoring_gate_v6.py": "d9658f72abb9121192a558a5c004093fbc9acbaa82afdaaf0926fa8e691a8563",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/seal_readout_v9.py": "d471270f9cc7c74ebd36b571030ac6639bd1527e53c1eaa36c265f601a2ebd3b",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/truth_readout.py": "2a5149ac2960439d25d38c10beef6b520c51c29468866d9026e219ee80ccdcfc",
+      "tmp/r80_currentonly_prospective_pilot_20261010_v001/truth_readout_v9.py": "3d720bbd38c984e87ebcfc9d6398b729f1b1fe929e07f1f6392f599df487ab78",
+      "tmp/r80_currentonly_prospective_review_20261010_v001/deferred_guard_review_v6.json": "a9821a031d6b1a8925eff55f9cf2cee39f9ca8436fa29ac630eb0615d0db60bd",
+      "tmp/r80_currentonly_prospective_review_20261010_v001/scoring_review_v6.json": "cafa8039c1b3cb7357fe74f45919c1ae7acf375ff7f4a6833224d84427f1ad44",
+      "tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+    },
+    "manifest": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\bundle\\manifest.json",
+      "sha256": "a24a1cc22ac1d2acd6a2ac82bbb35745fb188c62211d4bb9b61abe366dc7afc8"
+    },
+    "split_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\shards\\split_receipt.json",
+      "sha256": "946423f8f1d72c6d05213f9b17b5a5e56dea50930bd3c297d375e0ab1b4670e7"
+    },
+    "scorer_registry": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\scorer_registry.json",
+      "sha256": "715ee588e1145ac3c0246d544726aae4010f88acdcb4eb1289e785d6ed37e0c3"
+    },
+    "predictions": {
+      "live_predictions.json": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\live_predictions.json",
+        "sha256": "0ba0ef29db17988699fa0e801df23ff57d4a74e75e54c723ede5cf7d0c7b3cc5"
+      },
+      "current_only_predictions.json": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\current_only_predictions.json",
+        "sha256": "3ce7204ea372331f9a21732a0a626cf79053d872666bec7f98f30a0dc95bd890"
+      }
+    },
+    "actions": [
+      {
+        "binding": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-01\\action_receipt.json",
+          "sha256": "07fa4c373784e74af7d719d4200ffa060fa2b388b97aaffb1995e94a4d107a9a"
+        },
+        "dispatch_readback": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-01\\dispatch-readback-v9-20261009T221517199640.json",
+          "sha256": "32e25262b51d52bd9bf5d9fd1bdfd36253d93a1696a2141666a7627c821e6697"
+        },
+        "cycle_id": "f0b21c1b520e5201f7c47b90ec20550f999f10da398d3919b4cb4b7310ffcacd",
+        "planned_jobs": [
+          {
+            "kind": "g",
+            "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\shards\\shard-001_input",
+            "input": "dedust_r80cf0b21c1bg01_input",
+            "store": "dedust_r80cf0b21c1bg01",
+            "prio": 1,
+            "count": 16,
+            "tree_sha256": "675bbdf3210fac76f03ec23908007fba018073d5544b2c80af3e69997aaf6b45"
+          }
+        ]
+      },
+      {
+        "binding": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-02\\action_receipt.json",
+          "sha256": "bd06eee5c52d3880518d35b72e7031d95d8aa1ced76a979ffb8a512a1b29bdcd"
+        },
+        "dispatch_readback": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-02\\dispatch-readback-v9-20261009T230141055253.json",
+          "sha256": "423d2599c5c01d0cdb16a79bc7aa22736dbae3a06f7f3f719204eacf0706111e"
+        },
+        "cycle_id": "8c708075b8a209249d3e791310beb73c81c2e24febd5780c1178f0467a7139a9",
+        "planned_jobs": [
+          {
+            "kind": "g",
+            "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\shards\\shard-002_input",
+            "input": "dedust_r80c8c708075g01_input",
+            "store": "dedust_r80c8c708075g01",
+            "prio": 1,
+            "count": 16,
+            "tree_sha256": "f43bcc4ff661d4c1443f221817410ec2eadc92c3fb15f90bcc62073063c57563"
+          }
+        ]
+      }
+    ],
+    "selected_truth_read": false,
+    "models_loaded_or_predictions_recomputed": false,
+    "results_or_stores_read": false
+  },
+  "driver_success_result_sha256": "f12fdd062330b32cf12e21e936dab51a28e1e2aefa00c32614200f5c50ae8968",
+  "driver_result": {
+    "action_after": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-02\\action_receipt.json",
+      "sha256": "bd06eee5c52d3880518d35b72e7031d95d8aa1ced76a979ffb8a512a1b29bdcd"
+    },
+    "automatic_retry": false,
+    "claim": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_claim.json",
+      "sha256": "814a6358236fdcb0ce93645e1709d663c703980e58ee9e4aab2376c3c64f2a73"
+    },
+    "dispatch_attempts": 1,
+    "driver": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9.py",
+      "sha256": "39d6abe8b76d46b0ed6e51f0b7da8819c0a5a20f34ecb254e2882788a9e16da4"
+    },
+    "finished_utc": "2026-10-09T23:10:21.850205+00:00",
+    "phase": 2,
+    "process_identity": {
+      "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -B -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9.py\" run",
+      "creation_unix_ms": 1791585193765,
+      "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+      "pid": 31132
+    },
+    "schema_version": 1,
+    "started_utc": "2026-10-09T22:33:16.044581+00:00",
+    "status": "dispatch_finished",
+    "trigger": {
+      "controller_cim": {
+        "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\"",
+        "creation_unix_ms": 1791541659267,
+        "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+        "pid": 15944
+      },
+      "cycle_started_utc": "2026-10-09T22:27:44.947100+00:00",
+      "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+      "status_binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+        "sha256": "3d1d58a05e56f600d95edf2f9391c3f4b911e60eb3a7b68cbe5da782d9cf68bc"
+      },
+      "wait_clock": {
+        "announced_seconds": 1704.0939999998081,
+        "elapsed_seconds": 13.764194,
+        "origin_field": "last_completed_utc",
+        "origin_utc": "2026-10-09T22:59:20.842072+00:00",
+        "remaining_seconds": 1690.329805999808
+      }
+    }
+  },
+  "driver_process_handle_terminal_observed": true,
+  "driver_absent_cim_observed": true,
+  "driver_exit_code_captured": false,
+  "observer_shell_session97925_exit_code": 0,
+  "selected_total": 32,
+  "owner_counts": {
+    "frozen_live_v010": 16,
+    "current_only_v010": 16
+  },
+  "explicit_comparative_truth_readout_complete": false,
+  "main_scorer_adopted": false,
+  "current_main_reported_sm_version": 14,
+  "read_scope_disclosure": "The selection, owner attribution and two prediction sets for all32 were frozen before any HFSS. Capacity/duplicate validation can read completed raw sample/rad files and the live main may learn from early results; this is not an end-to-end raw-unread or training-isolated pipeline. Seal flags describe only the local sealing operation.",
+  "prior_scope_receipt": "docs/log/assets/r80_currentonly_prospective_v010_predispatch_scope_20261010.json",
+  "next_step": "At scheduled health checks inspect terminal markers. Only after both stores are terminal run the already-reviewed truth_readout_v9.py, preserve all32 proposed IDs including failures, and compare the frozen owners without changing selected patterns or predictions.",
+  "latest_full_census_receipt": "docs/log/assets/r80_best_status_20261010_0626.json",
+  "next_routine_health_taipei": "2026-10-10 07:33",
+  "R80_5000_complete": false,
+  "R81_launched": false,
+  "new_NAS_archive_created": false,
+  "validation_script_sha256": "22471c9d931978a6745fb4aba78de95e76618e4e1d6dfae9dd53b4f6b6393961"
+}

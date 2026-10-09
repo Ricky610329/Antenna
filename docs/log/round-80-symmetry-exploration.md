@@ -1194,3 +1194,10 @@ controller exact身分通過、running_cycle、completed18／reported v013；三
 ### 2026-10-10 07:03：SM v014更新與持續工作
 
 主線controller exact身分通過，completed19／reported SM v014，本輪cached valid3101不冒充新的完整census；三個claimed工作13/16、13/16、7/16，最新結果2／1／3分鐘前，scope無警報，新增加兩個guided工作排隊中。第一批對照仍排隊，第二批單次等待器31132在06:59抓到1690秒主線空檔，已進入既有publisher安全交易，07:03尚未看到完成readback；不重新啟動或中止。[健康紀錄](assets/r80_health_20261010_0703.json)。最新完整實測仍為06:27的3086個、WM+.021682；下次routine07:33。
+
+
+### 2026-10-10 07:10：32筆雙scorer對照完成派工與封存
+
+第二批dedust_r80c8c708075g01入列完成，單次等待器保存dispatch_finished，原process handle終止，無stderr；driver獨立exit code未捕捉，不拿observer exit0代替。第二批capacity3280≤5000／guided80≤96，queue205→206精確新增一項。兩批共32筆（frozen-live v010 16／current-only v010 16）的圖形、owner及兩組預測與原派工前seal完全相同；本機seal CLI exit0，獨立保存證據審查通過。[兩批派工與seal](assets/r80_currentonly_prospective_v010_combined32_dispatch_seal_20261010.json)。
+
+這是派工／來源證據里程碑，尚非32筆HFSS完成或current-only性能改善，也未替換主線v014。容量驗證可讀完成raw、主線可使用早期結果的範圍限制保留；不宣稱全流程盲讀，但比較cohort沒有依早期真值改選。等兩store終止後再按既有truth_readout_v9完整回填所有32筆。最新完整census仍為06:27的3086，R80 5000與R81工作繼續；下次routine07:33。
