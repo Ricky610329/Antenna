@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "name": "r80_sm_currentonly_shadow_v006",
+  "status": "predeclared_preparation_only_training_not_launched",
+  "purpose": "Bounded CPU shadow diagnostic of the legacy-prior provenance gap. This is a standard current-only recipe comparison, not a pure causal pretraining-only ablation and not a proposed live-model replacement.",
+  "output_root": "tmp/r80_sm_currentonly_shadow_v006_20261009_v001",
+  "training_workdir": "tmp/r80_sm_currentonly_shadow_v006_20261009_v001/training",
+  "source": {
+    "training_workdir": "tmp/r80_factory_20261007/training_familydev_v1",
+    "data_version": 6,
+    "cumulative_valid_unique": 2641,
+    "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "files": {
+      "measurement.json": "439093feb9f4a49276d24df9972501d48d2c90416b52b40a9edaa826816e7d96",
+      "score_spec.json": "7cd051b4c2523cd7611a874dfdcab7fbb0d2f3d5b223f8adf01e8abf444d006b",
+      "protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "data/data-v006/manifest.json": "e0e288f91f0dd747d94271180de45db60c31caeec32071a31da02732a5c08ad5",
+      "data/data-v006/receipt.json": "4b9041f486d94b0ab9d34427651d9b41cd295c18a2279df91e858d094302d877",
+      "models/data-v006/summary.json": "bb8a4e66c128f077dfa61a109c6a4993d361ba2dcfa7895a67a3adfca9729e27",
+      "models/data-v006/member-0.pt": "4164dcdec01241b2e304ebf1c7fe0f8c6efc7f2b152ff8d5dad0c329d319b1c8",
+      "models/data-v006/member-1.pt": "34e08ff518d3bc041fdf9bfa7db18487589766c6c0f4f17f7c93f973f71ce236",
+      "models/data-v006/member-2.pt": "9d3cb91019104c02e95fb73c82860ceae7592118afde0fd0e02b4724a6d4e6cd"
+    },
+    "live_state_snapshot": {
+      "sha256_at_preparation": "01125bfcfb2e670a6b64b3165d918e72b7f4deeaab02915b74981a77e901250c",
+      "use": "Copy the 299 lineage aliases and frozen v006 chunk history during preparation only.",
+      "launch_gate": false,
+      "reason": "The source state is live and may advance to a later data version; future launch must bind the copied shadow state plus immutable v006 protocol, manifest, receipt, and model metadata rather than require this old live-state hash."
+    }
+  },
+  "shadow_protocol": {
+    "expected_protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+    "only_protocol_value_change_before_protocol_id_recomputation": "model.legacy_epochs: 30 -> 0",
+    "measurement_and_score": "exact source v006 identities",
+    "geometry_profile": "single_v1",
+    "frequencies_ghz": [24.0, 24.5, 25.0, 25.5, 26.0, 26.5, 27.0, 27.5, 28.0, 28.5, 29.0, 29.5, 30.0, 30.5, 31.0, 31.5, 32.0],
+    "split": {"method": "sha256_lineage_threshold_v1", "seed": 20261007, "fraction": 0.2},
+    "development_train_groups": ["c48nq1p05_16"],
+    "reference_protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+    "aliases": {"count": 299, "source_sha256": "94fe680438ca5e1f35df803b7a8653a9c12747bcfcef4e0917704136fb1fff00"},
+    "model": {
+      "ensemble_seeds": [0, 1, 2],
+      "hidden_dims": [512, 512, 256],
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "legacy_epochs": 0,
+      "current_epochs": 100,
+      "fresh_initialization_each_version": true,
+      "early_stopping": false,
+      "normalization": "fit the exact 1773 current profile_train rows only",
+      "group_weights": "existing inverse canonical-group frequency"
+    },
+    "phase_index_difference": "With no legacy phase, current_profile uses phase_i=0 in script.symmetry_training._epoch_order; live v006 used phase_i=1 after legacy_pretrain. Thus minibatch order differs even with the same seed, and the comparison is not a pure one-factor causal estimate of pretraining alone."
+  },
+  "frozen_data": {
+    "manifest_rows": 2641,
+    "profile_train": 1773,
+    "profile_holdout": 868,
+    "sample_files": 2641,
+    "radiation_files": 2641,
+    "copy_policy": "Copy only paths referenced by the v006 cumulative manifest; verify source and destination SHA-256 against source_sample_sha256/source_rad_sha256. Preserve manifest and receipt bytes exactly.",
+    "legacy_registered": false,
+    "warm_start": false,
+    "live_model_files_copied_into_shadow_training_root": false
+  },
+  "prospective_selected32": {
+    "cycle_id": "4b5e0d7e981967e63c52479f78b745caf05091d19866c443ef4d6ba9f2398639",
+    "source_directory": "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/4b5e0d7e981967e63c52479f78b745caf05091d19866c443ef4d6ba9f2398639/guided_bundle",
+    "selected_count": 32,
+    "manifest_sha256": "3c7303f0e0d6e7d6b1e0b537832c3afaa315461261ba7fb6351f31e0799397fd",
+    "factory_bundle_complete_sha256": "ece63758464327a08c1946c8f40ffa64f28927b5f71cad18e2046d8902e566f4",
+    "action_receipt_sha256": "408efecb8c2466ddf2fb23fb8446211e08a75b393626937e8477c5c98054bda9",
+    "saved_live_v006_predictions": "Copy the prospective guided manifest byte-for-byte; it contains the frozen live-v006 curves, scores, model hash, predicted_before_hfss=true, and data-v006 binding.",
+    "required_training_exclusion": "All 32 pattern_sha256 values must be absent from the 2641-row training manifest; preparation rejects any intersection.",
+    "future_shadow_prediction_gate": "After all three shadow members complete, load_current_predictor must save and hash all 32 shadow curves and existing-scorer outputs before any evaluator opens an HFSS truth artifact. This is held-label-unread prediction generation; the queued HFSS work may already be physically running or complete.",
+    "timing_distinction": "The copied live-v006 predictions are prospective and carry predicted_before_hfss=true. New shadow predictions must not claim predicted_before_hfss; their allowed claim is saved before shadow evaluator truth read.",
+    "truth_policy": "Do not copy, inspect, or bind completed result stores during preparation or prediction generation."
+  },
+  "predeclared_evaluation": {
+    "no_tuning_or_early_stop_on_results": true,
+    "same_868_profile_holdout": {
+      "metrics": ["full_vector_mae", "s11_mae", "gain_mae", "phi0_mae", "phi90_mae"],
+      "actual_wm": "min(-10-max(actual S11[26.5:29.5]), min(actual Gain[26.5:29.5])-4)",
+      "prediction_score_definitions": {
+        "wm_of_ensemble_mean": "Apply WM once to the ensemble-mean response curve.",
+        "factory_score": "Use script.symmetry_sm_pool._score_rows with the frozen PoolConfig; this is the mean of per-member WM values and is not generally WM of the ensemble mean.",
+        "lcb_score": "Use the same existing scorer and frozen PoolConfig uncertainty penalty."
+      },
+      "rank_metrics": [
+        "Spearman(wm_of_ensemble_mean, actual_wm)",
+        "Spearman(factory_score, actual_wm)",
+        "Spearman(lcb_score, actual_wm)"
+      ],
+      "classification_diagnostics": [
+        "false predicted positive counts for wm_of_ensemble_mean > 0",
+        "false predicted positive counts for factory_score > 0",
+        "false predicted positive counts for lcb_score > 0"
+      ],
+      "comparison": "Report shadow beside the already-frozen live-v006 summary; do not select a model from this holdout."
+    },
+    "same_selected32": {
+      "metrics_when_truth_becomes_available": ["s11_mae", "gain_mae", "phi0_mae", "phi90_mae", "full_vector_mae", "wm_of_ensemble_mean_vs_actual_wm_spearman", "factory_score_vs_actual_wm_spearman", "lcb_score_vs_actual_wm_spearman", "false_predicted_positive_counts"],
+      "comparison": "Shadow predictions versus frozen live-v006 predictions on identical pattern order and immutable pattern hashes."
+    },
+    "claim_limit": "Current-only removes the unmatched legacy prior as a bounded diagnostic. Holdout MAE alone cannot authorize switching the live model, and any result remains confounded by the phase-index minibatch-order change."
+  },
+  "execution_policy": {
+    "preparation_only_now": true,
+    "training_launched": false,
+    "prediction_or_rescore_run": false,
+    "future_cpu_threads": 4,
+    "gpu": false,
+    "hfss": false,
+    "nas": false,
+    "live_controller_or_queue_mutation": false,
+    "implementation": "Reuse script.symmetry_training.train_version and load_current_predictor without source edits."
+  },
+  "implementation_bindings": {
+    "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+    "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+    "configs/r80_family_development_training_v1.json": "97326946ab7ddcf22a01a2721110b3724dc531fafedab343b7e13cc59cd95f4a",
+    "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095"
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "status": "fixed_current_only_shadow_prepared_and_reviewed_not_yet_launched",
+  "config": {
+    "path": "configs/r80_sm_currentonly_shadow_v006.json",
+    "sha256": "226427082ce283a318ee51cdb3d666d895dc9cf877234c238806cd6933b0c1bf"
+  },
+  "preparation_receipt_sha256": "3ff95432da42dcb3c15668b788d4e7f911e8f80d6ecd9b89fcaa0aad2d880a8b",
+  "correction_receipt_sha256": "72cc1ffa6d9165276477231d94477206d1310f0bc6fafd20d8aaa543f905d877",
+  "independent_review_sha256": "a1a580e94739f0f8437f5cf5360eaba1e7d03bfe6b27711cc810d3f72c000eab",
+  "independent_review": {
+    "schema_version": 1,
+    "status": "passed",
+    "scope": "Read-only local preparation audit; no training, prediction, rescore, HFSS truth, NAS, queue, model, or live-controller access.",
+    "helper": {
+      "path": "tmp/r80_sm_currentonly_shadow_v006_independent_20261009_v001/review.py",
+      "sha256": "03e4575393189cdf8426d1ea93c8ed15885e595f468283a2fe51c15dfb6e4652"
+    },
+    "artifact_sha256": {
+      "config": "226427082ce283a318ee51cdb3d666d895dc9cf877234c238806cd6933b0c1bf",
+      "prepare": "2fc15b0a1b869a1a1b29c002985e5677cfd96442649a3cf5ee1ce570e531991c",
+      "train": "9c13ba502713486c7ad00709015c780a241264b4b49ad1b86c8c4dd94dd872a6",
+      "receipt_v1": "3ff95432da42dcb3c15668b788d4e7f911e8f80d6ecd9b89fcaa0aad2d880a8b",
+      "receipt_v2": "72cc1ffa6d9165276477231d94477206d1310f0bc6fafd20d8aaa543f905d877"
+    },
+    "data": {
+      "rows": 2641,
+      "profile_train": 1773,
+      "profile_holdout": 868,
+      "unique_ids": 2641,
+      "unique_patterns": 2641,
+      "train_hold_id_pattern_and_canonical_group_leakage": 0,
+      "copied_cache_files_verified": 5282,
+      "sample_files_verified": 2641,
+      "radiation_files_verified": 2641,
+      "manifest_sha256": "e0e288f91f0dd747d94271180de45db60c31caeec32071a31da02732a5c08ad5",
+      "receipt_sha256": "4b9041f486d94b0ab9d34427651d9b41cd295c18a2279df91e858d094302d877"
+    },
+    "protocol": {
+      "source_protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "shadow_protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+      "only_protocol_value_change": "model.legacy_epochs: 30 -> 0",
+      "ensemble_seeds": [
+        0,
+        1,
+        2
+      ],
+      "legacy_epochs": 0,
+      "current_epochs": 100,
+      "fresh_initialization_each_version": true,
+      "expected_train_only_normalizer_tensor_sha256": {
+        "input_mean": "835913c6832148cfc2528a053f00876f1c39e195a7673f02aac679aef4797291",
+        "input_std": "6df80b0019c8ab65421c0ab49514e352fb937adcb8bafa2fd17f6ea0a7a24e24",
+        "target_mean": "dd7968f31e9f20f2a864c660d99666fea1143a89f4eb5ae41ca9d19c579337ea",
+        "target_std": "8934aa0c7cd0bed7e4bf017236778567c17ee71e14d1721ef1f445ca1aa771d2"
+      }
+    },
+    "selected32": {
+      "count": 32,
+      "training_pattern_overlap_count": 0,
+      "manifest_sha256": "3c7303f0e0d6e7d6b1e0b537832c3afaa315461261ba7fb6351f31e0799397fd",
+      "live_prediction_flag": "predicted_before_hfss=true on copied live-v006 rows",
+      "future_shadow_prediction_claim": "held-label-unread only; must not claim predicted_before_hfss"
+    },
+    "execution": {
+      "training_launched": false,
+      "models_present": false,
+      "predictions_generated": false,
+      "rescore_run": false,
+      "nas_or_queue_access": false,
+      "hfss_access": false
+    },
+    "scientific_limit": "The current-only phase uses phase_i=0 while live v006 used phase_i=1, changing minibatch permutations. This is a standard current-only recipe comparison, not a strict causal pretraining-only test. Holdout MAE cannot by itself authorize deployment.",
+    "checks": {
+      "v2_scorer_reference_correction_chain": true,
+      "exact_v006_manifest_receipt_and_all_cache_hashes": true,
+      "exact_1773_868_roles_without_leakage": true,
+      "current_only_protocol_new_id_and_only_intended_value_change": true,
+      "fresh_three_seeds_and_train_only_norm_semantics": true,
+      "selected32_absent_from_training2641": true,
+      "live_and_future_shadow_prediction_timing_labels_distinguished": true,
+      "source_state_treated_as_preparation_snapshot_not_future_gate": true,
+      "no_training_models_predictions_truth_or_runtime_access": true
+    }
+  },
+  "shadow": {
+    "copied_cache_files": 5282,
+    "data_version": 6,
+    "legacy_directory_present": false,
+    "lineage_alias_count": 299,
+    "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+    "manifest_sha256": "e0e288f91f0dd747d94271180de45db60c31caeec32071a31da02732a5c08ad5",
+    "model_directory_present": false,
+    "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+    "protocol_sha256": "4e11801c6d54d7c3b138b6f56498b3d2124dc40acad6291982bafa551847eabb",
+    "radiation_files": 2641,
+    "receipt_sha256": "4b9041f486d94b0ab9d34427651d9b41cd295c18a2279df91e858d094302d877",
+    "roles": {
+      "profile_holdout": 868,
+      "profile_train": 1773
+    },
+    "rows": 2641,
+    "sample_files": 2641,
+    "state_sha256": "65822c637ed69b7250666542c4eef48f4c1dd8bc15d21da1f164c8fd617e8cc1",
+    "training_workdir": "tmp/r80_sm_currentonly_shadow_v006_20261009_v001/training"
+  },
+  "footprint": {
+    "cache_bytes": 21543836,
+    "estimated_final_bytes": 53304703,
+    "estimated_three_checkpoint_bytes_using_live_v006_sizes": 27808416,
+    "metadata_bytes": 3307311,
+    "prepared_bytes_before_receipt": 25296287,
+    "prospective_bundle_bytes": 433942
+  },
+  "selected32_pattern_overlap_with_training": 0,
+  "train_entry_sha256": "9c13ba502713486c7ad00709015c780a241264b4b49ad1b86c8c4dd94dd872a6",
+  "root_run_entry_sha256": "a1444e9bf3e918e240d31b93842d289719c5b7604447a7f0d2b1b9af372977f8",
+  "root_comparison_helper_sha256": "599d2c4b1abfa8316f339591c7c00e34448c8611791346987da8da0690ee7e7c",
+  "limits": [
+    "Current-only diagnostic, no live model replacement.",
+    "Same100current epochs; no legacy phase also changes phase-index minibatch order.",
+    "Future shadow predictions are saved before evaluator truth read, not necessarily before physical HFSS.",
+    "No performance result exists at this preparation milestone."
+  ]
+}

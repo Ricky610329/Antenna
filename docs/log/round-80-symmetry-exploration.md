@@ -908,3 +908,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-09：v006三fresh SM與32筆私人派工核對
 
 原cycle21:56:01完成，新增63／fit2,641，原2,578列完全保留；effective train1,773／hold868，c48 development125。Root從實體train重建四norm tensors、核對三fresh legacy30＋current100及Adam各3,800步，32保存預測重播最大5.409e−6<2e−5。[薄收據](assets/r80_diverse_sm_cycle_v006_20261009.json)。獨立Sol一次重播凍結20k完整幾何／SHA／排名／strict round-robin greedy：配額11／11／10、23家族／cap2、minHamming84、32親本／31家族；兩片本機staged16與root實讀私人NAS兩片40-file tree／唯一prio1 queue完全吻合。guided待跑52再補32≤96，不變更容量政策。這32筆真值未完成，不以模型更新宣稱性能提升。fit2,641、dispatch截點2,652、22:09全量查詢2,675分開；維持原controller、worker及約30分钟routine。R80 5,000與R81仍未完成。
+
+
+### 2026-10-09：固定current-only背景SM對照，啟動前記錄
+
+針對legacy量測來源局限，固定[配方](../../configs/r80_sm_currentonly_shadow_v006.json)及[備料／獨立審查](assets/r80_sm_currentonly_shadow_prepared_20261009.json)：相同v006的2,641資料、1,773 train／868 hold、三fresh seeds0/1/2、架構512/512/256、batch128／lr0.001／current100，只取消legacy30，不讀新HFSS真值。所有5,282凍結sample/rad SHA與split/alias核對，32選樣皆不在training manifest；約25.30MB備料。獨立審查通過。新current phase index0取代原1，epoch permutation也改變，因此是標準current-only診斷，不是嚴格只改預訓練的因果實驗。固定868評估曲線MAE及WM-of-mean／member-mean factory／LCB的三種rank，另保存32新shadow預測再讀真值；不得沿用live的predicted_before_hfss=true。只用4 CPU threads及既有trainer，不改controller/queue/NAS、無HFSS或GPU、不以holdout誤差單獨採用模型。此記錄在training之前，尚無性能結果。
