@@ -1072,3 +1072,10 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 dfb6fe6固定配方後只執行一次CPU session53209，exit0；02:40:47.656–02:41:24.486／36.829877秒。三fresh CurveMLP seeds0/1/2、current100／phase0、Adam各1,600；三model state不同、每member770,008 finite參數及8個finite/nonzero optimizer moment states。Independent helper以1,944 frozen training sample/rad pairs（不含holdout）重算625input／216target四normalization tensors，與三checkpoint逐位相同；live三models+summary與整個liveinventory／currentnonmodelinventory不變。[結果與hashchain](assets/r80_currentonly_prospective_v010_training_20261010.json)。
 
 Existing trainer自身會做holdout forward產summary；此刻不獨立重算或解讀summary MAE，independent model audit不forward、不讀NAS、沒有future20k prediction/派工。第一audit helper在development-policy label expectation停止且沒有report，修正metadata expectation後通過，沒有重訓。下一stage只在精確review/model/source gate通過後做同池兩scorer排名；futurepublish/readout仍另review，原live與LOW不改。這不是新HFSS最佳或prospective性能結論。03:08routine；R80 5000/R81未完成。
+
+
+### 2026-10-10 03:08：三台新結果／原主線健康
+
+原PID15944／creation／argv／launch通過，scope零警報。02:38結果15分鐘前的v009 g03現在13/16、最新1分鐘；另外兩片v010 g02/g03為5/16與4/16，最新2/1分鐘；兩新guided片與五LOW片待跑。這是有進度的正常工作，沒有stale停機，不重啟worker／刪claim。[健康](assets/r80_health_20261010_0308.json)。controller completed13／reported v010，entries與watch cutoff不當成新的有效unique census。
+
+v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer20k準備入口獨立review通過，尚未predict或dispatch。因健康時間通常落在主線running階段，準備一個只讀本機waiting狀態、單次觸發CPU排名的背景guard；原v1把long cycle下一deadline誤當start+1800，在任何launch前被root／independent review拒絕並保留，窄修需與現有next_cycle_in_seconds契約一致。這不影響原main／LOW／worker。最新全量仍02:20的2,879及最佳+.021682；下一routine2026-10-10 03:38，R80/R81未完成。

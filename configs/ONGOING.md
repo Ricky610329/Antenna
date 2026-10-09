@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **03:08 routine健康通過**：原controller exact／running_cycle，三台claimed近期有結果／scope零警報；completed13、reported v010。[健康](../docs/log/assets/r80_health_20261010_0308.json)。02:38結果較久的那片已推進到13/16、最新1分鐘，未重啟／清claim；v010 current-only CPU已完成，雙scorer同池準備review通過但未prediction／派工。背景一次性guard的窗口計算已在launch前發現需窄修，保留原版，原main／LOW繼續。全量仍02:20的2,879／+.021682；下一routine2026-10-10 03:38，R80/R81未完成。
+
 - **v010前瞻對照SM實際CPU訓練完成**：dfb6fe6固定後單次session53209 exit0，02:40:47–02:41:24／36.830秒；三fresh seeds100epochs／Adam各1600，independent1944rawtrain-only normalization逐位吻合、有限參數／nonzero moments、兩frozen來源不變。[模型收據](../docs/log/assets/r80_currentonly_prospective_v010_training_20261010.json)。未做candidate pool prediction／NAS／HFSS派工，future scoring/publish另review；不把訓練完成當性能改善。下一routine03:08，全量仍02:20的2,879／+.021682。
 
 - **02:38健康與v010有限前瞻對照準備通過**：原controller exact／running_cycle，三台claimed／scope零警報（結果最新2／15／2分鐘），未重啟／清claim。[健康](../docs/log/assets/r80_health_20261010_0238.json)。固定同2,840 frozen資料／1944train896hold、同20k候選池、16live+16current-only／joint Ham64／cap2，五窄邏輯測試及独立inventory/pretrain review通過；先固定commit再單次CPU，不自動採用。[準備](../docs/log/assets/r80_currentonly_prospective_v010_prepared_20261010.json)。尚未train/predict/dispatch，futurepublish需另review；global cap5000和guided96不變。最新全量仍02:20的2,879／+.021682；下一routine03:08，R80/R81未完成。
