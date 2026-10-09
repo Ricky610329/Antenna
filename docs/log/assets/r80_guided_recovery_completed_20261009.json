@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "status": "actual_first_recovery_cycle_and_dispatch_verified",
+  "recorded_utc": "2026-10-09T00:52:13.175785+00:00",
+  "launch_commit": "ae63e1ffba452beddf3d97d8dcfae54a628d7275",
+  "process_id": 54712,
+  "creation_unix_ms": 1791505204815,
+  "launch_id": "b126f3badf3649a9bc9c4ea0f28ab37f",
+  "cycle_id": "034683bd54146648d99c3bafcda890bab9e892572def5fe8856516f6ff773191",
+  "first_completed_utc": "2026-10-09T00:35:28.811609+00:00",
+  "receipt_sha256": "437b3773a5b960deaea380cdb4a05b2ccbc26f764e3cf9d6a9df6416dcbd082d",
+  "cutoff_valid_unique": 1950,
+  "target_valid_unique": 5000,
+  "sm_data_version": 29,
+  "sm_fit_valid_unique": 1851,
+  "guided_count": 16,
+  "guided_store": "dedust_r80c034683bdg01",
+  "guided_priority": 1,
+  "canonical_bundle_unchanged": true,
+  "canonical_shard_unchanged": true,
+  "three_v029_models_unchanged": true,
+  "nas_input_tree_matches_original_shard": true,
+  "nas_queue_row_verified": true,
+  "dispatch_gate": "passed_per_shard",
+  "scoped_health": {
+    "exit_code": 0,
+    "alarms": 0,
+    "claimed_jobs": 3,
+    "guided_successes": 2,
+    "guided_claimed": true,
+    "queued_low_shards": 2
+  },
+  "limits": [
+    "1950 is the recovered cycle cutoff, not a new current-time exhaustive query.",
+    "Model29 fit1851 differs from the physical cutoff1950; completed model bytes were reused.",
+    "Read-only actual bundle/input/queue and receipt verification; no new SM fit, model forward, HFSS, worker restart or live lock.",
+    "No new best-WM or scientific improvement claim; R80/R81 goals remain incomplete."
+  ]
+}

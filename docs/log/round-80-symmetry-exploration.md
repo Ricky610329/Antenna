@@ -554,3 +554,10 @@ python -m script.figs.symmetry_profile --analysis-json "$archive\analysis\analys
 修補`ae63e1f`已push GAN；逐檔核對10個source／launcher binding與164個原runtime前提後，08:20:04只啟動一個hidden controller PID54712（creation1791505204815）。[實際啟動收據](assets/r80_guided_recovery_launch_20261009.json)記錄新launch=`b126f3badf3649a9bc9c4ea0f28ab37f`，新attempt完整保存原failed watch status及原SHA；已觀測進入`running_cycle`、stderr空白。沿用原settings／profile／protocol／training_v2，不刪active cycle、已完成16筆候選或claims，不新增本機HFSS。
 
 此次啟動核對只證明精確owned行程與恢復開始；第一輪prepared／dispatch／completed尚待實際確認，不先宣稱修復已完成派工。08:20私人scoped status exit0、無警報，三個claimed jobs為13/16、6/16、7/16，最新結果8／0／0分鐘前，另有三片LOW待跑。這是結果／claim活動證據，不等於遠端OS／runtime Git稽核。主線30分鐘與LOW90秒自動迴圈保持原設定，下一routine健康約08:50；沒有worker／HFSS重啟，亦無新的最佳WM查詢或私人歸檔。
+
+
+### 2026-10-09 08:52：首輪實際恢復完成，原16筆已進HFSS
+
+新controller同一PID54712／creation／command仍live。08:35:28原訓練cycle完成為`dispatched`、`dispatch_gate=passed_per_shard`，仍派原16筆prio1 store `dedust_r80c034683bdg01`；沒有重建或覆寫原canonical／分片，三份v029模型SHA均與失敗前相同。[完成派工核對收據](assets/r80_guided_recovery_completed_20261009.json)再以supported profile驗證NAS實際16筆input，整棵tree SHA與原local分片完全一致，queue只有一條相符的scope／input／priority row。此核對無model forward、新訓練或live鎖。
+
+恢復輪次的實體cutoff為1,950有效唯一，SM v029仍fit1,851；不將兩者混成即時累計或模型進步。08:50 scoped health無警報，三個claimed jobs持續工作，該guided job已有2/16實測，另有兩片LOW待跑；watch首輪completed=1、無deferred或error，stderr空白。下一主線仍按原30分鐘更新，新真值達門檻後才更新SM；LOW90秒補池維持原設定。不重啟worker，下一routine健康約09:20，不追加例行全量raw／模型重播；沒有新的最佳WM或性能改善宣稱。
