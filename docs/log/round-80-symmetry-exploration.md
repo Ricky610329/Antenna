@@ -719,3 +719,13 @@ v033對舊anchor預測WM分數−11.847624，與實測−0.246441差−11.601184
 方案參考`docs/memory/project_sm_training_redesign.md`的歷史單筆fit遺忘問題、`script.train_sm_offline`／`script.sm_reanchor`的累積真值／replay做法及既有scoped訓練API；不另建模型框架。新family資料不拿來驗證新模型，剩餘舊holdout亦僅作描述性的回歸監看；新候選須在HFSS真值前鎖定模型／pattern／predictions，未知家族泛化需另凍結整group驗證範圍。固定六欄checkpoint binding維持，protocol_id與manifest_id分別綁定新的角色政策及資料證據。
 
 Conductor已核對實際v2設定及方案來源；實作在`tmp/r80_sm_development_worktree_20261009_v001`的隔離worktree進行，live GAN來源／PID54712／settings未改。訓練功能與local frozen migration utility分工、generated-fixture測試及獨立審查尚在進行，沒有實際新模型或controller切換。新工作根的watch鎖不能阻止舊watcher同時存在，因此只能在舊cycle完成後正常停止精確舊controller，再整合live程式及啟動新watcher；worker／queue／claims／raw不變，已消耗的v2-bound pilot request不可沿用。此配方先commit，實際migration、training及activation另記收據，不以計畫當完成。
+
+### 2026-10-09 15:07：最新最佳樣本渲染（含兩次觀測註記）
+
+依使用者要求重新查詢並渲染。目前查詢截點共**2,308個唯一成功pattern／2,313次成功觀測**；沿用原唯讀query，逐一重播raw，沒有取得controller鎖或更動queue。各store使用各自保存的截點，查詢完成後的新結果不計入。唯一pattern優先保留非repeat代表，最佳仍為`r80localv1_00026_f6ffb938`，原次WM **+0.021682 dB**。另外已核對的一次獨立重跑WM **+0.036434 dB**，兩次均正，但餘裕很小；不聲稱連續頻率、網格獨立或多次穩定達標。
+
+![最新最佳對稱金屬圖樣：原次S11／Gain與28GHz極座標方向圖，原次及一次獨立重跑皆正WM](assets/round-80/best-symmetric-polar-20261009-v003/sample_card.png)
+
+沿用`script.figs.symmetry_profile`及歷史`polar_rad_ax`出圖，只新增可選的觀測狀態文字，預設文字及原曲線處理保留。這張图呈現原次響應，註記明示已有兩次正WM觀測，避免沿用舊圖「尚未重測」文字。金屬精確LR鏡射；場型鏡射殘差仍為phi0=0.102705、phi90=0.027582，沒有宣稱場型完全對稱。
+
+[排名與驗證收據](assets/round-80/best-symmetric-polar-20261009-v003/best_query_receipt.json)及[出圖收據](assets/round-80/best-symmetric-polar-20261009-v003/sample_plot_receipt.json)綁定query、raw、analysis／NPZ、renderer／helper及PNG SHA。另以float64重算帶內WM並核對金屬鏡射與固定饋線；目檢中文、曲線與極座標legend可讀。此次原始查詢凍結保存在本機ignored資料夾，未另建立NAS封存；Git保存圖卡與薄收據。既有LOW補池、SM批次更新及30分鐘例行健康檢查維持，新家族學習版本仍在隔離審查，未切換live controller。

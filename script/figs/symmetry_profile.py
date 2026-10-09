@@ -149,7 +149,8 @@ def render(analysis: Path, npz: Path, out: Path) -> dict:
     return receipt
 
 
-def render_sample(analysis: Path, npz: Path, out: Path, sample_id: str) -> dict:
+def render_sample(analysis: Path, npz: Path, out: Path, sample_id: str,
+                  observation_note: str = '單次 HFSS 模擬；尚未重測驗證') -> dict:
     """Render one explicit, hash-bound profile observation without NAS discovery."""
     summary, data = _load(analysis, npz)
     indices = np.flatnonzero(data['ids'] == sample_id)
@@ -208,7 +209,7 @@ def render_sample(analysis: Path, npz: Path, out: Path, sample_id: str) -> dict:
               f'φ=90° 鏡射功率殘差 = {row["phi90_mirror_power_45"]:.6f}\n\n'
               '場型殘差計算範圍：±45°，0 越對稱\n'
               '帶內 spec：26.5–29.5 GHz\n'
-              '單次 HFSS 模擬；尚未重測驗證',
+              f'{observation_note}',
               va='top', fontsize=10, linespacing=1.25, color=INK)
     theta = data['radiation_theta_deg']
     if not np.array_equal(theta, -theta[::-1]):
@@ -260,7 +261,8 @@ def render_sample(analysis: Path, npz: Path, out: Path, sample_id: str) -> dict:
                                   'window_deg': 45, 'reference_drop_db': 3,
                                   'display_clipped_below_rmin': clipped},
                'producer_sha256': _sha(Path(__file__)), 'figure_sha256': _sha(paths[0]),
-               'scope': 'one explicit frozen single HFSS solve; pixel view, frequency responses and GainTotal cuts; no repeat certification'}
+               'scope': 'one explicit frozen single HFSS solve; pixel view, frequency responses and GainTotal cuts; no repeat certification',
+               'observation_note': observation_note}
     paths[1].write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     return receipt
 
@@ -271,9 +273,12 @@ def main() -> None:
     parser.add_argument('--data-npz', type=Path, required=True)
     parser.add_argument('--out-dir', type=Path, required=True)
     parser.add_argument('--sample-id', help='render one frozen sample card instead of population plots')
+    parser.add_argument('--observation-note', default='單次 HFSS 模擬；尚未重測驗證',
+                        help='explicit observation status shown on the sample card and saved in its receipt')
     args = parser.parse_args()
     if args.sample_id:
-        result = render_sample(args.analysis_json, args.data_npz, args.out_dir, args.sample_id)
+        result = render_sample(args.analysis_json, args.data_npz, args.out_dir, args.sample_id,
+                               args.observation_note)
     else:
         result = render(args.analysis_json, args.data_npz, args.out_dir)
     print(json.dumps(result, ensure_ascii=False))
