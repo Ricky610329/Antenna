@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "status": "offline_readout_preparation_only",
+  "observed_utc": "2026-10-09T04:26:25.515418+00:00",
+  "helper_sha256": "ea0991eea4f5babcb252c88107731c96119de94d16358085fa40e18256874599",
+  "base_helper_sha256": "6534dda121453bbefdce1581e38e7ccffa576d080522099bd6c97d069b105f2b",
+  "tests_sha256": "c13b38495013f6c3e4eb094e726e62dfc04d2fdd364dad538ed73e1b9814afc2",
+  "implementer_tests": 11,
+  "conductor_tests": 11,
+  "actual_trial_outcomes_read": false,
+  "fixtures": "Synthetic32 negative responses/radiation using fixed selected patterns; not HFSS truth.",
+  "requires": "Both final dispatched receipts and all32 successful frozen raw observations under exact R80 profile.",
+  "source_libraries": {
+    "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+    "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+    "script/symmetry_analysis.py": "945b20ce399dab5dbf18e659d34d1860c28d5c5c21c0627d44c5ab5195e58571",
+    "script/symmetry_factory_cycle.py": "d7e8df31a4ea603fab957086a516f65dbd64355e64733755ee8a5aeb205aafef"
+  },
+  "no_live_lock_or_queue_mutation": true,
+  "private_archive": {
+    "destination": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\local_variations\\readout_handoffs\\selected32_final_dispatch_v002_20261009",
+    "payload_files": 93,
+    "published_files": 94,
+    "payload_bytes": 1384437,
+    "manifest_sha256": "ef9a5f44bfd13c47c3c2afa263373d34bc8012a76840b64e852dbbe42b08ee27",
+    "all_sha256_read_back": true
+  },
+  "limitations": [
+    "No actual32 cohort result or HFSS improvement is claimed.",
+    "Correlations apply only to selected32; canonical family remains touched profile_holdout.",
+    "The v1 prepared-phase helper is historical dependency only; real invocation uses v2 with both final archived dispatched receipts."
+  ]
+}

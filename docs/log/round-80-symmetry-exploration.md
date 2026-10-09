@@ -610,3 +610,9 @@ Conductor與獨立Sol全池座標／hash／feed／mirror／Hamming／排重／�
 原prepared歸檔與首片歸檔保留不改；第二片29檔（28個payload加manifest）另存本人私人`local_variations/dispatch_handoffs/incumbent_radius12_sm_v001_20261009_phase02_v001`，逐檔SHA讀回一致。主線沒有重啟，HFSS及SM訓練分割未改；固定anchor與v031相對排名、約11.92 dB絕對校準誤差及同家族holdout限制仍適用。全部32筆終態後才重播sample／rad與固定anchor比較，不把入queue或預測值當成改善。
 
 12:08完成的controller實體cutoff為2,146有效唯一；v032累積納入2,114筆profile真值（本版新增85），歷史先驗另計，兩者不混為即時累計。11:58有效scope健康檢查有三個claimed工作、最新結果1–2分鐘前，局部首片進度metadata為14／16、無警報；健康指令以UTF8讀settings並先確認私人`jobs.json`存在。PID54712／launch未變，主線1800秒、LOW90秒與48筆新有效唯一更新門檻照原設定運作。下一routine健康約12:28；沒有新最佳WM或32筆HFSS結果宣稱，R80／R81仍未完成。
+
+### 2026-10-09 12:27：固定32筆的離線判讀器完成備料
+
+[離線判讀備料收據](assets/r80_local_variation_readout_ready_20261009.json)綁定final-dispatch v2 wrapper、既有metric／mirror／Spearman函式及兩片最終immutable receipt。兩片均須`dispatched`，16＋16筆sample／rad全部成功重播、profile／pattern／family／rank一致且raw／metadata在讀取前後不變，才輸出WM最大值、超過固定anchor的比例及選中32筆的預測／實測相關；partial／failed不能當完整試驗。準備版v1對第二片prepared receipt的綁定已由新v2覆蓋，原v1與證據不改；v2明確拒絕舊prepared收據。
+
+Conductor source review及11項本機synthetic fixture測試通過；Sol implementer另11項通過，不宣稱額外獨立審查。沒有讀取這32筆實際結果或改主線／queue／訓練。helper、tests、synthetic fixture、固定輸入與final receipts等94檔（含manifest）、payload1,384,437 bytes封存本人私人`local_variations/readout_handoffs/selected32_final_dispatch_v002_20261009`，逐檔SHA讀回一致；所有fixture均標示非HFSS真值。一次發布preflight因兩份測試收據schema欄位不同而在建立stage／NAS前退出，修正schema核對後才發布，原失敗保留。此里程碑僅證明判讀備料完成，沒有新性能結果。
