@@ -580,3 +580,15 @@ python -m script.figs.symmetry_profile --analysis-json "$archive\analysis\analys
 ```powershell
 python -m script.figs.symmetry_profile --analysis-json tmp/r80_best_render_20261009_v001/analysis/analysis.json --data-npz tmp/r80_best_render_20261009_v001/analysis/arrays.npz --sample-id r80c91d71565g_00019_5a42476c --out-dir docs/log/assets/round-80/best-symmetric-polar-20261009-v002
 ```
+
+### 2026-10-09 10:30：最佳附近完整d1／d2掃描，SM排名32筆已備妥
+
+依使用者新指示，以目前最佳單次WM −0.246440887 dB的圖樣做局部暴力變動。25×13獨立半格共325格，固定下緣中心饋線後有324可變格；完整列舉d1=324、d2=52,326，共52,650個精確左右金屬對稱pattern。原15+1未先由SM排序的陰性pilot保留，這次是另外一個前瞻批次。
+
+[備料／私人歸檔薄收據](assets/r80_local_variation_prepare_20261009.json)綁定推論前固定的recipe／addenda、v031三個實體模型、排重cutoff及全池分數。凍結排除集合含2,192既有或預留pattern，包括主線準備的48筆；排除15個局部重複後，實際用v031評分52,635個。相對同模型anchor，LCB通過20,641、預測WM均值通過30,154，兩者共同通過20,067；按既有LCB（WM成員均值−成員SD＋0.2截限radiation窗margin）遞減、SHA打破平手，取前32，不放寬門檻或補盲選。全32均為d2、實體25×25 Hamming=4；兩片各16沿用既有round-robin分片，第一片是全域奇數名次，第二片是偶數名次。
+
+**只驗證相對排序假說，不把SM改善當HFSS改善。** v031對anchor的預測WM均值−12.161608060 dB，而實測−0.246440887 dB，誤差−11.915167173 dB；anchor LCB−12.054056993。前32預測WM為−10.972058至−10.347322、LCB為−10.719801至−10.463047，絕對數值明顯未校準。anchor家族`c48nq1p05_16`的既有89筆均在profile holdout；新變體保留同一lineage，不偽裝獨立家族，也不改既有訓練分割。此家族已被最佳搜尋觸及，後續保留集表現不是未觸及驗證。主線其餘家族仍照48筆門檻累積更新SM；每個新版本重新初始化，以歷史先驗預訓練再用累積profile train訓練，不是沿用前版權重或只訓練最新48筆。
+
+Conductor與獨立Sol全池座標／hash／feed／mirror／Hamming／排重／排名重算通過；Sol亦核對全部幾何bridge、曲線與manifest／兩分片、固定模型／recipe hash。完整120個payload檔、81,909,809 bytes加manifest已create-only封存本人私人NAS `local_variations/incumbent_radius12_sm_v001_20261009`，121檔逐檔SHA讀回一致；含全池分數／曲線、32輸入、三模型、原anchor、審查與helper。原本機CPU重算因每圈重解壓NPZ而中止，僅精確停止owned PID34628，改為一次載入後3.2秒核對通過；未影響HFSS／controller，原失敗亦記於私人證據。
+
+目前僅備料，尚未派工或取得這32筆實測。每次最多一片16筆prio1，以既有dispatch函式重新做實體查重、5,000總額及96 guided容量檢查，額外保留主線尚未入queue的planned hashes；競態／鎖忙時保留receipt並延後，不能擠停主線。全部終態後重播原sample／rad，比較最佳WM、超過固定anchor的比例及選中32筆的預測／實測相關；這是受選樣範圍限制的診斷，不推論整個候選池或重測合格。10:20同一controller PID54712 live、scope無警報、三台claimed持續供工；v031已完成，主線1800秒／LOW90秒不變，下一routine健康約10:50。未改tracked程式，不重跑既有817回歸。

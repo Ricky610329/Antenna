@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "status": "reviewed_prepared_not_dispatched",
+  "created_utc": "2026-10-09T02:30:43.952423+00:00",
+  "trial": "incumbent_radius12_sm_v001_20261009",
+  "anchor": {
+    "observation_id": "r80c91d71565g_00019_5a42476c",
+    "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+    "hfss_raw_replayed_wm_db": -0.24644088745117188,
+    "canonical_family": "c48nq1p05_16",
+    "data_v031_split": "profile_holdout",
+    "independent_half_grid_on_count": 167
+  },
+  "counts": {
+    "prior_hash_excluded": 15,
+    "model_scored": 52635,
+    "passes_relative_lcb": 20641,
+    "passes_relative_wm": 30154,
+    "relative_gate_eligible": 20067,
+    "selected": 32,
+    "shards": 2
+  },
+  "candidate_count": 52650,
+  "model": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+    "data_version": 31,
+    "manifest_id": "2cfee970c5250ccfaaf7904422cc606a78baf1342ee5b8d55a21064243dbedeb",
+    "cumulative_valid_unique": 2029
+  },
+  "member_sha256": [
+    "eeb42c810d7aed76ab205422421d3859414589f56070d398f0e10f7beed89c03",
+    "08c6baec17623b2a86fc5a30bb89bba04370f3deaa700e82c66ac66ba2805255",
+    "bf93d7c003deedf04e0a560f311998c2ac02fd7d7da971f9ddca826ebf3a4ae6"
+  ],
+  "selection": {
+    "eligibility": [
+      "candidate_lcb_score >= anchor_lcb_score",
+      "candidate_member_mean_worst_margin >= anchor_member_mean_worst_margin"
+    ],
+    "ordering": [
+      "lcb_score_descending",
+      "pattern_sha256_ascending"
+    ],
+    "maximum_selected": 32,
+    "diversity_filter": false,
+    "blind_quota": false,
+    "threshold_relaxation_if_fewer_than_32": false
+  },
+  "anchor_prediction": {
+    "anchor_factory_score": -12.16160806020101,
+    "anchor_lcb_score": -12.054056992830999,
+    "anchor_factory_score_minus_hfss_wm_db": -11.915167172749838
+  },
+  "selected_predicted_wm_range": [
+    -10.972057978312174,
+    -10.347321510314941
+  ],
+  "selected_predicted_lcb_range": [
+    -10.719800660967461,
+    -10.463047216422567
+  ],
+  "geometry": {
+    "radius": 2,
+    "physical_hamming": 4,
+    "exact_metal_lr_symmetry": true,
+    "feed_fixed_on": true,
+    "profile_bridge_validation_passed": true
+  },
+  "lineage": "c48nq1p05_16",
+  "current_sm_training_eligible": false,
+  "independent_review": {
+    "status": "passed",
+    "sha256": "e0c408edefebfe9622b5ba6fe03cd77cf555086dff3226016f5982df9c523e47"
+  },
+  "delivery_review_sha256": "7e49c58633a729d4a2659830b0f87719272e8b1fd3be194c01f04cc9261ac000",
+  "conductor_replay_sha256": "6fe1fc04c082332c1a7f82306b47b899fcbe6e1bce8a8175d7680d9a1067fb8d",
+  "source_bindings": {
+    "recipe.json": "40fac977698aa3dc64e6224e716930453b5be87380ff66152b40b3ff107faacb",
+    "recipe_addendum_v2.json": "ffa190f5d756a1653ac5ec10292b211da2c2a4f534bbe51ed339fb9c6edd2ffc",
+    "recipe_addendum_v3.json": "31f73697536d9089683caa3db9b1d01bb9a3e45437f47f6692e20412fb818f53",
+    "recipe_addendum_v5.json": "dfc9d4a24ebab740a0a819473d26b673292bf310451a034185bc85503c7112c2",
+    "exclusion_cutoff_v5.json": "a5ae5f5051b1d11ab8faa8a8409a31a7c160da59b248ddcc58821423d818754c",
+    "execution_receipt.json": "519f03a072fe2c5d0b7e19c8734d5108bc99166c47e5bf275aa22a40a5bf526e",
+    "candidate_scores.npz": "077ce7e14c150d944df99213987ae706d94ae3fa6e417c4b02b4aeb556a35869",
+    "candidate_curves.npz": "608df250508472b6a33d715cc6cd32e76e0b7679bc609e391c39b68f2b62ed67",
+    "selected_bundle/manifest.json": "444cbd1907dc62c60e3c74fe1bb2ed292fa42022aa570e5070a0d91ab8ea4568",
+    "selected_shards/split_receipt.json": "80638c8227d1adaee0e159602ef608c5e9605cf6257c380d3ed6c750aaa46ca3"
+  },
+  "private_archive": {
+    "relative_path": "local_variations/incumbent_radius12_sm_v001_20261009",
+    "status": "published_and_all_sha256_read_back",
+    "manifest_sha256": "e6f54ecdcabf3fc4bfb333f346a0b6f3022bc33f2c6450e2b5b3e8bd1d8dd04a",
+    "payload_files": 120,
+    "payload_bytes": 81909809,
+    "published_files": 121
+  },
+  "planned_jobs": [
+    {
+      "phase": 1,
+      "store": "dedust_r80c83e6601eg01",
+      "input": "dedust_r80c83e6601eg01_input",
+      "count": 16,
+      "prio": 1,
+      "tree_sha256": "393731916563293affee849b15a4ab8093efe273ae5f5f34f3370d67452d147c",
+      "receipt_sha256": "d05f8ad19d46bcb1fe19208741de48ecfcb0d8ef57660380132504a5f884a454"
+    },
+    {
+      "phase": 2,
+      "store": "dedust_r80cb79b4fd4g01",
+      "input": "dedust_r80cb79b4fd4g01_input",
+      "count": 16,
+      "prio": 1,
+      "tree_sha256": "7758cc50155a4c5ba9206e23060db985ea96dfe7e06079b4f9e272806ecb1a04",
+      "receipt_sha256": "df0f375e4c83aa4026d871dccf852b174cef6578470700c583552571cd6f0a21"
+    }
+  ],
+  "dispatch_gate": "one <=16 shard per fresh physical duplicate/capacity/active-reservation check; no watcher/training locks",
+  "evaluation_plan": [
+    "raw HFSS replay under unchanged R80 profile after all32 terminal",
+    "compare maxWM and fraction exceeding fixed anchor single-run WM",
+    "selected-cohort Spearman of prospective LCB/WM predictions against actualWM; restricted-range diagnostic only",
+    "raw S11/Gain/radiation metrics and same canonical family/split checks",
+    "preserve negatives; no whole-pool SM ranking validity or repeat certification claim"
+  ],
+  "scientific_limits": [
+    "All scores are current-SM navigation predictions; only HFSS under the named profile is physical truth.",
+    "The gate is a same-model relative ranking hypothesis and provides no calibrated coverage or confidence guarantee.",
+    "The anchor family is already in the current profile holdout and was touched by prior-best search; this is not untouched validation.",
+    "All local variants retain canonical family c48nq1p05_16, count as that family if measured, and are excluded from current-SM training under the fixed split.",
+    "No prospective split or training protocol is changed by this preparation.",
+    "The previous unranked pilot15+1 cohort is a distinct experiment and is neither reused nor relabeled here."
+  ],
+  "hfss_started_here": false,
+  "new_hfss_truth_from_this_trial": 0
+}
