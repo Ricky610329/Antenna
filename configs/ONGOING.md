@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **10/10 00:08健康通過／首次RPC樣本已重試成功**：原PID15944身分不變，scope零警報，三片claimed最新4／2／2分鐘。v008已完成cycle（fit/model實體完整核對待做），正常waiting30分鐘；v006兩片於正確jobs_state皆done、原失敗樣本status ok。[健康及恢復](../docs/log/assets/r80_health_20261010_0008.json)。first32判讀工具因round-robin/concatenation順序假設拒絕，窄adapter審查中，不改原始資料或派工。下一routine00:38。
+
 - **v007完整20k保存排名獨立核對通過**：10k fresh＋10k parent，strict11／11／10選32，26家族／cap2／minHamming66；兩個staged16與action／completion／fit2691吻合。[補充收據](../docs/log/assets/r80_diverse_sm_v007_selection_review_20261010.json)。只驗派工來源與幾何，不是新HFSS性能或SM改善；00:08再查終態，live流程未改。
 
 - 現況 **10/09 23:51：依使用者詢問全量 raw 核對**。2,756/5,000唯一有效實測，較22:54增加43；最佳WM仍 **+0.021682 dB**，既有獨立重測+0.036434。[收據](../docs/log/assets/r80_best_status_20261009_2351.json)。23:50精確PID15944／零警報，三片claimed有待跑工作；SM最近完成v007、持續更新中。CNN及weighted-loss背景對照未adopt；R80與R81未完成，下一routine00:08。

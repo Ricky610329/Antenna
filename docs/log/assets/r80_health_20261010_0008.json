@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "status": "verified_live_controller_health_and_HFSS_retry_recovery",
+  "observed_utc": "2026-10-09T16:08:24.6484198Z",
+  "physical_pid": 15944,
+  "creation_unix_ms": 1791541659267,
+  "argv_matches": true,
+  "controller_status": "waiting",
+  "completed_cycles": 10,
+  "latest_completed_data_version": 8,
+  "cycle_receipt_sha256": "3c18fcc2ac40ebe57ac70a5df01e82875b39a070850c8b13b08cc0128cd79d4b",
+  "cycle_valid_unique_cutoff": 2749,
+  "scoped_status_output": "資料工廠狀態:\n  job dedust_r80k1d1e587fde8167b2: 0/16（排隊中）\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\n  job dedust_r80c2e4d6525g01: 10/16 完成,最新結果 4 分前（已認領）\n  job dedust_r80c2e4d6525g02: 6/16 完成,最新結果 2 分前（已認領）\n  job dedust_r80c7e26901fg01: 1/16 完成,最新結果 2 分前（已認領）\n  job dedust_r80c7e26901fg02: 0/16（排隊中）\n  job dedust_r80c7e26901fg03: 0/16（排隊中）\n✓ 工廠無警報",
+  "first32_correct_jobs_state_markers": [
+    {
+      "job": "dedust_r80c4b5e0d7eg01",
+      "done": true,
+      "fail": false
+    },
+    {
+      "job": "dedust_r80c4b5e0d7eg02",
+      "done": true,
+      "fail": false
+    }
+  ],
+  "recovered_sample": {
+    "status": "ok",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "labels": [
+      "S11",
+      "Gain"
+    ],
+    "freqs": [
+      24.0,
+      24.5,
+      25.0,
+      25.5,
+      26.0,
+      26.5,
+      27.0,
+      27.5,
+      28.0,
+      28.5,
+      29.0,
+      29.5,
+      30.0,
+      30.5,
+      31.0,
+      31.5,
+      32.0
+    ],
+    "pattern_sha256": "50980f023ebf67ffd8bfe2224c7c11db492afcfb8a5dcf956e94d36ef1d82f49",
+    "lineage_id": "random-005",
+    "sample_file": "1566eddd19fc4f1b.pt",
+    "time_s": 192.0,
+    "geom": "single_v1",
+    "dbw": 0.1,
+    "gain28": -6.504515647888184,
+    "s11_28": -1.9070115089416504,
+    "rad_file": "rad/r80c4b5e0d7eg_00020_50980f02.pt",
+    "performance_gate": false,
+    "sample_sha256": "ce52f16a8b7c8b6090a68805a23b14ef4623f8ceae9c738ab78c0f62b91b60ad",
+    "rad_sha256": "41aee8c3e55f2728114d62dba135da234877d2c6c4371a3f454e0934b051c144"
+  },
+  "health_source_sha256": "401cd65873b0753d4711a2cd9e87982c193628b5a50bcc2c47272bc30bf9adbe",
+  "terminal_source_sha256": "efbf28ea2a0389419fe1ad10c8158b4b2154fa493cf15cb0d4464353b7eb0961",
+  "initial_marker_path_correction": "The initial health snapshot probed dataset root; false fields there are not authoritative. Corrected read-only followup probes dataset/jobs_state and both are done.",
+  "first32_readout_status": "HFSS terminal passed; v1 readout rejected an incorrect concatenated-order assumption before formal outputs; new explicit round-robin adapter under review.",
+  "latest_global_query": {
+    "taipei": "2026-10-09 23:51",
+    "valid_unique": 2756,
+    "best_wm_db": 0.021682262420654297
+  },
+  "next_health_taipei": "2026-10-10 00:38",
+  "source_or_queue_changed": false,
+  "limits": [
+    "Controller waiting means normal cycle interval, not worker idle. Three claimed shards have recent outputs.",
+    "v008 metadata completion is observed; fresh physical model/dispatch independent audit remains pending.",
+    "No newer global census or first32 performance metric is claimed."
+  ]
+}
