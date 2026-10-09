@@ -1189,3 +1189,8 @@ publisher v9實際session70963 exit0；固定16筆（current-only 8／frozen-liv
 ### 2026-10-10 06:33：健康檢查與第二批單次等待器
 
 controller exact身分通過、running_cycle、completed18／reported v013；三個已認領工作3/16、2/16、0/16，前兩個最新結果3／1分鐘前，scope無警報。最新完整實測仍是06:27的3086唯一圖形，最佳WM未變；這次健康檢查不冒充新census。第二批等待器31132於06:33啟動，CIM／claim／來源／審查綁定及實際啟動selfcheck通過，目前只讀本機狀態。等主線waiting且剩餘至少1200秒才單次呼叫既有publisher v9；global5000／guided96／最終180秒門檻不變，無自動重試或派工中timeout／kill。[啟動與健康紀錄](assets/r80_currentonly_prospective_v010_phase2_wait_launch_20261010.json)。第二批仍prepared，不改32筆選樣或主線模型；下次例行健康檢查07:03。
+
+
+### 2026-10-10 07:03：SM v014更新與持續工作
+
+主線controller exact身分通過，completed19／reported SM v014，本輪cached valid3101不冒充新的完整census；三個claimed工作13/16、13/16、7/16，最新結果2／1／3分鐘前，scope無警報，新增加兩個guided工作排隊中。第一批對照仍排隊，第二批單次等待器31132在06:59抓到1690秒主線空檔，已進入既有publisher安全交易，07:03尚未看到完成readback；不重新啟動或中止。[健康紀錄](assets/r80_health_20261010_0703.json)。最新完整實測仍為06:27的3086個、WM+.021682；下次routine07:33。

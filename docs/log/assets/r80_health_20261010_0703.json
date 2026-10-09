@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "status": "scheduled_health_passed",
+  "observed_utc": "2026-10-09T23:03:15.0351228Z",
+  "health": {
+    "observed_utc": "2026-10-09T23:03:15.0351228Z",
+    "physical_pid": 15944,
+    "creation_unix_ms": 1791541659267,
+    "argv_matches": true,
+    "watch_status": {
+      "schema_version": 1,
+      "status": "waiting",
+      "started_utc": "2026-10-09T10:27:41.075271+00:00",
+      "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+      "attempt_record": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\42afe91c263f4bacb74f6d6c5c6bbcb7.json",
+      "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+      "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+      "profile_binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "scope": "symmetry_filter_20261007"
+      },
+      "expected_retry_workers": [
+        "140.123.106.216",
+        "140.123.106.218",
+        "140.123.106.37"
+      ],
+      "interval_seconds": 1800,
+      "completed_cycles": 19,
+      "hfss_started_here": false,
+      "low_backlog": {
+        "poll_seconds": 90,
+        "low_watermark": 48,
+        "target_pending": 96,
+        "max_refill": 96,
+        "min_refill": 48,
+        "shard_size": 16,
+        "priority": 6,
+        "owner": "r80-low-backlog-v1",
+        "reservoir_seed": 80100791,
+        "reservoir_size": 2048
+      },
+      "search_policy": {
+        "schema_version": 1,
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\r80_diverse_sm_search_v1.json",
+        "sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+        "policy_id": "27937e8f03647431256a31ad47acf4124fc30f8b7195afb1f731d079d6e01d75",
+        "policy": {
+          "arm_order": [
+            "global_lcb",
+            "parent_lcb",
+            "high_disagreement"
+          ],
+          "arm_weights": [
+            1,
+            1,
+            1
+          ],
+          "candidate_pool_size": 20000,
+          "disagreement_mean_percentile": 60,
+          "dispatch": "existing factory transaction, same priority1 and 16-pattern shards, existing 96 outstanding and 5000 valid-plus-reserved limits",
+          "limits": [
+            "Predictions guide candidate selection; HFSS remains the truth.",
+            "This changes pool generation and arm allocation together; it is not a single-factor causal diversity comparison.",
+            "Top-quartile parent descriptors are development information, not independent model-validation evidence.",
+            "LOW blind backlog remains enabled and unchanged.",
+            "No bridge-width, frequency, score-spec, emforge or worker runtime change.",
+            "First new cohort must be evaluated by origin, saved prediction error, actual WM and geometry coverage before claiming improvement."
+          ],
+          "max_parents_per_canonical_group": 2,
+          "max_selected_per_canonical_group": 2,
+          "measurement_changes": false,
+          "measurement_profile": "configs/single_r80_symmetry_factory.yaml",
+          "min_parent_groups": 8,
+          "min_parent_physical_hamming": 64,
+          "min_selected_physical_hamming": 64,
+          "name": "r80_diverse_sm_v1",
+          "parent_count": 32,
+          "parent_ranking": "actual WM top quartile; highest-WM first, then existing maxmin_hamming_indices with canonical-group cap",
+          "parent_top_fraction": 0.25,
+          "ranking": "descending score, then pattern_sha256; greedily take the highest feasible candidate under whole-cohort constraints",
+          "schema_version": 1,
+          "seed": 80100956,
+          "source_pool_fractions": {
+            "fresh_random": 0.5,
+            "parent_variant": 0.5
+          },
+          "strict_no_relaxation": true,
+          "training_protocol_changes": false
+        }
+      },
+      "cycle_started_utc": "2026-10-09T22:27:44.947100+00:00",
+      "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\570c0d3fae4a1806ba5356c604fbc44397e4ff057e9e4053342a3b27a4ab59ca\\action_receipt.json",
+      "last_receipt_sha256": "687ce121aef44aa5a16a21c7ee9a059f606bbda42583948f467b383f4d390484",
+      "last_cycle_seconds": 1895.9060000001919,
+      "valid_unique": 3101,
+      "latest_data_version": 14,
+      "last_completed_utc": "2026-10-09T22:59:20.842072+00:00",
+      "next_cycle_in_seconds": 1704.0939999998081,
+      "deferred_retry_count": 1,
+      "last_deferred_retry": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\deferred_retries\\42afe91c263f4bacb74f6d6c5c6bbcb7-0001.json",
+        "sha256": "aa89660a6a2e7c21a1b95bd0b2a0f34ce183c8476eb38455087b4abb88e75a2c",
+        "schema_version": 1,
+        "event": "live_snapshot_changed",
+        "deferred_utc": "2026-10-09T16:47:18.863521+00:00",
+        "error": "worker state changed during controller scan: dedust_r80k1d1e587fde8167b2",
+        "exception_type": "LiveSnapshotChanged",
+        "cycle_started_utc": "2026-10-09T16:27:44.876091+00:00",
+        "controller_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\4d79840b62340e93150afa8748ff9a612d1ef08fd17d448d421ad8a883a0c286\\action_receipt.json"
+      }
+    },
+    "scoped_status_exit": 0,
+    "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c0418df9fg02: 13/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80ccd26614dg01: 13/16 完成,最新結果 1 分前（已認領）\r\n  job dedust_r80ccd26614dg02: 7/16 完成,最新結果 3 分前（已認領）\r\n  job dedust_r80cf0b21c1bg01: 0/16（排隊中）\r\n  job dedust_r80c570c0d3fg01: 0/16（排隊中）\r\n  job dedust_r80c570c0d3fg02: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+    "correct_jobs_state_markers": {
+      "dedust_r80c7e26901fg01": {
+        "fail": false,
+        "done": true
+      },
+      "dedust_r80c7e26901fg02": {
+        "fail": false,
+        "done": true
+      },
+      "dedust_r80c7e26901fg03": {
+        "fail": false,
+        "done": true
+      }
+    }
+  },
+  "health_source_sha256": "ecf8063788260cc827aaa5960afc1d3f02f57ca32cebd590627833469c692b7c",
+  "last_cycle_receipt_sha256": "687ce121aef44aa5a16a21c7ee9a059f606bbda42583948f467b383f4d390484",
+  "latest_full_census_receipt": "docs/log/assets/r80_best_status_20261010_0626.json",
+  "cached_valid_unique_is_new_full_census": false,
+  "phase2_driver_pid": 31132,
+  "phase2_driver_creation_unix_ms": 1791585193765,
+  "phase2_driver_exact_cim_verified": true,
+  "phase2_trigger": {
+    "event": "dispatch_started",
+    "trigger": {
+      "controller_cim": {
+        "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\"",
+        "creation_unix_ms": 1791541659267,
+        "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+        "pid": 15944
+      },
+      "cycle_started_utc": "2026-10-09T22:27:44.947100+00:00",
+      "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+      "status_binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+        "sha256": "3d1d58a05e56f600d95edf2f9391c3f4b911e60eb3a7b68cbe5da782d9cf68bc"
+      },
+      "wait_clock": {
+        "announced_seconds": 1704.0939999998081,
+        "elapsed_seconds": 13.764194,
+        "origin_field": "last_completed_utc",
+        "origin_utc": "2026-10-09T22:59:20.842072+00:00",
+        "remaining_seconds": 1690.329805999808
+      }
+    },
+    "utc": "2026-10-09T22:59:34.608275+00:00"
+  },
+  "phase2_log_cutoff_sha256": "2b8a7367dbadb358b48a468797cf8a2b9d8fa5d99aad24048df914fe1d182856",
+  "phase2_completed_readback_observed_at_health": false,
+  "next_routine_health_taipei": "2026-10-10 07:33",
+  "new_HFSS_started_here": false,
+  "worker_or_main_source_changed": false,
+  "queue_mutated_by_health_check": false,
+  "validation_script_sha256": "ef5bd3766ab181960b25f7fc5dc9e6c84b453d028767a1627984999c3d7cff1b"
+}
