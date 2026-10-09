@@ -689,3 +689,25 @@ v033對舊anchor預測WM分數−11.847624，與實測−0.246441差−11.601184
 [v034完成收據](assets/r80_factory_cycle_v034_20261009.json)核對實際action receipt、資料manifest／receipt、summary及三個模型檔案SHA前後一致。此版新增75個唯一profile真值，累積fit2,248（train1,359／holdout889）；歷史先驗train10,150／holdout1,850另計。controller完成派工截點2,254個有效唯一，送出3×16筆prio1；這和模型fit或持續到來的即時數不同。889筆當版holdout總MAE3.671123、Gain MAE5.779624 dB，但holdout集合變動，不把版本誤差變小當成模型進步。
 
 14:29 exact CIM核對PID54712／creation1791505204815／完整命令，scope零警報；三個claimed工作皆有近期結果，另有LOW及guided候選待跑。第二局部片218於14:25:01零error終態，14:29:33用既有snapshot helper只讀來源並create-only凍結16筆；完整32筆已進入原定離線判讀，實際獨立核對仍進行中。下一routine健康約14:59；R80的5,000筆與後續R81未完成。
+
+### 2026-10-09：固定32筆局部變體完整實測判讀與圖表
+
+[完整32筆結果薄收據](assets/r80_local_variation_result_20261009.json)綁定兩片最終派工、各38檔凍結raw／metadata、profile、事前v031排名及原fixed anchor。原`readout_v2.py`對32筆全部成功後才產出結果；獨立Sol不用原判讀器計算指標，另從全部sample／rad重算WM、方向窗、鏡射功率殘差及無ties的Spearman，90來源SHA在前後一致。兩片pattern集合互斥、rank1..32／ID／家族／同profile一致，全部精確LR鏡射且固定饋入，每個候選均為anchor的兩個獨立格／四個實體像素變動；別次重測不在這32個ID內。
+
+| 事前固定選中32筆的結果 | 實測值 |
+| --- | ---: |
+| 成功／唯一／金屬精確LR鏡射 | 32／32／32 |
+| WM嚴格大於0 | 1／32 |
+| WM嚴格超過anchor −0.246441 dB | 6／32（18.75%） |
+| 最大WM | +0.021682 dB（事前rank27） |
+| WM中位數／最小值 | −0.789916／−22.719912 dB |
+| 事前LCB與實測WM的Spearman | −0.090176 |
+| 事前member-WM平均與實測WM的Spearman | −0.105572 |
+
+超過anchor者為rank12／16／24／25／26／27。這招確實找到一個正WM、已另一次正WM重測的pattern，但在這個被選中的同家族32筆內，SM分數與真值排序沒有正相關；不能宣稱整池52,635個候選排序有效、SM校準改善或獨立泛化。没有盲選隨機對照，18.75%不能證明比盲選有效率；保留全部31筆非正WM與極差值，沒有排除低分或改門檻。這也不是新性能停滯證據，因本次已出現相對舊anchor的實際推進。
+
+![完整32筆的S11與正向Gain頻率響應](assets/round-80/local-variation32-20261009-v001/frequency_responses.png)
+
+[幾何分布／場型鏡射殘差圖](assets/round-80/local-variation32-20261009-v001/geometry_terrain.png)及[出圖收據](assets/round-80/local-variation32-20261009-v001/plot_receipt.json)沿用未修改的`script.symmetry_analysis profile`與`script.figs.symmetry_profile`。32筆／0重複／0repeat重播通過；Conductor另從出圖NPZ以float64重算每個ID的WM，和完整判讀完全一致，核對圖檔SHA并目檢文字／頻率帶／legend。頻率中位數與25–75%帶是逐頻率描述，並非信賴區間或單一可製作pattern；幾何只有兩個鄰近bins，不能分辨全部局部拓樸變體，也不作因果推論。最佳樣本的場型極座標仍見前節原圖。
+
+第一次分析CLI誤用`--profile`在argparse前退出、沒有產物，改用既有`profile`子命令後完成；薄收據匯出第一次因NPZ float32算術與Python float64指標不完全相同而在寫出前拒絕，改為將原raw值提升float64後逐ID精確一致，沒有放寬比較或修改真值。完整新凍結／分析／獨立審查仍在本機ignored資料夾，worker raw在本人私人dataset，未另發布新NAS證據歸檔；Git交付薄結果、兩张既有腳本圖及log。R80仍以5,000有效唯一為目標，LOW補池／批次SM及每30分鐘健康檢查繼續，R81尚未派工。
