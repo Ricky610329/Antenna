@@ -1201,3 +1201,10 @@ controller exact身分通過、running_cycle、completed18／reported v013；三
 第二批dedust_r80c8c708075g01入列完成，單次等待器保存dispatch_finished，原process handle終止，無stderr；driver獨立exit code未捕捉，不拿observer exit0代替。第二批capacity3280≤5000／guided80≤96，queue205→206精確新增一項。兩批共32筆（frozen-live v010 16／current-only v010 16）的圖形、owner及兩組預測與原派工前seal完全相同；本機seal CLI exit0，獨立保存證據審查通過。[兩批派工與seal](assets/r80_currentonly_prospective_v010_combined32_dispatch_seal_20261010.json)。
 
 這是派工／來源證據里程碑，尚非32筆HFSS完成或current-only性能改善，也未替換主線v014。容量驗證可讀完成raw、主線可使用早期結果的範圍限制保留；不宣稱全流程盲讀，但比較cohort沒有依早期真值改選。等兩store終止後再按既有truth_readout_v9完整回填所有32筆。最新完整census仍為06:27的3086，R80 5000與R81工作繼續；下次routine07:33。
+
+
+### 2026-10-10 07:33：使用者查詢的最新實測核對
+
+逐 store cutoff 重讀 sample/rad，共 3,150 個有效唯一對稱圖形、3,155 次成功實測含重測；比06:27增加64個。沒有新最佳，最佳 WM +0.0216822624 dB。[核對紀錄](assets/r80_best_status_20261010_0733.json)。
+
+07:32工廠無警報，三個已認領工作最新結果皆在1分鐘內；主線SM v014，下一輪已開始。固定32筆雙scorer對照已全數入列，第一批8/16、第二批排隊；未做完整對照truth readout或採用current-only模型。完整census會重讀完成原始資料，不宣稱全流程盲讀；對照選樣與預測維持凍結。R80 5000筆與R81新spec均未完成，例行健康檢查維持約30分鐘。
