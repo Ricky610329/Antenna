@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "status": "two_positive_same_profile_observations_verified",
+  "verified_utc": "2026-10-09T06:10:10.555583+00:00",
+  "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+  "family": "c48nq1p05_16",
+  "profile": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "scope": "symmetry_filter_20261007",
+    "factory_band_ghz": [
+      26.5,
+      29.5
+    ],
+    "band_indices": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ]
+  },
+  "metal_lr_exact": true,
+  "observations": [
+    {
+      "role": "original",
+      "id": "r80localv1_00026_f6ffb938",
+      "claimed_worker": "140.123.106.216",
+      "time_s": 156.0,
+      "metric": {
+        "s11_margin_db": 0.09608840942382812,
+        "gain_margin_db": 0.021682262420654297,
+        "factory_margin_db": 0.021682262420654297,
+        "radiation_margin_db": 0.3709280490875244,
+        "radiation_margin_clipped_db": 0.3709280490875244,
+        "worst_inband_s11_db": -10.096088409423828,
+        "minimum_inband_gain_dbi": 4.021682262420654,
+        "s11_limiting_index": 11,
+        "gain_limiting_index": 5,
+        "s11_limiting_ghz": 29.5,
+        "gain_limiting_ghz": 26.5
+      },
+      "sample_sha256": "f79add39e27605d2f54ab48a36a7e206d6bef672ca407efdfe8d0a237d1bca0c",
+      "rad_sha256": "e11aee92cc03340a6bebfd97ef713059904598fbc6f8fb39b0822184e5249b40"
+    },
+    {
+      "role": "repeat",
+      "id": "r80bestrep01_f6ffb938",
+      "claimed_worker": "140.123.106.37",
+      "time_s": 176.0,
+      "metric": {
+        "s11_margin_db": 0.09608840942382812,
+        "gain_margin_db": 0.03643369674682617,
+        "factory_margin_db": 0.03643369674682617,
+        "radiation_margin_db": 0.3709280490875244,
+        "radiation_margin_clipped_db": 0.3709280490875244,
+        "worst_inband_s11_db": -10.096088409423828,
+        "minimum_inband_gain_dbi": 4.036433696746826,
+        "s11_limiting_index": 11,
+        "gain_limiting_index": 10,
+        "s11_limiting_ghz": 29.5,
+        "gain_limiting_ghz": 29.0
+      },
+      "sample_sha256": "209c70e549475d20e13793868ad69574daf2a667d5ec414bfd93dd8c676eed9f",
+      "rad_sha256": "95c4cf70fba297ba994d671da53bc0db28601110f801ab67b6df1e48347dd7d8"
+    }
+  ],
+  "minimum_of_two_observed_wm_db": 0.021682262420654297,
+  "confirmation_pass": true,
+  "repeat_minus_original_db": {
+    "s11_margin_db": 0.0,
+    "gain_margin_db": 0.014751434326171875,
+    "factory_margin_db": 0.014751434326171875
+  },
+  "raw_comparison": {
+    "response_tensor_equal": false,
+    "response_changed_values": [
+      {
+        "label": "S11",
+        "index": 3,
+        "frequency_ghz": 25.5,
+        "original": -4.24017858505249,
+        "repeat": -4.235054969787598,
+        "repeat_minus_original": 0.005123615264892578
+      },
+      {
+        "label": "S11",
+        "index": 5,
+        "frequency_ghz": 26.5,
+        "original": -10.932695388793945,
+        "repeat": -10.935696601867676,
+        "repeat_minus_original": -0.0030012130737304688
+      },
+      {
+        "label": "Gain",
+        "index": 3,
+        "frequency_ghz": 25.5,
+        "original": 3.06722354888916,
+        "repeat": 3.048430919647217,
+        "repeat_minus_original": -0.01879262924194336
+      },
+      {
+        "label": "Gain",
+        "index": 5,
+        "frequency_ghz": 26.5,
+        "original": 4.021682262420654,
+        "repeat": 4.165576457977295,
+        "repeat_minus_original": 0.14389419555664062
+      }
+    ],
+    "response_max_abs_difference": 0.14389419555664062,
+    "response_l1_difference": 0.17081165313720703,
+    "radiation_tensor_values_equal": {
+      "theta": true,
+      "phi0": true,
+      "phi90": true
+    },
+    "radiation_file_bytes_distinct": true,
+    "pattern_tensor_equal": true,
+    "solve_times_distinct": true,
+    "stores_distinct": true
+  },
+  "chronology": {
+    "dispatch_effective_utc": "2026-10-09T05:41:24.733289+00:00",
+    "repeat_claim_taipei": "2026-10-09 13:51:14",
+    "repeat_done_taipei": "2026-10-09 13:54:34",
+    "freeze_created_utc": "2026-10-09T05:59:30.455114+00:00",
+    "readout_created_utc": "2026-10-09T05:59:30.515732+00:00",
+    "strict_order_verified": true
+  },
+  "dispatch_receipt": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\dispatch_receipt.json",
+    "sha256": "d026d67d2025287a52e1680898cf430181eb4ee51e851750da26a43a974c52e6",
+    "size": 2946
+  },
+  "readout": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\repeat_readout.json",
+    "sha256": "e7f6af8f0db224daae4aad2dd3060ab3c2d2d28d12fa21ef3da16f310c3b0aa4",
+    "size": 3767
+  },
+  "freeze_proof": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\raw_freeze_proof.json",
+    "sha256": "ee81b44d04526d238ebc5ee89152d13cadb12149ee6853c0dedcef3ee10d4df4",
+    "size": 81118
+  },
+  "independent_review": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_result_review_20261009_v001\\actual_review.json",
+    "sha256": "47fa1b2f7db73343fe109c2134c39d5a4e82bb7022698451c650e36ab2ddd9f6",
+    "size": 18317
+  },
+  "independent_replay_script": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_result_review_20261009_v001\\review_repeat_result.py",
+    "sha256": "ebb915bcd4d6a2ad22a3c942f019854404b79a04f67b016be4ea1a1258d0f505",
+    "size": 19636
+  },
+  "independent_source_bindings": 35,
+  "independent_source_binding_set_sha256": "548d9ed1d0ccef1d5273756d8510e6a1bc493593d9c82bda30b1e6658d71ff07",
+  "root_direct_response_check": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\root_independent_response_check.json",
+    "sha256": "d0bb323e3dca78affe3dfb8aef417ae733b0d8f1602c3b7c9e5e07b477f2b79a",
+    "size": 1347
+  },
+  "root_export_helper": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\root_export_result.py",
+    "sha256": "83740340aa918d0ae18dedef7662a830fac63157212c5cb4ac830a4915f132dd",
+    "size": 3964
+  },
+  "repeat_count": 1,
+  "new_unique_delta": 0,
+  "training_eligible": false,
+  "automatic_rerun": false,
+  "additional_hfss_launched_for_verification": false,
+  "archive_status": "repeat frozen evidence remains local; worker result remains in personal dataset; no new NAS evidence archive published",
+  "limits": [
+    "The original worker identity is a reconstructed exact .done payload bound by the dispatch parent proof; the original marker file itself is not in the local frozen store.",
+    "This is two observations, not a three-run certification.",
+    "It does not establish mesh independence, continuous-frequency compliance, generalization, stability across more repeats, or R80 collection completion.",
+    "Equal saved radiation tensor values and equal S11 margin are reported as observed; they are not inflated into extra independent evidence.",
+    "Margins are very small; the minimum of two observed WMs is not a statistical lower confidence bound.",
+    "The response minimum moved from 26.5 GHz to 29.0 GHz; repeat-minus-original WM is not a uniform curve shift.",
+    "No untouched holdout or field-symmetry improvement is claimed. Full32 and R80 5000/R81 remain incomplete."
+  ]
+}

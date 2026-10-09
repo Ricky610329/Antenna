@@ -662,3 +662,20 @@ v033對舊anchor預測WM分數−11.847624，與實測−0.246441差−11.601184
 13:26的v003實際嘗試在第一個guard、取得鎖與寫input前拒絕：主cycle因retryable結果更新正常defer，active pointer指向尚未產生的action receipt。v004只補這個等待狀態的精確證據對應，不改controller或worker：原PID／creation／完整命令、STOP及時間窗仍查核；缺失receipt需和空cycle目錄、deferred event、attempt中的current status及上一個成功receipt一致。Conductor完整來源審查、7項generated測試、實際verify-local與唯讀真實guard通過；獨立Sol來源及12項generated／adversarial測試PASS。既有追加前queue／raw重核及單列中斷恢復不變，v003舊證據保持。
 
 只有一次新HFSS重跑，主機由queue選取，未保證跨主機；不重啟worker或本機HFSS。原次及新次WM都嚴格大於0才確認，第一個負值／永久失敗照錄，不自動重跑，尚無重測結果。薄收據匯出初次誤讀審查JSON的`status`而拒絕，改用實際`verdict`後完成唯讀匯出，沒有重派。13:26例行exact CIM及scope無警報，三個claimed工作都有近期結果；第二局部片仍待跑，下一健康約13:56。R80完整32筆判讀、5,000筆與R81仍未完成。
+
+### 2026-10-09：最佳pattern的原次與獨立重測均為正WM
+
+[兩次觀測的驗證收據](assets/r80_best_repeat_result_20261009.json)綁定原始資料、第一終態凍結、原派工與獨立Sol的實際raw重播。`dedust_r80bestrep01`由37於13:51:14認領、13:54:34零error完成，solve time 176秒；原次216的156秒觀測仍保留。先凍結input／store／claim／done及queue cutoff，13:59:30後才計算指標；同pattern／同profile、新store、不同sample bytes及實際曲線差異均核對。Conductor直接從PT另算S11／Gain最差點與金屬LR；獨立Sol以獨立數值公式重播兩次並核對35個來源／proof的前後SHA一致，完整來源程式亦已審閱。
+
+| 26.5–29.5 GHz格點指標 | 原次（216） | 重測（37） |
+| --- | ---: | ---: |
+| 最差S11（dB，29.5 GHz） | −10.096088 | −10.096088 |
+| 最低正向RealizedGainTotal（dBi） | 4.021682（26.5 GHz） | 4.036434（29.0 GHz） |
+| WM（dB） | +0.021682 | +0.036434 |
+| 28 GHz ±45°方向窗餘裕（dB） | +0.370928 | +0.370928 |
+
+原次與這一次新重測均嚴格WM>0，通過本次事前訂定的兩次確認；兩個已觀測WM的較小值+0.021682 dB不是統計下界，餘裕仍很小。全頻率raw僅25.5／26.5 GHz的S11與Gain四個值不同，Gain單點最大差0.143894 dB；WM差+0.014751 dB是最小值位置改變後的結果，不能當整條曲線均勻提高。兩次28 GHz radiation tensor數值完全相同，序列化檔案bytes不同；照實記錄，不把相同場型當更多獨立證據或場型對稱性改善。
+
+這是同一個金屬精確左右對稱pattern的兩次已保存觀測，沿用家族與holdout；重測不算5,000筆新唯一，也不供目前SM訓練。不聲稱三次公證、網格獨立、連續頻率通過、多次穩定或未觸及保留集泛化；不再自動重跑此pattern。原[單次圖卡](assets/round-80/best-symmetric-polar-20261009-v002/sample_card.png)仍保留當時的「尚待重測」歷史註記，最新狀態以本節兩次收據為準。此次完整凍結／審查檔仍在本機ignored資料夾，worker raw已在本人私人dataset，未另發布新的NAS證據歸檔；Git僅此薄結果及log。
+
+13:58–13:59例行CIM身份／creation／命令及scope檢查通過、無警報，三台工作皆有近期結果，第二局部片5／16；下一routine健康約14:29。背景SM本cycle處於training，未以中途receipt當新版本完成。完整32筆的事前排序／實測關聯與R80的5,000筆仍待，之後才接續R81。
