@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "status": "completed_mixed_currentonly_v008_background_diagnostic_verified",
+  "started_utc": "2026-10-09T16:54:19.569849+00:00",
+  "terminal_utc": "2026-10-09T16:54:51.704839+00:00",
+  "child_wall_seconds": 32.13499,
+  "actual_cpu_threads": 4,
+  "fresh_shadow_members": 3,
+  "current_epochs": 100,
+  "per_member_adam_steps": 1500,
+  "manifest_rows": 2739,
+  "profile_train": 1855,
+  "profile_holdout": 884,
+  "fixed_config_commit": "296f8a4c7b1bbb437d57bbdbebca46d55ad540a5",
+  "fixed_config_sha256": "474b46db5a47c0cfe37c0970856747db8518b38234327dbb123bb3f459ca0a90",
+  "prepared_record_sha256": "f297836ec489ec3f4818016e4a33de36d7690feb99c20749b59b9e9793600620",
+  "comparison_sha256": "133bd43265630c831919d546a6e2200b37403b0b4a2d8dd2c89427cf8a3c1185",
+  "holdout_arrays_sha256": "fd49a04164a8a17d94a0a3eb0567761c0b9cb90831b659a5fafece4129e4dca5",
+  "saved48_predictions_sha256": "08ee9b625747786fe0f852122af90cd427413aee6dbb6cad3d180bde94f5ca58",
+  "results": {
+    "legacy_then_current": {
+      "binding": {
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+        "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+        "data_version": 8,
+        "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+        "cumulative_valid_unique": 2739
+      },
+      "model_ids": [
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v008\\member-0.pt",
+          "sha256": "470f07cbb065abe9c726b2e84f0e7e5fe11179ad87f634be4cd72baed4cd8e30",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+          "data_version": "8",
+          "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v008\\member-1.pt",
+          "sha256": "68b7dc4798919da9c80fdb87a5593ed6df1d4944331868a3ebf88d255ad25dac",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+          "data_version": "8",
+          "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v008\\member-2.pt",
+          "sha256": "dbbe67490ce88e1ea421f71609f87bcbe36df3c8f2d8e64c59c4e340130ff102",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+          "data_version": "8",
+          "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989"
+        }
+      ],
+      "metrics": {
+        "mae": 3.6044961844306647,
+        "s11_mae": 2.0725139737268528,
+        "gain_mae": 5.560412707145408,
+        "phi0_mae": 3.737319132640464,
+        "phi90_mae": 3.3924767163946474
+      },
+      "ranking": {
+        "wm_of_ensemble_mean": {
+          "spearman": {
+            "n": 884,
+            "rho": 0.06572405789861012
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        },
+        "factory_score": {
+          "spearman": {
+            "n": 884,
+            "rho": 0.08617200927924475
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        },
+        "lcb_score": {
+          "spearman": {
+            "n": 884,
+            "rho": 0.07681108603799194
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        }
+      }
+    },
+    "current_only": {
+      "binding": {
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+        "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+        "data_version": 8,
+        "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+        "cumulative_valid_unique": 2739
+      },
+      "model_ids": [
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v008_20261010_v001\\training\\models\\data-v008\\member-0.pt",
+          "sha256": "16895864d8861e1ffb2a683a0f3927a1a1dbb3c139d6df77daf43c6bdf3a610b",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+          "data_version": "8",
+          "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v008_20261010_v001\\training\\models\\data-v008\\member-1.pt",
+          "sha256": "485d2f4c264060fcb07c0675951f732e3a2241120a592d06e7e831954656b98b",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+          "data_version": "8",
+          "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v008_20261010_v001\\training\\models\\data-v008\\member-2.pt",
+          "sha256": "6541d80a6e001c1a3a1fe1f3da09d85a1222e5ca20f6d6fdb21800e2aca7c065",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+          "data_version": "8",
+          "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989"
+        }
+      ],
+      "metrics": {
+        "mae": 3.727659657246054,
+        "s11_mae": 2.364376259035944,
+        "gain_mae": 5.489680266563651,
+        "phi0_mae": 3.88162776255907,
+        "phi90_mae": 3.4992021828250475
+      },
+      "ranking": {
+        "wm_of_ensemble_mean": {
+          "spearman": {
+            "n": 884,
+            "rho": 0.1070345892369064
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        },
+        "factory_score": {
+          "spearman": {
+            "n": 884,
+            "rho": 0.10911537536532313
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        },
+        "lcb_score": {
+          "spearman": {
+            "n": 884,
+            "rho": 0.11377900447972225
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        }
+      }
+    }
+  },
+  "physical_checkpoint_audit": {
+    "live_v008": [
+      {
+        "file": "member-0.pt",
+        "sha256": "470f07cbb065abe9c726b2e84f0e7e5fe11179ad87f634be4cd72baed4cd8e30",
+        "member_seed": 0,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "adam_steps": 3900,
+        "model_tensor_count": 8,
+        "optimizer_state_count": 8,
+        "finite_nonzero_moments": true,
+        "train_only_norms_equal_frozen_preflight": true
+      },
+      {
+        "file": "member-1.pt",
+        "sha256": "68b7dc4798919da9c80fdb87a5593ed6df1d4944331868a3ebf88d255ad25dac",
+        "member_seed": 1,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "adam_steps": 3900,
+        "model_tensor_count": 8,
+        "optimizer_state_count": 8,
+        "finite_nonzero_moments": true,
+        "train_only_norms_equal_frozen_preflight": true
+      },
+      {
+        "file": "member-2.pt",
+        "sha256": "dbbe67490ce88e1ea421f71609f87bcbe36df3c8f2d8e64c59c4e340130ff102",
+        "member_seed": 2,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "adam_steps": 3900,
+        "model_tensor_count": 8,
+        "optimizer_state_count": 8,
+        "finite_nonzero_moments": true,
+        "train_only_norms_equal_frozen_preflight": true
+      }
+    ],
+    "current_only_v008": [
+      {
+        "file": "member-0.pt",
+        "sha256": "16895864d8861e1ffb2a683a0f3927a1a1dbb3c139d6df77daf43c6bdf3a610b",
+        "member_seed": 0,
+        "phase_names": [
+          "current_profile"
+        ],
+        "adam_steps": 1500,
+        "model_tensor_count": 8,
+        "optimizer_state_count": 8,
+        "finite_nonzero_moments": true,
+        "train_only_norms_equal_frozen_preflight": true
+      },
+      {
+        "file": "member-1.pt",
+        "sha256": "485d2f4c264060fcb07c0675951f732e3a2241120a592d06e7e831954656b98b",
+        "member_seed": 1,
+        "phase_names": [
+          "current_profile"
+        ],
+        "adam_steps": 1500,
+        "model_tensor_count": 8,
+        "optimizer_state_count": 8,
+        "finite_nonzero_moments": true,
+        "train_only_norms_equal_frozen_preflight": true
+      },
+      {
+        "file": "member-2.pt",
+        "sha256": "6541d80a6e001c1a3a1fe1f3da09d85a1222e5ca20f6d6fdb21800e2aca7c065",
+        "member_seed": 2,
+        "phase_names": [
+          "current_profile"
+        ],
+        "adam_steps": 1500,
+        "model_tensor_count": 8,
+        "optimizer_state_count": 8,
+        "finite_nonzero_moments": true,
+        "train_only_norms_equal_frozen_preflight": true
+      }
+    ]
+  },
+  "independent_review_sha256": "de1978bfa01247daacd1d60c13b7cfb02fea2c59c5bf819f3cafff8796fb65c5",
+  "independent_review": {
+    "bindings": {
+      "current_only": {
+        "cumulative_valid_unique": 2739,
+        "data_version": 8,
+        "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+      },
+      "live": {
+        "cumulative_valid_unique": 2739,
+        "data_version": 8,
+        "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+      },
+      "model_sha256": {
+        "current_only": [
+          "16895864d8861e1ffb2a683a0f3927a1a1dbb3c139d6df77daf43c6bdf3a610b",
+          "485d2f4c264060fcb07c0675951f732e3a2241120a592d06e7e831954656b98b",
+          "6541d80a6e001c1a3a1fe1f3da09d85a1222e5ca20f6d6fdb21800e2aca7c065"
+        ],
+        "legacy_then_current": [
+          "470f07cbb065abe9c726b2e84f0e7e5fe11179ad87f634be4cd72baed4cd8e30",
+          "68b7dc4798919da9c80fdb87a5593ed6df1d4944331868a3ebf88d255ad25dac",
+          "dbbe67490ce88e1ea421f71609f87bcbe36df3c8f2d8e64c59c4e340130ff102"
+        ]
+      }
+    },
+    "checks": {
+      "actual_wm_and_five_maes_both_models": true,
+      "average_tie_spearman_and_positive_counts_three_scores_both_models": true,
+      "checkpoint_file_hashes_and_six_field_bindings": true,
+      "fixed_config_and_helper_seals": true,
+      "manifest_identity_partition_and_order": true,
+      "selected48_order_exclusion_timing_curves_and_binding": true,
+      "terminal_and_output_hash_chain": true
+    },
+    "comparative_deltas_current_only_minus_live": {
+      "gain_mae": -0.07073244058175732,
+      "lcb_spearman": 0.03696791844173031,
+      "mae": 0.12316347281538942
+    },
+    "data": {
+      "holdout_order_exact": true,
+      "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+      "roles": {
+        "profile_holdout": 884,
+        "profile_train": 1855
+      },
+      "rows": 2739,
+      "selected48_training_overlap": 0
+    },
+    "holdout": {
+      "actual_positive": 0,
+      "n": 884,
+      "results": {
+        "current_only": {
+          "metrics": {
+            "gain_mae": 5.489680266563651,
+            "mae": 3.727659657246054,
+            "phi0_mae": 3.88162776255907,
+            "phi90_mae": 3.4992021828250475,
+            "s11_mae": 2.364376259035944
+          },
+          "ranking": {
+            "factory_score": {
+              "false_predicted_positive": 0,
+              "predicted_positive": 0,
+              "spearman": {
+                "n": 884,
+                "rho": 0.10911537536532313
+              }
+            },
+            "lcb_score": {
+              "false_predicted_positive": 0,
+              "predicted_positive": 0,
+              "spearman": {
+                "n": 884,
+                "rho": 0.11377900447972225
+              }
+            },
+            "wm_of_ensemble_mean": {
+              "false_predicted_positive": 0,
+              "predicted_positive": 0,
+              "spearman": {
+                "n": 884,
+                "rho": 0.1070345892369064
+              }
+            }
+          }
+        },
+        "legacy_then_current": {
+          "metrics": {
+            "gain_mae": 5.560412707145408,
+            "mae": 3.6044961844306647,
+            "phi0_mae": 3.737319132640464,
+            "phi90_mae": 3.3924767163946474,
+            "s11_mae": 2.0725139737268528
+          },
+          "ranking": {
+            "factory_score": {
+              "false_predicted_positive": 0,
+              "predicted_positive": 0,
+              "spearman": {
+                "n": 884,
+                "rho": 0.08617200927924475
+              }
+            },
+            "lcb_score": {
+              "false_predicted_positive": 0,
+              "predicted_positive": 0,
+              "spearman": {
+                "n": 884,
+                "rho": 0.07681108603799194
+              }
+            },
+            "wm_of_ensemble_mean": {
+              "false_predicted_positive": 0,
+              "predicted_positive": 0,
+              "spearman": {
+                "n": 884,
+                "rho": 0.06572405789861012
+              }
+            }
+          }
+        }
+      }
+    },
+    "input_sha256": {
+      "comparison": "133bd43265630c831919d546a6e2200b37403b0b4a2d8dd2c89427cf8a3c1185",
+      "comparison_helper": "2140b249b936cded2db0a300b66ace645e0132699711f3ce6500972eace3d082",
+      "config": "474b46db5a47c0cfe37c0970856747db8518b38234327dbb123bb3f459ca0a90",
+      "frozen_norms": "11c6b58b7931e8a2b702a70ba0c014732652771481979ae88daaacbd31f3c1c4",
+      "holdout_arrays": "fd49a04164a8a17d94a0a3eb0567761c0b9cb90831b659a5fafece4129e4dca5",
+      "preflight": "a36a94bfae6e6379358676519e7b073063ac8bfe2214b71fbee78c4695102533",
+      "prepare_receipt": "e8e2c36b85eee10009a72cafebd4b41e92e3eede7b446e05f8b567d1f62cf8aa",
+      "readiness": "9a503dbd40b2d368362ffc25442d8e6e82f69350e4cb43dcc762b5ba597a1203",
+      "run_helper": "c58cf1ab0626ba263efdaedf2af734b2fad0120fd10597f534e5f7e8bee0e7cd",
+      "run_status": "024217ee69bf96adb7cde399f430bc6f92b2fc6a542169769a6625b21b155baa",
+      "selected48_predictions": "08ee9b625747786fe0f852122af90cd427413aee6dbb6cad3d180bde94f5ca58",
+      "train_helper": "84b1f9a5b871329b82a61a5f865a8fffc39c2bf39d696cef0ed13f08987671fe"
+    },
+    "limits": [
+      "The 884-row development holdout truth is read from the saved NPZ and is not independent prospective HFSS validation.",
+      "The selected48 HFSS truth is not read; this review makes no selected48 accuracy or performance claim.",
+      "The v008 result is a weak mixed diagnostic and does not authorize live-model adoption or establish causal benefit."
+    ],
+    "review_script_sha256": "b405cca2f0c25867489caa34cf725af68fa750169f075dfbe20a99a1cac6274f",
+    "schema_version": 1,
+    "scope": {
+      "broad_tests": false,
+      "checkpoint_bytes_hashed_not_loaded": true,
+      "forward_or_rescore_or_training": false,
+      "model_or_pt_load": false,
+      "nas_or_selected48_hfss_truth": false,
+      "saved_numpy_and_json_arithmetic_only": true
+    },
+    "selected48": {
+      "binding_and_three_model_ids_exact": true,
+      "count": 48,
+      "finite_saved_curve_values_per_row": 216,
+      "fully_prospective_claim": false,
+      "order_and_pattern_hashes_exact": true,
+      "predicted_before_hfss": false,
+      "selected48_truth_read": false
+    },
+    "status": "passed_independent_saved_output_replay",
+    "terminal": {
+      "config_committed_in_head": true,
+      "started_utc": "2026-10-09T16:54:19.569849+00:00",
+      "status": "completed",
+      "terminal_utc": "2026-10-09T16:54:51.704839+00:00"
+    }
+  },
+  "launch_identity_sha256": "3060b486dbb2e9b38512c1a664b65f0f49ac1f4a175475fae797174768cdc263",
+  "run_status_sha256": "024217ee69bf96adb7cde399f430bc6f92b2fc6a542169769a6625b21b155baa",
+  "terminal_observation_sha256": "ad3a103ade39e58d05a5ea77ba8a997b52642bafe08ccfed28223f57d864bf9b",
+  "stderr_bytes": 0,
+  "raw_process_exit_code_observed": false,
+  "run_helper_sha256": "c58cf1ab0626ba263efdaedf2af734b2fad0120fd10597f534e5f7e8bee0e7cd",
+  "train_helper_sha256": "84b1f9a5b871329b82a61a5f865a8fffc39c2bf39d696cef0ed13f08987671fe",
+  "comparison_helper_sha256": "2140b249b936cded2db0a300b66ace645e0132699711f3ce6500972eace3d082",
+  "selected48_truth_read": false,
+  "predicted_before_hfss": false,
+  "fully_prospective": false,
+  "source_immutable_hashes_unchanged": true,
+  "live_model_replaced": false,
+  "controller_queue_hfss_or_nas_changed": false,
+  "decision": "Keep the live scorer. Current-only slightly improves Gain MAE and weak ranking, but worsens full/S11/radiation MAEs. Await the same selected48 terminal HFSS truth without extra solves or tuning.",
+  "limits": [
+    "The 884-row holdout is a frozen development comparison, not independent validation.",
+    "The selected48 predictions are explicitly non-prospective and this helper does not read their truth.",
+    "Removing legacy pretraining also fixes current training at phase index zero, as in the prior v006 current-only protocol.",
+    "No automatic live replacement is authorized by holdout or later single-cohort results.",
+    "CNN and weighted-loss branches are not trained or retuned here.",
+    "The process was observed absent after completed status; no raw OS exit code was captured.",
+    "Independent result review replays saved NPZ/JSON arithmetic and checkpoint file hashes, not model forward or tensors."
+  ]
+}

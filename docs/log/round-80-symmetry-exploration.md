@@ -1021,3 +1021,12 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-10：current-only v008固定新資料對照
 
 沿用v006 current-only CurveMLP、三seeds、Adam1e−3、batch128／100epochs／phase0、canonical group weights及train-only normalization，唯一新資料輸入為v008的2,739筆、1,855train／884hold。5,478 cache files／22,344,298 bytes逐檔SHA核對，48原guided候選全部排除於訓練。41項獨立metadata/static檢查通過，固定config與helper／receipt seal相符；先前暫態config seal不一致已在任何actual training前修正，最終固定config474b46...0a90。先commit再一次create-only CPU執行，物理checkpoint及保存算術核對後才記結果。48shadow預測不宣稱prospective／獨立泛化，也不凭單批自動替換live。legacy30→0會讓current phase1→0，故並非純預訓練單因子因果比較；不重試CNN／weighted coefficients、不改HFSS或queue。[準備收據](assets/r80_sm_currentonly_shadow_v008_prepared_20261010.json)。
+
+
+### 2026-10-10 00:54：current-only v008實際背景對照完成
+
+固定config先以296f8a4 commit/push，單次hidden CPU PID51832於00:54:19開始、00:54:51 completed／32.134990秒，00:55:38 CIM確認不存在／stderr0；未捕捉原始OS exit code。三fresh seeds/current100/Adam各1,500，八model及八optimizer states有限且moments非零，四norm與1,855train frozen preflight逐位一致；live三member各3,900步與norm核對通過，舊模型／來源／queue未變。[完整結果](assets/r80_sm_currentonly_shadow_v008_result_20261010.json)。
+
+同884 development holdout，live→current-only：fullMAE3.604496→3.727660（較差）、S11 2.072514→2.364376（較差）、Gain5.560413→5.489680（略降）、phi0 3.737319→3.881628／phi90 3.392477→3.499202（較差）。factory-scoreρ0.086172→0.109115、LCBρ0.076811→0.113779、mean-WMρ0.065724→0.107035，仍弱；真值及三score正WM counts均0，不能認證正例辨識。獨立Sol從保存NPZ/JSON重算WM、五MAE、average-tie Spearman/counts與所有884 IDs/order，並查六checkpoint file hashes／48排除與timing，七gate全通過；未載入PT或forward，沒有讀48HFSS真值。
+
+這是新資料上的混合診斷，不支持目前採用；保留original live legacy30/current100。48shadow predictions已保存，明示predicted_before_hfss=false／truth_read=false，待原本48實測終態後再對照，不加HFSS、不調係數、不續跑CNN/weighted。latest全量仍00:51的2,810／+.021682，R80／R81未完成，01:08健康檢查。
