@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **01:38 routine健康通過／等v008最後1筆**：原PID15944 exact／running_cycle，三台claimed最新0／0／1分鐘、scope零警報；controller已報v009／11cycles。v008g01/g02 done，g03尚15/16且非terminal；同48 live/current-only讀回及獨立replay已備好／未執行。[健康](../docs/log/assets/r80_health_20261010_0138.json)。不補假真值、不追加解算／清claims；最新全量仍00:51的2,810／+.021682，下一routine02:08。
+
 - **v007 first32真值及獨立raw重播完成**：32/32有效唯一／exactLR／0terminal error／0正WM；best−3.558715、median−10.154610，非新最佳。[結果](../docs/log/assets/r80_diverse_sm_v007_first32_result_20261010.json)。LCBρ0.0550、GainbandMAE3.9779，性能推進及排名仍弱；496對Hammingmin66、26canonical／cap2。只比原live v007，不混不同候選v006 shadow；v1/v2未執行、讀回gate/command窄修已核對。2810仍以00:51全量為準、不再加32；v00848待終態，01:38 routine。
 
 - **01:08 routine健康通過**：原PID15944 exact／running_cycle，三台claimed近期結果／scope零警報，LOW及guided有待跑；v007兩片皆done，可在讀回窄修審查後核對32真值。v008g02／g03為12／7且非terminal，48對照繼續等。[健康](../docs/log/assets/r80_health_20261010_0108.json)。current-only v008已實際完成／未adopt，最新全量仍00:51的2,810／+.021682；下一routine01:38，不重啟／清claims。
