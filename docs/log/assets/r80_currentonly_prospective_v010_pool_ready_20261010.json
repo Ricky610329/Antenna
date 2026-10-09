@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-09T21:05:24.772357+00:00",
+  "status": "independent_saved_pool_passed_local_actions_ready_no_dispatch",
+  "publisher_review": {
+    "path": "tmp/r80_currentonly_publisher_review_20261010_v001/publisher_review_v8.json",
+    "sha256": "8d78e21280f209cf215630a150304f7d1879e621e0850d4ade354f6340c234f1"
+  },
+  "pool_review": {
+    "path": "tmp/r80_currentonly_prospective_review_20261010_v001/pool_review_v6.json",
+    "sha256": "5f6ccc47689cddf447d8e7eaee562079d93f1c2512ffa3c075f2bdcd33145304"
+  },
+  "publisher": {
+    "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/publisher_v8.py",
+    "sha256": "3b155b8780c5a4baae9b697af802d65bf9d22564c9cb950a1c5fa50156a13d30"
+  },
+  "reviewed_bindings": {
+    "preparation_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\preparation_receipt.json",
+      "sha256": "3f5d667236f61bd6a25b6349cfb4f4488c4d1244a0802a155b0f899ea02bfa73"
+    },
+    "prepared_tree": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6",
+      "tree_sha256": "3a66687980e61fdcc9f889696c0a0400280e123f4e2d8c6ebf8c7c84895eb9df"
+    },
+    "prepared_replay": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\prepared_v6_replay.json",
+      "sha256": "7232a1457040ef6f34ba3015e3387dcc0a2645283edcc4211435040bb82a4e7c"
+    },
+    "publisher_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_review_v8.json",
+      "sha256": "8d78e21280f209cf215630a150304f7d1879e621e0850d4ade354f6340c234f1"
+    }
+  },
+  "independent_saved_pool_checks": {
+    "prepared_file_count": 86,
+    "prepared_canonical_file_sha256_inventory": "93cfc2d7414e8dc893f8b6dea8983eac834eb2b4b84b7111a3993f3ba7804af7",
+    "receipt_file_bindings_checked": 9,
+    "candidate_count": 20000,
+    "candidate_origin_counts": {
+      "fresh_random": 10000,
+      "parent_variant": 10000
+    },
+    "unique_packed_patterns": 20000,
+    "all_packed_patterns_25x25_binary_lr_symmetric": true,
+    "ordered_pool_sha256": "e70ac8ec42c37f815bb9cfcffee97ed496ad40418b7ad71bb90f030e3368bec5",
+    "owner_score_orders_identical": true,
+    "finite_scalar_rows_per_owner": {
+      "current_only": 20000,
+      "live": 20000
+    },
+    "exclusion_count": 3152,
+    "pool_disjoint_from_exclusions": true,
+    "selected_count": 32,
+    "selected_owner_counts": {
+      "current_only": 16,
+      "live": 16
+    },
+    "minimum_physical_hamming": 71,
+    "canonical_group_count": 25,
+    "canonical_max_observed": 2,
+    "all_32_pattern_tensors_match_packed_pool": true,
+    "manifest_scalars_match_selection_owner_pool": true,
+    "exact_round_robin_shards": true,
+    "shard_owner_counts": [
+      {
+        "current_only": 8,
+        "live": 8
+      },
+      {
+        "current_only": 8,
+        "live": 8
+      }
+    ]
+  },
+  "owner_bindings": {
+    "live": {
+      "predictor_binding_sha256": "29df69bd5a58cbf3ab58a84a33f5ae603494f918f830bffbfcc5571052b0a850",
+      "combined_model_hash": "283a6af50f1a4522480523cb13decb3eadcbc150f837a16a76536e5740b556ab",
+      "model_source_count": 3,
+      "model_source_sha256": [
+        "406aab285c1e5042d7f97247bff26a8ee09cf6f1ff9cbefd367da57dcb0d2018",
+        "8680bf0b9397e9dbd3dc6b34922323515cac9aeab318bde6515264e60e22607f",
+        "ccfe6f39ffff6344245f6e2d5bf74580212e5869d01a38abf136457e9e291d7d"
+      ]
+    },
+    "current_only": {
+      "predictor_binding_sha256": "2f1e6e3a508e04fc9fe3d6d7e089e74028d39f0a0e8220f34994b89ce405ec5f",
+      "combined_model_hash": "3c882df45d297d8ed3181338b739da62362f5f6a2470dd586ae4fdb52af2882e",
+      "model_source_count": 3,
+      "model_source_sha256": [
+        "5bd5cd55657ab4bb5195ead28180d6b90492b5ddddf76c4b67b23f1c5ecc875c",
+        "e39c279b83c9cd561726b933f1d1ebd49e50f5fe532198681b67fa4d12b865b2",
+        "2a054b4dfe859dc0831aa4c87352dea26e92914dc2eb3f9492ef63c1ea9328e3"
+      ]
+    }
+  },
+  "local_actions": [
+    {
+      "binding": {
+        "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/phase-v8-01/action_receipt.json",
+        "sha256": "fb40ab78e6617b9fbdad52f0aa5e9d494ac08fd85afc1ca92a890f6cf4541267"
+      },
+      "status": "prepared"
+    },
+    {
+      "binding": {
+        "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/phase-v8-02/action_receipt.json",
+        "sha256": "42cabd660535618e2ad39ebc9f133620be151225ec0a61c8c427c0a3afa624fc"
+      },
+      "status": "prepared"
+    }
+  ],
+  "HFSS_dispatched": false,
+  "NAS_or_queue_mutation": false,
+  "selected_truth_read": false,
+  "limits": [
+    "The completed prepared-v6 replay is authoritative for shared-code scoring and selection replay.",
+    "This bounded independent review checked saved packed geometry, all 32 raw pattern tensors, pool ordering, scalar finiteness and owner attribution, shard balance, and saved provenance consistency; it did not implement or rerun either scorer.",
+    "Predictor checkpoint paths and hashes were compared only as saved metadata. Predictor checkpoint files were not opened or hashed.",
+    "No model forward or training ran, no selected truth was read, and no NAS, HFSS, controller, queue, prepare-action, seal, truth-readout, or dispatch operation was invoked.",
+    "Local actions were prepared only; publication still requires the current waiting window, duplicate, global5000 and guided96 capacity gates."
+  ]
+}

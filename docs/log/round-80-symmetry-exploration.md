@@ -1140,3 +1140,8 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10 05:04：使用者查詢最新實測狀況
 
 逐 store cutoff 重播 sample/rad：3,015 唯一有效圖形／3,020 成功觀測含重測，較04:16新增36。沒有新最佳，最佳 WM +0.0216822624 dB。[實測收據](assets/r80_best_status_20261010_0504.json)。05:03原controller exact身分通過，三台claimed工作，scope無警報；主線reported v012／completed16，SM批次更新與LOW補池持續。current-only對照已完成20,000候選池及32筆保存預測／本機重播，尚未派HFSS或採用；準備成功不等於性能改善。目前資料持續增加，近期探索仍未改善全域最佳；R80 5,000與後續R81 spec／正WM驗證未完成。下一routine05:33。
+
+
+### 2026-10-10 05:05：前瞻對照選樣獨立核對與本機派工準備
+
+獨立保存資料核對通過：完整20,000候選左右對稱、32筆來源各16、兩片各8+8、Hamming最小71、25組每組最多2。publisher v8只接續已修正auditor的來源／版本，原capacity及交易規則不變；實際validator及兩份本機action準備通過。[收據](assets/r80_currentonly_prospective_v010_pool_ready_20261010.json)。尚未派HFSS、未讀新truth／改NAS queue、未採用新模型。待主線可用窗口及當下global5000／guided96餘量通過，再分兩片派工。原三worker／SM持續；這是準備進度，不是新最佳或模型勝出。
