@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-09T21:02:32.543392+00:00",
+  "completed_utc": "2026-10-09T21:04:09.711131+00:00",
+  "status": "read_only_query_complete",
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "unique_successful_patterns": 3015,
+  "successful_including_repeats": 3020,
+  "raw_replayed_this_query": 3020,
+  "exact_prior_metrics_reused": 0,
+  "reported_best_independently_raw_replayed": true,
+  "best": {
+    "id": "r80localv1_00026_f6ffb938",
+    "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+    "s11_margin_db": 0.09608840942382812,
+    "gain_margin_db": 0.021682262420654297,
+    "factory_margin_db": 0.021682262420654297,
+    "radiation_margin_db": 0.3709280490875244,
+    "radiation_margin_clipped_db": 0.3709280490875244,
+    "store": "dedust_r80c83e6601eg01",
+    "sample_sha256": "f79add39e27605d2f54ab48a36a7e206d6bef672ca407efdfe8d0a237d1bca0c",
+    "rad_sha256": "e11aee92cc03340a6bebfd97ef713059904598fbc6f8fb39b0822184e5249b40",
+    "repeat": false,
+    "pair_index": 137,
+    "row_index": 13,
+    "worst_inband_s11_db": -10.096088409423828,
+    "minimum_inband_gain_dbi": 4.021682262420654
+  },
+  "result_errors": [
+    {
+      "store": "dedust_r80c20015584g02",
+      "id": "r80c20015584g_00003_8e825f30",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      }
+    },
+    {
+      "store": "dedust_r80c20015584g02",
+      "id": "r80c20015584g_00009_f7bbed04",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      }
+    },
+    {
+      "store": "dedust_r80c20015584g02",
+      "id": "r80c20015584g_00011_1eb7f4e4",
+      "entry": {
+        "error": "watchdog_timeout: RPC_S_CALL_FAILED(HFSS 行程死亡) | (-2147023170, '遠端程序呼叫失敗。', None, None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      }
+    },
+    {
+      "store": "dedust_r80c8f61dc08g01",
+      "id": "r80c8f61dc08g_00012_41270bad",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      }
+    }
+  ],
+  "jobs_sha256_at_scan_start": "f3894595c6955c28c2cc8c30b50abcea4e4f40b4d1e3a4962bc0aa39552fb2dd",
+  "rows_sha256": "de30015074e0f019415b5811798a81debc51aaf6eced8756beae8de947819e86",
+  "pair_proofs_sha256": "53226f6e25399db2d7fd4853691f80d5f2ba23c64f29bcdb55c7f8ba9a27de80",
+  "query_script_sha256": "da6a0034241d4d6f22ecfd1ce0272b4dbd06ec252737278b0539b4bec2b631ac",
+  "controller_locks_acquired": false,
+  "queue_or_source_mutation": false,
+  "limits": [
+    "Each store has its own saved cutoff; later worker results or queue additions are excluded.",
+    "Unique representatives prefer nonrepeat observations, then queue/manifest order.",
+    "Single HFSS solve performance, not repeat certification or field-symmetry proof."
+  ],
+  "validation_status": "passed_local_saved_raw_summary_validation",
+  "new_best": false,
+  "target_unique": 5000,
+  "new_unique_since_prior": 36,
+  "prior_receipt": "docs\\log\\assets\\r80_best_status_20261010_0416.json",
+  "prior_receipt_sha256": "f00c45b4ae8f608c7c044d4cac9fc609d5dbd234df70cab09da546f978113029",
+  "query_report_sha256": "b12241026c7a68738e693ff71c9b20dec7532116bfdb29f96af5bc7671fd7e97",
+  "validation_script_sha256": "8417a018fbb53d3cb536ac79311009f8ce2a27fb5c04caaa8e68914c0989ce0c",
+  "known_independent_repeat_wm_db": 0.03643369674682617,
+  "health_observed_utc": "2026-10-09T21:03:00.0978875Z",
+  "source_health_sha256": "7ed28184c57c2d2507957676ca93680968247ee16417204f7108fcd5992042a4",
+  "controller_status": "running_cycle",
+  "latest_controller_reported_data_version": 12,
+  "completed_controller_cycles": 16,
+  "next_routine_health_taipei": "2026-10-10 05:33",
+  "prospective_preparation_terminal_status": "prepared_predictions_verified_no_publish_no_hfss",
+  "prospective_terminal_sha256": "a3ed713618a42d30974fb7c9c72b9ab3e0fee278cd3de047bc1de325d9cfe9fb",
+  "prospective_pilot_dispatched": false,
+  "shadow_models_adopted": false,
+  "new_NAS_archive_created": false,
+  "existing_best_figure": "docs/log/assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png",
+  "existing_best_figure_sha256": "39fda87412acaa7b0c5d82f78865c1e38326f6852bd8342c9a177ef1cfeaf969"
+}

@@ -1135,3 +1135,8 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10 04:50：實際雙scorer準備成功與全池重播
 
 - **04:46 CPU準備成功／04:50實際full-pool重播通過**：child45732 exit0／193.393秒，共同20k＝10k random+10k parent；32筆＝16 frozen-live v010+16 current-only v010，兩片各8+8、joint Hammingmin71／25 canonical groups／cap2，雙預測已保存。[結果](assets/r80_currentonly_prospective_v010_preparation_result_20261010.json)。原auditor的shard名字硬編碼不符已保留並只修一行，原準備／模型／選樣不改、不重訓。獨立actual pool review及下游auditor綁定尚待，未派HFSS／未讀新truth。原main在04:43完成v012週期；下次健康05:08，R80/R81未完成。
+
+
+### 2026-10-10 05:04：使用者查詢最新實測狀況
+
+逐 store cutoff 重播 sample/rad：3,015 唯一有效圖形／3,020 成功觀測含重測，較04:16新增36。沒有新最佳，最佳 WM +0.0216822624 dB。[實測收據](assets/r80_best_status_20261010_0504.json)。05:03原controller exact身分通過，三台claimed工作，scope無警報；主線reported v012／completed16，SM批次更新與LOW補池持續。current-only對照已完成20,000候選池及32筆保存預測／本機重播，尚未派HFSS或採用；準備成功不等於性能改善。目前資料持續增加，近期探索仍未改善全域最佳；R80 5,000與後續R81 spec／正WM驗證未完成。下一routine05:33。
