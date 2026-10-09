@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "status": "verified_single_controller_started_recovery_in_progress",
+  "recorded_utc": "2026-10-09T00:21:04.774026+00:00",
+  "launch_commit": "ae63e1ffba452beddf3d97d8dcfae54a628d7275",
+  "process_id": 54712,
+  "creation_unix_ms": 1791505204815,
+  "launch_id": "b126f3badf3649a9bc9c4ea0f28ab37f",
+  "watch_status": "running_cycle",
+  "interval_seconds": 1800,
+  "low_poll_seconds": 90,
+  "settings_sha256": "7662a0d3f5a344b2791f2bf06dfe6eb3e9d3755307a9134b5cc841b1507fc9b0",
+  "old_failed_status_preserved_in_new_attempt": true,
+  "old_failed_status_sha256": "cb7bde62b7fd99a3b22e225882a082fdbe456fbf9fb041c21770ddbb958bd04d",
+  "launch_gate_sha256": "1076126f2c20ac9c265be23adb68add21b95946420240589abae0aff461e9c1d",
+  "startup_observation_sha256": "486ac5b3bd224cc173f8539ea4d1c7e75e61d121b7309e479fbae73bb3b276a6",
+  "scoped_status": {
+    "exit_code": 0,
+    "alarms": 0,
+    "claimed_jobs": 3,
+    "claimed_counts": [
+      "13/16",
+      "6/16",
+      "7/16"
+    ],
+    "queued_low_shards": 3,
+    "latest_results_minutes": [
+      8,
+      0,
+      0
+    ],
+    "scope": "symmetry_filter_20261007"
+  },
+  "limits": [
+    "Startup and exact process identity only; first completed recovery cycle/dispatch remains pending.",
+    "Worker/NAS activity does not verify remote runtime Git or OS process identity.",
+    "No worker/HFSS restarted; no new full-dataset WM query or private archival transfer."
+  ]
+}
