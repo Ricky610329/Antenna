@@ -1145,3 +1145,10 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10 05:05：前瞻對照選樣獨立核對與本機派工準備
 
 獨立保存資料核對通過：完整20,000候選左右對稱、32筆來源各16、兩片各8+8、Hamming最小71、25組每組最多2。publisher v8只接續已修正auditor的來源／版本，原capacity及交易規則不變；實際validator及兩份本機action準備通過。[收據](assets/r80_currentonly_prospective_v010_pool_ready_20261010.json)。尚未派HFSS、未讀新truth／改NAS queue、未採用新模型。待主線可用窗口及當下global5000／guided96餘量通過，再分兩片派工。原三worker／SM持續；這是準備進度，不是新最佳或模型勝出。
+
+
+### 2026-10-10 05:33：例行健康與前瞻窗口等待
+
+原controller exact身分通過，三台claimed進度15/16、4/16、1/16，最新2／0／1分鐘，scope無警報；主線完成17輪、reported SM v012，新增兩片guided。[健康收據](assets/r80_health_20261010_0533.json)。這不是新全量census；最新全量仍05:04的3,015／最佳+.021682。兩片32筆對照的本機action準備完成、未派HFSS；剛完成主線周期的waiting僅372.703秒，下一輪已在運作。背景local-only窗口等待薄層正在準備；所有現有dispatch transaction／capacity／truth gate維持不變。下一routine06:03，R80/R81未完成。
+
+此前c20015584g02的兩筆COM錯誤及一筆watchdog錯誤，既有worker已重試成ok，store.done存在、store.fail不存在；未人工刪claim或重啟。這裡只核對錯誤恢复與結果標記，不冒稱新增全量真值審计或最佳結果。
