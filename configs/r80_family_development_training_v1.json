@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "name": "r80_family_development_training_v1",
+  "status": "fixed_recipe_for_isolated_implementation_not_activated",
+  "scope": "symmetry_filter_20261007",
+  "reference_protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "geometry_profile": "single_v1",
+  "development_train_groups": ["c48nq1p05_16"],
+  "data_role_policy": {
+    "reference_split": "preserve original seed-derived role in new manifest metadata",
+    "effective_profile_split": "whole named canonical group including aliases is development train; every other canonical group retains its reference role",
+    "legacy_split": "unchanged",
+    "parent_artifacts": "immutable; fresh child protocol/workdir/models and explicit local frozen migration receipt",
+    "repeat_and_nonunique": "excluded from new unique learning and collection counts",
+    "bootstrap": "existing verified labels; zero new HFSS points; never clone old model or mutable state"
+  },
+  "unchanged_training": {
+    "ensemble_seeds": [0, 1, 2],
+    "hidden_dims": [512, 512, 256],
+    "learning_rate": 0.001,
+    "batch_size": 128,
+    "legacy_epochs": 30,
+    "current_epochs": 100,
+    "fresh_initialization_each_version": true,
+    "early_stopping": false,
+    "normalization": "fit current effective training rows only",
+    "group_weights": "existing inverse canonical-group frequency",
+    "min_new_valid": 48,
+    "max_new_valid": 96
+  },
+  "unchanged_execution": {
+    "hfss_profile": "configs/single_r80_symmetry_factory.yaml",
+    "target_valid_unique": 5000,
+    "main_interval_seconds": 1800,
+    "low_poll_seconds": 90,
+    "guided_priority": 1,
+    "low_priority": 6,
+    "cpu_threads": 4,
+    "worker_restart": false,
+    "local_hfss": false,
+    "emforge_change": false
+  },
+  "evidence_policy": {
+    "old_v2_results": "retained under their original protocol; never relabeled as new-model validation",
+    "development_group_metrics": "fit/calibration diagnostics only, not independent validation",
+    "remaining_reference_holdout": "descriptive regression metrics, not blanket untouched validation",
+    "new_candidates": "freeze model hashes, patterns, exclusions and predictions before new HFSS truth; report all outcomes",
+    "unseen_group_claims": "require a separately predeclared untouched whole-group cohort",
+    "sm_improvement_claim": "not established by this recipe or a fitted best-point residual",
+    "spec_success": "actual HFSS values plus separately recorded repeat; finite grid limitations remain"
+  },
+  "transition_requirements": [
+    "Generated-fixture tests and independent code/role/provenance review pass before actual migration/training.",
+    "Create-only local frozen migration from an explicit verified parent data version; verify before/after source hashes and effective roles.",
+    "New model training and inference bindings pass before controller activation.",
+    "Normally stop the exact old controller at a completed cycle before integrating changed live source or starting a new watcher; distinct training roots do not enforce single ownership.",
+    "Preserve all queue/claims/raw and worker execution; do not reuse the consumed v2-bound pilot request.",
+    "Inspect real controller/process/queue readback after activation; no restart based only on an observer timeout."
+  ],
+  "actual_migration_performed": false,
+  "actual_model_training_performed": false,
+  "controller_transition_performed": false
+}

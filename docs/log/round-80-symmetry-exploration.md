@@ -711,3 +711,11 @@ v033對舊anchor預測WM分數−11.847624，與實測−0.246441差−11.601184
 [幾何分布／場型鏡射殘差圖](assets/round-80/local-variation32-20261009-v001/geometry_terrain.png)及[出圖收據](assets/round-80/local-variation32-20261009-v001/plot_receipt.json)沿用未修改的`script.symmetry_analysis profile`與`script.figs.symmetry_profile`。32筆／0重複／0repeat重播通過；Conductor另從出圖NPZ以float64重算每個ID的WM，和完整判讀完全一致，核對圖檔SHA并目檢文字／頻率帶／legend。頻率中位數與25–75%帶是逐頻率描述，並非信賴區間或單一可製作pattern；幾何只有兩個鄰近bins，不能分辨全部局部拓樸變體，也不作因果推論。最佳樣本的場型極座標仍見前節原圖。
 
 第一次分析CLI誤用`--profile`在argparse前退出、沒有產物，改用既有`profile`子命令後完成；薄收據匯出第一次因NPZ float32算術與Python float64指標不完全相同而在寫出前拒絕，改為將原raw值提升float64後逐ID精確一致，沒有放寬比較或修改真值。完整新凍結／分析／獨立審查仍在本機ignored資料夾，worker raw在本人私人dataset，未另發布新NAS證據歸檔；Git交付薄結果、兩张既有腳本圖及log。R80仍以5,000有效唯一為目標，LOW補池／批次SM及每30分鐘健康檢查繼續，R81尚未派工。
+
+### 2026-10-09：固定下一個家族學習版本，隔離實作中
+
+[新版本固定配方](../../configs/r80_family_development_training_v1.json)只更動已被搜尋觸及的`c48nq1p05_16`之current-profile學習角色：整個canonical家族及aliases作為development train，新manifest保存原reference split，其他group／legacy角色不變。原training_v2 protocol、資料及模型保留；新版本在另一个empty workdir重建、每版仍fresh initialization、歷史30＋current100 epochs、三成員、相同MLP／group weights／norm規則及48–96更新節奏。這是針對已證實的覆蓋缺口之單因素調整，不是SM改善已成立。
+
+方案參考`docs/memory/project_sm_training_redesign.md`的歷史單筆fit遺忘問題、`script.train_sm_offline`／`script.sm_reanchor`的累積真值／replay做法及既有scoped訓練API；不另建模型框架。新family資料不拿來驗證新模型，剩餘舊holdout亦僅作描述性的回歸監看；新候選須在HFSS真值前鎖定模型／pattern／predictions，未知家族泛化需另凍結整group驗證範圍。固定六欄checkpoint binding維持，protocol_id與manifest_id分別綁定新的角色政策及資料證據。
+
+Conductor已核對實際v2設定及方案來源；實作在`tmp/r80_sm_development_worktree_20261009_v001`的隔離worktree進行，live GAN來源／PID54712／settings未改。訓練功能與local frozen migration utility分工、generated-fixture測試及獨立審查尚在進行，沒有實際新模型或controller切換。新工作根的watch鎖不能阻止舊watcher同時存在，因此只能在舊cycle完成後正常停止精確舊controller，再整合live程式及啟動新watcher；worker／queue／claims／raw不變，已消耗的v2-bound pilot request不可沿用。此配方先commit，實際migration、training及activation另記收據，不以計畫當完成。
