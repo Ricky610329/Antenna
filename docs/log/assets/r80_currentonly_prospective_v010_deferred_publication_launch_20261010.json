@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "status": "actual_exact_phase1_driver_live_waiting_local_only",
+  "observed_utc": "2026-10-09T21:40:33.012785+00:00",
+  "launch": {
+    "schema_version": 1,
+    "status": "started_one_shot_phase1_driver",
+    "started_utc": "2026-10-09T21:39:46.6681901Z",
+    "driver_pid": 9960,
+    "driver_creation_unix_ms": 1791581986675,
+    "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+    "actual_argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -B -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8.py\" run ",
+    "driver_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8.py",
+    "driver_sha256": "4ba04dce461ddd5d91cff3e5ecf777c89fd8b6425ba0ea4c464aa66eea1e8c77",
+    "review_sha256": "3bba2f91bb71886bce1c4b65ca3f7a86e5e319b942b4964e16ddd69d060906ec",
+    "launch_helper_sha256": "8c1fcfaa8f24e461b9e2fa7b097e995496d158ce5fbd6531872d5146dac4e8ed",
+    "phase": 1,
+    "automatic_retry": false,
+    "driver_dispatch_timeout": null,
+    "HFSS_started_here": false,
+    "stdout_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8_stdout.log",
+    "stderr_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8_stderr.log"
+  },
+  "launch_sha256": "698b3ec7bc277e5d92ea33fa3a00f34d1a9f46766930afbd9d28ece624507560",
+  "claim": {
+    "argv": [
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8.py",
+      "run"
+    ],
+    "deadline_utc": "2026-10-09T23:39:48.890062+00:00",
+    "dispatch_attempt_limit": 1,
+    "driver": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8.py",
+      "sha256": "4ba04dce461ddd5d91cff3e5ecf777c89fd8b6425ba0ea4c464aa66eea1e8c77"
+    },
+    "expected_pinned_inputs": {
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v8-01\\action_receipt.json": {
+        "sha256": "fb40ab78e6617b9fbdad52f0aa5e9d494ac08fd85afc1ca92a890f6cf4541267"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\publisher_v8.py": {
+        "sha256": "3b155b8780c5a4baae9b697af802d65bf9d22564c9cb950a1c5fa50156a13d30"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\pool_review_v6.json": {
+        "sha256": "5f6ccc47689cddf447d8e7eaee562079d93f1c2512ffa3c075f2bdcd33145304"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_review_v8.json": {
+        "sha256": "8d78e21280f209cf215630a150304f7d1879e621e0850d4ade354f6340c234f1"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json": {
+        "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+      }
+    },
+    "max_wait_seconds": 7200.0,
+    "phase": 1,
+    "poll_seconds": 30.0,
+    "process_identity": {
+      "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -B -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8.py\" run",
+      "creation_unix_ms": 1791581986675,
+      "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+      "pid": 9960
+    },
+    "schema_version": 1,
+    "started_utc": "2026-10-09T21:39:48.890062+00:00",
+    "status": "claimed_one_shot_local_wait",
+    "trigger_remaining_seconds": 360.0
+  },
+  "claim_sha256": "da52dd2d8383b3a8e630ec7d3ab7105b38894999775b70139f017d2cb7251b6e",
+  "observed_process_exact": true,
+  "observed_controller_exact": true,
+  "last_local_event": {
+    "eligible": false,
+    "event": "local_poll",
+    "remaining_seconds": null,
+    "status": "running_cycle",
+    "status_binding": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+      "sha256": "fb491f1b76ff562b021c4f320c7f4962641bced1aae47190b494fcd88d77acbd"
+    },
+    "utc": "2026-10-09T21:40:19.617589+00:00"
+  },
+  "result_exists": false,
+  "stderr_empty": true,
+  "dispatch_started": false,
+  "NAS_or_queue_mutation": false,
+  "selected_truth_read": false,
+  "review_scope": "Implementer bounded static review plus conductor source/launcher and actual PID/start/argv/claim checks; no independent broad test pass claimed.",
+  "limits": [
+    "Only phase1 is scheduled; phase2 and complete readout seal are later gates.",
+    "7200 seconds bounds local pretrigger wait only; publisher has its unchanged final transaction guards and no wrapper kill/timeout.",
+    "Actual publication, capacity/readback, and new HFSS results are not claimed by this launch receipt."
+  ]
+}

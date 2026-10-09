@@ -1152,3 +1152,8 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 原controller exact身分通過，三台claimed進度15/16、4/16、1/16，最新2／0／1分鐘，scope無警報；主線完成17輪、reported SM v012，新增兩片guided。[健康收據](assets/r80_health_20261010_0533.json)。這不是新全量census；最新全量仍05:04的3,015／最佳+.021682。兩片32筆對照的本機action準備完成、未派HFSS；剛完成主線周期的waiting僅372.703秒，下一輪已在運作。背景local-only窗口等待薄層正在準備；所有現有dispatch transaction／capacity／truth gate維持不變。下一routine06:03，R80/R81未完成。
 
 此前c20015584g02的兩筆COM錯誤及一筆watchdog錯誤，既有worker已重試成ok，store.done存在、store.fail不存在；未人工刪claim或重啟。這裡只核對錯誤恢复與結果標記，不冒稱新增全量真值審计或最佳結果。
+
+
+### 2026-10-10 05:40：phase1本機等待driver實際啟動
+
+- **10/10 05:40 前瞻phase1背景等待已實際啟動**：driver PID9960／creation1791581986675／argv／claim现场吻合，原main15944仍exact live；只讀本機狀態，每30秒、最多2小時，剩餘窗口至少360秒才單次呼叫原publisher v8。不自動重試／殺程序／改模型；所有global5000／guided96、來源、duplicate及append前180秒guard照舊。[啟動](assets/r80_currentonly_prospective_v010_deferred_publication_launch_20261010.json)。尚未派HFSS／改queue，phase2之後接續；05:33三台健康、舊三筆HFSS錯誤已由既有worker重試成ok。最新全量05:04的3,015、WM+.021682。下一routine06:03；R80/R81未完成。
