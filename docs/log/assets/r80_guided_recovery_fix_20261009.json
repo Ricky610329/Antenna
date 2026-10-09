@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "status": "code_verified_runtime_restart_pending",
+  "recorded_utc": "2026-10-09T00:18:04.115553+00:00",
+  "scope": "R80 development controller guided bundle recovery; HFSS worker code unchanged",
+  "incident": {
+    "old_pid": 16536,
+    "failed_taipei": "2026-10-09T07:13:30.916987+08:00",
+    "observed_taipei": "2026-10-09T07:30:47+08:00",
+    "error": "ValueError: guided bundle completion binding differs from cycle",
+    "cycle_id": "034683bd54146648d99c3bafcda890bab9e892572def5fe8856516f6ff773191",
+    "completed_guided_count": 16,
+    "model_version": 29,
+    "sm_fit_valid_unique": 1851,
+    "fit_count_is_live_dataset_count": false,
+    "cause": "A recovered training cycle compared its completed cohort count with fresh outstanding capacity after workers produced more results."
+  },
+  "change": [
+    "Preserve completed cohort count and exact predictor/artifact bindings when fresh capacity and exclusions admit it.",
+    "Preserve unusable cohort and create/recover an immutable versioned plan in the same training cycle.",
+    "Separate original selected plan identity/tree from current queue/capacity/exclusion decision.",
+    "Replay exact roundrobin shard rows, metadata bytes, pattern bytes, receipt and directory entries.",
+    "Prepared/dispatching state flow is unchanged."
+  ],
+  "validation": {
+    "schema_version": 1,
+    "status": "reviewed_full_regression_pass",
+    "verified_utc": "2026-10-09T00:18:04.115553+00:00",
+    "full_tests": 817,
+    "seconds": 371.3,
+    "full_log_sha256": "5ed7499b0c540f2adabdf13407ac2c1b9496d9477fd1e3f6f0e733f53303a113",
+    "source_files": [
+      {
+        "path": "script/symmetry_factory_cycle.py",
+        "sha256": "d7e8df31a4ea603fab957086a516f65dbd64355e64733755ee8a5aeb205aafef"
+      },
+      {
+        "path": "tests/test_symmetry_factory_cycle.py",
+        "sha256": "a66922805a417ceee4cfe7a82bb3136ebe2627af3b3b40851ae8570f9264404e"
+      },
+      {
+        "path": "script/symmetry_factory_watch.py",
+        "sha256": "bbcb8bc7729d8f601577e4b8e8419baf7bfd8bba1863348c571dc1d88bc74a25"
+      },
+      {
+        "path": "script/symmetry_factory_backlog.py",
+        "sha256": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84"
+      },
+      {
+        "path": "script/symmetry_training.py",
+        "sha256": "4b58858b7d7adaea68b2e7db3eb527310e390921e5e2d5d05bd115c413a79a36"
+      },
+      {
+        "path": "script/symmetry_sm_pool.py",
+        "sha256": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8"
+      },
+      {
+        "path": "script/symmetry_incumbent_shell_pilot.py",
+        "sha256": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738"
+      },
+      {
+        "path": "script/profiled_shards.py",
+        "sha256": "c1571849d769c6731ab3df005f920e75cf212e1c439da4f50a20ca1a6a3628c9"
+      },
+      {
+        "path": "script/profiled_batch.py",
+        "sha256": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3"
+      }
+    ],
+    "golden_files": [
+      {
+        "path": "tests\\golden.json",
+        "sha256": "c5fc5ed0db1bf51de2e81f6ac8681962d70e4a1b99508dbf7cad6cdfb7ec42fb",
+        "bytes": 415
+      },
+      {
+        "path": "tests\\golden_loop.json",
+        "sha256": "8b179a83cda6726a713efdbe529d0b40454c199ac1c8e1419e7d48c13f3b5598",
+        "bytes": 942
+      },
+      {
+        "path": "tests\\golden_loop_dual.json",
+        "sha256": "fb48587153fcbeae6ce4b34880be7ba88b042845e004b4388a0c16ef1518627e",
+        "bytes": 900
+      }
+    ],
+    "golden_unchanged": true,
+    "source_unchanged": true,
+    "pyflakes_pass": true,
+    "independent_final_sha256": "a9b7c1d2a5537366240fdf00435ae0d9fe8339a74d6c2987f46b2e118a1f45d7",
+    "actual_local_replay_sha256": "31a948dfb67847a0b7128ee88cb12e527b814267ab1548d4bec6e5e267baa5db"
+  },
+  "local_evidence": {
+    "failed_runtime_manifest_sha256": "cdf86aa7505ce3abfc72a2cefa2e32071a503be2335f88ff3c8b65fbefc1114e",
+    "payload_files": 164,
+    "payload_bytes": 4374544,
+    "final_actual_local_replay_sha256": "31a948dfb67847a0b7128ee88cb12e527b814267ab1548d4bec6e5e267baa5db",
+    "strict_split_supplement_sha256": "c9dbfe2567cd3067c563a6a073ea0d9c0e31de51d2f87f14ae83c1113737bd63",
+    "interim_patch_sha256": "845a54a103a7ee760b51e82402bb4e9d48879053791c21112468c57ff7bac930",
+    "interim_validation_sha256": "2381b74cdb358d7cd82e7cac8bc5b90f31393ac623cddfa0dc26602d6443f68f",
+    "final_independent_review_sha256": "a9b7c1d2a5537366240fdf00435ae0d9fe8339a74d6c2987f46b2e118a1f45d7",
+    "review_history_note_sha256": "4f4d727a934cece0a9be23bdd5172508662e22dac377b44bb1ad7dc55e5a34bc"
+  },
+  "limits": [
+    "Earlier 811-test pass predates final fixes; two owned interim pytest processes were interrupted. Only the final 817-test run validates delivery source.",
+    "Independent dynamic review uses generated fixtures with mocked training/pool; actual local 16-row replay is conductor evidence without model forward or NAS writes.",
+    "Early blocking-review original bytes were overwritten before backup; only its recorded SHA and findings survive. Final review is separately preserved. Production failure artifacts are preserved.",
+    "No fresh full-dataset WM query, new HFSS measurement, worker restart, NAS archival write or second controller start has occurred at this code milestone.",
+    "Runtime recovery, R80 5000 unique valid physical observations and R81 positive WM/repeat are pending."
+  ]
+}

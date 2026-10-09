@@ -465,6 +465,51 @@ def _publish_bundle(output: Path, expected_cfg: Any, producer: Callable[[Path], 
     return output
 
 
+def _guided_completion(path: Path, *, cycle_id: str,
+                       predictor_model_ids: Sequence[Mapping[str, Any]]) -> tuple[int, set[str]]:
+    """Validate a completed guided cohort without imposing a newly computed capacity."""
+
+    marker = _read(path / "factory_bundle_complete.json")
+    manifest = _read(path / "manifest.json")
+    count = marker.get("selected_count")
+    if isinstance(count, bool) or not isinstance(count, int) or count <= 0:
+        raise ValueError("guided bundle completion has an invalid selected count")
+    hashes = [str(row["pattern_sha256"]) for row in manifest]
+    expected = {
+        "schema_version": 1, "cycle_id": cycle_id, "selected_count": count,
+        "predictor_model_ids": list(predictor_model_ids),
+        "manifest_sha256": pb.file_sha256(path / "manifest.json"),
+        "sm_pool_audit_sha256": pb.file_sha256(path / "sm_pool_audit.json"),
+    }
+    if marker != expected:
+        raise ValueError("guided bundle completion binding differs from cycle")
+    if len(manifest) != count or len(set(hashes)) != count:
+        raise ValueError("guided bundle completion count differs from unique manifest rows")
+    return count, set(hashes)
+
+
+def _guided_replan_proof(path: Path, *, cycle_id: str,
+                         predictor_model_ids: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    plan = _read(path / "factory_guided_plan.json")
+    if set(plan) != {"schema_version", "plan_id", "identity"} or plan.get("schema_version") != 1:
+        raise ValueError("guided replan proof has an invalid schema")
+    identity = plan.get("identity")
+    if not isinstance(identity, dict) or plan.get("plan_id") != _content_id(identity):
+        raise ValueError("guided replan proof identity differs")
+    name = path.name
+    if name.startswith(".") and name.endswith(".pending"):
+        name = name[1:-len(".pending")]
+    if name != f"guided_bundle_replan_{plan['plan_id'][:16]}":
+        raise ValueError("guided replan directory differs from plan identity")
+    count, hashes = _guided_completion(
+        path, cycle_id=cycle_id, predictor_model_ids=predictor_model_ids)
+    if (identity.get("cycle_id") != cycle_id or
+            identity.get("predictor_model_ids") != list(predictor_model_ids) or
+            identity.get("selected_count") != count):
+        raise ValueError("guided replan proof differs from cycle or predictor")
+    return {"plan": plan, "count": count, "hashes": hashes}
+
+
 def _load_profile(path: Path):
     cfg = pb.load_profile_config(path)
     if cfg is None:
@@ -1339,20 +1384,58 @@ def _split_or_validate(bundle: Path, output: Path, shard_size: int, cfg: Any) ->
     if not output.exists():
         return split_bundle(bundle, output, shard_size)
     receipt = _read(output / "split_receipt.json")
-    if (Path(receipt["canonical_input"]).resolve() != bundle.resolve() or
-            receipt["canonical_manifest_sha256"] != pb.file_sha256(bundle / "manifest.json") or
-            int(receipt["shard_size"]) != shard_size):
-        raise ValueError(f"existing shard split differs from staged bundle: {output}")
-    expected = [entry["name"] for entry in receipt["shards"]]
-    actual = sorted(path.name for path in output.glob("*_input") if path.is_dir())
-    if actual != sorted(expected):
-        raise ValueError(f"existing shard split has missing or extra children: {output}")
-    shards = [output / name for name in expected]
-    for shard in shards:
+    canonical_rows = pb.validate_input(bundle, cfg)
+    shard_count = (len(canonical_rows) + shard_size - 1) // shard_size
+    assignments = [canonical_rows[index::shard_count] for index in range(shard_count)]
+    expected_shards = []
+    shards = []
+    for number, group in enumerate(assignments, start=1):
+        name = f"shard-{number:03d}_input"
+        shard = output / name
         _validate_bundle(shard, cfg)
-    if sum(len(_read(shard / "manifest.json")) for shard in shards) != len(
-            _read(bundle / "manifest.json")):
-        raise ValueError(f"existing shard split count differs from staged bundle: {output}")
+        if _read(shard / "manifest.json") != group:
+            raise ValueError(f"existing shard differs from canonical round-robin split: {shard}")
+        items = []
+        expected_files = {"config.yaml", "measurement.json", "score_spec.json", "manifest.json"}
+        for metadata_name in ("config.yaml", "measurement.json", "score_spec.json"):
+            if pb.file_sha256(shard / metadata_name) != pb.file_sha256(bundle / metadata_name):
+                raise ValueError(
+                    f"existing shard metadata differs from canonical bundle: {shard}")
+        for row in group:
+            pattern_file = row.get("pattern_file", f"{row['id']}.pt")
+            expected_files.add(pattern_file)
+            canonical_sha = pb.file_sha256(bundle / pattern_file)
+            if pb.file_sha256(shard / pattern_file) != canonical_sha:
+                raise ValueError(f"existing shard pattern differs from canonical bundle: {shard}")
+            items.append({"id": row["id"], "pattern_file": pattern_file,
+                          "file_sha256": canonical_sha,
+                          "pattern_sha256": row["pattern_sha256"]})
+        actual_entries = {path.name for path in shard.iterdir()}
+        if actual_entries != expected_files or any(
+                not path.is_file() or path.is_symlink() for path in shard.iterdir()):
+            raise ValueError(f"existing shard has missing or extra files: {shard}")
+        expected_shards.append({
+            "name": name, "ids": [row["id"] for row in group], "items": items,
+            "manifest_sha256": pb.file_sha256(shard / "manifest.json"),
+        })
+        shards.append(shard)
+    expected_receipt = {
+        "schema_version": 1,
+        "canonical_input": str(bundle.resolve()),
+        "canonical_manifest_sha256": pb.file_sha256(bundle / "manifest.json"),
+        "canonical_metadata_sha256": {
+            name: pb.file_sha256(bundle / name) for name in
+            ("measurement.json", "score_spec.json", "config.yaml", "manifest.json")},
+        "config_sha256": pb.file_sha256(bundle / "config.yaml"),
+        "measurement_id": measurement_id(_read(bundle / "measurement.json")),
+        "score_spec_id": score_spec_id(_read(bundle / "score_spec.json")),
+        "round_robin": True, "shard_size": shard_size, "shards": expected_shards,
+    }
+    if receipt != expected_receipt:
+        raise ValueError(f"existing shard split receipt differs from canonical replay: {output}")
+    actual_entries = {path.name for path in output.iterdir()}
+    if actual_entries != {"split_receipt.json", *(entry["name"] for entry in expected_shards)}:
+        raise ValueError(f"existing shard split has missing or extra children: {output}")
     return shards
 
 
@@ -1378,7 +1461,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     recovered_training_path = None
     recovered_cycle_id = None
     if active.is_file():
-        receipt = Path(_read(active)["receipt"]).resolve()
+        active_payload = _read(active)
+        receipt = Path(active_payload["receipt"]).resolve()
         receipt.relative_to(local)
         if receipt.is_file():
             prior = _read(receipt)
@@ -1723,6 +1807,9 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                         "one_shot": True, "replacement_after_freeze": False,
                     }
 
+    guided_replan_receipt = None
+    guided_replan_context = None
+    guided_plan_identity = None
     if not pilot_blocks_ordinary and predictor is not None and remaining_budget > 0:
         shard_size = int(policy["shard_size"])
         capacity = min(int(policy["wave_size"]),
@@ -1730,6 +1817,102 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                        remaining_budget)
         final_target_tail = remaining_budget < shard_size
         count = capacity if final_target_tail else (capacity // shard_size) * shard_size
+        expected_models = list(getattr(predictor, "model_ids", ()))
+        bundle = cycle / "guided_bundle"
+        pending_bundle = bundle.with_name(f".{bundle.name}.pending")
+        completed_candidate = None
+        if bundle.exists():
+            completed_candidate = bundle
+        elif (recovering_training and
+              (pending_bundle / "factory_bundle_complete.json").is_file()):
+            completed_candidate = pending_bundle
+        shards_root = cycle / "guided_shards"
+        if completed_candidate is not None and recovering_training:
+            _validate_bundle(completed_candidate, cfg)
+            frozen_count, frozen_hashes = _guided_completion(
+                completed_candidate, cycle_id=cycle_id, predictor_model_ids=expected_models)
+            overlap = frozen_hashes & set(queue["exclusion_hashes"])
+            if frozen_count <= capacity and not overlap:
+                count = frozen_count
+                final_target_tail = frozen_count < shard_size
+            else:
+                reason = {
+                    "schema_version": 1,
+                    "code": ("fresh_exclusion_overlap" if overlap else
+                             "fresh_capacity_below_completed_count"),
+                    "completed_bundle": str(completed_candidate.resolve()),
+                    "completed_count": frozen_count,
+                    "fresh_capacity": capacity,
+                    "overlap_count": len(overlap),
+                    "overlap_sha256": _content_id(sorted(overlap)),
+                }
+                canonical_binding = {
+                    "path": str(completed_candidate.resolve()),
+                    "tree_sha256": _content_id(_tree_hashes(completed_candidate)),
+                    "completion_sha256": pb.file_sha256(
+                        completed_candidate / "factory_bundle_complete.json"),
+                }
+                chosen = None
+                versioned = sorted(
+                    [path for path in cycle.glob("guided_bundle_replan_*") if path.is_dir()] +
+                    [path for path in cycle.glob(".guided_bundle_replan_*.pending")
+                     if (path / "factory_bundle_complete.json").is_file()])
+                for candidate in versioned:
+                    _validate_bundle(candidate, cfg)
+                    proof = _guided_replan_proof(
+                        candidate, cycle_id=cycle_id, predictor_model_ids=expected_models)
+                    candidate_overlap = proof["hashes"] & set(queue["exclusion_hashes"])
+                    if proof["count"] <= capacity and not candidate_overlap and chosen is None:
+                        output_name = candidate.name
+                        if output_name.startswith(".") and output_name.endswith(".pending"):
+                            output_name = output_name[1:-len(".pending")]
+                        chosen = {**proof, "source": candidate,
+                                  "output": cycle / output_name}
+                if chosen is not None:
+                    count = chosen["count"]
+                    final_target_tail = count < shard_size
+                    bundle = chosen["output"]
+                    plan_id = chosen["plan"]["plan_id"]
+                    guided_plan_identity = chosen["plan"]["identity"]
+                elif count > 0:
+                    plan_identity = {
+                        "schema_version": 1, "cycle_id": cycle_id,
+                        "selected_count": count, "fresh_capacity": capacity,
+                        "predictor_model_ids": expected_models,
+                        "exclusion_sha256": _content_id(sorted(queue["exclusion_hashes"])),
+                        "queue_jobs_sha256": queue["jobs_sha256"],
+                        "queue_state_sha256": _content_id(queue.get("state_bindings", [])),
+                        "canonical_bundle": canonical_binding, "reason": reason,
+                    }
+                    plan_id = _content_id(plan_identity)
+                    guided_plan_identity = plan_identity
+                    bundle = cycle / f"guided_bundle_replan_{plan_id[:16]}"
+                else:
+                    plan_id = None
+                if plan_id is not None:
+                    shards_root = cycle / f"guided_shards_replan_{plan_id[:16]}"
+                guided_replan_context = {
+                    "reason": reason, "canonical_bundle": canonical_binding,
+                    "fresh_capacity": capacity,
+                    "exclusion_count": len(queue["exclusion_hashes"]),
+                    "exclusion_sha256": _content_id(sorted(queue["exclusion_hashes"])),
+                    "queue_jobs_sha256": queue["jobs_sha256"],
+                    "queue_state_sha256": _content_id(queue.get("state_bindings", [])),
+                }
+                if count <= 0:
+                    decision = {
+                        "schema_version": 1, **guided_replan_context,
+                        "selected_plan_id": None, "selected_count": 0,
+                        "selected_pattern_sha256": _content_id([]),
+                        "fits_fresh_capacity": True, "disjoint_from_fresh_exclusions": True,
+                    }
+                    guided_replan_receipt = {
+                        "schema_version": 1, "state": "no_plan",
+                        "current_decision_id": _content_id(decision),
+                        "current_decision": decision,
+                        "selected_plan": None, "selected_bundle": None,
+                        "selected_shards": None,
+                    }
         if count > 0:
             pool_cfg = sm.PoolConfig(
                 profile_config=profile, candidate_pool_size=max(10_000, count),
@@ -1738,18 +1921,12 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                 parent_count=256, seed=int(policy["seed"]) + version,
                 update_every_valid_points=int(policy["update_every_valid_unique"]),
             )
-            bundle = cycle / "guided_bundle"
-            expected_models = list(getattr(predictor, "model_ids", ()))
             completion_path = "factory_bundle_complete.json"
 
             def validate_guided(destination: Path) -> None:
-                marker = _read(destination / completion_path)
-                expected = {"schema_version": 1, "cycle_id": cycle_id,
-                            "selected_count": count, "predictor_model_ids": expected_models,
-                            "manifest_sha256": pb.file_sha256(destination / "manifest.json"),
-                            "sm_pool_audit_sha256": pb.file_sha256(
-                                destination / "sm_pool_audit.json")}
-                if marker != expected:
+                completed_count, _hashes = _guided_completion(
+                    destination, cycle_id=cycle_id, predictor_model_ids=expected_models)
+                if completed_count != count:
                     raise ValueError("guided bundle completion binding differs from cycle")
 
             def produce_guided(destination: Path) -> None:
@@ -1757,6 +1934,14 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                                        sorted(queue["exclusion_hashes"]), predictor=predictor)
                 sm.write_bundle(result, destination)
                 sm.write_audit(result, destination, 0.0)
+                if guided_replan_context is not None:
+                    if (guided_plan_identity is None or
+                            _content_id(guided_plan_identity) != plan_id):
+                        raise ValueError("guided replan identity changed before publication")
+                    _write(destination / "factory_guided_plan.json", {
+                        "schema_version": 1, "plan_id": plan_id,
+                        "identity": guided_plan_identity,
+                    })
                 _write(destination / completion_path, {
                     "schema_version": 1, "cycle_id": cycle_id,
                     "selected_count": count, "predictor_model_ids": expected_models,
@@ -1766,11 +1951,46 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                 })
 
             _publish_bundle(bundle, cfg, produce_guided, validate_guided)
+            if guided_replan_context is not None:
+                proof = _guided_replan_proof(
+                    bundle, cycle_id=cycle_id, predictor_model_ids=expected_models)
+                if proof["plan"]["plan_id"] != plan_id:
+                    raise ValueError("guided replan bundle differs from selected plan")
             if len(_read(bundle / "manifest.json")) != count:
                 raise ValueError("guided bundle count differs from frozen plan")
-            shards_root = cycle / "guided_shards"
             shards = _split_or_validate(bundle, shards_root, int(policy["shard_size"]), cfg)
             planned_jobs.extend(_planned(shards, "g", int(policy["guided_priority"]), cycle_id))
+            if guided_replan_context is not None:
+                pattern_sha256 = _content_id(sorted(proof["hashes"]))
+                decision = {
+                    "schema_version": 1, **guided_replan_context,
+                    "selected_plan_id": proof["plan"]["plan_id"],
+                    "selected_count": proof["count"],
+                    "selected_pattern_sha256": pattern_sha256,
+                    "fits_fresh_capacity": proof["count"] <= capacity,
+                    "disjoint_from_fresh_exclusions": not bool(
+                        proof["hashes"] & set(queue["exclusion_hashes"])),
+                }
+                guided_replan_receipt = {
+                    "schema_version": 1, "state": "selected",
+                    "current_decision_id": _content_id(decision),
+                    "current_decision": decision,
+                    "selected_plan": {
+                        "plan_id": proof["plan"]["plan_id"],
+                        "identity": proof["plan"]["identity"],
+                        "proof_sha256": pb.file_sha256(bundle / "factory_guided_plan.json"),
+                        "bundle": {
+                            "path": str(bundle.resolve()),
+                            "tree_sha256": _content_id(_tree_hashes(bundle)),
+                            "completion_sha256": pb.file_sha256(
+                                bundle / "factory_bundle_complete.json"),
+                            "selected_count": proof["count"],
+                            "pattern_sha256": pattern_sha256,
+                        },
+                    },
+                    "selected_bundle": str(bundle.resolve()),
+                    "selected_shards": str(shards_root.resolve()),
+                }
             for job in planned_jobs:
                 if job["kind"] == "g":
                     job["final_target_tail"] = final_target_tail
@@ -1836,6 +2056,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
         receipt["pilot_request"] = pilot_binding
     if pilot_receipt is not None:
         receipt["pilot"] = pilot_receipt
+    if guided_replan_receipt is not None:
+        receipt["guided_replan"] = guided_replan_receipt
     _write(receipt_path, receipt)
     if not planned_jobs and active.is_file():
         active.unlink()

@@ -536,3 +536,14 @@ python -m script.figs.symmetry_profile --analysis-json "$archive\analysis\analys
 ```powershell
 python -m script.figs.symmetry_profile --analysis-json "$archive\analysis\analysis.json" --data-npz "$archive\analysis\arrays.npz" --sample-id r80c91d71565g_00019_5a42476c --out-dir docs/log/assets/round-80/best-symmetric-polar-20261008-v003
 ```
+
+
+### 2026-10-09 08:17：修復已完成候選池在延後重試時的筆數綁定
+
+07:30健康檢查發現原controller PID16536已不存在；watch記錄實際於07:13:30失敗，錯誤為`guided bundle completion binding differs from cycle`。同一訓練輪次已完成v029（fit 1,851唯一）與16筆候選，最後佇列驗證因新結果延後後，重試拿新的可派名額比對原16筆completion，造成停機。fit筆數不是此次live有效實測累計；沒有重新查詢最佳WM。三台worker仍有claimed jobs／新結果，07:56 scoped health無警報、LOW仍有五片待跑，不重啟HFSS／worker。
+
+[修補與驗證收據](assets/r80_guided_recovery_fix_20261009.json)保留失敗runtime與原候選／分片證據。恢復時，已完成候選符合當前名額／排除集合就沿用原筆數；不符合時保留舊檔，在同一訓練輪次另存有content identity的候選計畫與分片。新版計畫原始來源／tree與本次佇列決策分別綁定；不新增superseded／recursive狀態，不改已prepared或dispatching的計畫。既有分片須逐行重播canonical roundrobin，核對metadata／pattern bytes、完整receipt與目錄項目；同樣筆數但重複分片或語義相同的metadata改寫均拒絕。
+
+最終完整817項回歸通過（371.30秒，OMP／MKL4、CI未設定），九份source前後SHA相同、三份golden未變；pyflakes／diff check通過。獨立Sol最終11項focused及三種completion篡改檢查通過，動態review使用generated fixture／mocked training與pool，不宣稱實際模型或NAS重播。Conductor另以最終程式唯讀核對真實16筆canonical與精確分片、三個v029模型SHA及全部原檔未變，無model forward或新訓練。早期811項全綠在最終修正之前；兩次interim full suite只停止精確owned pytest，不作最終驗證。早期blocking review原件在備份前被覆寫，原SHA與問題記錄仍在，未假造復原；最終review另存，原production失敗證據未受影響。
+
+本里程碑先交付程式修補，controller尚未恢復；下一步在已push GAN與source/runtime綁定通過後只啟動一個hidden開發機controller，沿用原settings／訓練／5000目標。使用者再次指定健康檢查每30分鐘；恢復後只在需處理的錯誤、結果或停滯時介入。R80資料目標與R81正WM／獨立重測仍未完成。

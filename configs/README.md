@@ -13,7 +13,7 @@
 | config | 測試重點 | 與歷史批次差異 | 紀錄 |
 | --- | --- | --- | --- |
 | `single_r80_symmetry_explore.yaml` | 金屬精確左右鏡射下，研究兩切面場型及 S11/Gain | **目前唯一執行項目**；固定 0.1 mm 橋；首批48＋兩組各2次重測，共52次 | R80 |
-| `single_r80_symmetry_factory.yaml` | 使用者最新調整為5,000有效唯一對稱量測；沿用R80完全相同量測身分 | 16筆小job；每48新真值批次更新SM；歷史先驗＋新資料、40/30/30配額、2,048盲選預備池；覆蓋先前10,240目標，不改已派輸入或首批snapshot | R80 factory |
+| `single_r80_symmetry_factory.yaml` | 使用者最新調整為5,000有效唯一對稱量測；沿用R80完全相同量測身分 | 16筆小job；每48新真值批次更新SM；歷史先驗＋新資料、40/30/30配額、2,048盲選預備池；覆蓋先前10,240目標，不改已派輸入或首批snapshot；重試凍結已完成候選筆數，重新核對當前去重／名額，不改量測或SM更新門檻 | R80 factory |
 | `symmetry_training.py` / [已凍結訓練protocol](../docs/log/assets/r80_factory_training_protocol_20261007.json) | 累積當前profile全曲線SM，每48–96個新唯一圖形更新 | 3 seeds；625–512–512–256–216 MLP；歷史預訓練30ep＋当前真值100ep；34個seed映至13家族；無HFSS驗證通過前不計實測 | R80 factory SM |
 | `dual_r81_wide_filter.yaml` | S21 26–30 ≥−3、16–20/36–40 ≤−20 dB | **延後**；smoke、Discrete、mesh、正式批次均不得排入目前佇列 | R81 |
 | `filter_prior.py`（備料API） | 舊24–32 GHz資料只監督完整覆蓋的三段margin，兩新阻帶mask | 明示manifest／hash／p01幾何；[實際21,034唯一先驗已備妥](../docs/log/assets/r81_full_prior_20261007.json)，axis/worker重建限制明示；保留集家族與圖形排除；R81派工順序不變 | R81 SM準備 |

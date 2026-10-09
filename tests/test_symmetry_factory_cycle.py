@@ -1416,6 +1416,227 @@ def test_training_recovery_reuses_frozen_cutoff_after_late_success(
     assert final["recovered_training_receipt"] == str(receipt_path)
 
 
+@pytest.mark.parametrize("recovery_mode", ["capacity_grows", "capacity_shrinks",
+                                            "new_exclusion", "completed_pending"])
+def test_training_recovery_freezes_or_replans_completed_guided_cohort(
+        tmp_path, monkeypatch, recovery_mode):
+    dataset = _dataset(tmp_path / "dataset")
+    completed_input = _bundle(dataset / "completed_input", 48, start=100)
+    _complete(completed_input, dataset / "completed")
+    pending_input = _bundle(dataset / "pending_input", 80, start=300)
+    pending_store = _complete(pending_input, dataset / "pending")
+    pending_results = pb.read_json(pending_store / "results.json")
+    pb.atomic_json(pending_store / "results.json", {})
+    cfg = pb.load_profile_config(PROFILE)
+    pb.atomic_json(dataset / "jobs.json", [
+        {"input": completed_input.name, "store": "completed", "prio": 6,
+         "scope": cfg.scope, "config": f"{completed_input.name}/config.yaml"},
+        {"input": pending_input.name, "store": "pending", "prio": 1,
+         "scope": cfg.scope, "config": f"{pending_input.name}/config.yaml"},
+    ])
+    train = _training(tmp_path / "training")
+    seeds = _bundle(tmp_path / "seeds", 2, start=700)
+    trained_hashes = set()
+    pool_calls = []
+
+    def trained(_root):
+        version = 1 if trained_hashes else 0
+        receipt = ({"manifest_id": "trained-v1", "data_version": 1}
+                   if version else None)
+        return version, set(trained_hashes), receipt
+
+    def ingest(_root, stores, *, min_new, max_new):
+        rows = pb.read_json(Path(stores[0]) / "manifest.json")
+        trained_hashes.update(row["pattern_sha256"] for row in rows)
+        output = Path(_root) / "data/data-v001"
+        output.mkdir(parents=True, exist_ok=True)
+        return output
+
+    def build(config, seed_rows, exclude_hashes, predictor=None):
+        pool_calls.append(config.selected_count)
+        return {"count": config.selected_count, "config": config}
+
+    def write(result, output):
+        start = 900 if len(pool_calls) == 1 else 1000
+        return _bundle(Path(output), result["count"], prefix="guided", start=start)
+
+    monkeypatch.setattr(cycle, "_trained", trained)
+    monkeypatch.setattr(cycle.training, "ingest_profile_stores", ingest)
+    monkeypatch.setattr(cycle.training, "train_version", lambda *_args: None)
+    monkeypatch.setattr(cycle.training, "load_current_predictor",
+                        lambda *_args: CurrentPredictor())
+    monkeypatch.setattr(cycle, "_training_summary", lambda *_args: {"fixture": True})
+    def audit_predictions(_store, _root, output):
+        pb.atomic_json(output, {"fixture": True})
+        return Path(output)
+
+    monkeypatch.setattr(cycle, "audit_frozen_predictions", audit_predictions)
+    monkeypatch.setattr(cycle.sm, "build_pool", build)
+    monkeypatch.setattr(cycle.sm, "write_bundle", write)
+    monkeypatch.setattr(cycle.sm, "write_audit",
+                        lambda _result, output, _elapsed: pb.atomic_json(
+                            Path(output) / "sm_pool_audit.json", {"fixture": True}))
+
+    original_write = cycle._write
+
+    def crash_after_bundle(path, payload):
+        if Path(path).name == "action_receipt.json" and payload.get("status") == "prepared":
+            raise RuntimeError("fixture crash after completed guided bundle")
+        return original_write(path, payload)
+
+    monkeypatch.setattr(cycle, "_write", crash_after_bundle)
+    with pytest.raises(RuntimeError, match="completed guided bundle"):
+        cycle.run_once(local_workdir=tmp_path / "cycle", dataset_root=dataset,
+                       profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds])
+
+    active = pb.read_json(tmp_path / "cycle/active_cycle.json")
+    old_receipt = Path(active["receipt"])
+    bundle = old_receipt.parent / "guided_bundle"
+    marker = pb.read_json(bundle / "factory_bundle_complete.json")
+    tree_before = cycle._tree_hashes(bundle)
+    assert marker["selected_count"] == 16 and pool_calls == [16]
+
+    if recovery_mode in {"capacity_grows", "new_exclusion", "completed_pending"}:
+        pb.atomic_json(pending_store / "results.json", pending_results)
+    if recovery_mode == "capacity_shrinks":
+        extra = _bundle(dataset / "extra_pending_input", 1, start=600)
+        jobs = pb.read_json(dataset / "jobs.json")
+        jobs.append({"input": extra.name, "store": "extra_pending", "prio": 1,
+                     "scope": cfg.scope, "config": f"{extra.name}/config.yaml"})
+        pb.atomic_json(dataset / "jobs.json", jobs)
+    elif recovery_mode == "new_exclusion":
+        overlap = _bundle(dataset / "overlap_input", 1, start=900)
+        jobs = pb.read_json(dataset / "jobs.json")
+        jobs.append({"input": overlap.name, "store": "overlap", "prio": 6,
+                     "scope": cfg.scope, "config": f"{overlap.name}/config.yaml"})
+        pb.atomic_json(dataset / "jobs.json", jobs)
+    elif recovery_mode == "completed_pending":
+        pending_bundle = bundle.with_name(f".{bundle.name}.pending")
+        bundle.rename(pending_bundle)
+        bundle = pending_bundle
+
+    monkeypatch.setattr(cycle, "_write", original_write)
+    completed_replan_plan = None
+    if recovery_mode == "new_exclusion":
+        monkeypatch.setattr(cycle, "_write", crash_after_bundle)
+        with pytest.raises(RuntimeError, match="completed guided bundle"):
+            cycle.run_once(local_workdir=tmp_path / "cycle", dataset_root=dataset,
+                           profile_config=PROFILE, training_workdir=train,
+                           seed_inputs=[seeds])
+        monkeypatch.setattr(cycle, "_write", original_write)
+        versioned = list(old_receipt.parent.glob("guided_bundle_replan_*"))
+        assert len(versioned) == 1
+        completed_replan_plan = pb.read_json(versioned[0] / "factory_guided_plan.json")
+        jobs = pb.read_json(dataset / "jobs.json")
+        jobs[1]["prio"] = 2
+        pb.atomic_json(dataset / "jobs.json", jobs)
+    recovered = cycle.run_once(
+        local_workdir=tmp_path / "cycle", dataset_root=dataset,
+        profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds])
+    receipt = pb.read_json(recovered)
+
+    if recovery_mode in {"capacity_grows", "completed_pending"}:
+        published = old_receipt.parent / "guided_bundle"
+        assert recovered == old_receipt
+        assert [job["count"] for job in receipt["planned_jobs"]] == [16]
+        assert receipt["guided_pending_unique"] == 0
+        assert pool_calls == [16]
+        assert cycle._tree_hashes(published) == tree_before
+    else:
+        assert recovered == old_receipt
+        decision = receipt["guided_replan"]["current_decision"]
+        assert receipt["guided_replan"]["current_decision_id"] == cycle._content_id(decision)
+        assert decision["reason"]["code"] == (
+            "fresh_capacity_below_completed_count"
+            if recovery_mode == "capacity_shrinks" else "fresh_exclusion_overlap")
+        assert cycle._tree_hashes(bundle) == tree_before
+        if recovery_mode == "capacity_shrinks":
+            assert receipt["status"] == "idle" and receipt["planned_jobs"] == []
+            assert receipt["guided_replan"]["state"] == "no_plan"
+            assert pool_calls == [16]
+        else:
+            assert [job["count"] for job in receipt["planned_jobs"]] == [16, 16, 16]
+            assert receipt["guided_replan"]["state"] == "selected"
+            assert Path(receipt["guided_replan"]["selected_bundle"]).name.startswith(
+                "guided_bundle_replan_")
+            selected = receipt["guided_replan"]["selected_plan"]
+            assert selected["plan_id"] == cycle._content_id(selected["identity"])
+            assert selected["plan_id"] == completed_replan_plan["plan_id"]
+            assert selected["identity"] == completed_replan_plan["identity"]
+            assert selected["identity"]["queue_jobs_sha256"] != decision["queue_jobs_sha256"]
+            assert selected["bundle"]["tree_sha256"] == cycle._content_id(
+                cycle._tree_hashes(Path(receipt["guided_replan"]["selected_bundle"])))
+            assert decision["selected_plan_id"] == selected["plan_id"]
+            assert decision["fits_fresh_capacity"] is True
+            assert decision["disjoint_from_fresh_exclusions"] is True
+            assert pool_calls == [16, 48]
+    if receipt["status"] == "prepared":
+        assert cycle.run_once(
+            local_workdir=tmp_path / "cycle", dataset_root=dataset,
+            profile_config=PROFILE, training_workdir=train, seed_inputs=[seeds]) == recovered
+        assert pool_calls == ([16, 48] if recovery_mode == "new_exclusion" else [16])
+
+
+def test_guided_completion_rejects_predictor_binding_tamper(tmp_path):
+    bundle = _bundle(tmp_path / "guided", 2)
+    pb.atomic_json(bundle / "sm_pool_audit.json", {"fixture": True})
+    models = [{"sha256": "1" * 64}]
+    pb.atomic_json(bundle / "factory_bundle_complete.json", {
+        "schema_version": 1, "cycle_id": "cycle", "selected_count": 2,
+        "predictor_model_ids": models,
+        "manifest_sha256": pb.file_sha256(bundle / "manifest.json"),
+        "sm_pool_audit_sha256": pb.file_sha256(bundle / "sm_pool_audit.json"),
+    })
+
+    with pytest.raises(ValueError, match="completion binding differs"):
+        cycle._guided_completion(
+            bundle, cycle_id="cycle", predictor_model_ids=[{"sha256": "2" * 64}])
+
+
+def test_existing_shard_split_rejects_valid_duplicate_partition(tmp_path):
+    bundle = _bundle(tmp_path / "bundle", 2)
+    cfg = pb.load_profile_config(PROFILE)
+    shards_root = tmp_path / "shards"
+    shards = cycle._split_or_validate(bundle, shards_root, 1, cfg)
+    first_row = pb.read_json(shards[0] / "manifest.json")[0]
+    second_row = pb.read_json(shards[1] / "manifest.json")[0]
+    (shards[1] / second_row["pattern_file"]).unlink()
+    shutil.copy2(shards[0] / first_row["pattern_file"],
+                 shards[1] / first_row["pattern_file"])
+    pb.atomic_json(shards[1] / "manifest.json", [first_row])
+    pb.validate_input(shards[1], cfg)
+
+    with pytest.raises(ValueError, match="canonical round-robin split"):
+        cycle._split_or_validate(bundle, shards_root, 1, cfg)
+
+
+def test_existing_shard_split_rejects_extra_nested_payload(tmp_path):
+    bundle = _bundle(tmp_path / "bundle", 2)
+    cfg = pb.load_profile_config(PROFILE)
+    shards_root = tmp_path / "shards"
+    shards = cycle._split_or_validate(bundle, shards_root, 1, cfg)
+    extra = shards[0] / "extra"
+    extra.mkdir()
+    (extra / "payload.txt").write_text("unexpected", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="missing or extra files"):
+        cycle._split_or_validate(bundle, shards_root, 1, cfg)
+
+
+def test_existing_shard_split_rejects_semantically_equivalent_metadata_change(tmp_path):
+    bundle = _bundle(tmp_path / "bundle", 2)
+    cfg = pb.load_profile_config(PROFILE)
+    shards_root = tmp_path / "shards"
+    shards = cycle._split_or_validate(bundle, shards_root, 1, cfg)
+    config = shards[0] / "config.yaml"
+    config.write_text(config.read_text(encoding="utf-8") + "\n# changed copy\n",
+                      encoding="utf-8")
+    pb.validate_input(shards[0], cfg)
+
+    with pytest.raises(ValueError, match="metadata differs from canonical bundle"):
+        cycle._split_or_validate(bundle, shards_root, 1, cfg)
+
+
 def test_post_training_receipt_and_planning_bind_fresh_append_while_snapshot_keeps_cutoff(
         tmp_path, monkeypatch):
     dataset = _dataset(tmp_path / "dataset")

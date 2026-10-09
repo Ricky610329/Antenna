@@ -26,7 +26,7 @@
 | `status.py` | NAS run 狀態掃描（`--md` 貼 ONGOING;`--alert --notify-topic` 當 watchdog） |
 | `status.py --factory --dataset-root ... --scope ...` | 私人具名profile佇列監看；成功observation不需wm欄位，且不混入全域舊run |
 | `symmetry_factory.py` | R80滾動資料工廠policy驗證與實體樣本/場型稽核快照；重測不增加唯一圖形計數 |
-| `symmetry_factory_cycle.py` | 單次可恢復controller：同輪實體cutoff＋全量raw SHA重核，避免反覆反序列化歷史資料；新增結果保留名額至下輪。固定cutoff選擇訓練快照→前瞻稽核→累積SM更新→16筆分片／逐片查重，保留明示retry名單與5,000／guided96限制。可選一次性15+1鄰域request共用原閘門，永久無法成批時回到一般派工 |
+| `symmetry_factory_cycle.py` | 單次可恢復controller：同輪實體cutoff＋全量raw SHA重核，避免反覆反序列化歷史資料；新增結果保留名額至下輪。固定cutoff選擇訓練快照→前瞻稽核→累積SM更新→16筆分片／逐片查重，保留明示retry名單與5,000／guided96限制。重試保留已完成候選的原筆數與模型／檔案綁定；新快照名額或排除集合不容許沿用時，另存新準備目錄，不覆寫原候選。可選一次性15+1鄰域request共用原閘門，永久無法成批時回到一般派工 |
 | `symmetry_factory_watch.py` | 開發機唯一常駐controller，每1800秒執行主線；可選同程序LOW補池thread，在SM訓練時繼續供工、讓主線優先派送。綁定settings／profile／retry名單／pilot，保留重啟及STOP紀錄；不啟動HFSS |
 | `symmetry_factory_backlog.py` | LOW背景補池：每90秒讀佇列、輸入manifest及worker markers，不重播raw／SM。未終態預留低於48筆時，以16筆prio6小片補向96筆；每片釋放寫入優先權。排除已預留、失敗及主線準備中的圖形；保守名額不足時交回主線處理尾批 |
 | `symmetry_incumbent_shell_pilot.py` | R80一次性鄰域核心：固定錨點15格d1對稱變體＋1個blind對照，先選擇再保存當前SM預測；凍結準備時真值參考、核對原觀測並依固定判準讀出，不直接操作佇列 |
