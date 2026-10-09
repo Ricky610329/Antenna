@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "status": "actual_single_hidden_guard_launched_waiting_for_main_window_no_prediction_yet",
+  "prelaunch_review": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\deferred_guard_review_v5.json",
+    "sha256": "6091f7710da58e41c9be00cb7749a2495b1593622d6805c0b7be7a253a1dc14e"
+  },
+  "launch": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_driver_launch_v5.json",
+    "sha256": "0bebe5bafc399c2885d1557431983eb1494728fed2925f2560eb072af3e19024"
+  },
+  "physical_process_observation": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\guard_process_observed_20261010_0344_native.json",
+    "sha256": "00d026eaaa7382d9fff148acf5848ef35147e23e8988289795860b71d399f034"
+  },
+  "native_process_children": [
+    {
+      "pid": 62340,
+      "creation_unix_ms": 1791574483620,
+      "exe": "C:\\Windows\\System32\\conhost.exe",
+      "argv": [
+        "\\??\\C:\\WINDOWS\\system32\\conhost.exe",
+        "0x4"
+      ],
+      "role": "console_host"
+    }
+  ],
+  "observer_cleanup": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\owned_observer_cleanup_20261010_v001.json",
+    "sha256": "7ff31c469f6ecb689897c7a0855bb5f9aeb144b4a79a60226507bba1c825d89e"
+  },
+  "pid": 20232,
+  "creation_unix_ms": 1791574483613,
+  "started_utc": "2026-10-09T19:34:43.5726752+00:00",
+  "observed_utc": "2026-10-09T19:44:40.085690+00:00",
+  "argv": "\"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_guard_v5.ps1\" -Run",
+  "window": "Hidden",
+  "reviewed_files": {
+    "config_v5": {
+      "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_prepare_guard_config_v5.json",
+      "sha256": "a749074ca82926e8ae08957d66e2212a1bd67d9891dd8fee496d7bc5d3ac7cea"
+    },
+    "driver_v5": {
+      "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_prepare_guard_v5.ps1",
+      "sha256": "c79e45660c49665f8d8f5db20c6c6effe4df967d1c93351b446a8b41d9f45566"
+    },
+    "launcher_v5": {
+      "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/launch_deferred_prepare_guard_v5.ps1",
+      "sha256": "94817eac1f2fd0048372b01f72d91b92771d4e0069ad2e72bc4085256e1bd9b2"
+    },
+    "readiness_v5": {
+      "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/deferred_prepare_guard_readiness_v5.json",
+      "sha256": "0485ba3cffb666a3a4619f74baf99be91910dce7191edf5c63a5429b31998b87"
+    },
+    "scoring_review_v5": {
+      "path": "tmp/r80_currentonly_prospective_review_20261010_v001/scoring_review_v5.json",
+      "sha256": "182084e4faa1ae3d7c660e59a6331a7ba54aff214933e81d10b7fde866e6c4cc"
+    },
+    "prepare_pilot_v5": {
+      "path": "tmp/r80_currentonly_prospective_pilot_20261010_v001/prepare_pilot_v5.py",
+      "sha256": "f73120867b52766946fc2ed61c249bc4c25f957484603db92fda2eae117168f2"
+    }
+  },
+  "local_wait_contract": {
+    "poll_seconds": 30,
+    "maximum_wait_seconds": 7200,
+    "minimum_remaining_seconds": 180,
+    "child_timeout_seconds": 600,
+    "no_retry": true
+  },
+  "current_status_evidence": [
+    "2026-10-09T19:42:16.6004698+00:00 not eligible: status=running_cycle, remaining=",
+    "2026-10-09T19:42:46.7684965+00:00 not eligible: status=running_cycle, remaining=",
+    "2026-10-09T19:43:16.9501564+00:00 not eligible: status=running_cycle, remaining=",
+    "2026-10-09T19:43:47.1006494+00:00 not eligible: status=running_cycle, remaining=",
+    "2026-10-09T19:44:17.2445188+00:00 not eligible: status=running_cycle, remaining="
+  ],
+  "child_present_at_observation": false,
+  "candidate_prediction_complete": false,
+  "NAS_read_or_write_by_this_guard_at_observation": false,
+  "candidate_HFSS_truth_read": false,
+  "HFSS_dispatch": false,
+  "automatic_publish": false,
+  "main_factory_restart_or_change": false,
+  "future_scope": "One CPU prepare_pilot_v5 may verify existing queue raw observations, score frozen two-model common pool and save local predictions. Full preparation review and publisher capacity gates precede any HFSS dispatch.",
+  "limits": [
+    "Physical process identity proves this guard is running at the saved observation; it does not prove future child completion or performance improvement.",
+    "Source models and original main factory remain unchanged; only local wait status/CIM are polled until eligibility."
+  ]
+}

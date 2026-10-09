@@ -1089,3 +1089,15 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10：v010雙scorer前瞻入口來源修正
 
 - **v010前瞻排名入口來源修正完成／尚未執行**：每筆採用owner自己的scores／curves／model hash，joint audit區分live-base生成證據並移除未採用的內部selection標記；既有queue驗證會讀sample/rad，與新32筆truth未讀分開。固定20k／16+16／Ham64／cap2及兩片8+8不變，12窄測試及獨立scoring v5 review通過。[收據](assets/r80_currentonly_prospective_v010_scoring_ready_20261010.json)。旧v2–v4入口與guard不launch；修正版guard獨立review後僅做一次CPU排名，publisher需另核對最終等待窗口、capacity和immutable輸入，尚未派工／adopt。主線HFSS照常，03:38 routine；最新全量03:20為2,930、WM+.021682。
+
+
+### 2026-10-10 03:34：雙scorer CPU排名guard實際啟動
+
+- **03:34:43 一次性CPU排名guard實際啟動**：PID20232／creation1791574483613／argv現場吻合，03:44 native process核對為等待原main窗口、只有console host、無CPU準備child／stderr；guard v5獨立PASS後只讀本機狀態、最多等2小時，單child600秒＋bounded cleanup，不自動publish或派HFSS。[啟動](assets/r80_currentonly_prospective_v010_guard_launch_20261010.json)。原main仍持續SM／HFSS；準備結果需另replay後派兩片16，各owner8+8；global5000／guided96不變。03:38 routine已通過，下一04:08；最新全量仍03:20的2,930及+.021682。
+
+
+### 2026-10-10 03:38：例行健康與一次CPU guard
+
+- **03:38 routine健康通過**：原PID15944 exact／running_cycle，三台claimed13/16、13/16、8/16，最新結果3／2／2分鐘，scope零警報；completed14／reported v011，新guided兩片16排隊。[健康](assets/r80_health_20261010_0338.json)。watch fit2,921不是新全量census；03:20全量2,930／最佳+.021682維持。一次性guard20232已啟動、03:44 native確認仍等待main窗口／無CPUchild；其兩模型固定v010，與目前main v011區分。下一routine04:08，不重啟／清claim，R80/R81未完成。
+
+兩次補充PowerShell process observer延遲未返回；不把觀測延遲當成guard／worker停機。psutil原生API核對guard exact PID／creation／argv，將conhost與CPU child區分；只有兩個明確由本次root建立的只讀observer在完整命令hash／creation／exe吻合後終止，guard20232／main15944／所有HFSS不受訊號。清理收據保留在本機ignored工作區，不臆測延遲原因。

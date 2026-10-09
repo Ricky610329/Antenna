@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "status": "verified_live_original_controller_and_three_progressing_claimed_jobs",
+  "observed_utc": "2026-10-09T19:38:38.3961800Z",
+  "source_health_sha256": "b07122637d0bdba4c1c3174b3d997f00707b1ccc1f13e1107fb9b4ea9643b4d0",
+  "physical_pid": 15944,
+  "creation_unix_ms": 1791541659267,
+  "argv_matches": true,
+  "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+  "controller_status": "running_cycle",
+  "completed_cycles": 14,
+  "latest_controller_reported_data_version": 11,
+  "last_completed_action_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\200155848913f5ec9ab170b2a300b412673d88f72b90d24b9e1e05aca9cbcfe3\\action_receipt.json",
+  "last_completed_action_receipt_sha256": "af9fc7dc1dd8ed76f3d0d41cad89049c3b5cd8a032d04f95649f930ff9c99200",
+  "last_cycle_seconds": 1795.3280000002123,
+  "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c5ada1687g02: 13/16 完成,最新結果 3 分前（已認領）\r\n  job dedust_r80c5ada1687g03: 13/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80c67bba728g01: 8/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80c67bba728g02: 0/16（排隊中）\r\n  job dedust_r80c20015584g01: 0/16（排隊中）\r\n  job dedust_r80c20015584g02: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+  "alarm_count": 0,
+  "HFSS_or_controller_restart": false,
+  "claims_or_done_removed": false,
+  "new_global_census_performed": false,
+  "latest_global_census_receipt": "docs/log/assets/r80_best_status_20261010_0320.json",
+  "latest_global_valid_unique": 2930,
+  "latest_global_best_wm_db": 0.021682262420654297,
+  "pilot_guard_pid": 20232,
+  "pilot_guard_receipt": "docs/log/assets/r80_currentonly_prospective_v010_guard_launch_20261010.json",
+  "pilot_models": "fixed frozen v010 live-control and current-only; not the current main v011",
+  "next_routine_health_taipei": "2026-10-10 04:08",
+  "limits": [
+    "Watch valid_unique/fit version is a separate older cutoff; not a new full raw census or independently replayed v011 model audit.",
+    "Current 32-candidate pilot remains undispatched; only one original factory continues main and LOW production."
+  ]
+}
