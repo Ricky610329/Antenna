@@ -1106,3 +1106,12 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10：v010受限前瞻派工及真值鏈準備
 
 - **v010兩片16前瞻派工鏈靜態驗證通過／未執行**：versioned publisher v6綁每筆model／prediction及immutable shards，global5000／guided96分開計main保留量，append前exact CIM／等待窗口再檢；partial-copy／exact-existing recovery與seal／capacity／queue轉移來源補齊，7窄測試及獨立review通過。[準備](assets/r80_currentonly_prospective_v010_publisher_ready_20261010.json)。actual prepared_v5／full20k replay／獨立pool review仍必需；未派HFSS、未改queue／主線source。原guard20232仍只準備CPU排名，下一routine04:08；最新全量03:20的2,930／+.021682。
+
+
+### 2026-10-10 04:16：最新實測、最佳與準備失敗
+
+逐store cutoff重播sample/rad：2,979唯一有效圖形，2,984成功觀測含重測；較03:20 +49，沒有新最佳，最佳WM +0.0216822624 dB。[全量及健康證據](assets/r80_best_status_20261010_0416.json)。主線PID15944 exact身分通過，三台claimed有近期結果且scope無警報，SM reported v011／completed15持續更新。近期探索尚未推進最佳性能。
+
+另一路current-only前瞻對照的CPU準備child於03:47:19–03:50:20執行181.800秒後exit1：scorer_registry.json.tmp寫入前沒有建立prepared_v5。保留原guard終態與stderr hashes，未產生preparation receipt、未派HFSS／未更動queue；已交由原實作方窄修新版本，尚未重跑或採用模型。這是工作流程錯誤，與性能停滯分開；三台HFSS沒有受影響。維持約30分鐘健康檢查，下一04:38；R80 5,000與R81 spec／正WM驗證仍未完成。
+
+補充：04:16 cutoff有兩筆HFSS COM首次失敗（各attempt1），該store無done/fail終態；失敗不列入2,979有效unique，保留交由既有重試機制處理，不刪claim或重啟worker。CPU輸出資料夾窄修v6已完成獨立review及一項create-only生命週期驗證；未重跑、未派工，後續需重新綁定prepared_v6入口。

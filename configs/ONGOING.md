@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **10/10 04:16 使用者詢問／最新全量實測**：2,979/5,000 唯一有效圖形，較03:20 +49；沒有新最佳，最佳 WM +0.021682 dB。[收據](../docs/log/assets/r80_best_status_20261010_0416.json)。04:13三台claimed有近期結果、scope零警報；主線completed15／SM v011持續更新。新對照CPU準備於03:50因prepared_v5輸出資料夾未建立exit1，未派工／未改queue；原失敗輸出保留、資料夾窄修已review通過但尚未重跑，沒有影響HFSS；兩筆HFSS首次COM失敗非終態、不計有效筆數。下一routine04:38；R80/R81未完成。
+
 - **v010兩片16前瞻派工鏈靜態驗證通過／未執行**：versioned publisher v6綁每筆model／prediction及immutable shards，global5000／guided96分開計main保留量，append前exact CIM／等待窗口再檢；partial-copy／exact-existing recovery與seal／capacity／queue轉移來源補齊，7窄測試及獨立review通過。[準備](../docs/log/assets/r80_currentonly_prospective_v010_publisher_ready_20261010.json)。actual prepared_v5／full20k replay／獨立pool review仍必需；未派HFSS、未改queue／主線source。原guard20232仍只準備CPU排名，下一routine04:08；最新全量03:20的2,930／+.021682。
 
 - **03:38 routine健康通過**：原PID15944 exact／running_cycle，三台claimed13/16、13/16、8/16，最新結果3／2／2分鐘，scope零警報；completed14／reported v011，新guided兩片16排隊。[健康](../docs/log/assets/r80_health_20261010_0338.json)。watch fit2,921不是新全量census；03:20全量2,930／最佳+.021682維持。一次性guard20232已啟動、03:44 native確認仍等待main窗口／無CPUchild；其兩模型固定v010，與目前main v011區分。下一routine04:08，不重啟／清claim，R80/R81未完成。

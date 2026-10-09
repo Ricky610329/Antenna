@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-09T20:13:11.772171+00:00",
+  "completed_utc": "2026-10-09T20:16:13.314502+00:00",
+  "status": "read_only_query_complete",
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "unique_successful_patterns": 2979,
+  "successful_including_repeats": 2984,
+  "raw_replayed_this_query": 2984,
+  "exact_prior_metrics_reused": 0,
+  "reported_best_independently_raw_replayed": true,
+  "best": {
+    "id": "r80localv1_00026_f6ffb938",
+    "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+    "s11_margin_db": 0.09608840942382812,
+    "gain_margin_db": 0.021682262420654297,
+    "factory_margin_db": 0.021682262420654297,
+    "radiation_margin_db": 0.3709280490875244,
+    "radiation_margin_clipped_db": 0.3709280490875244,
+    "store": "dedust_r80c83e6601eg01",
+    "sample_sha256": "f79add39e27605d2f54ab48a36a7e206d6bef672ca407efdfe8d0a237d1bca0c",
+    "rad_sha256": "e11aee92cc03340a6bebfd97ef713059904598fbc6f8fb39b0822184e5249b40",
+    "repeat": false,
+    "pair_index": 137,
+    "row_index": 13,
+    "worst_inband_s11_db": -10.096088409423828,
+    "minimum_inband_gain_dbi": 4.021682262420654
+  },
+  "result_errors": [
+    {
+      "store": "dedust_r80c20015584g02",
+      "id": "r80c20015584g_00003_8e825f30",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      }
+    },
+    {
+      "store": "dedust_r80c20015584g02",
+      "id": "r80c20015584g_00009_f7bbed04",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      }
+    }
+  ],
+  "jobs_sha256_at_scan_start": "344a655a381b07e705e0398e75e65d27c50a298e801862cdfbf1d99f57dcc18c",
+  "rows_sha256": "7ab438864773d943a89671ddf3e4ab525a353b6a51ec3ecf24c41e59cc01b509",
+  "pair_proofs_sha256": "6926b846d7428c12f325cf96612a723c619c651c4a9e1c92b41565144f9cf2ce",
+  "query_script_sha256": "da6a0034241d4d6f22ecfd1ce0272b4dbd06ec252737278b0539b4bec2b631ac",
+  "controller_locks_acquired": false,
+  "queue_or_source_mutation": false,
+  "limits": [
+    "Each store has its own saved cutoff; later worker results or queue additions are excluded.",
+    "Unique representatives prefer nonrepeat observations, then queue/manifest order.",
+    "Single HFSS solve performance, not repeat certification or field-symmetry proof."
+  ],
+  "validation_status": "passed_local_saved_raw_summary_validation",
+  "new_best": false,
+  "target_unique": 5000,
+  "new_unique_since_prior": 49,
+  "prior_receipt": "docs\\log\\assets\\r80_best_status_20261010_0320.json",
+  "prior_receipt_sha256": "15c75a4c00096b1c98ecce45bb15e43efd6f60d6df5a59c0ae945a79ef106579",
+  "query_report_sha256": "c4ad1d19a000c156a9ac8dfeeac0dd0fd57c31dfe1e090ccd8d38a43e8aefccf",
+  "validation_script_sha256": "b3367c87f9d277fa67d267b2ba360f5aa2d7513c90c7414d341d0317dc05182f",
+  "known_independent_repeat_wm_db": 0.03643369674682617,
+  "health_observed_utc": "2026-10-09T20:13:27.4527365Z",
+  "source_health_sha256": "8a4437dc1598f8c5285f53e7d42604282e46ab9790bc46c2685489ca7af9f029",
+  "physical_pid": 15944,
+  "controller_argv_matches": true,
+  "controller_status": "running_cycle",
+  "latest_controller_reported_data_version": 11,
+  "completed_controller_cycles": 15,
+  "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c67bba728g02: 8/16 完成,最新結果 0 分前（已認領）\r\n  job dedust_r80c20015584g01: 7/16 完成,最新結果 3 分前（已認領）\r\n  job dedust_r80c20015584g02: 3/16 完成,最新結果 4 分前（已認領）\r\n  job dedust_r80ceab1b3e0g01: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+  "next_routine_health_taipei": "2026-10-10 04:38",
+  "currentonly_v010_training_complete": true,
+  "prospective_pilot_dispatched": false,
+  "shadow_models_adopted": false,
+  "new_NAS_archive_created": false,
+  "prospective_preparation_terminal_status": "driver_failed_preserved_no_retry",
+  "prospective_preparation_child_exit": 1,
+  "prospective_preparation_finished_utc": "2026-10-09T19:50:20.8124734+00:00",
+  "prospective_preparation_failure": "Output directory prepared_v5 was not created before scorer_registry.json.tmp write.",
+  "prospective_terminal_sha256": "e1a3fa6327741295881eee9e5ebcde06e34a02b6f5ca9280fd95c4f9f29f3c5c",
+  "prospective_stderr_sha256": "2ccbff7f1af684f7b50e861040b61202220c3d9732d79b427b1b5ad9f5527fd2",
+  "prospective_retry_run": false,
+  "main_workers_affected": false,
+  "existing_best_figure": "docs/log/assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png",
+  "existing_best_figure_sha256": "39fda87412acaa7b0c5d82f78865c1e38326f6852bd8342c9a177ef1cfeaf969",
+  "nonterminal_HFSS_first_attempt_errors": {
+    "observed_utc": "2026-10-09T20:16:45.595894+00:00",
+    "store": "dedust_r80c20015584g02",
+    "entries": {
+      "r80c20015584g_00003_8e825f30": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      },
+      "r80c20015584g_00009_f7bbed04": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      }
+    },
+    "done": false,
+    "fail": false,
+    "queue_or_claim_mutation": false
+  },
+  "nonterminal_error_check_sha256": "f6be698966dad0c574f30a807843b4321b6cbd5c52a4f8e0777a66d7485eb382",
+  "preparation_directory_fix_review_sha256": "cafa8039c1b3cb7357fe74f45919c1ae7acf375ff7f4a6833224d84427f1ad44",
+  "preparation_directory_fix_independent_review_passed": true,
+  "preparation_directory_fix_retried": false
+}
