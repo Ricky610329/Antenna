@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "status": "verified_live_routine_health",
+  "observed_utc": "2026-10-09T17:08:58.0787280Z",
+  "physical_pid": 15944,
+  "creation_unix_ms": 1791541659267,
+  "argv_matches": true,
+  "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+  "controller_status": "running_cycle",
+  "completed_cycles": 10,
+  "latest_completed_data_version": 8,
+  "last_completed_receipt_sha256": "3c18fcc2ac40ebe57ac70a5df01e82875b39a070850c8b13b08cc0128cd79d4b",
+  "source_health_sha256": "fdded74e4127fcd339e7a4518c724721cfbc61aa7246e30e69be4bdc47a711a4",
+  "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80k1d1e587fde8167b2: 7/16 完成,最新結果 1 分前（已認領）\r\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c7e26901fg02: 12/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80c7e26901fg03: 7/16 完成,最新結果 1 分前（已認領）\r\n  job dedust_r80c4d79840bg01: 0/16（排隊中）\r\n  job dedust_r80c4d79840bg02: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+  "correct_jobs_state_markers": {
+    "dedust_r80c2e4d6525g01": {
+      "done": true,
+      "fail": false
+    },
+    "dedust_r80c2e4d6525g02": {
+      "done": true,
+      "fail": false
+    },
+    "dedust_r80c7e26901fg01": {
+      "done": true,
+      "fail": false
+    },
+    "dedust_r80c7e26901fg02": {
+      "done": false,
+      "fail": false
+    },
+    "dedust_r80c7e26901fg03": {
+      "done": false,
+      "fail": false
+    }
+  },
+  "deferred_retry_count": 1,
+  "last_deferred_retry": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\deferred_retries\\42afe91c263f4bacb74f6d6c5c6bbcb7-0001.json",
+    "sha256": "aa89660a6a2e7c21a1b95bd0b2a0f34ce183c8476eb38455087b4abb88e75a2c",
+    "schema_version": 1,
+    "event": "live_snapshot_changed",
+    "deferred_utc": "2026-10-09T16:47:18.863521+00:00",
+    "error": "worker state changed during controller scan: dedust_r80k1d1e587fde8167b2",
+    "exception_type": "LiveSnapshotChanged",
+    "cycle_started_utc": "2026-10-09T16:27:44.876091+00:00",
+    "controller_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\4d79840b62340e93150afa8748ff9a612d1ef08fd17d448d421ad8a883a0c286\\action_receipt.json"
+  },
+  "currentonly_v008_result_sha256": "db8201e5a7c4df5ac58f3a8fbdb32d4e8a5e665cd56eb2e6ca4fba65b6a5b325",
+  "next_health_taipei": "2026-10-10 01:38",
+  "worker_or_queue_restarted_or_mutated_by_health": false,
+  "limits": [
+    "Result entry counts are not a new verified unique-success census.",
+    "v007 both32 are terminal; corrected readout is pending independent review before execution.",
+    "v008 second/third shards remain nonterminal, so no full48 truth comparison yet.",
+    "Latest full raw census is2810/best+.021682 at00:51.",
+    "LiveSnapshotChanged is a deferred snapshot retry; controller identity is live and LOW/guided work remains available."
+  ]
+}

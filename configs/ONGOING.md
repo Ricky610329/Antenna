@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **01:08 routine健康通過**：原PID15944 exact／running_cycle，三台claimed近期結果／scope零警報，LOW及guided有待跑；v007兩片皆done，可在讀回窄修審查後核對32真值。v008g02／g03為12／7且非terminal，48對照繼續等。[健康](../docs/log/assets/r80_health_20261010_0108.json)。current-only v008已實際完成／未adopt，最新全量仍00:51的2,810／+.021682；下一routine01:38，不重啟／清claims。
+
 - **current-only v008背景對照完成／結果混合**：固定2,739／1855train／884hold、三fresh current100／Adam1,500，CPU32.135秒；checkpoint/norm及獨立保存算術通過。[結果](../docs/log/assets/r80_sm_currentonly_shadow_v008_result_20261010.json)。LCBρ0.0768→0.1138、GainMAE5.5604→5.4897稍改善，但fullMAE3.6045→3.7277、S11與rad變差，保留原live。48shadow預測已保存、truth未讀且timing=false，待同批HFSS終態，不加解算。最新全量仍00:51的2,810／WM+.021682，01:08 routine。
 
 - **current-only v008固定後備背景對照**：沿用v006 recipe，只換frozen2,739資料（1,855train／884hold）；5,478 cache hashes、48訓練排除與41項獨立prelaunch檢查通過。[準備收據](../docs/log/assets/r80_sm_currentonly_shadow_v008_prepared_20261010.json)。先commit固定config再執行一次CPU；此刻尚未train/predict/adopt，48預測明示non-prospective，原HFSS／SM／queue不變。
