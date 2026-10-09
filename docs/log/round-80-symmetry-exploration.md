@@ -922,3 +922,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 同868 development holdout：full MAE **3.605768→3.758972**、S11 **2.135741→2.354672**、Gain **5.559409→5.573625**、rad phi0 **3.743792→3.939856**／phi90 **3.377398→3.501430 dB**，全部略差。factory-score Spearman **0.072579→0.074856**、LCB **0.064484→0.067239**，變化很小、兩者排序仍弱；真值及預測正WM皆0，不能据此認證false-positive控制。獨立Sol只從NPZ/JSON重算actualWM、五MAE、average-tie三種rank、classification及32identity/binding/timing，所有數字通過；未重新forward/model/train。原comparison字段NAS_HFSS_truth_read有歧義，另保留hash-bound v2，明示讀固定holdout真值／沒讀NAS／沒讀32新真值，沒有重跑或改數字。
 
 保留目前live SM，沒有派額外HFSS或更換controller。這不是legacy錯標的因果證據；移除legacy同時改epoch phase-index排序，且holdout為development描述。接下來參考既有CNN與影子比較歷史，先固定一個相同當前資料的架構對照，不把增加資料或替換架構預先宣稱有效。
+
+
+### 2026-10-09 22:38：routine健康檢查
+
+實體CIM核對唯一controller PID15944／creation1791541659267／完整argv／launch不變，completed_cycles8、下一cycle running；scope零警報，三片claimed的result entries15／14／13、最新3／2／1分鐘，另六片LOW與prio1候選排隊。[健康收據](assets/r80_health_20261009_2238.json)。三片仍未終態，不把entry數當成功真值或完成cohort。Cycle5f196a41沿用v006，terminal dispatched／新補一片16；僅讀回action metadata，不聲稱新完整pool審查或性能改善。dispatch saved snapshot2,669與22:09逐store全量raw query2,675不是同一live截點，現況最佳仍以後者為準。未重啟worker／清claim或調queue。下一routine約23:08。

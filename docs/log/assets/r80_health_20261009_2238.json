@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "verified_live_routine_health",
+  "physical_controller": {
+    "observed_utc": "2026-10-09T14:37:50.9248412+00:00",
+    "physical_pid": 15944,
+    "creation_unix_ms": 1791541659267,
+    "argv_matches": true,
+    "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+    "watch_status": "running_cycle",
+    "completed_cycles": 8,
+    "dispatch_snapshot_unique": 2669,
+    "latest_data_version": 6,
+    "last_completed_utc": "2026-10-09T14:18:40.129413+00:00",
+    "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\5f196a41e9e01446716253339a189b648bb7c81ebd043f2232b2f00d16136897\\action_receipt.json",
+    "last_receipt_sha256": "0fe9e6f1c1cc5f0fff4c7f0390cfd5d0f14ebfdf1b401909075f61c6281785ed"
+  },
+  "physical_health_receipt_sha256": "f95746443092734928217a4326e7424419590741a3ff42eb94ea49cf9e8edb37",
+  "scoped_status_command": "python -m script.status --factory --dataset-root [private dataset] --scope symmetry_filter_20261007 --alert",
+  "scoped_status_observation": {
+    "alerts": 0,
+    "claimed_shards": [
+      {
+        "store": "dedust_r80c205a8627g01",
+        "result_entries": 15,
+        "latest_minutes": 3
+      },
+      {
+        "store": "dedust_r80ceec7d671g01",
+        "result_entries": 14,
+        "latest_minutes": 2
+      },
+      {
+        "store": "dedust_r80c8b2c869cg01",
+        "result_entries": 13,
+        "latest_minutes": 1
+      }
+    ],
+    "queued_low_shards": 6
+  },
+  "new_same_v006_refill": {
+    "action_sha256": "0fe9e6f1c1cc5f0fff4c7f0390cfd5d0f14ebfdf1b401909075f61c6281785ed",
+    "planned_job": {
+      "kind": "g",
+      "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\5f196a41e9e01446716253339a189b648bb7c81ebd043f2232b2f00d16136897\\guided_shards\\shard-001_input",
+      "input": "dedust_r80c5f196a41g01_input",
+      "store": "dedust_r80c5f196a41g01",
+      "prio": 1,
+      "count": 16,
+      "tree_sha256": "b2ab7ea06ca5dbb6bdaebf0ddefad6797089247ea95b091472d8b0b5de5b59f0",
+      "final_target_tail": false
+    },
+    "training_this_cycle": false
+  },
+  "next_routine_taipei": "2026-10-09 23:08",
+  "limits": [
+    "Result-entry counts are not valid successful unique counts or completed-cohort evidence.",
+    "Dispatch snapshot2669 is a saved scan cutoff, not a new live census; latest full raw query2675 at22:09 remains the best-status source.",
+    "New same-model refill observed through terminal action metadata only; not independently replayed full pool or HFSS outcome.",
+    "No worker restart, source/queue/claim/raw mutation."
+  ]
+}

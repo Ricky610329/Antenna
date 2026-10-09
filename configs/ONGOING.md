@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/09 22:38：routine健康通過**。唯一PID15944 exact身分／argv不變、8cycles、三片claimed最新3／2／1分鐘、零警報；LOW及guided都有排隊。v006沿用再補一片16，新的48真值尚未完成。[健康收據](../docs/log/assets/r80_health_20261009_2238.json)。current-only背景对照已核對陰性／未採用，既有CNN架構對照正備料；不改live。最新全量最佳仍22:09的2,675／+0.021682；下一routine約23:08。
+
 - 現況 **10/09 22:29：current-only SM背景對照完成／陰性**。固定2,641／1773train＋868hold、三fresh current100，31.34秒完成、獨立NPZ/JSON核對通過。fullMAE3.606→3.759／Gain5.559→5.574；factoryρ0.0726→0.0749變化很小，未採用。[結果](../docs/log/assets/r80_sm_currentonly_shadow_result_20261009.json)。32shadow預測已保存但真值未讀，不加HFSS；live SM及佇列照常。最新全量仍22:09的2,675／最佳+0.021682，下一routine22:39；R80及R81未完成。
 
 - 現況 **10/09：v006完整模型／32派工審查通過**。新增63／fit2,641，train1,773／hold868；三fresh模型norm／Adam3,800及32保存預測重播通過。獨立20k strict ranking核對11／11／10、23家族、minHamming84；NAS兩片40-file tree與queue一致。[收據](../docs/log/assets/r80_diverse_sm_cycle_v006_20261009.json)。32真值待完成；最新全量最佳仍以22:09的2,675／+0.021682為準。背景current-only SM對照準備中，live配方未改；下一routine約22:39。
