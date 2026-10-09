@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "status": "fixed_prospective_pilot_pretrain_stage_verified_not_executed",
+  "readiness_sha256": "779fe9b1478c7c9b921f1aa535694551759a60aeb06b0e13960e4381bcfc5209",
+  "configuration": "configs/r80_currentonly_prospective_pilot_v010.json",
+  "configuration_physical_sha256": "b86178a94ea5aba11b0240b2afdb61df59d7de593f10c8dfe96b9a881cccd206",
+  "independent_pretrain_review_sha256": "2261445dc7ad21681055a38f76947344c17ba7e8d828b016ed23b24c8b00b1d9",
+  "independent_inventory_report_sha256": "ad532bdb43e56312aaa61e8f1050d565c1b4a09dbc7a5ef591e6bf8601629374",
+  "reviewed_bindings": {
+    "config": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\pilot_config.json",
+      "sha256": "b86178a94ea5aba11b0240b2afdb61df59d7de593f10c8dfe96b9a881cccd206"
+    },
+    "freeze_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\freeze_receipt.json",
+      "sha256": "fccffa5fd9938db73b42ffaf748802ec57519d2654412c0c94c073555db2b118"
+    },
+    "freeze_inventory": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\freeze_inventory_v3.json",
+      "sha256": "4b06beb439f857db3b174e4f9ef5e9135704ecf68b97475cbcaf2070e34c2e6d"
+    },
+    "freeze_inventory_helper": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\freeze_inventory_v3.py",
+      "sha256": "584c00a51adf01f2549dce581edff8480cdea7e02e55059df0a60955b01d6c26"
+    },
+    "training_entry": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\train_currentonly_v3.py",
+      "sha256": "85c1a1441693010b1d37074a9195f71612abe63980d25e162d0156714abe195d"
+    },
+    "symmetry_training": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\script\\symmetry_training.py",
+      "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+    },
+    "exploration": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\script\\exploration.py",
+      "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7"
+    }
+  },
+  "frozen_inventory": {
+    "NAS_read_or_write": false,
+    "cache_bytes_per_root": 23165934,
+    "cache_files_per_root": 5680,
+    "cache_inventory_sha256": "0d734c3a8a807582127ddd4eb2404f703cc7c1d2818d306864bbe26241c47a26",
+    "config_sha256": "b86178a94ea5aba11b0240b2afdb61df59d7de593f10c8dfe96b9a881cccd206",
+    "current_only_file_count": 5686,
+    "current_only_model_directory_present": false,
+    "current_only_pretrain_inventory_sha256": "df68291962dafabe7cc444805db62778df2e5eae142648d8cf6bd77ca5f86c26",
+    "current_only_protocol_sha256": "371d2bcb327240b203c386879e4620143644ec65495b331c9156349fe427d555",
+    "current_only_state_sha256": "af917edf52f730af8d217ae895cf92e0bc9bcdce1acce0ddac76506896852294",
+    "live_file_count": 5690,
+    "live_inventory_sha256": "3f66fd53d7fb0f81186aa6ebde1f7c95f2e96ebd16bc3a7588dbe56c7b985078",
+    "live_model_hashes": {
+      "models/data-v010/member-0.pt": "406aab285c1e5042d7f97247bff26a8ee09cf6f1ff9cbefd367da57dcb0d2018",
+      "models/data-v010/member-1.pt": "8680bf0b9397e9dbd3dc6b34922323515cac9aeab318bde6515264e60e22607f",
+      "models/data-v010/member-2.pt": "ccfe6f39ffff6344245f6e2d5bf74580212e5869d01a38abf136457e9e291d7d",
+      "models/data-v010/summary.json": "7dc428beea32dd5786b93221d13a954a23f0fcc8d9da3b106b49a529f44edadb"
+    },
+    "manifest_id": "8f7d8cfcebcf75970db3ed11396eb1a5881a7c8449f92238a7bda46a3976805e",
+    "mutable_original_training_root_consulted": false,
+    "original_freeze_receipt_sha256": "fccffa5fd9938db73b42ffaf748802ec57519d2654412c0c94c073555db2b118",
+    "roles": {
+      "profile_holdout": 896,
+      "profile_train": 1944
+    },
+    "rows": 2840,
+    "schema_version": 3,
+    "status": "existing_v010_freeze_inventory_verified_pretrain_v3",
+    "training_or_prediction_run": false
+  },
+  "candidate_policy": {
+    "policy_path": "configs/r80_diverse_sm_search_v1.json",
+    "policy_sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+    "candidate_pool_size": 20000,
+    "pool_seed": 80100966,
+    "id_prefix": "r80p10",
+    "selection_total": 32,
+    "per_scorer": 16,
+    "arm_sequence_per_scorer": [
+      "global_lcb",
+      "parent_lcb",
+      "high_disagreement",
+      "global_lcb",
+      "parent_lcb",
+      "high_disagreement",
+      "global_lcb",
+      "parent_lcb",
+      "high_disagreement",
+      "global_lcb",
+      "parent_lcb",
+      "high_disagreement",
+      "global_lcb",
+      "parent_lcb",
+      "high_disagreement",
+      "global_lcb"
+    ],
+    "round_owner_order": "even rounds live,current_only; odd rounds current_only,live",
+    "overlap_rule": "earlier fixed turn claims an overlapping candidate; later turn advances in its own arm ranking",
+    "min_physical_hamming": 64,
+    "max_per_canonical_group": 2,
+    "strict_no_relaxation": true,
+    "prediction_timing": "Both scorers must save all 32 curves and scores before either phase is dispatched."
+  },
+  "dispatch_policy": {
+    "phase_count": 2,
+    "phase_size": 16,
+    "kind": "g",
+    "priority": 1,
+    "max_guided_outstanding": 96,
+    "target_valid_unique": 5000,
+    "capacity_rule": "For every phase, under the existing dataset lock, re-read all jobs and exact worker terminal states and require successful_unique + union(nonterminal_reserved, active_main_reserved, phase_hashes) <= 5000 and guided_nonterminal union(active_main_reserved, phase_hashes) <= 96.",
+    "waiting_rule": "Use the current main watcher only; require waiting with at least 180 seconds before its next cycle, and recheck its active reservation inside the dataset lock.",
+    "retry_rule": "Use the profile's exact three-worker retry roster. No manual claim, retry, queue append, or controller is introduced.",
+    "phase2_rule": "Phase 2 is a separate invocation after phase 1, with a fresh waiting, collision, reservation, and global-capacity proof. If unavailable, defer without replacement or retuning."
+  },
+  "current_only_recipe": {
+    "derivation": "Change only model.legacy_epochs from 30 to 0 in the exact v010 protocol and recompute protocol_id.",
+    "architecture": "CurveMLP(625,[512,512,256],216)",
+    "ensemble_seeds": [
+      0,
+      1,
+      2
+    ],
+    "optimizer": "Adam(lr=0.001)",
+    "batch_size": 128,
+    "legacy_epochs": 0,
+    "current_epochs": 100,
+    "expected_adam_steps_per_member": 1600,
+    "phase_index": 0,
+    "normalization": "train-only input and all 216 target coordinates",
+    "group_weights": "existing inverse canonical-group-frequency weights",
+    "warm_start": false,
+    "early_stopping": false
+  },
+  "evaluation_policy": {
+    "all_proposed_denominator": 32,
+    "owner_denominators": {
+      "live": 16,
+      "current_only": 16
+    },
+    "terminal_failures": "Retain ID/attempt/error hash; never fabricate WM or curve errors.",
+    "metrics": [
+      "factory_score_vs_actual_WM_spearman",
+      "LCB_vs_actual_WM_spearman",
+      "band_S11_MAE",
+      "band_Gain_MAE",
+      "full_response_MAE",
+      "radiation_MAE",
+      "full216_MAE",
+      "positive_count",
+      "best_WM",
+      "median_WM"
+    ],
+    "analysis": "Report each scorer on all valid 32 and its owned valid subset; preserve all-proposed and valid-only N.",
+    "claim_limit": "The v006/v008 diagnostics were posthoc development evidence. This pilot produces prospective policy data, not a causal model effect, independent validation, or automatic adoption authority."
+  },
+  "actual_executed": {
+    "HFSS_or_queue_or_controller_mutation": false,
+    "NAS_read_or_write": false,
+    "freeze_v3_inventory_replay": true,
+    "local_v010_copy_and_hash_freeze": true,
+    "model_load_or_prediction": false,
+    "narrow_logic_tests": "5 passed in 0.229s",
+    "syntax_compile": true,
+    "training": false,
+    "truth_read": false
+  },
+  "future_scoring_publication_readout_review_complete": false,
+  "training_launched": false,
+  "HFSS_dispatch": false,
+  "live_recipe_changed": false,
+  "limits": [
+    "Only pretrain stage is verified here. Future scoring, publication and readout helpers remain under a separate review.",
+    "Posthoc v006/v008 ranking changes justify a bounded exploration pilot, not causal efficacy or adoption.",
+    "Original watcher continues; candidate capacity must include all main and LOW reserved points under the existing lock.",
+    "Removing legacy training also changes current phase index to0; this is not a pure pretraining causal comparison."
+  ]
+}

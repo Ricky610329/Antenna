@@ -1058,3 +1058,10 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-10 02:20：最新全量實測及最佳核對
 
 沿用既有唯讀query逐store cutoff重播sample/rad：2,879唯一有效圖形／2,884成功觀測含重測，較00:51新增69唯一有效。沒有新最佳，最佳WM +0.0216822624 dB；本次不更動NAS、queue、claims、controller或模型。02:08原controller exact身分通過，三台近期有結果／scope零警報，報v010；這不是新的獨立v010模型完整審計。[全量收據](assets/r80_best_status_20261010_0220.json)。v00848最近完成0正WM，兩套保存prediction比較中current-only排名稍好但fullMAE略差；有限前瞻pilot準備中，未dispatch／adopt。資料持續增加不等於最佳性能改善，R80 5,000及後續R81 spec／正WM驗證仍未完成。下一routine02:38。
+
+
+### 2026-10-10 02:38：有限前瞻SM對照固定準備
+
+已凍結本機v010同2,840資料／1,944train896hold／875canonical groups；兩根各5,680cache檔案與三live模型hash核對，不載入模型或讀NAS。原live legacy30/current100保持，對照fresh current100／phase0／Adam預期1,600步每member；共同20k池固定16+16，兩scorer各6global／5parent／5disagreement，固定alternatingturn解重疊，整體Ham≥64／canonical cap2無放寬。五窄選擇tests與獨立byte-only inventory/pretrain review通過。舊WIP的binary cast／hash及共同來源驗證、unguarded entry和v2不完整inventory gate均已在任何training前窄修並保留原版本；舊入口停用且指向v3。[準備紀錄](assets/r80_currentonly_prospective_v010_prepared_20261010.json)。
+
+先固定config commit，才執行單次CPU訓練；目前尚未train/forward/predict/dispatch。future scoring／publication／readout需另review，三台原watcher及LOW不變，5000valid+reserved和guided96必須使用現有交易lock與main active reservation。這是posthoc診斷後的有限prospective policy探索，不是模型優越性／因果／automatic adoption證明。02:38 exact原PID／creation／argv與scope健康通過，三台claimed最新2／15／2分鐘；15分鐘的那片仍無stale警報，下次scheduled再查，不殺HFSS或清claims。[健康](assets/r80_health_20261010_0238.json)。03:08下一routine；全量仍02:20的2,879，R80/R81未完成。

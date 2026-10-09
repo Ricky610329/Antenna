@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **02:38健康與v010有限前瞻對照準備通過**：原controller exact／running_cycle，三台claimed／scope零警報（結果最新2／15／2分鐘），未重啟／清claim。[健康](../docs/log/assets/r80_health_20261010_0238.json)。固定同2,840 frozen資料／1944train896hold、同20k候選池、16live+16current-only／joint Ham64／cap2，五窄邏輯測試及独立inventory/pretrain review通過；先固定commit再單次CPU，不自動採用。[準備](../docs/log/assets/r80_currentonly_prospective_v010_prepared_20261010.json)。尚未train/predict/dispatch，futurepublish需另review；global cap5000和guided96不變。最新全量仍02:20的2,879／+.021682；下一routine03:08，R80/R81未完成。
+
 - **10/10 02:20 使用者詢問現況／全量raw核對**：2,879/5,000唯一有效實測（較00:51 +69），沒有新最佳，最佳WM +0.021682 dB。[收據](../docs/log/assets/r80_best_status_20261010_0220.json)。02:08三台有近期結果／scope零警報，controller報v010；v00848全數有效但0正WM。current-only排名稍好，準備有限前瞻對照、尚未派工或換live。下一routine02:38，R80/R81未完成。
 
 - **01:38 routine健康通過／等v008最後1筆**：原PID15944 exact／running_cycle，三台claimed最新0／0／1分鐘、scope零警報；controller已報v009／11cycles。v008g01/g02 done，g03尚15/16且非terminal；同48 live/current-only讀回及獨立replay已備好／未執行。[健康](../docs/log/assets/r80_health_20261010_0138.json)。不補假真值、不追加解算／清claims；最新全量仍00:51的2,810／+.021682，下一routine02:08。
