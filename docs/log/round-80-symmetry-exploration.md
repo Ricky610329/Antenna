@@ -729,3 +729,9 @@ Conductor已核對實際v2設定及方案來源；實作在`tmp/r80_sm_developme
 沿用`script.figs.symmetry_profile`及歷史`polar_rad_ax`出圖，只新增可選的觀測狀態文字，預設文字及原曲線處理保留。這張图呈現原次響應，註記明示已有兩次正WM觀測，避免沿用舊圖「尚未重測」文字。金屬精確LR鏡射；場型鏡射殘差仍為phi0=0.102705、phi90=0.027582，沒有宣稱場型完全對稱。
 
 [排名與驗證收據](assets/round-80/best-symmetric-polar-20261009-v003/best_query_receipt.json)及[出圖收據](assets/round-80/best-symmetric-polar-20261009-v003/sample_plot_receipt.json)綁定query、raw、analysis／NPZ、renderer／helper及PNG SHA。另以float64重算帶內WM並核對金屬鏡射與固定饋線；目檢中文、曲線與極座標legend可讀。此次原始查詢凍結保存在本機ignored資料夾，未另建立NAS封存；Git保存圖卡與薄收據。既有LOW補池、SM批次更新及30分鐘例行健康檢查維持，新家族學習版本仍在隔離審查，未切換live controller。
+
+### 2026-10-09：整家族學習角色通過獨立 fixture 審查，遷移仍待完成
+
+[角色功能審查薄收據](assets/r80_family_development_feature_review_20261009.json)記錄隔離commit `5774adb`：Conductor的16項owner／原訓練回歸、獨立8項額外負例及16項owner／baseline（另5 subtests）通過，tiny CPU SGD與epoch邊界恢復state bitwise一致。原預設protocol bytes／ID及固定六欄模型binding保留；opt-in整canonical家族／aliases／後續同家族點進入train，manifest保存reference split，其他／legacy角色不改。
+
+獨立審查先抓到canonical closure、初始alias root改指、非字串群組與不存在的群組被默默接受，全部修正後才接受此封印。這是程式與generated-fixture證據，沒有實際新模型、擬合改善或泛化結論。遷移另有發布前state alias未完整綁定缺口，獨立負例已重現、修正中；真實資料尚未遷移，新watcher尚未啟動，live訓練來源及HFSS派工維持原版本。

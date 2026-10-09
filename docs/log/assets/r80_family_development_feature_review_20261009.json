@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "status": "generated_fixture_feature_review_passed",
+  "isolated_branch": "r80-sm-development-20261009",
+  "isolated_feature_commit": "5774adb",
+  "baseline_commit": "6f05b7d",
+  "source": {
+    "path": "script/symmetry_training.py",
+    "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+  },
+  "owner_tests": {
+    "path": "tests/test_symmetry_development_training.py",
+    "sha256": "ad4f1498ca81a0665ee82dc969bdd74c73e4f9c974376ebd9f3a311f976177af"
+  },
+  "independent_review": {
+    "status": "PASS",
+    "receipt_sha256": "ff8751e78903b9f90d37e0a58b5113be82bad5bb1ff6bc3fb7deee078d4aa274",
+    "test_sha256": "b6f5d388b5b0dd81f29a08819bab94d930b656bc16c901627522e262fa3aa81c",
+    "independent_tests_passed": 8,
+    "owner_and_baseline_tests_passed": 16,
+    "subtests_passed": 5
+  },
+  "conductor_verification": {
+    "owner_and_baseline_unittest_passed": 16,
+    "true_tiny_sgd_and_epoch_boundary_recovery": "bitwise equal model and optimizer states on generated fixtures",
+    "diff_check": "passed",
+    "default_protocol_sha256": "1335298b18f2e122644a37b39f4026c13455630a54a95969d428c2fd8bf5e211",
+    "default_protocol_id": "80213e65ee1da7aaf8d82c0ad7aad3385350747033ccf901b77d8c60e61d13ca",
+    "checkpoint_binding_keys": ["measurement_id", "score_spec_id", "protocol_id", "data_version", "manifest_id", "cumulative_valid_unique"]
+  },
+  "verified_invariants": [
+    "Opt-in whole canonical development group includes aliases and later arrivals while preserving reference_split.",
+    "Other group roles and legacy roles are unchanged; default protocol bytes remain exact.",
+    "Strict string groups and reference protocol identity are required; initialization policy is immutable.",
+    "Rehashed canonical/lineage closure changes, alias-root retargeting, role changes and absent declared groups reject before training.",
+    "Checkpoint recovery rejects changed role metadata and binding; no model architecture, normalization, schedule or weighting change."
+  ],
+  "review_history": [
+    "Independent negatives exposed canonical closure and mutable alias-root retargeting plus string coercion; fixed before acceptance.",
+    "A second independent negative exposed silent acceptance of absent declared development groups; fixed before acceptance."
+  ],
+  "actual_migration_performed": false,
+  "actual_model_training_performed": false,
+  "live_controller_transition_performed": false,
+  "live_training_source_changed": false,
+  "migration_review_status": "separate staging-state alias binding defect being corrected before actual migration",
+  "limits": [
+    "Generated-fixture implementation and recovery evidence only; no new SM quality or generalization claim.",
+    "The feature is committed only in an isolated worktree; integration into live GAN awaits actual migration/training and a normal sole-owner controller transition.",
+    "The single-factor learning recipe and all old protocol/model/data evidence remain preserved."
+  ]
+}
