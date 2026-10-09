@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "status": "corrected_scoring_v5_preparation_verified_not_executed",
+  "recorded_utc": "2026-10-09T19:33:27.980343+00:00",
+  "fixed_config": {
+    "path": "configs/r80_currentonly_prospective_pilot_v010.json",
+    "sha256": "b86178a94ea5aba11b0240b2afdb61df59d7de593f10c8dfe96b9a881cccd206"
+  },
+  "independent_review": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\scoring_review_v5.json",
+    "sha256": "182084e4faa1ae3d7c660e59a6331a7ba54aff214933e81d10b7fde866e6c4cc",
+    "status": "passed_scoring_preparation_v5_no_execution"
+  },
+  "review_request": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\scoring_review_request_v5.json",
+    "sha256": "954eb97bb52847fa75db0c2715a060830c5c76789718d1ccf67fe46ea0487253"
+  },
+  "reviewed_bindings": {
+    "config": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\pilot_config.json",
+      "sha256": "b86178a94ea5aba11b0240b2afdb61df59d7de593f10c8dfe96b9a881cccd206"
+    },
+    "freeze_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\freeze_receipt.json",
+      "sha256": "fccffa5fd9938db73b42ffaf748802ec57519d2654412c0c94c073555db2b118"
+    },
+    "freeze_inventory": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\freeze_inventory_v3.json",
+      "sha256": "4b06beb439f857db3b174e4f9ef5e9135704ecf68b97475cbcaf2070e34c2e6d"
+    },
+    "pretrain_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\pretrain_review_v3.json",
+      "sha256": "2261445dc7ad21681055a38f76947344c17ba7e8d828b016ed23b24c8b00b1d9"
+    },
+    "training_launch": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\training_launch_receipt_v3.json",
+      "sha256": "dcbc4ada991702c3fad340a04640a06b3ca5550ce3b164d6107dff4f0d5c97fb"
+    },
+    "training_completion": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\training_completion_v3.json",
+      "sha256": "ba0892ba2f160d5837c4c8bf5da8da54c050639749f9649e3f359a17d9c479f6"
+    },
+    "independent_posttrain_audit": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_model_review_20261010_v001\\model_review.json",
+      "sha256": "96b8a1f73bbbc14421f3a0c06bbbd8dd41a6dacd81c6f1a224c18ef57a918e75",
+      "status": "passed_terminal_current_only_v010_physical_model_audit_no_forward",
+      "helper": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_model_review_20261010_v001\\audit_models.py",
+        "sha256": "69bad40f043134a3f1ac90045c70e8dc4354a10cb31dd1371341254dd32ae434"
+      }
+    },
+    "scoring_gate": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\scoring_gate_v5.py",
+      "sha256": "fcf3a14bb620dd79e1153ef09767aefbe18201a88037216f580a49d0669992ee"
+    },
+    "scoring_entry": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepare_pilot_v5.py",
+      "sha256": "f73120867b52766946fc2ed61c249bc4c25f957484603db92fda2eae117168f2"
+    },
+    "pilot_logic": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\pilot_logic.py",
+      "sha256": "6f11b968d9949d5c934a83b026684a10c8a16c30f1131254c7a8888c76133eaa"
+    },
+    "pilot_provenance": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\pilot_provenance_v3.py",
+      "sha256": "04553fe699c07dab8671bf11c85a9564c0d20ce89b543ac102c865c7e000cec8"
+    },
+    "provenance_tests": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\test_pilot_provenance_v3.py",
+      "sha256": "2a3753c26949c0bfc609e2439f918a539be1183bd636b793b0fc1eeb51a2afdd"
+    },
+    "pilot_audit": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\pilot_audit_v5.py",
+      "sha256": "dffe1d6e4f354846aabdaa7506c41def8f178bfd15762b35915d9027c07bf3ac"
+    },
+    "audit_tests": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\test_pilot_audit_v5.py",
+      "sha256": "02b831d086db1aa1be070a13253c21b11ac5c144618cbf184d45a7a27c59488b"
+    },
+    "symmetry_training": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\script\\symmetry_training.py",
+      "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+    },
+    "symmetry_diverse_sm": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\script\\symmetry_diverse_sm.py",
+      "sha256": "2cf599ab1bbba24e04b853df9d1485d8b30f7a99b98e7b7691e03a8c9e0db274"
+    },
+    "symmetry_sm_pool": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\script\\symmetry_sm_pool.py",
+      "sha256": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8"
+    },
+    "exploration": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\script\\exploration.py",
+      "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7"
+    },
+    "profiled_batch": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\script\\profiled_batch.py",
+      "sha256": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3"
+    },
+    "profile": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+      "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095"
+    },
+    "search_policy": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\r80_diverse_sm_search_v1.json",
+      "sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7"
+    }
+  },
+  "preserved_blocked_reviews": {
+    "scoring_review_v3_blocked.json": "53eef9e7ca2a8fe5673cf69b0cb60625f9dec10643059ad4c6a26c6ad6998e3e",
+    "scoring_review_v4_blocked.json": "3409600e21f0c0cd0a78b807e0c0980448754aea8dd4e023706bfce12addfd83"
+  },
+  "corrections": [
+    "Each selected row carries its owning scorer scores, curves, predictor binding and combined model hash.",
+    "Joint audit qualifies live-base predictor/model/training metadata and binds the full two-scorer registry.",
+    "Unused internal live-only selection arms are removed from canonical joint rank rows.",
+    "Existing queue/store verification reads sample and radiation truth; proposed candidate truth remains unread."
+  ],
+  "policy_unchanged": {
+    "common_pool_planned": 20000,
+    "cohort_planned": 32,
+    "per_owner_planned": 16,
+    "arms_per_owner": [
+      6,
+      5,
+      5
+    ],
+    "minimum_joint_hamming": 64,
+    "canonical_cap": 2,
+    "shards_planned": [
+      16,
+      16
+    ],
+    "owner_counts_per_shard": [
+      8,
+      8
+    ]
+  },
+  "model_recipe_or_parameters_changed": false,
+  "new_training": false,
+  "candidate_prediction_executed": false,
+  "NAS_read_or_write_executed": false,
+  "HFSS_dispatched": false,
+  "queue_or_controller_mutation": false,
+  "currentonly_automatically_adopted": false,
+  "publisher_status": "original_wrapper_blocked_pending_versioned_binding_capacity_and_final_wait_guard_fixes",
+  "limits": [
+    "Independent preparation review plus focused logic tests; actual common-pool prediction, full selected artifacts, dispatch and new HFSS truth remain unexecuted.",
+    "Only the original main factory remains in operation; this is a fixed exploratory prospective comparison, not demonstrated performance improvement."
+  ]
+}

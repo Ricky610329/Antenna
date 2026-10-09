@@ -1084,3 +1084,8 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10 03:20：最新全量實測及最佳核對
 
 沿用既有唯讀查詢，逐 store cutoff 重播 sample/rad：2,930 唯一有效圖形／2,935 成功觀測含重測，較02:20 新增51唯一有效。沒有新最佳，最佳 WM +0.0216822624 dB。本次不更動 NAS、queue、claims、controller 或模型。[全量收據](assets/r80_best_status_20261010_0320.json)。03:20 原 controller exact 身分通過，三台最新結果1–2分鐘、scope無警報；SM持續批次更新。v010 current-only 三模型實際訓練及物理審計完成，前瞻對照尚未派工／採用。資料持續增加，但近期多樣性批次尚未帶來新的正WM圖形；R80 5,000及後續R81 spec／正WM驗證未完成。維持30分鐘例行健康檢查，下一03:38。
+
+
+### 2026-10-10：v010雙scorer前瞻入口來源修正
+
+- **v010前瞻排名入口來源修正完成／尚未執行**：每筆採用owner自己的scores／curves／model hash，joint audit區分live-base生成證據並移除未採用的內部selection標記；既有queue驗證會讀sample/rad，與新32筆truth未讀分開。固定20k／16+16／Ham64／cap2及兩片8+8不變，12窄測試及獨立scoring v5 review通過。[收據](assets/r80_currentonly_prospective_v010_scoring_ready_20261010.json)。旧v2–v4入口與guard不launch；修正版guard獨立review後僅做一次CPU排名，publisher需另核對最終等待窗口、capacity和immutable輸入，尚未派工／adopt。主線HFSS照常，03:38 routine；最新全量03:20為2,930、WM+.021682。

@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **v010前瞻排名入口來源修正完成／尚未執行**：每筆採用owner自己的scores／curves／model hash，joint audit區分live-base生成證據並移除未採用的內部selection標記；既有queue驗證會讀sample/rad，與新32筆truth未讀分開。固定20k／16+16／Ham64／cap2及兩片8+8不變，12窄測試及獨立scoring v5 review通過。[收據](../docs/log/assets/r80_currentonly_prospective_v010_scoring_ready_20261010.json)。旧v2–v4入口與guard不launch；修正版guard獨立review後僅做一次CPU排名，publisher需另核對最終等待窗口、capacity和immutable輸入，尚未派工／adopt。主線HFSS照常，03:38 routine；最新全量03:20為2,930、WM+.021682。
+
 - **10/10 03:20 使用者詢問／全量 raw 核對**：2,930/5,000 唯一有效實測（較02:20 +51），沒有新最佳，最佳 WM +0.021682 dB。[收據](../docs/log/assets/r80_best_status_20261010_0320.json)。03:20 三台有近期結果、scope 無警報；SM 持續批次更新。v010 current-only 三模型實際訓練及物理審計完成，有限前瞻對照仍未派工／採用。下一例行03:38，R80/R81 未完成。
 
 - **03:08 routine健康通過**：原controller exact／running_cycle，三台claimed近期有結果／scope零警報；completed13、reported v010。[健康](../docs/log/assets/r80_health_20261010_0308.json)。02:38結果較久的那片已推進到13/16、最新1分鐘，未重啟／清claim；v010 current-only CPU已完成，雙scorer同池準備review通過但未prediction／派工。背景一次性guard的窗口計算已在launch前發現需窄修，保留原版，原main／LOW繼續。全量仍02:20的2,879／+.021682；下一routine2026-10-10 03:38，R80/R81未完成。
