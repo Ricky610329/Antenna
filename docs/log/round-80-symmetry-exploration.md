@@ -630,3 +630,13 @@ Conductor source review及11項本機synthetic fixture測試通過；Sol impleme
 [本次排名／私人封存收據](assets/round-80/best-symmetric-polar-20261009-v002/best_query_receipt.json)與[出圖收據](assets/round-80/best-symmetric-polar-20261009-v002/sample_plot_receipt.json)綁定raw、analysis／NPZ、PNG及原腳本SHA。Conductor另用凍結NPZ重算頻率網格、兩項margin／WM、完整theta網格、金屬鏡射／四格變動與固定rank27 metadata，全量計數及最大值亦核對通過。2304×1280圖卡目檢中文、下緣饋入、曲線／legend與極座標均可讀；共用−20..10 dBi，每圈5 dB，phi0六點僅顯示截於圓心，原資料／指標未截斷。這是像素俯視示意，並非完整HFSS 3D模型；未改繪圖程式，不重跑既有817項回歸，也未宣稱額外獨立審查。
 
 完整查詢cutoff／raw最佳快照／分析／圖／驗證helper共155個payload、25,919,829 bytes加manifest，create-only封存本人私人NAS `analysis_versions/best-query-20261009_v002`，156檔逐檔SHA讀回一致；Git只交付使用者要求的圖、薄收據與log。原v001圖與陰性pilot保留，沒有登錄重測公證或宣稱R80的5,000筆／R81任務完成。主線與按批次更新SM繼續，每30分鐘健康檢查不變，下一約12:58。
+
+### 2026-10-09 13:02：首片16筆終態原始證據凍結，SM照批次更新
+
+[首片終態薄收據](assets/r80_local_variation_phase01_terminal_20261009.json)綁定原派工、12:01:55機器216的零error終態及12:43:54本機凍結證明。沿用既有`profiled_shards.snapshot_successes`，16筆sample／rad完整驗證，來源success entries與凍結結果一致；38個凍結檔的SHA另行核對。第二片尚待執行，不把首片當成完整32筆試驗，也沒有重選候選或報告局部相關係數。
+
+首片完整凍結證據、派工收據及凍結腳本共41個payload、349,057 bytes已備好本機清單。自動批准審查拒絕新私人NAS子資料夾的歸檔，要求對本批範圍及目的地明確授權；尚未傳輸，待使用者答覆。原25檔清單漏列rad子目錄，已另備完整41檔清單並更正授權題，原清單不執行。原worker資料仍在私人dataset，這不停止HFSS、SM或必要修正。
+
+12:54主線原PID54712完成下一cycle並自動訓練v033，新增59筆、累積2,173筆profile真值（1,321 train／852 holdout），歷史先驗另計；該cycle實體cutoff為2,178唯一。完成收據綁定模型summary與新16筆prio1 job，不以版本增加或變動保留集MAE宣稱SM性能改善。12:56 exact CIM／creation／settings command與有效scope檢查通過，三個claimed工作均有近期新結果、無警報；下一routine健康約13:26。
+
+最佳候選的同profile一次獨立重跑正在隔離備料。獨立審查攔下草稿的controller身份、派工中斷恢復及終態讀取缺口，尚未複製重跑input或加入queue；修正版完成並驗證後才提交。單次WM+0.021682 dB的渲染與原始證據保留，重測不算新增唯一樣本，R80／R81目標仍未完成。
