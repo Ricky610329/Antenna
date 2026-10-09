@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "status": "completed_dispatch_read_back",
+  "phase": 2,
+  "job": {
+    "input": "dedust_r80cb79b4fd4g01_input",
+    "store": "dedust_r80cb79b4fd4g01",
+    "prio": 1,
+    "scope": "symmetry_filter_20261007",
+    "config": "dedust_r80cb79b4fd4g01_input/config.yaml"
+  },
+  "count": 16,
+  "completed_utc": "2026-10-09T04:17:30.561693+00:00",
+  "observed_utc": "2026-10-09T04:17:45.663493+00:00",
+  "immutable_input_tree_sha256": "7758cc50155a4c5ba9206e23060db985ea96dfe7e06079b4f9e272806ecb1a04",
+  "action_receipt_sha256": "c09198062800c5dbc1f2443abb3e86d4a0440ecea7c14b1ca5241f5bf5ea28df",
+  "dispatch_readback_sha256": "32d4b9e85ff0866c9293403e637dd4351983db869cc354cdad139324e8864f84",
+  "preflight_sha256": "16d2dd23eaa58aafb06a17749764786487cef288f9954bca2e210de3f1167045",
+  "guided_with_protected_and_local": 88,
+  "valid_plus_reserved_with_local": 2304,
+  "main_launch_id": "b126f3badf3649a9bc9c4ea0f28ab37f",
+  "main_preflight_waiting": true,
+  "rank_shard": "even_global_ranks",
+  "hfss_result_claim": false,
+  "observer_acquired_live_lock": false,
+  "phase02_runtime": {
+    "adapter_sha256": "e93c60ca2e78574215d07534229b46b20bb53509318eb6ceda7bf4a737a8f240",
+    "review_sha256": "a6eb8b5013de346cdeb7dedfd9924c8d37be8a39d6a0808f49efbc9663c2364c",
+    "runtime_readback_sha256": "674217b47c93e872596aa0f156faeb7a2706efc40fee7db0c46bbc4ea26bece5",
+    "original_v1_sha256": "8e8251c4bfa6cfce526f227c7cd478ded6a4958ee4c97213abc18c237a52ff23",
+    "only_empty_waiting_guard_changed": true,
+    "independent_generated_guard_tests": 35,
+    "conductor_generated_guard_tests": 35,
+    "conductor_fixture_result_sha256": "4c51429a35be87d54c16b6dee46271317c4cbbc6212834b13ad6095045914eef"
+  },
+  "private_archive": {
+    "destination": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\local_variations\\dispatch_handoffs\\incumbent_radius12_sm_v001_20261009_phase02_v001",
+    "payload_files": 28,
+    "published_files": 29,
+    "manifest_sha256": "27ad9fb543739b0af1356551aea6a139ef0528ef7056ec7a1139cf5a678efc1e",
+    "all_sha256_read_back": true
+  },
+  "prepared_record": "r80_local_variation_prepare_20261009.json",
+  "phase01_record": "r80_local_variation_phase01_dispatch_20261009.json",
+  "cohort_total_dispatched": 32,
+  "limitations": [
+    "Both queue shards are dispatched; this is not HFSS performance evidence.",
+    "The selected32 prospective rank and data-v031 models remain fixed.",
+    "Model ranking is only relative; incumbent absolute WM prediction error is about11.92dB.",
+    "Existing c48nq1p05_16 holdout lineage is retained.",
+    "Final outcome requires all32 terminal raw replays; new-best certification needs an independent repeat."
+  ]
+}

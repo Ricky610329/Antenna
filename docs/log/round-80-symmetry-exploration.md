@@ -600,3 +600,13 @@ Conductor與獨立Sol全池座標／hash／feed／mirror／Hamming／排重／�
 原prepared私人歸檔保留不改；新派工證據另存本人私人`local_variations/dispatch_handoffs/incumbent_radius12_sm_v001_20261009_phase01_v001`，7個payload加manifest共8檔逐檔SHA讀回一致。剩餘16筆尚未派工，待主線完成後重新檢查安全窗口與容量。v1逐檔查核耗時約8分鐘，這次只有兩片，取消另造v2的方案，不刪既有實體驗證或改controller／HFSS。
 
 10:54健康檢查同一PID54712／creation／command live、scope exit0無警報；LOW首片8／16、主線前兩片15／16及1／16 claimed，最新結果均1–2分鐘前，另有四片LOW待跑。主線10:50:51照原週期進入下一輪，沒有停機、worker重啟或新的最佳WM查詢。下一routine健康約11:24；本次16筆只證明派工完成，尚不宣稱HFSS性能改善，原32筆固定評估方案與同家族holdout限制不變。
+
+### 2026-10-09 12:19：局部SM排名32筆均完成派工回讀
+
+第二片`dedust_r80cb79b4fd4g01`於12:17:30完成`dispatched`／唯一queue row／16筆實體input tree讀回，prio1、全域偶數名次2／4／…／32。[第二片派工薄收據](assets/r80_local_variation_phase02_dispatch_20261009.json)綁定action、preflight、readback與實際guard；加上首片，原固定32筆均已入queue，未增補或重排候選。12:11實體容量截點為guided含本片88／96、有效加預留含本片2,304／5,000；容量數不能當作已完成實測數。
+
+原v1派工本體、逐檔raw／input查核、碰撞與容量判斷保持不變。新增的waiting guard v2只補齊主線在receipt建立前因raw競態延後的空週期核對；獨立Sol及conductor各35項generated guard測試通過。此次實際12:10開始時，主線已完成、active pointer不存在，剩餘650秒，走原正常waiting分支；沒有使用另備的lock-first草稿、改controller或縮減掃描。自動審查曾因疑似已有完成收據拒絕重試；先唯讀確認`prepared`、queue零相符列、input／store／completion evidence均不存在，才放行此唯一提交。
+
+原prepared歸檔與首片歸檔保留不改；第二片29檔（28個payload加manifest）另存本人私人`local_variations/dispatch_handoffs/incumbent_radius12_sm_v001_20261009_phase02_v001`，逐檔SHA讀回一致。主線沒有重啟，HFSS及SM訓練分割未改；固定anchor與v031相對排名、約11.92 dB絕對校準誤差及同家族holdout限制仍適用。全部32筆終態後才重播sample／rad與固定anchor比較，不把入queue或預測值當成改善。
+
+12:08完成的controller實體cutoff為2,146有效唯一；v032累積納入2,114筆profile真值（本版新增85），歷史先驗另計，兩者不混為即時累計。11:58有效scope健康檢查有三個claimed工作、最新結果1–2分鐘前，局部首片進度metadata為14／16、無警報；健康指令以UTF8讀settings並先確認私人`jobs.json`存在。PID54712／launch未變，主線1800秒、LOW90秒與48筆新有效唯一更新門檻照原設定運作。下一routine健康約12:28；沒有新最佳WM或32筆HFSS結果宣稱，R80／R81仍未完成。
