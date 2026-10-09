@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **v007完整20k保存排名獨立核對通過**：10k fresh＋10k parent，strict11／11／10選32，26家族／cap2／minHamming66；兩個staged16與action／completion／fit2691吻合。[補充收據](../docs/log/assets/r80_diverse_sm_v007_selection_review_20261010.json)。只驗派工來源與幾何，不是新HFSS性能或SM改善；00:08再查終態，live流程未改。
+
 - 現況 **10/09 23:51：依使用者詢問全量 raw 核對**。2,756/5,000唯一有效實測，較22:54增加43；最佳WM仍 **+0.021682 dB**，既有獨立重測+0.036434。[收據](../docs/log/assets/r80_best_status_20261009_2351.json)。23:50精確PID15944／零警報，三片claimed有待跑工作；SM最近完成v007、持續更新中。CNN及weighted-loss背景對照未adopt；R80與R81未完成，下一routine00:08。
 
 - 現況 **10/09 23:38：routine健康通過，first32仍待終態**。原PID15944精確身分不變／running_cycle，scope零警報；v006兩片各14/16、最新1／0分鐘，第三台已認領v007。32讀回因尚未terminal拒絕、未產真值報告，保留現場不重啟／清claims。[健康](../docs/log/assets/r80_health_20261009_2338.json)。背景weighted-loss結果已保存且未adopt；全量最佳仍以22:54的2,713／+0.021682為準。下一routine **10/10 00:08**。
