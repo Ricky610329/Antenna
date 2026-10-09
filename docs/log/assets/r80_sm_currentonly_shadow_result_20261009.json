@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "status": "completed_negative_current_only_shadow_diagnostic_verified",
+  "start_utc": "2026-10-09T14:28:48.993842+00:00",
+  "terminal_utc": "2026-10-09T14:29:20.333985+00:00",
+  "child_wall_seconds": 31.340143,
+  "actual_cpu_threads": 4,
+  "models_fresh": 3,
+  "current_epochs": 100,
+  "per_member_optimizer_steps": 1400,
+  "training_manifest_rows": 2641,
+  "profile_train": 1773,
+  "profile_holdout": 868,
+  "results": {
+    "legacy_then_current": {
+      "binding": {
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+        "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+        "data_version": 6,
+        "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+        "cumulative_valid_unique": 2641
+      },
+      "model_ids": [
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v006\\member-0.pt",
+          "sha256": "4164dcdec01241b2e304ebf1c7fe0f8c6efc7f2b152ff8d5dad0c329d319b1c8",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+          "data_version": "6",
+          "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v006\\member-1.pt",
+          "sha256": "34e08ff518d3bc041fdf9bfa7db18487589766c6c0f4f17f7c93f973f71ce236",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+          "data_version": "6",
+          "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v006\\member-2.pt",
+          "sha256": "9d3cb91019104c02e95fb73c82860ceae7592118afde0fd0e02b4724a6d4e6cd",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+          "data_version": "6",
+          "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948"
+        }
+      ],
+      "metrics": {
+        "mae": 3.6057678336562082,
+        "s11_mae": 2.135740733459944,
+        "gain_mae": 5.5594091746194945,
+        "phi0_mae": 3.743791777922775,
+        "phi90_mae": 3.3773983718837157
+      },
+      "ranking": {
+        "wm_of_ensemble_mean": {
+          "spearman": {
+            "n": 868,
+            "rho": 0.07183689218443887
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        },
+        "factory_score": {
+          "spearman": {
+            "n": 868,
+            "rho": 0.0725785212144308
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        },
+        "lcb_score": {
+          "spearman": {
+            "n": 868,
+            "rho": 0.06448383403033349
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        }
+      }
+    },
+    "current_only": {
+      "binding": {
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+        "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+        "data_version": 6,
+        "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+        "cumulative_valid_unique": 2641
+      },
+      "model_ids": [
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v006_20261009_v001\\training\\models\\data-v006\\member-0.pt",
+          "sha256": "4ac3f277bae4629add122083c69a1543444f862053fc384e934c2d9f1dad985f",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+          "data_version": "6",
+          "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v006_20261009_v001\\training\\models\\data-v006\\member-1.pt",
+          "sha256": "ae4358e4d70c418396b62a1318b4c3fac845577fb5aaccca0c900d0fed338d1d",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+          "data_version": "6",
+          "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948"
+        },
+        {
+          "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v006_20261009_v001\\training\\models\\data-v006\\member-2.pt",
+          "sha256": "bcc6952378d4c55d9dccc153b0a906ed11550111a061bee83441feb12c3981b3",
+          "architecture": "CurveMLP-216",
+          "source": "script.symmetry_training",
+          "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+          "data_version": "6",
+          "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948"
+        }
+      ],
+      "metrics": {
+        "mae": 3.7589723552335084,
+        "s11_mae": 2.3546716060535995,
+        "gain_mae": 5.573624945262795,
+        "phi0_mae": 3.939856063605319,
+        "phi90_mae": 3.5014295117579675
+      },
+      "ranking": {
+        "wm_of_ensemble_mean": {
+          "spearman": {
+            "n": 868,
+            "rho": 0.0751296061732777
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        },
+        "factory_score": {
+          "spearman": {
+            "n": 868,
+            "rho": 0.07485572253763775
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        },
+        "lcb_score": {
+          "spearman": {
+            "n": 868,
+            "rho": 0.06723850594733562
+          },
+          "predicted_positive": 0,
+          "false_predicted_positive": 0
+        }
+      }
+    }
+  },
+  "original_comparison_sha256": "f7c945e5ba467b2df3c4bff3d4bd383b6ac0e22eca24de2acde9fe28f9c6eff9",
+  "label_corrected_comparison_sha256": "5bc33c9c2d85296a78e1b963ac000bbf9e5973cc8e2f2405878a489bff4b858f",
+  "independent_review_sha256": "e5de776efe0c0a81616e4e6c03a2729348698c31212f3a5f24a5c4c22ebee859",
+  "independent_review": {
+    "schema_version": 1,
+    "status": "passed",
+    "scope": "Independent NumPy replay of saved holdout arrays and selected32 prediction metadata; no model tensors, forward pass, raw truth files, rescore, NAS, queue, or process access.",
+    "helper": {
+      "path": "tmp/r80_sm_currentonly_shadow_v006_independent_20261009_v001/comparison_replay.py",
+      "sha256": "05322857853770c0c4fa4982f9ffbafe72622d101fabceff2b0c463be5e4001d"
+    },
+    "artifact_sha256": {
+      "comparison.json": "f7c945e5ba467b2df3c4bff3d4bd383b6ac0e22eca24de2acde9fe28f9c6eff9",
+      "comparison_v2.json": "5bc33c9c2d85296a78e1b963ac000bbf9e5973cc8e2f2405878a489bff4b858f",
+      "holdout_comparison.npz": "944fd25ee1dbfd50b9e7b70e45f6359004d9d0fefecbe107df4fed31bc3a64db",
+      "selected32_shadow_predictions.json": "ad8502a2e8fdf9ac60257b6e526f6319fb8a1ccb540c2af28b4f968e1ed6cb1c",
+      "comparison.py": "599d2c4b1abfa8316f339591c7c00e34448c8611791346987da8da0690ee7e7c",
+      "run.py": "a1444e9bf3e918e240d31b93842d289719c5b7604447a7f0d2b1b9af372977f8"
+    },
+    "holdout": {
+      "n": 868,
+      "unique_ids": 868,
+      "actual_positive": 0,
+      "ids_equal_live_and_shadow_fixed_holdout": true,
+      "legacy_then_current": {
+        "metrics": {
+          "mae": 3.6057678336562082,
+          "s11_mae": 2.135740733459944,
+          "gain_mae": 5.5594091746194945,
+          "phi0_mae": 3.743791777922775,
+          "phi90_mae": 3.3773983718837157
+        },
+        "spearman": {
+          "wm_of_ensemble_mean": 0.07183689218443887,
+          "factory_score": 0.0725785212144308,
+          "lcb_score": 0.06448383403033349
+        },
+        "predicted_positive": 0,
+        "false_predicted_positive": 0
+      },
+      "current_only": {
+        "metrics": {
+          "mae": 3.7589723552335084,
+          "s11_mae": 2.3546716060535995,
+          "gain_mae": 5.573624945262795,
+          "phi0_mae": 3.939856063605319,
+          "phi90_mae": 3.5014295117579675
+        },
+        "spearman": {
+          "wm_of_ensemble_mean": 0.0751296061732777,
+          "factory_score": 0.07485572253763775,
+          "lcb_score": 0.06723850594733562
+        },
+        "predicted_positive": 0,
+        "false_predicted_positive": 0
+      },
+      "current_only_minus_live": {
+        "mae": 0.15320452157730013,
+        "gain_mae": 0.014215770643300374,
+        "factory_score_spearman": 0.002277201323206954
+      }
+    },
+    "selected32": {
+      "count": 32,
+      "order_and_pattern_hashes_match_live_manifest": true,
+      "live_manifest_predicted_before_hfss_all_true": true,
+      "shadow_predicted_before_hfss_all_false": true,
+      "shadow_binding_and_three_model_ids_exact": true,
+      "no_inherited_live_model_hash_metadata": true,
+      "truth_read": false
+    },
+    "correction_chain": {
+      "original_sha256": "f7c945e5ba467b2df3c4bff3d4bd383b6ac0e22eca24de2acde9fe28f9c6eff9",
+      "corrected_sha256": "5bc33c9c2d85296a78e1b963ac000bbf9e5973cc8e2f2405878a489bff4b858f",
+      "fixed_development_holdout_truth_read": true,
+      "NAS_access": false,
+      "selected32_truth_read": false,
+      "only_label_correction": true
+    },
+    "checks": {
+      "v2_label_only_derivation": true,
+      "868_ids_and_actual_wm_replayed": true,
+      "five_curve_maes_both_models": true,
+      "average_tie_spearman_three_scores_both_models": true,
+      "positive_and_false_positive_counts_both_models": true,
+      "selected32_order_hash_binding_models_and_timing": true,
+      "source_live_prediction_flags_unchanged": true
+    },
+    "scientific_interpretation": [
+      "Current-only has worse full-vector and gain MAE; its factory-score rank correlation is only slightly higher on the same fixed development holdout.",
+      "The phase-index minibatch permutation also changed, so the result is not a causal estimate of legacy pretraining's effect.",
+      "This fixed development holdout is not independent HFSS validation and cannot justify automatic live deployment.",
+      "The selected32 predictions are held-label-unread; this review makes no selected32 accuracy or HFSS performance claim."
+    ]
+  },
+  "saved32_shadow_predictions_sha256": "ad8502a2e8fdf9ac60257b6e526f6319fb8a1ccb540c2af28b4f968e1ed6cb1c",
+  "saved868_holdout_arrays_sha256": "944fd25ee1dbfd50b9e7b70e45f6359004d9d0fefecbe107df4fed31bc3a64db",
+  "run_helper_sha256": "a1444e9bf3e918e240d31b93842d289719c5b7604447a7f0d2b1b9af372977f8",
+  "comparison_helper_sha256": "599d2c4b1abfa8316f339591c7c00e34448c8611791346987da8da0690ee7e7c",
+  "launch_identity_sha256": "4de40e6d111849424e3d8dfc2da5da5f1b63958b57e98316fffd7c662b74e031",
+  "run_status_sha256": "e59e0169ec98d89136a586b0bd39e04a7ff1018cdd3242d90cba766a54f106ae",
+  "fixed_development_holdout_truth_read": true,
+  "NAS_access": false,
+  "selected32_truth_read": false,
+  "live_model_replaced": false,
+  "controller_queue_or_HFSS_changed": false,
+  "decision": "Keep existing live SM. Current-only recipe did not improve the curve MAEs; tiny ranking change is not evidence of useful improvement. Await same32 actual truth for diagnostic comparison without new HFSS solves.",
+  "limits": [
+    "Fixed development holdout, no new independent HFSS validation.",
+    "No legacy pretraining also changes current phase-index minibatch order.",
+    "Selected32 labels remain unread here; shadow timing is held-label-unread, not necessarily before HFSS solve.",
+    "No automatic live replacement based on holdout metrics."
+  ]
+}

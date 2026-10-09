@@ -913,3 +913,12 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-09：固定current-only背景SM對照，啟動前記錄
 
 針對legacy量測來源局限，固定[配方](../../configs/r80_sm_currentonly_shadow_v006.json)及[備料／獨立審查](assets/r80_sm_currentonly_shadow_prepared_20261009.json)：相同v006的2,641資料、1,773 train／868 hold、三fresh seeds0/1/2、架構512/512/256、batch128／lr0.001／current100，只取消legacy30，不讀新HFSS真值。所有5,282凍結sample/rad SHA與split/alias核對，32選樣皆不在training manifest；約25.30MB備料。獨立審查通過。新current phase index0取代原1，epoch permutation也改變，因此是標準current-only診斷，不是嚴格只改預訓練的因果實驗。固定868評估曲線MAE及WM-of-mean／member-mean factory／LCB的三種rank，另保存32新shadow預測再讀真值；不得沿用live的predicted_before_hfss=true。只用4 CPU threads及既有trainer，不改controller/queue/NAS、無HFSS或GPU、不以holdout誤差單獨採用模型。此記錄在training之前，尚無性能結果。
+
+
+### 2026-10-09 22:29：current-only背景SM對照陰性
+
+固定配方41a1b99先commit/push；單次hidden CPU PID27908於22:28:48進入train，22:29:20 completed／31.340秒、stderr空，root實體CIM確認該PID已退出。三fresh seeds、各100 current epochs／Adam1,400步、四train-only norm與live模型一致；既有trainer及scorer未改。32shadow預測先保存，未讀它們HFSS真值；這是held-label-unread，不是事前HFSS送測預測。原live32保存預測仍保留其真正前瞻標籤。[完整結果](assets/r80_sm_currentonly_shadow_result_20261009.json)。
+
+同868 development holdout：full MAE **3.605768→3.758972**、S11 **2.135741→2.354672**、Gain **5.559409→5.573625**、rad phi0 **3.743792→3.939856**／phi90 **3.377398→3.501430 dB**，全部略差。factory-score Spearman **0.072579→0.074856**、LCB **0.064484→0.067239**，變化很小、兩者排序仍弱；真值及預測正WM皆0，不能据此認證false-positive控制。獨立Sol只從NPZ/JSON重算actualWM、五MAE、average-tie三種rank、classification及32identity/binding/timing，所有數字通過；未重新forward/model/train。原comparison字段NAS_HFSS_truth_read有歧義，另保留hash-bound v2，明示讀固定holdout真值／沒讀NAS／沒讀32新真值，沒有重跑或改數字。
+
+保留目前live SM，沒有派額外HFSS或更換controller。這不是legacy錯標的因果證據；移除legacy同時改epoch phase-index排序，且holdout為development描述。接下來參考既有CNN與影子比較歷史，先固定一個相同當前資料的架構對照，不把增加資料或替換架構預先宣稱有效。
