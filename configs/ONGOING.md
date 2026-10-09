@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **04:22:42 CPU準備修正版實際啟動**：versioned guard v6 PID38776／creation1791577362433／exact argv現場吻合，原main PID15944同時live。prepared_v6建立修正已独立review，固定同v010模型／20k池／32雙owner配方不變；單child600秒、最多等2小時，不自動publish／派HFSS。[啟動收據](../docs/log/assets/r80_currentonly_prospective_v010_guard_retry_launch_20261010.json)。原v5失敗完整保留，這不是新性能結果；最新全量04:16為2,979／最佳+.021682。原三worker與SM照常，下一routine04:38，R80/R81未完成。
+
 - **10/10 04:16 使用者詢問／最新全量實測**：2,979/5,000 唯一有效圖形，較03:20 +49；沒有新最佳，最佳 WM +0.021682 dB。[收據](../docs/log/assets/r80_best_status_20261010_0416.json)。04:13三台claimed有近期結果、scope零警報；主線completed15／SM v011持續更新。新對照CPU準備於03:50因prepared_v5輸出資料夾未建立exit1，未派工／未改queue；原失敗輸出保留、資料夾窄修已review通過但尚未重跑，沒有影響HFSS；兩筆HFSS首次COM失敗非終態、不計有效筆數。下一routine04:38；R80/R81未完成。
 
 - **v010兩片16前瞻派工鏈靜態驗證通過／未執行**：versioned publisher v6綁每筆model／prediction及immutable shards，global5000／guided96分開計main保留量，append前exact CIM／等待窗口再檢；partial-copy／exact-existing recovery與seal／capacity／queue轉移來源補齊，7窄測試及獨立review通過。[準備](../docs/log/assets/r80_currentonly_prospective_v010_publisher_ready_20261010.json)。actual prepared_v5／full20k replay／獨立pool review仍必需；未派HFSS、未改queue／主線source。原guard20232仍只準備CPU排名，下一routine04:08；最新全量03:20的2,930／+.021682。

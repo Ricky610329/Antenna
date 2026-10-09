@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "observed_utc": "2026-10-09T20:23:39.908310+00:00",
+  "status": "actual_versioned_CPU_guard_launch_verified",
+  "launch": {
+    "schema_version": 1,
+    "status": "hidden_deferred_prepare_driver_launched",
+    "started_utc": "2026-10-09T20:22:42.3948468+00:00",
+    "window": "Hidden",
+    "driver_pid": 38776,
+    "driver_creation_unix_ms": 1791577362433,
+    "executable": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "argv": "\"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_guard_v6.ps1\" -Run",
+    "driver_sha256": "019fadc2538735deec508f21482e13ab175c7b36207cca29b5c5ceb77bb4bcd3",
+    "config_sha256": "923c55e610b43e101e5cf96a1af32205b0b4285572df77fd154d0e80d9a75a94",
+    "exact_prepare_review_sha256": "cafa8039c1b3cb7357fe74f45919c1ae7acf375ff7f4a6833224d84427f1ad44",
+    "poll_seconds": 30,
+    "max_wait_seconds": 7200,
+    "minimum_waiting_window_seconds": 180,
+    "child_timeout_seconds": 600,
+    "automatic_publish": false,
+    "HFSS_dispatch": false
+  },
+  "launch_receipt_sha256": "e07665d4fb506b58f83aa8c2716218eee2b0f90c8c7e2a6fa2cec10d954afcb8",
+  "guard_review_sha256": "a9821a031d6b1a8925eff55f9cf2cee39f9ca8436fa29ac630eb0615d0db60bd",
+  "reviewed_files": {
+    "make_deferred_prepare_guard_config_v6.py": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\make_deferred_prepare_guard_config_v6.py",
+      "sha256": "bdf028459bebb511c051abbd93d6b845432e05f95a318e1d7df9a0083fa40819"
+    },
+    "deferred_prepare_guard_config_v6.json": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_guard_config_v6.json",
+      "sha256": "923c55e610b43e101e5cf96a1af32205b0b4285572df77fd154d0e80d9a75a94"
+    },
+    "deferred_prepare_guard_v6.ps1": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_guard_v6.ps1",
+      "sha256": "019fadc2538735deec508f21482e13ab175c7b36207cca29b5c5ceb77bb4bcd3"
+    },
+    "launch_deferred_prepare_guard_v6.ps1": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\launch_deferred_prepare_guard_v6.ps1",
+      "sha256": "ab9f334c55efc55f24b9f62a2005a4d1d014506f2574599e87cc9f5e5330cb65"
+    },
+    "make_deferred_guard_readiness_v6.py": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\make_deferred_guard_readiness_v6.py",
+      "sha256": "eca4343e2252184394ae954fa0717b7f11d0a73a98e901ca850c001926d963c4"
+    },
+    "deferred_prepare_guard_readiness_v6.json": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_guard_readiness_v6.json",
+      "sha256": "beb9e6952fc5520003646dcca5b270b2d3989877c0c6d7c28654ff456d43285b"
+    },
+    "prepare_pilot_v6.py": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepare_pilot_v6.py",
+      "sha256": "cc8cf07d549cfec0fbd0f152c4d8491d5ae6ea39546198681916666d033f8085"
+    },
+    "scoring_gate_v6.py": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\scoring_gate_v6.py",
+      "sha256": "d9658f72abb9121192a558a5c004093fbc9acbaa82afdaaf0926fa8e691a8563"
+    },
+    "scoring_review_v6.json": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\scoring_review_v6.json",
+      "sha256": "cafa8039c1b3cb7357fe74f45919c1ae7acf375ff7f4a6833224d84427f1ad44"
+    },
+    "deferred_prepare_driver_result_v5.json": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_driver_result_v5.json",
+      "sha256": "e1a3fa6327741295881eee9e5ebcde06e34a02b6f5ca9280fd95c4f9f29f3c5c"
+    },
+    "deferred_prepare_child_stderr_v5.log": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_child_stderr_v5.log",
+      "sha256": "2ccbff7f1af684f7b50e861040b61202220c3d9732d79b427b1b5ad9f5527fd2"
+    }
+  },
+  "physical_guard_identity_verified": true,
+  "physical_guard_creation_unix_ms": 1791577362434,
+  "physical_guard_argv": [
+    "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_guard_v6.ps1",
+    "-Run"
+  ],
+  "physical_guard_children": [
+    {
+      "pid": 9852,
+      "exe": "C:\\Windows\\System32\\conhost.exe",
+      "argv": [
+        "\\??\\C:\\WINDOWS\\system32\\conhost.exe",
+        "0x4"
+      ]
+    }
+  ],
+  "main_identity_verified": true,
+  "main_status_at_observation": "running_cycle",
+  "main_completed_cycles": 15,
+  "main_reported_data_version": 11,
+  "driver_terminal_at_observation": false,
+  "prepared_v6_exists_at_observation": false,
+  "driver_log": "2026-10-09T20:22:42.6995711+00:00 deferred scoring-preparation guard started; local watcher/CIM polling only\n2026-10-09T20:22:42.9813532+00:00 not eligible: status=running_cycle, remaining=\n2026-10-09T20:23:13.1189203+00:00 not eligible: status=running_cycle, remaining=\n",
+  "driver_stderr": "",
+  "latest_full_census": "docs/log/assets/r80_best_status_20261010_0416.json",
+  "currentonly_models_frozen_version": 10,
+  "model_recipe_or_selection_changes": false,
+  "old_v5_failure_preserved": true,
+  "automatic_publish": false,
+  "HFSS_dispatch": false,
+  "queue_claim_worker_source_mutation": false,
+  "next_routine_health_taipei": "2026-10-10 04:38",
+  "limits": [
+    "Actual launch and live identity only; not proof of preparation success, new HFSS performance or dispatch.",
+    "Main SM version is distinct from this frozen-v010 two-scorer experiment."
+  ]
+}
