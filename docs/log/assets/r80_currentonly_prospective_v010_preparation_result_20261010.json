@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "status": "actual_CPU_preparation_and_saved_full_pool_replay_passed_no_dispatch",
+  "observed_utc": "2026-10-09T20:52:20.959883+00:00",
+  "driver_terminal_sha256": "a3ed713618a42d30974fb7c9c72b9ab3e0fee278cd3de047bc1de325d9cfe9fb",
+  "child": {
+    "pid": 45732,
+    "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+    "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepare_pilot_v6.py\" --review \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\scoring_review_v6.json\"",
+    "started_utc": "2026-10-09T20:43:19.5356171+00:00",
+    "finished_utc": "2026-10-09T20:46:32.9290650+00:00",
+    "duration_seconds": 193.39344789999998,
+    "timeout_seconds": 600,
+    "timed_out": false,
+    "exit_code": 0,
+    "terminated_by_driver": false,
+    "stdout_sha256": "41b9e1989eae4755c3cf8d15a8d9f3bef383d849f1b08321cde7f381dc375250",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "preparation_receipt_sha256": "3f5d667236f61bd6a25b6349cfb4f4488c4d1244a0802a155b0f899ea02bfa73",
+  "prepared_replay_sha256": "7232a1457040ef6f34ba3015e3387dcc0a2645283edcc4211435040bb82a4e7c",
+  "prepared_bindings": {
+    "auditor": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\audit_prepared_v7.py",
+      "sha256": "a9d58a9b1dc9b107aeae65a1494eda6aa56ecfc9b09aa072bfd851aaa3d0b982"
+    },
+    "driver_result": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_driver_result_v6.json",
+      "sha256": "a3ed713618a42d30974fb7c9c72b9ab3e0fee278cd3de047bc1de325d9cfe9fb"
+    },
+    "driver_claim": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_driver_claim_v6.json",
+      "sha256": "4e7bf7de21a61e28825c6bb9359b25609394dfba72a3356c6ddf5c300618c6f9"
+    },
+    "driver_launch": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_driver_launch_v6.json",
+      "sha256": "e07665d4fb506b58f83aa8c2716218eee2b0f90c8c7e2a6fa2cec10d954afcb8"
+    },
+    "guard_config": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_prepare_guard_config_v6.json",
+      "sha256": "923c55e610b43e101e5cf96a1af32205b0b4285572df77fd154d0e80d9a75a94"
+    },
+    "preparation_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\preparation_receipt.json",
+      "sha256": "3f5d667236f61bd6a25b6349cfb4f4488c4d1244a0802a155b0f899ea02bfa73"
+    },
+    "prepared_tree": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6",
+      "tree_sha256": "3a66687980e61fdcc9f889696c0a0400280e123f4e2d8c6ebf8c7c84895eb9df"
+    },
+    "scoring_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\scoring_review_v6.json",
+      "sha256": "cafa8039c1b3cb7357fe74f45919c1ae7acf375ff7f4a6833224d84427f1ad44"
+    },
+    "guard_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\deferred_guard_review_v6.json",
+      "sha256": "a9821a031d6b1a8925eff55f9cf2cee39f9ca8436fa29ac630eb0615d0db60bd"
+    },
+    "manifest": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\bundle\\manifest.json",
+      "sha256": "a24a1cc22ac1d2acd6a2ac82bbb35745fb188c62211d4bb9b61abe366dc7afc8"
+    },
+    "diversity_search_audit": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\bundle\\diversity_search_audit.json",
+      "sha256": "07ffbef60070814419a11cee4b11ec0e307df0a97207a5afe885f1684016a1d8"
+    },
+    "sm_pool_audit": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\bundle\\sm_pool_audit.json",
+      "sha256": "273b6e2fb7dc07b13bb93463c9865c86cc77c5ffc0e4e1b730176b4abd300599"
+    },
+    "dual_scorer_pool_scores": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\dual_scorer_pool_scores.json",
+      "sha256": "09ab03ec4569d7992a8f204edb67cc83fb8aad520d58bafd6b58eae763fce40c"
+    },
+    "scorer_registry": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\scorer_registry.json",
+      "sha256": "715ee588e1145ac3c0246d544726aae4010f88acdcb4eb1289e785d6ed37e0c3"
+    },
+    "live_base_internal_selection_not_dispatched": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\live_base_internal_selection_not_dispatched.json",
+      "sha256": "d46637ffd08c06f2c6440a0abd64d1ab28b19dcefb7aad2f4413e41e24cfa91c"
+    },
+    "live_predictions.json": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\live_predictions.json",
+      "sha256": "0ba0ef29db17988699fa0e801df23ff57d4a74e75e54c723ede5cf7d0c7b3cc5"
+    },
+    "current_only_predictions.json": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\current_only_predictions.json",
+      "sha256": "3ce7204ea372331f9a21732a0a626cf79053d872666bec7f98f30a0dc95bd890"
+    },
+    "split_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\shards\\split_receipt.json",
+      "sha256": "946423f8f1d72c6d05213f9b17b5a5e56dea50930bd3c297d375e0ab1b4670e7"
+    },
+    "exclusions": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\exclusions.json",
+      "sha256": "637ac87dde18c80b0ccf2b284f398d59a55a3c627999182d541ede3b9a764be1"
+    }
+  },
+  "replay": {
+    "candidate_count": 20000,
+    "candidate_origin_counts": {
+      "fresh_random": 10000,
+      "parent_variant": 10000
+    },
+    "queue_exclusion_count": 3152,
+    "measured_unique_pattern_count": 2840,
+    "combined_exclusion_count": 3152,
+    "pool_disjoint_from_combined_exclusions": true,
+    "selected_count": 32,
+    "selected_owner_counts": {
+      "current_only": 16,
+      "live": 16
+    },
+    "selected_arm_counts": {
+      "global_lcb": 12,
+      "high_disagreement": 10,
+      "parent_lcb": 10
+    },
+    "canonical_group_count": 25,
+    "canonical_max_observed": 2,
+    "minimum_physical_hamming": 71,
+    "two_round_robin_shards_exact_and_owner_balanced": true,
+    "two_full_prediction_sets_pre_hfss": true,
+    "owner_score_curve_model_and_predictor_provenance_exact": true
+  },
+  "prediction_files": {
+    "live_predictions.json": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\live_predictions.json",
+      "sha256": "0ba0ef29db17988699fa0e801df23ff57d4a74e75e54c723ede5cf7d0c7b3cc5"
+    },
+    "current_only_predictions.json": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\current_only_predictions.json",
+      "sha256": "3ce7204ea372331f9a21732a0a626cf79053d872666bec7f98f30a0dc95bd890"
+    }
+  },
+  "source_snapshot_after": {
+    "current_only_model_inventory": {
+      "models/data-v010/member-0.pt": "5bd5cd55657ab4bb5195ead28180d6b90492b5ddddf76c4b67b23f1c5ecc875c",
+      "models/data-v010/member-1.pt": "e39c279b83c9cd561726b933f1d1ebd49e50f5fe532198681b67fa4d12b865b2",
+      "models/data-v010/member-2.pt": "2a054b4dfe859dc0831aa4c87352dea26e92914dc2eb3f9492ef63c1ea9328e3",
+      "models/data-v010/summary.json": "01b3a2b8186d09cc662ab4dec1ec205ac9a6554cbd3ad783d4c28af80e6276d6"
+    },
+    "current_only_nonmodel_inventory_sha256": "df68291962dafabe7cc444805db62778df2e5eae142648d8cf6bd77ca5f86c26",
+    "live_inventory_sha256": "3f66fd53d7fb0f81186aa6ebde1f7c95f2e96ebd16bc3a7588dbe56c7b985078",
+    "manifest_id": "8f7d8cfcebcf75970db3ed11396eb1a5881a7c8449f92238a7bda46a3976805e",
+    "pretrain_review": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\pretrain_review_v3.json",
+      "sha256": "2261445dc7ad21681055a38f76947344c17ba7e8d828b016ed23b24c8b00b1d9"
+    },
+    "training_completion": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\training_completion_v3.json",
+      "sha256": "ba0892ba2f160d5837c4c8bf5da8da54c050639749f9649e3f359a17d9c479f6"
+    },
+    "training_launch": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\training_launch_receipt_v3.json",
+      "sha256": "dcbc4ada991702c3fad340a04640a06b3ca5550ce3b164d6107dff4f0d5c97fb"
+    }
+  },
+  "model_or_recipe_changes": false,
+  "original_v5_failure_preserved": true,
+  "original_auditor_v6_failure": "Actual splitter names shard-001_input/shard-002_input differ from auditor hardcoded input-01/input-02.",
+  "corrected_auditor_v7_sha256": "a9d58a9b1dc9b107aeae65a1494eda6aa56ecfc9b09aa072bfd851aaa3d0b982",
+  "auditor_only_one_line_path_correction": true,
+  "retraining_or_rescoring_for_auditor_fix": false,
+  "HFSS_dispatch": false,
+  "selected_truth_read": false,
+  "queue_or_controller_mutation": false,
+  "independent_actual_pool_review_pending": true,
+  "publisher_must_rebind_corrected_auditor": true,
+  "main_reported_at_preparation_start": 12,
+  "pilot_models_frozen_version": 10,
+  "next_routine_health_taipei": "2026-10-10 05:08",
+  "goal_complete": false,
+  "limits": [
+    "Prediction preparation and replay only; no HFSS efficacy or new-best claim.",
+    "Guard and child ended normally; do not relaunch."
+  ]
+}

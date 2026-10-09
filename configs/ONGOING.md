@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **04:46 CPU準備成功／04:50實際full-pool重播通過**：child45732 exit0／193.393秒，共同20k＝10k random+10k parent；32筆＝16 frozen-live v010+16 current-only v010，兩片各8+8、joint Hammingmin71／25 canonical groups／cap2，雙預測已保存。[結果](../docs/log/assets/r80_currentonly_prospective_v010_preparation_result_20261010.json)。原auditor的shard名字硬編碼不符已保留並只修一行，原準備／模型／選樣不改、不重訓。獨立actual pool review及下游auditor綁定尚待，未派HFSS／未讀新truth。原main在04:43完成v012週期；下次健康05:08，R80/R81未完成。
+
 - **v010對照派工讀回入口已接續prepared_v6／未執行**：publisher v7／seal／truth沿用已核對的capacity、交易與owner來源，只改新輸出版本並綁定terminal guard及full20k replay；獨立static review及實際static validator通過，不重跑廣泛測試。[準備](../docs/log/assets/r80_currentonly_prospective_v010_publisher_rebound_20261010.json)。實際準備／pool replay／獨立pool review仍必需，未派HFSS、未讀新truth／改queue；guard38776等待主線空檔。04:38三台健康，下一05:08；R80/R81未完成。
 
 - **04:38 routine健康通過**：原controller exact／running_cycle，三台claimed14/16、15/16、5/16，最新3／3／2分鐘，scope零警報；新增兩片guided待跑。[健康](../docs/log/assets/r80_health_20261010_0438.json)。reported v011／completed15，watch快照不當新的global census；最新全量仍04:16的2,979／+.021682。CPU guard v6 PID38776現場exact live，等待主線空檔、尚無preparation receipt／未派對照；不重啟／清claim。下一routine05:08，R80/R81未完成。
