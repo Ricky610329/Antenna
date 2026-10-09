@@ -966,3 +966,10 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-09：固定spec-band加權MLP背景對照
 
 歷史與當前碼核對：現有216-coordinate normalized MSE有182rad coordinates（84.26%）、精確spec-band S11／Gain各7（合6.48%）。這是loss維度分配事實，不等於已證明弱排名的原因。沿用既有current-only MLP625-[512,512,256]-216、2641資料／1773train／868hold、三fresh seeds／Adam.001／batch128／100epochs／phase0／原norm與familyrowweights；唯一變更per-row objective為.35 S11band mean＋.35 Gainband mean＋.10其餘response20 mean＋.10 phi0 mean＋.10 phi90 mean。保留全部216outputs，不加WM heads或改scorer。loss policy綁新protocol／signature／checkpoint；actual frozen first128 CPU4 gate loss.877457、8/8 finite/nonzero gradients、770008參數。獨立一次prelaunch審查通過、formal產物尚不存在。[準備收據](assets/r80_sm_weighted_loss_shadow_prepared_20261009.json)。先commit固定coefficients再訓練，不依已知868結果調權重；32預測先保存，其timing明示非完整prospective，不新增HFSS解算、不發布live。
+
+
+### 2026-10-09 23:24：帶內加權loss結果，等待新真值判读
+
+固定配方422cb95後hidden單次wrapper52240／creation1791559387027啟動，54.908秒exit0／程序已消失／stderr空。三fresh MLP100epochs／Adam各1,400，root檢查實體三checkpoint finite tensors/nonzero moments／八parameter states、norm與凍結current-only MLP相同、loss-policy及producerbinding；不同Sol再以獨立NumPy/JSON重播868真WM／七MAE／average-tieρ／32ID/hash/有限curve值／terminal模型hash，不forward/rescore或重訓。[完整結果](assets/r80_sm_weighted_loss_shadow_result_20261009.json)。
+
+對相同current-only基線，fullMAE3.758972→3.737744、S11band2.438553→2.232216改善，Gain5.573625→5.595082及Gainband5.531811→5.592033卻變差。factory-scoreρ0.074856→0.130230、LCBρ0.067239→0.117539、mean-WMρ0.075130→0.126117，排序改善但仍弱；868全負與全部pred-positive0不證明正樣本辨識／HFSS有效性。只一份固定development比較，未調coefficients／發布live；保存32不同shadow預測，候選HFSS真值對照將一次讀回，不加HFSS解算。主線v007及worker續跑，下一routine23:38；全量與最佳仍以22:54為準，R80/R81尚未完成。

@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "status": "weighted_loss_MLP_completed_rank_improved_but_Gain_error_worse_not_adopted",
+  "started_utc": "2026-10-09T15:23:07.088520+00:00",
+  "completed_utc": "2026-10-09T15:24:01.996181+00:00",
+  "elapsed_seconds": 54.907661,
+  "source_counts": {
+    "manifest": 2641,
+    "train": 1773,
+    "development_holdout": 868
+  },
+  "source_commit": "422cb95a8715c15cc97470c44ecf4c0d39b34b8d",
+  "launch_identity": {
+    "observed_utc": "2026-10-09T15:23:07.2834652Z",
+    "pid": 52240,
+    "creation_unix_ms": 1791559387027,
+    "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_weighted_loss_shadow_v006_20261009_v001\\execute.py\" ",
+    "launch_attempt_sha256": "2ea1302d8fbd3791a699c06260b1b1e8838257819f5e421ca6e25a64ba54ea30"
+  },
+  "loss_policy_id": "8a212b83f6632c901d3268bcd8816c8a5b538ef33e1682fd7e16d1235996ffe2",
+  "training_protocol_id": "c13c7c5e84e12ba62d5ccebdac8ed57e78dabd289322bba67a44f4448339f5de",
+  "holdout": {
+    "actual_positive": 0,
+    "count": 868,
+    "current_only_mlp": {
+      "metrics": {
+        "gain_factory_band_mae": 5.5318112975384235,
+        "gain_mae": 5.573624945262795,
+        "mae": 3.7589723552335084,
+        "phi0_mae": 3.939856063605319,
+        "phi90_mae": 3.5014295117579675,
+        "s11_factory_band_mae": 2.438553235097068,
+        "s11_mae": 2.3546716060535995
+      },
+      "ranking": {
+        "factory_score": {
+          "false_predicted_positive": 0,
+          "predicted_positive": 0,
+          "spearman": {
+            "n": 868,
+            "rho": 0.07485572253763775
+          }
+        },
+        "lcb_score": {
+          "false_predicted_positive": 0,
+          "predicted_positive": 0,
+          "spearman": {
+            "n": 868,
+            "rho": 0.06723850594733562
+          }
+        },
+        "wm_of_ensemble_mean": {
+          "false_predicted_positive": 0,
+          "predicted_positive": 0,
+          "spearman": {
+            "n": 868,
+            "rho": 0.0751296061732777
+          }
+        }
+      }
+    },
+    "weighted_loss_minus_current_only": {
+      "gain_factory_band_mae": 0.060221959528299784,
+      "gain_mae": 0.02145668108674581,
+      "mae": -0.021228417320119153,
+      "phi0_mae": -0.049492134427057355,
+      "phi90_mae": 0.01725386426115394,
+      "s11_factory_band_mae": -0.20633761974878917,
+      "s11_mae": -0.11861289026606592
+    },
+    "weighted_loss_mlp": {
+      "metrics": {
+        "gain_factory_band_mae": 5.592033257066723,
+        "gain_mae": 5.595081626349541,
+        "mae": 3.737743937913389,
+        "phi0_mae": 3.8903639291782617,
+        "phi90_mae": 3.5186833760191214,
+        "s11_factory_band_mae": 2.2322156153482786,
+        "s11_mae": 2.2360587157875336
+      },
+      "ranking": {
+        "factory_score": {
+          "false_predicted_positive": 0,
+          "predicted_positive": 0,
+          "spearman": {
+            "n": 868,
+            "rho": 0.13022963195973575
+          }
+        },
+        "lcb_score": {
+          "false_predicted_positive": 0,
+          "predicted_positive": 0,
+          "spearman": {
+            "n": 868,
+            "rho": 0.11753938435120359
+          }
+        },
+        "wm_of_ensemble_mean": {
+          "false_predicted_positive": 0,
+          "predicted_positive": 0,
+          "spearman": {
+            "n": 868,
+            "rho": 0.1261172671521645
+          }
+        }
+      }
+    }
+  },
+  "selected32": {
+    "count": 32,
+    "factory_binding_match": true,
+    "finite_curve_values_per_row": 216,
+    "ordered_id_hash_match": true,
+    "predicted_before_hfss": false,
+    "score_ranges": {
+      "factory_score": [
+        -15.325304985046387,
+        -4.868252118428548
+      ],
+      "lcb_score": [
+        -17.414354815660523,
+        -5.082996242957314
+      ],
+      "navigation_score": [
+        -15.529131548660855,
+        -4.813464097352525
+      ]
+    },
+    "selected32_evaluator_truth_read": false
+  },
+  "actual_checkpoint_checks": [
+    {
+      "seed": 0,
+      "sha256": "3970b756aeaa06e88fcadc31423af805b1b43bc0d64d73d763934d1e322869b7",
+      "epochs": 100,
+      "Adam_steps": 1400,
+      "Adam_parameter_states": 8,
+      "finite_model_optimizer": true,
+      "nonzero_Adam_moments": true,
+      "norm_equal_to_frozen_MLP": true
+    },
+    {
+      "seed": 1,
+      "sha256": "6c479f60b168bb26640a9a6907f5984798e8d0758fc93a440b89d12e00a373cd",
+      "epochs": 100,
+      "Adam_steps": 1400,
+      "Adam_parameter_states": 8,
+      "finite_model_optimizer": true,
+      "nonzero_Adam_moments": true,
+      "norm_equal_to_frozen_MLP": true
+    },
+    {
+      "seed": 2,
+      "sha256": "57527faf53f6d2ba5ab7ca20ce620cb474100a83ab5c1910a8c701526ccb0227",
+      "epochs": 100,
+      "Adam_steps": 1400,
+      "Adam_parameter_states": 8,
+      "finite_model_optimizer": true,
+      "nonzero_Adam_moments": true,
+      "norm_equal_to_frozen_MLP": true
+    }
+  ],
+  "local_output_bytes_at_record": 30962212,
+  "independent_saved_output_review_scope": {
+    "independence": "A separate Sol reviewer replayed the saved NumPy/JSON outputs without importing the project metric helpers or the weighted-loss training module.",
+    "no_broad_tests": true,
+    "no_checkpoint_tensor_load": true,
+    "no_forward": true,
+    "no_nas": true,
+    "no_rescore": true,
+    "no_retrain": true,
+    "reviewer_role": "independent_saved_output_arithmetic_reviewer"
+  },
+  "artifact_sha256": {
+    "execution_start.json": "946fc3ee31f2511abd483a3e182305d9ea10f917afba2b9983a12233bf7420b0",
+    "execution_terminal.json": "75d409336ba9bd373f1b08fa0e8752c514f072e00d7ce6ca4a0e4c66b81ece85",
+    "launch_attempt.json": "2ea1302d8fbd3791a699c06260b1b1e8838257819f5e421ca6e25a64ba54ea30",
+    "launch_identity.json": "7ee0b5f8fa276e4794b665af46f5546887bcb1530af83613b70480f42c892b0b",
+    "comparison.json": "a25a055477803f433c92880a3f27e3c9cd531af3bc063838af50eb935dc56721",
+    "selected32_weighted_loss_predictions.json": "a5466173857088da08ce58c6ecb98db170cde65dc96b19184861ec463ba039eb",
+    "holdout_weighted_loss_comparison.npz": "57e44692d0ed28a1ca272efdf92aa052b4ba7e9df5466ee9839972529db787c1",
+    "completed_models_check.json": "f9088dff2b9b364721843ec4b5d2dc314f19eab855761e00c6016729d0f5bb24",
+    "check_completed_models.py": "af4a17127786798918f404c45eac9c5cf8b557855ed05bdfef41b4c8e87b2e6a",
+    "comparison_review.json": "3430c6b21b01a094bc15266b5c438710aec7c4d541d9576ad08c4818d9a4d590",
+    "comparison_review.py": "affe81bee7afd97e3ca90d1b92119ad409d8cd1ae718e1b4164c756d975e7df6",
+    "weighted_loss_shadow.py": "1f4ff93bd988640f787be97d2eb51497ef552c7844e7a746d605dfdc4710c560",
+    "run.py": "dd0a64eb476c5b8ee4d479912aebdf754ccc9ecb87c023095ca52448cee6ffba",
+    "execute.py": "f19269714ef6ccf985fa7c632a1f6944b87bd2ef6ea3a203e4caf66e2f2edd6c"
+  },
+  "validation_helper_sha256": "f8a1d64c510337cc6aee4016d232e127672b4045356990e4bcd9356ce9ccceca",
+  "decision": "Hold live model. Fixed development ranking improved but remains weak; Gain/band Gain error worsened. Compare saved32 with actual HFSS outcome next, without extra HFSS solves or weight tuning.",
+  "live_model_changed": false,
+  "NAS_access": false,
+  "HFSS_queue_claim_mutation": false,
+  "limits": [
+    "The replay validates saved-output arithmetic and cross-file identity only.",
+    "It does not independently validate model forward execution, training code, checkpoint tensors, or optimizer/norm state.",
+    "The 868 rows are the fixed development holdout; the result is not an independent prospective HFSS validation or deployment authorization.",
+    "The loss recipe was checked once as fixed; this report does not support tuning, causal efficacy, or live-model publication.",
+    "Root inspected physical PT finite tensors/Adam1400/norm equality/loss binding; independent reviewer did not load PT tensors or replay model forward/SGD.",
+    "Selected32 are post-HFSS-timing shadows with evaluator-truth-unread flags; external status query read part of their raw outcomes.",
+    "First independent helper invocation rejected BOM while reading launch metadata before NPZ; utf-8-sig correction then one full replay, no training change."
+  ]
+}
