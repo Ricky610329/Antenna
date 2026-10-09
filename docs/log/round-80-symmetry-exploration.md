@@ -654,3 +654,11 @@ v033對舊anchor預測WM分數−11.847624，與實測−0.246441差−11.601184
 [單次重測準備收據](assets/r80_best_repeat_ready_20261009.json)綁定v003 helper、input／contract及獨立Sol審查。Conductor讀取完整程式、實際verify-local通過，7項generated恢復／終態測試通過；獨立5項測試及來源審查PASS。先前v001／v002被攔下的草稿與證據保留；v003分開綁定live與凍結results的序列化hash，追加前重核queue及controller／STOP，第一終態raw凍結可中斷恢復。
 
 僅準備對目前WM+0.021682 dB樣本做一次相同profile、新store的獨立HFSS重跑，尚未發布input或派工；13:23主controller正處理cycle，等待正常空窗。保留同一家族與holdout，重測不算5,000筆新唯一或SM訓練資料。判讀原次及新次WM都嚴格大於0才確認；首個陰性或永久失敗照錄，不自動重跑。這是兩次觀測，未聲稱歷史三次觀測公證或穩定達標。
+
+### 2026-10-09 13:41：最佳樣本的一次獨立重測實際入queue
+
+[實際重測派工／讀回收據](assets/r80_best_repeat_dispatch_20261009.json)綁定`dedust_r80bestrep01`、v004 contract、journal及原始最佳pattern。13:41:24經原`_dedust_add`路徑只追加一列prio1；Conductor另以唯讀方式確認146列queue中同input／store恰好一次，以及NAS input逐檔SHA與審查契約一致。dispatch receipt SHA `d026d67d2025287a52e1680898cf430181eb4ee51e851750da26a43a974c52e6`。實體核對截點2,241唯一成功、79唯一待跑／預留，共2,320，仍低於5,000；重測unique增量0，這個截點不混成v033的SM fit筆數。
+
+13:26的v003實際嘗試在第一個guard、取得鎖與寫input前拒絕：主cycle因retryable結果更新正常defer，active pointer指向尚未產生的action receipt。v004只補這個等待狀態的精確證據對應，不改controller或worker：原PID／creation／完整命令、STOP及時間窗仍查核；缺失receipt需和空cycle目錄、deferred event、attempt中的current status及上一個成功receipt一致。Conductor完整來源審查、7項generated測試、實際verify-local與唯讀真實guard通過；獨立Sol來源及12項generated／adversarial測試PASS。既有追加前queue／raw重核及單列中斷恢復不變，v003舊證據保持。
+
+只有一次新HFSS重跑，主機由queue選取，未保證跨主機；不重啟worker或本機HFSS。原次及新次WM都嚴格大於0才確認，第一個負值／永久失敗照錄，不自動重跑，尚無重測結果。薄收據匯出初次誤讀審查JSON的`status`而拒絕，改用實際`verdict`後完成唯讀匯出，沒有重派。13:26例行exact CIM及scope無警報，三個claimed工作都有近期結果；第二局部片仍待跑，下一健康約13:56。R80完整32筆判讀、5,000筆與R81仍未完成。

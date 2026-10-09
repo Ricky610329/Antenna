@@ -1,0 +1,92 @@
+{
+  "schema_version": 4,
+  "status": "one_repeat_dispatched_and_read_back",
+  "verified_utc": "2026-10-09T05:42:55.717790+00:00",
+  "dispatch_effective_utc": "2026-10-09T05:41:24.733289+00:00",
+  "contract_id": "6ac122fb5c47e5c29c96fd414e474d07ab91b1dd5f5f24fd071e85f328297c90",
+  "job": {
+    "input": "dedust_r80bestrep01_input",
+    "store": "dedust_r80bestrep01",
+    "prio": 1,
+    "scope": "symmetry_filter_20261007",
+    "config": "dedust_r80bestrep01_input/config.yaml"
+  },
+  "parent_id": "r80localv1_00026_f6ffb938",
+  "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+  "family": "c48nq1p05_16",
+  "original_wm_db": 0.021682262420654297,
+  "plan_cutoff": {
+    "successful_unique": 2241,
+    "pending_unique": 79,
+    "protected_unique": 0,
+    "repeat_unique_delta": 0,
+    "valid_plus_reserved": 2320,
+    "target_valid_unique": 5000,
+    "guided_with_repeat": 31,
+    "max_guided_outstanding": 96
+  },
+  "jobs_readback": {
+    "count": 146,
+    "sha256": "196238b503589ff4d21a178f1eeccc7bee94986d278fd815b16da1fe97007cb3",
+    "own_row_count": 1
+  },
+  "input_tree_sha256": "a9df158b05174a20ceb35aa7fae11ea9e775e8234e88ff5a122f379d73c14698",
+  "helper": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\repeat_once_v4.py",
+    "sha256": "e0d1898fdb9d60e42f340c91905055c403ba8faebc2350470ed2ee60d327b3ca",
+    "size": 19523
+  },
+  "contract": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\dispatch_contract.json",
+    "sha256": "3fffa94c2415605b8b2317db6fe1373ff2f8eeaafb65f5942a1daed333ccdc20",
+    "size": 4329
+  },
+  "dispatch_receipt": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\dispatch_receipt.json",
+    "sha256": "d026d67d2025287a52e1680898cf430181eb4ee51e851750da26a43a974c52e6",
+    "size": 2946
+  },
+  "journal": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\dispatch_journal.json",
+    "sha256": "cfa45aa45e630f9b559a5c899118fa936a5b95d15e17168e3708ffc09f7b6864",
+    "size": 8254
+  },
+  "independent_review": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_review_20261009_v004\\review_result.json",
+    "sha256": "8487e36f1384b0cc70d23c40ce9553bd2d655a5aa7af085e9a56d68700602cdc",
+    "size": 2437
+  },
+  "independent_review_report": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_review_20261009_v004\\REVIEW.md",
+    "sha256": "4a39e4c532d3e4463d253f67d066d4788a889624036fe81a33a7cdf66096498c",
+    "size": 4065
+  },
+  "root_readonly_guard": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\root_readonly_controller_guard_v001.json",
+    "sha256": "5f254ed164b901f6b98c46345db076c5e7477cc655ec8fca127d25c60c33a99e",
+    "size": 2886
+  },
+  "root_readback_helper": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_repeat_20261009_v004\\root_verify_dispatch.py",
+    "sha256": "ff1e2de86ea5c31746b45a157d97cbab0b14fcd3481f68076a42f3af5696ac20",
+    "size": 4007
+  },
+  "conductor_generated_tests": {
+    "passed": 7,
+    "seconds": 0.224
+  },
+  "independent_tests": {
+    "passed": 12,
+    "seconds": 0.411
+  },
+  "v003_actual_attempt": "Rejected before lock/input/queue at missing deferred active action receipt; journal remained prepared/attempt0/history[].",
+  "v004_correction": "Exact normal deferred waiting is bound to active empty cycle, deferred event, attempt/status and last completed receipt; previous dispatch/readout remain sealed.",
+  "new_unique_delta": 0,
+  "sm_training_eligible": false,
+  "automatic_rerun": false,
+  "hfss_started_here": false,
+  "worker_restarted_here": false,
+  "result_status": "not_read; awaiting terminal success or exhausted physical fail",
+  "confirmation": "Original and first fresh repeat WM must both be strictly positive; two observations, not three-observation certification.",
+  "limits": "Host not pinned. Count is physical dispatch cutoff, not current cumulative SM fitting count. R80 5000 and R81 remain incomplete."
+}
