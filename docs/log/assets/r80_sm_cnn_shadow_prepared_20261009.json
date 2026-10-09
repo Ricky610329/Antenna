@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "status": "cnn_shadow_fixed_recipe_and_actual_first_minibatch_reviewed_not_launched",
+  "configuration": "configs/r80_sm_cnn_shadow_v006.json",
+  "architecture_protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+  "source_counts": {
+    "manifest": 2641,
+    "profile_holdout": 868,
+    "profile_train": 1773
+  },
+  "reviewed_sha256": {
+    "config": "0b38e2f7d238d2adb304ba4cf3ad2e4aea61a3ade5df9391fdeb2b8759955595",
+    "module": "04bee5ac554a000eede844fe39207315d91bfb17216d650f0d3ab83f0272d128",
+    "preflight": "f01969105d7688c7b8f3d0b563951f9e88664da06c9142f129ad8df7cf809779",
+    "runner": "b39c62ed800f77bbf323de9de06c6111b1b832316e5eeebdd9c76bb688765768"
+  },
+  "actual_preflight": {
+    "architecture_protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+    "config_sha256": "0b38e2f7d238d2adb304ba4cf3ad2e4aea61a3ade5df9391fdeb2b8759955595",
+    "counts": {
+      "manifest": 2641,
+      "profile_holdout": 868,
+      "profile_train": 1773
+    },
+    "cpu_threads": 4,
+    "data_version": 6,
+    "device": "cpu",
+    "first_batch": {
+      "adapter_shape": [
+        128,
+        216
+      ],
+      "all_gradients_finite": true,
+      "epoch": 0,
+      "gradient_tensor_count": 13,
+      "loss": 1.0063636302947998,
+      "member_seed": 0,
+      "native_shape": [
+        128,
+        1,
+        216
+      ],
+      "nonzero_gradient_tensor_count": 13,
+      "order_sha256": "e8cbd6865785b2ba13824f4a3038ab0808ae1c3a1da24e85f21f03ffb1d79a9b",
+      "phase_index": 0,
+      "size": 128
+    },
+    "fixed_holdout_truth_read": false,
+    "formal_initialization_reused": false,
+    "formal_training_launched": false,
+    "limits": [
+      "Historical CNN/two results used different data, targets, wrappers, and reports; their efficacy does not transfer to this R80 shadow.",
+      "The same 868-row development holdout is descriptive and cannot independently authorize deployment.",
+      "This preparation makes no claim that CNNNet improves current-only MLP or live SM v006."
+    ],
+    "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+    "model_parameters": 710585,
+    "module_sha256": "04bee5ac554a000eede844fe39207315d91bfb17216d650f0d3ab83f0272d128",
+    "nas_access": false,
+    "permitted_final_output_mib": 40,
+    "runner_sha256": "b39c62ed800f77bbf323de9de06c6111b1b832316e5eeebdd9c76bb688765768",
+    "schema_version": 1,
+    "selected32_truth_read": false,
+    "source_binding_id": "4148f2b5f80f03a62c10223ffc323ff7c2f1f18f80703db19b3e2305f5d92d41",
+    "status": "prepared_actual_frozen_minibatch_check_passed_formal_training_not_launched"
+  },
+  "independent_review": {
+    "architecture_protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+    "formal_outputs_absent": true,
+    "limits": [
+      "This seals launch readiness and recovery identity; it does not establish CNN accuracy.",
+      "The future 868-row result is a fixed development-holdout diagnostic, not independent deployment evidence.",
+      "The current-only MLP comparison shares data and epoch order, but architecture effects remain descriptive rather than causal efficacy proof."
+    ],
+    "manual_static_findings": {
+      "checkpoint_recovery_binds_config_module_runner_preflight": true,
+      "fresh_three_seed_initialization": true,
+      "live_factory_or_NAS_publication_path_present": false,
+      "selected32_predictions_precede_fixed_holdout_read": true,
+      "train_only_normalization_and_group_weights": true
+    },
+    "preflight": {
+      "adapter_shape": [
+        128,
+        216
+      ],
+      "device": "cpu",
+      "finite_nonzero_gradient_tensors": 13,
+      "native_shape": [
+        128,
+        1,
+        216
+      ],
+      "parameter_count": 710585,
+      "threads": 4
+    },
+    "reviewed_sha256": {
+      "config": "0b38e2f7d238d2adb304ba4cf3ad2e4aea61a3ade5df9391fdeb2b8759955595",
+      "module": "04bee5ac554a000eede844fe39207315d91bfb17216d650f0d3ab83f0272d128",
+      "preflight": "f01969105d7688c7b8f3d0b563951f9e88664da06c9142f129ad8df7cf809779",
+      "runner": "b39c62ed800f77bbf323de9de06c6111b1b832316e5eeebdd9c76bb688765768"
+    },
+    "schema_version": 1,
+    "scope": {
+      "NAS_access": false,
+      "broad_tests": false,
+      "holdout_truth_read": false,
+      "model_tensor_replay": false,
+      "selected32_truth_read": false,
+      "training_launched": false
+    },
+    "selected32_training_overlap_count": 0,
+    "source_counts": {
+      "manifest": 2641,
+      "profile_holdout": 868,
+      "profile_train": 1773
+    },
+    "status": "pass_prelaunch_read_only"
+  },
+  "independent_review_sha256": "6112163c7fac485f6692ea8c64942d87fc399073cc30f4c1d55e36c819fb9bf3",
+  "independent_helper_sha256": "9f548643b365c861d1a0403dc2080234508ee7cda379268ef49fb82e3cf495e8",
+  "preflight_correction": "One narrow recovery-identity fix required rerunning the same frozen first128 constructor/finite-gradient gate; no broad synthetic suite or formal model training.",
+  "formal_command": "ant python tmp/r80_sm_cnn_shadow_v006_20261009_v001/run.py full",
+  "deployment_to_live_factory": false,
+  "HFSS_queue_claim_mutation": false,
+  "limits": [
+    "Historical CNN/two results used different data, targets, wrappers, and reports; their efficacy does not transfer to this R80 shadow.",
+    "The same 868-row development holdout is descriptive and cannot independently authorize deployment.",
+    "This preparation makes no claim that CNNNet improves current-only MLP or live SM v006."
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "name": "r80_sm_cnn_shadow_v006",
+  "status": "prepared_not_launched",
+  "purpose": "One bounded CPU architecture shadow against the completed current-only CurveMLP v006 diagnostic. Historical CNN results do not transfer as R80 efficacy evidence.",
+  "output_root": "tmp/r80_sm_cnn_shadow_v006_20261009_v001",
+  "source": {
+    "root": "tmp/r80_sm_currentonly_shadow_v006_20261009_v001/training",
+    "data_version": 6,
+    "counts": {
+      "manifest": 2641,
+      "profile_train": 1773,
+      "profile_holdout": 868
+    },
+    "identity": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "parent_protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+      "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+      "cumulative_valid_unique": 2641
+    },
+    "files": {
+      "measurement.json": "439093feb9f4a49276d24df9972501d48d2c90416b52b40a9edaa826816e7d96",
+      "score_spec.json": "7cd051b4c2523cd7611a874dfdcab7fbb0d2f3d5b223f8adf01e8abf444d006b",
+      "protocol.json": "4e11801c6d54d7c3b138b6f56498b3d2124dc40acad6291982bafa551847eabb",
+      "state.json": "65822c637ed69b7250666542c4eef48f4c1dd8bc15d21da1f164c8fd617e8cc1",
+      "data/data-v006/manifest.json": "e0e288f91f0dd747d94271180de45db60c31caeec32071a31da02732a5c08ad5",
+      "data/data-v006/receipt.json": "4b9041f486d94b0ab9d34427651d9b41cd295c18a2279df91e858d094302d877",
+      "models/data-v006/summary.json": "d9d17b081489c1dc35b5f06894777d77ac8a13e2a2da5f13bb0f27e9300708bd",
+      "models/data-v006/member-0.pt": "4ac3f277bae4629add122083c69a1543444f862053fc384e934c2d9f1dad985f",
+      "models/data-v006/member-1.pt": "ae4358e4d70c418396b62a1318b4c3fac845577fb5aaccca0c900d0fed338d1d",
+      "models/data-v006/member-2.pt": "bcc6952378d4c55d9dccc153b0a906ed11550111a061bee83441feb12c3981b3"
+    }
+  },
+  "architecture_protocol": {
+    "schema_version": 1,
+    "name": "r80_currentonly_cnnnet_flat216_v1",
+    "parent_protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+    "geometry_profile": "single_v1",
+    "frequencies_ghz": [24.0, 24.5, 25.0, 25.5, 26.0, 26.5, 27.0, 27.5, 28.0, 28.5, 29.0, 29.5, 30.0, 30.5, 31.0, 31.5, 32.0],
+    "target_layout": [
+      ["S11", 17],
+      ["RealizedGainTotal_boresight", 17],
+      ["GainTotal_28GHz_phi0", 91],
+      ["GainTotal_28GHz_phi90", 91]
+    ],
+    "model": {
+      "class": "antenna.models.surrogates.CNNNet",
+      "num_pattern_pixel": 625,
+      "num_response": [1, 216],
+      "channels": [32, 64, 64],
+      "fc": 256,
+      "native_output": "B x 1 x 216",
+      "adapter_output": "B x 216",
+      "parameter_count": 710585
+    },
+    "training": {
+      "ensemble_seeds": [0, 1, 2],
+      "optimizer": "torch.optim.Adam",
+      "learning_rate": 0.001,
+      "batch_size": 128,
+      "current_epochs": 100,
+      "phase_index": 0,
+      "epoch_order": "script.exploration._epoch_order",
+      "normalization": "exact profile_train-only per-dimension mean/std",
+      "group_weights": "inverse canonical-group frequency normalized to mean one",
+      "fresh_initialization": true,
+      "legacy_pretraining": false,
+      "warm_start": false,
+      "scheduler": false,
+      "early_stopping": false,
+      "mirror_augmentation": false,
+      "extra_heads": false,
+      "device": "cpu",
+      "cpu_threads": 4
+    }
+  },
+  "expected_architecture_protocol_id": "35d6895c471361ba09a76a9babfb59fc64c57bfd01d2f5d8e6a30f81fb4693cf",
+  "prospective_selected32": {
+    "root": "tmp/r80_sm_currentonly_shadow_v006_20261009_v001/prospective_selected32",
+    "count": 32,
+    "manifest_sha256": "3c7303f0e0d6e7d6b1e0b537832c3afaa315461261ba7fb6351f31e0799397fd",
+    "sm_pool_audit_sha256": "6761a633cccefede3f8f5e48e480313dab57a61b95d90b45b23e626ef16a2d3a",
+    "timing_label": "saved_before_cnn_shadow_evaluator_truth_read; predicted_before_hfss=false",
+    "truth_read": false
+  },
+  "comparison": {
+    "currentonly_report": "tmp/r80_sm_currentonly_shadow_v006_20261009_v001/comparison_v2.json",
+    "currentonly_report_sha256": "5bc33c9c2d85296a78e1b963ac000bbf9e5973cc8e2f2405878a489bff4b858f",
+    "currentonly_arrays": "tmp/r80_sm_currentonly_shadow_v006_20261009_v001/holdout_comparison.npz",
+    "currentonly_arrays_sha256": "944fd25ee1dbfd50b9e7b70e45f6359004d9d0fefecbe107df4fed31bc3a64db",
+    "holdout_count": 868,
+    "metrics": ["full_vector_mae", "s11_mae", "gain_mae", "phi0_mae", "phi90_mae"],
+    "ranks": ["wm_of_ensemble_mean", "factory_score", "lcb_score"],
+    "no_tuning_or_early_stop": true,
+    "deployment_authorized": false
+  },
+  "implementation_bindings": {
+    "antenna/models/surrogates.py": "f6168c7e4d1bc170bcc3b93f806df0db544abd1e6d91fdd7dfa7988a29518235",
+    "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+    "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+    "script/symmetry_sm_pool.py": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8",
+    "script/symmetry_factory_cycle.py": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e"
+  },
+  "execution_policy": {
+    "formal_training_launched": false,
+    "only_permitted_prelaunch_execution": "one CPU constructor, native/adapter shape, and finite-gradient check on the frozen first profile_train minibatch",
+    "no_gpu": true,
+    "no_hfss": true,
+    "no_nas": true,
+    "no_model_or_data_download": true,
+    "no_live_publication": true,
+    "estimated_final_checkpoint_mib": 25,
+    "maximum_local_output_mib": 40
+  },
+  "limits": [
+    "Historical CNN/two results used different data, targets, wrappers, and reports; their efficacy does not transfer to this R80 shadow.",
+    "The same 868-row development holdout is descriptive and cannot independently authorize deployment.",
+    "This preparation makes no claim that CNNNet improves current-only MLP or live SM v006."
+  ]
+}

@@ -932,3 +932,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-09 22:54：依使用者詢問重新核對最佳
 
 既有只讀query原樣重用，逐store保存cutoff並重播sample/rad；2,713唯一有效圖形／2,718成功觀測，比22:09多38。最佳pattern/sample/rad與WM完全相同，WM+0.0216822624 dB、帶內最差S11−10.0960884 dB／最低Gain4.0216823 dBi；既有獨立重測+0.0364336967 dB，原極座標圖繼續適用。[核對收據](assets/r80_best_status_20261009_2254.json)。22:53 CIM精確PID15944／creation／完整argv身分通過，三片v006 claimed結果entries5／2／2，最新0／0／1分鐘、scope零警報；entry數不是完整有效cohort數。未改佇列、claims、HFSS或live模型。背景current-only陰性結果保留，CNN僅準備中，未宣稱改善；維持約30分鐘健康檢查，R80 5,000及R81未完成。
+
+
+### 2026-10-09：固定既有CNN背景架構對照
+
+沿用既有CNNNet，僅加native B×1×216到B×216的adapter；不重寫網路。固定與已完成current-only MLP相同2,641資料、1,773 train／868 development hold、三fresh seeds、100epochs／Adam.001／batch128／phase0／groupweights與train-only norms；CNN710,585參數。實際凍結first128 CPU gate通過，loss1.006364、13/13梯度finite/nonzero，CPU4threads。一次獨立靜態／hash核對通過；先前preflight/recovery身分binding不足已修正，僅重跑同一真實minibatch gate。[準備收據](assets/r80_sm_cnn_shadow_prepared_20261009.json)。模型／結果尚不存在；先commit固定配方，再單次hidden CPU背景训练，32候選預測先保存、其真值不讀，最後固定868評估。既有歷史CNN效果不作R80改善證據；不改live SM、HFSS或queue。
