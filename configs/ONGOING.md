@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/09：v006完整模型／32派工審查通過**。新增63／fit2,641，train1,773／hold868；三fresh模型norm／Adam3,800及32保存預測重播通過。獨立20k strict ranking核對11／11／10、23家族、minHamming84；NAS兩片40-file tree與queue一致。[收據](../docs/log/assets/r80_diverse_sm_cycle_v006_20261009.json)。32真值待完成；最新全量最佳仍以22:09的2,675／+0.021682為準。背景current-only SM對照準備中，live配方未改；下一routine約22:39。
+
 - 現況 **10/09 22:09：全量實測重播，最佳未變**。2,675唯一成功圖形／2,680成功觀測，較20:17新增83；WM仍 **+0.021682 dB**，既有獨立重測 **+0.036434 dB**。[查詢收據](../docs/log/assets/r80_best_status_20261009_2210.json)。第二批多樣48獨立核對完成，最佳−5.102279／median−12.183969／0正WM；兩批96皆由同v004提出，非兩代迭代或停滯定論。[第二批收據](../docs/log/assets/r80_diverse_sm_second_cohort_result_20261009.json)。SM v006 summary新增63／fit2,641，完整模型派工審查尚待；PID15944身分不變、三台有claimed jobs／scope零警報。約30分鐘例行檢查，R80 5,000及R81未完成。
 
 - 現況 **10/09 21:28：首批多樣48真值／獨立算術核對完成**。全有效唯一／精確LR／零error，最佳WM **−4.820067**、median **−12.214764**，0正WM／0超過既有全域參考+0.021682。Hamming min65；保存LCB對WMρ0.151324、Gain MAE4.556437，排序仍弱。[結果](../docs/log/assets/r80_diverse_sm_first_cohort_result_20261009.json)／[頻率圖](../docs/log/assets/round-80/diverse-sm-first48-20261009-v001/frequency_responses.png)。僅單cohort，非因果改善／三代停滯；完整讀回posthoc、原預測prospective。原PID15944／零警報／stderr空，後續批次及SM持續；下一routine **21:58**。R80 5,000與R81未完成。

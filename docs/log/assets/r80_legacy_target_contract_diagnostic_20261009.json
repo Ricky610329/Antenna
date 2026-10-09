@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "status": "bounded_legacy_target_provenance_diagnostic_verified",
+  "diagnostic_report_sha256": "5eb4cbda77cb893a54efe809aa16fd5e9bb16133b7875959c5e1266513ca209e",
+  "diagnostic_scope": {
+    "question": "Are the 12,000 legacy-prior Gain and radiation targets physically authenticated as comparable to the current R80 single-port HFSS targets, and is there evidence relevant to the two weak v004 diverse-cohort rankings?",
+    "workspace": "C:/Users/ricky/Documents/GitHub/Antenna",
+    "inputs_read": "Bounded local source, protocol/model metadata, immutable legacy manifests, and compact existing cohort reports only.",
+    "not_performed": [
+      "NAS discovery or reads",
+      "HFSS execution",
+      "model training, rescore, inference, or checkpoint loading",
+      "GPU or process access",
+      "queue, claim, controller, config, source, model, or documentation mutation",
+      "broad test execution",
+      "commit or push"
+    ]
+  },
+  "verdict": {
+    "summary": "The current-profile target contract is internally explicit, but the 12,000-row legacy prior is not semantically authenticated to it. The legacy importer proves exact pattern pairing, finite 2x17 arrays, and radiation coverage; it does not prove that channel 2 is boresight dB(RealizedGainTotal) on Setup1:Sweep at 24--32 GHz, or that the radiation sidecars are 28 GHz dB(GainTotal) on Setup1:LastAdaptive. This is a concrete provenance/contract gap, not evidence that the legacy numeric values are definitely wrong.",
+    "more_data_only_interpretation": "The observed weakness should not be attributed to insufficient sample count alone. Two prospective v004 cohorts have zero positives in 96 points and weak LCB-to-actual-WM rank correlations (0.1513 and 0.1038), while Gain MAE is much larger than S11 MAE in both cohorts and on the v006 current-profile holdout. That pattern is consistent with a Gain-specific generalization/domain problem, but it does not identify legacy pretraining as the cause.",
+    "code_bug_result": "No target-order, denormalization-order, factory-score, or current-profile HFSS report-expression bug was found in the inspected paths. The earlier canonical-coverage diagnosis remains compatible with this result; this report adds a separate legacy semantic-provenance limitation.",
+    "action": "No live change is justified by this read-only diagnostic. A later versioned comparison of current-profile-only training against the same recipe with legacy pretraining, or a provenance-authenticated legacy subset, would be needed to estimate causal effect. Do not present disabling, relabeling, or reweighting legacy data as a proven fix from this evidence."
+  },
+  "current_contract": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "training_protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "geometry": {
+      "profile": "single_v1",
+      "pixel_count": 25,
+      "diag_bridge_w_mm": 0.1,
+      "required_pattern_symmetry": "left-right mirror plus feed pixel and mirrored physical bridge sites"
+    },
+    "frequency_response": {
+      "frequencies_ghz": [
+        24.0,
+        24.5,
+        25.0,
+        25.5,
+        26.0,
+        26.5,
+        27.0,
+        27.5,
+        28.0,
+        28.5,
+        29.0,
+        29.5,
+        30.0,
+        30.5,
+        31.0,
+        31.5,
+        32.0
+      ],
+      "s11": "Setup1:Sweep, dB(S(1,1))",
+      "gain": "Setup1:Sweep, Far Fields context 3D, phi=0deg, theta=0deg, dB(RealizedGainTotal)",
+      "returned_order": [
+        "S11[17]",
+        "Gain[17]"
+      ]
+    },
+    "radiation": {
+      "frequency_ghz": 28.0,
+      "solution": "Setup1:LastAdaptive",
+      "quantity": "dB(GainTotal)",
+      "cuts": [
+        "phi0",
+        "phi90"
+      ],
+      "stored_theta_deg": "-180..180 step 2",
+      "model_theta_deg": "interpolated -90..90 step 2",
+      "returned_order": [
+        "phi0[91]",
+        "phi90[91]"
+      ]
+    },
+    "factory_worst_margin": "min(-10 - max(S11[26.5:29.5]), min(Gain[26.5:29.5]) - 4)",
+    "evidence": [
+      {
+        "file": "configs/single_r80_symmetry_factory.yaml",
+        "lines": "5-15",
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095"
+      },
+      {
+        "file": "script/profiled_batch.py",
+        "lines": "58-72,91-119,170-197",
+        "sha256": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3"
+      },
+      {
+        "file": "antenna/patch/patch_simulator/single_port.py",
+        "lines": "599-624,648-691",
+        "sha256": "1e137ff77e76c8437bffc4faee46a19cf233a313a8c30e5333e1f460924b385d"
+      },
+      {
+        "file": "antenna/patch/patch_simulator/single_port_rad.py",
+        "lines": "25-32,39-48,75-114",
+        "sha256": "e57c64b9f600c0712f63560464812c629c1040c202b2e3f99de0f732734f85cd"
+      },
+      {
+        "file": "script/exploration.py",
+        "lines": "336-348",
+        "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7"
+      },
+      {
+        "file": "script/symmetry_diverse_sm.py",
+        "lines": "153-166",
+        "sha256": "2cf599ab1bbba24e04b853df9d1485d8b30f7a99b98e7b7691e03a8c9e0db274"
+      }
+    ]
+  },
+  "legacy_contract_census": {
+    "manifest": {
+      "file": "tmp/r80_factory_20261007/legacy_manifest.json",
+      "sha256": "3d904e05148fc1bf7a1d09bca70944dc91cdf2d65c370262dbfd1e0b74edd480",
+      "rows": 12000,
+      "source_stores": 765
+    },
+    "registered_manifest": {
+      "file": "tmp/r80_factory_20261007/training_familydev_v1/legacy/manifest.json",
+      "sha256": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a"
+    },
+    "accepted_semantics": "unique-pattern response pairing; finite response shape 2x17; valid radiation theta coverage and finite phi0/phi90 curves",
+    "authenticated_row_fields": {
+      "measurement_id": 0,
+      "labels": 0,
+      "frequencies_ghz": 0,
+      "gain_report_expression": 0,
+      "gain_angle_context": 0,
+      "gain_solution_tier": 0,
+      "radiation_report_expression": 0,
+      "radiation_frequency_or_solution": 0
+    },
+    "geometry_profile_counts": {
+      "unprofiled_legacy_unknown": 10179,
+      "legacy_diag_bridge_w_-0.1": 934,
+      "legacy_diag_bridge_w_0.1": 864,
+      "legacy_diag_bridge_w_0.14": 9,
+      "legacy_diag_bridge_w_0.075": 9,
+      "legacy_diag_bridge_w_0.05": 5
+    },
+    "geometry_interpretation": {
+      "explicit_current_width_count": 864,
+      "explicit_different_width_or_slot_count": 957,
+      "unknown_count": 10179,
+      "note": "The 934 rows with -0.1 are not a signed spelling of the current +0.1 bridge: current geometry code assigns negative width to a subtractive slot. Even the 864 +0.1 rows authenticate only the bridge width, not symmetry, HFSS expressions, frequency grid, solver tier, or all geometry details. Legacy provenance also explicitly permits nonmirror patterns."
+    },
+    "why_the_gap_exists": "prepare_legacy_manifest deliberately excludes stores carrying measurement.json and then accepts unnamed historical stores from tensor shape/finiteness plus optional hfss_setup fields. source_metadata is restricted to kind/family/source_id/lineage_id/geom/dbw/diag_bridge_w, so report quantity, units, angles, frequencies, and solution tier cannot enter the frozen legacy inventory.",
+    "evidence": [
+      {
+        "file": "script/symmetry_training.py",
+        "lines": "553-625,633-664",
+        "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+      },
+      {
+        "file": "antenna/patch/patch_simulator/single_port.py",
+        "lines": "95-98,377-385",
+        "sha256": "1e137ff77e76c8437bffc4faee46a19cf233a313a8c30e5333e1f460924b385d"
+      },
+      {
+        "file": "tmp/r80_factory_20261007/training_familydev_v1/legacy/provenance.json",
+        "lines": "2-11",
+        "sha256": "452e2f7563c44491004fff3bf414dae4548b0310d06e382d34fe35b32dcdc171"
+      },
+      {
+        "file": "docs/log/assets/r80_factory_legacy_20261007.json",
+        "lines": "17-38",
+        "sha256": "f35b1d5a04dba17aa42f134af0ea0d5d5a9da7dabb968b30168818ea37a6333e"
+      }
+    ],
+    "census_method": "PowerShell ConvertFrom-Json over the two local frozen manifest files; counted rows, source stores, geometry_profile, source_hfss_setup.diag_bridge_w, and presence of semantic identity fields. No tensor or NAS payload was read."
+  },
+  "training_and_error_evidence": {
+    "v006_binding": {
+      "data_version": 6,
+      "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+      "cumulative_valid_unique": 2641,
+      "legacy_train": 10150,
+      "legacy_holdout": 1850,
+      "profile_train": 1773,
+      "profile_holdout": 868,
+      "legacy_epochs": 30,
+      "current_profile_epochs": 100,
+      "initialization": "fresh each version",
+      "normalization": "fit from current profile_train only",
+      "phase_order": [
+        "legacy_pretrain",
+        "current_profile"
+      ]
+    },
+    "v006_current_profile_holdout": {
+      "n": 868,
+      "s11_mae_db": 2.135740041732788,
+      "gain_mae_db": 5.559408187866211,
+      "gain_to_s11_mae_ratio": 2.603035987,
+      "interpretation": "Gain error is materially larger on current-profile holdout, so this is not only a legacy-holdout artifact. The remaining holdout is descriptive because the family-development protocol moved one canonical group into training."
+    },
+    "diverse_v004_cohort_1": {
+      "n": 48,
+      "positive_wm_count": 0,
+      "saved_lcb_actual_wm_spearman": 0.15132435953104645,
+      "s11_curve_mae_db": 1.8833634098809142,
+      "gain_curve_mae_db": 4.556436663341432,
+      "gain_to_s11_mae_ratio": 2.419308265
+    },
+    "diverse_v004_cohort_2": {
+      "n": 48,
+      "positive_wm_count": 0,
+      "saved_lcb_actual_wm_spearman": 0.10377768128528006,
+      "s11_curve_mae_db": 2.1115641489478887,
+      "gain_curve_mae_db": 5.209754175837517,
+      "gain_to_s11_mae_ratio": 2.46724883
+    },
+    "interpretation": [
+      "All three current-profile readouts show a Gain-specific error gap of about 2.4--2.6 times the S11 MAE.",
+      "The two cohorts are selected and therefore do not estimate population error, but the v006 current-profile holdout shows the same direction.",
+      "Sequential legacy pretraining can influence the model, yet 100 later current-profile epochs and current-only normalization prevent inferring that row-count dominance alone determines the final predictor.",
+      "These records support investigating legacy/current target comparability and Gain-domain coverage; they do not prove that legacy targets are mislabeled or that removing them improves ranking."
+    ],
+    "evidence": [
+      {
+        "file": "script/symmetry_training.py",
+        "lines": "317-328,668-709,730-758,771-805",
+        "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+      },
+      {
+        "file": "tmp/r80_factory_20261007/training_familydev_v1/protocol.json",
+        "lines": "11-97",
+        "sha256": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e"
+      },
+      {
+        "file": "tmp/r80_factory_20261007/training_familydev_v1/models/data-v006/summary.json",
+        "lines": "2-46",
+        "sha256": "bb8a4e66c128f077dfa61a109c6a4993d361ba2dcfa7895a67a3adfca9729e27"
+      },
+      {
+        "file": "docs/log/assets/r80_diverse_sm_first_cohort_result_20261009.json",
+        "lines": "45-115",
+        "sha256": "110fbd18d06edcbe883d8e9dab82b560560a3423f75edd2327edee9eba0512b9"
+      },
+      {
+        "file": "tmp/r80_diverse_second_cohort_truth_20261009_v001/report.json",
+        "lines": "134-182,216-218,252-254",
+        "sha256": "67ccaeeee217134cff2e0b1a328e2b730e668a86731d205e4dea21df9891c32d"
+      },
+      {
+        "file": "tmp/r80_diverse_second_cohort_independent_20261009_v001/report.json",
+        "lines": "89-110",
+        "sha256": "cf11518fac57043b8b6efb6ea6a19cf764794e269ddbf21586f51dfe8afdedf1"
+      }
+    ]
+  },
+  "limits": [
+    "No local evidence inspected here proves that any legacy response is linear rather than dB, swaps S11/Gain, uses a different frequency grid, uses non-boresight Gain, or uses GainTotal instead of RealizedGainTotal. The problem is missing authentication, not a demonstrated per-row semantic corruption.",
+    "No source-store HFSS projects, CSV headers, solver projects, private NAS payloads, or historical executable environment were opened, so per-store physical semantics remain unverified.",
+    "Current curve Gain and current radiation Gain intentionally use different HFSS quantities and solution tiers. The target vector keeps them in separate fixed segments; no cross-segment ordering defect was found.",
+    "Radiation is excluded from the factory worst-margin score. Radiation provenance can affect a shared multitask representation, but this diagnostic provides no causal evidence that it harms factory ranking.",
+    "The prior input-contract diagnostic found a canonical-family coverage mismatch and no normalization/order bug. This diagnostic does not overturn that finding and does not rank the relative importance of coverage versus legacy-domain provenance.",
+    "The v006 model summary was read as metadata only; no checkpoint tensor, prediction, retraining, or rescore was performed."
+  ],
+  "root_checks": [
+    "Rehashed all cited local source/artifact evidence.",
+    "Recomputed registered legacy geometry counts.",
+    "Read actual frozen v006 holdout counts and MAEs."
+  ],
+  "root_verifier_sha256": "ad9a08e24f90116d129266411ff8e71e6d19b04bbe68eda712d8a99df0b64004",
+  "no_live_protocol_or_source_change": true,
+  "no_HFSS_or_training_in_diagnostic": true
+}

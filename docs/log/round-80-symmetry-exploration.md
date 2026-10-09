@@ -896,3 +896,15 @@ Cycle `205a8627...`於20:20:23完成。新增78有效唯一真值、累積fit **
 既有只讀query原樣重用，逐store固定cutoff並重播sample/rad，共2,675唯一成功圖形、2,680成功觀測。較20:17多83，最佳pattern/sample/rad/WM與前版完全一致：WM+0.0216822624 dB、帶內最差S11−10.0960884 dB、最低Gain4.0216823 dBi；既有獨立重測+0.0364336967 dB。沿用原極座標圖。[最新查詢](assets/r80_best_status_20261009_2210.json)。cutoff保留3筆首次HFSS/RPC/COM error，不計成功；目前job仍claimed、未達3連敗毒樣本判定，沿用worker重試，不清claim/done。
 
 第二批48全有效唯一／exactLR／零error，獨立Sol從凍結raw與保存預測重算WM、curve MAE、Spearman和Hamming；root確認全部source hashes及算術與判讀一致。最佳WM−5.1022787094、中位−12.1839690208、最低−32.3267993927，0正WM／0超過既有最佳；Hamming70／309／374。LCB對真實WMρ0.1037776813，Gain MAE5.209754 dB，排序仍弱。[第二批完整數字與binding](assets/r80_diverse_sm_second_cohort_result_20261009.json)。兩批96同用v004 fit2500；不可稱兩代fresh SM，更不可當成多代停滯證據。SM目前v006已新增63、fit2,641，summary只作更新觀察，完整模型／派工審查仍待。三台claimed工作、scope零警報、唯一PID15944精確身分不變；不改queue/claims/worker、不中斷收資料。R80 5,000與R81仍未完成。
+
+
+### 2026-10-09：歷史SM目標量測定義的局限
+
+[限定只讀診斷](assets/r80_legacy_target_contract_diagnostic_20261009.json)核對既有training/HFSS原始碼、固定legacy manifests及v006摘要。當前Gain明確為boresight `dB(RealizedGainTotal)`／Sweep；rad為28GHz `dB(GainTotal)`／LastAdaptive，分段目標與WM順序未發現錯誤。歷史12,000筆匯入驗證配對、有限2×17曲線與rad coverage，但缺少能認證quantity、angle、frequency、solution的逐筆metadata。10,179筆geometry unknown、957筆明示其他橋寬／負橋寬slot、864筆+0.1橋寬；864也不能據此認證完整量測定義。這是來源／domain局限，並非已證明歷史數值或單位錯誤。
+
+v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同樣Gain誤差較大，不能只以資料數解釋，也不能據此認定legacy預訓練就是原因。Root重算geometry census、核对metadata數字及所有引用SHA；沒有重新讀NAS歷史tensor、沒有訓練或改live。準備固定v006相同資料／split／架構／seeds／current100的current-only背景對照，再比較hold868與尚未送回真值的32筆保存預測；對照尚未執行，不宣稱修復或提高性能。
+
+
+### 2026-10-09：v006三fresh SM與32筆私人派工核對
+
+原cycle21:56:01完成，新增63／fit2,641，原2,578列完全保留；effective train1,773／hold868，c48 development125。Root從實體train重建四norm tensors、核對三fresh legacy30＋current100及Adam各3,800步，32保存預測重播最大5.409e−6<2e−5。[薄收據](assets/r80_diverse_sm_cycle_v006_20261009.json)。獨立Sol一次重播凍結20k完整幾何／SHA／排名／strict round-robin greedy：配額11／11／10、23家族／cap2、minHamming84、32親本／31家族；兩片本機staged16與root實讀私人NAS兩片40-file tree／唯一prio1 queue完全吻合。guided待跑52再補32≤96，不變更容量政策。這32筆真值未完成，不以模型更新宣稱性能提升。fit2,641、dispatch截點2,652、22:09全量查詢2,675分開；維持原controller、worker及約30分钟routine。R80 5,000與R81仍未完成。

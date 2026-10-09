@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "status": "v006_fresh_models_and_actual_32_dispatch_verified",
+  "observed_taipei": "2026-10-09T22:16:43.772848+08:00",
+  "cycle_id": "4b5e0d7e981967e63c52479f78b745caf05091d19866c443ef4d6ba9f2398639",
+  "cycle_completed_taipei": "2026-10-09 21:56:01",
+  "action_receipt_sha256": "408efecb8c2466ddf2fb23fb8446211e08a75b393626937e8477c5c98054bda9",
+  "binding": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 6,
+    "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+    "cumulative_valid_unique": 2641
+  },
+  "new_valid_unique": 63,
+  "previous_2578_rows_preserved": true,
+  "counts": {
+    "legacy_holdout": 1850,
+    "legacy_train": 10150,
+    "profile_holdout": 868,
+    "profile_train": 1773
+  },
+  "effective_roles": {
+    "profile_train": 1773,
+    "profile_holdout": 868
+  },
+  "reference_roles": {
+    "profile_train": 1648,
+    "profile_holdout": 993
+  },
+  "c48_development_rows": 125,
+  "members": [
+    {
+      "seed": 0,
+      "sha256": "4164dcdec01241b2e304ebf1c7fe0f8c6efc7f2b152ff8d5dad0c329d319b1c8",
+      "optimizer_steps": 3800,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 1,
+      "sha256": "34e08ff518d3bc041fdf9bfa7db18487589766c6c0f4f17f7c93f973f71ce236",
+      "optimizer_steps": 3800,
+      "norms_exact_effective_train": true
+    },
+    {
+      "seed": 2,
+      "sha256": "9d3cb91019104c02e95fb73c82860ceae7592118afde0fd0e02b4724a6d4e6cd",
+      "optimizer_steps": 3800,
+      "norms_exact_effective_train": true
+    }
+  ],
+  "actual_NAS_published": [
+    {
+      "job": {
+        "input": "dedust_r80c4b5e0d7eg01_input",
+        "store": "dedust_r80c4b5e0d7eg01",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c4b5e0d7eg01_input/config.yaml"
+      },
+      "input_tree_sha256": "92d5072f3a6ac6a8fefe10bdea63a44dad47ac25f18defebda68ae578b804c3d",
+      "files": 20,
+      "count": 16
+    },
+    {
+      "job": {
+        "input": "dedust_r80c4b5e0d7eg02_input",
+        "store": "dedust_r80c4b5e0d7eg02",
+        "prio": 1,
+        "scope": "symmetry_filter_20261007",
+        "config": "dedust_r80c4b5e0d7eg02_input/config.yaml"
+      },
+      "input_tree_sha256": "9ff5be3ff1ef3ebe4404a2ef612d47186c00b97e1ec4e459517c44d148ae5e56",
+      "files": 20,
+      "count": 16
+    }
+  ],
+  "dispatch_cutoff_unique": 2652,
+  "prepared_guided_pending_before_dispatch": 52,
+  "new_guided": 32,
+  "guided_cap": 96,
+  "root_physical_audit_sha256": "9c535d5fd1fa49fb186fd069ef3ca9e8580cca7cf7c01ff092203a4f1cd6174c",
+  "root_saved_predictions_replay": {
+    "schema_version": 1,
+    "status": "actual_saved_selected_predictions_replayed",
+    "rows": 32,
+    "predictor_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 6,
+      "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+      "cumulative_valid_unique": 2641
+    },
+    "manifest_sha256": "3c7303f0e0d6e7d6b1e0b537832c3afaa315461261ba7fb6351f31e0799397fd",
+    "max_abs_error": {
+      "factory_score": 1.9073486328125e-06,
+      "lcb_score": 5.291031451193362e-06,
+      "navigation_mean_score": 1.9386410716748514e-06,
+      "response_disagreement": 3.352390378630332e-06,
+      "predicted_s11": 1.9073486328125e-06,
+      "predicted_gain": 5.409121513366699e-06,
+      "predicted_radiation_phi0": 3.337860107421875e-06,
+      "predicted_radiation_phi90": 2.0265579223632812e-06
+    },
+    "tolerance": 2e-05,
+    "limits": "Same actual trained predictor replay; not independent implementation or HFSS truth."
+  },
+  "independent_selection_audit_sha256": "30d032f2a0163439c411d8dd0f9ff84ce6b05d7f49089d6b19082a0515e84de8",
+  "independent_selection_audit": {
+    "schema_version": 1,
+    "status": "passed",
+    "scope": "Independent local frozen v006 selection replay; no NAS, raw training data, model tensors, runtime, queues, rescore, or HFSS result access.",
+    "cycle_id": "4b5e0d7e981967e63c52479f78b745caf05091d19866c443ef4d6ba9f2398639",
+    "helper": {
+      "path": "tmp/r80_diverse_v006_independent_20261009_v001/replay.py",
+      "sha256": "81c370565ec9b0a094b8b9c039d7a519c92fbc0db48f444e0d98da962335d865"
+    },
+    "artifact_sha256": {
+      "action_receipt.json": "408efecb8c2466ddf2fb23fb8446211e08a75b393626937e8477c5c98054bda9",
+      "factory_bundle_complete.json": "ece63758464327a08c1946c8f40ffa64f28927b5f71cad18e2046d8902e566f4",
+      "manifest.json": "3c7303f0e0d6e7d6b1e0b537832c3afaa315461261ba7fb6351f31e0799397fd",
+      "sm_pool_audit.json": "6761a633cccefede3f8f5e48e480313dab57a61b95d90b45b23e626ef16a2d3a",
+      "diversity_search_audit.json": "2c53ad51e0de574128538df11e200afd100e936385004516449273a33df29c9c"
+    },
+    "replayed_identity": {
+      "policy_id": "27937e8f03647431256a31ad47acf4124fc30f8b7195afb1f731d079d6e01d75",
+      "frozen_lcb_ranks_sha256": "29752da5fc8635e53030ba425247118df6f74414a902701e18fa179a39116289",
+      "candidate_pool_sha256": "8667302ae3c3c9ee50710ef33b077b1c1e54edc2e565e33f10b15880274d05a4",
+      "selected_cohort_sha256": "b58b140e9c23e29cac5410de7fad72129e4d662520c59af40882028cc6d10cda",
+      "guided_shard_tree_sha256": [
+        "92d5072f3a6ac6a8fefe10bdea63a44dad47ac25f18defebda68ae578b804c3d",
+        "9ff5be3ff1ef3ebe4404a2ef612d47186c00b97e1ec4e459517c44d148ae5e56"
+      ]
+    },
+    "pool_and_selection": {
+      "candidate_count": 20000,
+      "candidate_origin_counts": {
+        "fresh_random": 10000,
+        "parent_variant": 10000
+      },
+      "selected_count": 32,
+      "capacity_limited": true,
+      "quota_method": "Equal weights and deterministic largest remainder in policy arm order.",
+      "arm_quotas_and_actual": {
+        "global_lcb": 11,
+        "parent_lcb": 11,
+        "high_disagreement": 10
+      },
+      "disagreement_mean_p60": -11.999781875610351,
+      "selected_min_physical_hamming": 84,
+      "selected_canonical_group_count": 23,
+      "selected_max_per_canonical_group": 2,
+      "parent_count": 32,
+      "parent_group_count": 31,
+      "parent_max_per_canonical_group": 2
+    },
+    "predictor_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 6,
+      "manifest_id": "4a92f82cbaf1768c200d8f6c893f750dad9eec585f0ee6bfec7f03da633a1948",
+      "cumulative_valid_unique": 2641
+    },
+    "model_sha256": [
+      "4164dcdec01241b2e304ebf1c7fe0f8c6efc7f2b152ff8d5dad0c329d319b1c8",
+      "34e08ff518d3bc041fdf9bfa7db18487589766c6c0f4f17f7c93f973f71ce236",
+      "9d3cb91019104c02e95fb73c82860ceae7592118afde0fd0e02b4724a6d4e6cd"
+    ],
+    "checks": {
+      "all_20000_packed_geometries_hashes_scores_ranks_and_origins": true,
+      "descending_lcb_then_sha_order": true,
+      "candidate_pool_hash": true,
+      "p60_and_equal_largest_remainder_quotas": true,
+      "strict_round_robin_greedy_sequence": true,
+      "whole_cohort_distance64_and_canonical_cap2": true,
+      "all_32_bundle_tensors": true,
+      "both_local_staged_shards_all_32_tensors_and_trees": true,
+      "parent_descriptor_bounds_and_hashes": true,
+      "six_field_training_predictor_binding": true,
+      "model_ids_completion_action_common_audit": true,
+      "completion_manifest_audit_action_hash_chain": true,
+      "files_unchanged_across_replay": true
+    },
+    "limits": [
+      "Exclusion sets were checked through saved counts and SHA-256 bindings, not reconstructed from NAS.",
+      "v006 training samples, radiation files, normalization tensors, and checkpoint tensors were not reopened; training and model conclusions here are identity-binding checks.",
+      "The two 16-pattern shards are the v006 capacity-limited 32-pattern cohort and do not relabel the prior v005 16-pattern audit.",
+      "No HFSS outcome, surrogate accuracy, or performance improvement is claimed."
+    ]
+  },
+  "no_queue_claim_raw_mutation_during_checks": true,
+  "limits": [
+    "Fit2641, dispatch cutoff2652 and live22:09 census2675 are different cutoffs.",
+    "Root checked all actual training norms and NAS inputs; independent reviewer checked frozen pool, ranks and local staged tensors.",
+    "v00632 HFSS outcomes remain pending. Training completion does not prove performance improvement.",
+    "R80 target5000 and R81 remain incomplete."
+  ]
+}
