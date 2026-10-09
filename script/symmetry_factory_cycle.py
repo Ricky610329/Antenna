@@ -29,6 +29,7 @@ import torch
 
 from antenna.measurement import measurement_id, score_spec_id
 from script import profiled_batch as pb
+from script import symmetry_diverse_sm as diverse
 from script import symmetry_factory as factory
 from script import symmetry_incumbent_shell_pilot as shell_pilot
 from script import symmetry_sm_pool as sm
@@ -164,6 +165,47 @@ def _write(path: Path, value: Any) -> None:
 def _content_id(value: Any) -> str:
     raw = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _load_search_policy(value: str | Path | None, profile: Path) -> tuple[
+        dict[str, Any] | None, dict[str, Any] | None]:
+    """Load and exactly bind one optional, tracked search-policy file."""
+
+    if value is None:
+        return None, None
+    path = Path(value).resolve()
+    raw_sha256 = pb.file_sha256(path)
+    policy = diverse.load_policy(path)
+    if not isinstance(policy, dict):
+        raise ValueError("search policy loader must return a JSON object")
+    if pb.file_sha256(path) != raw_sha256:
+        raise ValueError("search policy changed while binding the cycle")
+    declared_profile = Path(str(policy["measurement_profile"]))
+    if not declared_profile.is_absolute():
+        declared_profile = Path(__file__).resolve().parents[1] / declared_profile
+    if declared_profile.resolve() != profile.resolve():
+        raise ValueError("search policy measurement profile differs from the cycle profile")
+    canonical = json.loads(json.dumps(policy, sort_keys=True, ensure_ascii=False))
+    binding = {
+        "schema_version": 1,
+        "path": str(path),
+        "sha256": raw_sha256,
+        "policy_id": _content_id(canonical),
+        "policy": canonical,
+    }
+    return canonical, binding
+
+
+def _require_search_policy_binding(binding: Mapping[str, Any] | None,
+                                   profile: Path) -> dict[str, Any] | None:
+    if binding is None:
+        return None
+    if not isinstance(binding, Mapping) or "path" not in binding:
+        raise ValueError("search policy binding is invalid")
+    policy, current = _load_search_policy(str(binding["path"]), profile)
+    if current != dict(binding):
+        raise ValueError("search policy differs from its prepared binding")
+    return policy
 
 
 def _safe_child(root: Path, name: str) -> Path:
@@ -466,7 +508,9 @@ def _publish_bundle(output: Path, expected_cfg: Any, producer: Callable[[Path], 
 
 
 def _guided_completion(path: Path, *, cycle_id: str,
-                       predictor_model_ids: Sequence[Mapping[str, Any]]) -> tuple[int, set[str]]:
+                       predictor_model_ids: Sequence[Mapping[str, Any]],
+                       search_policy_binding: Mapping[str, Any] | None = None
+                       ) -> tuple[int, set[str]]:
     """Validate a completed guided cohort without imposing a newly computed capacity."""
 
     marker = _read(path / "factory_bundle_complete.json")
@@ -481,6 +525,10 @@ def _guided_completion(path: Path, *, cycle_id: str,
         "manifest_sha256": pb.file_sha256(path / "manifest.json"),
         "sm_pool_audit_sha256": pb.file_sha256(path / "sm_pool_audit.json"),
     }
+    if search_policy_binding is not None:
+        expected["search_policy"] = dict(search_policy_binding)
+        expected["diversity_search_audit_sha256"] = pb.file_sha256(
+            path / "diversity_search_audit.json")
     if marker != expected:
         raise ValueError("guided bundle completion binding differs from cycle")
     if len(manifest) != count or len(set(hashes)) != count:
@@ -489,7 +537,9 @@ def _guided_completion(path: Path, *, cycle_id: str,
 
 
 def _guided_replan_proof(path: Path, *, cycle_id: str,
-                         predictor_model_ids: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+                         predictor_model_ids: Sequence[Mapping[str, Any]],
+                         search_policy_binding: Mapping[str, Any] | None = None
+                         ) -> dict[str, Any]:
     plan = _read(path / "factory_guided_plan.json")
     if set(plan) != {"schema_version", "plan_id", "identity"} or plan.get("schema_version") != 1:
         raise ValueError("guided replan proof has an invalid schema")
@@ -502,7 +552,8 @@ def _guided_replan_proof(path: Path, *, cycle_id: str,
     if name != f"guided_bundle_replan_{plan['plan_id'][:16]}":
         raise ValueError("guided replan directory differs from plan identity")
     count, hashes = _guided_completion(
-        path, cycle_id=cycle_id, predictor_model_ids=predictor_model_ids)
+        path, cycle_id=cycle_id, predictor_model_ids=predictor_model_ids,
+        search_policy_binding=search_policy_binding)
     if (identity.get("cycle_id") != cycle_id or
             identity.get("predictor_model_ids") != list(predictor_model_ids) or
             identity.get("selected_count") != count):
@@ -1442,6 +1493,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                        profile_config: str | Path, training_workdir: str | Path,
                        seed_inputs: Sequence[str | Path],
                        prepared_blind_pool: str | Path | None = None,
+                       search_policy: str | Path | None = None,
                        cold_start_predictor: Any | None = None,
                        expected_retry_workers: Sequence[str] | None = None,
                        pilot_request: str | Path | None = None,
@@ -1452,6 +1504,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     profile = Path(profile_config).resolve(); train_root = Path(training_workdir).resolve()
     retry_workers = _normalize_retry_workers(expected_retry_workers)
     pilot, pilot_binding = _load_pilot_request(pilot_request, profile)
+    diverse_policy, search_policy_binding = _load_search_policy(search_policy, profile)
     local.mkdir(parents=True, exist_ok=True)
     active = local / "active_cycle.json"
     recovered_training_receipt = None
@@ -1475,6 +1528,10 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                 if prior_pilot != pilot_binding or (
                         pilot_binding is None and "pilot_request" in prior):
                     raise ValueError("active cycle belongs to different pilot request binding")
+                prior_search = prior.get("search_policy")
+                if prior_search != search_policy_binding or (
+                        search_policy_binding is None and "search_policy" in prior):
+                    raise ValueError("active cycle belongs to different search policy binding")
             if prior.get("status") == "training":
                 recovered_training_receipt = str(receipt)
                 recovered_prediction_audit = prior.get("pretrain_prediction_audit")
@@ -1519,6 +1576,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                       "expected_retry_workers": retry_workers}
     if pilot_binding is not None:
         cycle_identity["pilot_request"] = pilot_binding
+    if search_policy_binding is not None:
+        cycle_identity["search_policy"] = search_policy_binding
     cycle_id = _content_id(cycle_identity)
     if recovered_training_path is not None:
         if (not isinstance(recovered_cycle_id, str) or
@@ -1634,10 +1693,13 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
         }
         if pilot_binding is not None:
             training_receipt["pilot_request"] = pilot_binding
+        if search_policy_binding is not None:
+            training_receipt["search_policy"] = search_policy_binding
         if recovering_training:
             existing_training_receipt = _read(receipt_path)
             if (existing_training_receipt.get("profile_sha256") != profile_sha256 or
                     existing_training_receipt.get("training_protocol") != protocol_binding or
+                    existing_training_receipt.get("search_policy") != search_policy_binding or
                     existing_training_receipt.get("training_snapshot") !=
                     training_snapshot_binding or
                     existing_training_receipt.get("pretrain_prediction_audit") !=
@@ -1809,6 +1871,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     guided_replan_receipt = None
     guided_replan_context = None
     guided_plan_identity = None
+    guided_pool_audit_binding = None
     if not pilot_blocks_ordinary and predictor is not None and remaining_budget > 0:
         shard_size = int(policy["shard_size"])
         capacity = min(int(policy["wave_size"]),
@@ -1829,7 +1892,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
         if completed_candidate is not None and recovering_training:
             _validate_bundle(completed_candidate, cfg)
             frozen_count, frozen_hashes = _guided_completion(
-                completed_candidate, cycle_id=cycle_id, predictor_model_ids=expected_models)
+                completed_candidate, cycle_id=cycle_id, predictor_model_ids=expected_models,
+                search_policy_binding=search_policy_binding)
             overlap = frozen_hashes & set(queue["exclusion_hashes"])
             if frozen_count <= capacity and not overlap:
                 count = frozen_count
@@ -1859,7 +1923,8 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                 for candidate in versioned:
                     _validate_bundle(candidate, cfg)
                     proof = _guided_replan_proof(
-                        candidate, cycle_id=cycle_id, predictor_model_ids=expected_models)
+                        candidate, cycle_id=cycle_id, predictor_model_ids=expected_models,
+                        search_policy_binding=search_policy_binding)
                     candidate_overlap = proof["hashes"] & set(queue["exclusion_hashes"])
                     if proof["count"] <= capacity and not candidate_overlap and chosen is None:
                         output_name = candidate.name
@@ -1913,26 +1978,63 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                         "selected_shards": None,
                     }
         if count > 0:
+            candidate_pool_size = (int(diverse_policy["candidate_pool_size"])
+                                   if diverse_policy is not None else max(10_000, count))
+            pool_seed = (int(diverse_policy["seed"])
+                         if diverse_policy is not None else int(policy["seed"])) + version
             pool_cfg = sm.PoolConfig(
-                profile_config=profile, candidate_pool_size=max(10_000, count),
+                profile_config=profile, candidate_pool_size=candidate_pool_size,
                 selected_count=count, id_prefix=f"r80c{cycle_id[:8]}g",
-                initial_pool_size=min(2_500, max(10_000, count)), generations=3,
-                parent_count=256, seed=int(policy["seed"]) + version,
+                initial_pool_size=min(2_500, candidate_pool_size), generations=3,
+                parent_count=(int(diverse_policy["parent_count"])
+                              if diverse_policy is not None else 256), seed=pool_seed,
                 update_every_valid_points=int(policy["update_every_valid_unique"]),
             )
             completion_path = "factory_bundle_complete.json"
 
             def validate_guided(destination: Path) -> None:
                 completed_count, _hashes = _guided_completion(
-                    destination, cycle_id=cycle_id, predictor_model_ids=expected_models)
+                    destination, cycle_id=cycle_id, predictor_model_ids=expected_models,
+                    search_policy_binding=search_policy_binding)
                 if completed_count != count:
                     raise ValueError("guided bundle completion binding differs from cycle")
 
             def produce_guided(destination: Path) -> None:
-                result = sm.build_pool(pool_cfg, _seed_rows(seed_inputs),
-                                       sorted(queue["exclusion_hashes"]), predictor=predictor)
+                if diverse_policy is None:
+                    result = sm.build_pool(pool_cfg, _seed_rows(seed_inputs),
+                                           sorted(queue["exclusion_hashes"]),
+                                           predictor=predictor)
+                else:
+                    result = diverse.build_diverse_pool(
+                        pool_cfg=pool_cfg, policy=diverse_policy,
+                        training_workdir=train_root, version=version,
+                        exclusions=sorted(queue["exclusion_hashes"]), predictor=predictor)
                 sm.write_bundle(result, destination)
                 sm.write_audit(result, destination, 0.0)
+                if diverse_policy is not None:
+                    diversity_audit = result.get("diversity_audit")
+                    if not isinstance(diversity_audit, Mapping):
+                        raise ValueError("diverse search result lacks a JSON audit object")
+                    if (diversity_audit.get("policy_sha256") !=
+                            search_policy_binding["policy_id"] or
+                            diversity_audit.get("pool_seed") != pool_cfg.seed or
+                            diversity_audit.get("candidate_count") !=
+                            pool_cfg.candidate_pool_size or
+                            diversity_audit.get("selected_count") != count):
+                        raise ValueError("diverse search audit differs from its bound inputs")
+                    arm_counts = diversity_audit.get("selected_arm_counts")
+                    if (not isinstance(arm_counts, Mapping) or
+                            any(isinstance(value, bool) or not isinstance(value, int) or value < 0
+                                for value in arm_counts.values()) or
+                            sum(arm_counts.values()) != count):
+                        raise ValueError("diverse search audit has invalid selected arm counts")
+                    common_audit_path = destination / "sm_pool_audit.json"
+                    common_audit = _read(common_audit_path)
+                    if not isinstance(common_audit, dict):
+                        raise ValueError("common SM pool audit is not a JSON object")
+                    common_audit["selected_arm_counts"] = dict(arm_counts)
+                    _write(common_audit_path, common_audit)
+                    _write(destination / "diversity_search_audit.json", diversity_audit)
                 if guided_replan_context is not None:
                     if (guided_plan_identity is None or
                             _content_id(guided_plan_identity) != plan_id):
@@ -1947,16 +2049,29 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
                     "manifest_sha256": pb.file_sha256(destination / "manifest.json"),
                     "sm_pool_audit_sha256": pb.file_sha256(
                         destination / "sm_pool_audit.json"),
+                    **({
+                        "search_policy": search_policy_binding,
+                        "diversity_search_audit_sha256": pb.file_sha256(
+                            destination / "diversity_search_audit.json"),
+                    } if search_policy_binding is not None else {}),
                 })
 
             _publish_bundle(bundle, cfg, produce_guided, validate_guided)
             if guided_replan_context is not None:
                 proof = _guided_replan_proof(
-                    bundle, cycle_id=cycle_id, predictor_model_ids=expected_models)
+                    bundle, cycle_id=cycle_id, predictor_model_ids=expected_models,
+                    search_policy_binding=search_policy_binding)
                 if proof["plan"]["plan_id"] != plan_id:
                     raise ValueError("guided replan bundle differs from selected plan")
             if len(_read(bundle / "manifest.json")) != count:
                 raise ValueError("guided bundle count differs from frozen plan")
+            guided_pool_audit_binding = {
+                "bundle": str(bundle.resolve()),
+                "sm_pool_audit_sha256": pb.file_sha256(bundle / "sm_pool_audit.json"),
+            }
+            if search_policy_binding is not None:
+                guided_pool_audit_binding["diversity_search_audit_sha256"] = pb.file_sha256(
+                    bundle / "diversity_search_audit.json")
             shards = _split_or_validate(bundle, shards_root, int(policy["shard_size"]), cfg)
             planned_jobs.extend(_planned(shards, "g", int(policy["guided_priority"]), cycle_id))
             if guided_replan_context is not None:
@@ -2015,6 +2130,9 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
         raise ValueError("training protocol changed during cycle preparation")
     if [_path_binding(Path(value)) for value in seed_inputs] != seed_bindings:
         raise ValueError("seed inputs changed during cycle preparation")
+    if search_policy_binding is not None:
+        if _require_search_policy_binding(search_policy_binding, profile) != diverse_policy:
+            raise ValueError("search policy canonical content changed during cycle preparation")
     if ((prepared_blind_pool is not None and
          _path_binding(Path(prepared_blind_pool)) != blind_binding)):
         raise ValueError("prepared blind pool changed during cycle preparation")
@@ -2053,6 +2171,10 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
     }
     if pilot_binding is not None:
         receipt["pilot_request"] = pilot_binding
+    if search_policy_binding is not None:
+        receipt["search_policy"] = search_policy_binding
+        if guided_pool_audit_binding is not None:
+            receipt["guided_pool_audit"] = guided_pool_audit_binding
     if pilot_receipt is not None:
         receipt["pilot"] = pilot_receipt
     if guided_replan_receipt is not None:
@@ -2066,6 +2188,7 @@ def _run_once_unlocked(*, local_workdir: str | Path, dataset_root: str | Path,
 def run_once(*, local_workdir: str | Path, dataset_root: str | Path,
              profile_config: str | Path, training_workdir: str | Path,
              seed_inputs: Sequence[str | Path], prepared_blind_pool: str | Path | None = None,
+             search_policy: str | Path | None = None,
              cold_start_predictor: Any | None = None,
              expected_retry_workers: Sequence[str] | None = None,
              pilot_request: str | Path | None = None,
@@ -2079,6 +2202,7 @@ def run_once(*, local_workdir: str | Path, dataset_root: str | Path,
                 local_workdir=local, dataset_root=dataset_root, profile_config=profile_config,
                 training_workdir=train_root, seed_inputs=seed_inputs,
                 prepared_blind_pool=prepared_blind_pool,
+                search_policy=search_policy,
                 cold_start_predictor=cold_start_predictor,
                 expected_retry_workers=expected_retry_workers,
                 pilot_request=pilot_request, planning_guard=planning_guard)
@@ -2185,6 +2309,32 @@ def _commit_dispatch_locked(path: Path, *,
     if pb.file_sha256(profile) != receipt.get("profile_sha256"):
         raise ValueError("profile config differs from prepared receipt")
     cfg, policy = _load_profile(profile)
+    search_policy_binding = receipt.get("search_policy")
+    if "search_policy" in receipt:
+        if search_policy_binding is None:
+            raise ValueError("dispatch receipt has an invalid search policy binding")
+        _require_search_policy_binding(search_policy_binding, profile)
+    elif "guided_pool_audit" in receipt:
+        raise ValueError("guided pool audit lacks a search policy binding")
+    guided_jobs = [item for item in receipt.get("planned_jobs", [])
+                   if item.get("kind") == "g"]
+    if search_policy_binding is not None and guided_jobs:
+        audit_binding = receipt.get("guided_pool_audit")
+        if not isinstance(audit_binding, dict) or "bundle" not in audit_binding:
+            raise ValueError("diverse guided dispatch lacks its pool audit binding")
+        bundle = Path(audit_binding["bundle"]).resolve()
+        try:
+            bundle.relative_to(path.parent)
+        except ValueError as exc:
+            raise ValueError("guided pool audit escapes its prepared cycle") from exc
+        expected_audit = {
+            "bundle": str(bundle),
+            "sm_pool_audit_sha256": pb.file_sha256(bundle / "sm_pool_audit.json"),
+            "diversity_search_audit_sha256": pb.file_sha256(
+                bundle / "diversity_search_audit.json"),
+        }
+        if audit_binding != expected_audit:
+            raise ValueError("guided pool audit differs from its prepared binding")
     if "expected_retry_workers" not in receipt:
         raise ValueError("dispatch receipt lacks expected retry worker roster")
     retry_workers = _normalize_retry_workers(receipt["expected_retry_workers"])
@@ -2383,6 +2533,7 @@ def main() -> None:
     parser.add_argument("--training-workdir", type=Path)
     parser.add_argument("--seed-input", type=Path, action="append")
     parser.add_argument("--prepared-blind-pool", type=Path)
+    parser.add_argument("--search-policy", type=Path)
     parser.add_argument("--pilot-request", type=Path)
     parser.add_argument("--expected-retry-worker", action="append", default=[])
     parser.add_argument("--commit-receipt", type=Path)
@@ -2398,6 +2549,7 @@ def main() -> None:
                           profile_config=args.profile_config,
                           training_workdir=args.training_workdir, seed_inputs=args.seed_input,
                           prepared_blind_pool=args.prepared_blind_pool,
+                          search_policy=args.search_policy,
                           expected_retry_workers=args.expected_retry_worker,
                           pilot_request=args.pilot_request)
     print(result)

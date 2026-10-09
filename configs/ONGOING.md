@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- ✅ **多樣SM實作／實體20k pool通過，尚未啟動新controller**。三臂各16選48，32親本／31家族，入選37家族、最多2同家族、最小距離65；v003真實模型與凍結圖形／排序／選樣重播通過。[收據](../docs/log/assets/r80_diverse_sm_implementation_20261009.json)。獨立focused27＋narrow1通過；候選preview不算實測或已派工，保持原worker／LOW，下一步單次接手。18:20 scoped health零警報，三台12/16、9/16、7/16持續有結果，另五片LOW排隊。
+
 - ✅ **10/09：新familydev首批48實測已完整判讀**。`63c3efcdg01`–`g03`皆.done／零error、48互斥pattern及sample/rad完整重播；最佳WM **−5.617131 dB**，median−16.231790，0/48正WM、0/48超過既有最佳；saved LCB對實測WMρ=0.038645。整批幾何距離min5／median304，不能只看median宣稱沒有近親。保留19／15／14原臂及前瞻預測；[真值收據](../docs/log/assets/r80_familydev_first_cohort_result_20261009.json)。這是單批陰性結果，不是三世代性能停滯；多樣策略配方已先固定，實作審查中。
 
 - 🔵 **10/09 18:02：多樣搜尋controller交接中，HFSS續跑原佇列**。新配方已固定／push `3cf381c`，實作在隔離worktree審查中。精確PID60956／creation／argv與完成cycle核對後，18:01:20只寫其本機STOP；18:01:46正常退出，18:02 CIM核對舊PID消失、全機watcher數0，[交接收據](../docs/log/assets/r80_diverse_sm_controller_stop_20261009.json)。18:00 scope零警報；三台有已認領6/16、3/16、0/16與五片LOW待跑，共119筆metadata待跑，供交接期間持續工作。未kill／重啟worker或改queue／claims；新controller尚未啟動，完成review／實體pool核對後以同training root、新controller root單次接手。下一routine約18:30。

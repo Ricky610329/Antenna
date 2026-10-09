@@ -833,3 +833,10 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 固定首輪`63c3efcd...`的三個16筆job已全部.done且無.fail；完整input／store metadata、96個sample/rad raw與48個互斥pattern重播成功，凍結副本及source bindings保存在本機私人實驗tmp，原NAS不變。[48筆薄結果收據](assets/r80_familydev_first_cohort_result_20261009.json)顯示：最佳`r80c63c3efcdg_00013_d073e6f4` WM **−5.617131 dB**，median **−16.231790 dB**，最低−31.452421 dB；0/48正WM、0/48超過已知+0.021682最佳。最佳來自LCB臂，S11餘裕−5.617131、Gain餘裕−2.036056。
 
 原臂LCB／disagreement／blind分別19／15／14筆，最佳WM −5.617131／−5.739492／−6.979341。全48保存LCB對實測WM Spearman **0.038645**；各臂factory-scoreρ −0.007018／0.092857／−0.032967，只是這次選中樣本的前瞻排序診斷。整批pairwise physical Hamming min5／median304／max399，近親仍存在，不用中位數掩蓋。這個描述性判讀發生在部分真值已供較新模型學習之後，但比較只使用送測前已保存預測，沒有事後改排名。單批陰性結果不足以成立三世代停滯、SM學習無效或多樣策略改善的因果結論；原結果、低分真值與已固定的新探索配方全部保留。
+
+
+### 2026-10-09：多樣SM實作與20,000候選實體核對通過
+
+既有cycle/watch已加入opt-in搜尋配方，原無配方與LOW流程保留。獨立27項focused checks及最後一項arm-count regression通過；修正親本最多32的語義、sample/rad讀取前後hash、完整六欄predictor binding及新臂計數。Root實際controller環境focused tests通過，並使用v003真實三模型、2,419筆凍結實測、NAS唯讀2,592排除pattern，產生並評分20,000候選；10,000全域新圖＋10,000不同親本變體，32親本／31家族。
+
+凍結bit圖形／SHA／合法LR對稱、排序及三臂greedy selection另行重播；48候選再以真實模型評分核對。Global-LCB／parent-LCB／high-disagreement各16，入選37家族、每家族最多2、pairwise最小65／625，無門檻放寬。[薄實作與pool收據](assets/r80_diverse_sm_implementation_20261009.json)保留來源與模型binding；完整20k排名、48本機bundle與read-only exclusions存本機tmp。這是v003的本機preview，未寫NAS／queue；live controller可能先吃新真值並訓練v004，因此不宣稱preview48等於未來派工或性能改善。下一步以同training root、新controller root單次接手；HFSS原queue持續工作。

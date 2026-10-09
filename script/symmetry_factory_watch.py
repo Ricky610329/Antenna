@@ -58,7 +58,8 @@ def _profile_binding(path: Path) -> tuple[object, dict[str, str]]:
 
 def _require_campaign_binding(settings_file: Path, settings_sha256: str,
                               profile_binding: dict[str, str],
-                              pilot_binding: dict | None = None) -> None:
+                              pilot_binding: dict | None = None,
+                              search_policy_binding: dict | None = None) -> None:
     if pb.file_sha256(settings_file) != settings_sha256:
         raise ValueError('watch settings changed; restart explicitly with the new settings')
     profile = Path(profile_binding['path'])
@@ -67,10 +68,13 @@ def _require_campaign_binding(settings_file: Path, settings_sha256: str,
     if pilot_binding is not None:
         cycle._require_pilot_request_binding(
             pilot_binding['request_path'], profile, pilot_binding)
+    if search_policy_binding is not None:
+        cycle._require_search_policy_binding(search_policy_binding, profile)
 
 
 def _validate_cycle_receipt(receipt: dict, retry_workers: tuple[str, ...],
-                            pilot_binding: dict | None = None) -> None:
+                            pilot_binding: dict | None = None,
+                            search_policy_binding: dict | None = None) -> None:
     if receipt.get('expected_retry_workers') != list(retry_workers):
         raise ValueError('controller receipt retry worker roster differs from watch binding')
     valid = receipt.get('valid_unique')
@@ -85,6 +89,10 @@ def _validate_cycle_receipt(receipt: dict, retry_workers: tuple[str, ...],
     actual_pilot = receipt.get('pilot_request')
     if actual_pilot != pilot_binding or (pilot_binding is None and 'pilot_request' in receipt):
         raise ValueError('controller receipt pilot request differs from watch binding')
+    actual_search = receipt.get('search_policy')
+    if actual_search != search_policy_binding or (
+            search_policy_binding is None and 'search_policy' in receipt):
+        raise ValueError('controller receipt search policy differs from watch binding')
 
 
 def _write_state(state_file: Path, attempt_file: Path, attempt: dict, state: dict) -> None:
@@ -161,7 +169,7 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
     required = {'local_workdir', 'dataset_root', 'profile_config', 'training_workdir',
                 'seed_inputs', 'interval_seconds', 'expected_retry_workers'}
     if not required <= settings.keys() or set(settings) - required - {
-            'prepared_blind_pool', 'pilot_request', 'low_backlog'}:
+            'prepared_blind_pool', 'pilot_request', 'low_backlog', 'search_policy'}:
         raise ValueError(
             'watch settings must name explicit controller inputs, interval, and '
             'expected_retry_workers')
@@ -189,6 +197,10 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
     _pilot, pilot_binding = cycle._load_pilot_request(settings.get('pilot_request'), profile_path)
     if pilot_binding is not None:
         settings['pilot_request'] = pilot_binding['request_path']
+    _search_policy, search_policy_binding = cycle._load_search_policy(
+        settings.get('search_policy'), profile_path)
+    if search_policy_binding is not None:
+        settings['search_policy'] = search_policy_binding['path']
     stop_settings = dict(settings)
     stop_settings['_bound_scope'] = profile_binding['scope']
     launch_id = uuid.uuid4().hex
@@ -213,6 +225,9 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
     if pilot_binding is not None:
         attempt['pilot_request'] = pilot_binding
         state['pilot_request'] = pilot_binding
+    if search_policy_binding is not None:
+        attempt['search_policy'] = search_policy_binding
+        state['search_policy'] = search_policy_binding
     _write_state(state_file, attempt_file, attempt, state)
     coordinator = cycle.DatasetWriteCoordinator() if low_policy is not None else None
     maintainer = None
@@ -263,7 +278,7 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
                 sleep(min(30.0, remaining))
                 continue
             _require_campaign_binding(settings_file, bound_settings_sha256, profile_binding,
-                                      pilot_binding)
+                                      pilot_binding, search_policy_binding)
             stopped = campaign_stop(stop_settings)
             if stopped:
                 state.update(status='stopped', stop_reason=stopped, finished_utc=_utc())
@@ -286,13 +301,14 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
                             recovered_pilot_reservation = None
                 receipt = pb.read_json(receipt_path)
                 _require_campaign_binding(settings_file, bound_settings_sha256, profile_binding,
-                                          pilot_binding)
+                                          pilot_binding, search_policy_binding)
                 stopped = 'local_STOP' if stop_file.exists() else campaign_stop(stop_settings)
                 if stopped:
                     state.update(status='stopped', stop_reason=stopped, finished_utc=_utc(),
                                  prepared_receipt=str(receipt_path.resolve()))
                     break
-                _validate_cycle_receipt(receipt, retry_workers, pilot_binding)
+                _validate_cycle_receipt(
+                    receipt, retry_workers, pilot_binding, search_policy_binding)
                 if receipt['status'] in ('prepared', 'dispatching'):
                     # Preparation produces the concrete immutable proposal. The user
                     # already authorized continuing this bounded private campaign.
@@ -301,7 +317,8 @@ def _run(settings_path: str | Path, *, prepare: Callable = cycle.run_once,
                     else:
                         dispatch(receipt_path, coordinator=coordinator)
                     receipt = pb.read_json(receipt_path)
-                    _validate_cycle_receipt(receipt, retry_workers, pilot_binding)
+                    _validate_cycle_receipt(
+                        receipt, retry_workers, pilot_binding, search_policy_binding)
                 if receipt['status'] not in ('idle', 'dispatched'):
                     raise ValueError(f"controller did not complete: {receipt['status']}")
             except cycle.LiveSnapshotChanged as exc:

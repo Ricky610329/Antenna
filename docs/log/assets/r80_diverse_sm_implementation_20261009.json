@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "status": "implementation_review_and_actual_pool_passed_not_yet_launched",
+  "observed_taipei": "2026-10-09T18:27:17.301391+08:00",
+  "source_bindings": {
+    "script/symmetry_diverse_sm.py": "2cf599ab1bbba24e04b853df9d1485d8b30f7a99b98e7b7691e03a8c9e0db274",
+    "script/symmetry_factory_cycle.py": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e",
+    "script/symmetry_factory_watch.py": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+    "tests/test_symmetry_diverse_sm.py": "43cdc3e6dbe5a443048ad22c401292cdd9d7b6cc5be360aa0b18dee4e4c8a2ec",
+    "tests/test_symmetry_factory_diverse_search.py": "4fbc98f346af4c099435ad0fafb614f7af53b469ebba1cc3e8c818c2e74e3fe0"
+  },
+  "policy_sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+  "independent_review": {
+    "agent": "r80_diverse_sm_review",
+    "focused_passed": 27,
+    "seconds": 43.24,
+    "final_narrow_passed": 1,
+    "final_seconds": 0.57,
+    "limitations": "Unit geometry and tensor/hash operations real; integration tests use generated fixtures and mocked training/queue. Actual preview uses real v003 model and cached raw."
+  },
+  "root_focused_tests": {
+    "passed": 25
+  },
+  "actual_preview": {
+    "schema_version": 1,
+    "status": "actual_diverse_sm_pool_verified",
+    "data_version": 3,
+    "training_binding": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "data_version": 3,
+      "manifest_id": "063eb0b013c9c18456b9446068470089427f57f78c20aaab83514bb8984d2a4b",
+      "cumulative_valid_unique": 2419
+    },
+    "candidate_count": 20000,
+    "parent_count": 32,
+    "parent_groups": 31,
+    "selected_count": 48,
+    "arm_counts": {
+      "global_lcb": 16,
+      "high_disagreement": 16,
+      "parent_lcb": 16
+    },
+    "selected_group_count": 37,
+    "max_selected_per_group": 2,
+    "minimum_physical_hamming": 65,
+    "excluded_patterns": 2592,
+    "pool_seed": 80100959,
+    "elapsed_seconds": 44.95399999991059,
+    "audit_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_sm_preview_20261009_v001\\diversity_audit.json",
+    "audit_sha256": "fe97256441d93b3006fe9800d92172a40b0ac11961f26bae11467a8504b62e10",
+    "selected_bundle": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_sm_preview_20261009_v001\\selected_bundle",
+    "queue_mutation": false,
+    "nas_writes": false,
+    "live_dispatch": false,
+    "limits": "Preview binds v003; live cycle may ingest and retrain before generating its own cohort."
+  },
+  "actual_preview_sha256": "3af76b91ba5787d31e7cc8383b8050d7b6cbcaf879b3ac1b1b2db50e3ae7e4b6",
+  "scope": "Prospective geometry exploration. No measured performance benefit, plateau, live dispatch, worker restart, or spec change claimed."
+}
