@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-09T12:16:24.918794+00:00",
+  "completed_utc": "2026-10-09T12:17:29.290668+00:00",
+  "status": "read_only_query_complete",
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "unique_successful_patterns": 2592,
+  "successful_including_repeats": 2597,
+  "raw_replayed_this_query": 2597,
+  "best": {
+    "id": "r80localv1_00026_f6ffb938",
+    "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+    "s11_margin_db": 0.09608840942382812,
+    "gain_margin_db": 0.021682262420654297,
+    "factory_margin_db": 0.021682262420654297,
+    "radiation_margin_db": 0.3709280490875244,
+    "radiation_margin_clipped_db": 0.3709280490875244,
+    "store": "dedust_r80c83e6601eg01",
+    "sample_sha256": "f79add39e27605d2f54ab48a36a7e206d6bef672ca407efdfe8d0a237d1bca0c",
+    "rad_sha256": "e11aee92cc03340a6bebfd97ef713059904598fbc6f8fb39b0822184e5249b40",
+    "repeat": false,
+    "pair_index": 137,
+    "row_index": 13,
+    "worst_inband_s11_db": -10.096088409423828,
+    "minimum_inband_gain_dbi": 4.021682262420654
+  },
+  "jobs_sha256_at_scan_start": "18defae876f084141bfe705f5804d0a90d18454282205de2100f5fe71f8c36a5",
+  "rows_sha256": "333c1aa7487b14efe0fc93ccf0eaa8be80ec4aa8ffc1dd99fc802c6f1fc22ebf",
+  "pair_proofs_sha256": "1a665d676f3b2aa749b26e9fa28b65ecbe30e2d2fa99336a712779ad4adff1fd",
+  "query_script_sha256": "da6a0034241d4d6f22ecfd1ce0272b4dbd06ec252737278b0539b4bec2b631ac",
+  "controller_locks_acquired": false,
+  "queue_or_source_mutation": false,
+  "limits": [
+    "Each store has its own saved cutoff; later worker results or queue additions are excluded.",
+    "Unique representatives prefer nonrepeat observations, then queue/manifest order.",
+    "Single HFSS solve performance, not repeat certification or field-symmetry proof."
+  ],
+  "validation_status": "passed",
+  "query_report_sha256": "74596ce66efeea34c202d9a209d11e7f1ed9fe183485f6a0e3603a71ad607971",
+  "validation_script_sha256": "c47dc501108fccf97d9f77fc2e82fd63fe1a072ab88e4b01477954c36af70c93",
+  "prior_verified_receipt_sha256": "c7e290ffcf4d06ccfeae63b03844aa886b296037609d9270310cc3eac81ac2b2",
+  "new_unique_since_prior": 134,
+  "new_best": false,
+  "known_independent_repeat_wm_db": 0.03643369674682617,
+  "latest_training_summary_binding_observed": {
+    "cumulative_valid_unique": 2578,
+    "data_version": 5,
+    "manifest_id": "ef3b33f24f9fe1f08e25125a806a686defc163811a6f075a34e6727d66e4e4d5",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+  },
+  "latest_training_summary_sha256": "65d195c7580e60bee61ab7a6bc5edeae9ac2639038c8afbed4b69786da9559e0",
+  "new_rows_in_v005": 78,
+  "first_diverse_cohort_valid_at_query": 32,
+  "first_diverse_cohort_complete": false,
+  "transient_errors_at_saved_cutoffs": [
+    {
+      "store": "dedust_r80c50b9234dg02",
+      "id": "r80c50b9234dg_00022_65259616",
+      "attempts": 1,
+      "error_kind": "hfss_simulation"
+    }
+  ],
+  "current_cycle_training_or_dispatch_observation": "v005 summary and binding observed; full model/dispatch audit pending terminal receipt",
+  "existing_best_figure": "docs/log/assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png",
+  "new_nas_archive_created": false,
+  "target_unique": 5000
+}

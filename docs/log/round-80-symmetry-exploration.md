@@ -856,3 +856,10 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 [首輪派工薄收據](assets/r80_diverse_sm_first_dispatch_20261009.json)綁定原action／模型與獨立review。Sol另行重播完整20k packed geometry／SHA／LCB排序與strict greedy，確認10k新圖＋10k親本變體，32親本／30家族；三臂各16選48、37入選家族、同家族最多2、最小幾何距離65。三個`dedust_r80c50b9234dg01`–`g03`私人NAS input各20檔、queue row、profile／互斥pattern與source tree逐片讀回一致。獨立review驗證frozen selection與bindings，root另驗raw norm／checkpoint及NAS，沒有把獨立binding檢查誇大成獨立tensor重播。
 
 較晚dispatch截點 **2,508** 不等於較早fit2,500或最新live census。18:58精確CIM PID15944／creation／argv持續live，completed_cycles1、18:57:41下一cycle開始、stderr空白；scope無警報，三台各有新結果，首48尚在queue等待批次交替。按原48–96真值批次繼續fresh SM學習及LOW補池。第一多樣cohort尚無完整HFSS真值，不宣稱性能改善／停滯；下一routine約19:28，沒有新NAS bulk歸檔或worker重啟。R80 5,000與R81仍未完成。
+
+
+### 2026-10-09 20:17：使用者詢問最新最佳，全部實測只讀重算
+
+重用既有 `query_and_freeze.py`，在新的本機 v007 目錄逐一核對所有成功 sample/rad raw，共2,592個唯一圖形、2,597次成功觀測；較17:46多134個唯一圖形，沒有新的最佳。最佳仍是 `r80localv1_00026_f6ffb938`，WM +0.0216822624 dB、帶內最差S11 −10.0960884 dB、最低Gain 4.0216823 dBi；既有獨立重測 +0.0364336967 dB。best pattern/sample/rad SHA與前次已審查收據一致，重新凍結的response與幾何核對通過，因此沿用既有極座標圖，不重新產生相同圖片。
+
+[查詢收據](assets/r80_best_status_20261009_2017.json)保留來源cutoff及hash。首批多樣性48仍未全數完成；raw cutoff內一筆一次COM例外尚在既有重試機制，未當作成功資料。20:15 scope無警報，PID15944/creation/完整argv與原launch相符、stderr空。v005 summary與state顯示新增78、fit2,578；這是觀察到的訓練binding，並非已完成新的完整模型/派工審查，本輪terminal receipt尚未產生。圖形資料累計、模型fit cutoff與排隊量分開記錄；不以未完成的首批判定提升或性能停滯。NAS/queue/claim/raw均未更改，維持約30分鐘檢查。

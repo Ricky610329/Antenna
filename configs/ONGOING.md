@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/09 20:17：最新實測未出現新最佳**。全部 raw 重算 **2,592 unique / 2,597 observations**，較17:46增加134筆；仍為 `r80localv1_00026_f6ffb938` WM **+0.021682 dB**，既有獨立重測 **+0.036434 dB**。首批多樣性48尚未全部完成；部分結果有一次COM例外，仍在worker重試流程，20:15 scope無警報。v005 summary已出現：新增78、累計fit2,578；本輪尚在dispatching，完整模型/派工審查待terminal receipt。[只讀查詢收據](../docs/log/assets/r80_best_status_20261009_2017.json)。唯一controller PID15944身分不變、stderr空；維持約30分鐘健康檢查，R80 5,000與R81未完成。
+
 - 🔵 **10/09 19:04：多樣SM首輪v004／48實際派工核對通過**。新增81、fit **2,500**（1,653 train／847 hold），原2,419列保留；三fresh模型norm／Adam3,700與48 saved prediction重播通過。獨立20k幾何／strict排名重播：32親本／30家族，三臂各16、37入選家族、cap2／min距離65；私人NAS三片16完整input tree／queue核對。[薄收據](../docs/log/assets/r80_diverse_sm_first_dispatch_20261009.json)。較晚dispatch cutoff2,508分開記帳；HFSS未完整，不宣稱性能提升。18:58實體PID15944 live、下一cycle運作、三台有新結果／零警報，下一routine **19:28**。
 
 - 🔵 **10/09 18:28：多樣SM controller已單次啟動**。已push source `5802b79`；唯一實體PID15944／creation1791541659267／launch42afe91c263f4bacb74f6d6c5c6bbcb7，exact CIM／argv、政策、14來源模型binding及初始running_cycle核對通過，stderr空白。[啟動收據](../docs/log/assets/r80_diverse_sm_controller_launch_20261009.json)。新controller root、同familydev training root，維持48–96新真值重訓／LOW補池；三台原worker續跑。初始啟動時第一live fit／派送未完成；現已另驗首輪v004。原18:58 checkpoint已完成，繼續約30分鐘健康；R80 5,000與R81仍待完成。
