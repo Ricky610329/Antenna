@@ -735,3 +735,13 @@ Conductor已核對實際v2設定及方案來源；實作在`tmp/r80_sm_developme
 [角色功能審查薄收據](assets/r80_family_development_feature_review_20261009.json)記錄隔離commit `5774adb`：Conductor的16項owner／原訓練回歸、獨立8項額外負例及16項owner／baseline（另5 subtests）通過，tiny CPU SGD與epoch邊界恢復state bitwise一致。原預設protocol bytes／ID及固定六欄模型binding保留；opt-in整canonical家族／aliases／後續同家族點進入train，manifest保存reference split，其他／legacy角色不改。
 
 獨立審查先抓到canonical closure、初始alias root改指、非字串群組與不存在的群組被默默接受，全部修正後才接受此封印。這是程式與generated-fixture證據，沒有實際新模型、擬合改善或泛化結論。遷移另有發布前state alias未完整綁定缺口，獨立負例已重現、修正中；真實資料尚未遷移，新watcher尚未啟動，live訓練來源及HFSS派工維持原版本。
+
+### 2026-10-09 15:25：完成真實本機凍結遷移；15:28三成員重新訓練完成
+
+[真實遷移薄收據](assets/r80_family_development_actual_migration_20261009.json)綁定隔離commit `645cb04`、parent **training_v2/data-v034**與全新 **training_familydev_v1/data-v001**。不讀parent mutable latest／state，不複製舊模型；來源metadata／payload／target在複製前後一致。獨立實際審查逐行確認2,248個唯一pattern與ID／真值／來源不變，只新增reference split及改指定家族角色：c48共110筆（含19筆aliases）全部由原holdout進入development train，其他2,138筆角色不變；legacy 12,000筆manifest／provenance bytes及角色完全保留。bootstrap是既有資料，new／collection／HFSS delta均0。
+
+發布前state／alias缺口經修正並以故障注入確認拒絕；Conductor遷移19 tests及獨立含额外負例21 tests通過，訓練／SM pool／factory cycle／watch／LOW回歸162 tests＋5 subtests通過。以上fixture不代替實際審查。新protocol為`58404dbf…d57b9b`，manifest ID為`b1d9d75e…9d8498`；與舊v2歷史角色／模型分開保存。
+
+實際來源核對另外發現：舊cache的一筆普通train代表`dedust_r80repeat1_00_001c970d`可由ID與sample／rad／pattern hashes證明來自repeat-kind觀測，位於c48以外。此次原樣繼承這個既有唯一pattern代表，沒有新引入repeat label或增加唯一筆數；不能把舊cache說成全無repeat來源。另外兩筆只共享repeat geometry，來源ID及結果hash不同，不能推定repeat來源。
+
+15:27:16–15:28:55以CPU4完成三成員fresh initialization、歷史30＋current100 epochs，wall 99.062秒。實際train／holdout為1,469／779，legacy 10,150／1,850，模型binding載入通過且metadata／程式SHA不變；獨立正規化／推論稽核尚在進行，尚未切換controller或宣稱模型／HFSS性能改善。15:29精確PID54712仍存活，三台worker有工作，LOW排隊64筆、無工廠警報；主cycle再因retry結果在稽核期間更新而defer（共8次），正在隔離研究保留成功真值與容量截點下的修正，不停止HFSS。

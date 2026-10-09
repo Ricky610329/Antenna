@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "scope": "read_only_actual_r80_family_development_migration_review",
+  "implementation": {
+    "commit": "645cb044be1cd67fd193c7fb2e65cfd6f0330564",
+    "source_hashes_after": {
+      "migration_source_sha256": "b619403ac35b3e6c029c258ca34bb66fa1e7bd1e99058b6409e3b7716d09dcf6",
+      "training_source_sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+    },
+    "source_hashes_before": {
+      "migration_source_sha256": "b619403ac35b3e6c029c258ca34bb66fa1e7bd1e99058b6409e3b7716d09dcf6",
+      "training_source_sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+    }
+  },
+  "migration": {
+    "child_data_version": 1,
+    "child_manifest_id": "b1d9d75e0e42c9b369998fc04b5dd050c5ea8b17ca5c317fafb73cdaa29d8498",
+    "child_protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "metadata_hashes": {
+      "child_manifest_sha256": "c8f550c6890d5c31d8fac2e359d428e5df9d405900962dad5d1e7bfbb844fd68",
+      "child_protocol_sha256": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "child_receipt_sha256": "ed6310982a3cccf69eb156cb4dbdc6a64d24b634340c3c1a825368a6ffd5384b",
+      "legacy_manifest_sha256": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+      "legacy_provenance_sha256": "452e2f7563c44491004fff3bf414dae4548b0310d06e382d34fe35b32dcdc171",
+      "migration_receipt_sha256": "969eda536ae32fa3e01771578a88a536bd9126cf7ab374c16d8a301effd04105",
+      "pair_proofs_sha256": "31bf066579730ea3ea2a668a82f64897dde2a533d6dcb26fce7ae4fd1424431e",
+      "parent_manifest_sha256": "e5ca4d0f1ddfc74f9d392d0f898bc7b89f7c27dc3b78ae7a1f785d83760f25ad",
+      "parent_protocol_sha256": "01ec4d10362c02d5664760d6024fd44e32892cf01ee444048dea17e8e962c54c",
+      "parent_receipt_sha256": "151e7b7de3cdb692098d500cb61e0ff3561c42aeab3d4481ef24d2cd3d007059",
+      "render_rows_sha256": "ff6bab361acc5e579e5d00327ab0a4de8dd12172ad5635dc20e3967ce0389787"
+    },
+    "migration_id": "70e5fa7a1218dea6f3e651a150785c7be81b424aea346c4d21c5984dbdec2169",
+    "parent_data_version": 34,
+    "parent_manifest_id": "fbd49f5a38dd2f532722b151a284be99a47f3fc9ff34d5e5d5de7e65e9dc5533",
+    "parent_protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+    "sealed_verifier": "PASS"
+  },
+  "profile_rows": {
+    "child_rows": 2248,
+    "development_alias_lineages": [
+      "seed_0022_d7df3646",
+      "seed_0023_4117e03f"
+    ],
+    "development_alias_rows": 19,
+    "development_effective_split": "profile_train",
+    "development_group": "c48nq1p05_16",
+    "development_original_reference_split": "profile_holdout",
+    "development_rows": 110,
+    "mixed_effective_canonical_groups": 0,
+    "other_rows_same_effective_role": 2138,
+    "parent_rows": 2248,
+    "unchanged_fields": "all except effective split plus added reference_split",
+    "unique_patterns": 2248
+  },
+  "legacy": {
+    "manifest_bytes_identical": true,
+    "provenance_bytes_identical": true,
+    "role_counts": {
+      "legacy_holdout": 1850,
+      "legacy_train": 10150
+    },
+    "roles_identical": true,
+    "rows": 12000
+  },
+  "bootstrap": {
+    "bootstrap_kind": "frozen_parent_migration_not_new_hfss_collection",
+    "bootstrap_observations": 2248,
+    "bootstrap_valid_unique": 2248,
+    "collection_delta_observations": 0,
+    "collection_delta_valid_unique": 0,
+    "cumulative_observations": 2248,
+    "cumulative_valid_unique": 2248,
+    "new_observations": 0,
+    "new_valid_unique": 0,
+    "source_store_count": 0
+  },
+  "repeat_provenance": {
+    "exact_match": {
+      "canonical_group_id": "001c970d0c995518c5f9051f44c26ebabbe04b8ae145b14f16d9d1f9576595b6",
+      "pattern_sha256": "001c970d0c995518c5f9051f44c26ebabbe04b8ae145b14f16d9d1f9576595b6",
+      "source_observation_id": "dedust_r80repeat1_00_001c970d",
+      "source_rad_sha256": "27bc70840fdca0178c29d8331345d77d12a178a559881ccc81ecd6301f8d8bce",
+      "source_sample_sha256": "f9b9213958c5b8326e0f97d7202bca77b344b0095487f18c8c027dbe0b95451a"
+    },
+    "exact_match_child_effective_split": "profile_train",
+    "exact_match_child_reference_split": "profile_train",
+    "exact_match_is_development_group": false,
+    "exact_match_parent_split": "profile_train",
+    "exact_repeat_observation_ids": [
+      "dedust_r80repeat1_00_001c970d"
+    ],
+    "exact_source_id_sample_rad_pattern_matches": 1,
+    "interpretation": "One transferred cached representative is provably sourced from a repeat-kind observation and remains an ordinary profile_train row outside the named development group. Two additional geometries overlap repeat patterns only; their source IDs and result hashes do not match the repeat observations. The child still contains one row per unique physical pattern and migration adds zero new unique or HFSS observations.",
+    "parent_rows_with_repeat_pattern": 3,
+    "render_repeat_rows": 5
+  },
+  "limits": [
+    "The sealed verifier rehashed actual profile and legacy payload trees; this independent layer replays metadata, every row role, legacy bytes, and frozen repeat provenance.",
+    "The repeat-kind conclusion is limited to IDs and exact sample/radiation/pattern hashes present in the frozen render evidence.",
+    "No model score, training correctness, model quality, generalization, HFSS result, controller state, or prospective validation claim is made."
+  ],
+  "independent_actual_audit_sha256": "988e3ef267a3cc4a3dcfbca263bb17417c317b5ed0352cb1d85cde43eaf2eb4e",
+  "independent_actual_auditor_sha256": "5df59450cf9ecae7c81e00035377fd198cc022c46cd8ea322e1934c5b3a35452",
+  "actual_source_binding_before_after_equal": true,
+  "profile_payload_tree_id": "471fdd67bb532c71bfc895ffc273b9bc83cb8840e9bf2fd40f28c1602bd52dab",
+  "legacy_payload_tree_id": "875ae55b772a53ad1f223099d02b094a320a2a4d8436d6457612593e34899d12",
+  "profile_truth_id": "aba98dc04325971155f485329fb9f70f070900d1060ee826233128d91b83f9a6",
+  "legacy_truth_id": "152de7c52cf260880e1ddd71955255164e2672e12c6ae031042330774150d2a1",
+  "fixture_verification": {
+    "conductor_training_and_factory_tests": 162,
+    "conductor_subtests": 5,
+    "conductor_migration_tests": 19,
+    "independent_migration_authored_and_extra_tests": 21,
+    "all_passed": true
+  },
+  "controller_transition_performed": false,
+  "new_nas_archive_created": false,
+  "repeat_source_policy": "One historical unique cached representative is inherited unchanged; this migration introduces no new repeat learning rows or collection points. It does not prove the old cache is entirely repeat-source-free."
+}
