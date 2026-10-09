@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "status": "cnn_shadow_single_hidden_launch_and_real_epoch_checkpoint_observed",
+  "launch_identity": {
+    "observed_utc": "2026-10-09T14:59:02.4115782Z",
+    "pid": 62684,
+    "creation_unix_ms": 1791557942230,
+    "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_cnn_shadow_v006_20261009_v001\\execute.py\" ",
+    "launch_attempt_sha256": "0f95360e87977cc8a3e08bfee9230fa985643403af6829174a83f482769cacbb"
+  },
+  "launch_attempt_sha256": "0f95360e87977cc8a3e08bfee9230fa985643403af6829174a83f482769cacbb",
+  "execution_start_sha256": "5cb5ab12f26d0f0d7178e553477753451f81c1556ef169f137b10399957308c0",
+  "execution_entry_sha256": "d5b686ac05aa176db94f2a25cd9eb4fbf47f3a2d4b4e76aa801c6bcd8d89a975",
+  "source_commit": "d91f5ec7d73f29a54ef78b807727f33aa070cb8a",
+  "actual_checkpoint_observation": [
+    {
+      "member_seed": 0,
+      "epoch": 100,
+      "optimizer_steps": 1400,
+      "complete": true
+    },
+    {
+      "member_seed": 1,
+      "epoch": 28,
+      "optimizer_steps": 392,
+      "complete": false
+    }
+  ],
+  "completed_comparison": false,
+  "live_factory_model_changed": false,
+  "NAS_or_HFSS_queue_claim_mutation": false,
+  "limits": [
+    "CIM identity was observed after launch and confirmed again during root startup check; these checkpoint epochs are a bounded observation, not terminal result.",
+    "Prelaunch PowerShell False token failed before writing attempt or spawning; corrected once after absence gates, no duplicate training."
+  ]
+}

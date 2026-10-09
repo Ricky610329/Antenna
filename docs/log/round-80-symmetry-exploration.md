@@ -937,3 +937,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-09：固定既有CNN背景架構對照
 
 沿用既有CNNNet，僅加native B×1×216到B×216的adapter；不重寫網路。固定與已完成current-only MLP相同2,641資料、1,773 train／868 development hold、三fresh seeds、100epochs／Adam.001／batch128／phase0／groupweights與train-only norms；CNN710,585參數。實際凍結first128 CPU gate通過，loss1.006364、13/13梯度finite/nonzero，CPU4threads。一次獨立靜態／hash核對通過；先前preflight/recovery身分binding不足已修正，僅重跑同一真實minibatch gate。[準備收據](assets/r80_sm_cnn_shadow_prepared_20261009.json)。模型／結果尚不存在；先commit固定配方，再單次hidden CPU背景训练，32候選預測先保存、其真值不讀，最後固定868評估。既有歷史CNN效果不作R80改善證據；不改live SM、HFSS或queue。
+
+
+### 2026-10-09 22:59：CNN背景對照單次啟動
+
+固定配方commit d91f5ec之後，hidden CPU wrapper62684／creation1791557942230／完整argv與啟動receipt核對；真實Adam epoch checkpoint已保存，尚無terminal比較。[啟動收據](assets/r80_sm_cnn_shadow_launch_20261009.json)。首次PowerShell布林token拼寫拒絕發生在attempt寫檔／Start-Process之前，確認三項absence後修正一次，未重複啟動。只使用CPU4threads、原凍結資料；live HFSS／SM／queue不變。下一HFSS routine仍約23:08。
