@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- ✅ **10/09 17:46：最新最佳渲染已完成**。只讀raw重播為 **2,458唯一成功pattern／2,463成功觀測**；最佳仍`r80localv1_00026_f6ffb938`，原次WM **+0.021682 dB**、已核對獨立重跑 **+0.036434 dB**。沿用既有renderer及極座標helper，金屬／S11／Gain／rad圖與raw排名核對通過；[最新圖](../docs/log/assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)／[收據](../docs/log/assets/round-80/best-symmetric-polar-20261009-v006/best_query_receipt.json)。截點保留一筆首次COM失敗，未計成功，尚非最終毒樣本判定；最佳未變不等於性能停滯。背景SM／HFSS流程繼續，routine維持30分鐘；R80 5,000與R81未完成。
+
 - ✅ **10/09 17:17：依使用者要求更新最佳圖**。原只讀query逐store截點raw重播為 **2,431唯一成功pattern／2,436成功觀測**、截點零error；最佳仍為`r80localv1_00026_f6ffb938`，原次WM+0.021682 dB、已核對獨立重跑+0.036434 dB。沿用既有極座標renderer，PNG與前版byte-identical；[最新圖](../docs/log/assets/round-80/best-symmetric-polar-20261009-v005/sample_card.png)／[raw排名與出圖收據](../docs/log/assets/round-80/best-symmetric-polar-20261009-v005/best_query_receipt.json)。17:04已核對同一實體PID60956、第二cycle開始、LOW新補4×16、scope無警報／三台有新結果；下一routine約17:34。最新48筆SM引導HFSS尚待完整真值判讀，不宣稱性能停滯或改進；R80 5,000與R81未完成。
 
 - 🔵 **10/09 16:44：新protocol首輪已完成且獨立核對通過**。Controller於16:40:08自然轉waiting，completed_cycles=1、receipt `dispatched / passed_per_shard`；familydev v002新增96、累積fit2,344（1,533 effective train／811 hold，c48全121筆train且保留reference hold）。三個fresh member的六欄binding、30＋100 epochs／Adam3600 steps與effective-train-only四norm tensors均核對通過。已派3×16 prio1，Conductor實際私人NAS完整60-file tree與三個唯一queue row讀回吻合、48個pattern互斥，全部保留17＋17＋91＋91預測曲線；[首輪模型／派工收據](../docs/log/assets/r80_family_development_cycle_v002_20261009.json)。**這是controller派工完成，HFSS三片尚待真值判讀**；固定dispatch截點2,373 unique與即時總量分開。16:36 scope零警報／三台有新結果，下一routine約17:04；不以模型更新宣稱性能改善。

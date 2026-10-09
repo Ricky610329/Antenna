@@ -6,6 +6,8 @@
 
 2026-10-09 17:17更新：使用者要求的最新全量最佳查詢為2,431唯一成功pattern；最佳仍同一個，極座標圖與收據见本文末段。
 
+2026-10-09 17:46更新：最新只讀全量查詢為2,458唯一成功pattern；最佳仍同一個，依使用者要求沿用既有腳本重新渲染，圖與原始曲線核對見本文末段。
+
 日期：2026-10-07。狀態：實作與本機備料；尚無本輪 HFSS 結果。沿用 Antenna，不遷移 emforge。
 
 ## 問題與歷史
@@ -795,3 +797,11 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 [最新query／出圖收據](assets/round-80/best-symmetric-polar-20261009-v005/best_query_receipt.json)與[renderer收據](assets/round-80/best-symmetric-polar-20261009-v005/sample_plot_receipt.json)綁定raw／analysis／producer／polar helper／PNG。使用既有renderer、相同兩次觀測註記，因最佳raw未變，圖檔SHA與前版完全相同；Conductor核對WM／全量唯一排名／pattern鏡射與可讀圖面。沒有取得controller／dataset鎖或修改queue，也沒有新NAS bulk歸檔。金屬完全左右對稱，場型仍有非零鏡射殘差，正WM很小，不加網格／連續頻率／穩定性宣稱。
 
 17:04例行檢查已確認同一實體PID60956／creation1791532984209仍運作，第二cycle於17:03開始、stderr空，LOW自動新增4×16 prio6；scope無警報、三個claimed jobs有0–3分鐘內新結果。這是持續工作證據，新增48筆SM引導結果還未完整判讀，不能用單次最佳未變宣稱新版本性能停滯。下一routine約17:34，R80 5,000筆及R81尚待。
+
+### 2026-10-09 17:46：最新實測最佳重新出圖
+
+依使用者要求重新查詢，17:44:58至17:46:15逐store保存截點並重播全部2,463次成功觀測，得到**2,458個唯一成功pattern／5,000**。最佳仍為`r80localv1_00026_f6ffb938`：原次WM **+0.021682 dB**，26.5–29.5 GHz帶內最差S11 **−10.096088 dB**、最低正向RealizedGainTotal **4.021682 dBi**。既有獨立重跑WM **+0.036434 dB**；本圖展示原次曲線，重跑不增加唯一資料數。
+
+![目前最佳：對稱金屬排列、S11與Gain、28GHz兩切面極座標場型](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)
+
+沿用`script/figs/symmetry_profile.py`與歷史`polar_rad_ax`，沒有另造繪圖程式。核對全量唯一排名、raw／analysis／圖檔hash、WM重算與金屬鏡射通過，圖面文字與圖例可讀；最佳raw未變，因此PNG與前版相同。[最新查詢及出圖收據](assets/round-80/best-symmetric-polar-20261009-v006/best_query_receipt.json)保留截點的一筆首次HFSS COM失敗（`dedust_r80c0f16d531g01`、attempts=1），未列作成功資料，不能視為最終毒樣本或worker停機。查詢未取得controller鎖或修改NAS queue／raw，沒有新NAS bulk歸檔。金屬完全左右對稱，場型殘差仍非零；正WM餘裕很小，兩次正觀測不證明連續頻率、網格獨立或多次穩定達標。
