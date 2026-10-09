@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/10 00:51：使用者詢問全量raw核對**。2,810/5,000唯一有效實測，較23:51增加54；全域最佳仍WM **+0.021682 dB**，既有獨立重測+0.036434。[收據](../docs/log/assets/r80_best_status_20261010_0051.json)。三台claimed有新結果／scope零警報，SM v008持續批次更新；worker狀態在controller掃描中變動已安全defer、未重啟。current-only v008準備及獨立審查通過、尚未訓練／採用；多樣批次尚無新最佳。下一routine01:08，R80／R81仍未完成。
+
 - **10/10 00:38健康通過**：原PID15944／creation／argv不變、running_cycle／零警報；三片claimed最新4／2／3分鐘，v007g02尚14/16、v008g01/g02為12/3，g03排隊。[健康](../docs/log/assets/r80_health_20261010_0038.json)。v008資料／模型／48派工及完整20k獨立排名均已核對；current-only新資料對照準備中。最新全量仍23:51的2,756／+.021682，不把metadata或result entries冒稱新總數。下一routine01:08。
 
 - **v008完整20k獨立保存排名核對通過**：10k fresh／10k parent，strict三臂各16、48selected／三staged片完全重播；36家族／cap2／minHamming71、32parents32groups、fit2,739 binding一致。[補充收據](../docs/log/assets/r80_diverse_sm_v008_selection_review_20261010.json)。只核對派工幾何／來源，不作HFSS性能改善宣稱，未改live政策。

@@ -1011,3 +1011,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-10：v008三fresh模型與48實際派工核對
 
 新的v008新增48、fit2,739，舊2,691 manifest列完全保留；effective1,855train／884hold、c48dev135、reference roles保留。三fresh模型legacy30＋current100、Adam各3,900，四train-only norm tensors以既有independent/manual helper逐位重算吻合。三私人NAS片各16、完整20-file tree及唯一priority1 queue row吻合，48互斥圖形及17／17／91／91保存曲線重播max5.588430e−6＜2e−5，所有固定source hashes前後不變。[模型／派工收據](assets/r80_diverse_sm_cycle_v008_20261010.json)。這是新的實際資料／模型產物核對而非重訓／broadtests；完整20k選擇獨立重播另處理，候選HFSS性能未在此判讀。dispatch2,749／fit2,739與23:51全量2,756各自截點，不混成新的性能或資料量。current-only後續新資料背景對照準備中，original live source與模型recipe不變；R80 5,000與R81仍未完成。
+
+
+### 2026-10-10 00:51：使用者詢問最新最佳
+
+既有唯讀查詢逐store cutoff重播sample/rad，2,810有效唯一圖形、2,815成功觀測（含重測），较23:51增加54。最佳pattern/sample/rad/WM與上一截點一致，仍+0.0216822624 dB；既有独立重測+0.0364336967 dB，餘裕很薄。三台worker有claimed工作及近期結果，scope零警報；SM最新完成v008，資料批次更新及LOW補池仍開啟。controller因worker狀態在掃描中改變安全延後一輪，未殺程序、清claims或改queue。current-only v008背景對照只完成準備及獨立審查，尚未train/adopt；已完成多樣性批次仍未超過最佳，不能把資料增加或模型更新當成性能改善。[收據](assets/r80_best_status_20261010_0051.json)。下一routine01:08；R80 5,000與後續R81 spec／正WM驗證均未完成。
