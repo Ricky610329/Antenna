@@ -1,0 +1,372 @@
+{
+  "schema_version": 1,
+  "status": "phase2_one_shot_waiting_driver_started_verified",
+  "started_utc": "2026-10-09T22:33:13.7581992Z",
+  "launch": {
+    "schema_version": 1,
+    "status": "started_one_shot_phase2_driver",
+    "started_utc": "2026-10-09T22:33:13.7581992Z",
+    "driver_pid": 31132,
+    "driver_creation_unix_ms": 1791585193765,
+    "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+    "actual_argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -B -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9.py\" run ",
+    "driver_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9.py",
+    "driver_sha256": "39d6abe8b76d46b0ed6e51f0b7da8819c0a5a20f34ecb254e2882788a9e16da4",
+    "review_sha256": "7754cffbe89e97cb8c0c87f1c7ce777666324576ad5423b1ebf8237c2f511b16",
+    "launch_helper_sha256": "ecda0353e58a706138856ab0c76e40af886f036db45eccfcbbce41f0ea44f5cd",
+    "phase": 2,
+    "automatic_retry": false,
+    "driver_dispatch_timeout": null,
+    "HFSS_started_here": false,
+    "stdout_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_stdout.log",
+    "stderr_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_stderr.log"
+  },
+  "claim": {
+    "argv": [
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9.py",
+      "run"
+    ],
+    "deadline_utc": "2026-10-10T00:33:16.044581+00:00",
+    "dispatch_attempt_limit": 1,
+    "driver": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9.py",
+      "sha256": "39d6abe8b76d46b0ed6e51f0b7da8819c0a5a20f34ecb254e2882788a9e16da4"
+    },
+    "expected_pinned_inputs": {
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-02\\action_receipt.json": {
+        "sha256": "9902d56337117895bc48939a9e0d36e0310ca60daf984c61f168cbdf1c97ea6f"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\publisher_v9.py": {
+        "sha256": "38af0483fa4d15b80fbd910d5b93700cbcf451c2d9054d964935b415d3da5ddb"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\pool_review_v9.json": {
+        "sha256": "eca141283f26ec310f9b5ec72d5d8aad318b69ecf3fb6392bec29aba7831e263"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_review_v9.json": {
+        "sha256": "465f1d14e50069a69e6e73789020c1d5a7e8de219f592e8a1394bf8a7d8e942d"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json": {
+        "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+      }
+    },
+    "max_wait_seconds": 7200.0,
+    "phase": 2,
+    "poll_seconds": 30.0,
+    "process_identity": {
+      "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -B -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9.py\" run",
+      "creation_unix_ms": 1791585193765,
+      "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+      "pid": 31132
+    },
+    "schema_version": 1,
+    "started_utc": "2026-10-09T22:33:16.044581+00:00",
+    "status": "claimed_one_shot_local_wait",
+    "trigger_remaining_seconds": 1200.0
+  },
+  "launch_sha256": "5abb075d352bea5ffca91443edb503147a15541eebb9eee303a1f5f8fcd995dd",
+  "claim_sha256": "814a6358236fdcb0ce93645e1709d663c703980e58ee9e4aab2376c3c64f2a73",
+  "review_sha256": "7754cffbe89e97cb8c0c87f1c7ce777666324576ad5423b1ebf8237c2f511b16",
+  "review": {
+    "schema_version": 1,
+    "status": "passed_deferred_dispatch_phase2_v9_no_execution",
+    "reviewed_bindings": {
+      "driver": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9.py",
+        "sha256": "39d6abe8b76d46b0ed6e51f0b7da8819c0a5a20f34ecb254e2882788a9e16da4"
+      },
+      "review_request": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_review_request.json",
+        "sha256": "22d28bff59456cbd665baaf2775dcde93dfaf8100290d6df9c7a5c3ca9d1f917"
+      },
+      "base_driver": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase1_v8.py",
+        "sha256": "4ba04dce461ddd5d91cff3e5ecf777c89fd8b6425ba0ea4c464aa66eea1e8c77"
+      },
+      "retained_selfcheck_transcript": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_selfcheck_stdout.txt",
+        "sha256": "c766c0963325f764fdd5c99d7b45d8c77ab61db3f104561e2543a132db5027bc"
+      },
+      "selfcheck_provenance_supplement": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\deferred_dispatch_phase2_v9_selfcheck_supplement.json",
+        "sha256": "aac46286e2d8c4efd41ed2b1a02c9a6cfbf3891d94387af7671dc37c78126dc8"
+      },
+      "pinned_inputs": {
+        "publisher_v9.py": "38af0483fa4d15b80fbd910d5b93700cbcf451c2d9054d964935b415d3da5ddb",
+        "phase-v9-02/action_receipt.json": "9902d56337117895bc48939a9e0d36e0310ca60daf984c61f168cbdf1c97ea6f",
+        "pool_review_v9.json": "eca141283f26ec310f9b5ec72d5d8aad318b69ecf3fb6392bec29aba7831e263",
+        "publisher_review_v9.json": "465f1d14e50069a69e6e73789020c1d5a7e8de219f592e8a1394bf8a7d8e942d",
+        "watch_settings_diverse_sm_v1.json": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+      }
+    },
+    "verified": [
+      "The frozen driver, request, base-driver, transcript, supplement, and all five pinned input hashes match the reviewed local files exactly.",
+      "The phase1-v8 to phase2-v9 diff is limited to the publisher import, phase number, trigger threshold, exact v9 source/action/review hashes and paths, phase-2 create-only output namespace, and matching version/error text.",
+      "The frozen phase-v9-02 action remains the exact prepared one-shot action at SHA-256 9902d56337117895bc48939a9e0d36e0310ca60daf984c61f168cbdf1c97ea6f.",
+      "Polling is fixed at 30 seconds with a 7200-second pre-dispatch wait limit and a 1200-second trigger threshold; publisher_v9 retains its independent final minimum 180-second guard.",
+      "The driver performs exactly one publisher_v9.dispatch_phase(2, pool_review_v9, publisher_review_v9) call, records one terminal result, never retries dispatch, never kills or signals another process, and applies no timeout after dispatch begins.",
+      "All NAS, queue, duplicate, source, 5000-global, 96-guided, staging, final-window, atomic append, and readback checks remain owned by the unchanged publisher_v9 source.",
+      "The retained self-check transcript parses as the expected passed_static_self_check_no_dispatch result; all five bindings, phase/timing values, controller contract, and no-NAS/no-queue flag match the frozen request and current files."
+    ],
+    "fixed_contract": {
+      "phase": 2,
+      "publisher_version": 9,
+      "poll_seconds": 30.0,
+      "max_wait_seconds": 7200.0,
+      "minimum_trigger_remaining_seconds": 1200.0,
+      "publisher_minimum_remaining_seconds": 180.0,
+      "dispatch_attempt_limit": 1,
+      "automatic_retry": false,
+      "driver_dispatch_timeout": null,
+      "cleanup_or_signals": false,
+      "fixed_local_workdir": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1",
+      "controller_pid": 15944,
+      "controller_creation_unix_ms": 1791541659267,
+      "controller_launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7"
+    },
+    "selfcheck_evidence": {
+      "reported_status": "passed_static_self_check_no_dispatch",
+      "reported_exit_code": 0,
+      "reported_wall_time_seconds": 2.2755142,
+      "semantic_checks_compared": 14,
+      "semantic_mismatches": 0,
+      "rerun_during_review": false,
+      "runtime_driver_selfcheck_remains_required": true
+    },
+    "scope": {
+      "static_code_and_local_artifacts_only": true,
+      "driver_or_selfcheck_executed_by_reviewer": false,
+      "live_process_or_controller_query": false,
+      "NAS_or_queue_access": false,
+      "dispatch_or_launch": false,
+      "HFSS_or_model_access": false,
+      "selected_truth_read": false,
+      "tests_repeated": false
+    },
+    "limits": [
+      "The self-check transcript was transcribed from retained tool-result chunk 711797 with LF-normalized line endings; it is not byte-identical redirected stdout and is not independent execution evidence.",
+      "The actual driver run must execute static_self_check again before claiming and polling; that runtime gate, live controller identity, waiting status, and publisher guards are not established by this static review.",
+      "The 7200-second timeout applies only before dispatch begins. Once publisher_v9 dispatch starts, this driver neither times it out nor retries it."
+    ],
+    "execution_ready": false,
+    "process_started": false,
+    "NAS_or_queue_mutation": false,
+    "HFSS_started": false,
+    "model_or_truth_access": false,
+    "blockers": []
+  },
+  "actual_runtime_static_selfcheck": {
+    "bindings": {
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-02\\action_receipt.json": {
+        "sha256": "9902d56337117895bc48939a9e0d36e0310ca60daf984c61f168cbdf1c97ea6f"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\publisher_v9.py": {
+        "sha256": "38af0483fa4d15b80fbd910d5b93700cbcf451c2d9054d964935b415d3da5ddb"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\pool_review_v9.json": {
+        "sha256": "eca141283f26ec310f9b5ec72d5d8aad318b69ecf3fb6392bec29aba7831e263"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_review_v9.json": {
+        "sha256": "465f1d14e50069a69e6e73789020c1d5a7e8de219f592e8a1394bf8a7d8e942d"
+      },
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json": {
+        "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+      }
+    },
+    "event": "static_self_check_passed",
+    "utc": "2026-10-09T22:33:16.128739+00:00"
+  },
+  "last_local_poll": {
+    "eligible": false,
+    "event": "local_poll",
+    "remaining_seconds": null,
+    "status": "running_cycle",
+    "status_binding": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+      "sha256": "b7d721438e8be0ea29a81cc1c5e6005cb78780abbba88a0dd5cb34e8504c0715"
+    },
+    "utc": "2026-10-09T22:34:17.207826+00:00"
+  },
+  "physical_cim_identity_matches_launch_observed": true,
+  "phase2_dispatched": false,
+  "phase2_action_sha256": "9902d56337117895bc48939a9e0d36e0310ca60daf984c61f168cbdf1c97ea6f",
+  "health": {
+    "observed_utc": "2026-10-09T22:33:29.5437737Z",
+    "physical_pid": 15944,
+    "creation_unix_ms": 1791541659267,
+    "argv_matches": true,
+    "watch_status": {
+      "schema_version": 1,
+      "status": "running_cycle",
+      "started_utc": "2026-10-09T10:27:41.075271+00:00",
+      "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+      "attempt_record": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\42afe91c263f4bacb74f6d6c5c6bbcb7.json",
+      "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+      "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+      "profile_binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "scope": "symmetry_filter_20261007"
+      },
+      "expected_retry_workers": [
+        "140.123.106.216",
+        "140.123.106.218",
+        "140.123.106.37"
+      ],
+      "interval_seconds": 1800,
+      "completed_cycles": 18,
+      "hfss_started_here": false,
+      "low_backlog": {
+        "poll_seconds": 90,
+        "low_watermark": 48,
+        "target_pending": 96,
+        "max_refill": 96,
+        "min_refill": 48,
+        "shard_size": 16,
+        "priority": 6,
+        "owner": "r80-low-backlog-v1",
+        "reservoir_seed": 80100791,
+        "reservoir_size": 2048
+      },
+      "search_policy": {
+        "schema_version": 1,
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\r80_diverse_sm_search_v1.json",
+        "sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+        "policy_id": "27937e8f03647431256a31ad47acf4124fc30f8b7195afb1f731d079d6e01d75",
+        "policy": {
+          "arm_order": [
+            "global_lcb",
+            "parent_lcb",
+            "high_disagreement"
+          ],
+          "arm_weights": [
+            1,
+            1,
+            1
+          ],
+          "candidate_pool_size": 20000,
+          "disagreement_mean_percentile": 60,
+          "dispatch": "existing factory transaction, same priority1 and 16-pattern shards, existing 96 outstanding and 5000 valid-plus-reserved limits",
+          "limits": [
+            "Predictions guide candidate selection; HFSS remains the truth.",
+            "This changes pool generation and arm allocation together; it is not a single-factor causal diversity comparison.",
+            "Top-quartile parent descriptors are development information, not independent model-validation evidence.",
+            "LOW blind backlog remains enabled and unchanged.",
+            "No bridge-width, frequency, score-spec, emforge or worker runtime change.",
+            "First new cohort must be evaluated by origin, saved prediction error, actual WM and geometry coverage before claiming improvement."
+          ],
+          "max_parents_per_canonical_group": 2,
+          "max_selected_per_canonical_group": 2,
+          "measurement_changes": false,
+          "measurement_profile": "configs/single_r80_symmetry_factory.yaml",
+          "min_parent_groups": 8,
+          "min_parent_physical_hamming": 64,
+          "min_selected_physical_hamming": 64,
+          "name": "r80_diverse_sm_v1",
+          "parent_count": 32,
+          "parent_ranking": "actual WM top quartile; highest-WM first, then existing maxmin_hamming_indices with canonical-group cap",
+          "parent_top_fraction": 0.25,
+          "ranking": "descending score, then pattern_sha256; greedily take the highest feasible candidate under whole-cohort constraints",
+          "schema_version": 1,
+          "seed": 80100956,
+          "source_pool_fractions": {
+            "fresh_random": 0.5,
+            "parent_variant": 0.5
+          },
+          "strict_no_relaxation": true,
+          "training_protocol_changes": false
+        }
+      },
+      "cycle_started_utc": "2026-10-09T22:27:44.947100+00:00",
+      "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\cd26614da9d2abde770e880918c91f82854d119212d0aed767b155fc10dea784\\action_receipt.json",
+      "last_receipt_sha256": "e92a5dfbb43e39db2de8dc313abbc148523407b7241fc8af890b4ca001c2cf90",
+      "last_cycle_seconds": 1854.75,
+      "valid_unique": 3052,
+      "latest_data_version": 13,
+      "last_completed_utc": "2026-10-09T21:58:39.696599+00:00",
+      "next_cycle_in_seconds": 1745.25,
+      "deferred_retry_count": 1,
+      "last_deferred_retry": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\deferred_retries\\42afe91c263f4bacb74f6d6c5c6bbcb7-0001.json",
+        "sha256": "aa89660a6a2e7c21a1b95bd0b2a0f34ce183c8476eb38455087b4abb88e75a2c",
+        "schema_version": 1,
+        "event": "live_snapshot_changed",
+        "deferred_utc": "2026-10-09T16:47:18.863521+00:00",
+        "error": "worker state changed during controller scan: dedust_r80k1d1e587fde8167b2",
+        "exception_type": "LiveSnapshotChanged",
+        "cycle_started_utc": "2026-10-09T16:27:44.876091+00:00",
+        "controller_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\4d79840b62340e93150afa8748ff9a612d1ef08fd17d448d421ad8a883a0c286\\action_receipt.json"
+      }
+    },
+    "scoped_status_exit": 0,
+    "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c0418df9fg02: 3/16 完成,最新結果 3 分前（已認領）\r\n  job dedust_r80ccd26614dg01: 2/16 完成,最新結果 1 分前（已認領）\r\n  job dedust_r80ccd26614dg02: 0/16（已認領）\r\n  job dedust_r80cf0b21c1bg01: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+    "correct_jobs_state_markers": {
+      "dedust_r80c7e26901fg01": {
+        "fail": false,
+        "done": true
+      },
+      "dedust_r80c7e26901fg02": {
+        "fail": false,
+        "done": true
+      },
+      "dedust_r80c7e26901fg03": {
+        "fail": false,
+        "done": true
+      }
+    }
+  },
+  "health_sha256": "ae9bc831cda65ac16cd143efe88dd985901a8d1331b887f9c83985fa896e9bd9",
+  "recovered_latest_failed_solve_status": {
+    "store": "dedust_r80c8f61dc08g02",
+    "id": "r80c8f61dc08g_00031_0d6f63e1",
+    "results_sha256": "a4612f95a4f4655253ad5d1bc15388a4d6a9616343d8d61d481573bf6f5b7cfa",
+    "current_entry": {
+      "status": "ok",
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "labels": [
+        "S11",
+        "Gain"
+      ],
+      "freqs": [
+        24.0,
+        24.5,
+        25.0,
+        25.5,
+        26.0,
+        26.5,
+        27.0,
+        27.5,
+        28.0,
+        28.5,
+        29.0,
+        29.5,
+        30.0,
+        30.5,
+        31.0,
+        31.5,
+        32.0
+      ],
+      "pattern_sha256": "0d6f63e165dda313efed6685e1a43370ee8ff836e7952092bb75ad7d8117b64f",
+      "lineage_id": "random-g1-003",
+      "sample_file": "44426a16620fbd4d.pt",
+      "time_s": 196.0,
+      "geom": "single_v1",
+      "dbw": 0.1,
+      "gain28": 4.493277549743652,
+      "s11_28": -8.927230834960938,
+      "rad_file": "rad/r80c8f61dc08g_00031_0d6f63e1.pt",
+      "performance_gate": false,
+      "sample_sha256": "1f580ea86a767aae5a709435fded49cfb0df01383928d7dc7934db604aa10acd",
+      "rad_sha256": "de851a78efd07c37c63bda5d7017692b088360ba41ba697316f4cb00dcafdf24"
+    },
+    "done": true,
+    "fail": false,
+    "raw_tensor_or_performance_replay": false,
+    "claims_or_results_modified": false
+  },
+  "latest_full_census_receipt": "docs/log/assets/r80_best_status_20261010_0626.json",
+  "next_routine_health_taipei": "2026-10-10 07:03",
+  "main_models_or_workers_changed": false,
+  "new_NAS_archive_created": false,
+  "validation_script_sha256": "c525d243dda515c5a07752a575a990a7800e37554677f521157adf54f60274f8"
+}

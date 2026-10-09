@@ -1184,3 +1184,8 @@ publisher v9只修實際writer的換行雜湊與版本namespace；既有dedust.j
 ### 2026-10-10 06:24：固定雙scorer對照第一批實際入列
 
 publisher v9實際session70963 exit0；固定16筆（current-only 8／frozen-live 8）完成capacity、不可變輸入與單次queue append/readback。独立本機證據核對通過：action正規化與派工前seal相同，總預算3232≤5000、guided76≤96，queue202→203。[派工證據](assets/r80_currentonly_prospective_v010_phase1_dispatch_20261010.json)。06:26健康檢查看到該job排隊中；第二批仍prepared。這是派工里程碑，不是HFSS完成或模型性能改善；主線未採用current-only模型。32筆選樣與預測維持凍結，容量驗證可讀已完成raw資料的範圍限制仍適用。
+
+
+### 2026-10-10 06:33：健康檢查與第二批單次等待器
+
+controller exact身分通過、running_cycle、completed18／reported v013；三個已認領工作3/16、2/16、0/16，前兩個最新結果3／1分鐘前，scope無警報。最新完整實測仍是06:27的3086唯一圖形，最佳WM未變；這次健康檢查不冒充新census。第二批等待器31132於06:33啟動，CIM／claim／來源／審查綁定及實際啟動selfcheck通過，目前只讀本機狀態。等主線waiting且剩餘至少1200秒才單次呼叫既有publisher v9；global5000／guided96／最終180秒門檻不變，無自動重試或派工中timeout／kill。[啟動與健康紀錄](assets/r80_currentonly_prospective_v010_phase2_wait_launch_20261010.json)。第二批仍prepared，不改32筆選樣或主線模型；下次例行健康檢查07:03。
