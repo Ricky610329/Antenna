@@ -927,3 +927,8 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 ### 2026-10-09 22:38：routine健康檢查
 
 實體CIM核對唯一controller PID15944／creation1791541659267／完整argv／launch不變，completed_cycles8、下一cycle running；scope零警報，三片claimed的result entries15／14／13、最新3／2／1分鐘，另六片LOW與prio1候選排隊。[健康收據](assets/r80_health_20261009_2238.json)。三片仍未終態，不把entry數當成功真值或完成cohort。Cycle5f196a41沿用v006，terminal dispatched／新補一片16；僅讀回action metadata，不聲稱新完整pool審查或性能改善。dispatch saved snapshot2,669與22:09逐store全量raw query2,675不是同一live截點，現況最佳仍以後者為準。未重啟worker／清claim或調queue。下一routine約23:08。
+
+
+### 2026-10-09 22:54：依使用者詢問重新核對最佳
+
+既有只讀query原樣重用，逐store保存cutoff並重播sample/rad；2,713唯一有效圖形／2,718成功觀測，比22:09多38。最佳pattern/sample/rad與WM完全相同，WM+0.0216822624 dB、帶內最差S11−10.0960884 dB／最低Gain4.0216823 dBi；既有獨立重測+0.0364336967 dB，原極座標圖繼續適用。[核對收據](assets/r80_best_status_20261009_2254.json)。22:53 CIM精確PID15944／creation／完整argv身分通過，三片v006 claimed結果entries5／2／2，最新0／0／1分鐘、scope零警報；entry數不是完整有效cohort數。未改佇列、claims、HFSS或live模型。背景current-only陰性結果保留，CNN僅準備中，未宣稱改善；維持約30分鐘健康檢查，R80 5,000及R81未完成。

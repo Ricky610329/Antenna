@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/09 22:54：使用者要求的全量最佳核對**。2,713/5,000唯一有效實測、較22:09增加38；最佳仍WM **+0.021682 dB**，既有獨立重測+0.036434。[查詢收據](../docs/log/assets/r80_best_status_20261009_2254.json)。22:53精確controller身分不變，三台claimed新v006工作／零警報。SM持續批次更新；current-only對照陰性未採用，CNN背景對照準備中尚未訓練。R80與R81仍未完成。
+
 - 現況 **10/09 22:38：routine健康通過**。唯一PID15944 exact身分／argv不變、8cycles、三片claimed最新3／2／1分鐘、零警報；LOW及guided都有排隊。v006沿用再補一片16，新的48真值尚未完成。[健康收據](../docs/log/assets/r80_health_20261009_2238.json)。current-only背景对照已核對陰性／未採用，既有CNN架構對照正備料；不改live。最新全量最佳仍22:09的2,675／+0.021682；下一routine約23:08。
 
 - 現況 **10/09 22:29：current-only SM背景對照完成／陰性**。固定2,641／1773train＋868hold、三fresh current100，31.34秒完成、獨立NPZ/JSON核對通過。fullMAE3.606→3.759／Gain5.559→5.574；factoryρ0.0726→0.0749變化很小，未採用。[結果](../docs/log/assets/r80_sm_currentonly_shadow_result_20261009.json)。32shadow預測已保存但真值未讀，不加HFSS；live SM及佇列照常。最新全量仍22:09的2,675／最佳+0.021682，下一routine22:39；R80及R81未完成。
