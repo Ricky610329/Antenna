@@ -2,6 +2,8 @@
 
 最新狀態（2026-10-09 16:04）：family development controller已接手；2,359唯一實測截點／5,000，最佳圖見本文末段。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
+2026-10-09 16:44更新：首輪新protocol已完成模型更新與48筆派工，fit2,344／固定dispatch截點2,373。新候選HFSS真值尚待，不以這個里程碑改寫最佳WM或宣稱性能提升。
+
 日期：2026-10-07。狀態：實作與本機備料；尚無本輪 HFSS 結果。沿用 Antenna，不遷移 emforge。
 
 ## 問題與歷史
@@ -771,3 +773,13 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 舊controller的首個STOP guard因未發布deferred cycle沒有action receipt而在寫STOP前拒絕；保留該嘗試，再明確核對已保存typed LiveSnapshotChanged、null controller_receipt與等待狀態後，只寫本機STOP。PID54712於15:49:59正常退出，無process kill或worker重啟。三份已審查source整合並push GAN至`b1d4c4a`，新hidden watcher於16:03:04單次啟動：PID60956、creation1791532984209、launch=`555a4dbe6a7d474e8ffc70a97e555de7`。
 
 [交接與独立startup收據](assets/r80_family_development_activation_20261009.json)證實全系統唯一watcher、exact argv／creation、profile／scope與新模型summary一致。新工作根為`controller_familydev_v1`與`training_familydev_v1`，已消耗16/16的舊pilot request不沿用，其餘settings相同。新state `running_cycle`、stdout/stderr空；**首輪完成／新候選派工尚待確認**。原訓練、鎖、raw與失敗證據保留。16:04 scope無警報，三個claimed jobs11/16、11/16、3/16及三片16筆LOW待跑，主線1800秒／LOW90秒及48–96新真值更新SM保留，下一routine約16:34；R80 5,000與R81仍待。
+
+### 2026-10-09 16:44：首輪批次學習與真實NAS派工核對通過
+
+新controller於16:40:08完成首輪（2,222.797秒），自然進入waiting，唯一PID／creation與設定不變；`action_receipt`終態`dispatched / passed_per_shard`。這次可用新unique113，按既定上限收96，familydev data-v002累積**2,344筆fit**；effective train1,533／hold811、reference train1,412／hold932。新增96的角色為53 train|reference-train、32 hold|reference-hold、11 train|reference-hold；c48全121筆effective train且保留reference hold，whole canonical closure政策吻合。固定派工截點**2,373唯一實測**不是16:44即時全量census，亦不同於fit資料數。
+
+[首輪薄收據](assets/r80_family_development_cycle_v002_20261009.json)綁定原terminal receipt SHA、summary、三member與獨立稽核。三成員仍fresh initialization、legacy30／current100 epochs，Adam八state各3,600步；六欄binding完全吻合。獨立從1,533 effective train重建625維X／216維Y，四個normalization tensor在三checkpoint逐位相等，沒有讀holdout或legacy payload來重算norm。這是資料／模型契約證據，不是新holdout或泛化提升。
+
+更新前的保存預測已先核對再匯入：96個新觀測中58個預測完整、38個缺預測、0顯式無效，缺預測沒有被丟掉或冒充SM測試。依新三模型送出`dedust_r80c63c3efcdg01`–`g03`，各16個、prio1，共48個互斥pattern。獨立稽核本機三片tree及reservation／stdout，Conductor另實際讀回私人NAS三片完整60檔SHA、profile/input有效性與三個唯一queue row，全部吻合；每筆保存S11／Gain各17點及phi0／phi90各91點預測。沒有另發布model bulk或NAS歸檔。
+
+16:36只讀scope健康截點無警報、三個claimed jobs皆有最近結果，既有LOW待跑保留。新三片**HFSS尚未完成真值判讀**，不得把controller terminal當作48筆模擬terminal，也不得宣稱新SM引導候選更好。已完成首輪不等於5000資料或R81完成；主線1800秒／LOW90秒照常，下一routine約17:04。

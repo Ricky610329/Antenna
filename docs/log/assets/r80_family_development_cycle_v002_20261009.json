@@ -1,0 +1,438 @@
+{
+  "schema_version": 1,
+  "observed_utc": "2026-10-09T08:42:47.897134+00:00",
+  "status": "first_familydev_cycle_terminal_and_independently_reviewed",
+  "watch": {
+    "schema_version": 1,
+    "status": "waiting",
+    "started_utc": "2026-10-09T08:03:06.064728+00:00",
+    "launch_id": "555a4dbe6a7d474e8ffc70a97e555de7",
+    "attempt_record": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1\\watch_attempts\\555a4dbe6a7d474e8ffc70a97e555de7.json",
+    "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_familydev_v1.json",
+    "settings_sha256": "987e813fbc324ca5e1eb4fe5276ab80deb37327c0d4ecd135b7cba68335fb6ff",
+    "profile_binding": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+      "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+      "scope": "symmetry_filter_20261007"
+    },
+    "expected_retry_workers": [
+      "140.123.106.216",
+      "140.123.106.218",
+      "140.123.106.37"
+    ],
+    "interval_seconds": 1800,
+    "completed_cycles": 1,
+    "hfss_started_here": false,
+    "low_backlog": {
+      "poll_seconds": 90,
+      "low_watermark": 48,
+      "target_pending": 96,
+      "max_refill": 96,
+      "min_refill": 48,
+      "shard_size": 16,
+      "priority": 6,
+      "owner": "r80-low-backlog-v1",
+      "reservoir_seed": 80100791,
+      "reservoir_size": 2048
+    },
+    "cycle_started_utc": "2026-10-09T08:03:06.070289+00:00",
+    "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1\\cycles\\63c3efcdc6d1ac15511ebf0fc8eb39f3785ba675e3b455f53c7e7954ad389862\\action_receipt.json",
+    "last_receipt_sha256": "cc54f4e3dfa7f031337cd5a3366f46b0a53b469d01d4b2394244aedb64bdcd2d",
+    "last_cycle_seconds": 2222.7970000000205,
+    "valid_unique": 2373,
+    "latest_data_version": 2,
+    "last_completed_utc": "2026-10-09T08:40:08.866406+00:00",
+    "next_cycle_in_seconds": 1377.2029999999795
+  },
+  "watch_sha256": "c54f1f5c7477de7097bd87481c42eea4f7afa88dcd2311198bdbf644ef14a15d",
+  "receipt_path": "tmp\\r80_factory_20261007\\controller_familydev_v1\\cycles\\63c3efcdc6d1ac15511ebf0fc8eb39f3785ba675e3b455f53c7e7954ad389862\\action_receipt.json",
+  "receipt_sha256": "cc54f4e3dfa7f031337cd5a3366f46b0a53b469d01d4b2394244aedb64bdcd2d",
+  "cycle": {
+    "status": "dispatched",
+    "cycle_id": "63c3efcdc6d1ac15511ebf0fc8eb39f3785ba675e3b455f53c7e7954ad389862",
+    "latest_data_version": 2,
+    "trained_this_cycle": true,
+    "new_unique_available_before_training": 113,
+    "valid_unique": 2373,
+    "pending_unique": 59,
+    "guided_pending_unique": 0,
+    "target_valid_unique": 5000,
+    "dispatch_gate": "passed_per_shard"
+  },
+  "predictor_binding": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 2,
+    "manifest_id": "68079289697fb03ee9a4abe09c9c7d8337cd482e12d98a382ade9eaed6883ddb",
+    "cumulative_valid_unique": 2344
+  },
+  "model_summary_sha256": "3b48ef8454aab1250a3fe5b0eb04e8ab94a9e461ece03e00bcd681a7b3adfa45",
+  "model_counts": {
+    "legacy_holdout": 1850,
+    "legacy_train": 10150,
+    "profile_holdout": 811,
+    "profile_train": 1533
+  },
+  "member_seeds": [
+    0,
+    1,
+    2
+  ],
+  "member_models": [
+    {
+      "file": "member-0.pt",
+      "member_seed": 0,
+      "sha256": "2472a4801cba1259df74559b11d10da918e1bd82b9945bd40de6c06cd5eb3956"
+    },
+    {
+      "file": "member-1.pt",
+      "member_seed": 1,
+      "sha256": "480b291abad3dfa4d3a4573ebbce4d90ff93e29320e317dd21c447288f3b7c1c"
+    },
+    {
+      "file": "member-2.pt",
+      "member_seed": 2,
+      "sha256": "4be9ecf07fc08b817fc973dc2bc6818758709015537c0966e35c4de1444f0265"
+    }
+  ],
+  "pretrain_prediction_audit": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1\\cycles\\63c3efcdc6d1ac15511ebf0fc8eb39f3785ba675e3b455f53c7e7954ad389862\\pretrain_prediction_audit.json",
+    "sha256": "36f1fd2121ea246288a6d443b30b05a841380976e149d61127b9e368638c0178"
+  },
+  "model_quality_gate": null,
+  "planned_jobs": [
+    {
+      "kind": "g",
+      "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1\\cycles\\63c3efcdc6d1ac15511ebf0fc8eb39f3785ba675e3b455f53c7e7954ad389862\\guided_shards\\shard-001_input",
+      "input": "dedust_r80c63c3efcdg01_input",
+      "store": "dedust_r80c63c3efcdg01",
+      "prio": 1,
+      "count": 16,
+      "tree_sha256": "cdc5ab83bec439b5fa353301b9d5eec4d8e4fe1a19ba5d28ba752b08bf93f584",
+      "final_target_tail": false
+    },
+    {
+      "kind": "g",
+      "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1\\cycles\\63c3efcdc6d1ac15511ebf0fc8eb39f3785ba675e3b455f53c7e7954ad389862\\guided_shards\\shard-002_input",
+      "input": "dedust_r80c63c3efcdg02_input",
+      "store": "dedust_r80c63c3efcdg02",
+      "prio": 1,
+      "count": 16,
+      "tree_sha256": "4574c5d7f4b8420984e0dc972c476cb40b4450ef18a7599ef7544b391f88a619",
+      "final_target_tail": false
+    },
+    {
+      "kind": "g",
+      "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1\\cycles\\63c3efcdc6d1ac15511ebf0fc8eb39f3785ba675e3b455f53c7e7954ad389862\\guided_shards\\shard-003_input",
+      "input": "dedust_r80c63c3efcdg03_input",
+      "store": "dedust_r80c63c3efcdg03",
+      "prio": 1,
+      "count": 16,
+      "tree_sha256": "e951ba9da21a228839a293d161b8ea5690839dc475052b825093a04898547ae6",
+      "final_target_tail": false
+    }
+  ],
+  "limits": [
+    "dispatch valid_unique is a frozen cycle cutoff, not a live census.",
+    "Fresh SM/data version does not prove improved prospective HFSS performance.",
+    "R80 target5000 and R81 remain incomplete."
+  ],
+  "independent_review": {
+    "path": "tmp\\r80_familydev_live_first_cycle_review_20261009_v001\\review.json",
+    "sha256": "3fcc730eda21b36b62fa4a0ee064d2a4483350fe2780807a362f3e5daa6711a4",
+    "report": {
+      "schema_version": 1,
+      "status": "pass_cycle_dispatched_jobs_nonterminal",
+      "observed_utc": "2026-10-09T08:41:53.988735+00:00",
+      "scope": "read-only first family-development live cycle audit",
+      "main_commit": "7769f22f975bb95ba50ae38df7891b1a60f7476f",
+      "watcher": {
+        "pid": 60956,
+        "creation_unix_ms": 1791532984209,
+        "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+        "command_line": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_familydev_v1.json\" ",
+        "reported_loaded_commit": "b1d4c4a",
+        "launch_id": "555a4dbe6a7d474e8ffc70a97e555de7",
+        "status": "waiting",
+        "completed_cycles": 1,
+        "stderr_bytes": 0,
+        "stdout_sha256": "70ff6539f19b0f09d4eb98f79eab67394280cf3a38f73772a16a954c98d26b90",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "cycle": {
+        "cycle_id": "63c3efcdc6d1ac15511ebf0fc8eb39f3785ba675e3b455f53c7e7954ad389862",
+        "action_receipt_sha256": "cc54f4e3dfa7f031337cd5a3366f46b0a53b469d01d4b2394244aedb64bdcd2d",
+        "action_status": "dispatched",
+        "dispatch_gate": "passed_per_shard",
+        "active_pointer_present": false,
+        "controller_cycle_complete": true,
+        "trained_this_cycle": true,
+        "retryable_failed_jobs": 0,
+        "terminal_failed_jobs": 0,
+        "saved_health_snapshot": {
+          "path": "tmp/r80_familydev_handoff_20261009_v001/first_cycle_health.json",
+          "sha256": "6ce3965833664c36cfb421a31aef24feb203fcc0d368be12bfff0eb17f0d17bb",
+          "observed_utc": "2026-10-09T08:36:04.459333+00:00",
+          "receipt_status": "dispatching",
+          "valid_unique_at_fixed_snapshot": 2373,
+          "pending_unique_at_fixed_snapshot": 59,
+          "alarms": [],
+          "interpretation": "fixed 16:36 snapshot; counts are not asserted as current live values"
+        }
+      },
+      "data_v002": {
+        "receipt_sha256": "52e5864137b369046489f3f3d6d234ceda0dcb0b926544981133e8b09a3487ab",
+        "manifest_sha256": "e902d51b496da2a80afd8119b8146703457dc6afd1c3b5f0804df584af413288",
+        "manifest_id": "68079289697fb03ee9a4abe09c9c7d8337cd482e12d98a382ade9eaed6883ddb",
+        "new_valid_unique": 96,
+        "cumulative_valid_unique": 2344,
+        "new_role_counts": {
+          "profile_holdout|profile_holdout": 32,
+          "profile_train|profile_holdout": 11,
+          "profile_train|profile_train": 53
+        },
+        "new_development_family_rows": 11,
+        "effective_counts": {
+          "profile_train": 1533,
+          "profile_holdout": 811
+        },
+        "reference_counts": {
+          "profile_train": 1412,
+          "profile_holdout": 932
+        },
+        "development_family_rows": 121,
+        "development_reference_holdout_rows": 121
+      },
+      "models_v002": {
+        "summary_sha256": "3b48ef8454aab1250a3fe5b0eb04e8ab94a9e461ece03e00bcd681a7b3adfa45",
+        "binding": {
+          "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+          "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+          "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+          "data_version": 2,
+          "manifest_id": "68079289697fb03ee9a4abe09c9c7d8337cd482e12d98a382ade9eaed6883ddb",
+          "cumulative_valid_unique": 2344
+        },
+        "six_key_binding_exact": true,
+        "members": [
+          {
+            "file": "member-0.pt",
+            "sha256": "2472a4801cba1259df74559b11d10da918e1bd82b9945bd40de6c06cd5eb3956",
+            "member_seed": 0,
+            "complete": true,
+            "fresh_initialization": true,
+            "phases": {
+              "legacy_epochs": 30,
+              "current_epochs": 100
+            },
+            "optimizer_parameter_states": 8,
+            "optimizer_steps": [
+              3600
+            ],
+            "norms_exact_effective_train": [
+              true,
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "file": "member-1.pt",
+            "sha256": "480b291abad3dfa4d3a4573ebbce4d90ff93e29320e317dd21c447288f3b7c1c",
+            "member_seed": 1,
+            "complete": true,
+            "fresh_initialization": true,
+            "phases": {
+              "legacy_epochs": 30,
+              "current_epochs": 100
+            },
+            "optimizer_parameter_states": 8,
+            "optimizer_steps": [
+              3600
+            ],
+            "norms_exact_effective_train": [
+              true,
+              true,
+              true,
+              true
+            ]
+          },
+          {
+            "file": "member-2.pt",
+            "sha256": "4be9ecf07fc08b817fc973dc2bc6818758709015537c0966e35c4de1444f0265",
+            "member_seed": 2,
+            "complete": true,
+            "fresh_initialization": true,
+            "phases": {
+              "legacy_epochs": 30,
+              "current_epochs": 100
+            },
+            "optimizer_parameter_states": 8,
+            "optimizer_steps": [
+              3600
+            ],
+            "norms_exact_effective_train": [
+              true,
+              true,
+              true,
+              true
+            ]
+          }
+        ],
+        "normalization_replay": {
+          "source_rows": 1533,
+          "source_split": "effective profile_train only",
+          "x_shape": [
+            1533,
+            625
+          ],
+          "y_shape": [
+            1533,
+            216
+          ],
+          "holdout_payloads_read": 0,
+          "legacy_payloads_read": 0,
+          "all_members_exact": true
+        },
+        "validation_scope": "remaining_reference_group_holdouts_descriptive_only_no_early_stopping"
+      },
+      "dispatch": {
+        "split_receipt_sha256": "8a15de02f5e2097e986e2990a4290ec590084186c6d187e45a170bfc51e0e21b",
+        "planned_rows": 48,
+        "planned_shards": 3,
+        "shards": [
+          {
+            "shard": 1,
+            "store": "dedust_r80c63c3efcdg01",
+            "planned": true,
+            "local_staged_rows": 16,
+            "manifest_sha256": "dba7318af3181143418317458a6107a4b1a4ab68cc754d55dc5a74eb110dfab5",
+            "tree_sha256": "cdc5ab83bec439b5fa353301b9d5eec4d8e4fe1a19ba5d28ba752b08bf93f584",
+            "tree_matches_action_receipt": true,
+            "reservation_index_present": true,
+            "watch_stdout_dispatch_line_present": true,
+            "terminal_receipt_present_locally": false,
+            "state": "dispatched_nonterminal"
+          },
+          {
+            "shard": 2,
+            "store": "dedust_r80c63c3efcdg02",
+            "planned": true,
+            "local_staged_rows": 16,
+            "manifest_sha256": "87dcb44daca06e74d153b2a3af68c9cfc2a40e386b87e3a8f202082a590c3b73",
+            "tree_sha256": "4574c5d7f4b8420984e0dc972c476cb40b4450ef18a7599ef7544b391f88a619",
+            "tree_matches_action_receipt": true,
+            "reservation_index_present": true,
+            "watch_stdout_dispatch_line_present": true,
+            "terminal_receipt_present_locally": false,
+            "state": "dispatched_nonterminal"
+          },
+          {
+            "shard": 3,
+            "store": "dedust_r80c63c3efcdg03",
+            "planned": true,
+            "local_staged_rows": 16,
+            "manifest_sha256": "d798e9cc3404f6b61cfd59ba99622ed54399aa00a8e207bc067a0decc26ab3b4",
+            "tree_sha256": "e951ba9da21a228839a293d161b8ea5690839dc475052b825093a04898547ae6",
+            "tree_matches_action_receipt": true,
+            "reservation_index_present": true,
+            "watch_stdout_dispatch_line_present": true,
+            "terminal_receipt_present_locally": false,
+            "state": "dispatched_nonterminal"
+          }
+        ],
+        "stdout_lines": [
+          "已入佇列: dedust_r80c63c3efcdg01 (prio 1);目前 154 個 job",
+          "已入佇列: dedust_r80c63c3efcdg02 (prio 1);目前 155 個 job",
+          "已入佇列: dedust_r80c63c3efcdg03 (prio 1);目前 156 個 job"
+        ],
+        "dispatch_cycle_complete": true,
+        "hfss_job_terminal_results_complete": false
+      },
+      "source_bindings": {
+        "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+        "tmp/r80_factory_20261007/training_familydev_v1/data/data-v002/manifest.json": "e902d51b496da2a80afd8119b8146703457dc6afd1c3b5f0804df584af413288",
+        "tmp/r80_factory_20261007/training_familydev_v1/data/data-v002/receipt.json": "52e5864137b369046489f3f3d6d234ceda0dcb0b926544981133e8b09a3487ab",
+        "tmp/r80_factory_20261007/training_familydev_v1/models/data-v002/summary.json": "3b48ef8454aab1250a3fe5b0eb04e8ab94a9e461ece03e00bcd681a7b3adfa45",
+        "tmp/r80_factory_20261007/training_familydev_v1/models/data-v002/member-0.pt": "2472a4801cba1259df74559b11d10da918e1bd82b9945bd40de6c06cd5eb3956",
+        "tmp/r80_factory_20261007/training_familydev_v1/models/data-v002/member-1.pt": "480b291abad3dfa4d3a4573ebbce4d90ff93e29320e317dd21c447288f3b7c1c",
+        "tmp/r80_factory_20261007/training_familydev_v1/models/data-v002/member-2.pt": "4be9ecf07fc08b817fc973dc2bc6818758709015537c0966e35c4de1444f0265"
+      },
+      "limitations": [
+        "The controller cycle may be terminal at dispatched/passed_per_shard while the three HFSS jobs remain nonterminal; no HFSS result completion is claimed.",
+        "No NAS path embedded in receipts was opened.",
+        "No controller, training, or dataset lock was acquired.",
+        "Only 1,533 effective-train sample/radiation pairs were read for norm replay; holdout, legacy, and full raw re-audits were intentionally skipped.",
+        "The model holdout remains descriptive under the development policy and is not an untouched generalization claim."
+      ]
+    }
+  },
+  "published_private_NAS_readback": {
+    "schema_version": 1,
+    "status": "actual_private_NAS_inputs_and_queue_readback_passed",
+    "observed_utc": "2026-10-09T08:44:34.977185+00:00",
+    "receipt_sha256": "cc54f4e3dfa7f031337cd5a3366f46b0a53b469d01d4b2394244aedb64bdcd2d",
+    "queue_sha256_at_scan_start": "29f8df06923e59322aa0dd45503be2c425d93d96f7da4611bb115234e8a84b20",
+    "published": [
+      {
+        "job": {
+          "input": "dedust_r80c63c3efcdg01_input",
+          "store": "dedust_r80c63c3efcdg01",
+          "prio": 1,
+          "scope": "symmetry_filter_20261007",
+          "config": "dedust_r80c63c3efcdg01_input/config.yaml"
+        },
+        "input_tree_sha256": "cdc5ab83bec439b5fa353301b9d5eec4d8e4fe1a19ba5d28ba752b08bf93f584",
+        "files": 20,
+        "patterns": 16,
+        "saved_prediction_curves_complete": true
+      },
+      {
+        "job": {
+          "input": "dedust_r80c63c3efcdg02_input",
+          "store": "dedust_r80c63c3efcdg02",
+          "prio": 1,
+          "scope": "symmetry_filter_20261007",
+          "config": "dedust_r80c63c3efcdg02_input/config.yaml"
+        },
+        "input_tree_sha256": "4574c5d7f4b8420984e0dc972c476cb40b4450ef18a7599ef7544b391f88a619",
+        "files": 20,
+        "patterns": 16,
+        "saved_prediction_curves_complete": true
+      },
+      {
+        "job": {
+          "input": "dedust_r80c63c3efcdg03_input",
+          "store": "dedust_r80c63c3efcdg03",
+          "prio": 1,
+          "scope": "symmetry_filter_20261007",
+          "config": "dedust_r80c63c3efcdg03_input/config.yaml"
+        },
+        "input_tree_sha256": "e951ba9da21a228839a293d161b8ea5690839dc475052b825093a04898547ae6",
+        "files": 20,
+        "patterns": 16,
+        "saved_prediction_curves_complete": true
+      }
+    ],
+    "unique_candidates": 48,
+    "limits": [
+      "Published candidate inputs and queue only; no HFSS result or simulation completion claim."
+    ]
+  },
+  "NAS_input_queue_or_claim_mutation_by_verifier": false,
+  "pretrain_saved_prediction_counts": {
+    "n": 96,
+    "prediction_complete": 58,
+    "prediction_missing": 38,
+    "prediction_explicitly_invalid": 0
+  },
+  "helper_bindings": {
+    "capture_completed_cycle.py": "1f1a9f278c3dbbfedd202b730af8760f7e3da3dec5b7c09ae47c3d64df816bc7",
+    "verify_published_cycle.py": "abfa6ce3df1b05060fdd1a02bc86a4dc4e1acce56cf0365e486b76b92d7d8be7",
+    "completed_cycle.json": "c0206fcd2112e72e20ff79e3b82e60cef5b201a598bc95475b5e46eaddcec37a",
+    "published_readback.json": "6d8446ac8211cfcad6fe47d9006b1345d7160b826d179eda216bbfdf96077f2a",
+    "first_cycle_health.json": "6ce3965833664c36cfb421a31aef24feb203fcc0d368be12bfff0eb17f0d17bb"
+  },
+  "new_nas_archive_created": false
+}

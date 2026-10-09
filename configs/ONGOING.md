@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 🔵 **10/09 16:44：新protocol首輪已完成且獨立核對通過**。Controller於16:40:08自然轉waiting，completed_cycles=1、receipt `dispatched / passed_per_shard`；familydev v002新增96、累積fit2,344（1,533 effective train／811 hold，c48全121筆train且保留reference hold）。三個fresh member的六欄binding、30＋100 epochs／Adam3600 steps與effective-train-only四norm tensors均核對通過。已派3×16 prio1，Conductor實際私人NAS完整60-file tree與三個唯一queue row讀回吻合、48個pattern互斥，全部保留17＋17＋91＋91預測曲線；[首輪模型／派工收據](../docs/log/assets/r80_family_development_cycle_v002_20261009.json)。**這是controller派工完成，HFSS三片尚待真值判讀**；固定dispatch截點2,373 unique與即時總量分開。16:36 scope零警報／三台有新結果，下一routine約17:04；不以模型更新宣稱性能改善。
+
 - 🔵 **10/09 16:04：family development 新 controller 已單次接手**。舊 PID54712 在15:49:59透過本機 STOP 正常退出；新唯一 PID60956（creation1791532984209）於16:03:04從已push `b1d4c4a` hidden start，launch=`555a4dbe6a7d474e8ffc70a97e555de7`，新根 `controller_familydev_v1`／`training_familydev_v1`。固定2,248筆bootstrap、c48整家族110筆轉development train，三個fresh模型已訓練與獨立稽核；其fit誤差不是泛化證據。首輪 `running_cycle`、stderr空，尚無首輪完成／新模型派工證據；[交接紀錄](../docs/log/assets/r80_family_development_activation_20261009.json)。16:04 scope零警報，三個claimed jobs及三片LOW待跑；主線1800秒／LOW90秒、48–96新資料更新SM不變，下一routine約16:34。不重啟HFSS worker。
 - ✅ **10/09 16:02最新最佳圖已核對**：逐store截點raw重播 **2,359唯一成功pattern／2,364成功觀測**，仍為`r80localv1_00026_f6ffb938`，原次WM+0.021682 dB、獨立重跑+0.036434 dB。[極座標圖](../docs/log/assets/round-80/best-symmetric-polar-20261009-v004/sample_card.png)／[排名與出圖收據](../docs/log/assets/round-80/best-symmetric-polar-20261009-v004/best_query_receipt.json)。R80 5,000與R81均未完成；repeat不計新unique。
 
