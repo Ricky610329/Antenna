@@ -95,6 +95,118 @@ def _protocol(work_dir: Path) -> dict[str, Any]:
     return value
 
 
+def _hex64(value: Any, name: str) -> str:
+    if (not isinstance(value, str) or len(value) != 64 or
+            any(char not in "0123456789abcdefABCDEF" for char in value)):
+        raise ValueError(f"{name} must be 64 hexadecimal characters")
+    return value.lower()
+
+
+def _canonical_group(group_id: str, aliases: Mapping[str, str]) -> str:
+    current = str(group_id)
+    seen: set[str] = set()
+    while current in aliases and str(aliases[current]) != current:
+        if current in seen:
+            raise ValueError("lineage alias cycle")
+        seen.add(current)
+        current = str(aliases[current])
+    return current
+
+
+def _profile_role(canonical_group_id: str, protocol: Mapping[str, Any],
+                  aliases: Mapping[str, str]) -> dict[str, str]:
+    """Return the immutable effective/reference role for one canonical group."""
+    canonical = _canonical_group(canonical_group_id, aliases)
+    reference = "profile_" + fixed_group_split(
+        canonical, protocol["split"]["fraction"], protocol["split"]["seed"])
+    declared = protocol.get("development_train_groups")
+    if declared is None:
+        return {"split": reference}
+    development = {_canonical_group(str(group), aliases) for group in declared}
+    effective = "profile_train" if canonical in development else reference
+    return {"split": effective, "reference_split": reference}
+
+
+def _assign_profile_role(row: dict[str, Any], protocol: Mapping[str, Any],
+                         aliases: Mapping[str, str]) -> None:
+    row.pop("reference_split", None)
+    row.update(_profile_role(str(row["canonical_group_id"]), protocol, aliases))
+
+
+def _validate_development_aliases(protocol: Mapping[str, Any],
+                                  aliases: Mapping[str, str]) -> None:
+    if "development_train_groups" not in protocol:
+        return
+    initial = dict(protocol["lineage_aliases"]["mapping"])
+    frozen_roots = set(initial.values()) | set(protocol["development_train_groups"])
+    for root in frozen_roots:
+        if _canonical_group(str(root), aliases) != root:
+            raise ValueError("protocol canonical alias root was retargeted in state")
+    for lineage, root in initial.items():
+        if _canonical_group(str(lineage), aliases) != root:
+            raise ValueError("protocol lineage alias was retargeted in state")
+
+
+def _validate_profile_roles(rows: Sequence[Mapping[str, Any]], protocol: Mapping[str, Any],
+                            aliases: Mapping[str, str]) -> None:
+    effective_by_group: dict[str, str] = {}
+    opt_in = "development_train_groups" in protocol
+    for row in rows:
+        recorded_canonical = row.get("canonical_group_id")
+        if not isinstance(recorded_canonical, str) or not recorded_canonical:
+            raise ValueError("profile row lacks a canonical group")
+        canonical = _canonical_group(recorded_canonical, aliases)
+        if opt_in:
+            lineage = row.get("lineage_id")
+            if not isinstance(lineage, str) or not lineage:
+                raise ValueError("development profile row lacks a lineage identifier")
+            if recorded_canonical != canonical:
+                raise ValueError("profile canonical group is not a state alias root")
+            if _canonical_group(lineage, aliases) != canonical:
+                raise ValueError("profile lineage and canonical group closure mismatch")
+        expected = _profile_role(canonical, protocol, aliases)
+        actual = {"split": row.get("split")}
+        if opt_in:
+            actual["reference_split"] = row.get("reference_split")
+        elif "reference_split" in row:
+            raise ValueError("legacy profile row unexpectedly contains a reference split")
+        if actual != expected:
+            raise ValueError(f"profile role proof mismatch for {row.get('id', '<unknown>')}")
+        prior = effective_by_group.setdefault(canonical, str(row["split"]))
+        if prior != row["split"]:
+            raise ValueError("one canonical group spans effective train and holdout roles")
+
+
+def _development_metadata(rows: Sequence[Mapping[str, Any]], protocol: Mapping[str, Any],
+                          aliases: Mapping[str, str]) -> dict[str, Any] | None:
+    if "development_train_groups" not in protocol:
+        return None
+    development = {_canonical_group(str(group), aliases)
+                   for group in protocol["development_train_groups"]}
+    represented = {_canonical_group(str(row["canonical_group_id"]), aliases) for row in rows}
+    missing = sorted(development - represented)
+    if missing:
+        raise ValueError(f"declared development groups are absent from current manifest: {missing}")
+    development_rows = [row for row in rows
+                        if _canonical_group(str(row["canonical_group_id"]), aliases) in development]
+    reference_counts = Counter(str(row["reference_split"]) for row in rows)
+    effective_counts = Counter(str(row["split"]) for row in rows)
+    return {
+        "role_policy": dict(protocol["development_role_policy"]),
+        "reference_protocol_id": protocol["reference_protocol_id"],
+        "development_train_groups": list(protocol["development_train_groups"]),
+        "counts": {
+            "development_rows": len(development_rows),
+            "development_reference_holdout_rows": sum(
+                row["reference_split"] == "profile_holdout" for row in development_rows),
+            "effective_profile_train": effective_counts["profile_train"],
+            "effective_profile_holdout": effective_counts["profile_holdout"],
+            "reference_profile_train": reference_counts["profile_train"],
+            "reference_profile_holdout": reference_counts["profile_holdout"],
+        },
+    }
+
+
 def initialize_workdir(
     work_dir: str | Path,
     measurement: Mapping[str, Any] | str | Path,
@@ -113,6 +225,8 @@ def initialize_workdir(
     update_max: int = 96,
     initial_lineage_aliases: Mapping[str, str] | None = None,
     alias_source_sha256: str | None = None,
+    development_train_groups: Sequence[str] = (),
+    reference_protocol_id: str | None = None,
 ) -> Path:
     """Create or verify a scoped training work directory."""
     root = Path(work_dir).resolve()
@@ -142,6 +256,16 @@ def initialize_workdir(
             raise ValueError("a 64-hex alias_source_sha256 is required with initial aliases")
     elif alias_source_sha256 is not None:
         raise ValueError("alias_source_sha256 requires initial_lineage_aliases")
+    if isinstance(development_train_groups, (str, bytes)):
+        raise TypeError("development_train_groups must be a sequence of group identifiers")
+    if any(not isinstance(group, str) or not group for group in development_train_groups):
+        raise ValueError("development_train_groups must contain non-empty strings")
+    development = sorted({_canonical_group(group, aliases)
+                          for group in development_train_groups})
+    if development:
+        reference_protocol_id = _hex64(reference_protocol_id, "reference_protocol_id")
+    elif reference_protocol_id is not None:
+        raise ValueError("reference_protocol_id requires development_train_groups")
     protocol: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "measurement_id": measurement_id(m),
@@ -162,6 +286,17 @@ def initialize_workdir(
                    "validation": "current_profile_holdout_only",
                    "early_stopping": False},
     }
+    if development:
+        protocol.update({
+            "development_train_groups": development,
+            "reference_protocol_id": reference_protocol_id,
+            "development_role_policy": {
+                "name": "whole_canonical_group_train_override_v1",
+                "reference_split_method": "sha256_lineage_threshold_v1",
+                "future_same_group_labels": "profile_train",
+                "validation_scope": "remaining_reference_group_holdouts_descriptive_only",
+            },
+        })
     protocol["protocol_id"] = content_id(protocol)
     if (root / "protocol.json").exists():
         if _read_json(root / "protocol.json") != protocol:
@@ -220,6 +355,8 @@ def ingest_profile_stores(
     prior = _latest_rows(root, int(state["latest_data_version"]))
     by_id = {r["id"]: r for r in prior}
     aliases = dict(state.get("lineage_aliases", {}))
+    _validate_development_aliases(protocol, aliases)
+    _validate_profile_roles(prior, protocol, aliases)
     pattern_groups = {r["pattern_sha256"]: r["canonical_group_id"] for r in prior}
     frozen_groups = set(aliases.values()) | set(pattern_groups.values())
     known_unique = {r["pattern_sha256"] for r in prior}
@@ -265,13 +402,14 @@ def ingest_profile_stores(
                     canonical, merged = min(existing_group, aliased_group), max(existing_group, aliased_group)
                 aliases = {key: (canonical if value == merged else value)
                            for key, value in aliases.items()}
+                if "development_train_groups" in protocol:
+                    aliases[merged] = canonical
                 pattern_groups = {key: (canonical if value == merged else value)
                                   for key, value in pattern_groups.items()}
                 for prior_pending, _sample, _rad in pending:
                     if prior_pending["canonical_group_id"] == merged:
                         prior_pending["canonical_group_id"] = canonical
-                        prior_pending["split"] = "profile_" + fixed_group_split(
-                            canonical, protocol["split"]["fraction"], protocol["split"]["seed"])
+                        _assign_profile_role(prior_pending, protocol, aliases)
                 existing_group = canonical
                 aliased_group = canonical
             canonical_group = existing_group or aliased_group or raw_lineage
@@ -289,10 +427,8 @@ def ingest_profile_stores(
                 "measurement_id": protocol["measurement_id"],
                 "score_spec_id": protocol["score_spec_id"],
                 "geometry_profile": protocol["geometry_profile"],
-                "split": "profile_" + fixed_group_split(canonical_group,
-                                                           protocol["split"]["fraction"],
-                                                           protocol["split"]["seed"]),
             }
+            _assign_profile_role(record, protocol, aliases)
             if uid in by_id:
                 if by_id[uid] != record:
                     raise ValueError(f"observation identity collision: {name}")
@@ -314,6 +450,7 @@ def ingest_profile_stores(
     version = int(state["latest_data_version"]) + 1
     version_dir = root / "data" / f"data-v{version:03d}"
     rows_out = sorted(by_id.values(), key=lambda x: x["id"])
+    _validate_profile_roles(rows_out, protocol, aliases)
     manifest_hash = content_id(rows_out)
     _atomic_json(version_dir / "manifest.json", rows_out)
     _atomic_json(version_dir / "receipt.json", {
@@ -586,6 +723,10 @@ def train_version(work_dir: str | Path, version: int | None = None, *,
     receipt = _read_json(version_dir / "receipt.json")
     if content_id(current_rows) != receipt["manifest_id"]:
         raise ValueError("data manifest hash mismatch")
+    aliases = dict(state.get("lineage_aliases", {}))
+    _validate_development_aliases(protocol, aliases)
+    _validate_profile_roles(current_rows, protocol, aliases)
+    development_metadata = _development_metadata(current_rows, protocol, aliases)
     current_train = _load_dataset(root, current_rows, "profile_train", protocol["frequencies_ghz"])
     current_hold = _load_dataset(root, current_rows, "profile_holdout", protocol["frequencies_ghz"])
     if not current_train[2] or not current_hold[2]:
@@ -644,6 +785,11 @@ def train_version(work_dir: str | Path, version: int | None = None, *,
                 raise ValueError("checkpoint factory binding/member mismatch")
             if saved.get("legacy_manifest_id") != legacy_id:
                 raise ValueError("checkpoint legacy manifest mismatch")
+            if development_metadata is not None:
+                if saved.get("development_training") != development_metadata:
+                    raise ValueError("checkpoint development role binding mismatch")
+            elif "development_training" in saved:
+                raise ValueError("default checkpoint unexpectedly has development metadata")
             if saved.get("complete"):
                 paths.append(path)
                 summaries.append(saved.get("metrics"))
@@ -687,7 +833,7 @@ def train_version(work_dir: str | Path, version: int | None = None, *,
                     metrics = {"profile_train": _metrics(model, current_train, input_norm, target_norm),
                                "profile_holdout": _metrics(model, current_hold, input_norm, target_norm),
                                "legacy_holdout": _metrics(model, legacy_hold, input_norm, target_norm)}
-                _atomic_torch(path, {
+                checkpoint = {
                     "schema_version": SCHEMA_VERSION, "signature": signature,
                     "binding": binding,
                     "protocol_id": protocol["protocol_id"], "data_version": data_version,
@@ -699,7 +845,10 @@ def train_version(work_dir: str | Path, version: int | None = None, *,
                     "target_norm": tuple(t.cpu() for t in target_norm), "complete": complete,
                     "metrics": metrics, "torch_rng_state": torch.get_rng_state(),
                     "numpy_rng_state": np.random.get_state(),
-                })
+                }
+                if development_metadata is not None:
+                    checkpoint["development_training"] = development_metadata
+                _atomic_torch(path, checkpoint)
                 epochs_this_call += 1
                 if interrupt_after_epochs is not None and epochs_this_call >= interrupt_after_epochs:
                     raise TrainingInterrupted("intentional epoch-boundary interruption")
@@ -719,7 +868,7 @@ def train_version(work_dir: str | Path, version: int | None = None, *,
     member_models = [{"member_seed": int(torch.load(path, weights_only=False,
                                                       map_location="cpu")["member_seed"]),
                       "file": path.name, "sha256": file_sha256(path)} for path in paths]
-    _atomic_json(model_dir / "summary.json", {
+    summary = {
         "schema_version": SCHEMA_VERSION, "data_version": data_version,
         "protocol_id": protocol["protocol_id"], "manifest_id": receipt["manifest_id"],
         "legacy_manifest_id": legacy_id, "member_seeds": cfg["ensemble_seeds"],
@@ -732,7 +881,12 @@ def train_version(work_dir: str | Path, version: int | None = None, *,
         "metrics": summaries,
         "ensemble_profile_holdout": ensemble_holdout,
         "validation_policy": "current_profile_holdout_only_no_early_stopping",
-    })
+    }
+    if development_metadata is not None:
+        summary["development_training"] = development_metadata
+        summary["validation_policy"] = (
+            "remaining_reference_group_holdouts_descriptive_only_no_early_stopping")
+    _atomic_json(model_dir / "summary.json", summary)
     return paths
 
 
