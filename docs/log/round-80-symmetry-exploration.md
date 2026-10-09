@@ -679,3 +679,13 @@ v033對舊anchor預測WM分數−11.847624，與實測−0.246441差−11.601184
 這是同一個金屬精確左右對稱pattern的兩次已保存觀測，沿用家族與holdout；重測不算5,000筆新唯一，也不供目前SM訓練。不聲稱三次公證、網格獨立、連續頻率通過、多次穩定或未觸及保留集泛化；不再自動重跑此pattern。原[單次圖卡](assets/round-80/best-symmetric-polar-20261009-v002/sample_card.png)仍保留當時的「尚待重測」歷史註記，最新狀態以本節兩次收據為準。此次完整凍結／審查檔仍在本機ignored資料夾，worker raw已在本人私人dataset，未另發布新的NAS證據歸檔；Git僅此薄結果及log。
 
 13:58–13:59例行CIM身份／creation／命令及scope檢查通過、無警報，三台工作皆有近期結果，第二局部片5／16；下一routine健康約14:29。背景SM本cycle處於training，未以中途receipt當新版本完成。完整32筆的事前排序／實測關聯與R80的5,000筆仍待，之後才接續R81。
+
+### 2026-10-09 14:29：SM輸入契約及最佳家族覆蓋診斷，v034完成
+
+[固定v033診斷薄收據](assets/r80_sm_input_contract_diagnostic_20261009.json)綁定本機凍結資料、三個checkpoint及獨立Sol重算。1,321筆profile-train的625維金屬輸入與216維target，重新計算的mean／std和三模型儲存值完全一致；target順序為S11 17點、Gain 17點、phi0／phi90各91點，推論反正規化及最差margin順序相符。檢查的路徑沒有發現編碼／正規化／Gain順序錯誤，不等於證明整套模型沒有其他問題。獨立直接MLP forward亦重現新最佳預測WM −10.813041；member最差值平均和平均曲線的最差值僅差0.240757 dB，不能解釋與實測+0.021682的10.834723 dB偏差。
+
+最佳canonical家族`c48nq1p05_16`在v033有105筆profile-holdout（86筆直接lineage、19筆canonical aliases）、0筆profile-train；歷史先驗同家族另17筆holdout、0筆train。新資料確實已收集／登錄，但這個家族未供目前SM學習。最佳pattern距最近profile-train為241／625實體像素，最近legacy-train為192／625；另一個同家族holdout鄰點僅4／625。這支持訓練覆蓋／分布落差的假說，尚未證明是預測偏差的原因，亦不是SM品質或泛化改善結果。診斷沒有修改分割、重訓、觸及live鎖／NAS／queue或重排事前32筆；任何未來針對搜尋家族的訓練規則需另立版本、保留原分割證據並使用不同的未觸及驗證範圍，尚未採用。
+
+[v034完成收據](assets/r80_factory_cycle_v034_20261009.json)核對實際action receipt、資料manifest／receipt、summary及三個模型檔案SHA前後一致。此版新增75個唯一profile真值，累積fit2,248（train1,359／holdout889）；歷史先驗train10,150／holdout1,850另計。controller完成派工截點2,254個有效唯一，送出3×16筆prio1；這和模型fit或持續到來的即時數不同。889筆當版holdout總MAE3.671123、Gain MAE5.779624 dB，但holdout集合變動，不把版本誤差變小當成模型進步。
+
+14:29 exact CIM核對PID54712／creation1791505204815／完整命令，scope零警報；三個claimed工作皆有近期結果，另有LOW及guided候選待跑。第二局部片218於14:25:01零error終態，14:29:33用既有snapshot helper只讀來源並create-only凍結16筆；完整32筆已進入原定離線判讀，實際獨立核對仍進行中。下一routine健康約14:59；R80的5,000筆與後續R81未完成。

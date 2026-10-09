@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "status": "completed_v034_local_model_and_receipt_bindings_verified",
+  "observed_utc": "2026-10-09T06:25:22.688346+00:00",
+  "cycle_id": "a3283cd16dfc9b1a94fde766b913850e31e52aaad5129167f7934b7593ba1921",
+  "data_version": 34,
+  "new_profile_unique": 75,
+  "cumulative_profile_fit_unique": 2248,
+  "physical_dispatch_cutoff_valid_unique": 2254,
+  "counts": {
+    "legacy_holdout": 1850,
+    "legacy_train": 10150,
+    "profile_holdout": 889,
+    "profile_train": 1359
+  },
+  "binding": {
+    "cumulative_valid_unique": 2248,
+    "data_version": 34,
+    "manifest_id": "fbd49f5a38dd2f532722b151a284be99a47f3fc9ff34d5e5d5de7e65e9dc5533",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "protocol_id": "e9f7f5f4f1af2a6fedc4a436d280110f8899f6257f75c00bcc76183b8a4bdc32",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+  },
+  "ensemble_profile_holdout": {
+    "gain_mae": 5.779623508453369,
+    "mae": 3.6711230278015137,
+    "n": 889,
+    "phi0_mae": 3.796464681625366,
+    "phi90_mae": 3.4088919162750244,
+    "s11_mae": 2.2953948974609375
+  },
+  "validation_policy": "current_profile_holdout_only_no_early_stopping",
+  "member_models": [
+    {
+      "file": "member-0.pt",
+      "member_seed": 0,
+      "sha256": "39898d428d136764f67f4b15e45ee005fbbe4c15dffee7184ddd66180de23c3d"
+    },
+    {
+      "file": "member-1.pt",
+      "member_seed": 1,
+      "sha256": "d01ccd4c8bee1dd108864cb4385c317daac7572ddf826a2146c2e3dfcafa51f7"
+    },
+    {
+      "file": "member-2.pt",
+      "member_seed": 2,
+      "sha256": "a7821bea5a8aeee0f9fab95b71e87299b5a3b428b13efa95a5c49df18d227f0e"
+    }
+  ],
+  "planned_jobs": [
+    {
+      "input": "dedust_r80ca3283cd1g01_input",
+      "store": "dedust_r80ca3283cd1g01",
+      "count": 16,
+      "prio": 1,
+      "tree_sha256": "db8cee0440008012eec1059e3c663020b7d7a21ca03b4b9d11d888ab55bee110"
+    },
+    {
+      "input": "dedust_r80ca3283cd1g02_input",
+      "store": "dedust_r80ca3283cd1g02",
+      "count": 16,
+      "prio": 1,
+      "tree_sha256": "741c68923491aaf3a3770546d25f0dd003087eeae12d3de8464119e89ce7176a"
+    },
+    {
+      "input": "dedust_r80ca3283cd1g03_input",
+      "store": "dedust_r80ca3283cd1g03",
+      "count": 16,
+      "prio": 1,
+      "tree_sha256": "ea551000535940957fe787800b792ecd5d607d3b65bdf6004d5537cdab1eeb5e"
+    }
+  ],
+  "source_sha256": {
+    "tmp\\r80_factory_20261007\\controller_shell_v1\\cycles\\a3283cd16dfc9b1a94fde766b913850e31e52aaad5129167f7934b7593ba1921\\action_receipt.json": "caede3c00a25449da049b31b46bf56542b5b4679f57ea499d73b50353d2ac4e3",
+    "tmp\\r80_factory_20261007\\training_v2\\models\\data-v034\\summary.json": "1eb5ba615a19da3e0f2b55a16b615cec0012bcb6afc169b10b2ff2bf915dd377",
+    "tmp\\r80_factory_20261007\\training_v2\\data\\data-v034\\receipt.json": "151e7b7de3cdb692098d500cb61e0ff3561c42aeab3d4481ef24d2cd3d007059",
+    "tmp\\r80_factory_20261007\\training_v2\\data\\data-v034\\manifest.json": "e5ca4d0f1ddfc74f9d392d0f898bc7b89f7c27dc3b78ae7a1f785d83760f25ad",
+    "tmp\\r80_factory_20261007\\training_v2\\models\\data-v034\\member-0.pt": "39898d428d136764f67f4b15e45ee005fbbe4c15dffee7184ddd66180de23c3d",
+    "tmp\\r80_factory_20261007\\training_v2\\models\\data-v034\\member-1.pt": "d01ccd4c8bee1dd108864cb4385c317daac7572ddf826a2146c2e3dfcafa51f7",
+    "tmp\\r80_factory_20261007\\training_v2\\models\\data-v034\\member-2.pt": "a7821bea5a8aeee0f9fab95b71e87299b5a3b428b13efa95a5c49df18d227f0e"
+  },
+  "limitations": [
+    "Receipt and physical local model bytes verified; no new independent inference, tensor replay, or training.",
+    "Dispatch cutoff, cumulative model-fit count, and live incoming results are different counts.",
+    "Holdout changed; aggregate MAE differences do not establish model improvement.",
+    "No NAS write, queue mutation, HFSS run, live lock, or controller restart."
+  ],
+  "collector_sha256": "e3c9ffcc44c75693bca7a4b77ace2063a07fb0b0aa2da9c8ad33d9cb3c357757"
+}

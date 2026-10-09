@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "status": "bounded_read_only_sm_input_contract_diagnostic",
+  "safety": {
+    "training_started": false,
+    "hfss_started": false,
+    "cuda_initialized": false,
+    "queue_or_live_lock_touched": false,
+    "nas_or_network_accessed": false,
+    "prospective_32_evaluated": false,
+    "production_files_modified": false
+  },
+  "frozen_binding": {
+    "data_version": 33,
+    "manifest_id": "059dae7b82ba06addaecddfc7c0e5fdfcd357085d617471a50abccfeec32ad77",
+    "cumulative_valid_unique": 2173,
+    "counts": {
+      "legacy_holdout": 1850,
+      "legacy_train": 10150,
+      "profile_holdout": 852,
+      "profile_train": 1321
+    },
+    "checkpoints": [
+      {
+        "file": "member-0.pt",
+        "sha256": "ddd41747444592ac516208744254660825fa5d75e166500882bf4d10f2e1b4bf",
+        "member_seed": 0,
+        "complete": true,
+        "fresh_initialization": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "input_norm_exact_recompute": true,
+        "target_norm_exact_recompute": true
+      },
+      {
+        "file": "member-1.pt",
+        "sha256": "0bf153574b9c9b134b5987c648cac8e282e1374f6d5110c8e953555ec95a3ce1",
+        "member_seed": 1,
+        "complete": true,
+        "fresh_initialization": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "input_norm_exact_recompute": true,
+        "target_norm_exact_recompute": true
+      },
+      {
+        "file": "member-2.pt",
+        "sha256": "e03faa1e325ba8dea26ed04cb1ae4dd22d699da97efdb7edb1651223ab8944b0",
+        "member_seed": 2,
+        "complete": true,
+        "fresh_initialization": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "input_norm_exact_recompute": true,
+        "target_norm_exact_recompute": true
+      }
+    ]
+  },
+  "contract_checks": {
+    "input": {
+      "training": "float32 binary 25x25 flattened row-major to 625",
+      "inference": "float32 supplied 25x25 flattened row-major to 625",
+      "profile_train_norm_recomputed_exactly": true,
+      "all_ensemble_norms_identical": true,
+      "active_pool_validates_single_v1_symmetry_and_feed_before_prediction": true
+    },
+    "target": {
+      "order": [
+        "S11[17]",
+        "Gain[17]",
+        "phi0[-90:2:90][91]",
+        "phi90[-90:2:90][91]"
+      ],
+      "dimension": 216,
+      "profile_train_norm_recomputed_exactly": true,
+      "training_and_inference_denormalization_order_match": true,
+      "cached_best_response_byte_identical_to_frozen_original": true
+    },
+    "score": {
+      "factory": "min(-10-max(S11[26.5:29.5]), min(Gain[26.5:29.5])-4)",
+      "training_target_and_actual_truth_label_order_match": true,
+      "radiation_excluded_from_factory_score": true,
+      "ensemble_navigation_uses_mean(member worst margins), not worst margin of mean response": true
+    }
+  },
+  "best_and_repeat_truth": {
+    "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+    "family": "c48nq1p05_16",
+    "original_factory_margin_db": 0.021682262420654297,
+    "repeat_factory_margin_db": 0.03643369674682617,
+    "repeat_training_eligible": false
+  },
+  "existing_two_anchor_evidence_no_rerun": {
+    "v033_best_predicted_factory_db": -10.813041051228842,
+    "v033_best_worst_margin_of_mean_response_db": -10.57228422164917,
+    "aggregation_definition_difference_db": -0.24075682957967182,
+    "v033_best_actual_factory_db": 0.021682262420654297,
+    "v033_best_residual_db": -10.834723313649496,
+    "v033_old_anchor_predicted_factory_db": -11.84762446085612,
+    "v033_old_anchor_actual_factory_db": -0.24644088745117188,
+    "limitation": "two previously selected/search-touched anchors; not independent validation"
+  },
+  "finding": {
+    "contract_bug_found": false,
+    "evidence": [
+      "checkpoint input and target norms equal independent recomputation from all 1321 profile-train rows",
+      "raw target segment order, inference reshape/denormalization, and actual truth score use S11 then Gain consistently",
+      "the v033 cached best sample is byte-identical to the frozen original HFSS sample",
+      "radiation cannot cause the factory-margin bias because factory_score excludes radiation",
+      "member-worst aggregation changes the best score only by the separately reported sub-dB amount"
+    ],
+    "supported_mismatch_hypothesis": "coverage/distribution mismatch: the entire best canonical family is absent from effective training and confined to heldout data",
+    "not_proven": [
+      "causal source of the bias",
+      "independent generalization",
+      "new SM quality",
+      "prospective-32 performance"
+    ]
+  },
+  "source_file_bindings": {
+    "tmp/r80_sm_input_diagnostic_20261009_v001/check.py": "9aec463482f4b3211d26f6575c066c1fdc9e59116eb7f1ee4ed1ac7716aea46d",
+    "script/symmetry_training.py": "4b58858b7d7adaea68b2e7db3eb527310e390921e5e2d5d05bd115c413a79a36",
+    "script/symmetry_sm_pool.py": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8",
+    "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+    "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+    "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+    "tmp/r80_factory_20261007/training_v2/protocol.json": "01ec4d10362c02d5664760d6024fd44e32892cf01ee444048dea17e8e962c54c",
+    "tmp/r80_factory_20261007/training_v2/measurement.json": "439093feb9f4a49276d24df9972501d48d2c90416b52b40a9edaa826816e7d96",
+    "tmp/r80_factory_20261007/training_v2/score_spec.json": "7cd051b4c2523cd7611a874dfdcab7fbb0d2f3d5b223f8adf01e8abf444d006b",
+    "tmp/r80_factory_20261007/training_v2/data/data-v033/manifest.json": "cde96a5beffa25baaa023a631c738d048d35093247b89d4512a97478e06a8fd2",
+    "tmp/r80_factory_20261007/training_v2/data/data-v033/receipt.json": "7a8fb3a49a42d0a34698b2526d777c656aa3309e5206d2d4fb6df78c56ecf322",
+    "tmp/r80_factory_20261007/training_v2/models/data-v033/summary.json": "1d6506de03a75e901d6f9d348b7cde31f588adc3e86fb12334d415a6a471f8b1",
+    "tmp/r80_factory_20261007/training_v2/legacy/manifest.json": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+    "tmp/r80_two_anchor_sm_check_20261009_v001/report.json": "3ba306e3aaa396ccc2cfd2e7955e410d671193afc70dfcc64e1c184967949788",
+    "tmp/r80_best_render_20261009_v002/best_frozen_store/manifest.json": "0e5cf409640b23cdb7301a5e48966c63c9883f5ceb43cc8f01f61f89c4f4c573",
+    "tmp/r80_best_render_20261009_v002/best_frozen_store/results.json": "fda35f6c4fda7cf41389388317ce12ad68ec1cb83d0a20a990e4d6b6720e2d97",
+    "tmp/r80_best_repeat_20261009_v004/raw_freeze/store/manifest.json": "24c2e07044bb7301e55fd5238f0d9e2323c0416abb1e9252874c13cf4857a729",
+    "tmp/r80_best_repeat_20261009_v004/raw_freeze/store/results.json": "d2f4939feb76ed9b1ccab97418cc68d5f8ed7e4021b8eb800415a95f09ecddf1",
+    "tmp/r80_factory_20261007/training_v2/models/data-v033/member-0.pt": "ddd41747444592ac516208744254660825fa5d75e166500882bf4d10f2e1b4bf",
+    "tmp/r80_factory_20261007/training_v2/models/data-v033/member-1.pt": "0bf153574b9c9b134b5987c648cac8e282e1374f6d5110c8e953555ec95a3ce1",
+    "tmp/r80_factory_20261007/training_v2/models/data-v033/member-2.pt": "e03faa1e325ba8dea26ed04cb1ae4dd22d699da97efdb7edb1651223ab8944b0"
+  },
+  "coverage": {
+    "best_present_in_v033": true,
+    "best_split": "profile_holdout",
+    "current_best_family": {
+      "profile_train": 0,
+      "profile_holdout": 105
+    },
+    "legacy_best_family": {
+      "legacy_train": 0,
+      "legacy_holdout": 17
+    },
+    "effective_train_best_family_rows": 0,
+    "nearest_to_best": {
+      "profile_train_1321": {
+        "id": "67130c16f947c186f35db1d5bd6a213a2b5be5943f813664f9c29bc84259ad86",
+        "pattern_sha256": "c72595c0727146f9798976c2dff08d5233b6d21014f3a201fdcb67f81fc855f1",
+        "canonical_group_id": "random-047",
+        "physical_625_hamming": 241,
+        "independent_left12_plus_center_hamming": 123
+      },
+      "legacy_train_10150": {
+        "id": "148a22fd94b5192107a5edb8b7c57969da3e1bad397402d63fbdbc73d5db8b4f",
+        "pattern_sha256": "8f6e9b97032c27d2a06b0dcecbeb76726586866d827d9fce4d5b9105d3d0525c",
+        "canonical_group_id": "c48nq1p03_21",
+        "physical_625_hamming": 192,
+        "independent_left12_plus_center_hamming": 79
+      },
+      "same_family_profile_holdout_105": {
+        "id": "4e7a29867786417eb89fcc18369ebec11d76cdaa918fc0e963716850f91e0f6a",
+        "pattern_sha256": "1b6820ee4d3fc2b5d7e44c1384b6780191c9d8a45ee7d0d33a47333da4803bd9",
+        "canonical_group_id": "c48nq1p05_16",
+        "physical_625_hamming": 4,
+        "independent_left12_plus_center_hamming": 2
+      }
+    }
+  },
+  "independent_review": {
+    "verdict": "PASS",
+    "report_sha256": "4bb3b0a3a97ca3168e8f92cd80480f771f0f5db493dfe6733423381bd3f37153",
+    "review_sha256": "177fc3c26724adc9bf0aa267314b5941a5c46866700577eb3e20146fd7d78258",
+    "script_sha256": "9a0185d3f621bc936daba3c1df554a2c17150fb95bb01be95a69242eb3b8a517",
+    "score_replay": {
+      "member_factory_margins_db": [
+        -10.937666416168213,
+        -9.776675701141357,
+        -11.724781036376953
+      ],
+      "mean_member_worst_margin_db": -10.813041051228842,
+      "worst_margin_of_mean_response_db": -10.57228422164917,
+      "aggregation_difference_db": -0.24075682957967182,
+      "actual_factory_margin_db": 0.021682262420654297,
+      "predicted_minus_actual_residual_db": -10.834723313649496,
+      "aggregation_abs_fraction_of_residual": 0.02222085627940017
+    },
+    "family_count_definition": {
+      "profile": "canonical_group_id (105 heldout rows; 86 carry the family as direct lineage and 19 are canonical aliases)",
+      "legacy": "lineage_id (17 heldout rows; legacy manifest has no canonical_group_id)"
+    },
+    "source_bindings_before_after_equal": true,
+    "limits": [
+      "No bug was discovered in the inspected contract paths; this does not prove that the model or wider pipeline contains no bugs.",
+      "The coverage evidence is correlational and does not identify the causal source of the prediction error.",
+      "No fixed split, model, fixed-32 recipe, or prospective/partial-32 result was changed or evaluated."
+    ]
+  },
+  "next_protocol_status": "not_adopted; preserve existing split and selected32 protocol; any future development-training rule must be versioned and use a separate untouched validation scope"
+}
