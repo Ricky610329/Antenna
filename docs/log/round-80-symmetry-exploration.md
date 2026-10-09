@@ -1079,3 +1079,8 @@ Existing trainer自身會做holdout forward產summary；此刻不獨立重算或
 原PID15944／creation／argv／launch通過，scope零警報。02:38結果15分鐘前的v009 g03現在13/16、最新1分鐘；另外兩片v010 g02/g03為5/16與4/16，最新2/1分鐘；兩新guided片與五LOW片待跑。這是有進度的正常工作，沒有stale停機，不重啟worker／刪claim。[健康](assets/r80_health_20261010_0308.json)。controller completed13／reported v010，entries與watch cutoff不當成新的有效unique census。
 
 v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer20k準備入口獨立review通過，尚未predict或dispatch。因健康時間通常落在主線running階段，準備一個只讀本機waiting狀態、單次觸發CPU排名的背景guard；原v1把long cycle下一deadline誤當start+1800，在任何launch前被root／independent review拒絕並保留，窄修需與現有next_cycle_in_seconds契約一致。這不影響原main／LOW／worker。最新全量仍02:20的2,879及最佳+.021682；下一routine2026-10-10 03:38，R80/R81未完成。
+
+
+### 2026-10-10 03:20：最新全量實測及最佳核對
+
+沿用既有唯讀查詢，逐 store cutoff 重播 sample/rad：2,930 唯一有效圖形／2,935 成功觀測含重測，較02:20 新增51唯一有效。沒有新最佳，最佳 WM +0.0216822624 dB。本次不更動 NAS、queue、claims、controller 或模型。[全量收據](assets/r80_best_status_20261010_0320.json)。03:20 原 controller exact 身分通過，三台最新結果1–2分鐘、scope無警報；SM持續批次更新。v010 current-only 三模型實際訓練及物理審計完成，前瞻對照尚未派工／採用。資料持續增加，但近期多樣性批次尚未帶來新的正WM圖形；R80 5,000及後續R81 spec／正WM驗證未完成。維持30分鐘例行健康檢查，下一03:38。
