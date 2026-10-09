@@ -1167,3 +1167,8 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10 06:03：健康通過與派工原生換行問題
 
 - **10/10 06:03 主線健康／前瞻派工格式錯誤已定位**：三台claimed10/16、10/16、8/16，最新14／2／2分鐘、scope零警報；主線完成18輪、reported v013，cached3,052不是新全量census。phase1 driver9960於05:59單次呼叫publisher8，06:01在copy／append前exit失敗，兩action仍prepared、無capacity proof；不重啟舊driver。實際40,800B佇列檔使用Windows CRLF，helper計算LF bytes而誤判；診斷cutoff前後相同，正在窄修新版本，不改模型／選樣／容量限制。[失敗與診斷](assets/r80_currentonly_prospective_v010_publication_failure_20261010.json)。最新全量05:04的3,015／+.021682；下一routine06:33，R80/R81未完成。
+
+
+### 2026-10-10 06:13：原生換行窄修與同32筆再固定
+
+publisher v9只修實際writer的換行雜湊與版本namespace；既有dedust.jobs_add／pb.atomic_json本機實際寫入回歸1項通過，獨立來源review及pool來源續接通過，不重跑廣泛測試。兩份v9本機action／派工前seal已實際產生，全部32筆選樣、owner配额、模型、雙預測與v8完全相同；修正後prepared action雜湊與實際file bytes一致。[準備收據](assets/r80_currentonly_prospective_v010_publisher_native_fix_20261010.json)。舊失敗、action、原始佇列cutoff保留；未派HFSS／改queue，接續仍需當下capacity、duplicate與最終window驗證。
