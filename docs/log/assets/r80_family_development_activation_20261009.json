@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "status": "activated_startup_identity_review_passed",
+  "old_controller": {
+    "launch_id": "b126f3badf3649a9bc9c4ea0f28ab37f",
+    "finished_utc": "2026-10-09T07:49:59.964085+00:00",
+    "stop_reason": "local_STOP",
+    "completed_cycles": 7
+  },
+  "old_terminal_state_sha256": "7255fe12e55d542b2e0c740092c190611b0f4fe1c6fb055e674728f958dfff62",
+  "new_controller": {
+    "schema_version": 1,
+    "status": "launched_identity_verified",
+    "observed_utc": "2026-10-09T08:03:04.3712313+00:00",
+    "pid": 60956,
+    "creation_unix_ms": 1791532984209,
+    "exact_argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_familydev_v1.json\" ",
+    "source_commit": "b1d4c4ae230ce982f9e19cd170b3714c265ad5a6",
+    "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_familydev_v1.json",
+    "settings_sha256": "987e813fbc324ca5e1eb4fe5276ab80deb37327c0d4ecd135b7cba68335fb6ff",
+    "training_workdir": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1",
+    "controller_workdir": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1",
+    "stdout": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_familydev_handoff_20261009_v001\\watch_stdout.txt",
+    "stderr": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_familydev_handoff_20261009_v001\\watch_stderr.txt",
+    "old_terminal_utc": "2026-10-09T07:49:59.964085+00:00",
+    "hfss_started_here": false,
+    "worker_restart_or_claim_mutation": false
+  },
+  "independent_startup_review": {
+    "path": "tmp\\r80_familydev_handoff_review_20261009_v001\\postlaunch_startup_review.json",
+    "sha256": "ba2d59fc3d3eb852c0db8225a918b077c991c9387821137a92d388a06a52a56c",
+    "report": {
+      "schema_version": 1,
+      "review_kind": "postlaunch_startup_identity_only",
+      "observed_utc": "2026-10-09T08:04:55.3954302+00:00",
+      "verdict": "PASS",
+      "limitations": [
+        "Initial cycle physical audit was intentionally not awaited.",
+        "No queue, claim, source, process, or controller state was modified by this review."
+      ],
+      "launch": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_familydev_handoff_20261009_v001\\launch_new.json",
+        "sha256": "b79bdbdf5b11e486cee8296599fe5328934f7979e858f507fbbc7304d327286c",
+        "status": "launched_identity_verified",
+        "pid": 60956,
+        "creation_unix_ms": 1791532984209,
+        "exact_argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_familydev_v1.json\" ",
+        "source_commit": "b1d4c4ae230ce982f9e19cd170b3714c265ad5a6"
+      },
+      "process": {
+        "watcher_count": 1,
+        "matching_pid_count": 1,
+        "pid": 60956,
+        "creation_unix_ms": 1791532984209,
+        "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+        "exact_argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_familydev_v1.json\" "
+      },
+      "controller": {
+        "watch_status_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_familydev_v1\\watch_status.json",
+        "watch_status_sha256": "8c2fe0fc30de91113cf386f66e281f8e249d3bffe9dbad6aeeab0bddc98365b9",
+        "status": "running_cycle",
+        "launch_id": "555a4dbe6a7d474e8ffc70a97e555de7",
+        "started_utc": "2026-10-09T08:03:06.064728+00:00",
+        "settings_sha256": "987e813fbc324ca5e1eb4fe5276ab80deb37327c0d4ecd135b7cba68335fb6ff",
+        "profile_sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "profile_scope": "symmetry_filter_20261007",
+        "interval_seconds": 1800,
+        "low_backlog": {
+          "poll_seconds": 90,
+          "low_watermark": 48,
+          "target_pending": 96,
+          "max_refill": 96,
+          "min_refill": 48,
+          "shard_size": 16,
+          "priority": 6,
+          "owner": "r80-low-backlog-v1",
+          "reservoir_seed": 80100791,
+          "reservoir_size": 2048
+        },
+        "expected_retry_workers": [
+          "140.123.106.216",
+          "140.123.106.218",
+          "140.123.106.37"
+        ],
+        "hfss_started_here": false
+      },
+      "bindings": {
+        "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_familydev_v1.json",
+        "settings_sha256": "987e813fbc324ca5e1eb4fe5276ab80deb37327c0d4ecd135b7cba68335fb6ff",
+        "profile_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+        "profile_sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "training_summary_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v001\\summary.json",
+        "training_summary_sha256": "90d5894677a5bd1d896ab90add8f4837aca3bd82375732afb3ab77a681b5d500",
+        "training_data_version": 1,
+        "training_protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+        "source_head": "b1d4c4ae230ce982f9e19cd170b3714c265ad5a6",
+        "source_paths_clean": true,
+        "launch_script_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_familydev_handoff_20261009_v001\\launch_new.ps1",
+        "launch_script_sha256": "9b0f912e38ffdcdc93ea27134562993cea070b890f0f6421578b40ec7c7578c6"
+      },
+      "logs": {
+        "stdout_bytes": 0,
+        "stderr_bytes": 0
+      },
+      "checks": {
+        "launch_identity_verified": true,
+        "sole_watcher": true,
+        "pid_matches": true,
+        "creation_matches": true,
+        "argv_matches": true,
+        "executable_matches": true,
+        "source_commit_matches": true,
+        "source_paths_clean": true,
+        "settings_matches": true,
+        "training_summary_matches": true,
+        "profile_matches": true,
+        "interval_1800": true,
+        "low_backlog_owner": true,
+        "new_training_model": true,
+        "startup_logs_empty": true,
+        "no_hfss_started_here": true,
+        "no_worker_restart_or_claim_mutation": true
+      }
+    }
+  },
+  "unchanged_settings": [
+    "dataset_root",
+    "expected_retry_workers",
+    "interval_seconds",
+    "low_backlog",
+    "prepared_blind_pool",
+    "profile_config",
+    "seed_inputs"
+  ],
+  "consumed_old_pilot_omitted": true,
+  "bootstrap": {
+    "unique_rows": 2248,
+    "new_hfss_rows": 0,
+    "promoted_whole_family_rows": 110,
+    "train": 1469,
+    "hold": 779,
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "model_summary_sha256": "90d5894677a5bd1d896ab90add8f4837aca3bd82375732afb3ab77a681b5d500"
+  },
+  "retry_fix_review": {
+    "sha256": "9aee49fcff646694fb97c2b1b6f3d53a033d66384b9149e1211f4b2430bd01c6",
+    "report": {
+      "schema_version": 1,
+      "review": "r80_retry_cutoff_independent_review_v001",
+      "status": "PASS",
+      "scope": "read_only_generated_fixture_review",
+      "canonical_base_git_blob": "b1765dd3fd0799fdf1478df57e2b5279c407d4b3",
+      "reviewed_files": {
+        "script/symmetry_factory_cycle.py": {
+          "sha256_before": "fe116fc0d18125bc1baf972c1aca87d45b7a05e9411ea3fc9ef0ec5bb2ec8638",
+          "sha256_after": "fe116fc0d18125bc1baf972c1aca87d45b7a05e9411ea3fc9ef0ec5bb2ec8638",
+          "diff_from_base": "+5/-6"
+        },
+        "tests/test_symmetry_factory_retry_cutoff.py": {
+          "sha256": "bc535c89223434a75921f0af1c28fd20cc74c2f8f48ef79a086aac1e704840a6",
+          "tests": 9
+        },
+        "tests/test_symmetry_factory_cycle.py": {
+          "sha256": "5b44b006a4507121010be5ed0d82ab1011ee6bb5d18a66c9495455b60cfacfb2",
+          "authorized_change": "+6/-2 in the existing retry-transition assertion"
+        }
+      },
+      "independent_tests": {
+        "path": "tmp/r80_retry_cutoff_independent_review_20261009_v001/review_tests.py",
+        "sha256": "d0d7c38d8e390fafde7d40e140144ae04429e7ac36335c98423dc8c6c5c54286",
+        "result": "3 passed in 2.65s"
+      },
+      "scoped_regression": {
+        "command_scope": "new retry cutoff tests plus existing factory cycle and watch tests",
+        "result": "105 passed in 52.49s",
+        "expected_partition": "9 new plus 96 existing cycle/watch"
+      },
+      "verified_invariants": [
+        "A nonterminal retryable error that becomes a valid success is fully validated from the current results and raw files, returned only as deferred progress, and never added to the frozen successful set or success order.",
+        "The original pending reservation, exclusion set, valid count, remaining capacity, pair proof, and exact training snapshot selection remain unchanged after postcutoff success.",
+        "A postcutoff success cannot be selected into an original-cutoff snapshot; requesting it fails as absent from the physical cutoff.",
+        "Removed or updated retry errors remain reserved and cannot release original-cutoff capacity.",
+        "Frozen successful result entries and their sample/radiation bytes remain immutable and fail closed on change.",
+        "Terminal result changes, unknown manifest IDs, stable malformed JSON or result entries, wrong physical identities, and corrupt late-success raw bytes are rejected.",
+        "Results changing during validation produce LiveSnapshotChanged, while stable invalid evidence remains a fatal ValueError.",
+        "Validation caching is keyed by the exact current results SHA; repeated identical evidence reuses validation, while success-error-success oscillation revalidates each distinct transition and leaves the cutoff unchanged.",
+        "A raw artifact changed immediately after validate_store returns is caught by the subsequent raw hash replay before deferred progress is returned."
+      ],
+      "call_path_review": {
+        "original_cutoff": "run_cycle keeps queue.successful_hashes, pending_hashes, pair_proofs, capacity, and snapshot order frozen across ordinary rechecks",
+        "deferred_return": "_recheck_queue_proof returns late success hashes for observation only; run_cycle does not merge them into the frozen queue",
+        "fresh_cutoff_boundary": "only the pre-existing trained_this_cycle branch deliberately obtains a new physical queue proof after training; it does not mutate the original proof"
+      },
+      "additional_checks": [
+        "git diff --check passed",
+        "py_compile passed for source, owner tests, and independent tests",
+        "source SHA was unchanged before and after review"
+      ],
+      "limits": [
+        "All execution used generated local fixtures with CPU thread limits.",
+        "No NAS, live controller, lock, Git mutation, CUDA, HFSS, or real dataset was accessed.",
+        "This review supports retry-cutoff safety and evidence handling only; it does not validate model quality or the later controller transition."
+      ]
+    },
+    "main_integrated_test_count": 49,
+    "main_subtests": 5,
+    "main_exit_code": 0
+  },
+  "health": {
+    "observed_utc": "2026-10-09T08:04:27.944079+00:00",
+    "scope": "symmetry_filter_20261007",
+    "lines": [
+      "  job dedust_r80k247c32cf1ed9be57: 11/16 完成,最新結果 3 分前（已認領）",
+      "  job dedust_r80k84da1bbdf7374781: 11/16 完成,最新結果 1 分前（已認領）",
+      "  job dedust_r80k31d94f9de14019f3: 3/16 完成,最新結果 1 分前（已認領）",
+      "  job dedust_r80kbbff56abdb8d6797: 0/16（排隊中）",
+      "  job dedust_r80ke781edf1546c8902: 0/16（排隊中）",
+      "  job dedust_r80k083b51a17c67ba93: 0/16（排隊中）"
+    ],
+    "alarms": [],
+    "queue_or_claim_mutation": false
+  },
+  "health_sha256": "c9b29c2226c4ae6df8c0ec006d205c7aee8e8bf2e42ad54bbcf6fb5b1ae2b6bf",
+  "launch_script_sha256": "9b0f912e38ffdcdc93ea27134562993cea070b890f0f6421578b40ec7c7578c6",
+  "stop_script_sha256": "d2dc6492524d599eca069f611c91cba9d3b28ea0c001fe4f7d73f60a03c57c27",
+  "preserved_first_stop_guard_rejection": "Unpublished deferred action_receipt did not exist; first script rejected before STOP. Final guard validated the typed saved LiveSnapshotChanged and null controller_receipt before normal STOP.",
+  "limits": [
+    "Startup identity only; initial new cycle completion/dispatch not yet verified.",
+    "Retry-cutoff regression tests do not prove a completed live cycle after the fix.",
+    "5000 unique R80 target and R81 remain incomplete.",
+    "Inherited repeat-origin representative in bootstrap remains disclosed in the migration receipt."
+  ],
+  "new_nas_archive_created": false
+}

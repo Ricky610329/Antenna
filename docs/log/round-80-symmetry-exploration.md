@@ -1,5 +1,7 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
+最新狀態（2026-10-09 16:04）：family development controller已接手；2,359唯一實測截點／5,000，最佳圖見本文末段。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
+
 日期：2026-10-07。狀態：實作與本機備料；尚無本輪 HFSS 結果。沿用 Antenna，不遷移 emforge。
 
 ## 問題與歷史
@@ -753,3 +755,19 @@ Conductor已核對實際v2設定及方案來源；實作在`tmp/r80_sm_developme
 在**完全相同的779筆未升級角色cohort**上，216維MAE從舊v034的3.699170至新版本3.637540（−0.061630）；S11／Gain／兩個rad切面MAE均略降。這些資料早已用於development holdout監看，因此只是描述性的同資料回歸比較，不能宣稱未觸及驗證或泛化。110筆c48之新MAE 1.042525及最佳點預測WM約−1.567980、與真值差−1.589663 dB則是**訓練擬合診斷**，不可拿來驗證新模型，也不能以此宣稱新HFSS候選會更好。
 
 新模型可載入並通過實際契約稽核；live controller仍使用舊training_v2。既有retryable結果變動所造成的batch更新延後修正還在隔離審查，待通過後於正常cycle邊界切換唯一controller，再用事前鎖定的新候選與HFSS真值確認導航效果。最佳實測WM及兩次確認不因這次model fit而改寫，5,000筆目標／R81尚未完成。
+
+### 2026-10-09 16:02：目前最佳重新渲染與全量查詢
+
+沿用原只讀查詢，逐store保存截點並實際重播2,364次成功觀測，得到**2,359個唯一成功pattern／5,000**。最佳仍是`r80localv1_00026_f6ffb938`，原次WM **+0.021682 dB**；獨立重跑WM **+0.036434 dB**。同樣的金屬、raw S11/Gain與rad重新沿用既有renderer出圖，PNG SHA與前版完全相同；更新的是查詢時間與全量排名證據，沒有修改曲線。金屬左右完全鏡射，場型殘差並非零，正WM餘裕很小。
+
+![目前最佳：金屬排列、S11/Gain、28GHz兩切面極座標方向圖](assets/round-80/best-symmetric-polar-20261009-v004/sample_card.png)
+
+[最新查詢／圖檔收據](assets/round-80/best-symmetric-polar-20261009-v004/best_query_receipt.json)保存query／raw／分析／renderer／polar helper／PNG bindings；Conductor核對圖檔與前版相同且文字可讀，驗證重算WM、唯一排名、金屬鏡射及兩次觀測註記通過。這張圖仍展示原次響應；兩次正WM不是網格獨立、連續頻率或多次穩定達標的證明。沒有新NAS bulk歸檔。
+
+### 2026-10-09 16:04：唯一controller正常交接，批次學習持續
+
+retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗證新entry/raw後，晚到成功列作deferred capacity，不修改原截點／成功集／候選排序。原成功entry/raw、terminal results hash、metadata及未知／不合法結果仍嚴格拒絕。獨立105項回歸與3個額外負例通過；整合後49 tests＋5 subtests通過。這是工程修正，未宣稱已完成live新cycle或改善HFSS性能。
+
+舊controller的首個STOP guard因未發布deferred cycle沒有action receipt而在寫STOP前拒絕；保留該嘗試，再明確核對已保存typed LiveSnapshotChanged、null controller_receipt與等待狀態後，只寫本機STOP。PID54712於15:49:59正常退出，無process kill或worker重啟。三份已審查source整合並push GAN至`b1d4c4a`，新hidden watcher於16:03:04單次啟動：PID60956、creation1791532984209、launch=`555a4dbe6a7d474e8ffc70a97e555de7`。
+
+[交接與独立startup收據](assets/r80_family_development_activation_20261009.json)證實全系統唯一watcher、exact argv／creation、profile／scope與新模型summary一致。新工作根為`controller_familydev_v1`與`training_familydev_v1`，已消耗16/16的舊pilot request不沿用，其餘settings相同。新state `running_cycle`、stdout/stderr空；**首輪完成／新候選派工尚待確認**。原訓練、鎖、raw與失敗證據保留。16:04 scope無警報，三個claimed jobs11/16、11/16、3/16及三片16筆LOW待跑，主線1800秒／LOW90秒及48–96新真值更新SM保留，下一routine約16:34；R80 5,000與R81仍待。
