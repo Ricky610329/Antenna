@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "review_scope": "local frozen v008 cohort artifacts only; no NAS/HFSS truth/model/process access",
+  "cycle_id": "7e26901fe1a65c1ecbd0a5dc9616ea20374441bf85ecbbe5f110ab7821e067c7",
+  "artifact_sha256": {
+    "action_receipt.json": "3c18fcc2ac40ebe57ac70a5df01e82875b39a070850c8b13b08cc0128cd79d4b",
+    "diversity_search_audit.json": "b7070e03857188d8a738dc66218a805fbace80851a5d052ea083f38f01b6a969",
+    "factory_bundle_complete.json": "12c248fc8e5fa4858020fb07ba7c71b45b679673bd60499f6f63d965315f3789",
+    "manifest.json": "f1de2bc662a9cbaed668dc3219b8fe3574a6594ced81af033b2522276b528385",
+    "sm_pool_audit.json": "27a91108a8d39eb5a05f0093a04dca15e90e14ddca52050771ddc5797647b915"
+  },
+  "candidate_count": 20000,
+  "candidate_origin_counts": {
+    "fresh_random": 10000,
+    "parent_variant": 10000
+  },
+  "expected_arm_quotas": {
+    "global_lcb": 16,
+    "high_disagreement": 16,
+    "parent_lcb": 16
+  },
+  "selected_arm_counts": {
+    "global_lcb": 16,
+    "high_disagreement": 16,
+    "parent_lcb": 16
+  },
+  "selected_count": 48,
+  "selected_canonical_group_count": 36,
+  "selected_max_per_canonical_group": 2,
+  "selected_min_physical_hamming": 71,
+  "parent_count": 32,
+  "parent_group_count": 32,
+  "parent_max_per_canonical_group": 1,
+  "predictor_binding": {
+    "cumulative_valid_unique": 2739,
+    "data_version": 8,
+    "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+  },
+  "training_binding": {
+    "artifact_set_sha256": "d33a1d3b17156588b74f52dcc6f27c19bf861be5dcdf3d597de0d06be4d754c7",
+    "cumulative_valid_unique": 2739,
+    "data_version": 8,
+    "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+    "manifest_sha256": "1260a66ee30beceb4fff04dbc6fbec20feb29652ea48a24a7e485a96f509c12a",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "protocol_sha256": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+    "receipt_sha256": "7e0b3d77dd8c3b5c1cc36a4c44909ddd3b7eb3f106dad59c39546e96d7e635b5",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "state_sha256": "a1e57b3305fa4870d640417b240351dbf22d80b92125a13a8b53591b96ecccfa"
+  },
+  "checks": {
+    "candidate_pool_hash_replayed": true,
+    "completion_action_and_shard_hashes": true,
+    "equal_largest_remainder_quotas_replayed": true,
+    "full_20k_lcb_order_and_tie_break": true,
+    "full_20k_packed_geometry_and_hashes": true,
+    "p60_and_strict_greedy_selection_replayed": true,
+    "parent_descriptor_and_model_identity_bindings": true,
+    "saved_48_tensors_and_manifest_replayed": true,
+    "three_staged_shards_48_tensors_and_trees_replayed": true,
+    "whole_cohort_distance_and_group_cap": true
+  },
+  "limits": [
+    "No NAS queue/store/raw re-read; exclusion sets are verified through saved counts and SHA-256 bindings, not independently reconstructed.",
+    "No v008 training samples, radiation files, normalization tensors, or checkpoint weights were reopened; parent/training/model claims are binding checks, not a duplicate physical replay.",
+    "The review validates selection provenance and geometry, not HFSS performance or SM improvement.",
+    "This v008 cohort contains three 16-pattern guided shards (48 total); this review does not read their HFSS outcomes."
+  ],
+  "independent_helper_sha256": "884215f0f7b6f23d7e0e799bb219ed1f1136461876994a312ec7cd2c62b4bce8",
+  "independent_report_sha256": "00211fcdea959484aeed6697032ad44b5fd6371f03ad12cf326b190454ec9e7e",
+  "prior_physical_model_dispatch_record_sha256": "896f30d539f2f57d2c3346ffbe6e8ed9d40152a6dd1bc89f4d2824379120a059",
+  "model_sha256": [
+    "470f07cbb065abe9c726b2e84f0e7e5fe11179ad87f634be4cd72baed4cd8e30",
+    "68b7dc4798919da9c80fdb87a5593ed6df1d4944331868a3ebf88d255ad25dac",
+    "dbbe67490ce88e1ea421f71609f87bcbe36df3c8f2d8e64c59c4e340130ff102"
+  ],
+  "HFSS_performance_read": false,
+  "live_policy_changed": false,
+  "conductor_record_script_sha256": "368279e319761cb09c3df5937e28ad203d0d6b77620fa26484099bd2cbf8ccc7"
+}

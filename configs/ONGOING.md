@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **v008完整20k獨立保存排名核對通過**：10k fresh／10k parent，strict三臂各16、48selected／三staged片完全重播；36家族／cap2／minHamming71、32parents32groups、fit2,739 binding一致。[補充收據](../docs/log/assets/r80_diverse_sm_v008_selection_review_20261010.json)。只核對派工幾何／來源，不作HFSS性能改善宣稱，未改live政策。
+
 - **v008新資料／模型／48實際派工核對通過**：新增48／fit2,739，舊2,691保留；1,855train／884hold，三fresh legacy30＋current100／Adam3,900、train-only norm逐位吻合。私人NAS三片各16 tree／queue及48保存曲線重播通過。[收據](../docs/log/assets/r80_diverse_sm_cycle_v008_20261010.json)。dispatch2,749與fit分開記帳，最新全量仍23:51的2,756／+.021682；獨立20k排名核對待做，current-only新資料shadow準備中，未改主線。
 
 - **v006 first32終態真值及四SM比較完成**：32/32有效唯一／exactLR／0terminal error／0正WM，最佳−2.101229、median−17.323709；非新最佳。[結果](../docs/log/assets/r80_diverse_sm_v006_first32_result_20261010.json)。LCBρ live0.3138／current-only0.3952／CNN0.1074／weighted0.2786；CNN曲線誤差較低但排名較差，加權loss未改善本批Gain或LCB。先保留主線，不憑單批替換；32原預測prospective、三shadow仍false。窄round-robin讀回修正與独立raw重播已核對，v1保留；v006另16不混入，00:38下次routine。
