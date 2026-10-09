@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "status": "phase1_dispatched_saved_evidence_independently_verified",
+  "completed_utc": "2026-10-09T22:24:07.580535+00:00",
+  "unified_exec_session": 70963,
+  "observed_session_exit_code": 0,
+  "observed_terminal_stdout_status": "dispatched",
+  "publisher_pid": 62720,
+  "publisher_absent_cim_observed_after_terminal": true,
+  "phase1_job": "dedust_r80cf0b21c1bg01",
+  "review_sha256": "e6157fb259a5c960ec4b89e926487e92dfce96ee3ddbca0a5143bdfc7226389b",
+  "review": {
+    "schema_version": 1,
+    "status": "passed_phase1_dispatch_v9_saved_evidence_review_no_live_access",
+    "reviewed_bindings": {
+      "publisher_source": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\publisher_v9.py",
+        "sha256": "38af0483fa4d15b80fbd910d5b93700cbcf451c2d9054d964935b415d3da5ddb"
+      },
+      "publisher_review": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_publisher_review_20261010_v001\\publisher_review_v9.json",
+        "sha256": "465f1d14e50069a69e6e73789020c1d5a7e8de219f592e8a1394bf8a7d8e942d"
+      },
+      "pool_review": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_review_20261010_v001\\pool_review_v9.json",
+        "sha256": "eca141283f26ec310f9b5ec72d5d8aad318b69ecf3fb6392bec29aba7831e263"
+      },
+      "predispatch_seal": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\predispatch_cohort_scope_seal_v9.json",
+        "sha256": "5b0211fb6b5ad7910adef8e0296431b2014f29ce13acd69d570a9dcd94cdae59"
+      },
+      "phase1_manifest": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\prepared_v6\\shards\\shard-001_input\\manifest.json",
+        "sha256": "47df791f44703b2b0ef8cc619fc0e2fff2cc743f88e1ee40076a3abc61fa41ce"
+      },
+      "action": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-01\\action_receipt.json",
+        "sha256": "07fa4c373784e74af7d719d4200ffa060fa2b388b97aaffb1995e94a4d107a9a"
+      },
+      "capacity_proof": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-01\\capacity-proof-v9-20261009T221517199640.json",
+        "sha256": "c6ed59e6aadf7cd2f95112d9833fd67b73d07e4d3d765c127c41e517fd8699f5"
+      },
+      "dispatch_readback": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\phase-v9-01\\dispatch-readback-v9-20261009T221517199640.json",
+        "sha256": "32e25262b51d52bd9bf5d9fd1bdfd36253d93a1696a2141666a7627c821e6697"
+      },
+      "copied_pool_audits": {
+        "sm_pool_audit_sha256": "273b6e2fb7dc07b13bb93463c9865c86cc77c5ffc0e4e1b730176b4abd300599",
+        "diversity_search_audit_sha256": "07ffbef60070814419a11cee4b11ec0e307df0a97207a5afe885f1684016a1d8"
+      }
+    },
+    "fixed_phase1_cohort": {
+      "phase": 1,
+      "publisher_version": 9,
+      "cycle_id": "f0b21c1b520e5201f7c47b90ec20550f999f10da398d3919b4cb4b7310ffcacd",
+      "source_shard_tree_sha256": "675bbdf3210fac76f03ec23908007fba018073d5544b2c80af3e69997aaf6b45",
+      "selected_count": 16,
+      "selected_unique": 16,
+      "owner_counts": {
+        "current_only": 8,
+        "live": 8
+      },
+      "manifest_order_equals_action_selected_pattern_hashes": true,
+      "manifest_ids_hashes_owners_equal_predispatch_seal_phase1": true,
+      "planned_job_count": 16,
+      "planned_job_tree_equals_source_shard_and_predispatch_seal": true,
+      "predictions_saved_before_hfss": true,
+      "selected_truth_read": false,
+      "hfss_started_here": false
+    },
+    "normalized_action": {
+      "method": "set status to prepared, remove dispatch_gate, serialize with indent=2 and Windows-native text newlines",
+      "sha256": "64237f3abb472e032846fb206dcbf1e895374cba7e20552b18e3f1c3cfeaa09c",
+      "equals_predispatch_seal_native_prepared_action_binding": true,
+      "equals_capacity_proof_action_before": true,
+      "only_allowed_postprepare_fields_observed": [
+        "status",
+        "dispatch_gate"
+      ],
+      "dispatched_status": "dispatched",
+      "dispatch_gate": "passed_per_shard"
+    },
+    "capacity_lineage": {
+      "proof_status": "final_locked_capacity_preflight_before_copy",
+      "proof_phase": 1,
+      "controller_cim_equals_action_contract": true,
+      "controller_launch_id_equals_action_contract": true,
+      "wait_origin_field": "last_completed_utc",
+      "wait_origin_utc": "2026-10-09T21:58:39.696599+00:00",
+      "wait_remaining_seconds": 748.056646,
+      "minimum_required_wait_seconds": 180.0,
+      "capacity": {
+        "successful_unique": 3076,
+        "nonterminal_pending_unique": 140,
+        "active_main_all_unique": 0,
+        "active_main_guided_unique": 0,
+        "phase_unique": 16,
+        "global_total": 3232,
+        "global_limit": 5000,
+        "guided_total": 76,
+        "guided_limit": 96
+      },
+      "jobs_before_count": 202,
+      "expected_job_absent_before": true,
+      "jobs_before_sha256": "6c3bdcb1fae9be1a1b64b4dd1f9139710d9741fd4254c6dfcf2219ef929946b6",
+      "jobs_before_native_serialization_hash_exact": true
+    },
+    "readback_lineage": {
+      "status": "dispatched",
+      "phase": 1,
+      "completed_utc": "2026-10-09T22:24:07.580535+00:00",
+      "job_equals_action_expected_queue_job": true,
+      "action_binding_equals_dispatched_action": true,
+      "capacity_proof_binding_exact": true,
+      "jobs_before_hash_equals_capacity_proof": true,
+      "jobs_after_is_exact_single_append": true,
+      "jobs_after_count": 203,
+      "jobs_after_sha256": "aca7b6dd97cdac68892718aad058e499d335723bd1772c8e288ef162008f8f6f",
+      "jobs_after_native_serialization_hash_exact": true,
+      "immutable_input_tree_equals_planned_source_shard": true
+    },
+    "scope": {
+      "saved_local_evidence_only": true,
+      "NAS_access": false,
+      "new_queue_scan": false,
+      "process_or_controller_query": false,
+      "model_forward_or_training": false,
+      "HFSS_access": false,
+      "selected_truth_read": false,
+      "phase2_dispatch_or_review": false,
+      "source_or_review_mutation": false
+    },
+    "limits": [
+      "This PASS validates the internally consistent saved local phase-1 dispatch evidence; it does not independently observe the live NAS queue after the saved readback.",
+      "The externally reported session-70963 exit code is not re-established by this review because process inspection was out of scope.",
+      "No claim is made about HFSS execution, result availability, phase-2 dispatch, comparative truth, or downstream performance."
+    ],
+    "blockers": []
+  },
+  "phase2_status": "prepared_not_dispatched",
+  "no_selected_performance_readout": true,
+  "main_scorer_adopted": false,
+  "read_scope_disclosure": "All 32 selected patterns, attribution and both predictions were frozen before HFSS. Capacity validation can read completed raw sample/rad files; this is not an end-to-end raw-unread pipeline.",
+  "prior_scope_receipt": "docs/log/assets/r80_currentonly_prospective_v010_predispatch_scope_20261010.json",
+  "validation_script_sha256": "d525c173fa7f3e56678227182781af9609d40293ce702b6137e913b8ab60ed01"
+}

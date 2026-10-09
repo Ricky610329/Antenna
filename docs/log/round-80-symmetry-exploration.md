@@ -1179,3 +1179,8 @@ publisher v9只修實際writer的換行雜湊與版本namespace；既有dedust.j
 逐 store cutoff 重讀 sample/rad：3,086 個有效唯一對稱圖形，3,091 次成功實測含重測，比05:04增加71個。沒有新最佳；最佳 WM +0.0216822624 dB。[實測紀錄](assets/r80_best_status_20261010_0626.json)。
 
 06:26三個已認領工作皆有新結果，scope沒有警報；主線reported SM v013，持續批次更新及多策略補池。固定32筆雙scorer對照的第一批16筆已完成安全入列，第二批仍prepared，尚無這批對照的性能結果，也未採用新模型替换主線。安全容量驗證可以讀已完成原始資料，並非全流程盲讀；32筆選樣與預測早已凍結。目前資料持續增加，但尚未突破原最佳；R80 5000筆與R81新spec任務均未完成。例行健康檢查維持約30分鐘。
+
+
+### 2026-10-10 06:24：固定雙scorer對照第一批實際入列
+
+publisher v9實際session70963 exit0；固定16筆（current-only 8／frozen-live 8）完成capacity、不可變輸入與單次queue append/readback。独立本機證據核對通過：action正規化與派工前seal相同，總預算3232≤5000、guided76≤96，queue202→203。[派工證據](assets/r80_currentonly_prospective_v010_phase1_dispatch_20261010.json)。06:26健康檢查看到該job排隊中；第二批仍prepared。這是派工里程碑，不是HFSS完成或模型性能改善；主線未採用current-only模型。32筆選樣與預測維持凍結，容量驗證可讀已完成raw資料的範圍限制仍適用。
