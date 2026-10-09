@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "status": "completed_v008_full48_two_saved_prediction_truth_independently_verified",
+  "observed_utc": "2026-10-09T18:08:46.754504+00:00",
+  "cycle_id": "7e26901fe1a65c1ecbd0a5dc9616ea20374441bf85ecbbe5f110ab7821e067c7",
+  "action_receipt_sha256": "3c18fcc2ac40ebe57ac70a5df01e82875b39a070850c8b13b08cc0128cd79d4b",
+  "denominators": {
+    "all_proposed": 48,
+    "terminal_attempts": 48,
+    "successful_valid_unique": 48,
+    "terminal_error_attempts": 0
+  },
+  "actual_valid_subset": {
+    "valid_count": 48,
+    "actual_positive_count": 0,
+    "actual_best_wm_db": -1.7159557342529297,
+    "actual_median_wm_db": -14.925785541534424,
+    "actual_min_wm_db": -31.890832901000977
+  },
+  "best_in_cohort": {
+    "id": "r80c7e26901fg_00001_94308dcf",
+    "pattern_sha256": "94308dcf4d008b7714fb7aa4f747413fc5b8d8dc43b6e7608b8f4bb9fbfd7e41",
+    "s11_margin_db": -1.7159557342529297,
+    "gain_margin_db": -0.0020592212677001953,
+    "factory_margin_db": -1.7159557342529297,
+    "radiation_margin_db": 0.7034745216369629,
+    "radiation_margin_clipped_db": 0.7034745216369629,
+    "selection_arm": "parent_lcb",
+    "candidate_group": "parent_variant",
+    "sample_sha256": "f306022ba39b4652d6fb44452bbf7e8ea8ae4625b0fa7cbc1abb439f2d3482d1",
+    "rad_sha256": "9d53d13fcc9535a5b67f5acf845cf4603f9e9698cd2a46acabf9b42a1b5aa6e9",
+    "saved_prediction_comparison": {
+      "live_v008": {
+        "factory_score": -2.4081780115763345,
+        "lcb_score": -2.706418501580612,
+        "band_s11_mae_db": 2.7112184252057756,
+        "band_gain_mae_db": 0.3249048505510603,
+        "response_full_curve_mae_db": 1.5140492892002357,
+        "full_vector_216_mae_db": 0.8948808942955954
+      },
+      "current_only_v008": {
+        "factory_score": -1.8613928159077961,
+        "lcb_score": -2.204544516195341,
+        "band_s11_mae_db": 2.6802614756992886,
+        "band_gain_mae_db": 1.1570750985826765,
+        "response_full_curve_mae_db": 2.1855564222616306,
+        "full_vector_216_mae_db": 1.3555901293832533
+      }
+    }
+  },
+  "saved_prediction_comparisons_valid_subset": {
+    "live_v008": {
+      "valid_count": 48,
+      "factory_vs_actual_wm_spearman": {
+        "n": 48,
+        "rho": 0.12158054711246201
+      },
+      "lcb_vs_actual_wm_spearman": {
+        "n": 48,
+        "rho": 0.08879722101606599
+      },
+      "predicted_factory_positive_count": 0,
+      "predicted_lcb_positive_count": 0,
+      "predicted_factory_best_db": -2.4081780115763345,
+      "predicted_factory_median_db": -8.647193968296051,
+      "predicted_lcb_best_db": -2.706418501580612,
+      "predicted_lcb_median_db": -9.322260292045625,
+      "band_s11_mae_db": 2.3873288446948644,
+      "band_gain_mae_db": 6.280782176816068,
+      "response_full_curve_mae_db": 4.144632770589085,
+      "radiation_phi0_mae_db": 4.098656136871769,
+      "radiation_phi90_mae_db": 3.2805545653687798,
+      "radiation_full_curve_mae_db": 3.6896053511202744,
+      "full_vector_216_mae_db": 3.7612300375181427
+    },
+    "current_only_v008": {
+      "valid_count": 48,
+      "factory_vs_actual_wm_spearman": {
+        "n": 48,
+        "rho": 0.2777898393399913
+      },
+      "lcb_vs_actual_wm_spearman": {
+        "n": 48,
+        "rho": 0.23534520191055144
+      },
+      "predicted_factory_positive_count": 0,
+      "predicted_lcb_positive_count": 0,
+      "predicted_factory_best_db": -1.8613928159077961,
+      "predicted_factory_median_db": -9.636873920758566,
+      "predicted_lcb_best_db": -2.204544516195341,
+      "predicted_lcb_median_db": -11.184797443191847,
+      "band_s11_mae_db": 2.3136838342817057,
+      "band_gain_mae_db": 6.218818836770272,
+      "response_full_curve_mae_db": 4.154916495287277,
+      "radiation_phi0_mae_db": 4.088857086207974,
+      "radiation_phi90_mae_db": 3.2962477537948804,
+      "radiation_full_curve_mae_db": 3.692552420001427,
+      "full_vector_216_mae_db": 3.765331950370496
+    }
+  },
+  "geometry": {
+    "all_exact_lr_symmetric": true,
+    "arm_counts": {
+      "global_lcb": 16,
+      "high_disagreement": 16,
+      "parent_lcb": 16
+    },
+    "canonical_group_count": 36,
+    "canonical_group_max_count": 2,
+    "maximum_pairwise_hamming": 373,
+    "minimum_pairwise_hamming": 71,
+    "pair_count": 1128,
+    "proposed_count": 48,
+    "training_overlap_count": 0
+  },
+  "predictor_binding_at_dispatch": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 8,
+    "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+    "cumulative_valid_unique": 2739
+  },
+  "training_exclusion": {
+    "manifest_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\data\\data-v008\\manifest.json",
+    "manifest_sha256": "1260a66ee30beceb4fff04dbc6fbec20feb29652ea48a24a7e485a96f509c12a",
+    "rows": 2739,
+    "selected48_overlap_count": 0
+  },
+  "prediction_sources": {
+    "live_v008": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\7e26901fe1a65c1ecbd0a5dc9616ea20374441bf85ecbbe5f110ab7821e067c7\\guided_bundle\\manifest.json",
+      "sha256": "f1de2bc662a9cbaed668dc3219b8fe3574a6594ced81af033b2522276b528385",
+      "predicted_before_hfss": true,
+      "fully_prospective_claim": true,
+      "selected48_truth_read": false,
+      "timing": "saved in the dispatch bundle before HFSS",
+      "predictor_binding": {
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+        "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+        "data_version": 8,
+        "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+        "cumulative_valid_unique": 2739
+      }
+    },
+    "current_only_v008": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_sm_currentonly_shadow_v008_20261010_v001\\selected48_shadow_predictions.json",
+      "sha256": "08ee9b625747786fe0f852122af90cd427413aee6dbb6cad3d180bde94f5ca58",
+      "predicted_before_hfss": false,
+      "fully_prospective_claim": false,
+      "selected48_truth_read": false,
+      "timing": "saved before this truth readout but not before HFSS",
+      "predictor_binding": {
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+        "protocol_id": "11fd39a1dd6fee0f8694ec12bdb7825052dfd978d0db3912bd3a05d716599544",
+        "data_version": 8,
+        "manifest_id": "5c448023db489c10cb0802d3a1384c34acedbc6530aa27ed468f7a680c182989",
+        "cumulative_valid_unique": 2739
+      }
+    }
+  },
+  "prediction_timing_interpretation": {
+    "live_v008": "The original dispatch-bundle predictions are prospective and predate HFSS.",
+    "current_only_v008": "The saved current-only predictions have selected48_truth_read=false but predicted_before_hfss=false and are not fully prospective."
+  },
+  "shards": {
+    "dedust_r80c7e26901fg01": {
+      "proposed": 16,
+      "successful": 16,
+      "terminal_errors": 0,
+      "done_marker": true,
+      "terminal_fail_marker": false,
+      "input_metadata_sha256": {
+        "config.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "d6ced273452f3760c0b67ee9b08943ce33be37fce9bcd3d33026f566839f692b"
+      },
+      "store_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "d6ced273452f3760c0b67ee9b08943ce33be37fce9bcd3d33026f566839f692b",
+        "results.json": "96cc4df83230e9ad0f81065bc3ea58c4ecd7b4f8546182f3a4797f78c30a8c55"
+      }
+    },
+    "dedust_r80c7e26901fg02": {
+      "proposed": 16,
+      "successful": 16,
+      "terminal_errors": 0,
+      "done_marker": true,
+      "terminal_fail_marker": false,
+      "input_metadata_sha256": {
+        "config.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "7279b019234ab70a1922ab201a1a200f84154bef583144f81a62722d41d2d8f0"
+      },
+      "store_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "7279b019234ab70a1922ab201a1a200f84154bef583144f81a62722d41d2d8f0",
+        "results.json": "6ef3434905cd4d5a48a225cbda7d0dfff856e65eb1faf20b9aee8093d8ec9ba3"
+      }
+    },
+    "dedust_r80c7e26901fg03": {
+      "proposed": 16,
+      "successful": 16,
+      "terminal_errors": 0,
+      "done_marker": true,
+      "terminal_fail_marker": false,
+      "input_metadata_sha256": {
+        "config.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "747a326a59aa196f55f8c38d1dc939bd3b2033a14d1ce63a770de02f21cf647e"
+      },
+      "store_metadata_sha256": {
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+        "manifest.json": "747a326a59aa196f55f8c38d1dc939bd3b2033a14d1ce63a770de02f21cf647e",
+        "results.json": "d7447fcbe9d6a9d728f46d52296e3c5c24c964ea13cbb3aaf0c970bb0371f1a3"
+      }
+    }
+  },
+  "order_fix_lineage": {
+    "v006_raw_failure_round_robin_base_sha256": "48381fb5b4c9ac825c923892f68305471dea8a69a926f706158b55a9d5b5ad75",
+    "v007_corrected_metadata_and_canonical_gate_base_sha256": "0ee98f3723b812098635b52869df33f668ad2109bc4553c4a9890f0ea96fb524",
+    "round_robin": true,
+    "v008_narrow_change": "Use three exact 16-row shards and guided_index = job_index + shard_position*3; compare only live and current-only saved predictions for the same 48 IDs.",
+    "reconstructed_guided_ids_sha256": "068a51c632de68c511e8daa747ed07cd7b9b26a83d46717309d739be0c20d973"
+  },
+  "source_report_sha256": "15b7486ace05644b3699e99f668320416e1d117b75d528b9c3ded611751a1d90",
+  "rows_sha256": "ea7d3b1258e6c28ba7352e957f05998123a975db4df5662dc624cfa6c3838291",
+  "failures_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "frozen_source_bindings_sha256": "55d45971ce5c7dc6d561fd09383e721b65495e9b7660a699b38840335fda4bc6",
+  "producer_sha256": "48873a6372e67873758de460837847b727de94ee4b94df705837a0e70f2c8a14",
+  "final_config_sha256": "985c8fd3dcbf76c9056a0154381d14e6528fdca4f47a7d24ab7111806e3acb5e",
+  "final_readiness_sha256": "75d2b94af74c4d5fa4f07bb32be36315df54d8747a8825df8dd5aa719aa465ed",
+  "independent_static_review_sha256": "77de0ca77a38311700a2f8883f1e60a2c772bfa7e74bda09a088a7d812e58804",
+  "preserved_initial_static_blocked_review_sha256": "e0e9ce9714f36872794b63235922356ffc14b40afb91ec606d88fdc3f0accbaf",
+  "independent_result_review_sha256": "d77c574357b62402236b04489325d7f0c18936e1038d21faa761db6b1ea51fba",
+  "independent_replay_helper_sha256": "a13e36bf228afbe91477fa9a947a239e121d3169c7c442dc1cb7ec776befb9b4",
+  "independent_replay_scope": {
+    "no_broad_tests": true,
+    "no_forward": true,
+    "no_hfss_or_queue_action": true,
+    "no_model_checkpoint_load": true,
+    "no_nas": true,
+    "no_project_metric_helpers": true,
+    "no_training_or_rescore": true,
+    "numpy_json_and_frozen_observation_tensors_only": true,
+    "raw_tensor_load_disclosed": true
+  },
+  "terminal_health": {
+    "path": "tmp/r80_diverse_sm_handoff_20261009_v001/health_20261010_0208.json",
+    "sha256": "4fc26488f07aafe83f551f1cdbdece34c29fec827ec726b2fe25a4f645c96242",
+    "observed_utc": "2026-10-09T18:08:21.6434629Z",
+    "three_v008_jobs_done_no_fail": true,
+    "scoped_status_exit": 0,
+    "scoped_zero_alerts": true
+  },
+  "source_before_after_equal": true,
+  "new_global_best": false,
+  "global_census_recomputed_here": false,
+  "fixed_global_census_cutoff": {
+    "receipt_sha256": "21472f8619a2911ee9a28718064e33d3fe83770e39c5fee21c778c463c28674d",
+    "observed_cutoff": "2026-10-10 00:51 Asia/Taipei",
+    "known_best_wm_db": 0.021682262420654297,
+    "known_valid_unique": 2810,
+    "is_latest_claim": false
+  },
+  "NAS_queue_claim_raw_mutation": false,
+  "actual_readout_exit_code": 0,
+  "readout_attempts": {
+    "v1": 0,
+    "v2": 1
+  },
+  "decision": "Keep the live model. Current-only has higher saved-ranking correlations and slightly lower band S11/Gain MAE on this cohort, but slightly worse full-vector MAE and is explicitly non-prospective. Use this only to prepare a limited prospective pilot, not to replace the live model.",
+  "limits": [
+    "All-proposed denominator is 48. Terminal HFSS failures retain IDs, attempt counts, and error hashes but receive no fabricated WM, curve error, or rank metric.",
+    "All rho, MAE, positive-count, best, and median summaries use only hash-verified successful observations and state their valid N.",
+    "Only same-cohort v008 live and current-only saved predictions are compared. v006, CNN, and weighted-loss predictions are excluded.",
+    "Current-only timing is false/non-prospective. This one development cohort does not establish causal efficacy or deployment authority.",
+    "The 02:08 health receipt proves the three v008 jobs were done with no fail markers and the scoped status had zero alerts; it is not a fresh global census.",
+    "The cited +0.021682 dB best and 2,810 valid unique are the fixed 00:51 cutoff only and are not claimed as current totals.",
+    "The original v1 helper was never executed. The corrected v2 helper was executed exactly once after static review and terminal health evidence.",
+    "Current-only predictions were produced after HFSS timing and cannot support a prospective or causal model comparison on this cohort."
+  ]
+}

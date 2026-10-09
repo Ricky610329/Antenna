@@ -1039,3 +1039,17 @@ v006 current holdout868筆Gain MAE5.559408、S11 MAE2.135740 dB；兩批v004同�
 獨立Sol使用本機frozen observation/sample/rad tensors與自有NumPy算術重算32raw WM、所有曲線誤差、average-tie ranks/denoms及496幾何距離：全部exactLR、min/maxHamming66/388、26canonical groups／max2、訓練overlap0；70個frozen raw-store檔案及report/rows/failures前後不變。沒有載入模型checkpoint／forward／rescore／train／NAS／queue操作。讀回v1錯把candidate_group（19parent／13fresh來源標籤）當canonical cap2；v2 config command仍指錯v1。兩者均在任何執行/真值前被獨立review拒絕且原檔保留，finalv3 canonical_group_id gate与command/config/helper seals一致，round-robin還原沿用v006修正。
 
 只核對這32原live prospective predictions，不混入不同候選的v006三shadow。這32可能已在00:51全量2810內，不能再相加；v00848尚未terminal，current-only v008已保存non-prospective預測待對照。保留live與LOW補池，性能卡點已通知，資料收集及批次SM更新持續；R80/R81未完成，下一routine01:38。
+
+
+### 2026-10-10 02:10 — v008 full48 終態讀回與獨立重播
+
+02:08 的既存 health receipt（SHA-256 `4fc26488f07aafe83f551f1cdbdece34c29fec827ec726b2fe25a4f645c96242`）記錄三個 v008 shard 均為 `done=true/fail=false`，scoped status exit 0 且無警報。原始 v1 helper 從未執行；修正證據標籤與版本綁定後的 v2 只執行一次。48/48 筆均為有效結果、0 terminal error、0 筆 WM 大於 0；cohort 最佳 WM 為 -1.715956 dB，中位數 -14.925786 dB。完整雜湊、逐筆資料及限制見[薄研究紀錄](assets/r80_diverse_sm_v008_full48_result_20261010.json)。
+
+| 保存預測 | factory 與實測 WM 的 Spearman ρ | LCB 與實測 WM 的 Spearman ρ | band S11 MAE (dB) | band Gain MAE (dB) | full-216 MAE (dB) |
+|---|---:|---:|---:|---:|---:|
+| live v008（prospective） | 0.121581 | 0.088797 | 2.387329 | 6.280782 | 3.761230 |
+| current-only v008（non-prospective） | 0.277790 | 0.235345 | 2.313684 | 6.218819 | 3.765332 |
+
+獨立 replay 只讀本機 frozen sample/radiation tensors 與 JSON，以 NumPy 重算 WM、MAE、average-tie Spearman、正值計數及幾何。48 個幾何皆為 exact LR symmetric；1,128 個 pair 的最小 Hamming distance 為 71，36 個 canonical groups 的最大重複數為 2，三個 selection arms 各 16，與 v008 訓練 manifest 的 overlap 為 0。current-only 的排名相關與 band MAE 稍好，但 full-216 MAE 稍差，而且其 `predicted_before_hfss=false`，因此不能據此替換 live model 或宣稱因果改善。這項結果只支持準備一個範圍有限、真正 prospective 的 pilot。
+
+本節沒有重做全域 census。引用的全域最佳 +0.0216822624 dB 與 2,810 valid unique 僅是 00:51 cutoff（receipt SHA-256 `21472f8619a2911ee9a28718064e33d3fe83770e39c5fee21c778c463c28674d`），不代表 02:08 或目前的最新總數；也沒有額外 NAS、HFSS、模型 forward、訓練、rescore 或 queue 動作。
