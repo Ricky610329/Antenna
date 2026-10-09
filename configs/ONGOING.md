@@ -5,11 +5,11 @@
 > - config 全集（不刪）→ [README.md](README.md)
 > **流程**：新實驗 → `docs/log/` 開 round 檔 + 這裡加「🔵 進行中」一行指向它；跑完結論寫進 round 檔，這裡只留「✅ 已歸檔」一行指標。
 
-最後更新：2026-10-08
+最後更新：2026-10-09
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
-- 🔵 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：14:09唯讀cutoff為1,005唯一實測／5,000，單次最佳WM仍−0.246441 dB（未公證）。[同一239保留集比較](../docs/log/assets/r80_sm_common_v013_v015_20261008.json)已重播v013／v014／v015：總MAE3.4454／3.3976／3.4024 dB，分量有升有降，不代表HFSS性能推進；v015 fit970。[兩份新私人歸檔](../docs/log/assets/r80_sm_profile_archive_20261008.json)已獲批准並逐檔NAS readback通過。15+1 pilot陰性／性能停滯仍未解除；sole PID16536、主線prio1與LOW prio6／按48新唯一真值更新SM持續運作。14:39工廠無警報，下一例行健康約15:09；R80／R81未完成。 [970筆凍結統計／頻率圖](../docs/log/assets/r80_profile_data_v015_20261008.json)完成；970片金屬精確LR，phi0／phi90鏡射功率殘差中位數0.2521／0.0215，無對稱性能因果結論。consumer新snapshot格式修正／809 tests通過；worker不需重啟。
+- 🔵 [R80 金屬對稱探索](../docs/log/round-80-symmetry-exploration.md)：10/09 09:53–09:54唯讀raw截點 **2,031唯一實測／5,000**（2,035含repeat），目前最佳單次WM仍 **−0.246441 dB**，未公證／未達雙門檻。[最新金屬、S11／Gain及極座標圖](../docs/log/assets/round-80/best-symmetric-polar-20261009-v001/sample_card.png)／[排名核對收據](../docs/log/assets/round-80/best-symmetric-polar-20261009-v001/best_query_receipt.json)。既有性能停滯未解除；唯一controller PID54712持續運作，v030已觀測，48筆新唯一真值門檻更新SM、prio1主線／prio6補池。09:50 scoped health無警報、三台有claimed與新結果、五片LOW待跑；每30分鐘健康檢查，下一約10:20。R80／R81未完成；[舊同一239保留集SM比較](../docs/log/assets/r80_sm_common_v013_v015_20261008.json)與[私人歸檔](../docs/log/assets/r80_sm_profile_archive_20261008.json)保留，模型更新不等於性能改善。
 - **首個成熟性能窗口已驗證**：v001／v002／v003共176唯一實測（48／48／80），全部終態且零error。v001、v002有實質推進；v003無相關前緣增量，只累積一個未推進世代，未達三世代停滯判準。此225筆窗口最佳單次factory margin−0.246441 dB，帶內最差S11−9.76091、最低Gain3.75356，仍未達原天線雙門檻；不把這個窗口數字當作326筆全量最優。主基準49與非重測48敏感性結果一致；完整證據643檔存私人`analysis_versions/performance-window-v001-v003_20261008`，見[收據及適用限制](../docs/log/assets/r80_performance_window_v001_v003_20261008.json)。
 - **延伸至v005的性能窗口**：新增v004／v005各48筆，17片共272唯一實測。v003、v004無實質推進，但v005有一個相關2D／3D前緣增量，重置停滯計數；綜合最佳仍−0.246441 dB。新增點S11最差−10.46454 dB、最低Gain2.66478 dBi，屬取捨而非雙門檻達標。49／48基準結論一致，完整新證據223檔存私人`performance-window-v001-v005_20261008`，見[延伸窗口收據](../docs/log/assets/r80_performance_window_v001_v005_20261008.json)。
 - **v008窗口已觸發性能停滯**：新增v006／v007／v008各48／64／80筆，全部終態、零error；三世代相關點與2D／3D增量均0，固定判準的192筆未推進後綴成立。513／512基準分析及獨立192筆raw／全量前緣重算一致；本窗口最佳仍−0.246441 dB，不當作615筆全量最優。440檔含新真值、原三世代9個模型及審查存私人`performance-window-v001-v008_20261008`。停滯僅通知，不自動停HFSS或改佇列／spec；選樣誤差與歷史方法診斷正在另行處理。

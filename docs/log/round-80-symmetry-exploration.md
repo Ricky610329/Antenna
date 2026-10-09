@@ -561,3 +561,22 @@ python -m script.figs.symmetry_profile --analysis-json "$archive\analysis\analys
 新controller同一PID54712／creation／command仍live。08:35:28原訓練cycle完成為`dispatched`、`dispatch_gate=passed_per_shard`，仍派原16筆prio1 store `dedust_r80c034683bdg01`；沒有重建或覆寫原canonical／分片，三份v029模型SHA均與失敗前相同。[完成派工核對收據](assets/r80_guided_recovery_completed_20261009.json)再以supported profile驗證NAS實際16筆input，整棵tree SHA與原local分片完全一致，queue只有一條相符的scope／input／priority row。此核對無model forward、新訓練或live鎖。
 
 恢復輪次的實體cutoff為1,950有效唯一，SM v029仍fit1,851；不將兩者混成即時累計或模型進步。08:50 scoped health無警報，三個claimed jobs持續工作，該guided job已有2/16實測，另有兩片LOW待跑；watch首輪completed=1、無deferred或error，stderr空白。下一主線仍按原30分鐘更新，新真值達門檻後才更新SM；LOW90秒補池維持原設定。不重啟worker，下一routine健康約09:20，不追加例行全量raw／模型重播；沒有新的最佳WM或性能改善宣稱。
+
+
+### 2026-10-09 09:56：重新核對目前最佳並沿用歷史極座標腳本出圖
+
+依使用者要求重新查詢當前實測，再渲染最佳。09:53:20–09:54:24的唯讀逐store截點，共2,035次有效成功、去重後2,031個實體pattern；全數以原始sample／rad重播，零結果error，不重用舊排名或SM預測。各store結果是在掃描時分別凍結；掃描後新增的worker結果／queue job不包含在此數字。重複片優先保留非repeat，再依queue／manifest順序；所有成功單次的最大WM也與此最佳一致。沒有取得live鎖、改queue／claims或啟動HFSS。
+
+最佳仍為`r80c91d71565g_00019_5a42476c`，單次WM **−0.246440887 dB**；帶內最差S11 **−9.760910 dB**、最低正向RealizedGainTotal **3.753559 dBi**，仍未通過26.5–29.5 GHz雙門檻。金屬左右mismatch=0；±45°鏡射功率殘差phi0=0.091769、phi90=0.004225。最佳未改善，既有性能停滯紀錄不因此解除；這次只有全量最大值核對，不把它冒充新的成熟世代前緣分析或重測公證。
+
+![目前2,031筆唯一實測中的最佳單次對稱樣本：金屬、S11／Gain及28GHz極座標方向圖](assets/round-80/best-symmetric-polar-20261009-v001/sample_card.png)
+
+[最新排名／截點核對收據](assets/round-80/best-symmetric-polar-20261009-v001/best_query_receipt.json)及[出圖收據](assets/round-80/best-symmetric-polar-20261009-v001/sample_plot_receipt.json)綁定raw、查詢、analysis／NPZ、PNG與未修改的renderer／歷史`polar_rad_ax`。最佳單次先以既有snapshot函式凍結，再由既有`script.symmetry_analysis profile`與`script.figs.symmetry_profile --sample-id`產生；完整查詢／raw／分析保留本機ignored `tmp/r80_best_render_20261009_v001`，Git只交付本次明確要求的圖與薄收據。圖是25×25像素俯視示意，不是HFSS完整3D模型。0°朝上、順時針、每圈5 dB及共用−20..10 dBi刻度；phi0有5點在顯示上截至圓心，原資料／指標不截斷。
+
+目檢中文、饋線在下緣、頻率曲線與極座標圖均通過；另用凍結NPZ重算兩項margin／WM、金屬LR對稱、完整角度網格、全量去重／最大值及全部出圖hash。PNG bytes與昨日同一最佳的極座標圖完全一致，並非新性能結果。沒有改程式，因此未重跑已通過的817項回歸。09:50健康核對PID54712精確creation／command仍live、factory無警報；三片guided claimed且有新結果，另有五片LOW待跑。controller主線1800秒／LOW90秒維持原設定，按48筆新有效唯一真值門檻更新SM，v030已觀測；下一routine健康約10:20，worker不需重啟。
+
+從repo根目錄、ant環境重現，請選新的輸出資料夾：
+
+```powershell
+python -m script.figs.symmetry_profile --analysis-json tmp/r80_best_render_20261009_v001/analysis/analysis.json --data-npz tmp/r80_best_render_20261009_v001/analysis/arrays.npz --sample-id r80c91d71565g_00019_5a42476c --out-dir docs/log/assets/round-80/best-symmetric-polar-20261009-v002
+```

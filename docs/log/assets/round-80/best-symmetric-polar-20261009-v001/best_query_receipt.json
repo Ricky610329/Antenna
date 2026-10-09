@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-09T01:53:20.993676+00:00",
+  "completed_utc": "2026-10-09T01:54:24.104218+00:00",
+  "status": "read_only_query_complete",
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "unique_successful_patterns": 2031,
+  "successful_including_repeats": 2035,
+  "raw_replayed_this_query": 2035,
+  "exact_prior_metrics_reused": 0,
+  "reported_best_independently_raw_replayed": true,
+  "best": {
+    "id": "r80c91d71565g_00019_5a42476c",
+    "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+    "s11_margin_db": -0.2390899658203125,
+    "gain_margin_db": -0.24644088745117188,
+    "factory_margin_db": -0.24644088745117188,
+    "radiation_margin_db": 0.11250185966491699,
+    "radiation_margin_clipped_db": 0.11250185966491699,
+    "store": "dedust_r80c91d71565g02",
+    "sample_sha256": "3894a2a8878a7f28bcaedf6524f47a2d2cb7b26eb434be12dac59e8477eb96a1",
+    "rad_sha256": "879595d5c0084b6be070daecae9d048ec69190eeb5f19effee4624a20a2b91e1",
+    "repeat": false,
+    "pair_index": 13,
+    "row_index": 9,
+    "worst_inband_s11_db": -9.760910034179688,
+    "minimum_inband_gain_dbi": 3.753559112548828
+  },
+  "result_errors": [],
+  "jobs_sha256_at_scan_start": "3be5db9b80e4be49e1862b9012ce359e6f53d38ff407a854e5ecb2de9908dd6b",
+  "rows_sha256": "59ab45d4940402b5f94d994a1101763f61f8432a6f1262afcd0a3224045f67ce",
+  "pair_proofs_sha256": "ff56aced01f3de7244e122d65c40125600e4fd2ee51b669c1e1cbfcf254a5e2d",
+  "query_script_sha256": "da6a0034241d4d6f22ecfd1ce0272b4dbd06ec252737278b0539b4bec2b631ac",
+  "controller_locks_acquired": false,
+  "queue_or_source_mutation": false,
+  "limits": [
+    "Each store has its own saved cutoff; later worker results or queue additions are excluded.",
+    "Unique representatives prefer nonrepeat observations, then queue/manifest order.",
+    "Single HFSS solve performance, not repeat certification or field-symmetry proof."
+  ],
+  "query_evidence_sha256": "0c5b4e19f9004563a5ec4fb5605878bffdb1b6453453b3af658553c72b00464a",
+  "analysis_sha256": "8591e820605e8fffbe34b0019a1d587b94cfb86943976961aff152dfb5c3e024",
+  "npz_sha256": "23524cf26319de1207830161e733363c9efa32726e657a752ea5f30c70013d40",
+  "sample_plot_receipt_sha256": "0855d04e7f0c4493d032b5dbc01cb1d33d1f2ce61f2e2c674436eb36b0e80dec",
+  "figure_sha256": "ca75330c324337cc213ee1fd060a48062b3ecf93982f0d572577ba9a45adcaa1",
+  "figure_pixels": [
+    2304,
+    1280
+  ],
+  "scope": "Current saved-success cutoff ranking plus one explicitly requested single-HFSS-solve plot; no repeat certification.",
+  "validation": {
+    "full_cutoff_raw_replay": true,
+    "independent_npz_margin_and_geometry_check": true,
+    "rank_counts_and_maximum_check": true,
+    "visual_qa": "Chinese labels, feed at lower edge, frequency thresholds and polar cuts inspected; no clipping or overlap of labels.",
+    "tracked_renderer_changed": false,
+    "same_png_as_previous_best": true
+  },
+  "monitoring": {
+    "controller_pid": 54712,
+    "controller_creation_unix_ms": 1791505204815,
+    "health_interval_seconds": 1800,
+    "scoped_factory_alerts": false,
+    "low_pool_pending_jobs_observed": 5,
+    "three_guided_jobs_claimed": true,
+    "controller_or_worker_restarted": false,
+    "health_check_local_window": "2026-10-09 09:50–09:52 Asia/Taipei (approximate tool execution window)"
+  }
+}

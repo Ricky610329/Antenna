@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "sample_id": "r80c91d71565g_00019_5a42476c",
+  "pattern_sha256": "5a42476cf367d7435ef96de131ad6c7cecbe0232f4c17d2875983224fd6d9faf",
+  "analysis_sha256": "8591e820605e8fffbe34b0019a1d587b94cfb86943976961aff152dfb5c3e024",
+  "npz_sha256": "23524cf26319de1207830161e733363c9efa32726e657a752ea5f30c70013d40",
+  "sample_sha256": "3894a2a8878a7f28bcaedf6524f47a2d2cb7b26eb434be12dac59e8477eb96a1",
+  "radiation_sha256": "879595d5c0084b6be070daecae9d048ec69190eeb5f19effee4624a20a2b91e1",
+  "s11_margin_db": -0.2390899658203125,
+  "gain_margin_db": -0.24644088745117188,
+  "wm_db": -0.24644088745117188,
+  "geometry_mismatch_fraction": 0.0,
+  "phi0_mirror_power_45": 0.09176931028534725,
+  "phi90_mirror_power_45": 0.004224751071367147,
+  "radiation_plot": {
+    "projection": "polar",
+    "helper": "script/figs/report_r1r10_style.py:polar_rad_ax",
+    "helper_sha256": "c3399a2a3b600a5922d130a655acb1e79ca8fc5780e7cc079fbcd97b7ee867b4",
+    "theta_zero": "north",
+    "theta_direction": "clockwise",
+    "radial_unit": "dBi",
+    "radial_tick_step_db": 5,
+    "rmin_db": -20,
+    "rmax_db": 10,
+    "g0_ref_db": 5.796427249908447,
+    "window_deg": 45,
+    "reference_drop_db": 3,
+    "display_clipped_below_rmin": {
+      "phi0_db": 5,
+      "phi90_db": 0
+    }
+  },
+  "producer_sha256": "fcc01904dd716b258dd549bdc0aae5ad2cba618fe8bb79c50cd894a872bb9f72",
+  "figure_sha256": "ca75330c324337cc213ee1fd060a48062b3ecf93982f0d572577ba9a45adcaa1",
+  "scope": "one explicit frozen single HFSS solve; pixel view, frequency responses and GainTotal cuts; no repeat certification"
+}
