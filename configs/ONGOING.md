@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- ✅ **10/09：新familydev首批48實測已完整判讀**。`63c3efcdg01`–`g03`皆.done／零error、48互斥pattern及sample/rad完整重播；最佳WM **−5.617131 dB**，median−16.231790，0/48正WM、0/48超過既有最佳；saved LCB對實測WMρ=0.038645。整批幾何距離min5／median304，不能只看median宣稱沒有近親。保留19／15／14原臂及前瞻預測；[真值收據](../docs/log/assets/r80_familydev_first_cohort_result_20261009.json)。這是單批陰性結果，不是三世代性能停滯；多樣策略配方已先固定，實作審查中。
+
 - 🔵 **10/09 18:02：多樣搜尋controller交接中，HFSS續跑原佇列**。新配方已固定／push `3cf381c`，實作在隔離worktree審查中。精確PID60956／creation／argv與完成cycle核對後，18:01:20只寫其本機STOP；18:01:46正常退出，18:02 CIM核對舊PID消失、全機watcher數0，[交接收據](../docs/log/assets/r80_diverse_sm_controller_stop_20261009.json)。18:00 scope零警報；三台有已認領6/16、3/16、0/16與五片LOW待跑，共119筆metadata待跑，供交接期間持續工作。未kill／重啟worker或改queue／claims；新controller尚未啟動，完成review／實體pool核對後以同training root、新controller root單次接手。下一routine約18:30。
 
 - 🔵 **10/09 17:49：第二輪SM更新／私人NAS派工核對通過**。自動cycle於17:34:16完成；v003新增75、累積fit **2,419**（1,583 train／836 hold），原2,344列完整保留。三個fresh member為legacy30＋current100 epochs／Adam3,700 steps，effective-train-only四norm tensors完全吻合；3×16 prio1私人input tree、唯一queue row、互斥48pattern及17／17／91／91預測曲線讀回通過。[薄收據](../docs/log/assets/r80_family_development_cycle_v003_20261009.json)。固定派工截點2,431與較早fit2,419分開；初版人工audit誤把兩截點之差當新增fit，在寫通過收據前拒絕，已用實體新舊manifest差75修正，並非controller失敗。HFSS結果仍待整批真值判讀。使用者新授權：維持SM排名並嘗試更多不同潛力對稱幾何，正準備前瞻批次，不改既有完成批次。

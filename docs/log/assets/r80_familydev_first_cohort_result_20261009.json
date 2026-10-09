@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "status": "complete_48_valid_unique_raw_and_saved_prediction_readout",
+  "observed_utc": "2026-10-09T10:05:38.740980+00:00",
+  "action_receipt_sha256": "cc54f4e3dfa7f031337cd5a3366f46b0a53b469d01d4b2394244aedb64bdcd2d",
+  "predictor_binding_at_dispatch": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 2,
+    "manifest_id": "68079289697fb03ee9a4abe09c9c7d8337cd482e12d98a382ade9eaed6883ddb",
+    "cumulative_valid_unique": 2344
+  },
+  "unique_successful_patterns": 48,
+  "errors": 0,
+  "all_metals_exact_LR": true,
+  "rows_sha256": "e0b05a93c5bc15245b0b08138817abe7ff97d3636bc63448fd4d0542aeefd780",
+  "frozen_source_bindings_sha256": "02cf9aa0cc5d9042f02a1ec9a26d859279d032b29f3a8155fe7892948fe1fec8",
+  "best": {
+    "id": "r80c63c3efcdg_00013_d073e6f4",
+    "pattern_sha256": "d073e6f4ff3c41e8102f7000fcaa977cb0e157a24f933257549eb4737c90d47a",
+    "s11_margin_db": -5.617131233215332,
+    "gain_margin_db": -2.036055564880371,
+    "factory_margin_db": -5.617131233215332,
+    "radiation_margin_db": -1.5940556526184082,
+    "radiation_margin_clipped_db": -1.5940556526184082,
+    "selection_arm": "lcb_performance",
+    "proposal": "sm_guided_mutation",
+    "ancestry_id": "e50b2_000_F18644",
+    "predicted_factory_score": -6.480043013890584,
+    "saved_lcb_score": -7.644827960336308,
+    "sample_sha256": "00beb50ae47a24a0e5e887732a494304ab1ede687b8a509d0e83dd6cf359d22b",
+    "rad_sha256": "faf17060848248c2eaabfb80fefc4fc52aad1b61f1244e8156db2b0cf7f63c35"
+  },
+  "median_wm_db": -16.23179006576538,
+  "min_wm_db": -31.452421188354492,
+  "positive_wm_count": 0,
+  "above_existing_best_count": 0,
+  "arms": {
+    "blind_random": {
+      "count": 14,
+      "best_wm_db": -6.9793407917022705,
+      "median_wm_db": -18.551931858062744,
+      "positive": 0,
+      "saved_factory_spearman": {
+        "n": 14,
+        "rho": -0.032967032967032975
+      }
+    },
+    "high_disagreement": {
+      "count": 15,
+      "best_wm_db": -5.739491939544678,
+      "median_wm_db": -10.35077953338623,
+      "positive": 0,
+      "saved_factory_spearman": {
+        "n": 15,
+        "rho": 0.09285714285714285
+      }
+    },
+    "lcb_performance": {
+      "count": 19,
+      "best_wm_db": -5.617131233215332,
+      "median_wm_db": -16.282550811767578,
+      "positive": 0,
+      "saved_factory_spearman": {
+        "n": 19,
+        "rho": -0.007017543859649123
+      }
+    }
+  },
+  "saved_lcb_actual_wm_spearman": {
+    "n": 48,
+    "rho": 0.03864524533217543
+  },
+  "canonical_ancestry_counts": {
+    "e50b2_000_F18644": 19,
+    "e50b2_007_F6161": 4,
+    "random-028": 1,
+    "random-g2-011": 1,
+    "random-058": 1,
+    "random-g2-040": 1,
+    "random-g1-057": 1,
+    "random-g3-028": 1,
+    "random-g1-033": 1,
+    "random-016": 1,
+    "random-g1-018": 1,
+    "random-g3-061": 1,
+    "random-g3-042": 1,
+    "random-g3-040": 1,
+    "random-g3-054": 1,
+    "random-g2-035": 1,
+    "random-011": 1,
+    "random-041": 1,
+    "random-043": 1,
+    "random-049": 1,
+    "random-062": 1,
+    "random-027": 1,
+    "random-005": 1,
+    "random-g2-014": 1,
+    "random-020": 1,
+    "random-001": 1,
+    "random-g1-025": 1
+  },
+  "pairwise_physical_hamming": {
+    "min": 5,
+    "median": 304.0,
+    "max": 399
+  },
+  "done_bindings": {
+    "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\jobs_state\\dedust_r80c63c3efcdg01.done": "d0e7b20101d1a12e2a70c4a9cc8d62cf119befbe2bffb872aebdb46acf4ed494",
+    "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\jobs_state\\dedust_r80c63c3efcdg02.done": "461aff2e59e3ba80c5b0fc69a73019412e0499e3e33f1e6ea87e580dde9ffba8",
+    "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\jobs_state\\dedust_r80c63c3efcdg03.done": "4082cc17a2d3a8b6878c685a9e07a539e6cfb65aa3b4065d7ccdd4f0e1f20c20"
+  },
+  "NAS_queue_claim_raw_mutation": false,
+  "source_before_after_equal": true,
+  "producer_sha256": "878d6ccf4687f286160d5f242a327cef7ed9c4d9dbfe4413f8bc2d5eb0932875",
+  "limits": [
+    "One complete selected cohort, not a three-generation plateau or causal strategy comparison.",
+    "Saved predictions are prospective; this descriptive readout occurs after some observations have been ingested for later model versions.",
+    "Best single solve does not prove repeat stability.",
+    "R80 target5000 and R81 remain incomplete."
+  ]
+}

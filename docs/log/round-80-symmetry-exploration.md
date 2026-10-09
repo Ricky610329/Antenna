@@ -827,3 +827,9 @@ retry-cutoff修正只調整有效非終態HFSS重試的重新驗證：完整驗�
 18:00私人scope status exit0／零警報，三片已認領為6/16、3/16、0/16，另五片16筆LOW排隊；metadata顯示119筆待跑。為切換已授權的新候選策略，核對精確PID60956／creation1791532984209／argv／settings、waiting且已完成第二cycle、原action SHA與v003實體稽核後，18:01:20只在`controller_familydev_v1`建立create-only本機STOP。Controller於18:01:46自然退出；18:02 CIM確認原PID absent與全機watcher數0，沒有送process signal。
 
 [交接停止薄收據](assets/r80_diverse_sm_controller_stop_20261009.json)保存request／terminal／policy hash；HFSS worker、queue、claims、raw與原模型完全保留。新實作仍在隔離worktree，審查與實際pool核對後才以新controller工作根、同一training根單次啟動；此刻不能聲稱新多樣候選已派工。這是短暫controller源碼交接，不是使用者暫停研究或完成goal。既有worker繼續消化預備工作，routine健康檢查下一約18:30。
+
+### 2026-10-09：新familydev首批48筆完整真值判讀
+
+固定首輪`63c3efcd...`的三個16筆job已全部.done且無.fail；完整input／store metadata、96個sample/rad raw與48個互斥pattern重播成功，凍結副本及source bindings保存在本機私人實驗tmp，原NAS不變。[48筆薄結果收據](assets/r80_familydev_first_cohort_result_20261009.json)顯示：最佳`r80c63c3efcdg_00013_d073e6f4` WM **−5.617131 dB**，median **−16.231790 dB**，最低−31.452421 dB；0/48正WM、0/48超過已知+0.021682最佳。最佳來自LCB臂，S11餘裕−5.617131、Gain餘裕−2.036056。
+
+原臂LCB／disagreement／blind分別19／15／14筆，最佳WM −5.617131／−5.739492／−6.979341。全48保存LCB對實測WM Spearman **0.038645**；各臂factory-scoreρ −0.007018／0.092857／−0.032967，只是這次選中樣本的前瞻排序診斷。整批pairwise physical Hamming min5／median304／max399，近親仍存在，不用中位數掩蓋。這個描述性判讀發生在部分真值已供較新模型學習之後，但比較只使用送測前已保存預測，沒有事後改排名。單批陰性結果不足以成立三世代停滯、SM學習無效或多樣策略改善的因果結論；原結果、低分真值與已固定的新探索配方全部保留。
