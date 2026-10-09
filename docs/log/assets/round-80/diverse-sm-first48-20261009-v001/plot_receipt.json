@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "analysis_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_first_cohort_truth_20261009_v001\\analysis\\analysis.json",
+  "analysis_sha256": "46ad327e2cd1b046ed967f2794f7c8e18e3b1135a9b401d3d2b1def076010fca",
+  "npz_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_diverse_first_cohort_truth_20261009_v001\\analysis\\arrays.npz",
+  "npz_sha256": "cc3bf8b45dacee062513cb43129346ca78ee1acf800d64de6ecafd422ac041ad",
+  "unique_patterns": 48,
+  "geometry_extent": [
+    0.0,
+    1.0,
+    -1.0,
+    1.0
+  ],
+  "hex_gridsize": [
+    24,
+    24
+  ],
+  "hex_reduction": "median, mincnt=1; no interpolation",
+  "coordinate_policy": "fixed geometric metal fraction and upper-minus-lower fraction; no response embedding",
+  "frequency_quantiles": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "scope": {
+    "descriptive_only": true,
+    "causal_claim": false,
+    "performance_filter_applied": false,
+    "hfss_or_training_run": false,
+    "input_discovery": false,
+    "dedup_key": [
+      "measurement_id",
+      "pattern_sha256"
+    ],
+    "duplicate_preference": "nonrepeat_then_explicit_store_and_manifest_order"
+  },
+  "figures": {
+    "geometry_terrain.png": "788703b0d4a3d323a233584fd0816325e7d5861e70bd5ca2a838ddca887d97ac",
+    "frequency_responses.png": "756a74a09b99c5d9ecd7876cdb0ebd3bf5d9a5bbdaa2a916057bd3b663bbd663"
+  }
+}

@@ -872,3 +872,20 @@ Cycle `205a8627...`於20:20:23完成。新增78有效唯一真值、累積fit **
 [完整核對薄收據](assets/r80_diverse_sm_cycle_v005_20261009.json)綁定模型、原action及獨立review。獨立Sol重播全部20k幾何／來源／SHA／LCB排序及strict round-robin greedy；容量16的equal-largest-remainder配額為global6／parent5／disagreement5，13家族、同家族最多2、最小Hamming72。32親本來自30家族；本機bundle與staged shard各16個tensor全部核對。Root另讀私人NAS單片20-file input tree及唯一queue row，與原action tree相同。準備派工時guided待跑69／上限96，故只補一片16，不放寬政策或塞滿48。
 
 20:28實體CIM controller PID15944／creation／完整argv不變、completed_cycles4、下一cycle20:27:41開始、stderr空，scope無警報。首批多樣48當時三片結果entry數16／12／8，仍未全數完成；完整cohort真值判讀尚未執行。fit2,578、較早dispatch snapshot2,587與另外20:17全量查詢2,592分開記錄；最佳仍以最新已完成raw query為準。驗證不更動NAS/queue/claim/raw，不重啟worker，不宣稱性能提升或停滯。下一routine20:58；R80 5,000與R81仍未完成。
+
+
+### 2026-10-09：首批多樣性48筆HFSS真值完成判讀
+
+21:28三個 `dedust_r80c50b9234dg01`–`g03` 全部.done／無.fail；重用既有完整input/store/sample/rad與保存預測判讀流程，48有效唯一、全金屬LR鏡射、零error。最佳 `r80c50b9234dg_00004_4247dda1` WM **−4.820067 dB**（parent變體）；中位數 **−12.214764 dB**，最低−33.371231，**0/48正WM、0/48超過已核對的全域參考+0.021682**。這一批沒有新的合格圖形。獨立Sol逐一re-hash本機48 sample/rad，以獨立算式重算WM、rad/navigation、1,128組Hamming距離、average-tie Spearman和curve MAE，未import專案metric/summary/spearman helpers；所有數字與root判讀一致。[結果收據](assets/r80_diverse_sm_first_cohort_result_20261009.json)。
+
+| SM選擇臂 | 筆數 | 最佳WM(dB) | 中位WM(dB) | 正WM |
+|---|---:|---:|---:|---:|
+| global LCB | 16 | −5.781328 | −11.069358 | 0 |
+| parent LCB | 16 | −4.820067 | −14.042150 | 0 |
+| high disagreement | 16 | −7.939806 | −13.367542 | 0 |
+
+選入來源為fresh18／parent30，不等於pool的10k／10k比例。最小／中位／最大幾何Hamming **65／307／365**；37家族、同家族最多2。保存LCB與真實WM Spearman **0.151324**；預測曲線MAE為S11 **1.883363**、Gain **4.556437**、radφ0 **3.620443**／φ90 **3.441780 dB**，顯示本批排序與Gain預測仍弱。與較早familydev48比較，cohort最佳約好0.797 dB、中位約好4.017 dB；模型資料版本2與4、pool、配額和幾何均不同，僅描述，不能宣稱策略造成改善。更不能把cohort最佳−4.820誤稱全域最佳或超過+0.021682。
+
+已用既有 `script.symmetry_analysis profile` 與 `script.figs.symmetry_profile` 畫出[首批48幾何／指標圖](assets/round-80/diverse-sm-first48-20261009-v001/geometry_terrain.png)及[首批48頻率響應](assets/round-80/diverse-sm-first48-20261009-v001/frequency_responses.png)，兩圖均視覺核對；不加點、不插值、不挑性能子集。這些圖僅為這48筆，並非全部R80。幾何圖的rad是純量鏡射殘差，不是角度場型；既有最佳的場型極座標圖保留原樣。
+
+保存的v004預測是在送測前產生，但本次完整cohort判讀是在部分真值可能已進v005之後的posthoc讀回；shared prediction helper的固定before-training文字不作本次時序證據。獨立審查v1把全域參考誤標為previous-familydev-best，僅作hash-bound v2文字／欄名修正，原v1/算術helper保留，數字與tensorchecks未改。只有一個完整多樣cohort，不宣稱三代停滯或穩定提升；按原48–96新真值更新SM，接續批次仍跑。Controller PID15944／身分不變、completed_cycles6、stderr空、scope無警報；不為負WM候選補跑最佳認證重測，不更動queue/claims/raw。下一routine21:58；R80 5,000與R81仍待完成。

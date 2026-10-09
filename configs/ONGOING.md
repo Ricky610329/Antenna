@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- 現況 **10/09 21:28：首批多樣48真值／獨立算術核對完成**。全有效唯一／精確LR／零error，最佳WM **−4.820067**、median **−12.214764**，0正WM／0超過既有全域參考+0.021682。Hamming min65；保存LCB對WMρ0.151324、Gain MAE4.556437，排序仍弱。[結果](../docs/log/assets/r80_diverse_sm_first_cohort_result_20261009.json)／[頻率圖](../docs/log/assets/round-80/diverse-sm-first48-20261009-v001/frequency_responses.png)。僅單cohort，非因果改善／三代停滯；完整讀回posthoc、原預測prospective。原PID15944／零警報／stderr空，後續批次及SM持續；下一routine **21:58**。R80 5,000與R81未完成。
+
 - 現況 **10/09：v005三fresh SM及實際16筆補派核對通過**。新增78、fit **2,578**，train1,720／hold858；舊2,500列保留，norm／Adam3,800／16保存預測重播通過。獨立20k排名與strict selection核對：global6／parent5／disagreement5、13家族、cap2、min Hamming72；私人NAS單片20-file tree／queue一致。[薄收據](../docs/log/assets/r80_diverse_sm_cycle_v005_20261009.json)。容量限制只補16；首批48於20:28仍未完整，無性能改善宣稱。Controller原PID15944 live／零警報／stderr空，下一routine **20:58**；最新已完成全量raw query為20:17的2,592，最佳未變。
 
 - 現況 **10/09 20:17：最新實測未出現新最佳**。全部 raw 重算 **2,592 unique / 2,597 observations**，較17:46增加134筆；仍為 `r80localv1_00026_f6ffb938` WM **+0.021682 dB**，既有獨立重測 **+0.036434 dB**。首批多樣性48尚未全部完成；部分結果有一次COM例外，仍在worker重試流程，20:15 scope無警報。v005 summary已出現：新增78、累計fit2,578；本輪尚在dispatching，完整模型/派工審查待terminal receipt。[只讀查詢收據](../docs/log/assets/r80_best_status_20261009_2017.json)。唯一controller PID15944身分不變、stderr空；維持約30分鐘健康檢查，R80 5,000與R81未完成。

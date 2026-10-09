@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "status": "first_diverse_48_HFSS_cohort_raw_and_independent_arithmetic_verified",
+  "recorded_taipei": "2026-10-09T21:38:39.744787+08:00",
+  "actual_readout_utc": "2026-10-09T13:28:42.033237+00:00",
+  "action_receipt_sha256": "8e69592bc4ec76fa7c79714307c2638eeff2394e68ecdf50b7753d131dbe9709",
+  "predictor_binding_at_dispatch": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "data_version": 4,
+    "manifest_id": "df9a6821dfcc4ff83a3d1fd5ca0fdf2392c9274898daed7f29224ffb5029e188",
+    "cumulative_valid_unique": 2500
+  },
+  "unique_valid": 48,
+  "errors": 0,
+  "all_metals_exact_LR": true,
+  "best": {
+    "id": "r80c50b9234dg_00004_4247dda1",
+    "pattern_sha256": "4247dda1dd46b01e9e693e3edcaa6e333903874989de81c7651bbbe01b18926e",
+    "s11_margin_db": -4.820067405700684,
+    "gain_margin_db": -2.6719809770584106,
+    "factory_margin_db": -4.820067405700684,
+    "radiation_margin_db": -2.0248669236898422,
+    "radiation_margin_clipped_db": -2.0248669236898422,
+    "selection_arm": "parent_lcb",
+    "proposal": "parent_variant",
+    "candidate_group": "parent_variant",
+    "canonical_group_id": "c48nq1p05_16",
+    "ancestry_id": "c48nq1p05_16",
+    "predicted_factory_score": -4.76218048731486,
+    "saved_lcb_score": -5.33225860539973,
+    "sample_sha256": "0aaa32fccd6f1f86d1f2c98ad23be4a0a5c38061fcbc6fab6adcf9fd02a66352",
+    "rad_sha256": "b175031c269896716fa410f0c9511e321758117a2de58e73782fcf2c660f088a",
+    "saved_prediction_mae": {
+      "s11": 5.3210673332214355,
+      "gain": 2.406981292016366,
+      "radiation_phi0": 1.628007220861676,
+      "radiation_phi90": 1.0802648709165854,
+      "full_vector": 1.7492110508373353
+    }
+  },
+  "median_wm_db": -12.21476411819458,
+  "min_wm_db": -33.37123107910156,
+  "positive_wm_count": 0,
+  "above_cited_existing_best_count": 0,
+  "cited_existing_best_wm_db": 0.021682262420654297,
+  "selection_arms": {
+    "global_lcb": {
+      "count": 16,
+      "best_wm_db": -5.781328201293945,
+      "median_wm_db": -11.069357633590698,
+      "min_wm_db": -23.830522537231445,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": 0.19411764705882353,
+      "saved_lcb_vs_actual_wm_spearman": 0.3558823529411765
+    },
+    "high_disagreement": {
+      "count": 16,
+      "best_wm_db": -7.9398064613342285,
+      "median_wm_db": -13.367541790008545,
+      "min_wm_db": -33.37123107910156,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": 0.18529411764705883,
+      "saved_lcb_vs_actual_wm_spearman": 0.6088235294117647
+    },
+    "parent_lcb": {
+      "count": 16,
+      "best_wm_db": -4.820067405700684,
+      "median_wm_db": -14.042150020599365,
+      "min_wm_db": -22.136077880859375,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": 0.044117647058823525,
+      "saved_lcb_vs_actual_wm_spearman": 0.08823529411764705
+    }
+  },
+  "candidate_origins": {
+    "fresh_random": {
+      "count": 18,
+      "best_wm_db": -5.781328201293945,
+      "median_wm_db": -10.999322414398193,
+      "min_wm_db": -23.830522537231445,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": -0.005159958720330237,
+      "saved_lcb_vs_actual_wm_spearman": 0.13106295149638802
+    },
+    "parent_variant": {
+      "count": 30,
+      "best_wm_db": -4.820067405700684,
+      "median_wm_db": -14.326382160186768,
+      "min_wm_db": -33.37123107910156,
+      "positive_wm_count": 0,
+      "saved_factory_vs_actual_wm_spearman": 0.21067853170189096,
+      "saved_lcb_vs_actual_wm_spearman": 0.2716351501668521
+    }
+  },
+  "physical_hamming": {
+    "min": 65,
+    "median": 307.0,
+    "max": 365
+  },
+  "saved_prospective_prediction_readout": {
+    "dispatch_model_data_version": 4,
+    "completed_cohort_readout_timing": "posthoc_after_possible_partial_ingestion_into_v005",
+    "correlations": {
+      "lcb_vs_actual_wm_spearman": 0.15132435953104645,
+      "factory_vs_actual_wm_spearman": 0.07696482848458532,
+      "navigation_vs_actual_navigation_spearman": 0.10540599218410766
+    },
+    "curve_mae": {
+      "s11": 1.8833634098809142,
+      "gain": 4.556436663341432,
+      "radiation_phi0": 3.6204429032247654,
+      "radiation_phi90": 3.4417799019080717,
+      "full_vector": 3.4821244282956854
+    }
+  },
+  "actual_prediction_audit_timing": "posthoc_complete_cohort_readout_after_possible_live_ingest_saved_predictions_only",
+  "root_report_sha256": "18062a1393643a5536593dc56dfba9c18e83042f4bba17cdc7caf20a30d7958a",
+  "root_readout_helper_sha256": "a2ca53b44e05f3ddc5aa50014664a934f025eecfebb2a0d427682d131313bc51",
+  "source_artifact_sha256": {
+    "report.json": "18062a1393643a5536593dc56dfba9c18e83042f4bba17cdc7caf20a30d7958a",
+    "rows.json": "f2ffc00f2577878a34c29618381415cfa71e7b11bf78c740243c89fe98ecbfbc",
+    "saved_prediction_helper_audit.json": "f1a983ad71d5691dac70e45fd36978f20431fcc25d0876f026d37866d9e4d7fb",
+    "frozen_store/source_bindings.json": "12be11443ce301d3ed230bbc858850c3499fe9cc7ec6825c65aaa213b44d07d4",
+    "frozen_store/manifest.json": "43c5de904524197e20aa983b73493f7ca47af9d11f6bba2e3cd6df27619ee9bd",
+    "frozen_store/results.json": "54af4a0964842ed066e8397e8b4ea879106ffd61ba38961f6e966a73fcceddcc"
+  },
+  "independent_review_scope": "Independent arithmetic from the local frozen 48 samples, radiation tensors, manifest predictions, and hashes; no project metric or summary helper imported.",
+  "independent_raw_review_v1_sha256": "b77f5bc9cfc8fe7dd483daa164e4134cc0d501761a31377bfceef6933b8beeff",
+  "independent_label_corrected_review_v2_sha256": "49080782bc0d6780760fbcdb49e0c6216f74816e10d40faa5c01190435ddf9d1",
+  "independent_arithmetic_helper": {
+    "path": "tmp/r80_diverse_first_cohort_independent_20261009_v001/replay.py",
+    "sha256": "3507386c0a426131b55e52a08932023d54e81ecef068fc3884569283854348e3"
+  },
+  "independent_label_correction_helper_sha256": "f03b8bc5bbc7cc8e598bafa9b8661533216c07c7e4a876f894411601e7e824f5",
+  "independent_checks": {
+    "48_unique_successful_pattern_sample_and_rad_hashes": true,
+    "all_48_exact_left_right_geometry": true,
+    "raw_17_frequency_26_5_to_29_5_wm_recomputed": true,
+    "raw_radiation_margin_and_navigation_recomputed": true,
+    "all_pair_physical_hamming_recomputed": true,
+    "saved_curve_mae_recomputed_from_raw": true,
+    "saved_factory_navigation_lcb_correlations_recomputed": true,
+    "per_arm_and_origin_summaries_recomputed": true,
+    "prepared_rows_report_and_prediction_audit_agree": true,
+    "local_sources_unchanged_during_replay": true
+  },
+  "descriptive_prior_cohort_comparison": {
+    "prior_receipt_sha256": "8b0d41870cbc914de75cb362e509c1d080ed7315e43161999da321653469d241",
+    "prior_model_data_version": 2,
+    "prior_best_wm_db": -5.617131233215332,
+    "prior_median_wm_db": -16.23179006576538,
+    "cohort_best_difference_db": 0.7970638275146484,
+    "cohort_median_difference_db": 4.017025947570801,
+    "causal_comparison": false,
+    "limits": "Different training snapshots, candidate pools, selected arm allocations and geometries; descriptive only."
+  },
+  "plot_receipt_sha256": "1c6c1adbb4dac0de1dc29ff457db92ad262b08cc2d4cd872e73f4e812abec02e",
+  "plot_producer_sha256": "428e65abb66ea6dcc2b883609569dca06d1f4892523f907953bf865a60507bfb",
+  "analysis_producer_sha256": "945b20ce399dab5dbf18e659d34d1860c28d5c5c21c0627d44c5ab5195e58571",
+  "figures": {
+    "geometry_terrain.png": {
+      "sha256": "788703b0d4a3d323a233584fd0816325e7d5861e70bd5ca2a838ddca887d97ac",
+      "pixels": [
+        2370,
+        1530
+      ]
+    },
+    "frequency_responses.png": {
+      "sha256": "756a74a09b99c5d9ecd7876cdb0ebd3bf5d9a5bbdaa2a916057bd3b663bbd663",
+      "pixels": [
+        2025,
+        780
+      ]
+    }
+  },
+  "visual_qa": "Both existing-script figures inspected: Chinese labels, legends, axes and notes readable; all48 included. Geometry plot is a scalar residual map, not a raw radiation-pattern plot.",
+  "health_at_2128": {
+    "physical_controller_pid": 15944,
+    "creation_unix_ms": 1791541659267,
+    "completed_cycles": 6,
+    "next_cycle_started_taipei": "21:27:44",
+    "stderr_empty": true,
+    "scoped_alerts": 0,
+    "all_three_first_cohort_done": true,
+    "all_three_first_cohort_fail_absent": true
+  },
+  "NAS_queue_claim_or_raw_mutation_during_analysis": false,
+  "new_NAS_bulk_archive": false,
+  "limits": [
+    "No member of this cohort beats the cited prior global R80 incumbent; this is not a fresh full-global-best query.",
+    "Saved predictionsv004 are prospective; full cohort readout is posthoc after possible partial ingestion into v005. Ignore the shared helper static pretraining order label here.",
+    "Only one full diverse cohort: no causal strategy improvement, stability, or three-generation plateau claim.",
+    "Independent reviewer rehashed local frozen raw tensors and independently recomputed arithmetic; root alone reopened original NAS and done bindings.",
+    "No negative cohort candidate is sent for extra best-certification HFSS repeats.",
+    "R80 target5000 and R81 remain incomplete."
+  ]
+}
