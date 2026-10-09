@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "status": "passed_actual_controller_and_scoped_worker_health",
+  "health_observed_utc": "2026-10-09T20:38:13.2704362Z",
+  "health_sha256": "1cdf726dddf92291cd1d9131e716badce7f275cfeb96216462e91be2ab793738",
+  "physical_pid": 15944,
+  "creation_unix_ms": 1791541659267,
+  "controller_argv_matches": true,
+  "controller_launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+  "controller_status": "running_cycle",
+  "completed_cycles": 15,
+  "controller_reported_data_version": 11,
+  "controller_cached_valid_unique": 2939,
+  "cached_count_is_not_new_global_census": true,
+  "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c67bba728g02: 14/16 完成,最新結果 3 分前（已認領）\r\n  job dedust_r80c20015584g01: 15/16 完成,最新結果 3 分前（已認領）\r\n  job dedust_r80c20015584g02: 5/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80ceab1b3e0g01: 0/16（排隊中）\r\n  job dedust_r80c8f61dc08g01: 0/16（排隊中）\r\n  job dedust_r80c8f61dc08g02: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+  "scoped_status_exit": 0,
+  "guard_v6": {
+    "observed_utc": "2026-10-09T20:39:43.086548+00:00",
+    "pid": 38776,
+    "exact_identity": true,
+    "live": true,
+    "children": [
+      {
+        "pid": 9852,
+        "exe": "C:\\Windows\\System32\\conhost.exe",
+        "argv": [
+          "\\??\\C:\\WINDOWS\\system32\\conhost.exe",
+          "0x4"
+        ]
+      }
+    ],
+    "stdout_tail": [
+      "2026-10-09T20:38:17.3979524+00:00 not eligible: status=running_cycle, remaining=",
+      "2026-10-09T20:38:47.5338151+00:00 not eligible: status=running_cycle, remaining=",
+      "2026-10-09T20:39:17.6535949+00:00 not eligible: status=running_cycle, remaining="
+    ],
+    "stderr": "",
+    "terminal_exists": false,
+    "preparation_receipt_exists": false
+  },
+  "guard_launch_sha256": "e07665d4fb506b58f83aa8c2716218eee2b0f90c8c7e2a6fa2cec10d954afcb8",
+  "last_full_census_receipt": "docs/log/assets/r80_best_status_20261010_0416.json",
+  "last_full_census_unique": 2979,
+  "last_verified_best_wm_db": 0.021682262420654297,
+  "no_new_global_census_this_routine": true,
+  "HFSS_or_controller_restart": false,
+  "claim_mutation": false,
+  "new_pilot_dispatch": false,
+  "prospective_preparation_success_claimed": false,
+  "next_routine_health_taipei": "2026-10-10 05:08",
+  "goal_complete": false
+}

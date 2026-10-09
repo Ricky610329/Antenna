@@ -1120,3 +1120,8 @@ v010 current-only實際訓練及物理核對已commit cc4c474；後續雙scorer2
 ### 2026-10-10 04:22：CPU準備資料夾修復與實際續接
 
 - **04:22:42 CPU準備修正版實際啟動**：versioned guard v6 PID38776／creation1791577362433／exact argv現場吻合，原main PID15944同時live。prepared_v6建立修正已独立review，固定同v010模型／20k池／32雙owner配方不變；單child600秒、最多等2小時，不自動publish／派HFSS。[啟動收據](assets/r80_currentonly_prospective_v010_guard_retry_launch_20261010.json)。原v5失敗完整保留，這不是新性能結果；最新全量04:16為2,979／最佳+.021682。原三worker與SM照常，下一routine04:38，R80/R81未完成。
+
+
+### 2026-10-10 04:38：例行健康與等待主線空檔
+
+- **04:38 routine健康通過**：原controller exact／running_cycle，三台claimed14/16、15/16、5/16，最新3／3／2分鐘，scope零警報；新增兩片guided待跑。[健康](assets/r80_health_20261010_0438.json)。reported v011／completed15，watch快照不當新的global census；最新全量仍04:16的2,979／+.021682。CPU guard v6 PID38776現場exact live，等待主線空檔、尚無preparation receipt／未派對照；不重啟／清claim。下一routine05:08，R80/R81未完成。

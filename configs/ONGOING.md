@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **04:38 routine健康通過**：原controller exact／running_cycle，三台claimed14/16、15/16、5/16，最新3／3／2分鐘，scope零警報；新增兩片guided待跑。[健康](../docs/log/assets/r80_health_20261010_0438.json)。reported v011／completed15，watch快照不當新的global census；最新全量仍04:16的2,979／+.021682。CPU guard v6 PID38776現場exact live，等待主線空檔、尚無preparation receipt／未派對照；不重啟／清claim。下一routine05:08，R80/R81未完成。
+
 - **04:22:42 CPU準備修正版實際啟動**：versioned guard v6 PID38776／creation1791577362433／exact argv現場吻合，原main PID15944同時live。prepared_v6建立修正已独立review，固定同v010模型／20k池／32雙owner配方不變；單child600秒、最多等2小時，不自動publish／派HFSS。[啟動收據](../docs/log/assets/r80_currentonly_prospective_v010_guard_retry_launch_20261010.json)。原v5失敗完整保留，這不是新性能結果；最新全量04:16為2,979／最佳+.021682。原三worker與SM照常，下一routine04:38，R80/R81未完成。
 
 - **10/10 04:16 使用者詢問／最新全量實測**：2,979/5,000 唯一有效圖形，較03:20 +49；沒有新最佳，最佳 WM +0.021682 dB。[收據](../docs/log/assets/r80_best_status_20261010_0416.json)。04:13三台claimed有近期結果、scope零警報；主線completed15／SM v011持續更新。新對照CPU準備於03:50因prepared_v5輸出資料夾未建立exit1，未派工／未改queue；原失敗輸出保留、資料夾窄修已review通過但尚未重跑，沒有影響HFSS；兩筆HFSS首次COM失敗非終態、不計有效筆數。下一routine04:38；R80/R81未完成。
