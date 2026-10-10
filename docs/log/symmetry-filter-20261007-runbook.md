@@ -111,6 +111,19 @@ JSON 保存來源、原始觀測與分位數；hash 綁定的 NPZ 保存對齊�
 
 首版49筆的完整分析及圖已保存私人 `experiments/r80_symmetry_20261007/analysis_versions/data-v001`；來源 raw snapshot 仍在 `sm_versions/data-v001`。這只是早期描述統計，不表示全部5,000筆已完成或對稱改善性能。
 
+### 5,000筆收尾：重測資料另留，不能只凍結unique
+
+`snapshot_successes`與`_snapshot_successes_from_proofs`每個pattern只保留一個代表，優先非重測；將全5,000個hash傳入也不會保留其餘repeat的sample/rad。最後穩定cutoff須保存完整`pair_proofs`、各store的results cutoff及source hashes，先建立5,000 unique代表的凍結store，再將每個repeat源store**分開**凍結。每store內pattern須先確認唯一；若同store有同hash多次觀測，不可靜默去重，也不可裁切proof後沿用原metadata hashes冒充完整cutoff，應沿用觀測級raw-freeze/readout保留。
+
+主分析依序指定unique store及各repeat snapshot；既有profile入口會把repeat保留在`duplicate_rows`的audit，NPZ、分位數與人口圖仍只計unique代表。重測量化則對各repeat snapshot單獨使用相同profile入口，再按pattern hash與主分析代表比較S11/Gain、場型曲線與scalar差值，明列原件／repeat來源。**`duplicate_rows`本身不是已計算的repeat residual，場型mirror residual也不是重測誤差。**
+
+```powershell
+python -m script.symmetry_analysis profile --store <full_unique_frozen> --store <repeat1_frozen> --store <repeat2_frozen> --store <best_repeat_frozen> --out-json <新combined.json> --out-npz <新combined.npz>
+python -m script.symmetry_analysis profile --store <某個repeat_frozen> --out-json <新repeat.json> --out-npz <新repeat.npz>
+```
+
+10/10已用既有最佳原件＋獨立repeat的本機凍結資料驗證這個分層呼叫：combined為2觀測／1unique／1duplicate，repeat單獨分析保留1觀測，來源hash不變，無NAS／HFSS／訓練；[證據與限制](assets/r80_repeat_closeout_reuse_20261010.json)。實際小例是schema-v2原件＋schema-v1 repeat；完整单pair proof的schema-v2 repeat路徑另經只讀source核對，尚非5,000正式凍結／全repeat驗證。15:59保存cutoff的三個repeat stores分別2／2／1觀測，store內hash皆唯一；final cutoff仍須重新核對。所有輸出用新路徑、不覆蓋原資料，原19個live runtime來源不改。
+
 ## R81 正 WM 候選的確認入口（待後續濾波器階段使用）
 
 R81派工前先執行`python -m script.prepare_symmetry_filter check-wide-inputs --dataset-root <R81備妥dataset>`：只驗證正式60筆與6+2+2工程輸入、來源組、親代及Fast／Discrete／mesh設定，不啟動HFSS。完成量測後才用同模組`check-wide`重播完整觀測並比較四組曲線／margin，任一差異>0.3 dB不放行。

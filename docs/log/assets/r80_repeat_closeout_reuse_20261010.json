@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "status": "passed_real_saved_pair_reuse_with_independent_saved_review",
+  "actual_pair_result": {
+    "status": "passed_existing_snapshot_and_profile_on_real_local_repeat_pair",
+    "scope": "One already measured best geometry, original plus one independent repeat; not full R80 closeout.",
+    "original_wm_db": 0.021682262420654297,
+    "repeat_wm_db": 0.03643369674682617,
+    "repeat_minus_original_wm_db": 0.014751434326171875,
+    "s11_gain_curve_max_abs_repeat_delta_db": [
+      0.005123615264892578,
+      0.14389419555664062
+    ],
+    "phi0_phi90_curve_max_abs_repeat_delta_db": [
+      0.0,
+      0.0
+    ],
+    "combined_counts": {
+      "source_stores": 2,
+      "validated_complete_source_rows": 2,
+      "valid_response_rows": 2,
+      "valid_radiation_rows": 2,
+      "unique_selected_rows": 1,
+      "duplicate_rows_removed": 1,
+      "repeat_or_notarize_candidates": 1,
+      "repeat_or_notarize_selected": 0,
+      "symmetry_class": {
+        "exact": 1
+      }
+    },
+    "standalone_repeat_counts": {
+      "source_stores": 1,
+      "validated_complete_source_rows": 1,
+      "valid_response_rows": 1,
+      "valid_radiation_rows": 1,
+      "unique_selected_rows": 1,
+      "duplicate_rows_removed": 0,
+      "repeat_or_notarize_candidates": 1,
+      "repeat_or_notarize_selected": 1,
+      "symmetry_class": {
+        "exact": 1
+      }
+    },
+    "prior_repeat_receipt_sha256": "4f8b1595a99110402c3c00dcabc27d5390da08b928ff2c41de9657cf59195ebf",
+    "prior_frozen_proof_sha256": "ee81b44d04526d238ebc5ee89152d13cadb12149ee6853c0dedcef3ee10d4df4",
+    "prior_census_receipt_sha256": "880c2c4d3a1e25079e0fea36768dd8cb260e37ac90ff6e02fd6b04f15f94270c",
+    "source_frozen_tree_unchanged": true,
+    "original_snapshot_unchanged": true,
+    "methods": {
+      "script/profiled_shards.py": "c1571849d769c6731ab3df005f920e75cf212e1c439da4f50a20ca1a6a3628c9",
+      "script/symmetry_analysis.py": "945b20ce399dab5dbf18e659d34d1860c28d5c5c21c0627d44c5ab5195e58571"
+    },
+    "outputs": {
+      "combined.json": "50d0b8c5c74f3147cf71e75557549e854a83d81390787fba8974fbba5363c6d1",
+      "combined.npz": "6f17aaf4f3f111b2e871a6166c819d251689cc674a074ebac4f66b20e22f5890",
+      "repeat.json": "37d50e0220403d5937936b57639c2d16941ca13992777dc4f2b14be5b3ac696d",
+      "repeat.npz": "e3420190c223385f7610ebac3a16325866aa03cc1e11b3d7871a239fa0459c71"
+    },
+    "helper_sha256": "842036a103c858255e4b6373c42c3a65a8cb81e21c9d760d122a86478e4de974",
+    "NAS_read_or_write": false,
+    "HFSS_or_training": false,
+    "limits": [
+      "Combined arrays and quantiles contain one unique representative; duplicate_rows retain audit entries.",
+      "This actual case combines a schema-v2 original snapshot with a schema-v1 repeat snapshot.",
+      "A separate existing profile call retains the repeat curve/metrics for explicit differences.",
+      "No new samples, final 5000 census, mesh certification or release is produced."
+    ]
+  },
+  "actual_pair_result_sha256": "93f5ae1130d6ebefad33598f90d4172f04b208e7a3c2c0e8c6ad4d052ad7c053",
+  "independent_review": {
+    "schema_version": 1,
+    "kind": "r80_repeat_closeout_reuse_independent_saved_review_v001",
+    "status": "passed_one_actual_saved_original_repeat_pair_through_existing_interfaces",
+    "review_scope": "Read-only review of the saved helper, JSON and NPZ outputs. Numerical replay used NPZ arrays only; profile generation was not rerun.",
+    "nas_read_or_write": false,
+    "hfss_or_training": false,
+    "model_or_inference": false,
+    "reviewed_artifacts": {
+      "verify_existing_pair.py": "842036a103c858255e4b6373c42c3a65a8cb81e21c9d760d122a86478e4de974",
+      "result.json": "93f5ae1130d6ebefad33598f90d4172f04b208e7a3c2c0e8c6ad4d052ad7c053",
+      "combined.json": "50d0b8c5c74f3147cf71e75557549e854a83d81390787fba8974fbba5363c6d1",
+      "combined.npz": "6f17aaf4f3f111b2e871a6166c819d251689cc674a074ebac4f66b20e22f5890",
+      "repeat.json": "37d50e0220403d5937936b57639c2d16941ca13992777dc4f2b14be5b3ac696d",
+      "repeat.npz": "e3420190c223385f7610ebac3a16325866aa03cc1e11b3d7871a239fa0459c71",
+      "repeat_snapshot/manifest.json": "24c2e07044bb7301e55fd5238f0d9e2323c0416abb1e9252874c13cf4857a729",
+      "repeat_snapshot/results.json": "a52a48b0bb4145d1c3fc6c459c18a117e6ebc2130cba56c711f559220a180723",
+      "repeat_snapshot/source_bindings.json": "46d51eb59a2a571b8ec8e15f400da5c3c80ac2d70730aac5be22d3ca9d2f33ab",
+      "script/profiled_shards.py": "c1571849d769c6731ab3df005f920e75cf212e1c439da4f50a20ca1a6a3628c9",
+      "script/symmetry_analysis.py": "945b20ce399dab5dbf18e659d34d1860c28d5c5c21c0627d44c5ab5195e58571"
+    },
+    "interface_checks": {
+      "repeat_snapshot_schema": 1,
+      "repeat_snapshot_successful_source_rows": 1,
+      "repeat_snapshot_duplicate_successful_rows": 0,
+      "repeat_snapshot_unique_selected_rows": 1,
+      "combined_source_binding_schemas": [
+        2,
+        1
+      ],
+      "combined_validated_source_rows": 2,
+      "combined_unique_selected_rows": 1,
+      "combined_duplicate_rows": 1,
+      "combined_repeat_candidates": 1,
+      "combined_repeat_selected": 0,
+      "standalone_repeat_validated_rows": 1,
+      "standalone_repeat_unique_rows": 1,
+      "standalone_repeat_selected": 1,
+      "combined_npz_sha_matches_json_binding": true,
+      "repeat_npz_sha_matches_json_binding": true,
+      "pattern_arrays_equal": true,
+      "pattern_sha256_equal": true,
+      "frequency_grids_equal": true
+    },
+    "npz_only_numerical_replay": {
+      "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+      "original_id": "r80localv1_00026_f6ffb938",
+      "repeat_id": "r80bestrep01_f6ffb938",
+      "original_wm_db": 0.021682262420654297,
+      "repeat_wm_db": 0.03643369674682617,
+      "repeat_minus_original_wm_db": 0.014751434326171875,
+      "s11_gain_curve_max_abs_repeat_delta_db": [
+        0.005123615264892578,
+        0.14389419555664062
+      ],
+      "phi0_phi90_curve_max_abs_repeat_delta_db": [
+        0.0,
+        0.0
+      ]
+    },
+    "source_immutability_evidence": {
+      "helper_before_after_checks": "verify_existing_pair.py lines 24-26 and 58-59 hash the complete pre-existing repeat raw-freeze tree and original snapshot before and after generation.",
+      "saved_result_source_frozen_tree_unchanged": true,
+      "saved_result_original_snapshot_unchanged": true,
+      "independent_raw_tree_rehash_performed": false,
+      "evidence_limit": "This review confirms the helper logic and its passed durable result; it did not independently reread the pre-existing raw PT trees."
+    },
+    "conclusion": "The existing snapshot_successes and analyze_profile_stores interfaces preserve and expose this one actual independent repeat when it is frozen as its own one-row schema-v1 snapshot. Combined analysis keeps the non-repeat representative in arrays and the repeat in duplicate_rows; standalone repeat analysis retains the repeat row and curves for exact saved differences.",
+    "required_final_closeout_preconditions": [
+      "The final 5,000-unique census and full unique representative snapshot must exist and be independently validated; this evidence does not create or validate them.",
+      "Every repeat source store intended for this reuse path must be enumerated at the final cutoff and shown to have unique pattern hashes within that store, or otherwise receive an observation-level truthful freeze contract.",
+      "Each repeat snapshot must preserve its full source input/store metadata hashes and be analyzed separately before comparison with the full-unique representative keyed by measurement_id and pattern_sha256.",
+      "The final report must distinguish total successful observations, unique representatives, retained duplicate repeat rows, missing/failed repeats, and repeat observations not covered by this path.",
+      "Schema-v2 original cutoff IDs remain declared shape-validated provenance because analyze_profile_stores cannot reconstruct the original pair-proof from the frozen store alone."
+    ],
+    "limits": [
+      "This proves interface reuse on one already measured original-plus-one-repeat pair only. It does not show that all R80 repeats are present, complete, independent, or compatible with the same per-store assumption.",
+      "It is not the final R80 5,000 closeout, a new performance result, a repeat uncertainty estimate, mesh certification, model evidence, or a release/adoption decision.",
+      "Combined population arrays and quantiles contain one unique representative; the repeat survives there as a duplicate_rows audit entry, while its numerical curves are retained by the separate repeat profile output.",
+      "No raw PT tensor was deserialized during this review. During the initial artifact inventory, SHA-256 was inadvertently computed over the two local repeat_snapshot PT files; this was a local byte read only, with no tensor load, original-source-tree read, NAS access, or mutation. The numerical replay used only combined.npz and repeat.npz.",
+      "No NAS read or write, HFSS dispatch, training, model loading, inference, profile rerun, test execution, source modification, archival action, or commit occurred."
+    ]
+  },
+  "independent_review_sha256": "5e41c84225deffa3ed7f5ef6a285ab1abbe2af1a540c4bf537887ba564ce119e",
+  "repeat_source_shape_at_prior_cutoff": [
+    {
+      "store": "dedust_r80repeat1",
+      "rows": 2,
+      "unique_pattern_hashes": 2,
+      "all_rows_repeat": true,
+      "successful_rows": 2
+    },
+    {
+      "store": "dedust_r80repeat2",
+      "rows": 2,
+      "unique_pattern_hashes": 2,
+      "all_rows_repeat": true,
+      "successful_rows": 2
+    },
+    {
+      "store": "dedust_r80bestrep01",
+      "rows": 1,
+      "unique_pattern_hashes": 1,
+      "all_rows_repeat": true,
+      "successful_rows": 1
+    }
+  ],
+  "prior_cutoff": "2026-10-10 15:59 Taipei; not a new census",
+  "prior_census_receipt": "docs/log/assets/r80_best_status_20261010_1559.json",
+  "prior_census_receipt_sha256": "880c2c4d3a1e25079e0fea36768dd8cb260e37ac90ff6e02fd6b04f15f94270c",
+  "prior_pair_proofs_sha256": "359d27be339ab4af79fa6e7af0058e7b440aaf9d277608b1b78dd6fb2faad017",
+  "recording_script_sha256": "95b22224daa53edecd9549f44fedd8d06ee50d34daa066359933d4d34b927436",
+  "completion": false,
+  "R80_final_snapshot_created": false,
+  "R81_release_created": false,
+  "HFSS_or_training": false,
+  "NAS_read_or_write": false,
+  "runtime_source_mutation": false,
+  "required_next_action": "At final stable 5000 cutoff, freeze all unique representatives and each full repeat store separately, check within-store uniqueness, then use existing profile/figures and report explicit repeat differences and missing coverage."
+}
