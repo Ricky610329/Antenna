@@ -1478,3 +1478,8 @@ R81新入口267af9c及歷史masked-prior config-only builder103517c均已推送G
 ### 2026-10-10 18:34：LOW部分失敗保留，三台續跑、尚待37跨機補測
 
 例行helper因scope partial-fail警報exit1，原main身份／19來源仍通過，沒有把health error誤認主控消失。LOW ka00bff601d27501e的r80kl05_d436793fe129 COM0x80070203 attempts4，15/16成功；fail記216／218與worker_continues=true，done不存在，claim218殘留保留。沿用既有讀回與verify_incomplete_hfss_batch，全15成功observation完整性通過，error分類合法；精確roster仍缺37，不能釋放失敗保留名額或宣稱毒樣本終態。後續marker/result cutoff確認218已接下一LOW7/16且無error；37 g02 10/16另1筆COM0x80070223 attempts1、fail不存在；216 g03 8/16無error。三台當前claimed與近期saved結果支持續跑，不等於remote PID驗證；既有優先序使37先做guided，未保證補測時間。沒有新全量census／性能結論、手動刪marker／重派／restart／source hotpatch。依既有容錯等跨機補測與下次19:04健康。[完整證據](assets/r80_health_20261010_1834.json)。
+
+
+### 2026-10-10 19:04：保留LOW失敗；兩台已認領新guided，218續跑
+
+helper保留partial-fail警報exit1，但原main身份／19來源與唯一inventory通過。19:06marker讀回舊LOW ka00bff601d27501e仍15/16，COM attempts4，216／218 fail及results bytes完全與18:34相同；引用先前15成功partial verifier，不重複宣稱本次raw replay。37仍可依法接管，但正做較高priority guided。218下一LOW10成功並有1筆首次watchdog RPC_S_CALL_FAILED attempts1，fail不存在，尚非批次終態；216新guided d2451199g01 claim19:01已有1成功；37新g02 claim19:03在19:06尚無results，只支持新認領startup，不是remote process或成功證明。未因helperexit1重新開主控／刪markers／重派，沒有全量census。上一v023 guided是否全48完成及其性能由單獨gate／readout處理，不從本健康缺列直接推論完成。最初本機inline adapter shell parsing失敗在任何NAS讀寫前；改為file-based adapter後實際兩個readonly讀回exit0，沒有controller／worker改動。下一例行19:34。[完整證據](assets/r80_health_20261010_1904.json)。
