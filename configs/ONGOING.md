@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **目前狀態（10/10 14:23全量查詢／14:22健康）**：有效唯一對稱實測 **3,506/5,000（70.12%）**，較13:36增加44筆；全3,511筆成功觀測重新raw核對，沒有新最佳，WM仍 **+0.0216822624 dB**，既有独立重測+0.0364336967。[最新全量收據](../docs/log/assets/r80_best_status_20261010_1423.json)。exact主控PID53228／launch5a181a47…與19個來源仍吻合，三台claimed2/16、7/16、8/16，最新1／2／3分鐘，scope無警報、LOW仍有待跑工作，SM持續批次更新。這次cutoff有3筆首次HFSS／COM錯誤，不計有效數、非終態失敗，既有worker依批尾規則重試；未宣稱恢復。資料量增加、最佳性能停滯；沒有改模型、佇列或重啟worker。**下一例行檢查14:34**沿用已掛計時器。新多樣性48切換仍待既有授權回覆；R80 5,000與R81/spec未完成。
+
 - **目前狀態（10/10 14:04健康／13:36全量查詢完成）**：最近全量有效唯一對稱實測 **3,462/5,000（69.24%）**，較12:46增加44筆；該次沒有新最佳，WM仍 **+0.0216822624 dB**、既有獨立重測 +0.0364336967。[最新全量raw](../docs/log/assets/r80_best_status_20261010_1336.json)。14:04健康核對main仍為exact **PID53228／launch5a181a47…**、running_cycle，19個runtime bindings吻合；三片claimed11/16、4/16、3/16，最新0／3／2分鐘，scope無警報，LOW有待跑工作，主控reported SM v20。[最新健康](../docs/log/assets/r80_health_20261010_1404.json)。此健康不是新census或性能稽核；13:36 raw保存的2筆首次HFSS／COM錯誤不计有效數，依既有worker規則重試，未於此宣稱已恢復。資料量增加、最佳性能停滯。新多樣性48主控切換的明確授權仍待回覆。**下一例行檢查14:34**；R80 5,000與R81/spec未完成。
 
 - **R81獨立worker入口已提交／未啟用**：`267af9c`新增portable immutable release入口，原R80來源未改；44個實際Git blob gate通過，拿目前3,462筆真實證據時正確拒絕提前R81啟動。[準備與限制](../docs/log/assets/r81_worker_entry_readiness_20261010.json)。固定獨立私人R81 dataset，先6+2+2工程檢查，再依回填與模型依序最多3×60；沒有actual release／R81 HFSS／positive WM。既有三台worker繼續原入口，不使用combined混合queue。`103517c`已提交歷史masked-prior config-only builder；以既有真實manifest生成30歷史＋100當前ep／holdout0.2設定，科學量測／spec／60×3及其餘配置保持原版。[設定證據](../docs/log/assets/r81_masked_prior_recipe_20261010.json)。尚未重新full prior preflight、建立R81工作區或訓練模型；21,034是保留集排除前上限，新兩阻帶保持mask。
