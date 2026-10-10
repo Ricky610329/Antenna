@@ -1273,3 +1273,7 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 使用者現況查詢觸發完整唯讀核對；09:13–09:15重播3,246個成功觀測，扣除重測有3,241個有效唯一對稱圖形，達5,000目標64.82%，比08:31增加34筆。最佳仍是r80localv1_00026_f6ffb938，WM +0.0216822624 dB、26.5–29.5GHz最差S11 −10.0960884094 dB／最低Gain4.0216822624 dBi；獨立重測WM +0.0364336967 dB。[完整查詢與健康](assets/r80_best_status_20261010_0915.json)。
 
 09:14三台claimed10/16、8/16、5/16，最新結果1／3／1分鐘前、scope零警報；原controller exact live、waiting、completed21、reported SMv016。資料仍增加但最佳性能停滯；新20k多來源池已完成v015排名，尚未送HFSS。一次COM首試例外由既有重試處理，未改claims或restart。下一例行檢查仍09:32；R81未啟動，R80及spec任務尚未完成。
+
+### 2026-10-10 09:32：例行健康核對通過
+
+原controller PID／creation／argv／launch與last receipt hash核對通過，running_cycle、completed21、reported SMv016；scope無警報。三個claimed批次15/16、14/16、13/16，最新結果1／0／2分鐘前，另有兩片guided與五片LOW待跑。[健康證據](assets/r80_health_20261010_0932.json)。cached3,214不當作新的完整census；最新完整仍是09:15的3,241／最佳+.0216822624。未重查全量真值、重啟controller或改queue。下一例行健康10:02。
