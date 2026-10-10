@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "status": "reviewed_execution_entry_preparation_only",
+  "created_utc": "2026-10-10T03:18:44.475457+00:00",
+  "record_helper": {
+    "path": "tmp\\r80_structured48_transition_milestone_20261010_v001\\record_execution_entry.py",
+    "sha256": "1b242f33e99c7bd4236c3fc3aeaf2bcf0fcae7fb3e7ec60c5428e537023b4de6",
+    "bytes": 3716
+  },
+  "health_review": {
+    "path": "tmp\\r80_structured48_controller_transition_20261010_v004\\independent_review_check_health_restored.json",
+    "sha256": "321ec2111370eeacf128ffb98a29926548ac2a6b56a4dd80b4207cf01b312022",
+    "bytes": 2423
+  },
+  "health_review_content": {
+    "schema_version": 1,
+    "status": "pass_source_only_not_executed",
+    "scope": "independent bounded review of restored-controller health helper",
+    "reviewed_sources": {
+      "check_health_restored.ps1": "cd69d148db9775d90a0ee2da451a740271f8557d9aa6fcfbd61a20d9285910a3",
+      "check_health_restored_common.ps1": "31962c3d5e895bce8e64717c81a19b89df1ac5c3b93e967342bcc510bd4cf4a2",
+      "test_check_health_restored.ps1": "efb581b1b969310ececb2f462c722845004130a582f25b8e3898097e3ba553ef",
+      "check_health_restored_readiness.json": "855a24232b114b804d4e762cf2eb14f534340490353f770f29def67457a7d6c1",
+      "restore_controller.ps1": "5dbd82642210284cb882071878cf66459cc90d2229059e92302c2f04f1a444dc"
+    },
+    "findings": {
+      "restoration_receipt_schema_matches_writer": true,
+      "receipt_path_and_lowercase_sha256_are_mandatory_and_rehashed": true,
+      "pid_is_taken_only_from_hash_bound_receipt": true,
+      "cim_pid_creation_executable_and_argv_are_exactly_revalidated": true,
+      "watcher_inventory_requires_exactly_one_matching_restored_identity": true,
+      "new_launch_differs_from_old_launch_and_is_bound_through_receipt_attempt_and_current_status": true,
+      "attempt_is_rehashed_with_recorded_size": true,
+      "settings_file_path_and_bytes_are_rehashed": true,
+      "profile_search_policy_settings_and_watcher_hashes_match_frozen_runtime_bindings": true,
+      "current_status_revalidates_launch_settings_profile_scope_search_policy_and_attempt_path": true,
+      "existing_health_scope_is_preserved_for_factory_status_and_three_job_markers": true,
+      "local_health_output_is_create_only": true,
+      "no_start_restart_stop_signal_or_nas_write_path_exists": true
+    },
+    "validation": {
+      "powershell_parser_three_sources": "pass",
+      "single_pure_fixture": "RESTORED_HEALTH_FIXTURE_PASS",
+      "broad_tests_run": false,
+      "actual_health_or_cim_invocation": false,
+      "factory_status_invocation": false,
+      "nas_access": false,
+      "process_action": false
+    },
+    "limits": [
+      "This review does not establish that restoration has occurred or that the receipt, PID, status, or NAS paths currently exist.",
+      "The live watch_status is intentionally treated as mutable health state; immutable launch provenance comes from the rehashed attempt and restoration receipt.",
+      "The actual health helper must be invoked later with the concrete restoration_complete.json path and its exact SHA256."
+    ],
+    "blockers": []
+  },
+  "publisher_launcher": {
+    "path": "tmp\\r80_structured48_controller_transition_20261010_v004\\run_publisher_once.ps1",
+    "sha256": "1cb37d63cdff6fbf939cb96ff658414c7731406c218f768f5b2f54157637ec62",
+    "bytes": 3564
+  },
+  "publisher_launcher_review": {
+    "path": "tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_launcher_review.json",
+    "sha256": "c4ca988a3949140ede8cdc06a0329da266efca622ff69c7176d85ccae58d7c5a",
+    "bytes": 2866
+  },
+  "publisher_launcher_review_content": {
+    "schema_version": 1,
+    "kind": "r80_structured48_publisher_once_launcher_independent_review_v001",
+    "status": "PASS",
+    "reviewed_source": {
+      "path": "tmp/r80_structured48_controller_transition_20261010_v004/run_publisher_once.ps1",
+      "sha256": "1cb37d63cdff6fbf939cb96ff658414c7731406c218f768f5b2f54157637ec62",
+      "bytes": 3564
+    },
+    "findings": [
+      "TaskValidateConfig runs before lease creation and preserves exact activation HEAD, runtime, source, publisher, settings, and cancelled-driver bindings.",
+      "The launcher requires original activation_complete evidence, exact owned STOP hash, zero TaskWatchers inventory, and a prepared action before its create-only lease claim.",
+      "The lease owner comes from the frozen STOP payload and its 3600-second duration exactly matches the frozen publisher lease_seconds ceiling.",
+      "Exactly one hidden private-Python process is started with publisher_quiescent48.py dispatch --request --lease from the repository working directory.",
+      "Native WaitForExit completes before Refresh and ExitCode capture. A publisher nonzero exit does not throw merely because of its exit code, so terminal evidence still records the actual native exit code, log hashes, action readback, and confirmed PID absence.",
+      "The launcher contains no Stop-Process, Remove-Item, retry loop, automatic restoration, NAS operation, queue implementation, or second publisher start.",
+      "Existing lease/start/terminal/log paths cause fail-closed refusal, preserving a prior attempt. Restoration handoff remains a separate root-reviewed action after result inspection."
+    ],
+    "bounded_validation": {
+      "powershell_parser_errors": 0,
+      "start_process_count": 1,
+      "wait_for_exit_count": 1,
+      "stop_process_count": 0,
+      "remove_item_count": 0,
+      "publisher_cli_and_lease_contract_read_only_checked": true,
+      "broad_tests_run": false
+    },
+    "limitations": [
+      "The current transition config builder intentionally does not bind this later launcher; the actual milestone must separately bind the exact reviewed launcher SHA-256 before use.",
+      "A wrapper-level I/O or Start-Process exception can leave only the already-created lease and any logs/start evidence reached before the exception; there is deliberately no automatic retry, kill, or restoration. Root must inspect those artifacts and live process absence before constructing a terminal handoff.",
+      "This review does not claim that an actual publisher process was launched or completed."
+    ],
+    "operations": {
+      "launcher_executed": false,
+      "configuration_built": false,
+      "CIM_queried": false,
+      "STOP_touched": false,
+      "process_started_or_signalled": false,
+      "NAS_queue_dispatch_HFSS_model_truth_touched": false
+    },
+    "conclusion": "PASS for one-time root-controlled use after separately hash-binding these exact source bytes."
+  },
+  "activation_config_built": false,
+  "STOP_written": false,
+  "controller_transition_executed": false,
+  "publisher_executed": false,
+  "NAS_or_queue_mutation": false,
+  "scope": "One native publisher launch after reviewed quiescence; manually reviewed terminal handoff to original-settings restoration; future health PID is bound by the immutable restoration receipt.",
+  "limits": [
+    "The publisher launcher is separately hash-bound because the transition builder binds its original six transition files only.",
+    "A wrapper-level start or I/O failure requires authentic reached evidence and manual inspection, never a fake publisher PID, automatic retry, or forced process termination."
+  ]
+}

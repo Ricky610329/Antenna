@@ -1354,3 +1354,8 @@ v001獨立review攔下完整old_controller欄位缺失與CIM image-name限制兩
 目前最佳f6ffb938的52,650個radius1/2候選完成一次固定v015模型排名；獨立保存結果重播通過完整幾何、來源、member均值、八項分數與8LCB／4disagreement／4blind選擇，共16筆。anchor模型預測WM為−2.99575，與實測+.021682差距明顯，因此不聲稱SM或候選性能改善。主線之後更新live loader state至v18，原執行前後hash相同；保留saved-output通過及目前配方不可原樣重跑的限制，未回退live state、未再forward。
 
 transition v002/v003的實際復原鏈缺陷已留存BLOCKED審查，v004以真實觀察的failed-activation復原receipt、exact failure path/hash/bytes與當下rehash修正。新48 readout v003亦通過獨立準備審查；可在恢復main後用歷史全48 dispatch proof封存，partial/defer不會誤封存。全部仍preparation-only；尚未建立activation config／STOP／停止main／派HFSS。[完整來源、結果與限制](assets/r80_structured48_transition_and_local16_readiness_20261010.json)。接下來先在自然waiting且無active reservation時補新48，無論成功、容量defer或failure均恢復原設定main；不改三台worker／HFSS，實際鎖內whole48容量與duplicate驗證仍必需。
+
+
+### 2026-10-10：單次publisher launcher與恢復後健康入口審查通過
+
+launcher只有一次hidden private-ant publisher start、native wait、實際exit code與PID absence讀回；有限lease 3,600秒，existing output禁止重試，無kill或自動restore。另已準備讀取immutable restoration receipt＋指定SHA的健康工具，以exact新PID／creation／argv／launch／attempt及原profile/search/settings核對主控，不從mutable status自行選PID。兩項独立窄審與parser/一個純健康fixture通過，未執行CIM／STOP／NAS／publisher。launcher另行hash綁定；wrapper start/I/O failure須依真實已達證據人工核對，不能虛構PID或盲目重送。[來源與限制](assets/r80_structured48_execution_entry_readiness_20261010.json)。下一步才用本里程碑HEAD建立activation config並執行自然waiting handoff，直到恢復完成前不變更HEAD。
