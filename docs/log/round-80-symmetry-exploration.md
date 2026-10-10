@@ -1,6 +1,6 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
-最新狀態（2026-10-11 01:39）：4,074有效唯一實測／5,000（81.48%），尚差926，較00:14增加72；全4,079含5筆repeat原始觀測重算、零cached metrics。沒有新最佳，仍f6ffb938／WM+.0216822624dB，獨立同圖形重測+.0364336967不計new unique。03:34原主控／唯一inventory／19來源吻合；216新LOW片3成功、37原g03讀回12成功、218新guided片startup0。前次g01／g02已保存16成功、done、無fail／error，未新增全批raw重播。SM最新reported v030；新54增量raw重算0正WM／best−4.8460984230，未觸發full；latest physical review仍v029、實際fit4009／43項通過；v029當輪新增92，v026以來跨三版+200，模型更新不等於性能進步。v028完整48／fit3917、兩筆watchdog finalok、0正WM與排序ρ.1165的弱效果保留。舊LOW15有效／三機終態SHA不變，未新增終態錯誤。[01:39全量及SM證據](assets/r80_best_status_20261011_0139.json)／[v028批次](assets/r80_sm_v028_cohort48_result_20261011.json)／[既有最佳極座標圖](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)。[03:34健康](assets/r80_health_20261011_0334.json)。下一例行04:04；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer屬歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
+最新狀態（2026-10-11 01:39）：4,074有效唯一實測／5,000（81.48%），尚差926，較00:14增加72；全4,079含5筆repeat原始觀測重算、零cached metrics。沒有新最佳，仍f6ffb938／WM+.0216822624dB，獨立同圖形重測+.0364336967不計new unique。04:04原主控／唯一inventory／19來源吻合，216 LOW13、218新g01讀回3、37 g02=2成功；218一筆新watchdog attempt1，留原補測。前次g03已保存16成功／done／無error。SM最新reported v031；completed action cutoff4157有效唯一，新81增量raw重算0正WM／best−1.9476852417，未觸發full；latest physical review仍v029、實際fit4009／43項通過；v029當輪新增92，v026以來跨三版+200，模型更新不等於性能進步。v028完整48／fit3917、兩筆watchdog finalok、0正WM與排序ρ.1165的弱效果保留。舊LOW15有效／三機終態SHA不變，未新增終態錯誤。[01:39全量及SM證據](assets/r80_best_status_20261011_0139.json)／[v028批次](assets/r80_sm_v028_cohort48_result_20261011.json)／[既有最佳極座標圖](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)。[04:04健康](assets/r80_health_20261011_0404.json)。下一例行04:34；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer屬歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
 
 歷史全量狀態（2026-10-10 16:55）：3,630有效唯一實測／5,000（72.60%），較15:59增加46筆；全3,635成功觀測重新raw核對，最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。16:54三台worker有claimed工作，scope無警報，SM reported v022持續批次更新；兩筆首次COM失敗未計入有效數，16:56讀回各attempts1，尚未宣稱恢復。最新證據見[本次收據](assets/r80_best_status_20261010_1655.json)／[錯誤讀回](assets/r80_error_readback_20261010_1656.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
@@ -1688,3 +1688,9 @@ root審查發現v001自訂terminal證據不足，保留但禁止其valid執行�
 原controller的actual CIM身分、唯一inventory、19来源不變。216在LOW新片3成功、37原guided g03讀回12成功、218新guided片startup0；後續低優先片仍可被主線插隊。前次218 g01兩筆COM所在批次及216 g02均保存16成功、done、無fail與error；此為結果／marker恢復證據，未新增全批原始曲線核對。舊三機終態LOW的results／fail SHA不變，未手動改markers或重派。
 
 主控仍running_cycle，latest completed action仍1ac13397/v030，先前54增量不重播，也不推定未完成cycle的筆數／新版模型。最新全量4074仍是01:39cutoff。達5,000有效唯一即開始R81備料，R80統計／圖表同步收尾；實際R81 HFSS需零pending與有效獨立release。下一例行04:04。本輪無HFSS／SM training／forward／NAS寫入／worker重啟／runtime或queue變更。[健康與分cutoff證據](assets/r80_health_20261011_0334.json)。
+
+
+### 2026-10-11 04:04：新v031持續更新，81增量未超過最佳
+原main actual CIM／creation／argv、唯一inventory與19來源不變。216 LOW13成功、218新guided g01讀回3、37 g02=2；健康最新1／2／1分鐘。218 `r80caade1016g_00003_bf483ade`為首次watchdog/RPC失敗，attempt1、無done/fail；不稱終態、恢復或root cause，留既有補測。前次g03保存16成功／done／無error；舊全roster終態LOW results／fail SHA不變。
+
+新completed action `aade1016` reported v031，action cutoff4157有效唯一；新的81筆frozen raw用既有reader核對一次，0正WM、最佳−1.9476852417，未超過01:39參考+.021682，未觸發全量重新稽核。這不證明目前全域沒有新best；latest full4074仍為01:39cutoff，latest physical SM仍v029 fit4009，不以reported31冒充模型實體／accuracy review。達validated5000即接R81備料，R80統計图表同步完成。下一例行04:34。[健康／分cutoff／新81增量證據](assets/r80_health_20261011_0404.json)。無额外HFSS、模型forward／training、NAS寫入、restart／redispatch或queue／marker／runtime變更。
