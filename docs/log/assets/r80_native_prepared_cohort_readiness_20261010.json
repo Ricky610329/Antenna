@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "status": "native_prepared_cohort_ready_locally_switch_not_authorized_or_executed",
+  "recorded_date_taipei": "2026-10-10",
+  "native_feature": {
+    "isolated_commit": "23ec26fb0d4a8cade51ee8bf295ae1ada14ed0c3",
+    "merged_to_main": false,
+    "pushed": false,
+    "independent_review": {
+      "path": "tmp/r80_prepared_cohort_intent_review_20261010_v001/independent_review.json",
+      "sha256": "d198fc8561df8a7d4dbfdd313363afc9365a4eaabe25fed68e4992cb0c053fc8",
+      "status": "PASS",
+      "focused_result": "24 passed in 15.71s",
+      "broad_suite_run": false
+    }
+  },
+  "concrete_prepared_cohort": {
+    "request": {
+      "path": "tmp/r80_native_prepared_cohort_20261010_v001/structured48_request.json",
+      "sha256": "2a1504eda224b359f541f49a55539b3aa27e5909729a410d263ebb6926f76fba"
+    },
+    "watch_settings": {
+      "path": "tmp/r80_native_prepared_cohort_20261010_v001/watch_settings_structured48.json",
+      "sha256": "d38d7052251368034dfd7c3948ddba74e99de68c7fe5849b617b81d1541dc43d"
+    },
+    "validation": {
+      "path": "tmp/r80_native_prepared_cohort_20261010_v001/validation_receipt.json",
+      "sha256": "52e2ab2ba7af8e662aa77f4e492b50a7c40e71cd91af5199dc5ee479edc63285"
+    },
+    "count": 48,
+    "planned_native_jobs": 3,
+    "planned_rows_per_job": 16,
+    "dispatched": false
+  },
+  "controller_transition_readiness": {
+    "accepted_v2_config": {
+      "path": "tmp/r80_native_cohort_transition_20261010_v001/transition_config_v2.json",
+      "sha256": "bf152512c6cbc1f0e3a8f6c8f636d2a0a5a645de9a604f3808de3fff25157cf8"
+    },
+    "independent_review": {
+      "path": "tmp/r80_native_cohort_transition_20261010_v001/independent_transition_review.json",
+      "sha256": "7d50cac195fcf248e4e4a6e6462607c49a5663f5b2297d1ac23886e2c166994d",
+      "status": "PASS"
+    },
+    "preserved_v1_review": {
+      "path": "tmp/r80_native_cohort_transition_20261010_v001/independent_transition_review_v1.json",
+      "sha256": "f10c011836389774e29e670d98284bc723b61e010d0ba56c8afadee8444fa1e0",
+      "status": "BLOCKED"
+    },
+    "executed": false
+  },
+  "native_readout_readiness": {
+    "seal_source": {
+      "path": "tmp/r80_native_cohort_readout_20261010_v002/seal_dispatched_cohort.py",
+      "sha256": "a7dc6374451273c71707703de0490c503a573a327097e9ea21c226de9eb8ec30"
+    },
+    "truth_source": {
+      "path": "tmp/r80_native_cohort_readout_20261010_v002/truth_readout_native_cohort.py",
+      "sha256": "e35c06e0d4fc28d6f3800d5b1941ddc4a66f7b972c1c72d0ba01e1b88248931d"
+    },
+    "focused_result": {
+      "path": "tmp/r80_native_cohort_readout_20261010_v002/focused_test_result.json",
+      "sha256": "9a2ccda4c93ab72780ae0bb4e06cd41effdade5e9fe8ed169c1bb3a11230a980",
+      "result": "10 passed"
+    },
+    "independent_review": {
+      "path": "tmp/r80_native_cohort_readout_20261010_v002/independent_review_r80_v7_namespace.json",
+      "sha256": "0fc0a898902ec721caa1eedfc666e6b67c2153dc9056259ddde7b13f11e58327",
+      "status": "PASS_STATIC_AND_FOCUSED_NO_EXECUTION",
+      "targeted_negative_tests": "4 passed in 3.655s"
+    },
+    "preserved_v1_failure": {
+      "path": "tmp/r80_native_cohort_readout_20261010_v001/independent_static_review_r80_v7_namespace.json",
+      "sha256": "f9b5c85fb0a51dd1678520e4bb253342d0f96ceccb98f011e1005d7ed0a94c4c",
+      "status": "FAIL_STATIC_BLOCKERS_NO_EXECUTION"
+    },
+    "actual_seal_created": false,
+    "actual_truth_readout_run": false
+  },
+  "latest_read_only_health": {
+    "path": "tmp/r80_restored_health_20261010_v005/health_restored_20261010_1234.json",
+    "sha256": "03fee362c2fff6c2ce636c1ef02fb68e6a06441a0f122bac460333bb3aa0b7e7",
+    "observed_utc": "2026-10-10T04:35:01.1394662Z",
+    "observed_taipei": "2026-10-10 12:35:01",
+    "process_pid": 53228,
+    "process_creation_unix_ms": 1791602636766,
+    "launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+    "runtime_file_bindings_verified": 19,
+    "watch_status": "waiting",
+    "reported_sm_data_version": 19,
+    "scoped_status_exit": 0,
+    "claimed_jobs": [
+      {"completed": 14, "total": 16, "latest_result_minutes": 3},
+      {"completed": 8, "total": 16, "latest_result_minutes": 1},
+      {"completed": 10, "total": 16, "latest_result_minutes": 1}
+    ],
+    "scope_alarm_count": 0,
+    "automatic_restart": false,
+    "process_signal_or_stop": false,
+    "source_or_queue_mutation": false,
+    "note": "reported SM v19 is controller state, not a new full raw census"
+  },
+  "latest_full_raw_census": {
+    "path": "docs/log/assets/r80_best_status_20261010_1214.json",
+    "sha256": "4b9686031cfec55d2bdac965f1ade14a255bf4e62c71bae66ec3140ad4a08a1a",
+    "completed_utc": "2026-10-10T04:16:08.285962+00:00",
+    "unique_successful_patterns": 3389,
+    "target_unique": 5000,
+    "best_factory_margin_db": 0.021682262420654297,
+    "new_best": false
+  },
+  "attempted_switch": {
+    "observation": {
+      "path": "tmp/r80_native_cohort_transition_20261010_v001/approval_rejection_observation.json",
+      "sha256": "06df9c53a05cf583f9386d5114c999e9d821a1b9c4eaeea63526a22c639981c3",
+      "observed_utc": "2026-10-10T04:37:18.4112798Z"
+    },
+    "outcome": "automatic_approval_rejected_before_CreateProcess",
+    "reason": "Exact live-controller STOP/relaunch side effect requires explicit user authorization.",
+    "explicit_authorization_pending": true,
+    "switch_process_created": false,
+    "transition_intent_exists": false,
+    "local_STOP_exists": false,
+    "new_launch_receipt_exists": false,
+    "automatic_retry": false,
+    "worker_or_HFSS_signal": false
+  },
+  "not_claimed": [
+    "native feature merged or pushed",
+    "controller stopped, replaced, or restarted",
+    "native prepared cohort adopted or dispatched",
+    "NAS, queue, worker, HFSS, model, seal, or truth execution",
+    "new performance result or new full raw census after 12:16 Taipei"
+  ],
+  "future_execution_requirement": "After this documentation milestone advances root HEAD, create a new versioned transition config bound to that exact HEAD and obtain fresh independent review plus explicit authorization before any live STOP/relaunch execution. Never retry the old config or action.",
+  "next_routine_health_taipei": "2026-10-10 13:04"
+}

@@ -1392,3 +1392,12 @@ native launcher exit_code實際為null，故只以原traceback及durable deferra
 12:14只讀健康核對同一main PID53228／launch5a181a47…與19份runtime來源，三片claimed8/16、2/16、1/16，最近3／1／3分鐘有結果，scope無警報。12:16完成既有腳本全量raw重播：3,394個成功觀測含重測，去重3,389筆，較11:40增加28筆（67.78%）；最佳仍為r80localv1_00026_f6ffb938，WM +0.0216822624 dB、帶內最差S11 −10.0960884094 dB、最低Gain 4.0216822624 dBi，沒有新最佳。[本次raw及健康證據](assets/r80_best_status_20261010_1214.json)。
 
 raw保存1筆首次HFSS／COM錯誤，不計有效數；未清claim、重啟worker或派新HFSS。SM仍更新，性能停滯已向使用者說明；新48與最佳附近16尚未派工，隔離原生批次入口獨立24項窄測通過但尚未採用，不宣稱新性能提升。下一例行12:34；R80與後續spec尚未完成。
+
+
+### 2026-10-10 12:35–12:37：原生prepared cohort備妥；切換未獲自動核准，未執行
+
+隔離feature commit `23ec26f…`完成原生prepared cohort入口，獨立24項窄測通過；具體48筆request `2a1504…`、settings `d38d70…`與validation `52e2ab…`已固定。transition v2 config `bf1525…`及獨立review `7d50ca…`為PASS，v1 BLOCKED review `f10c01…`保留；native readout v2也以seal `a7dc63…`、truth `e35c06…`通過實作者10項與獨立4項替換負例，review `0fc0a8…`為PASS。這些是本機source／protocol readiness，feature仍只在local branch，未merge／push，未建立actual seal或讀取truth。[完整hash與限制](assets/r80_native_prepared_cohort_readiness_20261010.json)。
+
+12:35唯讀健康仍核對同一PID53228／launch `5a181a47…`、19份runtime bindings；三片claimed14/16、8/16、10/16，最近3／1／1分鐘有結果，scope零警報，SM reported v19不當全量census。全量結果仍是12:16的3,389筆與WM +0.0216822624 dB，沒有新最佳。
+
+12:37實際嘗試進入切換時，自動審批因exact live-controller STOP／relaunch缺少明確授權而在CreateProcess前拒絕；保存的唯讀觀察證明沒有transition intent、local STOP、新launch、automatic retry或worker／HFSS signal，原main與19份runtime仍相同。此處不宣稱controller stop、feature採用、原生48派工或新性能。明確授權仍待處理；而本文件里程碑commit會推進root HEAD，因此未來執行前必須以新HEAD另建版本化transition config並重新獨立審查，舊config／action不得重試。下一例行健康13:04。
