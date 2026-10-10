@@ -1,6 +1,6 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
-最新狀態（2026-10-10 20:13）：3,797有效唯一實測／5,000（75.94%），較17:59增加109；全3,802含5筆repeat原始觀測重新核對、零cached metrics，最佳仍f6ffb938／WM+.0216822624dB，沒有新最佳。20:12三台近期saved結果持續增長，主控身份及19來源吻合，reported SM v024；舊LOW部分失敗警報仍保留，不等於全線停機。完整cutoff、raw及health見[最新全量收據](assets/r80_best_status_20261010_2013.json)／[20:04健康及20:05錯誤讀回](assets/r80_health_20261010_2004.json)。20:34 health確認main及19來源吻合，三台近期結果持續增加、reported SM v025；本次不是新全量或最佳核對。[20:34健康](assets/r80_health_20261010_2034.json)，下一例行21:04；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer只屬當時歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
+最新狀態（2026-10-10 20:13）：3,797有效唯一實測／5,000（75.94%），較17:59增加109；全3,802含5筆repeat原始觀測重新核對、零cached metrics，最佳仍f6ffb938／WM+.0216822624dB，沒有新最佳。20:12三台近期saved結果持續增長，主控身份及19來源吻合，reported SM v024；舊LOW部分失敗警報仍保留，不等於全線停機。完整cutoff、raw及health見[最新全量收據](assets/r80_best_status_20261010_2013.json)／[20:04健康及20:05錯誤讀回](assets/r80_health_20261010_2004.json)。21:04 health確認main及19來源吻合，兩台guided近期結果持續增加、37新claim约40秒進入startup，reported SM v025／running_cycle；本次不是新全量或最佳核對。[21:04健康](assets/r80_health_20261010_2104.json)，下一例行21:34；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer只屬當時歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
 
 歷史全量狀態（2026-10-10 16:55）：3,630有效唯一實測／5,000（72.60%），較15:59增加46筆；全3,635成功觀測重新raw核對，最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。16:54三台worker有claimed工作，scope無警報，SM reported v022持續批次更新；兩筆首次COM失敗未計入有效數，16:56讀回各attempts1，尚未宣稱恢復。最新證據見[本次收據](assets/r80_best_status_20261010_1655.json)／[錯誤讀回](assets/r80_error_readback_20261010_1656.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
@@ -1516,3 +1516,10 @@ main身份／19來源與唯一inventory通過，scope仍因舊LOW部分失敗exi
 批内best−5.0556001663／median−11.0773396492／mean−13.0614707122、0正WM；saved meanρ−.0233391229／MAE5.2224222662dB，LCBρ−.0622014763／MAE5.7401809933dB。本批SM排序幾乎無相關，尚未推進已核對全域最佳+.021682；不能由不同selected cohorts的相關係數判定版本因果退步／改善，也不據此宣稱模型可採用。Current及legacy exact-pattern overlap均0，pair Hamming min67／median308。
 
 20:04／20:05健康留下的g02 IDs16／34與g03 IDs2／23／26五筆首次COM目前皆ok，原sample／rad及raw WM核對通過，context health hash b249e6bf…一併綁定。這是本批恢復，沒有把舊LOW ka00之15/16兩機fail也宣稱恢復。沒有另派／刪markers／重啟／HFSS加跑、模型訓練／推論或新全量census；latest full仍20:13的3797，下一例行21:04。訓練3685只作累積資料binding，不當作全部train或v024實體optimizer／norm驗證。[完整結果及獨立證據](assets/r80_sm_v024_cohort48_result_20261010.json)。
+
+
+### 2026-10-10 21:04：兩台guided推進、37新claim正常startup
+
+exact CIM main身份、唯一inventory與19來源綁定通過，scope仍因舊LOW部分失敗exit1。當前218／216 ce09c595g02／g03有15／8成功、最近2／2分鐘；g02 row r80cce09c595g_00013_3b88ebfc首次COM attempts1尚存，無fail，未宣稱已恢復或終態。37已21:04:03 claim新71f14183g01，21:04:43 owners保存cutoff約40秒、0成功且results.json未建立，nullable hash／mtime保留，不用空字典hash假裝有result；仍在1800s sample timeout內，不把startup當停止或重開。claim本身不证明遠端PID，兩台recent results與本機main生存證據分別記錄。
+
+舊LOW ka00結果／fail bytes不變：15成功＋1COM attempts4、兩機216／218fail，37仍eligible；此前partial raw驗證只因hash不變被引用，不重複宣稱本次重新驗證15raw。LOW仍有待跑；watch_status v025／running_cycle只是runtime cutoffs，不能由新job prefix臆測v026模型已完成。沒有census／best更新、model forward或accuracy宣稱，也沒有worker／HFSS重啟、刪marker、手動派工、NAS／queue／source mutation。最新全量仍20:13的3797／+.021682，v024完整批及5COM恢復證據已另行commit；下一例行21:34。[健康及分cutoff證據](assets/r80_health_20261010_2104.json)。
