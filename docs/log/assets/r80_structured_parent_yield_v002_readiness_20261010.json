@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "status": "passed_bounded_current_parent_geometry_yield_only",
+  "observed_utc": "2026-10-10T00:03:56.770435+00:00",
+  "v002_receipt_sha256": "394862038f0b45ddf4f365927c29319a985f366542351ab3020e23c7ee977eb2",
+  "independent_saved_review_sha256": "eb8a0504e1666cbcb55fd96a8716b50b540a15d2ca3b36f9908a77a49d4f9212",
+  "review_helper": {
+    "path": "tmp/r80_structured_parent_yield_20261010_v002/review_saved_evidence.py",
+    "sha256": "b133f1c8837a48fe374c8b0de24b10b0d21cdae0decccf4e78246412b012e274",
+    "final_invocation": "C:/Users/ricky/miniforge3/envs/ant/python.exe tmp/r80_structured_parent_yield_20261010_v002/review_saved_evidence.py",
+    "final_exit_code": 0
+  },
+  "reviewed_files_sha256": {
+    "tmp/r80_structured_parent_yield_20261010_v001/README.md": "da994c73f31517e029a89c9e979b777316eb8ad94d9088db65612199d928941b",
+    "tmp/r80_structured_parent_yield_20261010_v001/accepted_patterns.npz": "3e00a0d301a8cec46329cedaf2967a10722e4e0a04bb35e6f5628bf97c9210d2",
+    "tmp/r80_structured_parent_yield_20261010_v001/measure_parent_yield.py": "54746a368442bad563d4c2ce93a89b7224e8825c5a4ebe61826bce1b038b1799",
+    "tmp/r80_structured_parent_yield_20261010_v001/yield_receipt.json": "62602914530051e5d1298da727700c595e665f05babc7e556dc6acd6731fcba6",
+    "tmp/r80_structured_parent_yield_20261010_v002/README.md": "5ce2ec8281d0bd106a0253cf2491d6bf62adea1e687c0bb47359733e274b7313",
+    "tmp/r80_structured_parent_yield_20261010_v002/accepted_patterns_v002.npz": "2c4907d98903df11d16e990f410651b0a0c5610ca1888b75ca81b05d0a944580",
+    "tmp/r80_structured_parent_yield_20261010_v002/measure_parent_yield_v002.py": "715df795b15c2149ea16b9ed6197eb07c680ab21627b32de709c149a02b94c5e",
+    "tmp/r80_structured_parent_yield_20261010_v002/yield_receipt_v002.json": "394862038f0b45ddf4f365927c29319a985f366542351ab3020e23c7ee977eb2"
+  },
+  "frozen_local_snapshot": {
+    "root": "tmp/r80_currentonly_prospective_pilot_20261010_v001/frozen_live_v010",
+    "data_version": 10,
+    "manifest_id": "8f7d8cfcebcf75970db3ed11396eb1a5881a7c8449f92238a7bda46a3976805e",
+    "cumulative_valid_unique": 2840,
+    "local_only": true
+  },
+  "parent_selection": {
+    "selected": 32,
+    "v001_v002_parent_ids_equal": true,
+    "pattern_hash_lineage_and_canonical_equal": true,
+    "current_exact_lr_fixed_points_recomputed": 32,
+    "changed_after_current_projection": 0
+  },
+  "attempt_schedule": {
+    "parents": 32,
+    "operator_families": 3,
+    "attempts_per_parent_operator": 4,
+    "total": 384,
+    "retries": 0,
+    "quota_relaxation": false,
+    "v001_v002_resolved_operator_parameters_equal": true,
+    "sha256": "25eeb2809e394068b4bd01b333280e00b0488c6067ccb3d63cee067f31aaa71f"
+  },
+  "status_totals": {
+    "accepted": 43,
+    "helper_none": 306,
+    "no_op_after_projection": 34,
+    "duplicate_probe": 1,
+    "duplicate_measured": 0,
+    "validation_failure": 0
+  },
+  "operator_outcomes": {
+    "add_block": {
+      "accepted": 0,
+      "helper_none": 128
+    },
+    "resize_component": {
+      "accepted": 0,
+      "helper_none": 128
+    },
+    "group_mutate": {
+      "accepted": 43,
+      "helper_none": 50,
+      "no_op_after_projection": 34,
+      "duplicate_probe": 1
+    }
+  },
+  "preserved_v001_interpretation": {
+    "pure_unary_yield": false,
+    "legacy_adapter_changed_parent_count": 32,
+    "reason": "v001 used dedust.symmetrize with strip_small and legacy feed-pad cleanup before the current validator",
+    "preservation": "all four reviewed v001 files retained their exact hashes"
+  },
+  "metadata_scope_correction": {
+    "finding": "projection_diff_px is computed as projected accepted candidate != baseline parent, while source_parent_diff_px is projected accepted candidate != parent_pattern; because v002 requires the baseline to equal the unchanged parent, the two saved values are duplicates.",
+    "accepted_rows_recomputed_against_parent": 43,
+    "raw_candidate_to_exact_lr_projection_delta_saved": false,
+    "allowed_claim": "the saved value is the parent-to-projected-candidate pixel delta",
+    "disallowed_claim": "the saved value measures how many pixels exact-LR projection changed in the raw helper output"
+  },
+  "source_sha256": {
+    "antenna/measurement.py": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9",
+    "antenna/patch/patch_simulator/single_port.py": "1e137ff77e76c8437bffc4faee46a19cf233a313a8c30e5333e1f460924b385d",
+    "script/dedust.py": "4d203816826ca20179c2ae3a5c345dcc900117d33a671090d896db3c61ece05d",
+    "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+    "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+    "script/symmetry_diverse_sm.py": "2cf599ab1bbba24e04b853df9d1485d8b30f7a99b98e7b7691e03a8c9e0db274",
+    "script/symmetry_sm_pool.py": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8",
+    "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+    "configs/r80_diverse_sm_search_v1.json": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7"
+  },
+  "record_validator_sha256": "74fe54498b3f02d836d253957287c598961bbd35a2e551841b5c112c21412e50",
+  "models_loaded_or_trained": false,
+  "prediction_or_ranking": false,
+  "nas_access": false,
+  "hfss_run": false,
+  "queue_or_controller_mutation": false,
+  "current_frozen32_comparison_changed": false,
+  "production_integration": false,
+  "limits": [
+    "The accepted count is bounded evidence from 384 scheduled attempts, not full-pool or production yield.",
+    "Neither add_block nor resize_component yielded any accepted candidate in this sample; both returned helper_none for all 128 attempts, so the 43 accepted rows come only from group_mutate.",
+    "This review supports geometry validity, dedup/event accounting, and provenance only; it makes no antenna-performance claim.",
+    "The saved duplicate_measured count was recomputed from event aggregation, while the generator/dedup decision process itself was not rerun.",
+    "v001 remains useful only as preserved legacy-cleanup-confounded evidence and must not be described as pure unary yield."
+  ],
+  "next_action_scope": "Use group mutation as a candidate source only after a separate frozen-pool/SM ranking check; component subquotas are not validated by this zero-yield sample."
+}

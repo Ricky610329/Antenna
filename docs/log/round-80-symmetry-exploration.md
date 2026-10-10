@@ -1220,3 +1220,10 @@ controller exact身分通過、running_cycle、completed18／reported v013；三
 ### 2026-10-10 08:02：第一批對照終止，主線持續工作
 
 controller exact身分通過、running_cycle，reported v014／completed19；這是controller狀態，cached3101不當作新census。三個claimed工作7/16、2/16、0/16，前兩個最新0／1分鐘，第三個新認領；scope無警報。固定對照第一批.done、無.fail，第二批仍2/16且非terminal，因此未讀取完整定量對照結果。[健康紀錄](assets/r80_health_20261010_0802.json)。最新完整實測仍為07:33的3150唯一圖形、WM+.021682；未採用shadow模型，下一routine08:32。
+
+
+### 2026-10-10：目前幾何上的歷史算子產出核對
+
+使用本機凍結v010的2840筆資料、既定32個parents，固定384次幾何探測。發現legacy symmetrize同時除塵／補feed pad，會改變全部32個已量測parents；v001保留，不能當成純算子變異。v002僅套用目前exact-LR enforcement與profile validator，32個parents均保持原hash；排程與helper參數不變。得到43個唯一有效圖形，皆來自group_mutate；add_block與resize_component各128次均回None。保存陣列、排程、parent lineage/canonical與來源雜湊經獨立核對通過。[產出紀錄](assets/r80_structured_parent_yield_v002_readiness_20261010.json)。
+
+這43個是離線候選，不是HFSS實測，未計入5000筆、未排名或派工。不能據此保證完整候選池產出率；先前元件來源配額仍是未驗證提案。收據的projection_diff_px實際為parent到candidate差，不是raw到鏡射的差，範圍更正保留。主線／32筆對照／模型／worker均未更動。
