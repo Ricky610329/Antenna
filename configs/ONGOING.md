@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **目前狀態（10/10 15:04健康）**：exact主控PID53228／launch5a181a47…與19來源吻合，三台claimed11/16、7/16、2/16，最新0／0／2分鐘，scope無警報、LOW與guided有待跑工作。主控reported SM已至v021，該版尚未做獨立model核對。[本次健康與重試讀回](../docs/log/assets/r80_health_20261010_1504.json)。14:23記錄的三筆COM錯誤現在全部results.status=ok且MID/SID吻合，既有worker已自動重試；此為狀態讀回，未新增sample/rad實體truth audit。最新全量仍14:23的3,506/5,000／最佳+.021682；本次未重算census／最佳。**下一例行15:34**計時器已掛；沒有重啟主控或worker、沒有queue／模型變更。R80/R81/spec未完成，新多樣性48切換仍待既有明確授權回覆。
+
 - **目前狀態（10/10 14:34健康／14:23全量）**：exact主控PID53228／launch5a181a47…、19個來源吻合，三台claimed7/16、10/16、12/16，最新1／3／2分鐘，scope無警報且後續guided／LOW都有待跑工作。[本次健康](../docs/log/assets/r80_health_20261010_1434.json)。最新已核對全量仍3,506/5,000（70.12%）／最佳WM+0.0216822624；本次不是新census或新最佳評估。已完成SM v020的34項獨立saved實體核對：v019的3,370列完整保留、新增55個唯一圖形至3,425；2,487 train／938 holdout家族與圖形無交集，三份checkpoint hash／binding／finite optimizer state與各4,400 Adam steps吻合，只用train重算的norm完全一致。[SM證據與限制](../docs/log/assets/r80_sm_v020_physical_review_20261010.json)。沒有forward／重訓／模型或queue變更；fresh-init僅metadata／source及不同terminal state證據，初始tensor未保存，saved metrics未重播，不宣稱SM性能改善。**下一例行15:04**計時器已掛；R80/R81/spec未完成，新多樣性48切換仍待既有明確授權回覆。
 
 - **目前狀態（10/10 14:23全量查詢／14:22健康）**：有效唯一對稱實測 **3,506/5,000（70.12%）**，較13:36增加44筆；全3,511筆成功觀測重新raw核對，沒有新最佳，WM仍 **+0.0216822624 dB**，既有独立重測+0.0364336967。[最新全量收據](../docs/log/assets/r80_best_status_20261010_1423.json)。exact主控PID53228／launch5a181a47…與19個來源仍吻合，三台claimed2/16、7/16、8/16，最新1／2／3分鐘，scope無警報、LOW仍有待跑工作，SM持續批次更新。這次cutoff有3筆首次HFSS／COM錯誤，不計有效數、非終態失敗，既有worker依批尾規則重試；未宣稱恢復。資料量增加、最佳性能停滯；沒有改模型、佇列或重啟worker。**下一例行檢查14:34**沿用已掛計時器。新多樣性48切換仍待既有授權回覆；R80 5,000與R81/spec未完成。

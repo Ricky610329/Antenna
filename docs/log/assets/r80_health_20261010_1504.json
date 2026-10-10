@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "status": "passed_read_only_routine_health_not_new_census",
+  "observed_utc": "2026-10-10T07:04:26.4632256Z",
+  "source_health": {
+    "path": "tmp/r80_restored_health_20261010_v005/health_restored_20261010_1504.json",
+    "sha256": "9bcb795b4c8b9a19cfc63bf01ea82ca874fc0979343972066d7c740cb926cf33"
+  },
+  "process": {
+    "pid": 53228,
+    "creation_unix_ms": 1791602636766,
+    "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+    "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+  },
+  "launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+  "runtime_file_bindings_verified": 19,
+  "process_matches_restoration_receipt": true,
+  "watcher_inventory_exact": true,
+  "watch_status": "running_cycle",
+  "reported_sm_data_version": 21,
+  "claimed_progress": [
+    {
+      "store": "dedust_r80kf9839e61a70045af",
+      "completed": 11,
+      "total": 16,
+      "latest_minutes": 0
+    },
+    {
+      "store": "dedust_r80cf51b3378g01",
+      "completed": 7,
+      "total": 16,
+      "latest_minutes": 0
+    },
+    {
+      "store": "dedust_r80cf51b3378g02",
+      "completed": 2,
+      "total": 16,
+      "latest_minutes": 2
+    }
+  ],
+  "scope_alarm_count": 0,
+  "latest_full_census": "docs/log/assets/r80_best_status_20261010_1423.json",
+  "latest_full_census_sha256": "ee9b6d32c1cabf64da8a76beb18e874cdad59439f62b7f54f18de8e7d6f8c733",
+  "latest_full_census_unique": 3506,
+  "next_routine_health_taipei": "2026-10-10 15:34",
+  "sm_v020_physical_review": "docs/log/assets/r80_sm_v020_physical_review_20261010.json",
+  "R81_release_created": false,
+  "controller_restart": false,
+  "worker_signal": false,
+  "queue_mutation": false,
+  "model_mutation": false,
+  "new_best_assessed": false,
+  "recording_script_sha256": "b085f5f09f7933f9895148d3d70817d2862827c397159069c1da97ff863d5e68",
+  "prior_error_readback": {
+    "observed_utc": "2026-10-10T07:05:25.274715+00:00",
+    "prior_receipt": "docs/log/assets/r80_best_status_20261010_1423.json",
+    "prior_receipt_sha256": "ee9b6d32c1cabf64da8a76beb18e874cdad59439f62b7f54f18de8e7d6f8c733",
+    "source_result_path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80c96357896g02\\results.json",
+    "source_result_cutoff_sha256": "eabd3883b69f6bde7f937868028d1ae72f050655709f5ce1f8eca4784a3e8862",
+    "local_cutoff": "tmp/r80_1504_health_record_20261010_v001/prior_error_store_results_cutoff.json",
+    "checked_entries": [
+      {
+        "store": "dedust_r80c96357896g02",
+        "id": "r80c96357896g_00001_02c0ccbc",
+        "recovered_status_ok": true,
+        "entry": {
+          "status": "ok",
+          "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+          "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+          "labels": [
+            "S11",
+            "Gain"
+          ],
+          "freqs": [
+            24.0,
+            24.5,
+            25.0,
+            25.5,
+            26.0,
+            26.5,
+            27.0,
+            27.5,
+            28.0,
+            28.5,
+            29.0,
+            29.5,
+            30.0,
+            30.5,
+            31.0,
+            31.5,
+            32.0
+          ],
+          "pattern_sha256": "02c0ccbc48e6abaff34bcd706c0cf0af7a7a666f2e201e0e4898c33bc38ca80b",
+          "lineage_id": "c48nq1p05_16",
+          "sample_file": "c94a2a8b1bb25544.pt",
+          "time_s": 180.0,
+          "geom": "single_v1",
+          "dbw": 0.1,
+          "gain28": 5.824379920959473,
+          "s11_28": -21.589981079101562,
+          "rad_file": "rad/r80c96357896g_00001_02c0ccbc.pt",
+          "performance_gate": false,
+          "sample_sha256": "5c0722898f50c7aa615d816d8d01f4b01b675deab8b0ead4bb7265f3d888b591",
+          "rad_sha256": "4d1e1dd66e18186071c221071dd667b444f65c0a46376564ba1437685057c070"
+        }
+      },
+      {
+        "store": "dedust_r80c96357896g02",
+        "id": "r80c96357896g_00016_215779da",
+        "recovered_status_ok": true,
+        "entry": {
+          "status": "ok",
+          "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+          "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+          "labels": [
+            "S11",
+            "Gain"
+          ],
+          "freqs": [
+            24.0,
+            24.5,
+            25.0,
+            25.5,
+            26.0,
+            26.5,
+            27.0,
+            27.5,
+            28.0,
+            28.5,
+            29.0,
+            29.5,
+            30.0,
+            30.5,
+            31.0,
+            31.5,
+            32.0
+          ],
+          "pattern_sha256": "215779da0b9536e4c64402f3e757d334bdd7eb5125f241c4c647814166747b51",
+          "lineage_id": "random-g3-060",
+          "sample_file": "c43cb99971305540.pt",
+          "time_s": 232.0,
+          "geom": "single_v1",
+          "dbw": 0.1,
+          "gain28": 4.044302940368652,
+          "s11_28": -3.5279719829559326,
+          "rad_file": "rad/r80c96357896g_00016_215779da.pt",
+          "performance_gate": false,
+          "sample_sha256": "d30035b724c5cf5743246663e54eeb0c2e30e5842b3f2f3726087101f55457ee",
+          "rad_sha256": "2efb70b4eb9ca59849c35be1eecb0f715f8c5d8e88e8d671483fa1974ddacbf0"
+        }
+      },
+      {
+        "store": "dedust_r80c96357896g02",
+        "id": "r80c96357896g_00025_ff5ed660",
+        "recovered_status_ok": true,
+        "entry": {
+          "status": "ok",
+          "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+          "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+          "labels": [
+            "S11",
+            "Gain"
+          ],
+          "freqs": [
+            24.0,
+            24.5,
+            25.0,
+            25.5,
+            26.0,
+            26.5,
+            27.0,
+            27.5,
+            28.0,
+            28.5,
+            29.0,
+            29.5,
+            30.0,
+            30.5,
+            31.0,
+            31.5,
+            32.0
+          ],
+          "pattern_sha256": "ff5ed660ade45fd588bf3ff22decb7167768dc8dee0c92aa022e47795e608114",
+          "lineage_id": "random-g3-042",
+          "sample_file": "3d733fc8392bcd29.pt",
+          "time_s": 239.0,
+          "geom": "single_v1",
+          "dbw": 0.1,
+          "gain28": -4.976354122161865,
+          "s11_28": -1.7767823934555054,
+          "rad_file": "rad/r80c96357896g_00025_ff5ed660.pt",
+          "performance_gate": false,
+          "sample_sha256": "51bf1a7ae07d930b6e1707112533b02a6afd41111672d7f791cb298bba89049d",
+          "rad_sha256": "c0e7f1d2f6d05b464b1fa056d74d529ecce7e91a16e8f7bba6902af5afd26ebe"
+        }
+      }
+    ],
+    "all_three_status_ok": true,
+    "limits": "Result status and measurement identity readback only; no new sample/rad truth audit, full census, model audit, or best assessment."
+  }
+}

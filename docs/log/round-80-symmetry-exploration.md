@@ -2,6 +2,8 @@
 
 最新狀態（2026-10-10 14:23）：3,506有效唯一實測／5,000（70.12%），較13:36增加44筆；最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。14:22三台worker有持續產出、scope無警報，SM持續批次更新。最新證據見[本次收據](assets/r80_best_status_20261010_1423.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
+2026-10-10 15:04健康更新：三台claimed11/16、7/16、2/16，最新結果0／0／2分鐘；exact主控與19來源吻合、scope無警報，reported SM v021持續更新，尚未獨立model核對。14:23的三筆首次COM錯誤全部results.status=ok／MID-SID吻合，由既有worker流程重試成功；這是保存result entry的狀態讀回，不是新增sample/rad全量實體truth audit。[本次收據](assets/r80_health_20261010_1504.json)。下一routine15:34，未重算最佳或全量筆數，未重啟／改queue。
+
 2026-10-10 14:34健康更新：三台claimed7/16、10/16、12/16，最新結果1／3／2分鐘；exact主控與19來源吻合、scope無警報，guided／LOW都有待跑工作。[健康收據](assets/r80_health_20261010_1434.json)。下一routine15:04；不將健康查詢當作新全量筆數或最佳判讀。
 
 同次完成[SM v020獨立實體核對](assets/r80_sm_v020_physical_review_20261010.json)：34/34通過，v019的3,370列無遺失／改動，新增55唯一圖形至3,425；effective train2,487／holdout938無家族alias或pattern交集。三個member的hash／binding／有限optimizer tensors及各4,400 Adam steps符合legacy30＋current100，僅train重算input／target norm逐位吻合。此次只讀既有資料與CPU checkpoint，沒有forward、訓練、派工或來源改動；fresh initialization未保存初始tensor，不作byte replay宣稱。saved metrics未重播，holdout是development descriptive，不作SM改善或獨立泛化證據。
