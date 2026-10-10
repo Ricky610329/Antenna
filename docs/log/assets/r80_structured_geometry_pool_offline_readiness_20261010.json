@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "kind": "r80_structured_geometry_pool_offline_readiness_20261010",
+  "status": "independently_reviewed_geometry_only_not_adoption_ready",
+  "scope": {
+    "offline_geometry_only": true,
+    "model_loaded_or_ranked": false,
+    "adopted_or_dispatched": false,
+    "hfss_or_new_candidate_truth": false,
+    "nas_current_live_pilot_or_queue_read": false,
+    "candidate_count_is_measured_count": false
+  },
+  "pool": {
+    "total_candidates": 20000,
+    "origins": {
+      "fresh_random_pixel": 5000,
+      "fresh_smooth_blob": 5000,
+      "parent_pixel_mutation": 8000,
+      "parent_group_mutation": 2000
+    },
+    "current_profile_valid": 20000,
+    "unique_pattern_hashes": 20000,
+    "child_actual_wm_fields": 0,
+    "unary_parent_variant_rows": 10000,
+    "multi_parent_rows": 0
+  },
+  "exclusion": {
+    "scope": "frozen_local_data_v010_only",
+    "frozen_manifest_rows": 2840,
+    "frozen_unique_pattern_hashes": 2840,
+    "pool_intersection": 0,
+    "current_live_measured_or_queued_scanned": false,
+    "adoption_ready": false
+  },
+  "truth_read_scope": {
+    "frozen_historical_v010_sample_tensors_read": true,
+    "frozen_historical_v010_radiation_tensors_read": true,
+    "historical_actual_wm_used_for_32_parent_selection": true,
+    "new_candidate_truth_read": false,
+    "current_pilot_or_live_truth_read": false,
+    "nas_truth_read": false,
+    "interpretation": "No new/live/pilot/NAS truth was read; the producer did read frozen historical sample and radiation tensors and used derived historical actual_wm only to select the 32 parents."
+  },
+  "provenance": {
+    "requested_and_reviewed_reference_head": "96309163b20d8154fed1ad6d2a8ba2c4fdce0e7e",
+    "observed_production_head": "f4bb87bfa962a5536dff84d39f41941c9ac64331",
+    "source_tuple_sha256": "bcfa25ec8b6850b92b03acf65e3102d8643d60d273320b003336390e869ee773",
+    "source_tuple_entry_count": 5696,
+    "byte_source_gate_passed": true,
+    "whole_commit_identity_at_requested_head_proven": false,
+    "claim_scope": "Used generator/helper/config/policy/parent/schedule/frozen-source bytes matched their recorded hashes; this does not establish that the producing checkout whole-commit identity was the requested reference head."
+  },
+  "review": {
+    "independent_review": {
+      "path": "tmp/r80_structured_geometry_pool_20261010_v001/independent_saved_review.json",
+      "sha256": "119175b605a8d22513cece4b71217d8b4f488166ec8e41e61325cdadfde6e2aa",
+      "status": "passed_saved_artifacts_with_scope_correction_no_generation"
+    },
+    "verified_hash_counts": {
+      "reviewed_artifacts": 10,
+      "bound_local_sources": 12,
+      "fixed_snapshot_files": 4
+    },
+    "saved_full_replay": {
+      "path": "tmp/r80_structured_geometry_pool_20261010_v001/verification.json",
+      "sha256": "aafcc90b5b3dc4331917ebff1188c78dd888402653b0f24cf9c1e356c65dd1e4",
+      "status": "pass"
+    }
+  },
+  "artifacts": {
+    "policy": {
+      "path": "tmp/r80_structured_geometry_pool_20261010_v001/pool_policy.json",
+      "sha256": "7aa1acb8c9ae36c3f580aebf94a3bb4d7157e6e49c943ee156b81f67a801e1f6"
+    },
+    "receipt": {
+      "path": "tmp/r80_structured_geometry_pool_20261010_v001/pool_receipt.json",
+      "sha256": "2b37d3f38fb5d0339afef761963d49f79e4158fcb4e6937524ab28efc27fced6"
+    },
+    "patterns_npz": {
+      "path": "tmp/r80_structured_geometry_pool_20261010_v001/candidate_patterns.npz",
+      "sha256": "59a688fd662372b3e01a7cd0ba186d20678741bc7a2e4218d803ecb963f6d121"
+    },
+    "row_manifest": {
+      "path": "tmp/r80_structured_geometry_pool_20261010_v001/row_manifest.json",
+      "sha256": "572b68e16c23c69890c3b255ad81a92f5be31154436420c35809e8e92caa0b03"
+    },
+    "reviewed_parent_receipt": {
+      "path": "tmp/r80_structured_parent_yield_20261010_v002/yield_receipt_v002.json",
+      "sha256": "394862038f0b45ddf4f365927c29319a985f366542351ab3020e23c7ee977eb2"
+    },
+    "reviewed_blob_schedule": {
+      "path": "tmp/r80_structured_blob_readiness_20261010_v001/probe_schedule.json",
+      "sha256": "a3d075b8d669667a7c99e277c7a8027a3dd50aba69eddeb716a1f00141155d10"
+    }
+  },
+  "limitations": [
+    "This is a geometry-yield and provenance readiness artifact, not antenna-performance evidence.",
+    "The candidates were not SM-ranked, adopted, dispatched, or measured.",
+    "Only frozen v010 patterns were excluded; later live measured and queued patterns were not inspected.",
+    "smooth_blob retains its own strip_small/feed-pad generator semantics before current exact-LR projection."
+  ]
+}

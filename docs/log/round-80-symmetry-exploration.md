@@ -1234,3 +1234,10 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 歷史R8曾用smooth_blob作20筆校準圖形，checked-in報告只有blob/random合併的舊SM校準誤差，沒有可歸給每個blob的性能表，不挪用舊標籤。重用既有Gaussian／quantile／除塵／feed-pad generator後，單獨套目前exact-LR／physical profile validator；固定4×4參數格、每格16 seeds，共256次，256個final hashes唯一且有效。root核對保存陣列、參數排程、來源雜湊及幾何描述，15個圖形有共32個鏡射bridge sites。[準備紀錄](assets/r80_smooth_blob_offline_readiness_20261010.json)。
 
 仍只是geometry readiness：未SM排名、未做完整候選池／目前measured與queued排除、未送HFSS或計入5000筆。連通／金屬量描述不是場型或性能結果；未改主線policy、模型或固定32筆對照。
+
+
+### 2026-10-10：20k 多來源幾何候選池通過離線核對
+
+已產生 **20,000 個候選圖形**：5,000 個既有 random generator、5,000 個 smooth blob、8,000 個 parent pixel mutation、2,000 個 parent group mutation。保存陣列、幾何規格、唯一性、lineage 與完整重播均通過核對。這些是候選，未 SM 排名、未送 HFSS，也不計入 5,000 筆實測目標。
+
+來源讀取範圍：為選出 32 個 parents，generator 讀取凍結 v010 的歷史 sample／rad 並計算歷史 WM；沒有讀取新候選、目前 pilot、live queue 或 NAS truth。只排除了凍結的 2,840 個圖形，尚須核對最新 measured／queued exclusions 才能採用。來源以檔案 bytes 綁定，參考 commit 96309163 與實際產生時 HEAD f4bb87bf 不同，不宣稱完整 checkout 相同。[離線準備紀錄](assets/r80_structured_geometry_pool_offline_readiness_20261010.json)。
