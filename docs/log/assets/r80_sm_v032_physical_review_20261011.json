@@ -1,0 +1,512 @@
+{
+  "schema_version": 1,
+  "kind": "r80_sm_v032_physical_review_milestone_v001",
+  "status": "passed_bounded_saved_model_integrity_no_forward",
+  "archive": {
+    "path": "docs/log/assets/round-80/r80-sm-v032-physical-review-20261011-v001.zip",
+    "sha256": "2f9deac23fc67510526f3434dfbc8c376b31bac7c99005ac0a4dcb2866545267",
+    "bytes": 18015
+  },
+  "payload_sha256": {
+    "review_v032.py": "efd99a651a3f670b9402fe53a767030c8d7f9f816af05fc9a4ea37d7fa20822d",
+    "version_diff.json": "d78861abe71a1cf040e4ec9a4740073d119f2a9840d48032761dadcce38c1a20",
+    "physical_checks.json": "19a07c8b3d8fa67db5ae1b928825b0dde74a75ab193e8c5a503beea62b364cee",
+    "independent_source_review.json": "c1f9343b826890cde8eb9a19aba776dde5b6ce9f47cbe56d17e544c15c93a916"
+  },
+  "physical_checks": {
+    "added_raw_bindings": {
+      "all_446_file_sha256_values_match_manifest": true,
+      "all_files_exist": true,
+      "all_names_match_declared_hashes": true,
+      "radiation_files": 223,
+      "sample_files": 223,
+      "source_observation_ids": 223
+    },
+    "checks": {
+      "added_raw_bindings_unique": true,
+      "added_raw_file_hashes_exact": true,
+      "added_raw_files_exist": true,
+      "added_raw_names_match_declared_hashes": true,
+      "all_bound_bytes_unchanged_during_review": true,
+      "all_manifest_ids_unique": true,
+      "all_v032_patterns_unique": true,
+      "checkpoint_bindings_and_metadata_exact": true,
+      "checkpoint_complete_terminal_phases": true,
+      "checkpoint_member_seeds_exact_distinct": true,
+      "checkpoint_optimizer_steps_exact": true,
+      "checkpoint_signatures_exact_unique": true,
+      "checkpoint_tensors_finite": true,
+      "checkpoint_train_only_norm_identical_across_members": true,
+      "cumulative_added_patterns_new_unique": true,
+      "cumulative_v029_to_v032_delta_exact": true,
+      "current_cycle_snapshot_metadata_exact": true,
+      "cycle_completed_model_binding_exact": true,
+      "delta_split_counts_exact": true,
+      "existing_increment_replay_bound_without_raw_repeat": true,
+      "health_completed_cycle_binding_exact": true,
+      "incremental_train_only_norm_reconstruction_float32_tolerance": true,
+      "legacy_current_holdout_exclusion_exact": true,
+      "legacy_train_holdout_family_separated": true,
+      "member_hashes_exact": true,
+      "prior_v029_norm_baseline_hash_exact": true,
+      "prior_v029_physical_review_passed": true,
+      "profile_split_counts_exact": true,
+      "profile_train_holdout_alias_separated": true,
+      "profile_train_holdout_pattern_separated": true,
+      "protocol_fresh_training_contract_exact": true,
+      "protocol_id_exact": true,
+      "successive_delta_counts_exact": true,
+      "successive_old_rows_semantically_frozen": true,
+      "summary_binding_exact": true,
+      "summary_counts_exact": true,
+      "summary_member_seeds_exact": true,
+      "summary_profile_ids_exact": true,
+      "summary_protocol_manifest_exact": true,
+      "v029_manifest_id_exact": true,
+      "v029_receipt_counts_exact": true,
+      "v029_rows_semantically_frozen_through_v032": true,
+      "v030_manifest_id_exact": true,
+      "v030_receipt_counts_exact": true,
+      "v031_manifest_id_exact": true,
+      "v031_receipt_counts_exact": true,
+      "v032_manifest_id_exact": true,
+      "v032_receipt_counts_exact": true
+    },
+    "completed_cycle": {
+      "action_cutoff_valid_unique": 4243,
+      "action_receipt_sha256": "5ac262527feacfaf6c234f6c55a450bbd78145da4ab14f1deb705f900ce6bf9b",
+      "cycle_id": "0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f",
+      "fitted_model_cumulative_valid_unique": 4232,
+      "health_last_completed_utc": "2026-10-10T21:45:16.401793+00:00",
+      "health_observed_utc": "2026-10-10T22:04:14.1708417Z",
+      "latest_data_version": 32,
+      "status": "dispatched",
+      "trained_model_summary_sha256": "e52b971371cd17c2e07ab2c29d587bc7913c02f0d7452de0c493cac2e790794e",
+      "trained_this_cycle": true
+    },
+    "current_cycle_snapshot": {
+      "count": 88,
+      "existing_increment_best_factory_margin_db": -4.3684728145599365,
+      "existing_increment_positive_rows": 0,
+      "existing_increment_replay_sha256": "6ae32db9d026352c30e13cb1b65046b2d4886089d2c44eb8403dc6dc291957c1",
+      "metadata_hashes": {
+        "manifest.json": "8ead7aa02d9c20d82b235a27a66b4ee7e4f345a4f21484184299e672e05a7911",
+        "results.json": "caa06584cc05388961766b7be9254ad2597802bb33441aae4d9e04ef1e877689",
+        "source_bindings.json": "36f825a83d289af5f4a2669f1edd27862b5dd08390f3ec93f821d6e5ff160489"
+      },
+      "patterns_equal_v031_to_v032_delta": true,
+      "raw_replayed_by_this_review": false
+    },
+    "elapsed_seconds": 1.0163583755493164,
+    "failures": [],
+    "hashes_after": {
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f/action_receipt.json": "5ac262527feacfaf6c234f6c55a450bbd78145da4ab14f1deb705f900ce6bf9b",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f/training_snapshot/manifest.json": "8ead7aa02d9c20d82b235a27a66b4ee7e4f345a4f21484184299e672e05a7911",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f/training_snapshot/results.json": "caa06584cc05388961766b7be9254ad2597802bb33441aae4d9e04ef1e877689",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f/training_snapshot/source_bindings.json": "36f825a83d289af5f4a2669f1edd27862b5dd08390f3ec93f821d6e5ff160489",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v029/manifest.json": "34858629e2b9dd6207d06eb8c82ff2dba1cf515b73f4c7e07001ea9d9bbafa71",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v029/receipt.json": "c334a81656ccf10bfafea929819d8d6c9be836939caab24e2504207049046125",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v030/manifest.json": "867cc6f14d7b58dc5bfefd6c7bb224ff08d4f86f54c2953c5eaf24caa9dee878",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v030/receipt.json": "7697625e85971dd12f28d1124f6fbf8123102dee95ab81e4005aa06343808c2f",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v031/manifest.json": "ddcb0053bce20f999199158eeff3588afd0b76f288b72fac2510e563c1157000",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v031/receipt.json": "bacdf5de108d51e2db657dc57f527204f2d37648dcf160e2c195d3a050097e38",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v032/manifest.json": "7d85d74960158af3361c66c133341fe43bfee9d94f7d06c41d52627da3de9382",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v032/receipt.json": "776881d5cfd5a7f0bbfa4f14a8b9c9759ebfc7c46bede591da7e71cf33cf315f",
+      "tmp/r80_factory_20261007/training_familydev_v1/legacy/manifest.json": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v029/member-0.pt": "8b555d4de86d981d5b062e687713ce545a28145aa382b066bce8d7d532f5823d",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v032/member-0.pt": "037f24e16183003b0a7df44b31faa1c521a8478f0e2610f90ad444ec3a240a60",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v032/member-1.pt": "9abd8f60193b5b3f594d1b0691c60b2e8a8e3cd2e54927b7af08611fc715df48",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v032/member-2.pt": "9026b721e033b3cf70c2546c39a6123464bd30629ffaab9273986d798bb6ba60",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v032/summary.json": "e52b971371cd17c2e07ab2c29d587bc7913c02f0d7452de0c493cac2e790794e",
+      "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "tmp/r80_increment_best_monitor_20261010_v001/increment_0dcc7ec5_20261011.json": "6ae32db9d026352c30e13cb1b65046b2d4886089d2c44eb8403dc6dc291957c1",
+      "tmp/r80_restored_health_20261010_v005/health_restored_20261011_0604.json": "1a017ef7f898d008ec0059b6d9980546f50600620f256ab5ff9d6f64acc23a62",
+      "tmp/r80_sm_v029_physical_review_20261011_v001/physical_checks.json": "5d119ba91141a134fb9e5bcf845e1edb5dfd6c88440676a41e91c008f3be5b6c"
+    },
+    "hashes_before": {
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f/action_receipt.json": "5ac262527feacfaf6c234f6c55a450bbd78145da4ab14f1deb705f900ce6bf9b",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f/training_snapshot/manifest.json": "8ead7aa02d9c20d82b235a27a66b4ee7e4f345a4f21484184299e672e05a7911",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f/training_snapshot/results.json": "caa06584cc05388961766b7be9254ad2597802bb33441aae4d9e04ef1e877689",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f/training_snapshot/source_bindings.json": "36f825a83d289af5f4a2669f1edd27862b5dd08390f3ec93f821d6e5ff160489",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v029/manifest.json": "34858629e2b9dd6207d06eb8c82ff2dba1cf515b73f4c7e07001ea9d9bbafa71",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v029/receipt.json": "c334a81656ccf10bfafea929819d8d6c9be836939caab24e2504207049046125",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v030/manifest.json": "867cc6f14d7b58dc5bfefd6c7bb224ff08d4f86f54c2953c5eaf24caa9dee878",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v030/receipt.json": "7697625e85971dd12f28d1124f6fbf8123102dee95ab81e4005aa06343808c2f",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v031/manifest.json": "ddcb0053bce20f999199158eeff3588afd0b76f288b72fac2510e563c1157000",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v031/receipt.json": "bacdf5de108d51e2db657dc57f527204f2d37648dcf160e2c195d3a050097e38",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v032/manifest.json": "7d85d74960158af3361c66c133341fe43bfee9d94f7d06c41d52627da3de9382",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v032/receipt.json": "776881d5cfd5a7f0bbfa4f14a8b9c9759ebfc7c46bede591da7e71cf33cf315f",
+      "tmp/r80_factory_20261007/training_familydev_v1/legacy/manifest.json": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v029/member-0.pt": "8b555d4de86d981d5b062e687713ce545a28145aa382b066bce8d7d532f5823d",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v032/member-0.pt": "037f24e16183003b0a7df44b31faa1c521a8478f0e2610f90ad444ec3a240a60",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v032/member-1.pt": "9abd8f60193b5b3f594d1b0691c60b2e8a8e3cd2e54927b7af08611fc715df48",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v032/member-2.pt": "9026b721e033b3cf70c2546c39a6123464bd30629ffaab9273986d798bb6ba60",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v032/summary.json": "e52b971371cd17c2e07ab2c29d587bc7913c02f0d7452de0c493cac2e790794e",
+      "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "tmp/r80_increment_best_monitor_20261010_v001/increment_0dcc7ec5_20261011.json": "6ae32db9d026352c30e13cb1b65046b2d4886089d2c44eb8403dc6dc291957c1",
+      "tmp/r80_restored_health_20261010_v005/health_restored_20261011_0604.json": "1a017ef7f898d008ec0059b6d9980546f50600620f256ab5ff9d6f64acc23a62",
+      "tmp/r80_sm_v029_physical_review_20261011_v001/physical_checks.json": "5d119ba91141a134fb9e5bcf845e1edb5dfd6c88440676a41e91c008f3be5b6c"
+    },
+    "kind": "r80_sm_v032_saved_physical_checks_v001",
+    "limits": [
+      "No model was instantiated and no forward, inference, training, prediction, HFSS, NAS, process, dispatch, worker, queue, marker, source or runtime mutation was run.",
+      "The prior v029 43-check audit was not rerun. Its saved receipt/hash is bound, prior manifest rows are compared semantically, and only the 223 new v029-to-v032 sample/radiation pairs were freshly hashed.",
+      "The 88-row current-cycle raw WM/radiation replay was not repeated. This review binds the immutable snapshot metadata to the existing replay, which reported zero positive rows and best factory margin -4.3684728145599365 dB.",
+      "The train-only norms are byte-identical across all three v032 members. Because the v029 saved norm is float32 aggregate metadata rather than the original unreduced tensors, the incremental reconstruction from only 189 new train rows differs by at most 1.9073486328125e-06; unchanged raw rows were deliberately not reread.",
+      "Fresh initialization is supported by protocol/checkpoint metadata, unique signatures and distinct terminal tensor digests. Initial pre-training tensor bytes are not saved and were not independently replayed.",
+      "The 30+100 epoch history is supported by protocol, terminal phase metadata and exact Adam step tensors. No separate per-epoch log exists and no per-epoch history claim is made.",
+      "Saved metrics/accuracy were not recomputed because that would require model forward inference. No model-quality, SM-improvement, causal-improvement or best-trigger claim is made.",
+      "The descriptive development holdout is not an untouched independent validation set.",
+      "The fitted v032 model binds 4,232 unique rows. The same completed action receipt reports a later 4,243 valid-unique cutoff; that later count is not substituted into the model binding."
+    ],
+    "members": [
+      {
+        "binding_match": true,
+        "complete": true,
+        "development_metadata_match": true,
+        "expected_optimizer_steps": 4900,
+        "file_sha256": "037f24e16183003b0a7df44b31faa1c521a8478f0e2610f90ad444ec3a240a60",
+        "fresh_initialization_metadata": true,
+        "legacy_manifest_match": true,
+        "member_seed": 0,
+        "model_tensor_count": 8,
+        "model_tensor_digest": "7845b931d053650621e46e4f9cca6e008e8878c111b49d278447aea9da195046",
+        "model_tensors_finite": true,
+        "optimizer_moments_finite": true,
+        "optimizer_state_entries": 8,
+        "optimizer_steps": [
+          4900
+        ],
+        "optimizer_steps_match": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "signature": "958703ecc3a75f842d9ab6c030294132f8328d72822a703ad4dd65de85360013",
+        "signature_match": true,
+        "summary_hash_match": true,
+        "terminal_epoch": 0,
+        "terminal_phase": 2
+      },
+      {
+        "binding_match": true,
+        "complete": true,
+        "development_metadata_match": true,
+        "expected_optimizer_steps": 4900,
+        "file_sha256": "9abd8f60193b5b3f594d1b0691c60b2e8a8e3cd2e54927b7af08611fc715df48",
+        "fresh_initialization_metadata": true,
+        "legacy_manifest_match": true,
+        "member_seed": 1,
+        "model_tensor_count": 8,
+        "model_tensor_digest": "65272e85f49ed4b8b0c849da2a8874673ce4cb0239626a7961e437ef68f49354",
+        "model_tensors_finite": true,
+        "optimizer_moments_finite": true,
+        "optimizer_state_entries": 8,
+        "optimizer_steps": [
+          4900
+        ],
+        "optimizer_steps_match": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "signature": "79df399fbe36a643845dd874cf08e0b2e55d45d48026fc822e41bb196cf1e613",
+        "signature_match": true,
+        "summary_hash_match": true,
+        "terminal_epoch": 0,
+        "terminal_phase": 2
+      },
+      {
+        "binding_match": true,
+        "complete": true,
+        "development_metadata_match": true,
+        "expected_optimizer_steps": 4900,
+        "file_sha256": "9026b721e033b3cf70c2546c39a6123464bd30629ffaab9273986d798bb6ba60",
+        "fresh_initialization_metadata": true,
+        "legacy_manifest_match": true,
+        "member_seed": 2,
+        "model_tensor_count": 8,
+        "model_tensor_digest": "2c029670bce2ec689e87d14ba3779484ec3b091baf536a4939722ae525d8f226",
+        "model_tensors_finite": true,
+        "optimizer_moments_finite": true,
+        "optimizer_state_entries": 8,
+        "optimizer_steps": [
+          4900
+        ],
+        "optimizer_steps_match": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "signature": "436a52ff29f710cabcef53def4c6d6efdf947df5807399ec8e0961176433ef55",
+        "signature_match": true,
+        "summary_hash_match": true,
+        "terminal_epoch": 0,
+        "terminal_phase": 2
+      }
+    ],
+    "schema_version": 1,
+    "scope": "one bounded completed data-v029 to data-v032/model-v032 physical review; the distinct 88-row current-cycle snapshot is metadata-bound to the existing raw replay without repeating raw WM/radiation work",
+    "split_findings": {
+      "alias_overlap": [],
+      "legacy_holdout": 1850,
+      "legacy_train": 10150,
+      "legacy_train_exclusions_for_current_holdout": 0,
+      "pattern_overlap_count": 0,
+      "profile_holdout": 1046,
+      "profile_holdout_aliases": 303,
+      "profile_train": 3186,
+      "profile_train_aliases": 1195
+    },
+    "status": "passed",
+    "training_contract": {
+      "batch_size": 128,
+      "current_epochs": 100,
+      "current_train_rows": 3186,
+      "expected_optimizer_steps": 4900,
+      "incremental_norm_float32_max_abs_diffs": {
+        "input_norm": {
+          "mean_max_abs_diff": 5.960464477539063e-08,
+          "std_max_abs_diff": 1.1920928955078125e-07
+        },
+        "target_norm": {
+          "mean_max_abs_diff": 1.9073486328125e-06,
+          "std_max_abs_diff": 9.5367431640625e-07
+        }
+      },
+      "legacy_epochs": 30,
+      "legacy_train_rows": 10150,
+      "normalization_source": "saved norms are byte-identical across all three members; incremental reconstruction used the frozen v029 train-only norm plus only 189 newly added train rows",
+      "separate_per_epoch_log_present": false
+    },
+    "version_growth": {
+      "cumulative_new_patterns": 223,
+      "cumulative_new_profile_holdout": 34,
+      "cumulative_new_profile_train": 189,
+      "cumulative_new_rows": 223,
+      "successive_new_rows": [
+        54,
+        81,
+        88
+      ],
+      "v029_rows": 4009,
+      "v030_rows": 4063,
+      "v031_rows": 4144,
+      "v032_rows": 4232,
+      "versions_advanced": 3
+    }
+  },
+  "independent_source_review": {
+    "schema_version": 1,
+    "kind": "r80_sm_v032_independent_source_review_v001",
+    "status": "passed_saved_v032_no_forward",
+    "repo": {
+      "branch": "GAN",
+      "head": "54deec326aa960a8c7e50c11c144780cde0c902f",
+      "reviewed_source": [
+        {
+          "path": "script/symmetry_training.py",
+          "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+          "unchanged_from_prior_v029_source_review": true
+        },
+        {
+          "path": "script/exploration.py",
+          "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+          "unchanged_from_prior_v029_source_review": true
+        }
+      ]
+    },
+    "evidence": {
+      "prior_v029_helper": {
+        "path": "tmp/r80_sm_v029_physical_review_20261011_v001/review_v029.py",
+        "sha256": "49cfdb15991105cd1fad551ffc5aa4f032d4800cd0e3a875bb3941a2d08f694d",
+        "bytes": 20528
+      },
+      "prior_v029_physical_checks": {
+        "path": "tmp/r80_sm_v029_physical_review_20261011_v001/physical_checks.json",
+        "sha256": "5d119ba91141a134fb9e5bcf845e1edb5dfd6c88440676a41e91c008f3be5b6c",
+        "bytes": 12709,
+        "status": "passed",
+        "check_count": 43,
+        "failures": []
+      },
+      "prior_v029_source_review": {
+        "path": "tmp/r80_sm_v029_physical_review_20261011_v001/source_review_receipt.json",
+        "sha256": "83d880fe09098e3a457ea55b6f999ee4d340514502c66539e1faa989b2767a18",
+        "bytes": 8367
+      },
+      "helper": {
+        "path": "tmp/r80_sm_v032_physical_review_20261011_v001/review_v032.py",
+        "sha256": "efd99a651a3f670b9402fe53a767030c8d7f9f816af05fc9a4ea37d7fa20822d",
+        "bytes": 26106
+      },
+      "version_diff": {
+        "path": "tmp/r80_sm_v032_physical_review_20261011_v001/version_diff.json",
+        "sha256": "d78861abe71a1cf040e4ec9a4740073d119f2a9840d48032761dadcce38c1a20",
+        "bytes": 3408
+      },
+      "physical_checks": {
+        "path": "tmp/r80_sm_v032_physical_review_20261011_v001/physical_checks.json",
+        "sha256": "19a07c8b3d8fa67db5ae1b928825b0dde74a75ab193e8c5a503beea62b364cee",
+        "bytes": 18185,
+        "status": "passed",
+        "check_count": 48,
+        "failures": [],
+        "elapsed_seconds": 1.0163583755493164
+      }
+    },
+    "source_findings": {
+      "immutable_protocol": "The saved protocol content ID is recomputed exactly; source refuses a nonidentical protocol in an existing work directory.",
+      "fresh_version_training": "The protocol fixes fresh_initialization_each_version=true and early_stopping=false. train_version creates a new CurveMLP and Adam optimizer after setting each member seed; existing checkpoints are accepted only when signature, data version, factory binding, member seed, legacy manifest and development metadata match.",
+      "split_and_payload_validation": "train_version validates the manifest content ID and development roles. _load_dataset resolves local cached paths, hashes each selected sample/radiation payload against the manifest and only then constructs tensors.",
+      "train_only_normalization": "train_version computes _fit_norm only from current_train inputs and targets before either training phase. _fit_norm uses population standard deviation and floors values below 1e-6 to 1.0. Holdout tensors are not inputs to those norms.",
+      "two_phase_training": "The source builds legacy_pretrain followed by current_profile and uses deterministic per-seed/per-phase/per-epoch permutations. With 10,150 legacy-train rows, 3,186 current-train rows, batch 128, 30 legacy epochs and 100 current epochs, the exact saved Adam step value is 4,900 for every model parameter state.",
+      "checkpoint_contract": "Each checkpoint records the signature, exact binding, member seed, fresh-initialization flag, terminal phase/epoch, model and optimizer states, train-only norms and development metadata. The completed v032 artifacts satisfy these fields.",
+      "forward_boundary": "The source performs model forwards to calculate saved metrics only during production training completion. This review did not invoke train_version, _metrics, model construction, inference or any forward path and does not recompute accuracy."
+    },
+    "completion_binding": {
+      "cycle_id": "0dcc7ec592d614214817cf3e3117ab8460c18355eb13b9e758160b6c8ac9a94f",
+      "action_receipt_sha256": "5ac262527feacfaf6c234f6c55a450bbd78145da4ab14f1deb705f900ce6bf9b",
+      "trained_this_cycle": true,
+      "latest_data_version": 32,
+      "model_cumulative_valid_unique": 4232,
+      "action_cutoff_valid_unique": 4243,
+      "trained_model_summary_sha256": "e52b971371cd17c2e07ab2c29d587bc7913c02f0d7452de0c493cac2e790794e",
+      "training_snapshot_count": 88,
+      "training_snapshot_manifest_sha256": "8ead7aa02d9c20d82b235a27a66b4ee7e4f345a4f21484184299e672e05a7911",
+      "training_snapshot_results_sha256": "caa06584cc05388961766b7be9254ad2597802bb33441aae4d9e04ef1e877689",
+      "training_snapshot_source_bindings_sha256": "36f825a83d289af5f4a2669f1edd27862b5dd08390f3ec93f821d6e5ff160489",
+      "existing_increment_replay_sha256": "6ae32db9d026352c30e13cb1b65046b2d4886089d2c44eb8403dc6dc291957c1",
+      "existing_increment_positive_rows": 0,
+      "existing_increment_best_factory_margin_db": -4.3684728145599365,
+      "interpretation": "The completed-cycle action receipt, summary and predictor binding fix the fitted model at data-v032/4,232. The later action-cutoff value 4,243 remains separate and was not substituted into the model binding."
+    },
+    "data_version_findings": {
+      "reviewed_base_v029_rows": 4009,
+      "completed_v030_rows": 4063,
+      "completed_v031_rows": 4144,
+      "completed_v032_rows": 4232,
+      "versions_advanced": 3,
+      "successive_new_rows": [
+        54,
+        81,
+        88
+      ],
+      "cumulative_new_rows": 223,
+      "cumulative_new_unique_patterns": 223,
+      "cumulative_new_profile_train_rows": 189,
+      "cumulative_new_profile_holdout_rows": 34,
+      "v029_rows_preserved_semantically_through_v032": true,
+      "prior_row_loss_or_change_count": 0,
+      "all_v032_pattern_hashes_unique": true,
+      "all_four_manifest_content_ids_match_receipts": true,
+      "bound_bytes_unchanged_during_review": true
+    },
+    "new_raw_binding_findings": {
+      "source_observation_ids": 223,
+      "sample_files": 223,
+      "radiation_files": 223,
+      "all_binding_ids_and_paths_unique": true,
+      "all_names_match_declared_sha256": true,
+      "all_files_exist": true,
+      "all_446_file_sha256_values_match_manifest": true,
+      "unchanged_v029_raw_payloads_reread": false
+    },
+    "split_findings": {
+      "effective_profile_train_rows": 3186,
+      "effective_profile_holdout_rows": 1046,
+      "profile_train_holdout_alias_overlap": 0,
+      "profile_train_holdout_pattern_overlap": 0,
+      "legacy_train_rows": 10150,
+      "legacy_holdout_rows": 1850,
+      "legacy_train_holdout_lineage_overlap": 0,
+      "legacy_train_exclusions_for_current_holdout": 0,
+      "summary_ids_and_counts_match_manifests": true,
+      "development_policy": "whole_canonical_group_train_override_v1",
+      "validation_policy": "remaining_reference_group_holdouts_descriptive_only_no_early_stopping"
+    },
+    "checkpoint_findings": {
+      "member_seeds": [
+        0,
+        1,
+        2
+      ],
+      "member_sha256": [
+        "037f24e16183003b0a7df44b31faa1c521a8478f0e2610f90ad444ec3a240a60",
+        "9abd8f60193b5b3f594d1b0691c60b2e8a8e3cd2e54927b7af08611fc715df48",
+        "9026b721e033b3cf70c2546c39a6123464bd30629ffaab9273986d798bb6ba60"
+      ],
+      "all_member_hashes_match_summary": true,
+      "all_signatures_and_factory_bindings_match": true,
+      "all_three_training_signatures_unique": true,
+      "development_metadata_matches_summary": true,
+      "phase_names": [
+        "legacy_pretrain",
+        "current_profile"
+      ],
+      "legacy_epochs": 30,
+      "current_epochs": 100,
+      "batch_size": 128,
+      "expected_and_actual_optimizer_steps_per_member": 4900,
+      "optimizer_state_entries_per_member": 8,
+      "all_optimizer_moments_and_model_tensors_finite": true,
+      "terminal_phase": 2,
+      "terminal_epoch": 0,
+      "all_complete": true,
+      "fresh_initialization_metadata_all_true": true,
+      "terminal_model_tensor_digests_distinct": true,
+      "independent_initial_tensor_bytes_available": false,
+      "separate_per_epoch_log_present": false
+    },
+    "normalization_findings": {
+      "source_uses_profile_train_only": true,
+      "saved_norms_byte_identical_across_all_three_v032_members": true,
+      "incremental_reconstruction_base_v029_member0_sha256": "8b555d4de86d981d5b062e687713ce545a28145aa382b066bce8d7d532f5823d",
+      "incremental_reconstruction_new_profile_train_rows_loaded": 189,
+      "unchanged_v029_raw_rows_loaded_for_normalization": 0,
+      "input_mean_max_abs_diff": 5.960464477539063e-08,
+      "input_std_max_abs_diff": 1.1920928955078125e-07,
+      "target_mean_max_abs_diff": 1.9073486328125e-06,
+      "target_std_max_abs_diff": 9.5367431640625e-07,
+      "interpretation": "Train-only provenance and exact cross-member saved bytes are verified. The independent incremental reconstruction is tolerance-based because the saved v029 float32 aggregate cannot reproduce the original reduction order byte-for-byte without rereading all unchanged raw rows."
+    },
+    "helper_review_correction": {
+      "issue": "The first passing helper used v029 member-0 norms without including that checkpoint in its immutable before/after hash set.",
+      "fix": "The final helper hashes the v029 checkpoint before and after and requires its SHA-256 to equal the prior reviewed v029 evidence.",
+      "first_pass_check_count": 47,
+      "final_check_count": 48,
+      "first_pass_failures": [],
+      "final_failures": [],
+      "production_defect": false
+    },
+    "defects": [],
+    "limits_and_unresolved": [
+      "No model was instantiated and no forward, inference, training, prediction, HFSS, NAS, process, dispatch, worker, queue, marker, source or runtime mutation was run.",
+      "The prior v029 audit was not rerun, and unchanged v029 sample/radiation tensors were not reread. The saved prior audit/hash and exact semantic old-row equality are used as the baseline.",
+      "The completed cycle's 88 raw WM/radiation curves were not replayed again. Their immutable metadata hashes and the existing raw replay receipt are bound instead.",
+      "Fresh initialization is supported by source protocol and checkpoint metadata, three unique signatures and distinct terminal tensors. Initial pre-training tensor bytes are not saved, so byte-for-byte initial-state replay is unavailable.",
+      "The 30+100 epoch protocol and exact 4,900 optimizer steps are verified, but no separate per-epoch log exists and no independent per-epoch-history claim is made.",
+      "Saved metrics and accuracy were not recomputed because that requires model forward inference. No accuracy, SM-performance, causal-improvement or best-trigger claim is made.",
+      "The development-family holdout is descriptive and is not an untouched independent validation set."
+    ],
+    "prohibited_actions_observed": {
+      "training": false,
+      "inference_or_model_forward": false,
+      "hfss": false,
+      "nas": false,
+      "wm_or_radiation_curve_replay": false,
+      "process_or_monitor_operation": false,
+      "dispatch_or_worker_action": false,
+      "queue_marker_source_or_runtime_mutation": false,
+      "tracked_file_edit": false,
+      "git_stage_commit_or_push": false
+    },
+    "readiness": "v032 saved data/model update passes the bounded physical integrity review against physically reviewed v029; no accuracy, performance, best-trigger or causal-improvement claim"
+  },
+  "conductor_review": "Read the final helper and independent source review; inspected scope, split separation, immutable baseline binding, optimizer counts and tolerance-based incremental normalization. Did not repeat raw WM, old v029 audit or model forward.",
+  "quota_policy": "Validated 5000 unique exact-LR HFSS points triggers R81 preparation immediately; R80 statistics/plots/repeats proceed in parallel. Actual R81 worker dispatch requires validated quota, zero pending and immutable separate Release."
+}
