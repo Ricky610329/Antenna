@@ -1,6 +1,6 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
-最新狀態（2026-10-11 00:14）：4,002有效唯一實測／5,000（80.04%），尚差998，較10/10 21:57增加114；全4,007含5筆repeat原始觀測重算、零cached metrics。沒有新最佳，仍f6ffb938／WM+.0216822624dB，独立同圖形重測+.0364336967不計new unique。01:04主控／唯一inventory／19來源吻合，三台接續ddcdbca9g02／g03與6677fa77g01，health5／5／0、稍後owners6／6／1，active無error。Latest completed action仍ddcdbca9/v028，main running_cycle不稱新模型；舊LOW三機終態與15有效SHA不變，前批兩筆watchdog恢復另待done-only/raw gate。[00:14全量證據](assets/r80_best_status_20261011_0014.json)／[01:04健康](assets/r80_health_20261011_0104.json)／[既有最佳極座標圖](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)。v026實體訓練與48完整真值核對保留，但不把模型更新當性能進步。下一例行01:34；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer是當時歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
+最新狀態（2026-10-11 00:14）：4,002有效唯一實測／5,000（80.04%），尚差998，較10/10 21:57增加114；全4,007含5筆repeat原始觀測重算、零cached metrics。沒有新最佳，仍f6ffb938／WM+.0216822624dB，独立同圖形重測+.0364336967不計new unique。01:04主控／唯一inventory／19來源吻合，三台接續ddcdbca9g02／g03與6677fa77g01，health5／5／0、稍後owners6／6／1，active無error。Latest completed action仍ddcdbca9/v028，main running_cycle不稱新模型；舊LOW三機終態與15有效SHA不變，v028完整48／fit3917與兩筆watchdog finalok已另核對，排序仍弱、0正WM。[v028批次](assets/r80_sm_v028_cohort48_result_20261011.json)。[00:14全量證據](assets/r80_best_status_20261011_0014.json)／[01:04健康](assets/r80_health_20261011_0104.json)／[既有最佳極座標圖](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)。v026實體訓練與48完整真值核對保留，但不把模型更新當性能進步。下一例行01:34；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer是當時歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
 
 歷史全量狀態（2026-10-10 16:55）：3,630有效唯一實測／5,000（72.60%），較15:59增加46筆；全3,635成功觀測重新raw核對，最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。16:54三台worker有claimed工作，scope無警報，SM reported v022持續批次更新；兩筆首次COM失敗未計入有效數，16:56讀回各attempts1，尚未宣稱恢復。最新證據見[本次收據](assets/r80_best_status_20261010_1655.json)／[錯誤讀回](assets/r80_error_readback_20261010_1656.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
@@ -1631,3 +1631,12 @@ Health scope仍exit1保留舊partial alarm，主控running_cycle／reported27／
 原main／19來源／唯一inventory吻合，216與218在ddcdbca9g02／g03各5成功、最近1分鐘；37接6677fa77g01，health startup0後01:07 owners已有1成功，其餘6／6，無active error/done/fail。不同stores不直接相減當global新unique；前批不在active清單也不自動證明48完整或兩筆watchdog成功，另交由既有done-only cohort gate確認。
 
 舊ka00 results/fail SHA與23:04 proof相同，15有效／三機終態／eligible空沿用；主控running_cycle、reported28／13完成cycles，last completed ddcdbca9 action SHA仍與00:14綁定一致，不把新6677job當v029模型已完成。最新full仍00:14的4,002與最佳+.021682；下一例行01:34，無full census／15raw／相同increment重播、NAS mutation／queue／HFSS啟動／restart／redispatch／marker刪除／source hotpatch。[本次健康](assets/r80_health_20261011_0104.json)。
+
+
+### 2026-10-11 01:08後：v028完整48與兩筆watchdog恢復，排名仍弱
+
+先核對cycle541a6576三store原生done且無fail，再用既有v026 helpers的最小衍生讀取一次真值；48唯一exactLR／48有效／0terminal error，arms各16、origins17fresh_random／31parent_variant。Prospective data-v028／fit3917／action／saved model summary/member SHA與預測前metadata一致，current/legacy exact-pattern overlap均0。Root檢視actual完整helper diff；獨立local frozen48 raw WM／pattern／96payload hashes、proof/source、saved算術與geometry審查通過，root只重核artifact hashes，不第二次raw或模型訓練。
+
+批內best−4.8460984230／mean−15.1844456928／median−13.5061712265／min−32.2272644043，0正WM。Saved meanρ.1164785063／MAE6.6414855251dB，LCBρ.1155015198／MAE6.2200127814dB；不同selected cohort的指標不能證明版本退步/改善或策略因果，但尚未有排序改善或性能突破證據。PairHamming min66／median308，nearest median193。Best比00:14 full reference+.021682低4.8677806854，不觸發新full census；不據此宣稱較晚全域無新best。
+
+00:34 context留下的兩筆watchdog r80c541a6576g_00004_4a302333與r80c541a6576g_00034_a1af88a5目前都finalok；各恰出現在一個proof group index1，推導同為g02，sample/rad hashes與源proof／local frozen一致。各WM−4.8460984230／−11.9888472557；不猜literal store、不把舊ka00三機失敗說成恢復。No model load／forward／train／新tests／HFSS／NAS mutation／dispatch／queue／runtime／marker／archive；rad只hash，未獨立重算曲線。Latest full仍4002、latest physical model審查仍v026；下一例行01:34保持。[完整批真值與獨立審查](assets/r80_sm_v028_cohort48_result_20261011.json)。
