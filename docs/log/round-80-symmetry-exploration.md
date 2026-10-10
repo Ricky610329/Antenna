@@ -1253,3 +1253,9 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 以凍結 v015 三模型（fit snapshot 3,147）及既有 predictor／score function 完成全部20,000候選的 S11、Gain、radiation 與排名；另一代理以保存來源、相同模型、CPU4threads／batch256實際 forward，全部 member／mean／rad、八個 scores 及完整排序逐值相同。原產生程式是未保存的 inline stdin，不虛構原 runner hash；另保存獨立 forward helper／receipt。[預測準備證據](assets/r80_structured_pool_sm_v015_readiness_20261010.json)。
 
 全體 LCB top32 為30個 group mutation、2個 pixel mutation，預測偏向parent來源。global navigation mean p60為−12.4235828898，disagreement eligible有random753／blob344／group1,834／pixel5,069；只是原始資格數，尚未證明 joint Hamming64／canonical cap2 下能選滿48。模型預測雙margin嚴格正值的候選為0，不把此當作HFSS不可行。尚未選樣或派工，最新measured／queued排除仍必需；v015可能已學到早期pilot結果，禁止拿它評判固定v010雙scorer對照。
+
+### 2026-10-10 09:02：工廠健康、固定32筆皆已終態
+
+原controller身分及immutable last receipt核對通過，scope無警報；三個claimed批次7/16、5/16、1/16，最新均約1分鐘前，guided與LOW均有待跑。[健康紀錄](assets/r80_health_20261010_0902.json)。reported v015／completed20／cached3,159，只是controller快照，未再做完整census或重啟程序。
+
+兩片固定pilot皆done、無fail；原v9 readout單次exit0，32有效、0終態錯誤，report／rows／frozen sample-rad已保存，正在獨立核對。未換模型／再派相同候選，舊driver不可重啟；下一例行健康09:32。R80 5,000及R81 spec仍未完成。

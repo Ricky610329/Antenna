@@ -9,8 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
-- **目前狀態（10/10 08:31 全量／08:32 健康）**：有效唯一對稱實測 **3,207/5,000**，較07:33增加57；最佳仍為 WM **+0.0216822624 dB**，獨立重測 +0.0364336967 dB。[查詢及健康證據](../docs/log/assets/r80_best_status_20261010_0831.json)。原主線 PID15944／creation1791541659267／launch42afe91c263f4bacb74f6d6c5c6bbcb7 現場 exact live，報 SM v015、完成20輪、running_cycle；三台已認領15/16、13/16、11/16且結果約2分鐘前，scope零警報。**下一例行檢查09:02**，不按分鐘重查HFSS。
-- **固定32筆模型對照已全部派工／尚待完整真值讀回**：v9第一片 `dedust_r80cf0b21c1bg01` 已done，第二片 `dedust_r80c8c708075g01` 08:32為13/16、非terminal。所有32筆選樣／雙預測與combined seal已固定；[派工及seal](../docs/log/assets/r80_currentonly_prospective_v010_combined32_dispatch_seal_20261010.json)。舊driver9960格式失敗已由新v9處理，phase1／phase2派工程序皆已終態；**不重啟driver、不再派相同批次、不採用尚未評估的current-only模型**。
+- **目前狀態（10/10 08:31 全量／09:02 健康）**：最新完整只讀 census 有效唯一對稱實測 **3,207/5,000**，最佳 WM **+0.0216822624 dB**、獨立重測 +0.0364336967 dB。[全量證據](../docs/log/assets/r80_best_status_20261010_0831.json)。09:02 原主線 PID15944／creation1791541659267／launch42afe91c263f4bacb74f6d6c5c6bbcb7 exact live，報 SM v015／完成20輪／running_cycle；三個claimed批次7/16、5/16、1/16，最新均約1分鐘前，scope零警報。[健康證據](../docs/log/assets/r80_health_20261010_0902.json)。cached3,159不是新 census；**下一例行檢查09:32**，不按分鐘重查HFSS。
+- **固定32筆模型對照已全部完成，真值讀回正在獨立核對**：`dedust_r80cf0b21c1bg01`、`dedust_r80c8c708075g01` 09:02皆done、無fail；原v9 readout單次exit0、32有效／0終態錯誤，完整保存report／rows／frozen raw。[派工及seal](../docs/log/assets/r80_currentonly_prospective_v010_combined32_dispatch_seal_20261010.json)。不重啟已終態的舊driver9960或兩片派工程序、不重派相同批次、不採用current-only模型。數值比較與下一步決策以完成獨立核對後的結果紀錄為準。
 - **新多樣性候選池僅離線準備**：20k＝5k random＋5k smooth blob＋8k pixel mutation＋2k group mutation，幾何與保存資料通過獨立核對；[準備證據](../docs/log/assets/r80_structured_geometry_pool_offline_readiness_20261010.json)。這些不是實測筆數，只排除凍結v010的2,840個圖形，尚未採用或派HFSS；不得當作完整live measured／queued exclusion。R80目標仍是5,000個有效唯一實測；R81及後续spec尚未完成，先完成R80。
 
 下列較早時間戳為歷史操作紀錄；已被上述新狀態取代的程序不得重啟。
