@@ -1463,3 +1463,8 @@ R81新入口267af9c及歷史masked-prior config-only builder103517c均已推送G
 ### 2026-10-10 17:59：使用者現況詢問，全量3,688、最佳未變
 
 沿用原query_and_freeze.py（SHA da6a0034…31ac）重新讀私人NAS，17:57:25–17:59:24逐store cutoff。全3,693含repeat raw重算、零cached metric，3,688有效唯一精確LR，比16:55多58，目標73.76%。最佳WM+.0216822624未變，原sample／rad／pattern及既有極座標圖hash一致；沒有重畫相同圖。cutoff有1筆首次COM error，不計有效数，不能把scope無警報誤稱全結果零錯誤。同期健康唯一main及19來源通過，三個claimed13/16、10/16、1/16，最近2／2／1分鐘成功，guided／LOW仍有待跑，reported SM v023僅代表狀態未做模型性能稽核。未重派／重啟／改來源或queue。資料仍增但最佳性能停滯，v022完整48筆亦無正WM；此為結果通知，不是停止收集條件。[全量與健康收據](assets/r80_best_status_20261010_1759.json)。下一既定18:04健康檢查保留。
+
+
+### 2026-10-10 18:04：例行健康通過，維持既有HFSS與SM循環
+
+實際CIM main PID53228／creation1791602636766／launch5a181a47…存活且唯一，19份來源bindings及原settings吻合，scope無警報。三個claimed批次15/16、13/16、2/16，最近0／0／2分鐘成功，LOW與guided均仍有待跑；reported SM v023不是模型性能稽核。沒有做full census，仍以17:59的3,688／最佳+.0216822624為最近全量證據，亦未把單筆COM error宣稱恢復。未改來源／queue、未重啟worker／刪marker／手動重派。依既定30分鐘頻率下一18:34。[健康收據](assets/r80_health_20261010_1804.json)。
