@@ -2,6 +2,8 @@
 
 最新狀態（2026-10-10 14:23）：3,506有效唯一實測／5,000（70.12%），較13:36增加44筆；最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。14:22三台worker有持續產出、scope無警報，SM持續批次更新。最新證據見[本次收據](assets/r80_best_status_20261010_1423.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
+2026-10-10 15:34健康更新：三台claimed14/16、10/16、1/16，最新結果2／2／1分鐘；exact主控與19來源吻合、scope無警報，reported SM v021、guided／LOW持續待跑。[本次健康](assets/r80_health_20261010_1534.json)。下一routine16:04；不當作新全量筆數／最佳或新model性能評估。先前三筆COM恢復引用15:04讀回，本次未重讀errors；原15:04紀錄與全48實體truth證據保留。
+
 2026-10-10 SM v020 cycle96357896完整48筆結果：三片native claim+done且無fail，48成功唯一／exactLR；三個search arm各16，fresh20／parent28，physical Hamming min68／median309。批內WM best−0.5609149933／median−13.2332506180，0正WM，未超過已核對全域参考+.021682。保存mean-WM對實測ρ0.5660／MAE6.0001dB，LCBρ0.5567／MAE4.7378dB，Gain曲線MAE4.8639dB；單批結果不作策略配比或SM改善因果宣稱。[完整真值／來源／root獨立raw replay](assets/r80_sm_v020_cohort48_result_20261010.json)。root重算48份本機frozen sample的S11/Gain WM、LR、Hamming與保存預測算術，核對96個sample/rad hashes；rad metrics未第二次重算。48圖形在bound v020 current與legacy exact-pattern overlap皆0，但不排除祖先或近似幾何。前瞻證據是hash／流程與檔案metadata，不是外部時間認證。原helper的round-robin concatenation順序假設失敗保留，窄修為id-to-row一致後重讀同48筆，沒有重新HFSS；v002僅澄清實際允許的NAS只讀與零NAS mutation，原v001 bytes保留。
 
 2026-10-10 15:04健康更新：三台claimed11/16、7/16、2/16，最新結果0／0／2分鐘；exact主控與19來源吻合、scope無警報，reported SM v021持續更新，尚未獨立model核對。14:23的三筆首次COM錯誤全部results.status=ok／MID-SID吻合，由既有worker流程重試成功；這是保存result entry的狀態讀回，不是新增sample/rad全量實體truth audit。[本次收據](assets/r80_health_20261010_1504.json)。下一routine15:34，未重算最佳或全量筆數，未重啟／改queue。
