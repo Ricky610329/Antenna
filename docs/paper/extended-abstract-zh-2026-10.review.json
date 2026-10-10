@@ -7,27 +7,52 @@
     595.2755737304688,
     841.8897705078125
   ],
-  "sha256": "b41b57a22550ba118f77a73d9b2a007ff0de922c94667ec9ea48d16028a6a587",
-  "source_sha256": "c89d8354c967f4fdecc298e1518fb1190dc3526b34e376e5237d3fd5ab3c98e6",
-  "characters": 1657,
+  "sha256": "8890d749c892a1b4c168f8a37571b77da38dfc4100abdc7dc6d864a93c056d94",
+  "source_sha256": "86cccc219032e919d3e57249b597eda05e97b2417a9fae84508fe2e7d0191d84",
+  "figure": "docs/paper/figures/extended-abstract-symmetry.png",
+  "figure_sha256": "9f2ddf583dd2bd234c22e60f1b754ecd464df49e632aa1a133d840575cfc509d",
+  "figure_facts": {
+    "wm_db": {
+      "free": 0.7707,
+      "sym": 0.0217
+    },
+    "metal_components_8conn": {
+      "free": 3,
+      "sym": 13
+    },
+    "metal_fraction": {
+      "free": 0.5296,
+      "sym": 0.5136
+    }
+  },
+  "characters": 2196,
   "required_text_pass": true,
   "embedded_chinese_fonts": [
     "AAAAAA+MicrosoftJhengHeiRegular-0",
     "AAAAAB+MicrosoftJhengHeiRegular-0",
     "AAAAAA+MicrosoftJhengHeiBold-0"
   ],
-  "reference_links": 5,
+  "reference_links": 4,
   "text_within_page": true,
   "renderer": "PyMuPDF 2x; Poppler was unavailable locally",
-  "visual_review": "Conductor inspected final 2x-rendered page: one A4 page; readable text, no missing glyphs, overlap or clipping.",
-  "scientific_review": "Independent gpt-5.6-sol final read-only review passed: configuration/history distinction, strategy-specific cadence, numerical results and evidence boundaries.",
-  "date": "2026-10-08",
-  "reference_reading_scope": "Three references reused from citation-audit-2026-10-07.json: Karahan full paper, Kapoor arXiv v2 full paper, Liu relevant original methods/results. No new external-paper reading in this milestone.",
-  "unchanged_inputs": {
-    "docs/paper/manuscript-draft-2026-10.html": "cc0ea28598ef2a5d99a2681c9b7410eedd1d85d43d75edf5eecaa677faf1701d",
-    "docs/paper/paper-evidence-data.json": "9eb770c02ac2e296064338b745655552639bc3b43c614be3e9b541190285c624",
-    "docs/paper/single-port-evidence.json": "a98532dd77db0331d318911482a4b7ddc1e9a0b8a0054821c0775ac6fbd78bfd",
-    "docs/paper/final-candidate-response.json": "8a672708afd2fc9484baa90ab5a0487d6fc5d05cc015ef67e09b00d3870f2636"
-  },
-  "scope": "Separate Chinese extended abstract; no experiments or edits to the full manuscript."
+  "date": "2026-10-10",
+  "version": "v3 status abstract for the advisor (+ symmetry attachment); v1 review is in git history (f95d0c7)",
+  "visual_review": "Conductor (Claude Opus 5.5) inspected the final 2x-rendered page and the 300 dpi figure: one A4 page, no missing glyphs (U+2212/≤/≥ avoided because Microsoft JhengHei lacks them), no clipping or overlap.",
+  "scientific_review": "Independent read-only Opus review (2026-10-10) of the v2 abstract and symmetry note: ~70 numbers confirmed (612/0, 970/0, 3,632 n8 median 5, 439, +0.022/+0.036, rank 27, rho -0.09, 6,000/90, 43,846, -5.90 to -2.39); 4 errors and several over-strong causal phrasings found and fixed in v3 (local-32 are neighbours of the -0.25 anchor chosen by SM LCB; anchor came from the disagreement quota; post-best batches are within-batch Hamming>=64 diversity plus blind pool; c48 symmetrization is ~15% of pixels; historical stats relabelled descriptive, unique-pattern counts 592/3,546). v3 rewrite itself was checked by the conductor against the same sources, not by a second independent review.",
+  "conductor_recomputation": [
+    "Symmetric best curves, margins and exact LR mirror re-derived from the NPZ whose SHA matches the committed R80 figure receipt (symmetric-best-evidence.json).",
+    "Free-form WM +0.77 re-derived from single-port-evidence.json; 8-connected metal pieces 3 vs 13 computed in the build script.",
+    "Historical snapshot counts (612 WM>=0.3 with 0 exact; 3,632 passing designs, n8 median 5, 3 with n8>=13; 439 passing with low-side gain <=0 dBi all A>=0.327; exact 1,029/1,030) recomputed read-only from application/pattern_browser/data.",
+    "R80 figures (970 first samples 0 dual pass; local 32: 1 positive, range +0.02..-22.7, Spearman -0.09, rank 27; anchor -0.246 from v002; 2,178 cutoff; 3,630 at 16:55) taken from the R80 log and receipts."
+  ],
+  "not_done": "No new HFSS, training or measurement. Full pytest not rerun (documentation-only change, no code under antenna/ or script/ touched).",
+  "scope": "Internal discussion draft; not a submission. Symmetric result is two single-condition HFSS observations, not a mesh-convergence or fabrication claim.",
+  "attachment": {
+    "pdf": "output/pdf/symmetry-difficulty-zh-2026-10.pdf",
+    "pages": 1,
+    "sha256": "fd2608373814ca41212369612a5052a14a6fa70af8fed7f8b48b79d49270fe0c",
+    "source_sha256": "562b4a504e4f022ac185139902bd80302c42cb0c5f331a3bf7b2f1c99d072a48",
+    "characters": 2250,
+    "required_text_pass": true
+  }
 }
