@@ -6,6 +6,8 @@
 
 2026-10-10 16:04健康更新：三台claimed10/16、10/16、2/16，最新結果1／0／2分鐘；exact主控PID53228／creation／launch与19來源吻合、scope無警報、LOW與guided有待跑工作，reported SM v022，該版尚未獨立model核對。[本次健康](assets/r80_health_20261010_1604.json)。最新全量仍引用15:59的3,584及WM+.021682；本次不是新census或最佳性能評估。下一routine16:34 notify-only計時器已掛，未重啟／改來源、模型或queue。三台持續推進是已核對的等待，R80/R81/spec仍未完成。
 
+2026-10-10 16:34健康更新：三台claimed10/16、4/16、3/16，最新結果0／2／0分鐘；唯一主控PID53228／原creation／launch与19來源吻合、scope無警報、guided及LOW仍有待跑。主控reported v022；本次沒有獨立model性能核對、全量census或新最佳評估。[健康收據](assets/r80_health_20261010_1634.json)。另只讀本機hash-bound action`bbb8f9c1…`（SHA18985bed…）與diversity audit（SHA0b2de9b6…）：v022保存parent集合3,534筆的最高仍是f6ffb938／+.021682；此較早subset metadata不涵蓋15:59全量3,584，更不能當最新全域truth。沒有觸發重複全量查詢／出圖或任何runtime／queue變更；下一routine17:04 notify-only計時器已掛。R80/R81/spec仍待完成。
+
 2026-10-10 live板歷史整理：只精簡`configs/ONGOING.md`的R80/R81區塊，53,137→5,309bytes；目前有效狀態、5,000收尾條件、prepared48等待授權、R81工程／正式與正WM門檻、舊入口禁恢復保留。原區塊bytes逐字存於[單一member ZIP](assets/round-80/ongoing-r80-snapshot-20261010-1604.zip)，解壓回讀完全一致；檔案prefix及2026-08舊suffix完全未變，並未宣稱整份操作板已清空歷史。Sol只讀稿件審查與實際文件／archive／連結核對通過；沒有NAS、runtime來源、模型或queue變更。[精確hash與範圍](assets/r80_live_board_compaction_20261010.json)。封存相對路徑以原`configs/ONGOING.md`為基準；歷史PID／指令不是目前操作依據。
 
 2026-10-10 15:34健康更新：三台claimed14/16、10/16、1/16，最新結果2／2／1分鐘；exact主控與19來源吻合、scope無警報，reported SM v021、guided／LOW持續待跑。[本次健康](assets/r80_health_20261010_1534.json)。下一routine16:04；不當作新全量筆數／最佳或新model性能評估。先前三筆COM恢復引用15:04讀回，本次未重讀errors；原15:04紀錄與全48實體truth證據保留。
