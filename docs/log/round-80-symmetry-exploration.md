@@ -1,6 +1,8 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
-最新狀態（2026-10-10 16:55）：3,630有效唯一實測／5,000（72.60%），較15:59增加46筆；全3,635成功觀測重新raw核對，最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。16:54三台worker有claimed工作，scope無警報，SM reported v022持續批次更新；兩筆首次COM失敗未計入有效數，16:56讀回各attempts1，尚未宣稱恢復。最新證據見[本次收據](assets/r80_best_status_20261010_1655.json)／[錯誤讀回](assets/r80_error_readback_20261010_1656.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
+最新狀態（2026-10-10 20:13）：3,797有效唯一實測／5,000（75.94%），較17:59增加109；全3,802含5筆repeat原始觀測重新核對、零cached metrics，最佳仍f6ffb938／WM+.0216822624dB，沒有新最佳。20:12三台近期saved結果持續增長，主控身份及19來源吻合，reported SM v024；舊LOW部分失敗警報仍保留，不等於全線停機。完整cutoff、raw及health見[最新全量收據](assets/r80_best_status_20261010_2013.json)／[20:04健康及20:05錯誤讀回](assets/r80_health_20261010_2004.json)。下一例行20:34；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer只屬當時歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
+
+歷史全量狀態（2026-10-10 16:55）：3,630有效唯一實測／5,000（72.60%），較15:59增加46筆；全3,635成功觀測重新raw核對，最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。16:54三台worker有claimed工作，scope無警報，SM reported v022持續批次更新；兩筆首次COM失敗未計入有效數，16:56讀回各attempts1，尚未宣稱恢復。最新證據見[本次收據](assets/r80_best_status_20261010_1655.json)／[錯誤讀回](assets/r80_error_readback_20261010_1656.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
 2026-10-10 17:34健康＋17:38恢復：actual CIM主控PID53228／原creation／launch存活、19來源吻合；健康cutoff claimed5/16、15/16、10/16，最近成功2／3／2分鐘，scope無警報、guided與LOW有待跑，reported v022。218的g03从6/16恢復到16/16；17:34診斷仍有一筆watchdog待補，17:35保存結果已轉success，另以17:37新版本重算三筆原COM／watchdog的sample＋rad與WM（−15.1697006226／−22.1421146393／−15.9860010147），並用既有verify_completed通過全16筆完整性。17:38真正jobs_state讀回done存在、fail不存在、零error，claim owner仍218；marker不是worker PID證據，不宣稱遠端程序／重開事件已独立驗證。沒有agent重啟HFSS／worker、刪claim／done或另行派工，原有補測已產出可驗證資料。[分cutoff健康／raw／恢復收據](assets/r80_health_20261010_1734.json)。本次只針對恢復樣本核對，無新full census或全域最佳評估，最新全量仍16:55的3,630；18:04 notify-only cell781已掛，R80 5,000完整收尾與R81/spec仍未完成。
 
@@ -1493,3 +1495,10 @@ helper保留partial-fail警報exit1，但原main身份／19來源與唯一invent
 ### 2026-10-10 19:34：三台guided有新結果、218上一LOW watchdog恢復16/16
 
 main身份／19來源與唯一inventory通過，scope仍因舊LOW部分失敗exit1。現在guided d2451199g01／g02／g03分屬216／37／218，11／7／3成功且最近1／3／1分鐘有saved結果；g02 row r80cd2451199g_00016_14194ece與g03 row r80cd2451199g_00002_ad048088各COM0x80070223 attempts1，fail不存在，不提前判終態。218已完成上一LOW k5f7985239fe04028：16/16成功、done存在／fail不存在，已按既有metric helper重算原watchdog row r80kl09_9becc84667fb WM−13.8992547989及sample/rad綁定，既有verify_completed全16通過，input/store metadata前後不變；只有該原error的WM另外重算，不誇大為16個WM獨立重播。舊LOW ka00bff601d27501e的15成功＋1COM attempts4、216／218 fail與18:34results/fail hashes不變，37仍可接管。沒有新全量count／best、沒有重啟／刪marker／queue修改／額外HFSS或SM性能宣稱。下一例行20:04。[完整健康及恢復證據](assets/r80_health_20261010_1934.json)。
+
+
+### 2026-10-10 20:04健康／20:13全量：增加109筆、最佳未變
+
+20:04 exact main身份與19來源核對通過；健康成功5／13／11，20:05順序讀回三台216／37／218成功5／14／11、另5筆guided COM0x80070223各attempts1且無fail，未宣稱恢復或終態。舊LOW ka00bff601d27501e results/fail hash仍與18:34一致：15成功、1COM attempts4、fail216／218，37仍是eligible；只復用此前partial完整性證據，不重複宣稱重算15 raw。COM歷史曾有補測恢復，不能推論本次原因或保證恢復，也未用本機Win32文字診斷遠端磁碟／記憶體。
+
+使用者詢問現況觸發新全量：沿用未修改query_and_freeze.py SHA da6a0034…，3,802原始成功觀測重算為3,797唯一，較17:59增加109；3筆error在各store保存cutoff中排除，不把健康較早5error與全量較晚3error合併成同一cutoff。20:12三台成功8／15／13且最近0／3／3分鐘，待跑LOW與guided繼續供工作。最佳原sample/rad/pattern與WM仍完全相同，既有極座標圖hash吻合；獨立repeat+.0364336967是同圖形，非新best。資料推進但最佳性能停滯；沒有新SM性能改善、完整5,000 freeze或R81達標宣稱。沒有runtime／queue mutation、worker／HFSS重啟、刪markers、手動重派或額外解算。修正本日誌頂端過時latest指標並保留原歷史段；下一20:34健康。[最新全量](assets/r80_best_status_20261010_2013.json)／[20:04分cutoff證據](assets/r80_health_20261010_2004.json)。
