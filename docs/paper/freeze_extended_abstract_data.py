@@ -18,6 +18,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 SNAP = ROOT / "application/pattern_browser/data"
 LOCAL = ROOT / "docs/log/assets/r80_local_variation_result_20261009.json"
+PREPARE = ROOT / "docs/log/assets/r80_local_variation_prepare_20261009.json"
 SYM = ROOT / "docs/paper/symmetric-best-evidence.json"
 R54 = ROOT / "docs/log/assets/round-54/r54_close_analysis.md"
 OUT = ROOT / "docs/paper/extended-abstract-figure-data.json"
@@ -137,9 +138,13 @@ def local32() -> dict:
              "sm_mean_db": round(r["prospective_wmmean"], 3),
              "hfss_wm_db": round(r["actual"]["factory_margin_db"], 4)} for r in data["rows"]]
     assert len(rows) == 32
+    anchor = json.loads(PREPARE.read_text(encoding="utf-8"))["anchor_prediction"]
     return {"source": rel(LOCAL), "source_sha256": sha(LOCAL),
+            "prepare_source": rel(PREPARE), "prepare_sha256": sha(PREPARE),
+            "anchor_sm_mean_db": round(anchor["anchor_factory_score"], 3),
             "anchor_wm_db": round(data["trial_identity"]["anchor_raw_hfss_wm_db"], 4),
             "spearman_lcb_vs_wm": round(data["outcomes"]["selected_cohort_spearman"]["prospective_lcb_vs_actual_wm"]["rho"], 3),
+            "spearman_mean_vs_wm": round(data["outcomes"]["selected_cohort_spearman"]["prospective_wmmean_vs_actual_wm"]["rho"], 3),
             "best_rank": data["outcomes"]["max_wm_selection_rank"], "rows": rows,
             "note": "SM-selected 32 neighbours (4 physical pixels) of the -0.25 dB anchor; profile-holdout model data-v031."}
 

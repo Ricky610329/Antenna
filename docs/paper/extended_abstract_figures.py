@@ -332,93 +332,67 @@ def symmetric() -> dict:
 
 
 def symmetry_evidence() -> dict:
-    """Fig 6: four descriptive views of why exact mirror symmetry is hard."""
+    """Fig 6: one claim per panel. (a) the symmetry constraint alone, applied to existing
+    designs; (b) what the SM predicted for the region where the symmetric best was found."""
     data = load(FROZEN)
-    snap, local = data["snapshot"], data["r80_local32"]
-    sym = load(SYM)
-    free_bits = np.asarray(load(FREE)["candidate"]["bits"], dtype=int)
-    fig = plt.figure(figsize=(WIDTH_IN, 3.25))
-    gs = fig.add_gridspec(2, 2, wspace=.2, hspace=.62, left=.075, right=.985, bottom=.1, top=.93)
+    r55, local = data["snapshot"]["r55_posthoc_symmetrization"], data["r80_local32"]
+    fig = plt.figure(figsize=(WIDTH_IN, 2.5))
+    gs = fig.add_gridspec(1, 2, wspace=.24, left=.07, right=.99, bottom=.19, top=.87)
 
-    ax = fig.add_subplot(gs[0, 0])   # (a) post-hoc symmetrisation
-    r55 = snap["r55_posthoc_symmetrization"]
-    styles = {"L": ("左半鏡射", "o", BLUE), "R": ("右半鏡射", "^", TEAL), "O": ("聯集鏡射", "s", AMBER)}
-    for key, (label, marker, color) in styles.items():
-        rows = [r for r in r55["rows"] if r["style"] == key]
-        ax.scatter([r["parent_wm"] for r in rows], [r["wm"] for r in rows], s=10, marker=marker,
-                   facecolor="none", edgecolor=color, lw=.8, label=label)
-    ax.plot([-1, 1], [-1, 1], color=INK, lw=.7, ls=(0, (3, 2)))
-    ax.axhline(0, color=MUTED, lw=.5)
-    champ = next(r for r in r55["rows"] if r["parent"] == "c48nq1p05_16" and r["style"] == "R")
-    ax.annotate(f"冠軍 +{champ['parent_wm']:.2f} → {champ['wm']:.2f}", (champ["parent_wm"], champ["wm"]),
-                xytext=(-6, -12), textcoords="offset points", ha="right", fontsize=6,
+    ax = fig.add_subplot(gs[0, 0])   # (a) same design, only "force left-right mirror" changes
+    parents = sorted({r["parent"]: r["parent_wm"] for r in r55["rows"]}.items(), key=lambda kv: kv[1])
+    for x, (pid, pwm) in enumerate(parents, 1):
+        kids = [r["wm"] for r in r55["rows"] if r["parent"] == pid]
+        ax.plot([x, x], [min(kids), pwm], color=GRID, lw=2.4, solid_capstyle="round", zorder=1)
+        ax.scatter([x] * len(kids), kids, s=15, facecolor="white", edgecolor=AMBER, lw=.9, zorder=2,
+                   label="強制對稱後（各鏡射方式）" if x == 1 else None)
+        ax.scatter([x], [pwm], s=18, color=BLUE, zorder=3, label="原設計" if x == 1 else None)
+    champ = len(parents)
+    assert parents[-1] == ("c48nq1p05_16", .79)
+    best_kid = max(r["wm"] for r in r55["rows"] if r["parent"] == "c48nq1p05_16")
+    ax.annotate(f"冠軍 +0.79 → 最好也只剩 {best_kid:.2f}", (champ, best_kid), xytext=(-8, -16),
+                textcoords="offset points", ha="right", fontsize=6,
                 arrowprops=dict(arrowstyle="-", lw=.5, color=INK))
-    ax.set(xlim=(-1.05, 1.0), ylim=(-34, 3))
-    ax.set_xlabel("親代 WM（dB）")
-    ax.set_ylabel("對稱化後 WM（dB）")
-    ax.set_title(f"(a) 事後對稱化：{r55['count']} 個探針，中位降幅 {-r55['median_drop_db']:.1f} dB")
-    ax.legend(loc="upper left", bbox_to_anchor=(0, .93), handletextpad=.2, labelspacing=.25)
-    ax.grid(color=GRID, lw=.4)
-    assert r55["count"] == 34 and r55["parents"] == 13 and all(r["wm"] < r["parent_wm"] for r in r55["rows"])
+    ax.axhline(0, color=INK, lw=.7, ls=(0, (3, 2)))
+    ax.set(xlim=(.3, champ + .7), ylim=(-41, 4), xticks=range(1, champ + 1))
+    ax.set_xticklabels([])
+    ax.tick_params(axis="x", length=0)
+    ax.set_xlabel(f"{len(parents)} 個既有設計（依原本 WM 由低到高排列）")
+    ax.set_ylabel("WM（dB）")
+    ax.set_title(f"(a) 同一設計只改「強制左右對稱」：{r55['count']} 個版本全部變差")
+    ax.legend(loc="lower left", ncol=2, handletextpad=.3, columnspacing=1)
+    ax.grid(axis="y", color=GRID, lw=.4)
+    assert r55["count"] == 34 and len(parents) == 13 and all(r["wm"] < r["parent_wm"] for r in r55["rows"])
 
-    ax = fig.add_subplot(gs[0, 1])   # (b) SM score vs HFSS for the 32 local variants
+    ax = fig.add_subplot(gs[0, 1])   # (b) SM prediction vs HFSS around the symmetric best
     rows = local["rows"]
-    x = np.array([r["sm_lcb_db"] for r in rows])
+    x = np.array([r["sm_mean_db"] for r in rows])
     y = np.array([r["hfss_wm_db"] for r in rows])
     best = next(r for r in rows if r["rank"] == local["best_rank"])
-    ax.axhline(local["anchor_wm_db"], color=INK, lw=.7, ls=(0, (3, 2)))
+    lim = (-25, 2)
+    ax.plot(lim, lim, color=INK, lw=.7, ls=(0, (3, 2)))
+    ax.text(-22.5, -20.5, "預測 = 實測", rotation=33, fontsize=6, color=INK)
     ax.axhline(0, color=MUTED, lw=.5)
-    ax.scatter(x, y, s=9, color=BLUE, lw=0)
-    ax.scatter([best["sm_lcb_db"]], [best["hfss_wm_db"]], s=60, marker="*", color=AMBER, zorder=3)
-    ax.annotate(f"達標者（SM 排第 {best['rank']}）", (best["sm_lcb_db"], best["hfss_wm_db"]),
-                xytext=(8, -14), textcoords="offset points", fontsize=6,
-                arrowprops=dict(arrowstyle="-", lw=.5, color=INK))
-    ax.text(.99, .08, f"前一最佳 {local['anchor_wm_db']:.2f}（虛線）", transform=ax.transAxes,
-            ha="right", fontsize=6, color=INK)
-    ax.set_xlabel("SM 選樣分數 LCB（dB，越大越看好）")
-    ax.set_ylabel("HFSS WM（dB）")
-    ax.set_title(f"(b) 鄰域 32 個變體：Spearman 相關 {local['spearman_lcb_vs_wm']:.2f}")
+    ax.scatter(x, y, s=11, color=BLUE, lw=0, label=f"鄰域 {len(rows)} 個變體")
+    ax.scatter([local["anchor_sm_mean_db"]], [local["anchor_wm_db"]], s=24, marker="D", facecolor="white",
+               edgecolor=INK, lw=.8, zorder=3, label="前一最佳（-0.25 dB）")
+    ax.scatter([best["sm_mean_db"]], [best["hfss_wm_db"]], s=70, marker="*", color=AMBER, zorder=4,
+               label="達標解（+0.022 dB）")
+    ax.annotate(f"SM 預測都在 {x.min():.1f} 到 {x.max():.1f} dB\n實測卻從 {y.min():.1f} 到 +{y.max():.2f} dB",
+                (x.max(), -11), xytext=(10, -2), textcoords="offset points", fontsize=6, va="center")
+    ax.set(xlim=lim, ylim=lim)
+    ax.set_xlabel("SM 預測 WM（dB）")
+    ax.set_ylabel("HFSS 實測 WM（dB）")
+    ax.set_title(f"(b) 對稱區的 SM 預測 vs 實測（排序相關 {local['spearman_mean_vs_wm']:.2f}）")
+    ax.legend(loc="upper left", handletextpad=.3, labelspacing=.35)
     ax.grid(color=GRID, lw=.4)
-    assert best["hfss_wm_db"] == max(y) and local["spearman_lcb_vs_wm"] == -.09
-
-    ax = fig.add_subplot(gs[1, 0])   # (c) metal pieces of passing designs
-    passing = snap["passing_unique"]
-    hist = {int(k): v for k, v in passing["n8_histogram"].items()}
-    ks = np.arange(1, 16)
-    ax.bar(ks, [hist.get(k, 0) for k in ks], width=.75, color=MUTED, lw=0)
-    ax.set_yscale("log")
-    n_free, n_sym = components(free_bits), components(sym_bits(sym))
-    for k, color, label, y in ((n_free, BLUE, "圖 2 自由圖形", hist[n_free] * 1.15), (n_sym, AMBER, "圖 5 對稱解（R80）", 1.15)):
-        ax.annotate(label, (k, y), xytext=(0, 16 if k == n_free else 34), textcoords="offset points",
-                    ha="center", fontsize=6, color=color,
-                    arrowprops=dict(arrowstyle="-|>", mutation_scale=6, lw=.7, color=color))
-    ax.set(xlim=(1.3, 15.7), ylim=(.7, 2.5e4), xticks=[3, 5, 7, 9, 11, 13, 15])
-    ax.set_xlabel("金屬連通塊數（對角相接算相連）")
-    ax.set_ylabel("設計數（對數）")
-    ax.set_title(f"(c) {passing['count']:,} 個 WM 非負設計：中位數 {passing['n8_median']:.0f}，13 塊以上 {passing['n8_at_least_13']} 個")
-    ax.grid(axis="y", color=GRID, lw=.4)
-    assert (passing["count"], passing["n8_median"], passing["n8_at_least_13"]) == (3546, 5, 3)
-
-    ax = fig.add_subplot(gs[1, 1])   # (d) low-side OOB gain vs asymmetry
-    pts = np.array(passing["asym_lo_points"])
-    low = pts[:, 1] <= 0
-    sym_lo = max(sym["RealizedGainTotal_dbi"][:4])   # 24-25.5 GHz, same as dedust oob_gain_max_lo
-    ax.scatter(pts[~low, 0], pts[~low, 1], s=2.2, color=MUTED, lw=0, alpha=.6, rasterized=True)
-    ax.scatter(pts[low, 0], pts[low, 1], s=2.2, color=BLUE, lw=0, rasterized=True,
-               label=f"不高於 0 dBi：{int(low.sum())} 個")
-    ax.scatter([0], [sym_lo], s=36, marker="*", color=AMBER, zorder=3, label=f"對稱達標解（R80）{sym_lo:.1f} dBi")
-    ax.axhline(0, color=INK, lw=.7, ls=(0, (3, 2)))
-    ax.set(xlim=(-.02, .62), ylim=(-6, 10))
-    ax.set_xlabel("不對稱度（0 = 完全左右對稱）")
-    ax.set_ylabel("24–25.5 GHz 最大增益（dBi）")
-    ax.set_title("(d) 低頻帶外增益 vs 不對稱度")
-    ax.legend(loc="upper right", markerscale=1.6, handletextpad=.2)
-    ax.grid(color=GRID, lw=.4)
-    assert int(low.sum()) == passing["lo_le_0_count"] == 439 and pts[low, 0].min() >= .32
-    assert pts[:, 0].max() <= .62 and (pts[:, 1].min() >= -6) and pts[:, 1].max() <= 10, (pts.min(0), pts.max(0))
+    assert best["hfss_wm_db"] == max(y) and (round(x.min(), 2), round(x.max(), 2)) == (-10.97, -10.35)
     return {"path": save(fig, "symmetry-evidence"),
-            "facts": {"r55_median_drop_db": r55["median_drop_db"], "local32_rho": local["spearman_lcb_vs_wm"],
-                      "passing_unique": passing["count"], "lo_le_0": int(low.sum()), "sym_lo_dbi": round(sym_lo, 3)}}
+            "facts": {"r55_probes": r55["count"], "r55_parents": len(parents), "r55_median_drop_db": r55["median_drop_db"],
+                      "champion_best_mirror_db": best_kid, "sm_pred_range_db": [round(float(x.min()), 3), round(float(x.max()), 3)],
+                      "hfss_range_db": [round(float(y.min()), 3), round(float(y.max()), 4)],
+                      "anchor": [local["anchor_sm_mean_db"], local["anchor_wm_db"]],
+                      "spearman_mean": local["spearman_mean_vs_wm"], "spearman_lcb": local["spearman_lcb_vs_wm"]}}
 
 
 FIGURES = {"workflow": workflow, "antenna": antenna, "oob": oob, "filter": filter_,

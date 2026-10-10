@@ -1,14 +1,14 @@
 {
   "pdf": "output/pdf/extended-abstract-zh-2026-10.pdf",
-  "pages": 4,
+  "pages": 6,
   "page_size_pt": [
     0.0,
     0.0,
     595.2755737304688,
     841.8897705078125
   ],
-  "sha256": "499c3d15cffb3f5767bd7428d8b479136f0b8c074999d3c4321a56795f28754a",
-  "source_sha256": "35998b849384400e881f67bf5458739f54cc8b7624d23aaabdb460302a025d2f",
+  "sha256": "b3f68c93893f01d712d4566f0680ae438db8c7223d0c711fb2c0a421ba032573",
+  "source_sha256": "2b86841aabc5a57ded9fc75205052384a4febc4e71ef6f6c095f1c69106ceb6c",
   "figures": {
     "workflow": {
       "path": "docs/paper/figures/extended-abstract-workflow.png",
@@ -83,17 +83,30 @@
     },
     "symmetry-evidence": {
       "path": "docs/paper/figures/extended-abstract-symmetry-evidence.png",
-      "sha256": "269d2c1326b8d57640d36eba00fb31e863ce1e8dedc36023505646506af02e54",
+      "sha256": "7203f144f596de5181a432f8802bc241d3c0bc27a59d01cf42611b0412bfbcba",
       "facts": {
+        "r55_probes": 34,
+        "r55_parents": 13,
         "r55_median_drop_db": -17.16,
-        "local32_rho": -0.09,
-        "passing_unique": 3546,
-        "lo_le_0": 439,
-        "sym_lo_dbi": 3.067
+        "champion_best_mirror_db": -1.48,
+        "sm_pred_range_db": [
+          -10.972,
+          -10.347
+        ],
+        "hfss_range_db": [
+          -22.72,
+          0.0217
+        ],
+        "anchor": [
+          -12.162,
+          -0.2464
+        ],
+        "spearman_mean": -0.106,
+        "spearman_lcb": -0.09
       }
     }
   },
-  "characters": 5939,
+  "characters": 6079,
   "required_text_pass": true,
   "glyph_coverage_pass": true,
   "embedded_chinese_fonts": [
@@ -106,19 +119,21 @@
   "text_within_page": true,
   "renderer": "PyMuPDF 2x; Poppler was unavailable locally",
   "date": "2026-10-10",
-  "version": "v4 four-page status abstract (user allowed up to 4 pages, light formatting, more figures); v3 one-page = 8446aba; v1 = f95d0c7",
+  "version": "v5 six-page status abstract (user 2026-10-10: less formatting, looser layout, check sample count, clear attribution in Fig 6); v4 = 48d1337; v3 one-page = 8446aba; v1 = f95d0c7",
   "frozen_figure_data": "docs/paper/extended-abstract-figure-data.json via docs/paper/freeze_extended_abstract_data.py (snapshot 2026-08-10, R80 receipts, R54 S0 bridge table)",
-  "visual_review": "Conductor (Claude Opus 5.5) inspected all four 2x-rendered pages, the attachment page and each 300 dpi figure: no missing glyphs (builder asserts JhengHei coverage; figure builder fails on matplotlib missing-glyph warnings), no clipping, no overlapping labels after fixes.",
+  "visual_review": "Conductor inspected all six 2x-rendered pages, the one-page attachment and every figure: no clipping, overlap or missing glyphs.",
   "scientific_review": "Independent read-only Opus review of v4 (2026-10-10). Confirmed: records +0.79/-3.46, 159 px anchor distance, R80 counts (2,178 first pass, 3,688 at 17:59), 'not yet a systematic neighbourhood search' still true, local-32 (rho -0.09, rank 27), R55 34 probes median -17.16, snapshot stats, Fig 2/4/5 margins, Table 1 specs, filter numbers. Fixed: (P1/P2) snapshot db100_wm -0.44/-1.99 were S1-mesh values; replaced by R54 S0 bridged values +0.58 (champion) and about -0.32 (low-side record); (P3) snapshot main rows are no-bridge, 'mixed bridge conditions' removed; (P4) +0.77 labelled as handoff re-solve (original +0.69); (P5) the 439 low-side designs are one family (pairwise median 23 px); (P6) 30.8%/5.8% definitions and caveat; (P7) anchor entered via disagreement arm among top-40% predicted, not 'SM did not favour it'; (P8) lineage wording; (P9) R55 drop range 2.3-32 dB; (P10) mesh |dWM|; (P11) filter rho definition; (P12) ring labels, star not in snapshot, 17 records incl. start, hedges and jargon. Conductor re-verified P1/P2 in round-54 logs and recomputed 1 px, 23/80 px, 159/195/281 px and the p60 rule.",
   "not_done": "No new HFSS, training or measurement. Full pytest not rerun (documentation/figure scripts under docs/paper only; pyflakes clean).",
   "scope": "Internal discussion draft for the advisor; all performance numbers are HFSS simulations. Snapshot statistics are descriptive.",
   "attachment": {
     "pdf": "output/pdf/symmetry-difficulty-zh-2026-10.pdf",
     "pages": 1,
-    "sha256": "530db2cd01727ab4c30d76e98fde661e7fd026f16bb39fba23380f7dcc8d764d",
-    "source_sha256": "836d0c5652fa04b2284dc4c7304012823c2b9aa3db7c2f91c6b694e03c2c7590",
-    "characters": 2342,
+    "sha256": "f6e593982f68d489a6fc3bbad61f7b30f70e7be302a93a48ccbbc3a4fd1d0ec7",
+    "source_sha256": "f8ccaaac4797ff9709de9df558d47f3f2a61d6c381233a091c06ffa1a84660cc",
+    "characters": 2242,
     "required_text_pass": true,
     "changes": "lineage (159 px), disagreement-arm wording, R55 and 30.8%/5.8% definitions, 439 one-family note, figure reference -> main Fig 5; compact layout keeps one page"
-  }
+  },
+  "v5_changes": "Highlight box and bold-led bullets removed (prose; tables, figures and section headings kept); body 10/17.5 pt, 20 mm margins, conditional page breaks, no widows. Sample count corrected from 4.7 萬 (single-port with full radiation cuts only) to >7.6 萬: local backup 2026-08-28 single 43,694 + dual 26,203 (port read from one file per store), online 2,943, R80 3,688; harvest 34,215. Fig 6 rebuilt as two single-claim panels: (a) the same 13 designs before/after forcing a mirror (34 versions, all worse) and (b) SM predicted vs HFSS WM for the 32 neighbours and the anchor (predictions -10.97..-10.35, HFSS -22.72..+0.02, Spearman mean -0.106); the n8 histogram and asymmetry-vs-lo scatter moved to text as descriptive notes. Section 4 reasons labelled by evidence strength (direct contrast / direct observation / descriptive / inference) with limitations.",
+  "v5_review": "Conductor-verified (counts recomputed read-only from the local backup; figure numbers asserted in extended_abstract_figures.py). No second independent review of v5; v4 claims reused unchanged were independently reviewed."
 }

@@ -4,11 +4,17 @@
   "footer": "延伸摘要附件 · 對稱難度",
   "max_pages": 1,
   "layout": {
+    "font": 9.5,
     "leading": 13.2,
+    "para_after": 3,
     "margin_mm": 16,
     "top_mm": 12,
     "bottom_mm": 11,
-    "heading_before": 3
+    "heading_before": 3,
+    "heading_after": 2.5,
+    "sub_before": 3.5,
+    "fig_gap": 2,
+    "keep_mm": 0
   },
   "sections": [
     {
@@ -61,8 +67,7 @@
       "paragraphs": [
         "對稱實驗：docs/log/round-80-symmetry-exploration.md，以及 docs/log/assets/r80_local_variation_result_20261009.json、r80_profile_data_v015_20261008.json、r80_sm_input_contract_diagnostic_20261009.json。",
         "歷史快照：application/pattern_browser/data，見 analysis-18 §0 的限制說明。",
-        "其他輪次：R55（round-55-finetune.md）、R9（round-09-pool-revalidation.md）、R12（round-12-consolidate-diversify.md）。",
-        "連通塊與曲線：docs/paper/symmetric-best-evidence.json、single-port-evidence.json。"
+        "其他：R55、R9、R12 的輪次紀錄（docs/log/）；連通塊與曲線見 docs/paper/symmetric-best-evidence.json。"
       ]
     }
   ],

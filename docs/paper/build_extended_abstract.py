@@ -4,8 +4,9 @@ Usage: python docs/paper/build_extended_abstract.py [source.json ...]
 (default: the abstract; e.g. also symmetry-difficulty-zh-2026-10.json).
 
 A source JSON has a title, subtitle and sections. A section holds either plain
-"paragraphs" or ordered "blocks": {"p"}, {"bullets"}, {"sub"}, {"highlights"},
-{"table"} or {"figure", "caption"}. Figures are drawn by
+"paragraphs" or ordered "blocks": {"p"}, {"bullets"}, {"sub"}, {"table"} or
+{"figure", "caption"}; "new_page": true starts it on a fresh page. An optional
+"layout" object tightens spacing (used by the one-page handout). Figures are drawn by
 extended_abstract_figures.py from frozen evidence JSON; nothing here runs HFSS.
 
 Dependencies: reportlab (PDF), pymupdf (render/QA), pypdf (text QA), matplotlib.
@@ -39,8 +40,8 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
-    BaseDocTemplate, Frame, Image, KeepTogether, PageTemplate, Paragraph,
-    Spacer, Table, TableStyle,
+    BaseDocTemplate, CondPageBreak, Frame, Image, KeepTogether, PageBreak, PageTemplate,
+    Paragraph, Spacer, Table, TableStyle,
 )
 
 import extended_abstract_figures as figures
@@ -67,7 +68,6 @@ def texts(data: dict) -> list[str]:
         for block in section.get("blocks", []):
             out.extend(v for k, v in block.items() if k in ("p", "sub", "caption"))
             out.extend(block.get("bullets", []))
-            out.extend(x for pair in block.get("highlights", []) for x in pair)
             if "table" in block:
                 t = block["table"]
                 out.extend([t["caption"], *t["headers"], *(x for row in t["rows"] for x in row)])
@@ -96,26 +96,25 @@ def build(source: Path) -> None:
     muted = colors.HexColor("#65717d")
     rule = colors.HexColor("#d3dbe1")
     base = dict(fontName="JhengHei", textColor=ink, wordWrap="CJK")
-    title = ParagraphStyle("Title", **base, fontSize=15.6, leading=20, alignment=TA_CENTER, spaceAfter=3)
-    subtitle = ParagraphStyle("Subtitle", **base, fontSize=7.8, leading=10, alignment=TA_CENTER, spaceAfter=6)
-    keywords = ParagraphStyle("Keywords", **base, fontSize=8.4, leading=11, spaceAfter=3)
-    # Optional "layout" keys tighten a one-page handout; defaults suit the multi-page abstract.
-    lay = {"leading": 14, "margin_mm": 17, "top_mm": 13, "bottom_mm": 12, "heading_before": 6, **data.get("layout", {})}
-    body = ParagraphStyle("Body", **base, fontSize=9.5, leading=lay["leading"], alignment=TA_JUSTIFY, spaceAfter=3)
+    # Defaults leave room to breathe; a one-page handout overrides them via "layout".
+    lay = {"font": 10, "leading": 17.5, "para_after": 7, "margin_mm": 20, "top_mm": 18, "bottom_mm": 17,
+           "heading_before": 16, "heading_after": 6, "sub_before": 10, "fig_gap": 8, "keep_mm": 45,
+           **data.get("layout", {})}
+    title = ParagraphStyle("Title", **base, fontSize=16, leading=21, alignment=TA_CENTER, spaceAfter=4)
+    subtitle = ParagraphStyle("Subtitle", **base, fontSize=8, leading=11, alignment=TA_CENTER, spaceAfter=8)
+    keywords = ParagraphStyle("Keywords", **base, fontSize=8.6, leading=12, spaceAfter=4)
+    body = ParagraphStyle("Body", **base, fontSize=lay["font"], leading=lay["leading"], alignment=TA_JUSTIFY,
+                          spaceAfter=lay["para_after"], allowWidows=0, allowOrphans=0)
     bullet = ParagraphStyle("Bullet", parent=body, leftIndent=11, bulletIndent=1.5,
-                            bulletFontName="JhengHei", bulletFontSize=9, spaceAfter=2.2)
-    heading = ParagraphStyle("Heading", fontName="JhengHeiBold", textColor=accent, fontSize=10.6,
-                             leading=14, wordWrap="CJK", spaceBefore=lay["heading_before"], spaceAfter=2.5,
-                             keepWithNext=True)
-    sub = ParagraphStyle("Sub", parent=heading, fontSize=9.6, leading=13, textColor=ink,
-                         spaceBefore=3.5, spaceAfter=1.5)
-    cell = ParagraphStyle("Cell", **base, fontSize=8.4, leading=11.4, alignment=TA_LEFT)
-    caption = ParagraphStyle("Caption", **base, fontSize=8.1, leading=11.2, alignment=TA_JUSTIFY,
-                             spaceBefore=2, spaceAfter=4)
-    big = ParagraphStyle("Big", fontName="JhengHeiBold", textColor=accent, fontSize=13.5, leading=16,
-                         alignment=TA_CENTER, wordWrap="CJK")
-    small = ParagraphStyle("Small", **{**base, "textColor": colors.HexColor("#33414d")}, fontSize=7.6,
-                           leading=9.8, alignment=TA_CENTER)
+                            bulletFontName="JhengHei", bulletFontSize=9, spaceAfter=lay["para_after"] * .6)
+    heading = ParagraphStyle("Heading", fontName="JhengHeiBold", textColor=accent, fontSize=11.2,
+                             leading=15, wordWrap="CJK", spaceBefore=lay["heading_before"],
+                             spaceAfter=lay["heading_after"], keepWithNext=True)
+    sub = ParagraphStyle("Sub", parent=heading, fontSize=10, leading=14, textColor=ink,
+                         spaceBefore=lay["sub_before"], spaceAfter=lay["heading_after"] * .6)
+    cell = ParagraphStyle("Cell", **base, fontSize=8.8, leading=13, alignment=TA_LEFT)
+    caption = ParagraphStyle("Caption", **base, fontSize=8.4, leading=12.4, alignment=TA_JUSTIFY,
+                             spaceBefore=3, spaceAfter=lay["fig_gap"] + 2)
     refs = ParagraphStyle("Reference", fontName="Times-Roman", textColor=ink, fontSize=7.6, leading=9,
                           spaceAfter=1.2, leftIndent=13, firstLineIndent=-13)
     refs_cjk = ParagraphStyle("ReferenceCJK", parent=refs, fontName="JhengHei")
@@ -152,24 +151,9 @@ def build(source: Path) -> None:
             ("LINEBELOW", (0, -1), (-1, -1), .7, accent),
             ("LINEBELOW", (0, 1), (-1, -2), .25, rule),
             ("LEFTPADDING", (0, 0), (-1, -1), 5), ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-            ("TOPPADDING", (0, 0), (-1, -1), 2.8), ("BOTTOMPADDING", (0, 0), (-1, -1), 2.8),
+            ("TOPPADDING", (0, 0), (-1, -1), 3.6), ("BOTTOMPADDING", (0, 0), (-1, -1), 3.6),
         ]))
-        return [KeepTogether([Paragraph(escape(t["caption"]), caption), grid]), Spacer(1, 4)]
-
-    def highlights(pairs: list, columns: int):
-        cells = [[Paragraph(escape(n), big), Paragraph(escape(label), small)] for n, label in pairs]
-        rows = [cells[i:i + columns] for i in range(0, len(cells), columns)]
-        box = Table(rows, colWidths=[width / columns] * columns, hAlign="LEFT")
-        box.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f2f5f8")),
-            ("LINEABOVE", (0, 0), (-1, 0), .9, accent), ("LINEBELOW", (0, -1), (-1, -1), .9, accent),
-            ("LINEBELOW", (0, 0), (-1, -2), .4, colors.white),
-            ("LINEAFTER", (0, 0), (-2, -1), .8, colors.white),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4.5),
-            ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-        ]))
-        return [box, Spacer(1, 5)]
+        return [KeepTogether([Paragraph(escape(t["caption"]), caption), grid]), Spacer(1, lay["fig_gap"])]
 
     built = {}
 
@@ -178,13 +162,14 @@ def build(source: Path) -> None:
             built[name] = figures.FIGURES[name]()
         path = built[name]["path"]
         w, h = ImageReader(str(path)).getSize()
-        return [KeepTogether([Spacer(1, 2), Image(str(path), width=width, height=width * h / w),
+        return [KeepTogether([Spacer(1, lay["fig_gap"]), Image(str(path), width=width, height=width * h / w),
                               Paragraph(rich(text), caption)])]
 
     story = [Paragraph(escape(data["title"]), title), Paragraph(escape(data["subtitle"]), subtitle)]
     if data.get("keywords"):
         story.append(Paragraph("<b>關鍵詞：</b>" + escape(data["keywords"]), keywords))
     for section in data["sections"]:
+        story.append(PageBreak() if section.get("new_page") else CondPageBreak(lay["keep_mm"] * mm))
         story.append(Paragraph(escape(section["heading"]), heading))
         story.extend(Paragraph(rich(p), body) for p in section.get("paragraphs", []))
         for block in section.get("blocks", []):
@@ -194,8 +179,6 @@ def build(source: Path) -> None:
                 story.append(Paragraph(escape(block["sub"]), sub))
             elif "bullets" in block:
                 story.extend(Paragraph(rich(b), bullet, bulletText="•") for b in block["bullets"])
-            elif "highlights" in block:
-                story.extend(highlights(block["highlights"], block.get("columns", 3)))
             elif "table" in block:
                 story.extend(table(block["table"]))
             elif "figure" in block:
