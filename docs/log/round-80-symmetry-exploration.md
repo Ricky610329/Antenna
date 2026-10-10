@@ -1291,3 +1291,7 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 新publisher沿用原dataset lock、原factory commit及native Windows CRLF writer；每次保留整批48＋主線未queued保留量，global5000／guided96／priority1不變。審查發現的hard-loss prefix自動續送、缺少完整append讀回及末片後guard問題已窄修：1／2片prefix必須fail closed，正常成功保存exact before＋3 ordered jobs＝after；已存在3片的恢復也要求相容原capacity proof及完整readback。獨立審查通過，9 focused tests通過；獨立測試在pre-final candidate，final search-policy binding追加以static review核對，不宣稱重跑全部final tests。
 
 實際hash-bound request／本機prepare-action均exit0，cycle`1f4988602a631ddd48667c50b22b262b9092fcf997dd74025c2a8b3cf7ab3845`、3×16 planned stores`dedust_r80c1f498860g01`–`g03`，priority1、once、prepared。獨立expected_action完整重播与保存action逐值相同；action目錄僅收據，沒有NAS input／capacity proof／queue append／readback。核心逐片append、無rollback，任何部分提交都保留證據並禁止自動重試，不把它說成原子all-or-nothing。[發布準備證據](assets/r80_structured48_publisher_readiness_20261010.json)。背景driver尚待獨立核對及實際啟動；這些都不是新HFSS實測。
+
+### 2026-10-10 09:46：48筆背景等待driver實際啟動
+
+獨立hash／static與四種mock終態核對通過後，hidden driver於09:46:43啟動；09:52 native CIM核對PID64504、creation、完整argv與executable，claim來源吻合、stderr空、waiting／publisher calls0。[啟動收據](assets/r80_structured48_deferred_launch_20261010.json)。原main未重啟；本機狀態每30秒、最多2小時，waiting elapsed至少300秒且remaining至少600秒才單次呼叫reviewed publisher。publisher另做fresh容量／duplicate／exact main窗口核對；不自動重試、刪claim或殺程序。此刻action仍prepared，未新增NAS派工或HFSS實測，例行健康仍10:02。
