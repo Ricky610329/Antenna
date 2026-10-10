@@ -1301,3 +1301,7 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 唯讀逐store凍結cutoff並raw重播3282筆成功（含重測），得到3277個唯一有效對稱圖形，較09:15增加36，5000目標完成65.54%。沒有新最佳：r80localv1_00026_f6ffb938仍WM +0.0216822624 dB，26.5–29.5GHz最差S11 −10.0960884094 dB、最低Gain 4.0216822624 dBi；sample／rad／pattern hashes與原最佳一致。既有獨立重測WM +0.0364336967 dB。此次cutoff沒有error entries，沒有queue／source修改。[全量收據](assets/r80_best_status_20261010_0953.json)。
 
 09:52 exact main PID／creation／argv／launch核對通過，SM reported v016／completed21／running_cycle；三台claimed各4/16、最新2／0／0分鐘、scope無警報。有效資料持續增加，但近期多批探索未刷新最佳，性能推進仍停滯；新48多來源候選driver已啟動等待安全窗口，尚非48筆新truth。保留每30分鐘routine，下一10:02；未啟動R81或重啟worker。
+
+### 2026-10-10 10:02：例行健康通過，背景driver持續等待
+
+原main PID／creation／argv／launch與last receipt hashes一致；running_cycle／completed21／reported SMv016。三台claimed7/16、6/16、7/16，最新結果0／3／0分鐘，scope無警報；另四片LOW及一片guided待跑。[健康收據](assets/r80_health_20261010_1002.json)。同次native CIM確認背景driver64504 creation／argv／executable仍吻合，result為waiting／publisher calls0，沒有重啟或手動派工。latest全量仍09:53的3277／最佳+.021682；未重查census或新48truth，下一routine10:32。新48終態判讀入口正在沿用既有raw/seal helper準備，需完成派工及全cohort終態才執行。
