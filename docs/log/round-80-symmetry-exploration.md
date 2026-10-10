@@ -1530,3 +1530,10 @@ exact CIM main身份、唯一inventory與19來源綁定通過，scope仍因舊LO
 exact main身份／19来源與唯一inventory通過；37／218／216当前71f14183g01／g02／g03有9／2／1成功、最近3／3／1分鐘，21:35 owners讀回9／3／1。37於21:04的新startup不再只是claim，現在有9個saved成功結果；仍不宣稱遠端PID独立驗證。g02 row r80c71f14183g_00007_0c6514d7首次watchdog_timeout／RPC_S_CALL_FAILED attempts1、无fail，屬單樣本HFSS例外，沒有由此推出worker停機或已恢復，也不人工重派／重啟。
 
 舊LOW ka00 results/fail bytes仍與18:34相同，15成功／1COM attempts4、兩機216／218fail，37仍eligible；保留partial-fail警報，且與新工作近期結果分開。Watch reported v026／completed10cycles，不直接當實體AdamW/Adam更新或性能改善證據；沿用既有model實體核對檢查保存weights／optimizer／norm與data binding，前v025 guided批另外先gate all done/no-fail才分析。無新census／best、NAS／queue／來源mutation、模型forward／training、額外HFSS或marker刪除。最新全量仍20:13的3797／+.021682，下一例行22:04。[分cutoff健康](assets/r80_health_20261010_2134.json)。
+
+
+### 2026-10-10 21:34後：v026重新訓練實體證據，新增179唯一資料
+
+Sol沿用v023 helper作完整cycle71f14183／data-v026物理核對，43/43通過（13.515s），root檢視266行adapter差異並重核evidence／source及所有immutable artifact hashes，沒有第二次tensor/norm重跑。v0233630→v0263809，三版本間新增179唯一圖形、154train／25holdout，舊rows語義保留無變；358新增sample/rad檔存在且符合manifest SHA。Final train2821／holdout988，alias／pattern overlap零；三個checkpoint的hash、signature、seed、完成phase、有限tensors及optimizer moments、fresh-init metadata及distinct terminal tensor digest通過。每模型Adam實際4700steps，對應ceil10150/128×30＋ceil2821/128×100，train-only input/target norms逐一完全吻合，包含holdout重算則不同。
+
+完成action/summary明確綁定fit3809，health cycle更新較晚3826不替代訓練binding，也不把3809全叫train。這是資料持續加入、三模型fresh retrain已完成的保存狀態證據；没有獨立初始weights bytes或epoch log，不能宣稱bitwise fresh initialization／逐epoch重播，也沒有forward／accuracy／性能改善推論。R80 best仍引用20:13全量，沒有新census、NAS／queue／runtime／marker變動、HFSS解算或額外訓練。[完整43核對與限制](assets/r80_sm_v026_physical_review_20261010.json)。

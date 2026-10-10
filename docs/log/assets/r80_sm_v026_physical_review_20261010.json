@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "kind": "r80_sm_v026_independent_saved_physical_review_v001",
+  "status": "passed_saved_v026_no_forward",
+  "repo": {
+    "branch": "GAN",
+    "head": "b3b310a73ec6715ee4802bc7ccbb578c772d59ce",
+    "reviewed_source": [
+      {
+        "path": "script/symmetry_training.py",
+        "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+      },
+      {
+        "path": "script/exploration.py",
+        "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7"
+      }
+    ]
+  },
+  "evidence": {
+    "base_helper": {
+      "path": "tmp/r80_sm_v023_physical_review_20261010_v001/review_v023.py",
+      "sha256": "0c23bd67a4b1be251e14da5e9aa175a394bf9d62c1b1bbb6a2d2ff0ea3986f56"
+    },
+    "helper": {
+      "path": "tmp/r80_sm_v026_physical_review_20261010_v001/review_v026.py",
+      "sha256": "8daaa649de196daad80b5e9241e779ebb3d61a651d3dafebcc313a1fd42558ff",
+      "bytes": 20526
+    },
+    "helper_diff": {
+      "path": "tmp/r80_sm_v026_physical_review_20261010_v001/helper_diff_from_v023.patch",
+      "sha256": "2e80c76d67fe159d032ead1571aa898d7f73263448d20a24f92a733bb980a014",
+      "bytes": 15430,
+      "summary": "Identity adapters change reviewed base v023 to completed v026, cycle/health bindings, expected counts and scope. Four added checks physically hash the 179 new sample/radiation bindings. Training, inference and metric logic are unchanged."
+    },
+    "physical_checks": {
+      "path": "tmp/r80_sm_v026_physical_review_20261010_v001/physical_checks.json",
+      "sha256": "435ed6b0b71ec092ccc170a634d927f5e972130321b007cc8998f086fd2bc8a7",
+      "bytes": 12709,
+      "status": "passed",
+      "check_count": 43,
+      "failures": [],
+      "elapsed_seconds": 13.514878273010254
+    }
+  },
+  "completion_binding": {
+    "cycle_id": "71f1418368e78459ce9d3e20f7a99064e0e3f19cd7c853235233a653e3031450",
+    "action_receipt_sha256": "e0afd4df68c33c8f0e669be489685888e638e68c290761c049fd0c53cba764af",
+    "trained_this_cycle": true,
+    "latest_data_version": 26,
+    "trained_model_summary_sha256": "4f9fb6d2c03e282bb745bfbf4842b716745ffa173e153adbf4bb07c4cd0c6b6d",
+    "health_last_completed_utc": "2026-10-10T13:15:28.267409+00:00",
+    "health_observed_utc": "2026-10-10T13:34:21.8261123Z",
+    "health_launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+    "health_runtime_bindings_verified": 19,
+    "model_cumulative_valid_unique": 3809,
+    "cycle_valid_unique_after_training_and_dispatch": 3826,
+    "interpretation": "The completed-cycle receipt and summary bind the fitted model to data-v026/3809. The running-cycle count 3826 was not substituted for the training binding. Receipt status 'dispatched' describes the full cycle after completed training and later dispatch."
+  },
+  "immutable_artifact_hashes": {
+    "data_v023_manifest": "8a02a78640e7ff25e13f67de29101640f644cb6fceb3339e49120a3d57123267",
+    "data_v023_receipt": "3ff73b621542bfc34cb304dcd89ab4ef8103232988e59c15fa4ffc69847a900a",
+    "data_v026_manifest": "2c77fa470ded0d55565756c07ce04dba917eeeeb3ec01aecaafc40b4e44b7e54",
+    "data_v026_receipt": "637c2f2a32711ad8060c06990654a00a8f95b7d92a218eb0d99cb6ac5970405a",
+    "data_v026_summary": "4f9fb6d2c03e282bb745bfbf4842b716745ffa173e153adbf4bb07c4cd0c6b6d",
+    "data_v026_member_0": "ffdaea5775e7ad19a21982182656a667ac7232d9e8584de89a820921bc41830b",
+    "data_v026_member_1": "0f3e380fa3b3030d54454a99cfd533f2be9da93c2fdff232352cf11c36fdeeb7",
+    "data_v026_member_2": "504854b74598c70f887d72f9f11285bb33be0d4c5efce18fa84aec38af7ead29",
+    "protocol": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+    "legacy_manifest": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+    "health_record": "5dc5d0f9e2e1ab034019ce27ca5471dd826a3eb1f00dc414c2c9cf0198ed259d"
+  },
+  "data_version_findings": {
+    "reviewed_base_v023_rows": 3630,
+    "completed_v026_rows": 3809,
+    "versions_advanced": 3,
+    "new_rows_since_reviewed_v023": 179,
+    "new_unique_patterns": 179,
+    "new_profile_train_rows": 154,
+    "new_profile_holdout_rows": 25,
+    "v023_rows_preserved_semantically_in_v026": true,
+    "prior_row_loss_or_change_count": 0,
+    "all_v026_pattern_hashes_unique": true,
+    "manifest_content_ids_match_receipts": true,
+    "bound_bytes_unchanged_during_review": true
+  },
+  "new_raw_binding_findings": {
+    "source_observation_ids": 179,
+    "sample_files": 179,
+    "radiation_files": 179,
+    "all_binding_ids_and_paths_unique": true,
+    "all_names_match_declared_sha256": true,
+    "all_files_exist": true,
+    "all_358_file_sha256_values_match_manifest": true
+  },
+  "split_findings": {
+    "effective_profile_train_rows": 2821,
+    "effective_profile_holdout_rows": 988,
+    "profile_train_holdout_alias_overlap": 0,
+    "profile_train_holdout_pattern_overlap": 0,
+    "legacy_train_rows": 10150,
+    "legacy_holdout_rows": 1850,
+    "legacy_train_holdout_lineage_overlap": 0,
+    "legacy_train_exclusions_for_current_holdout": 0,
+    "summary_ids_and_counts_match_manifests": true,
+    "development_policy": "whole_canonical_group_train_override_v1",
+    "validation_policy": "remaining_reference_group_holdouts_descriptive_only_no_early_stopping"
+  },
+  "checkpoint_findings": {
+    "member_seeds": [
+      0,
+      1,
+      2
+    ],
+    "all_member_hashes_match_summary": true,
+    "all_signatures_and_factory_bindings_match": true,
+    "all_three_training_signatures_unique": true,
+    "development_metadata_matches_summary": true,
+    "phase_names": [
+      "legacy_pretrain",
+      "current_profile"
+    ],
+    "legacy_epochs": 30,
+    "current_epochs": 100,
+    "batch_size": 128,
+    "expected_and_actual_optimizer_steps_per_member": 4700,
+    "optimizer_state_entries_per_member": 8,
+    "all_optimizer_moments_and_model_tensors_finite": true,
+    "terminal_phase": 2,
+    "terminal_epoch": 0,
+    "all_complete": true,
+    "fresh_initialization_metadata_all_true": true,
+    "terminal_model_tensor_digests_distinct": true,
+    "separate_per_epoch_log_present": false
+  },
+  "normalization_findings": {
+    "recomputed_from_saved_profile_train_rows": 2821,
+    "input_norm_exact_for_all_members": true,
+    "target_norm_exact_for_all_members": true,
+    "holdout_rows_used_in_recomputed_checkpoint_norm": 0,
+    "holdout_inclusive_norm_would_differ": true
+  },
+  "defects": [],
+  "limits_and_unresolved": [
+    "No model was instantiated and no forward, inference, training, prediction, HFSS, NAS, dispatch, worker, queue, marker, source, or runtime mutation was run.",
+    "Fresh initialization is supported by checkpoint metadata, three unique training signatures, distinct terminal tensor digests, and the reviewed source contract. Initial pre-training tensor bytes are not saved, so fresh initialization cannot be replayed byte-for-byte.",
+    "The 30+100 epoch history is supported by the saved protocol, terminal phase metadata, and exact Adam step tensors. The v026 model directory contains no separate per-epoch log.",
+    "Saved metrics were not recomputed because that requires model forward inference. This review makes no accuracy, SM-performance, causal-improvement, or model-quality claim.",
+    "The development-family holdout is descriptive under the saved policy and is not an untouched independent validation set.",
+    "The later running cycle and its guided stores were not assessed."
+  ],
+  "prohibited_actions_observed": {
+    "training": false,
+    "inference_or_model_forward": false,
+    "hfss": false,
+    "nas": false,
+    "dispatch_or_worker_action": false,
+    "queue_marker_source_or_runtime_mutation": false,
+    "tracked_file_edit": false,
+    "git_commit": false
+  },
+  "readiness": "v026 saved data/model update passes bounded physical integrity review against reviewed v023; no accuracy, performance, or causal-improvement claim",
+  "independent_review_sha256": "9fa29d40e7e7c78cd495658c1fed03e687e6f4d64f896a862f8414a9a13f703e",
+  "conductor_review": {
+    "source": "Reviewed full266-line helper diff and actual identity/binding/optimizer/normalization changes; rehashed saved evidence, source files and all immutable bound artifacts.",
+    "physical_checks_sha256": "435ed6b0b71ec092ccc170a634d927f5e972130321b007cc8998f086fd2bc8a7",
+    "checks_passed": 43,
+    "checkpoint_tensor_or_norm_replay_repeated": false,
+    "training_or_model_forward": false,
+    "limits": "Sol physical review is independent of the SM training producer. The conductor did not run a second tensor/normalization audit or new model forward."
+  },
+  "recording_script_sha256": "427584719212cef6254121d41f2e5ddf5e6a157b129694ec6401f92a0a46ab8f"
+}
