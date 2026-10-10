@@ -1366,3 +1366,10 @@ launcher只有一次hidden private-ant publisher start、native wait、實際exi
 自然waiting、無active/recovered reservation時寫入exact owned local STOP；11:19:29原15944乾淨退出，無worker／HFSS signal。有限lease下單次publisher52244於11:22返回durable guided96 capacity-deferred，action仍prepared，未copy／append／產生capacity proof或readback。root後續直接核對私人NAS：三個planned job/input都不存在。同一action終態不得自動重送，容量限制未放寬。[實際完整證據](assets/r80_structured48_capacity_deferral_and_restore_20261010.json)。
 
 native launcher exit_code實際為null，故只以原traceback及durable deferral分類，不虛構exit1。最初default PowerShell dot-source因execution policy在handoff/restore前被拒絕；獨立Bypass-file入口才建立真實capacity handoff並執行原reviewed restorer。11:24:02已移除自己的STOP、hidden啟動原settings/source主控53228，creation1791602636766／newlaunch5a181a47c95a4ab1a8377d803f9da3c1／prior stopped SHA與attempt鏈吻合。11:26:51恢復後健康核對exact新身分、唯一watch、原profile/search/settings、三worker都有claimed工作、scope無警報。主控SM與LOW補池續跑；舊15944入口不得再用，下一例行11:57。三worker從未重啟；R80及R81未完成。後續先解決同tier預備cohort與主線補池的入場排程，避免反覆STOP而仍超容量；不以改tier或放寬96偷過此實際結果。
+
+
+### 2026-10-10 11:38–11:40：有效唯一增至3,361筆，性能仍未提升
+
+11:38恢復後健康仍綁定restoration receipt：PID53228／launch5a181a47c95a4ab1a8377d803f9da3c1身分一致、running_cycle；三片claimed12/16、15/16、4/16，最新結果3／3／2分鐘，scope零警報。兩筆g65g01首次HFSS／RPC錯誤仍等待既有batch-tail重試，不宣稱已恢復或已成終態。
+
+11:40完成唯讀raw查詢：3,366個成功觀測含重測，去重後3,361個有效唯一對稱圖形，達5,000目標67.22%，較11:06增加30筆。最佳仍是r80localv1_00026_f6ffb938，WM +0.0216822624 dB；沒有新最佳，資料量增加尚未帶來性能推進。[全量raw與恢復後健康](assets/r80_best_status_20261010_1138.json)。新48仍是容量defer、未派HFSS；下一例行健康11:57，R80與R81/spec仍未完成。
