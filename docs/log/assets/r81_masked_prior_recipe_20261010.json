@@ -1,0 +1,382 @@
+{
+  "schema_version": 1,
+  "status": "committed_recipe_and_actual_local_config_only",
+  "recorded_utc": "2026-10-10T05:57:45.586826+00:00",
+  "producer_commit": "103517c7a39bb37816d58191fe6f75f3912e7dcf",
+  "source_transport": {
+    "script/r81_prior_recipe.py": {
+      "reviewed_physical_sha256": "1d5e73293f85afa2c3277d0f5b502f6099dc095a1ed8b92ff6651497a6df0370",
+      "git_blob_sha256": "1d5e73293f85afa2c3277d0f5b502f6099dc095a1ed8b92ff6651497a6df0370",
+      "root_physical_sha256": "3a5f82fb0f388df41b63d40dd05e7945f43c83b06d874a581589dc863bf3a14d"
+    },
+    "tests/test_r81_prior_recipe.py": {
+      "reviewed_physical_sha256": "02edbdd7b8eaf4a5ac81b39f69cac00d53f69b3526651250b473bbde8c9a8d76",
+      "git_blob_sha256": "02edbdd7b8eaf4a5ac81b39f69cac00d53f69b3526651250b473bbde8c9a8d76",
+      "root_physical_sha256": "8b90f4636f70e9a0dd91b5bb791f281de6573bd26e9659e2b045bdd5c73cf972"
+    }
+  },
+  "independent_reviews": [
+    {
+      "path": "tmp\\r81_prior_recipe_review_20261010_v001\\independent_review.json",
+      "sha256": "446a4f9b63861e57df0e75b3e6f4429700efe9e431fe37cffd54ac33b29ad5ca",
+      "evidence": {
+        "schema_version": 1,
+        "kind": "r81_prior_recipe_independent_static_review_v001",
+        "status": "failed_no_overwrite_race",
+        "reviewed_candidate": {
+          "worktree": "tmp/r81_prior_recipe_worktree",
+          "branch": "agent/r81-prior-recipe",
+          "base_head": "fed3d51202291480d7de5fb5652d27c8ff55c448",
+          "files": [
+            {
+              "path": "script/r81_prior_recipe.py",
+              "sha256": "0d4989c158b9655c3f31ee8c3d0e0697e0bd66ea6479dcacd7fa517d02edc5df",
+              "bytes": 5178
+            },
+            {
+              "path": "tests/test_r81_prior_recipe.py",
+              "sha256": "12311b759d86d5e010b6606ab1c72f5c4c43ca9a163291b4b977ab1814af8804",
+              "bytes": 3137
+            }
+          ],
+          "git_status": [
+            "?? script/r81_prior_recipe.py",
+            "?? tests/test_r81_prior_recipe.py"
+          ]
+        },
+        "reviewed_bindings": [
+          {
+            "path": "script/exploration.py",
+            "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7"
+          },
+          {
+            "path": "script/filter_training.py",
+            "sha256": "ac2b211db969fcbde357c23b2fd645db291baee6ecd1ead28f2929b3e75106a6"
+          },
+          {
+            "path": "script/filter_prior.py",
+            "sha256": "67e10caf71e1410c661e79c87335a11ae0ec21acfccd6467ca66457ffa5451bb"
+          },
+          {
+            "path": "configs/dual_r81_wide_filter.yaml",
+            "sha256": "1ca15eba360b44dc1246b98640c199c3d44538fe29a91e11a661222ae6cc121a"
+          },
+          {
+            "path": "docs/log/assets/r81_full_prior_20261007.json",
+            "sha256": "7ca6523c5b3f790a8dad016a860f654a7e0d633f0d8addf220edb3689ee158a7"
+          }
+        ],
+        "required_prior_manifest_sha256": "8fcd05614e7851e9c0f7043c00540068df37380423ee4469db0afed90505c777",
+        "checks": {
+          "base_scientific_measurement_score_runtime_preserved": true,
+          "base_geometry_arms_pool_ensemble_and_runtime_settings_preserved": true,
+          "only_masked_prior_protocol_and_requested_epoch_holdout_fields_changed": true,
+          "historical_masked_prior_epochs": 30,
+          "current_five_margin_finetune_epochs": 100,
+          "holdout_fraction": 0.2,
+          "absolute_manifest_and_sample_root_required": true,
+          "manifest_sha256_fixed_and_checked_before_cli_write": true,
+          "parser_has_only_manifest_sample_root_and_output": true,
+          "config_builder_does_not_load_prior_samples": true,
+          "full_prior_validation_remains_execution_time_gate": true,
+          "exclusive_no_overwrite_creation": false
+        },
+        "blockers": [
+          {
+            "id": "R81-PRIOR-RECIPE-EXCLUSIVE-CREATE",
+            "severity": "blocking",
+            "location": "script/r81_prior_recipe.py:125",
+            "finding": "The CLI checks output.exists() and later calls output.write_text(). A concurrent creator between those operations is overwritten, so the stated no-overwrite contract is not guaranteed.",
+            "required_correction": "Open the destination with exclusive creation semantics, for example Path.open('x', encoding='utf-8'), and retain a focused metadata-only existing-output rejection test. Revalidate the emitted bytes after the exclusive write."
+          }
+        ],
+        "focused_test": {
+          "command": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe -m pytest -q tests/test_r81_prior_recipe.py",
+          "result": "5 passed in 0.06s",
+          "scope": "Exactly five metadata/config tests; no synthetic training, prior sample loading, model loading, inference, NAS, worker, HFSS, or runtime action.",
+          "coverage_limit": "The five passing tests do not exercise exclusive output creation and therefore do not disprove the blocker."
+        },
+        "prior_record_context": {
+          "role": "historical_prior_not_current_truth",
+          "historical_rows_validated": 21251,
+          "records_kept_before_current_holdout": 21034,
+          "records_excluded_as_physical_duplicates": 217,
+          "covered_bands": [
+            "s11_match",
+            "s22_match",
+            "s21_pass"
+          ],
+          "masked_bands": [
+            "s21_low_stop",
+            "s21_high_stop"
+          ],
+          "full_current_worst_margin_available": false,
+          "noise_limit": "Of 217 duplicate pairs, 50 covered-margin vectors differ, 11 differ by more than 0.3 dB, 4 by more than 1 dB, and the maximum covered-margin difference is 2.559473 dB. The historical prior is noisy and is not calibrated current truth.",
+          "holdout_limit": "The 21,034 count is before current-family holdout exclusion; the execution-time loader must repeat connected family/pattern exclusion for actual R81 observations."
+        },
+        "review_limits": {
+          "full_prior_preflight_performed": false,
+          "prior_manifest_or_samples_loaded": false,
+          "training_or_inference_performed": false,
+          "nas_worker_hfss_runtime_action_performed": false,
+          "candidate_files_modified": false,
+          "commit_created": false
+        },
+        "readiness": "not_ready_until_exclusive_create_blocker_is_fixed_and_re-reviewed"
+      }
+    },
+    {
+      "path": "tmp\\r81_prior_recipe_review_20261010_v002\\independent_review.json",
+      "sha256": "b4904a9c5b2c37056586059f3881d40c060237dbb966c76c246ba36d08363efe",
+      "evidence": {
+        "schema_version": 1,
+        "kind": "r81_prior_recipe_independent_static_delta_review_v002",
+        "status": "passed_config_only_no_execution",
+        "reviewed_candidate": {
+          "worktree": "tmp/r81_prior_recipe_worktree",
+          "branch": "agent/r81-prior-recipe",
+          "base_head": "fed3d51202291480d7de5fb5652d27c8ff55c448",
+          "files": [
+            {
+              "path": "script/r81_prior_recipe.py",
+              "sha256": "1d5e73293f85afa2c3277d0f5b502f6099dc095a1ed8b92ff6651497a6df0370",
+              "bytes": 5248
+            },
+            {
+              "path": "tests/test_r81_prior_recipe.py",
+              "sha256": "02edbdd7b8eaf4a5ac81b39f69cac00d53f69b3526651250b473bbde8c9a8d76",
+              "bytes": 4063
+            }
+          ]
+        },
+        "predecessor_review": {
+          "path": "tmp/r81_prior_recipe_review_20261010_v001/independent_review.json",
+          "sha256": "446a4f9b63861e57df0e75b3e6f4429700efe9e431fe37cffd54ac33b29ad5ca",
+          "status": "failed_no_overwrite_race",
+          "resolved_blocker": "R81-PRIOR-RECIPE-EXCLUSIVE-CREATE"
+        },
+        "preserved_v001_candidate": [
+          {
+            "path": "tmp/r81_prior_recipe_worktree/tmp/r81_prior_recipe_candidate_v001/r81_prior_recipe.py",
+            "sha256": "0d4989c158b9655c3f31ee8c3d0e0697e0bd66ea6479dcacd7fa517d02edc5df"
+          },
+          {
+            "path": "tmp/r81_prior_recipe_worktree/tmp/r81_prior_recipe_candidate_v001/test_r81_prior_recipe.py",
+            "sha256": "12311b759d86d5e010b6606ab1c72f5c4c43ca9a163291b4b977ab1814af8804"
+          }
+        ],
+        "delta_review": {
+          "source_delta_exact": "The only source change serializes the already validated config, then creates the output with Path.open('x', encoding='utf-8', newline='') and writes the payload.",
+          "test_delta_exact": "One metadata-only race test creates a sentinel output during parent mkdir after the friendly exists check, expects FileExistsError from exclusive creation, and verifies the sentinel bytes are unchanged.",
+          "unrelated_source_changes_found": false,
+          "unrelated_test_changes_found": false,
+          "exclusive_creation_guaranteed": true,
+          "concurrent_owner_preserved": true,
+          "serialization_occurs_before_destination_creation": true,
+          "post_write_schema_reparse_preserved": true,
+          "scientific_config_builder_unchanged": true,
+          "prior_manifest_binding_unchanged": "8fcd05614e7851e9c0f7043c00540068df37380423ee4469db0afed90505c777"
+        },
+        "inherited_v001_findings": {
+          "base_scientific_measurement_score_runtime_preserved": true,
+          "base_geometry_arms_pool_ensemble_and_runtime_settings_preserved": true,
+          "only_masked_prior_protocol_and_requested_epoch_holdout_fields_changed": true,
+          "historical_masked_prior_epochs": 30,
+          "current_five_margin_finetune_epochs": 100,
+          "holdout_fraction": 0.2,
+          "absolute_manifest_and_sample_root_required": true,
+          "config_builder_does_not_load_prior_samples": true,
+          "full_prior_validation_remains_execution_time_gate": true,
+          "historical_prior_is_noisy_not_calibrated_current_truth": true,
+          "records_kept_before_current_holdout": 21034,
+          "current_family_holdout_must_be_applied_at_execution": true
+        },
+        "test_evidence": {
+          "independent_tests_rerun_for_v002": false,
+          "reason": "The requested review was a static exact-delta review and explicitly prohibited rerunning tests.",
+          "implementer_reported_delta_test": "1 passed",
+          "v001_independent_metadata_suite": "5 passed in 0.06s",
+          "claim_limit": "The V2 test result is implementer-reported evidence; this review independently inspected its exact source but did not execute it."
+        },
+        "blockers": [],
+        "review_limits": {
+          "cli_invoked": false,
+          "full_prior_preflight_performed": false,
+          "prior_manifest_or_samples_loaded": false,
+          "training_or_inference_performed": false,
+          "nas_worker_hfss_runtime_action_performed": false,
+          "candidate_files_modified": false,
+          "commit_created": false
+        },
+        "readiness": "passed_for_root_integration_as_config_only_recipe_builder; actual prior extraction paths and full execution-time prior validation remain required before any run"
+      }
+    }
+  ],
+  "config": {
+    "path": "tmp\\r81_masked_prior_config_20261010_v001\\config.yaml",
+    "sha256": "b3ff008492862593b361bc217eb39a5c56943e158e2f04dab50b0078c6d279b6",
+    "content": {
+      "name": "dual_r81_wide_filter",
+      "port": "dual",
+      "scope": "symmetry_filter_20261007",
+      "measurement": {
+        "name": "dual25_p01_db075_wide16_40_v1",
+        "port": "dual",
+        "labels": [
+          "S11",
+          "S21",
+          "S22"
+        ],
+        "geometry": {
+          "geom": "p01",
+          "pixel_count": 25,
+          "diag_bridge_w": 0.075
+        },
+        "sweep": {
+          "start_ghz": 16,
+          "stop_ghz": 40,
+          "step_ghz": 0.5,
+          "type": "Fast"
+        },
+        "solver": {
+          "setup_freq_ghz": 28,
+          "open_region_freq_ghz": 16,
+          "max_delta_s": 0.02,
+          "max_passes": 6,
+          "min_passes": 5,
+          "min_converged": 5
+        }
+      },
+      "score_spec": {
+        "name": "filter_26_30_stop20_36_v1",
+        "bands": [
+          {
+            "name": "s11_match",
+            "label": "S11",
+            "start_ghz": 26.5,
+            "stop_ghz": 29.5,
+            "relation": "le",
+            "threshold": -10
+          },
+          {
+            "name": "s22_match",
+            "label": "S22",
+            "start_ghz": 26.5,
+            "stop_ghz": 29.5,
+            "relation": "le",
+            "threshold": -10
+          },
+          {
+            "name": "s21_pass",
+            "label": "S21",
+            "start_ghz": 26,
+            "stop_ghz": 30,
+            "relation": "ge",
+            "threshold": -3
+          },
+          {
+            "name": "s21_low_stop",
+            "label": "S21",
+            "start_ghz": 16,
+            "stop_ghz": 20,
+            "relation": "le",
+            "threshold": -20
+          },
+          {
+            "name": "s21_high_stop",
+            "label": "S21",
+            "start_ghz": 36,
+            "stop_ghz": 40,
+            "relation": "le",
+            "threshold": -20
+          }
+        ]
+      },
+      "runtime": {
+        "timeout": 1800
+      },
+      "exploration": {
+        "mode": "dual_margin5",
+        "geometry_profile": "dual25_p01_db075",
+        "seed": 811007,
+        "batch_size": 60,
+        "max_batches": 3,
+        "candidate_pool_size": 1024,
+        "ensemble_seeds": [
+          0,
+          1
+        ],
+        "hidden_dims": [
+          128,
+          128
+        ],
+        "epochs": 100,
+        "pretrain_epochs": 30,
+        "batch_train_size": 32,
+        "learning_rate": 0.001,
+        "holdout_fraction": 0.2,
+        "arms": {
+          "history": 20,
+          "specialist": 20,
+          "random": 20
+        },
+        "later_arms": {
+          "best_min_margin": 20,
+          "uncertainty": 20,
+          "random": 20
+        },
+        "training_protocol": "filter_masked_prior_v1",
+        "filter_prior": {
+          "manifest": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r81_filter_prior_full_v2_20261007\\manifest.json",
+          "sample_root": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r81_filter_prior_full_v2_20261007\\raw_snapshot",
+          "expected_manifest_sha256": "8fcd05614e7851e9c0f7043c00540068df37380423ee4469db0afed90505c777"
+        }
+      }
+    }
+  },
+  "measurement_id": "285ef64d46a6a39a73bfb444de299464d8ba3a637710f14818886c71379ef919",
+  "score_spec_id": "3da2ba77ef7c10623cd8ecc4ca8b991ee5f8edd8bde8f4a8321def9c1441c4e4",
+  "scientific_and_runtime_base_preserved": true,
+  "base_profile_sha256": "1ca15eba360b44dc1246b98640c199c3d44538fe29a91e11a661222ae6cc121a",
+  "actual_prior_manifest": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r81_filter_prior_full_v2_20261007\\manifest.json",
+    "bytes": 41901535,
+    "sha256": "8fcd05614e7851e9c0f7043c00540068df37380423ee4469db0afed90505c777"
+  },
+  "prior_record": {
+    "path": "docs\\log\\assets\\r81_full_prior_20261007.json",
+    "sha256": "7ca6523c5b3f790a8dad016a860f654a7e0d633f0d8addf220edb3689ee158a7"
+  },
+  "historical_unique_before_current_holdout_exclusion": 21034,
+  "covered_historical_bands": [
+    "s11_match",
+    "s22_match",
+    "s21_pass"
+  ],
+  "masked_historical_bands": [
+    "s21_low_stop",
+    "s21_high_stop"
+  ],
+  "implementer_reported_new_race_test": "1 passed / 0.06s; no broad suite repeated",
+  "full_prior_loader_repeated": false,
+  "sample_tensors_loaded": false,
+  "training_or_prediction_executed": false,
+  "R81_release_created": false,
+  "NAS_access_or_queue_mutation": false,
+  "HFSS_or_worker_started": false,
+  "remaining": [
+    "R80 completion and research audit",
+    "actual R81 preparation/full prior preflight and holdout-family exclusion",
+    "reviewed immutable engineering release",
+    "engineering HFSS evidence",
+    "formal feedback/SM updates and finite batch verification",
+    "positive-margin original and independent repeat if discovered"
+  ],
+  "limits": [
+    "Existing historical noise and unknown actual worker revision remain.",
+    "The two new stopbands cannot be filled from historical measurements.",
+    "Generated config contains developer-local prior paths; archive/release paths must be bound separately.",
+    "This is a config-only milestone, not execution readiness or a trained SM."
+  ],
+  "recording_script_sha256": "d1d4b6b58c8e3e3a14b151e5fc2e9aa17351ead8bd2cd1b4de711d2612b420ab"
+}

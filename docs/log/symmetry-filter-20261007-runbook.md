@@ -148,3 +148,5 @@ R81派工前先執行`python -m script.prepare_symmetry_filter check-wide-inputs
 先釋出`EngineeringOnly`的6 Fast＋2 Discrete＋2 mesh；正式60筆保留未排隊。四組實測曲線與五個margin的最大差異均≤0.3 dB後，才交付`Formal`。正式批次限三批、每批60：b1為history／specialist／random各20，b2/b3為best_min_margin／uncertainty／random各20，後批須綁定前批回填與SM模型。不預排三批，也不要求尚不存在的正WM重測才允許首批。
 
 每個release immutable；前一版所有launcher回報all_success並退出後，才能更新queue prefix和交付下一版。單機fail仍可由固定216／218／37 roster接手；全roster耗盡才視為終態失敗。入口不pull、不排新job、不刪claims，只在每次native `--once`前重驗release。唯讀preflight與claim並非同一原子transaction，所以prefix交接必須由開發機串行完成。若找到正WM原件，再另排獨立重測；只有兩次實測WM均嚴格>0才算性能達標，三批完成或SM預測正值不算。
+
+R81正式訓練配方已由`script.r81_prior_recipe`固定：以已解開的真實manifest／raw_snapshot絕對路徑產生新config，固定歷史清單hash、masked-prior30ep＋current100ep、holdout0.2；其他基礎量測／spec／runtime及三批設計不變。CLI只做config和位置/hash檢查，既有exploration prepare才會完整驗證先驗；每版還須排除當前holdout相連家族。尚未啟動R81模型。[實際config-only生成與限制](assets/r81_masked_prior_recipe_20261010.json)。
