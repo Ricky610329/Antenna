@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "status": "verified_generated_feedback_transition_sidecar_and_arithmetic_core_preparation_only",
+  "source_sha256_before": {
+    "script/r81_transition_soft.py": "8c0c604a86947b15aa8e8f6b1e5cac0dac12b64a7689df7acfebb845681d0e0c",
+    "tests/test_r81_transition_soft.py": "dd563b29f8887d51b843c23c8969e98a4107e60b119344eec680d40e2e4c8c08",
+    "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+    "script/filter_training.py": "ac2b211db969fcbde357c23b2fd645db291baee6ecd1ead28f2929b3e75106a6",
+    "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+    "antenna/measurement.py": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9",
+    "configs/dual_r81_wide_filter.yaml": "1ca15eba360b44dc1246b98640c199c3d44538fe29a91e11a661222ae6cc121a"
+  },
+  "source_sha256_after": {
+    "script/r81_transition_soft.py": "8c0c604a86947b15aa8e8f6b1e5cac0dac12b64a7689df7acfebb845681d0e0c",
+    "tests/test_r81_transition_soft.py": "dd563b29f8887d51b843c23c8969e98a4107e60b119344eec680d40e2e4c8c08",
+    "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+    "script/filter_training.py": "ac2b211db969fcbde357c23b2fd645db291baee6ecd1ead28f2929b3e75106a6",
+    "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+    "antenna/measurement.py": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9",
+    "configs/dual_r81_wide_filter.yaml": "1ca15eba360b44dc1246b98640c199c3d44538fe29a91e11a661222ae6cc121a"
+  },
+  "source_unchanged": true,
+  "conductor_verification": {
+    "command": [
+      "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+      "-m",
+      "pytest",
+      "tests/test_r81_transition_soft.py",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp",
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r81-transition-soft-conductor-final-v001"
+    ],
+    "elapsed_seconds": 4.327999999979511,
+    "exit_code": 0,
+    "passed_tests": 9,
+    "output_path": "tmp\\r81_transition_soft_review_20261011_v001\\conductor_focused_tests.txt",
+    "output_sha256": "49753eb7ace5f652cef915aac3d0cd38f2d524715eee18d235af61d10c58e375",
+    "interpreter": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+    "python_version": "3.11.16 | packaged by conda-forge | (main, Aug 21 2026, 22:37:11) [MSC v.1944 64 bit (AMD64)]",
+    "unrelated_plotting_or_path_patch": false
+  },
+  "conductor_review": {
+    "original_rank_authentication_gap_found": true,
+    "recomputed_content_id_tampering_now_rejected": true,
+    "full_current_feedback_sample_replay_before_rank": true,
+    "parsed_byte_hashes_and_source_stability_reviewed": true
+  },
+  "method": {
+    "transition_interiors_ghz": [
+      "20<f<26",
+      "30<f<36"
+    ],
+    "left_order": "26_to20",
+    "right_order": "30_to36",
+    "diagnostics": [
+      "mean_relative_attenuation_db",
+      "outward_rise_rms_db",
+      "curvature_rms_db"
+    ],
+    "hard_wm_five_bands_unchanged": true,
+    "candidate_sm_transition_output": false,
+    "measured_parent_only": true,
+    "parent_ranking_policy_cap_db": 0.1,
+    "cap_is_noise_or_engineering_threshold": false,
+    "strict_monotonic_gate": false
+  },
+  "integration": {
+    "formal_select_batch_consumer": false,
+    "coordinator_or_runtime_changed": false,
+    "production_release_consumer_pending": true
+  },
+  "limits": [
+    "Generated feedback/sample fixtures only; no actual R81 engineering, HFSS truth, optimization or efficacy.",
+    "Fixed0.1dB bounded preference is a design cap, not calibrated uncertainty; raw WM and six diagnostics remain separate.",
+    "Pure ranking arithmetic does not authenticate arbitrary mappings; rank CLI revalidates current source truth.",
+    "Only two new source/test files; original live R80 sources and44 R81 runtime paths unchanged.",
+    "No NAS/model train or forward/HFSS/queue/marker/worker operation during this preparation milestone."
+  ],
+  "record_producer_sha256": "002081a230ee227c141fdcef6808218c6713ad1d785069c24255b17635c00e2c"
+}

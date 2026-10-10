@@ -139,3 +139,20 @@ V1獨立5個metadata tests通過，但存在exists-check後write_text可覆蓋�
 ## 2026-10-11：達5,000立即開始R81，R80分析同步收尾
 
 使用者最新指定「到5000筆就開始做」。此指示覆蓋上方歷史段落的先完成R80全部分析才開始R81時序：達5,000有效唯一真值就開始私人R81備料、真實prior paths的完整preflight與工程準備，R80凍結、重測、稽核、統計圖表同步完成。工程HFSS仍使用已綁validated5,000／零pending的實際release與獨立worker入口；既有`_validate_r80`不要求統計／圖表完成，無需更改runtime。過渡帶相對下壓／平緩響應作軟性偏好、五段WM及原件＋獨立重測WM>0不變。沒有把達額、工程檢查或有限批次結束當成spec已達標。
+
+## 2026-10-11：實測過渡帶診斷與有界親代排序核心（備妥，未接正式選樣）
+
+新增獨立`script/r81_transition_soft.py`，沿用既有已回填feedback的驗證及五段`score_response`。只接受目前R81兩埠3×49、16–40／0.5 GHz、p01／25×25／0.075 mm完整實測身分；舊24–32歷史與未實測候選不能冒充過渡帶真值。左右分別按26→20與30→36方向保存S21原曲線，分列開區間的平均相對衰減，以及完整定向曲線的上升RMS與曲率RMS（端點作曲線錨點）。端點仍按原WM頻帶處理；非單調響應不拒收，這些數值不增加hard margin或改變WM。
+
+親代排序核心將六項實測診斷轉成同一pool內的midrank，平均為0–1軟品質；備妥的v1排序值是`measured WM + 0.1×soft quality`，原WM另列不變。0.1 dB只是一個明示的有界設計偏好，不是HFSS噪聲估計或0.3 dB工程門檻；軟品質不能推翻超過0.1 dB的WM差。純算術函式不認證任意mapping，正式`rank` CLI必須從目前bound feedback／sample重新計算整份sidecar、核對內容及來源hash後才寫出，修改數值再重算content ID也不能通過。
+
+Sol與root審查曾發現初版rank只查self content hash不足，已修正為完整來源重播；最終實際ant環境九個focused tests通過（root1.77秒），包含生成prepare→store→observation→feedback生命週期、相同WM的平順／波紋曲線、排序tie／permutation與有界差值、舊軸／nonfinite／changed spec、篡改及stale來源拒絕／無output。config、state、feedback、sample及所沿用程式來源以解析bytes的SHA及前後不變證據綁定，output只能create-only。
+
+工具使用形態（目前沒有實際R81工作區，以下不是worker啟動指令）：
+
+```powershell
+python -m script.r81_transition_soft sidecar --work-dir <R81工作區> --batch 1 --output <新版本sidecar.json>
+python -m script.r81_transition_soft rank --sidecar <該sidecar.json> --output <新版本ranking.json>
+```
+
+两命令使用同一不變cutoff；訓練或新feedback更新state後，舊sidecar會被拒絕，須在新cutoff建立新版本。跨批親代pool的合併、geometry diversity與正式`select_batch`／release consumer仍待接入；目前五margin SM沒有transition輸出，未宣稱學會此軟目標，三批60／各臂配額均未更動。沒有改原R80 live來源或44個R81 runtime檔，沒有NAS／HFSS／模型訓練／forward或實際R81工程真值。這是軟目標的診斷與排序核心準備，不能當正式優化已啟用或有效性的證據。[最終source／測試與限制](assets/r81_transition_soft_readiness_20261011.json)。
