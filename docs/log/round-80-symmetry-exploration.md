@@ -1537,3 +1537,12 @@ exact main身份／19来源與唯一inventory通過；37／218／216当前71f141
 Sol沿用v023 helper作完整cycle71f14183／data-v026物理核對，43/43通過（13.515s），root檢視266行adapter差異並重核evidence／source及所有immutable artifact hashes，沒有第二次tensor/norm重跑。v0233630→v0263809，三版本間新增179唯一圖形、154train／25holdout，舊rows語義保留無變；358新增sample/rad檔存在且符合manifest SHA。Final train2821／holdout988，alias／pattern overlap零；三個checkpoint的hash、signature、seed、完成phase、有限tensors及optimizer moments、fresh-init metadata及distinct terminal tensor digest通過。每模型Adam實際4700steps，對應ceil10150/128×30＋ceil2821/128×100，train-only input/target norms逐一完全吻合，包含holdout重算則不同。
 
 完成action/summary明確綁定fit3809，health cycle更新較晚3826不替代訓練binding，也不把3809全叫train。這是資料持續加入、三模型fresh retrain已完成的保存狀態證據；没有獨立初始weights bytes或epoch log，不能宣稱bitwise fresh initialization／逐epoch重播，也沒有forward／accuracy／性能改善推論。R80 best仍引用20:13全量，沒有新census、NAS／queue／runtime／marker變動、HFSS解算或額外訓練。[完整43核對與限制](assets/r80_sm_v026_physical_review_20261010.json)。
+
+
+### 2026-10-10：v025完整48真值與恢復列身份披露修正
+
+Cycle ce09c595…／data-v025／3756累積fit binding，三片原生claim＋done、無fail；48有效唯一精確LR，global LCB／parent LCB／disagreement各16，20 fresh與28 parent。最佳−1.3675212860、median−9.8772885799、mean−12.5379305209，0正WM；saved meanρ.1999565784／MAE5.0223995845dB，LCBρ.2137429440／MAE5.2860418590dB。排序仍弱，未推進已核對最佳+.021682；不同cohort數值不證明版本因果改進。
+
+Root發現v001把恢復row r80cce09c595g_00013_3b88ebfc store誤列g01；實際serialized proof唯一屬g02。拒絕版與原readout保存，v002由local proof修正披露並重播local證據，所有102凍結檔、rows／proofs／gate與性能數值不變。獨立Sol核對48 raw WM／patterns／exactLR、96payload hashes、proof身份／saved prediction算術及source bindings通過。原observed UTC13:37:06.908252不改；v002沒有新NAS readout、HFSS／model load／train／dispatch／marker動作。
+
+這是完成批真值，不是新full census；fit3756與後續v026 fit3809的實體更新分開。恢復列目前ok，不宣稱另一舊LOW ka00也恢復；radiation只有檔案hash核對，未獨立重算曲線。[完整結果、修正收據及獨立審查](assets/r80_sm_v025_cohort48_result_20261010.json)。
