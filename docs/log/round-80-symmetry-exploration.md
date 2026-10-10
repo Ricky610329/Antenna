@@ -1373,3 +1373,8 @@ native launcher exit_code實際為null，故只以原traceback及durable deferra
 11:38恢復後健康仍綁定restoration receipt：PID53228／launch5a181a47c95a4ab1a8377d803f9da3c1身分一致、running_cycle；三片claimed12/16、15/16、4/16，最新結果3／3／2分鐘，scope零警報。兩筆g65g01首次HFSS／RPC錯誤仍等待既有batch-tail重試，不宣稱已恢復或已成終態。
 
 11:40完成唯讀raw查詢：3,366個成功觀測含重測，去重後3,361個有效唯一對稱圖形，達5,000目標67.22%，較11:06增加30筆。最佳仍是r80localv1_00026_f6ffb938，WM +0.0216822624 dB；沒有新最佳，資料量增加尚未帶來性能推進。[全量raw與恢復後健康](assets/r80_best_status_20261010_1138.json)。新48仍是容量defer、未派HFSS；下一例行健康11:57，R80與R81/spec仍未完成。
+
+
+### 2026-10-10：publisher native exit code 保存缺陷完成窄修準備
+
+11:22已執行launcher的terminal receipt中exit code為null，歷史值維持未知，不回填猜測值。未來版只在`Start-Process`後立即保留native handle，`WaitForExit`後於任何`Refresh`前讀取整數exit code；其餘activation、lease、命令、PID absence、log、無kill與不自動重試契約不變。既有一次性private-Python `sys.exit(7)` probe實際取得7，獨立saved-source審查通過；未再執行probe或publisher。[來源、probe與限制](assets/r80_publisher_exitcode_capture_fix_20261010.json)。此版尚未綁定或執行，僅修正instrumentation，不是HFSS、WM或性能進展。

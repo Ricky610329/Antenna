@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "status": "future_launcher_fix_saved_review_pass_not_executed",
+  "observed_historical_defect": {
+    "executed_launcher": {
+      "path": "tmp/r80_structured48_controller_transition_20261010_v004/run_publisher_once.ps1",
+      "sha256": "1cb37d63cdff6fbf939cb96ff658414c7731406c218f768f5b2f54157637ec62",
+      "bytes": 3564
+    },
+    "actual_terminal": {
+      "path": "tmp/r80_structured48_controller_transition_20261010_v004/publisher_process_terminal.json",
+      "sha256": "6008f2892f346c3a1041539448d11b4fbe3ef576d54ee8ae6b9a581be4dfefdd",
+      "bytes": 1528,
+      "exit_code": null,
+      "confirmed_absent": true
+    },
+    "classification": "launcher instrumentation defect; the historical native exit code remains unknown"
+  },
+  "future_source": {
+    "path": "tmp/r80_structured48_publisher_launcher_exitcode_fix_20261010_v001/run_publisher_once_v2.ps1",
+    "sha256": "4afe9b57730bb213ec04e4d417b2651abfb473cf7aebcd3de6328e711632f999",
+    "bytes": 3999,
+    "executed": false,
+    "bound_to_existing_transition": false,
+    "exact_delta": [
+      "Acquire Process.Handle immediately after the single hidden Start-Process and reject a zero handle.",
+      "After WaitForExit, copy Process.ExitCode to an integer before any Refresh; Refresh is removed.",
+      "Write the copied integer to the create-only terminal receipt; other launcher behavior is unchanged."
+    ]
+  },
+  "single_saved_probe": {
+    "result_path": "tmp/r80_structured48_publisher_launcher_exitcode_fix_20261010_v001/native_exitcode_probe_result.json",
+    "result_sha256": "74fb06a0c836c6373d58c225c349c6841feaf2a143b0142faa003fb59ced8bce",
+    "result_bytes": 1278,
+    "source_sha256": "ce7d794d20f95d0eae8a90b0a68f339cb4b14b7cb8907912d74857e8d351a321",
+    "command": "sys.exit(7)",
+    "expected_exit_code": 7,
+    "actual_exit_code": 7,
+    "native_handle_acquired": true,
+    "has_exited": true,
+    "probe_executions": 1
+  },
+  "reviews": {
+    "existing_static_review_sha256": "dba52162d81ebe4583be5447aeb053e82ca157d0d4761a0e230066fbc4943719",
+    "independent_saved_review_path": "tmp/r80_structured48_publisher_launcher_exitcode_fix_20261010_v001/independent_saved_exitcode_fix_review.json",
+    "independent_saved_review_sha256": "0ff9a628a77cb2e8e89f12199033c4859b7e5e9b0674d9fef8cc54feafa17b3c",
+    "conclusion": "PASS"
+  },
+  "limits": [
+    "No new probe or process was run for the independent review.",
+    "The actual 7 applies only to the preserved private-Python probe, not to a publisher run.",
+    "A future reviewed transition namespace must bind the exact v2 source hash before execution.",
+    "This is an instrumentation correction, not HFSS, dispatch, capacity, WM, or antenna-performance evidence."
+  ]
+}
