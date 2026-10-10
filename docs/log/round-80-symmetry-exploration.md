@@ -1317,3 +1317,10 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 v001獨立審查找到metadata-only exhausted store會中止整批分母的阻塞，原檔及review保留。v002只允許absent／empty／完整且相符三份metadata，在exact3-worker exhausted marker下每個missing row明列terminal error；未知／不完整metadata／raw-without-results仍拒絕，片尾重驗store狀態。done errors／error_ids與結果精確交叉核對，incumbent保留原+.021682262420654297精度，seal以open x保護首個writer。[來源與review收據](assets/r80_structured48_readout_readiness_20261010.json)。root6focused／獨立6focused及tiny checks通過；未建立actual seal、未讀NAS／truth或跑模型。
 
 入口保留完整48分母、success-only rank／MAE、四origin／eight cells、SM保存曲線與raw重新核對；批內最佳與固定incumbent分開，不作adoption或global-best宣稱。新48原waiting driver仍0 calls；main新輪2871.281秒、剩等待728.719秒，小於driver的300＋600秒門檻，這個窗口無法触發。正在準備hash-owned本機STOP的主控quiescent單次派工／恢復方案，worker保留既有guided／LOW，不設global STOP。未實際停止任何程序或變更queue；新publisher/action若採用，readout配置須另rebind並review，不能直接執行本版原action seal。
+
+
+### 2026-10-10 10:30：使用者現況詢問，全量raw重播，最佳未變
+
+沿用既有query_and_freeze.py原始bytes，在新local v021輸出重新讀取每個store的固定cutoff及sample/rad，未使用舊metrics cache。有效唯一3,311/5,000（66.22%），成功觀測含重測3,316；較09:53增加34筆。最佳仍r80localv1_00026_f6ffb938，WM +0.0216822624 dB，帶內最差S11 -10.0960884094 dB、最低Gain 4.0216822624 dBi；既有獨立重測+0.0364336967，不冒充新解算。保存rows/proofs/query與最佳raw binding重播通過。每個store各有cutoff，不包含掃描後新增結果；[收據](assets/r80_best_status_20261010_1030.json)。
+
+10:29 native健康確認原15944身分、launch/settings/profile、running_cycle，完成22輪／reported v017；三個claimed13/16、15/16、1/16，最近3／1／1分鐘，scope零警報，guided與LOW有待跑佇列。性能仍未刷新，SM持續更新不等同改善。新四來源48筆與目前最佳radius1/2變異未派HFSS；quiescent publication仍僅準備，未STOP主控或重啟worker。將本次健康視為原10:32例行檢查的提前執行，下一11:00；R80 5,000及R81/spec未完成。
