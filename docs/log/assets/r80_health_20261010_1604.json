@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "status": "passed_read_only_routine_health_not_new_census",
+  "observed_utc": "2026-10-10T08:04:28.3714653Z",
+  "source_health": {
+    "path": "tmp/r80_restored_health_20261010_v005/health_restored_20261010_1604.json",
+    "sha256": "53f96ae17ee3fb50e30b64454e1caba30a0a02a23634032660c8229db1adb37b"
+  },
+  "process": {
+    "pid": 53228,
+    "creation_unix_ms": 1791602636766,
+    "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+    "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+  },
+  "launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+  "runtime_file_bindings_verified": 19,
+  "process_matches_restoration_receipt": true,
+  "watcher_inventory_exact": true,
+  "watch_status": "running_cycle",
+  "reported_sm_data_version": 22,
+  "claimed_progress": [
+    {
+      "store": "dedust_r80cf51b3378g03",
+      "completed": 10,
+      "total": 16,
+      "latest_minutes": 1
+    },
+    {
+      "store": "dedust_r80cbbb8f9c1g01",
+      "completed": 10,
+      "total": 16,
+      "latest_minutes": 0
+    },
+    {
+      "store": "dedust_r80cbbb8f9c1g02",
+      "completed": 2,
+      "total": 16,
+      "latest_minutes": 2
+    }
+  ],
+  "scope_alarm_count": 0,
+  "latest_full_census": "docs/log/assets/r80_best_status_20261010_1559.json",
+  "latest_full_census_sha256": "880c2c4d3a1e25079e0fea36768dd8cb260e37ac90ff6e02fd6b04f15f94270c",
+  "latest_full_census_unique": 3584,
+  "next_routine_health_taipei": "2026-10-10 16:34",
+  "sm_v020_physical_review": "docs/log/assets/r80_sm_v020_physical_review_20261010.json",
+  "R81_release_created": false,
+  "controller_restart": false,
+  "worker_signal": false,
+  "queue_mutation": false,
+  "model_mutation": false,
+  "new_best_assessed": false,
+  "recording_script_sha256": "cfc6763fe4c939184e1e838df208fef3ec3476a67e15d32194e34af63460ff45",
+  "prior_error_recovery_reference": {
+    "path": "docs/log/assets/r80_health_20261010_1504.json",
+    "sha256": "13cbd682248ebb7f3382282acea6048cce4193b570b9f328b74549479d56ad7a",
+    "new_error_readback_performed": false
+  },
+  "latest_completed_cohort_result": "docs/log/assets/r80_sm_v020_cohort48_result_20261010.json",
+  "latest_completed_cohort_result_sha256": "e32f5f181bd2da0dc69b19ee445f634d2b471a73f7a3a488c4cf03f14ea62f5a"
+}

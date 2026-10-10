@@ -4,6 +4,8 @@
 
 2026-10-10 15:59使用者詢問現況／新最佳：沿用原query_and_freeze.py（SHA da6a0034…）唯讀重算全量，3,584唯一／3,589含重測，零快取metrics、較14:23新增78。最佳S11頻帶最大−10.0960884094dB、Gain頻帶最小4.0216822624dBi，WM仍+.0216822624；既有獨立重測+.0364336967為同圖形，不算新最佳。15:57 exact PID53228／原creation／launch與19來源吻合，三台claimed8/16、6/16、0/16，LOW及guided有待跑工作，scope無警報。資料成長但最佳性能停滯；沒有變更模型／queue／worker、沒有新增HFSS解算或NAS歸檔；原圖hash核對一致，未重畫相同最佳。下一routine16:04沿用既有計時器；R80目標與R81/spec仍未完成。[raw與健康證據](assets/r80_best_status_20261010_1559.json)。
 
+2026-10-10 16:04健康更新：三台claimed10/16、10/16、2/16，最新結果1／0／2分鐘；exact主控PID53228／creation／launch与19來源吻合、scope無警報、LOW與guided有待跑工作，reported SM v022，該版尚未獨立model核對。[本次健康](assets/r80_health_20261010_1604.json)。最新全量仍引用15:59的3,584及WM+.021682；本次不是新census或最佳性能評估。下一routine16:34 notify-only計時器已掛，未重啟／改來源、模型或queue。三台持續推進是已核對的等待，R80/R81/spec仍未完成。
+
 2026-10-10 15:34健康更新：三台claimed14/16、10/16、1/16，最新結果2／2／1分鐘；exact主控與19來源吻合、scope無警報，reported SM v021、guided／LOW持續待跑。[本次健康](assets/r80_health_20261010_1534.json)。下一routine16:04；不當作新全量筆數／最佳或新model性能評估。先前三筆COM恢復引用15:04讀回，本次未重讀errors；原15:04紀錄與全48實體truth證據保留。
 
 2026-10-10 SM v020 cycle96357896完整48筆結果：三片native claim+done且無fail，48成功唯一／exactLR；三個search arm各16，fresh20／parent28，physical Hamming min68／median309。批內WM best−0.5609149933／median−13.2332506180，0正WM，未超過已核對全域参考+.021682。保存mean-WM對實測ρ0.5660／MAE6.0001dB，LCBρ0.5567／MAE4.7378dB，Gain曲線MAE4.8639dB；單批結果不作策略配比或SM改善因果宣稱。[完整真值／來源／root獨立raw replay](assets/r80_sm_v020_cohort48_result_20261010.json)。root重算48份本機frozen sample的S11/Gain WM、LR、Hamming與保存預測算術，核對96個sample/rad hashes；rad metrics未第二次重算。48圖形在bound v020 current與legacy exact-pattern overlap皆0，但不排除祖先或近似幾何。前瞻證據是hash／流程與檔案metadata，不是外部時間認證。原helper的round-robin concatenation順序假設失敗保留，窄修為id-to-row一致後重讀同48筆，沒有重新HFSS；v002僅澄清實際允許的NAS只讀與零NAS mutation，原v001 bytes保留。
