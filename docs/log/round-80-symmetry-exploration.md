@@ -1,6 +1,6 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
-最新狀態（2026-10-10 21:57）：3,888有效唯一實測／5,000（77.76%），較20:13增加91；全3,893含5筆repeat原始觀測重新核對、零cached metrics，最佳仍f6ffb938／WM+.0216822624dB，沒有新最佳。[最新全量收據](assets/r80_best_status_20261010_2157.json)。23:04 health確認原main PID53228／creation／launch、19來源與唯一inventory吻合；37已接LOW有2成功，218／216guided10／12，兩筆首次error尚待補測；舊LOW ka00已精確三台失敗、15有效完整性通過，reported v027。v026實體model更新及完整48真值另已核對，不把模型更新當性能進步。舊LOW部分失敗仍保留；21:57 cutoff的guided watchdog已在後續v026完整批raw核對恢復，沒有手動重派／刪marker。[健康](assets/r80_health_20261010_2304.json)／[v026批次](assets/r80_sm_v026_cohort48_result_20261010.json)／[v026訓練](assets/r80_sm_v026_physical_review_20261010.json)。下一例行23:34；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer只屬當時歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
+最新狀態（2026-10-10 21:57）：3,888有效唯一實測／5,000（77.76%），較20:13增加91；全3,893含5筆repeat原始觀測重新核對、零cached metrics，最佳仍f6ffb938／WM+.0216822624dB，沒有新最佳。[最新全量收據](assets/r80_best_status_20261010_2157.json)。23:34 health確認原main PID53228／creation／launch、19來源與唯一inventory吻合；37 LOW10，216／218新guided5／1成功（稍後6／1），目前active無error；舊LOW ka00精確三台失敗與15有效完整性證據未變，reported v028。v026實體model更新及完整48真值另已核對，不把模型更新當性能進步。舊LOW部分失敗仍保留；21:57 cutoff的guided watchdog已在後續v026完整批raw核對恢復，沒有手動重派／刪marker。[健康](assets/r80_health_20261010_2334.json)／[v026批次](assets/r80_sm_v026_cohort48_result_20261010.json)／[v026訓練](assets/r80_sm_v026_physical_review_20261010.json)。下一例行10/11 00:04；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer只屬當時歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
 
 歷史全量狀態（2026-10-10 16:55）：3,630有效唯一實測／5,000（72.60%），較15:59增加46筆；全3,635成功觀測重新raw核對，最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。16:54三台worker有claimed工作，scope無警報，SM reported v022持續批次更新；兩筆首次COM失敗未計入有效數，16:56讀回各attempts1，尚未宣稱恢復。最新證據見[本次收據](assets/r80_best_status_20261010_1655.json)／[錯誤讀回](assets/r80_error_readback_20261010_1656.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
@@ -1592,3 +1592,12 @@ Health scope仍exit1保留舊partial alarm，主控running_cycle／reported27／
 只增加agent-side只讀adapter、不改live factory／worker來源：從已核對health的last completed action讀existing training_snapshot，先綁receipt／manifest／results／source bindings hashes、measurement／spec／scope／row count／unique identities，再沿現有_metric_from_observation逐raw重算S11/Gain WM及radiation完整性；前後metadata與action SHA不變。候選超過最近full reference才要求fresh full census，未超過只代表該增量、不是當下全量無新best。
 
 實際801d878d／reported data-v027 snapshot54 rows用2.328s完成，best−1.3675212860、0positive，無需新full census；這54列早於21:57全量，因此不把本次執行當晚於該cutoff的全域查核、v027weights驗證或SM因果進步。沒有model forward／train、NAS read／mutation、HFSS、queue／source／marker動作或重覆廣泛tests；未新增主控／timer，下次23:34沿原timer。Helper完整source連同exact SHA存入收據便於pull後review。[實際執行與範圍](assets/r80_increment_best_trigger_20261010.json)。
+
+
+### 2026-10-10 23:34：新guided持續，local54增量未觸發全量重掃
+
+原main identity／19runtime bindings／唯一inventory通過。37 LOW k82c7b305d87c08e9有10成功，216／218在541a6576g01／g02有5／1成功、最近3／3／9分鐘；稍後owners10／6／1且active error0、done/fail無。前801d878d完成／原兩筆error恢復另先gate與raw核對，不能只由換片推論。Reportedv028／completed12不是實體模型驗證。
+
+沿新只讀adapter對既有local completed541a6576 increment54原始觀測重播（2.592s），best−2.1799321175、0positive，沒有超過21:57 full reference+.021682而不重掃NAS。此訊號只涵蓋增量54，action valid3931只是其cutoff count、不改全域最新3888，也不證明後來未訓練結果無新最佳。
+
+舊ka00 results／fail SHA與23:04三機終態partial proof相同，15有效／1COM attempts5、eligible空；本次不重跑15 raw。最新immutable action的prepared state仍是更早兩機fail／terminalfalse／retryable，與較晚現在三機終態分開，尚不宣稱後續容量計數已釋放；依既有cycle等待更新，不重寫action或marker。無NAS mutation／new model執行／HFSS／restart／redispatch。下一例行2026-10-11 00:04，latest full仍3888。[健康、cutoff差異及增量證據](assets/r80_health_20261010_2334.json)。
