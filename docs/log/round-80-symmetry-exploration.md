@@ -1241,3 +1241,9 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 已產生 **20,000 個候選圖形**：5,000 個既有 random generator、5,000 個 smooth blob、8,000 個 parent pixel mutation、2,000 個 parent group mutation。保存陣列、幾何規格、唯一性、lineage 與完整重播均通過核對。這些是候選，未 SM 排名、未送 HFSS，也不計入 5,000 筆實測目標。
 
 來源讀取範圍：為選出 32 個 parents，generator 讀取凍結 v010 的歷史 sample／rad 並計算歷史 WM；沒有讀取新候選、目前 pilot、live queue 或 NAS truth。只排除了凍結的 2,840 個圖形，尚須核對最新 measured／queued exclusions 才能採用。來源以檔案 bytes 綁定，參考 commit 96309163 與實際產生時 HEAD f4bb87bf 不同，不宣稱完整 checkout 相同。[離線準備紀錄](assets/r80_structured_geometry_pool_offline_readiness_20261010.json)。
+
+### 2026-10-10 08:31：最新實測 3,207 筆，最佳未變
+
+使用者查詢觸發完整只讀核對；08:29–08:31 各 store cutoff 共重播 3,212 筆成功觀測，含重測後有 3,207 個有效、不重複的對稱圖形，比 07:33 增加 57 個，達 5,000 目標的 64.14%。最佳仍為 r80localv1_00026_f6ffb938：WM +0.0216822624 dB、帶內最差 S11 −10.0960884094 dB、最低 Gain 4.0216822624 dBi；獨立重測 WM +0.0364336967 dB。保存原始摘要、cutoffs 與來源 hashes，未改 queue 或 controller。[查詢及健康紀錄](assets/r80_best_status_20261010_0831.json)。
+
+08:32 exact controller 身分核對通過，工廠無警報；三個已認領批次分別 15/16、13/16、11/16，最新結果均約兩分鐘前，另有待跑批次。主線 SM 已報 v015／完成 20 個 cycles；這是 controller 狀態，非新的全資料 census。固定 32 筆對照第一批已完成，第二批 13/16 尚非 terminal，因此未做完整對照 truth readout，未採用 current-only 模型。两筆首試 HFSS COM 例外仍交由既有重試機制處理，未刪 claims 或重啟 workers。下一次例行健康檢查 09:02；R80 與 R81 spec 任務尚未完成。
