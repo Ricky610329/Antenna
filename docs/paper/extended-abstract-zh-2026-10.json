@@ -52,7 +52,7 @@
           "p": "每項規格在每個評分頻點算出與門檻的差距（dB），取最差者稱為最差餘裕（worst margin, WM）；WM 不小於 0 代表全部通過。天線的 WM 指帶內 S11 與增益，radiation pattern 窗口另計餘裕。"
         },
         {
-          "p": "學長的方法已能產生合規天線[1]。接手初期我們在相同的 HFSS 預算下做比較，發現單筆線上更新的最佳結果還不如隨機抽樣；我們判斷主因是 SM 對沒看過的圖形預測不準。因此把線上學習定位為局部精修工具，研究重心移到資料的取得與利用：怎麼產生有價值的候選、怎麼用 SM 篩選，以及怎麼讓每一次模擬都成為下一輪的訓練資料。"
+          "p": "學長的方法已能產生合規天線[1]。接手初期我們以相同的模擬次數比較：單筆線上更新找到的最佳設計，還不如從學長既有資料集中任取同樣筆數的最佳者。這個資料集來自學長歷次搜尋的軌跡，本身已集中在較好的區域，所以這不是輸給均勻隨機搜尋，而是說明「候選從哪裡來」比「怎麼一步步優化」影響更大；加上 SM 對沒看過的圖形預測不準，沿著它優化容易被誤導。因此我們把線上學習定位為局部精修工具，研究重心移到資料的取得與利用：怎麼產生有價值的候選、怎麼用 SM 篩選，以及怎麼讓每一次模擬都成為下一輪的訓練資料。"
         }
       ]
     },
@@ -222,7 +222,8 @@
     "-22.7",
     "搜尋空間",
     "2,500",
-    "-11.0"
+    "-11.0",
+    "均勻隨機"
   ],
   "references": [
     {
@@ -251,7 +252,7 @@
       "filter": "manuscript V-C; docs/paper/final-candidate-response.json; docs/paper/paper-evidence-data.json (17 best-so-far records); SM rho 0.57 = R72 holdout, min of six auxiliary margins (manuscript V-C)",
       "symmetric": "docs/paper/symmetric-best-evidence.json; docs/log/round-80-symmetry-exploration.md (best unchanged at 3,688 samples, 2026-10-10 17:59)",
       "symmetry_evidence": "Search space: 624 free pixels (feed fixed) vs 324 under an exact left-right mirror (left 300 + centre column 24), ratio 2^300. Free-form: 2,513 unique wm>=0 & rad>=0 patterns in the 39,111-row 2026-08-10 snapshot (no-bridge S0). Symmetric: first 970 R80 samples have no S11-and-gain pass (round-80 log), first pass at about 2,200, best unchanged at 3,688 (2026-10-10 17:59). Budgets, bridge conditions and strategies differ; descriptive only.",
-      "online_vs_random": "June 2026 benchmark: three online-learning runs lost to random best-of-N at equal HFSS budget (memory project_benchmark_vs_random; harvest 5,000-sample ceiling study)",
+      "online_vs_random": "June 2026: at equal sample count, single-sample online runs scored below best-of-N blind draws from the harvested pool. The pool is the union of the senior's search trajectories (a biased, already-good region), not uniform random HFSS sampling, so the text states it as 'where candidates come from matters more than step-wise optimisation' (docs/discuss/scratch.md best-of-N notes; memory project_benchmark_vs_random). User correction 2026-10-11.",
       "mesh": "manuscript VI-C (18 selected cases incl. high-difference ones, S0->S1, median |dWM| 0.81 dB)",
       "wide_filter_spec": "docs/log/round-81-wide-filter.md",
       "bridge_conditions": "S0 mesh, R54 probe table (docs/log/assets/round-54/r54_close_analysis.md section 7, frozen in extended-abstract-figure-data.json r54_bridge_s0): c48nq1p05_16 +0.79 -> +0.58 with 0.10 mm bridges (Δ-0.21, reproduced across machines, round-54-diamond-bridge.md); c41grp2p02_02 +0.15 -> about -0.32 (Δ-0.47, single). Delivery design c48nq1p06_18 is 1 px from the champion: no-bridge +0.43, bridged +0.69 (R54 batch) / +0.77 (handoff re-solve). 3,318 bridged pairs median ΔWM -0.07 dB (manuscript VI-C). The snapshot db100_wm values for R54 probe parents (-0.44, -1.99) are S1-mesh and are NOT used.",
