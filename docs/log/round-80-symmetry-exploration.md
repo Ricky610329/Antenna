@@ -1324,3 +1324,10 @@ v001獨立審查找到metadata-only exhausted store會中止整批分母的阻�
 沿用既有query_and_freeze.py原始bytes，在新local v021輸出重新讀取每個store的固定cutoff及sample/rad，未使用舊metrics cache。有效唯一3,311/5,000（66.22%），成功觀測含重測3,316；較09:53增加34筆。最佳仍r80localv1_00026_f6ffb938，WM +0.0216822624 dB，帶內最差S11 -10.0960884094 dB、最低Gain 4.0216822624 dBi；既有獨立重測+0.0364336967，不冒充新解算。保存rows/proofs/query與最佳raw binding重播通過。每個store各有cutoff，不包含掃描後新增結果；[收據](assets/r80_best_status_20261010_1030.json)。
 
 10:29 native健康確認原15944身分、launch/settings/profile、running_cycle，完成22輪／reported v017；三個claimed13/16、15/16、1/16，最近3／1／1分鐘，scope零警報，guided與LOW有待跑佇列。性能仍未刷新，SM持續更新不等同改善。新四來源48筆與目前最佳radius1/2變異未派HFSS；quiescent publication仍僅準備，未STOP主控或重啟worker。將本次健康視為原10:32例行檢查的提前執行，下一11:00；R80 5,000及R81/spec未完成。
+
+
+### 2026-10-10 10:38：目前最佳下一層局部變異配方固定；取消舊等待driver
+
+固定f6ffb938最佳與既有v015三模型（fit3147），重用舊coordinate_array/make_pattern與現有投影；完整radius1=324、radius2=52326，共52650。排除3376既有snapshot與新structured48，聯集3424；預定16＝8相對anchor LCB／4高disagreement（兩者mean WM均不得低於同模型anchor）／4固定seed、與rank1/4/7/10半徑匹配的score-blind控制；不借配額、不放寬、不施Ham64。獨立45檔binding／靜態枚舉與六窄測試通過，尚未pool/forward，將先commit再做一次本機CPU，非主線替換或HFSS派工。[配方與來源](assets/r80_incumbent_next_shell_readiness_20261010.json)。
+
+10:36 exact PID64504／creation／完整argv／source/config、waiting calls0、無publisher child及原action只有prepared確認後，只取消這個owned等待driver；原result/claim/action保留，publisher calls0，main15944与HFSS worker未signal、NAS未變。首次helper因PowerShell false字面值在signal前失敗，原source保留，v002僅修boolean後成功，取消收據與hash已保存。原短waiting窗口無法容納完整派工；quiescent publisher另審查，尚未local STOP或恢復main。既有SM／HFSS继续。

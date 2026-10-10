@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "status": "passed_independent_static_readiness_before_actual_pool_forward",
+  "sources": {
+    "prepare_incumbent_next_shell.py": {
+      "path": "tmp\\r80_incumbent_next_shell_20261010_v001\\prepare_incumbent_next_shell.py",
+      "sha256": "2ca6b0f474ff30e7de338ef824bc5e9520c5dae0734c422380fb359edd63d932",
+      "bytes": 28798
+    },
+    "recipe.json": {
+      "path": "tmp\\r80_incumbent_next_shell_20261010_v001\\recipe.json",
+      "sha256": "fbaf7208d5c2ab07b59ac05d82e7aa034aa2ee3b47e10298c0ac2f95e8f9f045",
+      "bytes": 17005
+    },
+    "readiness.json": {
+      "path": "tmp\\r80_incumbent_next_shell_20261010_v001\\readiness.json",
+      "sha256": "68ce8ef3cec2257f94e0485c31eb9c6b13cb04b493324dc444ee974806910427",
+      "bytes": 2787
+    },
+    "independent_review.json": {
+      "path": "tmp\\r80_incumbent_next_shell_20261010_v001\\independent_review.json",
+      "sha256": "a3028736be6885e22e9f997778506e7f4cd7d6abce49e68bf33757150e4cc72b",
+      "bytes": 9471
+    },
+    "independent_review_helper.py": {
+      "path": "tmp\\r80_incumbent_next_shell_20261010_v001\\independent_review_helper.py",
+      "sha256": "0daab041d6cacb80eb75be0bebf816fafdbba7ee50b2741aa238d4666135cfa6",
+      "bytes": 8122
+    },
+    "test_prepare_incumbent_next_shell.py": {
+      "path": "tmp\\r80_incumbent_next_shell_20261010_v001\\test_prepare_incumbent_next_shell.py",
+      "sha256": "fffc07a2e5b656b62d6563d20004af295bce71143b793a5d0849f1e458478bf7",
+      "bytes": 5279
+    }
+  },
+  "anchor": {
+    "canonical_family": "c48nq1p05_16",
+    "development_exposed": true,
+    "frozen_store": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_render_20261010_v020\\best_frozen_store",
+    "known_repeat_id": "r80bestrep01_f6ffb938",
+    "known_repeat_wm_db": 0.03643369674682617,
+    "observation_id": "r80localv1_00026_f6ffb938",
+    "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+    "raw_hfss_wm_db": 0.021682262420654297
+  },
+  "predictor": {
+    "binding": {
+      "cumulative_valid_unique": 3147,
+      "data_version": 15,
+      "manifest_id": "01abc622b49d8291912783f7542db827bae2dfa6119e4f4494639b096430932e",
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+    },
+    "current_or_latest_dynamic_resolution": false,
+    "explicit_version": 15,
+    "v016_not_used_or_assessed": true,
+    "version_label": "data-v015",
+    "work_dir": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1"
+  },
+  "pool": {
+    "candidate_uniqueness_required": true,
+    "coordinate_order": "reuse exact reviewed r80_local_variation coordinate_array row-major singles then itertools combinations",
+    "pattern_projection": "reuse exact reviewed make_pattern and script.exploration.enforce_single_geometry",
+    "radius_1": 324,
+    "radius_2": 52326,
+    "save_every_source_row_raw_and_projected_pattern_and_full_prediction": true,
+    "total": 52650
+  },
+  "selection": {
+    "arm_quotas": {
+      "blind_random": 4,
+      "high_disagreement": 4,
+      "lcb_performance": 8
+    },
+    "blind_radius_reference_rank_indices": [
+      0,
+      3,
+      6,
+      9
+    ],
+    "blind_radius_reference_rank_positions_one_based": [
+      1,
+      4,
+      7,
+      10
+    ],
+    "blind_rule": "score-blind PCG64 draw from remaining nonexcluded candidates, with radius matched to fixed model-ranked reference positions",
+    "blind_seed": 20261010,
+    "disagreement_rule": "after LCB arm, candidate factory_score >= same-v015 anchor factory_score; sort descending response_disagreement then pattern_sha256",
+    "joint_pattern_unique": true,
+    "lcb_rule": "candidate lcb_score >= same-v015 anchor lcb_score AND candidate factory_score >= same-v015 anchor factory_score; sort descending lcb_score then pattern_sha256",
+    "minimum_hamming_filter": null,
+    "no_empty_fallback": true,
+    "no_quota_borrowing": true,
+    "no_threshold_relaxation": true,
+    "total": 16
+  },
+  "exclusion": {
+    "dynamic_nas_read": false,
+    "snapshot_count": 3376,
+    "snapshot_hashes_content_id": "8472e24b686ed83a2dfa4708361dc8db8b3acc0ca837e96d1a2dde8575a9d908",
+    "structured48_count": 48,
+    "structured48_hashes_content_id": "b3dcb6d0fb054d3e0396ed4a83eee16090fb6549b3de3c406e69001a6eed59e4",
+    "union_content_id": "71a5cf73d2d26e80fd2d85d3968a854c62867fe1185062f60ab77192624346d2",
+    "union_count": 3424
+  },
+  "scientific_limits": [
+    "Development-exposed local navigation around an incumbent found by prior search; not an independent blind holdout.",
+    "The prior selected32 LCB ranking had Spearman rho -0.09017595307917887 against HFSS WM; SM ranking efficacy is not established.",
+    "The local radius-1/radius-2 shell differs from the broad mainline geometry policy and does not replace it.",
+    "Predictions are navigation evidence only. No HFSS truth, adoption, dispatch, or capacity claim is made by preparation."
+  ],
+  "root_decision": "execute_once_local_CPU_after_this_recipe_record_is_committed",
+  "actual_pool_or_forward_completed": false,
+  "NAS_or_HFSS_or_dispatch": false,
+  "future_gates": {
+    "fresh_5000_total_and_96_guided_capacity_proof_required": true,
+    "nas_truth_or_queue_or_controller_read_in_this_recipe": false,
+    "new_structured48_terminal_and_readout_complete_before_any_hfss": true,
+    "publisher_or_dispatch_in_this_recipe": false
+  },
+  "cancelled_old_waiting_driver": {
+    "schema_version": 1,
+    "status": "owned_waiting_driver_cancelled_without_publisher_call",
+    "observed_utc": "2026-10-10T02:36:03.1076199+00:00",
+    "pid": 64504,
+    "creation_unix_ms": 1791596803277,
+    "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -B -u \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_publisher_20261010_v001\\deferred_dispatch.py\" ",
+    "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+    "driver_sha256": "a548ea1f0cd5bb93b101382404edb14453d7c6a3d6d67ce7f714984b23834c76",
+    "config_sha256": "1db17e7fc5f2ca638510e999c2522a3fb3c956a66f22a75229d8345140c6a15a",
+    "result_sha256": "8688a45988b8ef1a02b5722f589cda0791b489fbcf3d7816a016ce7280bb0c14",
+    "watch_sha256": "e55614b1de07a486e1b8debb9fa51c673adc502791ae818cd0ab3f5d9b96f13a",
+    "publisher_calls": 0,
+    "main_signal": false,
+    "worker_or_HFSS_signal": false,
+    "NAS_mutation": false,
+    "action_preserved": true,
+    "completed_utc": "2026-10-10T02:36:03.9100502+00:00",
+    "cancel_script_sha256": "beb17296b9db4b372f97b0e5cc3c6701c87f5f7a61486f0bf987e0888bc64e52",
+    "result_preserved_sha256": "8688a45988b8ef1a02b5722f589cda0791b489fbcf3d7816a016ce7280bb0c14"
+  },
+  "cancellation_evidence": {
+    "path": "tmp\\r80_structured48_publisher_20261010_v001\\root_cancel_waiting_driver_20261010.json",
+    "sha256": "925d03311f2ba53b234098e5872ec1b60abe0d750404d855cdd1bad5fd07190e",
+    "bytes": 1278
+  },
+  "cancellation_source": {
+    "path": "tmp\\r80_structured48_publisher_20261010_v001\\cancel_waiting_driver_v002.ps1",
+    "sha256": "beb17296b9db4b372f97b0e5cc3c6701c87f5f7a61486f0bf987e0888bc64e52",
+    "bytes": 4998
+  },
+  "preserved_pre_signal_failure_source": {
+    "path": "tmp\\r80_structured48_publisher_20261010_v001\\cancel_waiting_driver.ps1",
+    "sha256": "5e7695b2dbb6c624038939307b315c69b5c89467a4d47e17e9cb99cb8e74c30d",
+    "bytes": 4994
+  },
+  "pre_signal_failure": "PowerShell bare false token rejected before receipt or process signal; corrected only boolean literals in versioned v002",
+  "record_helper": {
+    "path": "tmp\\r80_incumbent_next_shell_20261010_v001\\record_readiness.py",
+    "sha256": "774c63bf9c20520d1957e069d392bdd75b54138bdfe18c22962e42c1d7e0f8e1",
+    "bytes": 5215
+  }
+}
