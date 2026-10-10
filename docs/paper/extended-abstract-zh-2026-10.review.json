@@ -1,58 +1,124 @@
 {
   "pdf": "output/pdf/extended-abstract-zh-2026-10.pdf",
-  "pages": 1,
+  "pages": 4,
   "page_size_pt": [
     0.0,
     0.0,
     595.2755737304688,
     841.8897705078125
   ],
-  "sha256": "8890d749c892a1b4c168f8a37571b77da38dfc4100abdc7dc6d864a93c056d94",
-  "source_sha256": "86cccc219032e919d3e57249b597eda05e97b2417a9fae84508fe2e7d0191d84",
-  "figure": "docs/paper/figures/extended-abstract-symmetry.png",
-  "figure_sha256": "9f2ddf583dd2bd234c22e60f1b754ecd464df49e632aa1a133d840575cfc509d",
-  "figure_facts": {
-    "wm_db": {
-      "free": 0.7707,
-      "sym": 0.0217
+  "sha256": "499c3d15cffb3f5767bd7428d8b479136f0b8c074999d3c4321a56795f28754a",
+  "source_sha256": "35998b849384400e881f67bf5458739f54cc8b7624d23aaabdb460302a025d2f",
+  "figures": {
+    "workflow": {
+      "path": "docs/paper/figures/extended-abstract-workflow.png",
+      "sha256": "924eaed86df9c43f698f62572b382fcbd6a7cddec02f0448f59e8eccc7e28382",
+      "facts": {
+        "boxes": [
+          "研究者＋AI agent",
+          "候選池",
+          "SM ensemble 篩選",
+          "HFSS 批次模擬",
+          "資料庫"
+        ]
+      }
     },
-    "metal_components_8conn": {
-      "free": 3,
-      "sym": 13
+    "antenna": {
+      "path": "docs/paper/figures/extended-abstract-antenna.png",
+      "sha256": "e99dc397f333477e7e5a6b26a0dc31a39d8c54857ff0e3724d148ba3b0d70695",
+      "facts": {
+        "s11_margin": 1.1341,
+        "gain_margin": 0.7707,
+        "rad_margin": {
+          "φ = 0°": 0.6337,
+          "φ = 90°": 0.4989
+        },
+        "components_8conn": 3
+      }
     },
-    "metal_fraction": {
-      "free": 0.5296,
-      "sym": 0.5136
+    "oob": {
+      "path": "docs/paper/figures/extended-abstract-oob.png",
+      "sha256": "a83d12b638d65729e2c408d04bb10f43972a4bce3d2a7762b5fba0044ba73da6",
+      "facts": {
+        "lo_dbi": -3.457,
+        "wm_db": 0.148,
+        "rad_margin": 0.062,
+        "components_8conn": 9,
+        "bridged_s0_wm_db": -0.32
+      }
+    },
+    "filter": {
+      "path": "docs/paper/figures/extended-abstract-filter.png",
+      "sha256": "0b4e7cb804e73838bc07a62688a7933b625eb7adc6d96d997e0b70d93ad7e65e",
+      "facts": {
+        "margins": [
+          1.9743,
+          2.3065,
+          -2.3871,
+          -2.169
+        ],
+        "unmet_points": 6,
+        "history": [
+          -5.9,
+          -2.39,
+          17
+        ]
+      }
+    },
+    "symmetry": {
+      "path": "docs/paper/figures/extended-abstract-symmetry.png",
+      "sha256": "b5b290ed014ad5695be955f1aee6fd7c067000ff147dc3df125bc52f7a41c25b",
+      "facts": {
+        "wm_db": {
+          "sym": 0.0217,
+          "free": 0.7707
+        },
+        "components_8conn": 13,
+        "rad_margin": {
+          "φ = 0°": 0.9897,
+          "φ = 90°": 0.3709
+        },
+        "metal_fraction": 0.5136
+      }
+    },
+    "symmetry-evidence": {
+      "path": "docs/paper/figures/extended-abstract-symmetry-evidence.png",
+      "sha256": "269d2c1326b8d57640d36eba00fb31e863ce1e8dedc36023505646506af02e54",
+      "facts": {
+        "r55_median_drop_db": -17.16,
+        "local32_rho": -0.09,
+        "passing_unique": 3546,
+        "lo_le_0": 439,
+        "sym_lo_dbi": 3.067
+      }
     }
   },
-  "characters": 2196,
+  "characters": 5939,
   "required_text_pass": true,
+  "glyph_coverage_pass": true,
   "embedded_chinese_fonts": [
     "AAAAAA+MicrosoftJhengHeiRegular-0",
     "AAAAAB+MicrosoftJhengHeiRegular-0",
+    "AAAAAC+MicrosoftJhengHeiRegular-0",
     "AAAAAA+MicrosoftJhengHeiBold-0"
   ],
   "reference_links": 4,
   "text_within_page": true,
   "renderer": "PyMuPDF 2x; Poppler was unavailable locally",
   "date": "2026-10-10",
-  "version": "v3 status abstract for the advisor (+ symmetry attachment); v1 review is in git history (f95d0c7)",
-  "visual_review": "Conductor (Claude Opus 5.5) inspected the final 2x-rendered page and the 300 dpi figure: one A4 page, no missing glyphs (U+2212/≤/≥ avoided because Microsoft JhengHei lacks them), no clipping or overlap.",
-  "scientific_review": "Independent read-only Opus review (2026-10-10) of the v2 abstract and symmetry note: ~70 numbers confirmed (612/0, 970/0, 3,632 n8 median 5, 439, +0.022/+0.036, rank 27, rho -0.09, 6,000/90, 43,846, -5.90 to -2.39); 4 errors and several over-strong causal phrasings found and fixed in v3 (local-32 are neighbours of the -0.25 anchor chosen by SM LCB; anchor came from the disagreement quota; post-best batches are within-batch Hamming>=64 diversity plus blind pool; c48 symmetrization is ~15% of pixels; historical stats relabelled descriptive, unique-pattern counts 592/3,546). v3 rewrite itself was checked by the conductor against the same sources, not by a second independent review.",
-  "conductor_recomputation": [
-    "Symmetric best curves, margins and exact LR mirror re-derived from the NPZ whose SHA matches the committed R80 figure receipt (symmetric-best-evidence.json).",
-    "Free-form WM +0.77 re-derived from single-port-evidence.json; 8-connected metal pieces 3 vs 13 computed in the build script.",
-    "Historical snapshot counts (612 WM>=0.3 with 0 exact; 3,632 passing designs, n8 median 5, 3 with n8>=13; 439 passing with low-side gain <=0 dBi all A>=0.327; exact 1,029/1,030) recomputed read-only from application/pattern_browser/data.",
-    "R80 figures (970 first samples 0 dual pass; local 32: 1 positive, range +0.02..-22.7, Spearman -0.09, rank 27; anchor -0.246 from v002; 2,178 cutoff; 3,630 at 16:55) taken from the R80 log and receipts."
-  ],
-  "not_done": "No new HFSS, training or measurement. Full pytest not rerun (documentation-only change, no code under antenna/ or script/ touched).",
-  "scope": "Internal discussion draft; not a submission. Symmetric result is two single-condition HFSS observations, not a mesh-convergence or fabrication claim.",
+  "version": "v4 four-page status abstract (user allowed up to 4 pages, light formatting, more figures); v3 one-page = 8446aba; v1 = f95d0c7",
+  "frozen_figure_data": "docs/paper/extended-abstract-figure-data.json via docs/paper/freeze_extended_abstract_data.py (snapshot 2026-08-10, R80 receipts, R54 S0 bridge table)",
+  "visual_review": "Conductor (Claude Opus 5.5) inspected all four 2x-rendered pages, the attachment page and each 300 dpi figure: no missing glyphs (builder asserts JhengHei coverage; figure builder fails on matplotlib missing-glyph warnings), no clipping, no overlapping labels after fixes.",
+  "scientific_review": "Independent read-only Opus review of v4 (2026-10-10). Confirmed: records +0.79/-3.46, 159 px anchor distance, R80 counts (2,178 first pass, 3,688 at 17:59), 'not yet a systematic neighbourhood search' still true, local-32 (rho -0.09, rank 27), R55 34 probes median -17.16, snapshot stats, Fig 2/4/5 margins, Table 1 specs, filter numbers. Fixed: (P1/P2) snapshot db100_wm -0.44/-1.99 were S1-mesh values; replaced by R54 S0 bridged values +0.58 (champion) and about -0.32 (low-side record); (P3) snapshot main rows are no-bridge, 'mixed bridge conditions' removed; (P4) +0.77 labelled as handoff re-solve (original +0.69); (P5) the 439 low-side designs are one family (pairwise median 23 px); (P6) 30.8%/5.8% definitions and caveat; (P7) anchor entered via disagreement arm among top-40% predicted, not 'SM did not favour it'; (P8) lineage wording; (P9) R55 drop range 2.3-32 dB; (P10) mesh |dWM|; (P11) filter rho definition; (P12) ring labels, star not in snapshot, 17 records incl. start, hedges and jargon. Conductor re-verified P1/P2 in round-54 logs and recomputed 1 px, 23/80 px, 159/195/281 px and the p60 rule.",
+  "not_done": "No new HFSS, training or measurement. Full pytest not rerun (documentation/figure scripts under docs/paper only; pyflakes clean).",
+  "scope": "Internal discussion draft for the advisor; all performance numbers are HFSS simulations. Snapshot statistics are descriptive.",
   "attachment": {
     "pdf": "output/pdf/symmetry-difficulty-zh-2026-10.pdf",
     "pages": 1,
-    "sha256": "fd2608373814ca41212369612a5052a14a6fa70af8fed7f8b48b79d49270fe0c",
-    "source_sha256": "562b4a504e4f022ac185139902bd80302c42cb0c5f331a3bf7b2f1c99d072a48",
-    "characters": 2250,
-    "required_text_pass": true
+    "sha256": "530db2cd01727ab4c30d76e98fde661e7fd026f16bb39fba23380f7dcc8d764d",
+    "source_sha256": "836d0c5652fa04b2284dc4c7304012823c2b9aa3db7c2f91c6b694e03c2c7590",
+    "characters": 2342,
+    "required_text_pass": true,
+    "changes": "lineage (159 px), disagreement-arm wording, R55 and 30.8%/5.8% definitions, 439 one-family note, figure reference -> main Fig 5; compact layout keeps one page"
   }
 }

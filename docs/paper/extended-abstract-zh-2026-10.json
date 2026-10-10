@@ -2,73 +2,228 @@
   "title": "用於天線與濾波器設計的多策略批次代理學習框架",
   "subtitle": "延伸摘要｜研究現況｜鄒穎麒｜2026 年 10 月 10 日",
   "keywords": "像素化天線；濾波器；HFSS；代理模型；批次學習；人機協作",
+  "max_pages": 4,
   "sections": [
     {
       "heading": "摘要",
-      "paragraphs": [
-        "本研究以 25 × 25 像素金屬圖形設計 28 GHz 貼片天線與雙埠濾波器。設計空間達 2^625 種組合，而一次 HFSS 模擬需 2–3 分鐘，核心問題是如何用有限的模擬次數找到同時滿足多項規格的設計。承接實驗室的梯度估計網路（GEN）線上學習[1]，我們改為「多策略產生候選、代理模型（SM）篩選、批次 HFSS、累積資料重訓」的資料循環，由研究者與 AI agent 共同調度探索策略。至今自行累積約 4.7 萬筆含 radiation pattern 的 HFSS 樣本，約為承接資料的兩倍；天線取得約 2,500 個合格設計，完全對稱的設計也首次達標；濾波器餘裕改善 3.51 dB；39 個設計已交付製作。"
+      "blocks": [
+        {
+          "p": "本研究以 25 × 25 像素金屬圖形設計 28 GHz 貼片天線與雙埠濾波器。設計空間達 2<sup>625</sup> 種組合，一次 HFSS 模擬需 2–3 分鐘，核心問題是如何用有限的模擬次數，找到同時滿足多項規格的設計。承接實驗室的梯度估計網路（GEN）線上學習[1]，我們改為「多策略產生候選、代理模型（SM）篩選、批次 HFSS、累積資料重訓」的資料循環，由研究者與 AI agent 共同調度探索策略。主要成果如下；所有性能數字都是 HFSS 模擬，交付設計的實測尚待完成。"
+        },
+        {
+          "highlights": [
+            [
+              "4.7 萬筆",
+              "自行累積的 HFSS 樣本（含 radiation pattern），約為承接資料的兩倍"
+            ],
+            [
+              "約 2,500 個",
+              "無橋條件下通過帶內與 radiation pattern 規格的不重複天線設計（08/10 快照）"
+            ],
+            [
+              "+0.77 dB",
+              "可製造（0.10 mm 橋）交付代表的 WM；無橋條件最佳為 +0.79 dB"
+            ],
+            [
+              "+0.022 dB",
+              "完全對稱天線首次達標；就現有紀錄，為 0.10 mm 橋接下首例"
+            ],
+            [
+              "+3.51 dB",
+              "濾波器 WM 改善：-5.90 → -2.39 dB"
+            ],
+            [
+              "39 個",
+              "已交付製作的設計（25 個天線、14 個濾波器）"
+            ]
+          ],
+          "columns": 3
+        }
       ]
     },
     {
-      "heading": "一、起點與問題",
-      "paragraphs": [
-        "天線要求 26.5–29.5 GHz 內 S11 不高於 -10 dB、正向實現增益不低於 4 dBi，且 28 GHz 兩個主切面在 ±45° 內相對正向下降不超過 3 dB；濾波器另有反射、通帶與阻帶共四項規格。結果以最差餘裕（worst margin, WM）表示，非負即全部通過。學長的方法已能產生合規天線；接手初期我們測試發現，在相同 HFSS 預算下，單筆線上更新的最佳結果還不如隨機抽樣，主因是 SM 對沒看過的圖形預測不準。因此把線上學習定位為局部開採工具，重心移到資料的取得與利用。"
+      "heading": "一、研究問題與起點",
+      "blocks": [
+        {
+          "p": "像素化天線的每個像素可以是金屬或空白，設計空間極大，而且響應對單一像素的改變很敏感。表 1 是目前使用的規格。每項規格在每個評分頻點算出與門檻的差距（dB），取最差者稱為最差餘裕（worst margin, WM）；WM 非負代表全部通過。天線的 WM 指帶內 S11 與增益，radiation pattern 窗口另計餘裕。"
+        },
+        {
+          "table": {
+            "caption": "表 1　設計規格（皆以 HFSS 模擬評分）",
+            "headers": [
+              "對象",
+              "規格"
+            ],
+            "first_col_mm": 30,
+            "rows": [
+              [
+                "天線（單埠）",
+                "26.5–29.5 GHz：S11 不高於 -10 dB、正向實現增益不低於 4 dBi；28 GHz 的 φ = 0° 與 90° 兩個切面，在 ±45° 內相對正向的下降不超過 3 dB（radiation pattern 窗口）。"
+              ],
+              [
+                "濾波器（雙埠）",
+                "26.5–29.5 GHz：S11、S22 不高於 -10 dB；通帶 25.5–30.5 GHz：S21 不低於 -3 dB；阻帶 24–25 與 31–32 GHz：S21 不高於 -15 dB。"
+              ],
+              [
+                "共同條件",
+                "25 × 25 像素、每格 0.2 mm；頻率以 0.5 GHz 間隔取樣。可製造版本在對角相接處加小方塊橋（天線 0.10 mm、濾波器 0.075 mm）；天線的歷史紀錄與快照統計為無橋條件，交付設計與對稱實驗則有橋。"
+              ]
+            ]
+          }
+        },
+        {
+          "p": "學長的方法已能產生合規天線[1]。接手初期我們在相同的 HFSS 預算下比較，發現單筆線上更新的最佳結果還不如隨機抽樣，我們判斷主因是 SM 對沒看過的圖形預測不準。因此把線上學習定位為局部精修工具，研究重心移到資料的取得與利用：如何產生有價值的候選、如何用 SM 篩選，以及如何讓每次模擬都成為下一輪的訓練資料。"
+        }
       ]
     },
     {
       "heading": "二、方法：多策略批次代理學習",
-      "paragraphs": [
-        "候選來自局部像素翻轉、組件嫁接與重組、隨機與對稱取樣等多種策略。SM ensemble 預測 S 參數、增益與 radiation pattern，依「預測較好」「模型分歧」「隨機」三種配額選出一批送 HFSS[2][3]（濾波器：每批由約 6,000 個候選選 90 個，配額 36／27／27）。三台 HFSS 工作站並行求解，有效結果（含不合格者）全部入庫、定期重訓 SM。研究者設定目標與判準，AI agent 提出並實作探索算子、分析每批結果，長時間開採則交給固定腳本迴圈；emforge 把派工、去重、收件與評分做成共用服務。"
+      "blocks": [
+        {
+          "figure": "workflow",
+          "caption": "圖 1　多策略批次代理學習流程。研究者與 AI agent 設定目標並提出探索算子；SM ensemble 依三種配額從候選池選出一批送 HFSS；結果全部入庫並定期重訓 SM。emforge 是三台工作站共用的派工與評分平台。"
+        },
+        {
+          "bullets": [
+            "<b>候選產生：</b>局部像素翻轉、組件嫁接與重組、隨機取樣與對稱取樣等多種策略並用。每批結果回來後，依結果調整各策略的比例，或提出新的算子。",
+            "<b>SM 篩選：</b>SM ensemble 預測 S 參數、增益與 radiation pattern，依「預測較好」「模型分歧」「隨機」三種配額選出一批送 HFSS[2][3]。第一種負責利用已知的好區域，後兩種保留探索、也提供校正 SM 的資料。濾波器每批由約 6,000 個候選選 90 個，配額為 36／27／27。",
+            "<b>批次模擬與資料：</b>三台 HFSS 工作站並行求解；有效結果（含不合格者）全部入庫，定期重訓 SM。每批發送前先比對歷史資料，避免重複模擬。",
+            "<b>人機分工：</b>研究者設定目標、判準與停損；AI agent 提出並實作探索算子、分析每批結果；長時間的局部精修則交給固定腳本迴圈。",
+            "<b>平台化：</b>emforge 把派工、去重、收件與評分做成共用服務，三台工作站已完成驗收。"
+          ]
+        }
       ]
     },
     {
       "heading": "三、目前成果",
-      "with_results": true,
-      "paragraphs": []
-    },
-    {
-      "heading": "四、主要觀察",
-      "paragraphs": [
-        "<b>SM 是排名工具：</b>適合從大量候選中挑出值得模擬的前幾名（濾波器 SM 保留集排序相關約 0.57），但絕對預測仍有數 dB 誤差。<b>完全對稱較難，但做得到：</b>饋入在下緣，只能左右對稱，可變像素由 624 降為 324；唯一的對稱達標解餘裕很小、形態罕見（13 個金屬連通塊，歷史合格設計的中位數是 5）。先前多是把好設計事後對稱化，WM 中位數因此掉了 17 dB；這次改在對稱條件下持續搜尋才達標（詳見附件）。<b>模擬條件會改變排名：</b>網格加嚴後，18 個選定案例的 WM 變化中位數為 0.81 dB，最終設計仍需實測確認。"
+      "blocks": [
+        {
+          "p": "表 2 是成果總覽；以下依天線、濾波器與交付分述，完全對稱的設計另於第四節說明。"
+        },
+        {
+          "table": {
+            "caption": "表 2　目前成果（數字皆為 HFSS 模擬；WM 為相對規格門檻的最差餘裕）",
+            "headers": [
+              "項目",
+              "結果"
+            ],
+            "rows": [
+              [
+                "天線（自由圖形）",
+                "無橋條件下約 2,500 個不重複設計通過帶內與 radiation pattern 規格；最佳 WM +0.79 dB（三次重測一致），同網格加 0.10 mm 橋後 +0.58 dB。加橋的交付代表為 +0.77 dB、radiation pattern 窗口 +0.50 dB。"
+              ],
+              [
+                "天線（帶外抑制）",
+                "無橋條件下，在 WM 不低於 0.15 dB 且 radiation pattern 合格時，24–25.5 GHz 增益最低壓到 -3.46 dBi（三次重測一致）；同一圖形加 0.10 mm 橋後 WM 約 -0.32 dB，不再合格。"
+              ],
+              [
+                "天線（完全對稱）",
+                "強制金屬左右鏡射，約 2,200 筆後首次達標：WM +0.022／+0.036 dB（兩次）、radiation pattern 窗口 +0.37 dB；就現有紀錄，為 0.10 mm 橋接下首例。"
+              ],
+              [
+                "濾波器（雙埠）",
+                "固定可製造幾何下，WM 由 -5.90 改善至 -2.39 dB；反射已合格，通帶與阻帶邊緣仍有 6 個採樣點未達。"
+              ],
+              [
+                "交付與平台",
+                "8/31 交付 25 個天線、14 個濾波器製作，重算 37/39 位元一致；emforge 三機驗收跨機差異 < 10<sup>-5</sup> dB。"
+              ]
+            ]
+          }
+        },
+        {
+          "sub": "3.1　天線（自由圖形）"
+        },
+        {
+          "p": "圖 2 是加 0.10 mm 對角橋的交付代表。26.5–29.5 GHz 內 S11 餘裕 +1.13 dB、增益餘裕 +0.77 dB（即 WM；交付前重算，原批次為 +0.69 dB）；28 GHz 兩個切面在 ±45° 窗口內的餘裕分別為 +0.63 與 +0.50 dB。無橋條件下的最佳 WM 是 +0.79 dB（三次重測一致），同網格加 0.10 mm 橋後為 +0.58 dB，仍合格；交付代表與它只差 1 個像素，是加橋後餘裕最高的設計。多數設計加橋後的變化不大：0.10 mm 橋的 3,318 組配對中，WM 變化中位數約 -0.07 dB。"
+        },
+        {
+          "figure": "antenna",
+          "caption": "圖 2　天線自由圖形交付代表（0.10 mm 對角橋）。(a) 金屬圖形，三角形為下緣饋入；(b) S11 與 (c) 正向實現增益，灰底為 26.5–29.5 GHz 評分頻帶、虛線為門檻；(d) 28 GHz radiation pattern，各切面以正向值歸一化，灰色扇形為 ±45° 窗口、虛線為 -3 dB 門檻，同心圓為 -20、-10、-3 dB。"
+        },
+        {
+          "p": "帶外方面，低頻（24–25.5 GHz）這一側最難壓。圖 3 的設計在無橋條件下帶內 WM +0.15 dB、radiation pattern 也合格，並把低頻最大增益壓到 -3.46 dBi；但它的餘裕很薄，又有 22 處對角相接，同網格加 0.10 mm 橋後 WM 約 -0.32 dB（單次），不再合格。如何同時做到可製造與深度低頻抑制，仍是未解的問題；低頻抑制也與第四節對稱設計的困難有關。"
+        },
+        {
+          "figure": "oob",
+          "caption": "圖 3　低頻帶外抑制的紀錄設計（無橋條件）。(a) 金屬圖形；(b) S11；(c) 正向實現增益，淡橘底為 24–25.5 GHz 低頻帶外、灰色虛線為圖 2 的交付代表；(d) 28 GHz radiation pattern。曲線取自 2026/08/10 歷史快照；同一圖形在同網格下加 0.10 mm 對角橋後 WM 約 -0.32 dB（單次）。"
+        },
+        {
+          "sub": "3.2　濾波器（雙埠）"
+        },
+        {
+          "p": "濾波器固定在可製造的幾何條件（0.075 mm 對角橋）下搜尋。2026/08/13 至 08/24 共有 17 筆最佳紀錄（含起點），WM 從 -5.90 改善到 -2.39 dB（圖 4d）。目前最佳設計的反射已合格（S11、S22 餘裕 +1.97、+2.31 dB），剩下通帶邊緣（-2.39 dB）與阻帶（-2.17 dB）未達，共 6 個採樣點（圖 4c 圓圈）。濾波器 SM 在當次保留集上的排序相關約 0.57（以六項輔助餘裕的最小值計），具一定的排序能力。"
+        },
+        {
+          "figure": "filter",
+          "caption": "圖 4　濾波器目前最佳設計。(a) 金屬圖形，P1、P2 為上下兩埠；(b) S11、S22，圖例數字為餘裕；(c) S21，灰底為通帶、淡橘底為阻帶，圓圈為未達的採樣點；(d) 2026/08/13–08/24 的最佳 WM 紀錄（橫軸是紀錄次序，不是模擬次數）。"
+        },
+        {
+          "sub": "3.3　交付與平台"
+        },
+        {
+          "p": "8/31 交付 25 個天線與 14 個濾波器給學長製作；交付前以相同條件重算，37/39 與原紀錄位元一致。emforge 已在三台工作站完成驗收，同一樣本跨機差異小於 10<sup>-5</sup> dB。實測結果回來後，將用來比對模擬與實作的差距。"
+        }
       ]
     },
     {
-      "heading": "五、下一步",
-      "paragraphs": [
-        "39 個設計的實測與模擬對照；新版寬頻濾波器規格（通帶 26–30 GHz，16–20 與 36–40 GHz 阻帶不高於 -20 dB）；對稱實驗收尾；論文初稿（中文完整稿 V8.1 已成形）與 emforge 遷移。"
+      "heading": "四、完全對稱：做得到，但比自由圖形難",
+      "blocks": [
+        {
+          "p": "饋入在下緣中央，因此只能要求左右對稱。對稱實驗在生成時就強制金屬左右精確鏡射，可變像素由 624 降為 324。約 2,200 筆實測後首次達標：兩次 HFSS 的 WM 為 +0.022 與 +0.036 dB，radiation pattern 窗口餘裕 +0.37 dB（圖 5）。就現有紀錄，這是 0.10 mm 橋接條件下第一個達標的完全對稱設計；先前曾有完全對稱設計在無橋條件下過線（+0.09 dB），加橋後掉到 -0.22 dB。"
+        },
+        {
+          "figure": "symmetry",
+          "caption": "圖 5　完全對稱達標解。(a) 金屬圖形，虛線為鏡射軸；(b) S11 與 (c) 正向實現增益，灰色虛線為圖 2 的自由圖形交付代表；(d) 28 GHz radiation pattern：φ = 90° 切面因鏡射而對稱，φ = 0° 則否。兩者都有 0.10 mm 對角橋；連通塊以對角相接算相連。"
+        },
+        {
+          "p": "為什麼難？以下是目前紀錄能支持的五點（圖 6）。除特別註明外，歷史數字是描述性統計：各批的選樣目的不同，不是對照實驗。"
+        },
+        {
+          "bullets": [
+            "<b>自由度少、步長粗：</b>離開中軸的修改都是成對翻轉，改 1 格就動 2 個實體像素。在前一最佳（-0.25 dB）附近，只差 4 個實體像素的 32 個變體，實測 WM 從 +0.02 到 -22.7 dB（中位數 -0.79 dB），響應對小修改非常敏感。",
+            "<b>好的「完全」對稱解很少：</b>歷史上 WM 達 0.3 dB 的 592 個不重複設計中，完全對稱 0 個、近對稱 225 個；對稱實驗的前 970 筆沒有一筆同時通過 S11 與增益。把 13 個既有代表設計（WM -0.89 至 +0.79 dB）事後對稱化，34 個探針全部退步，降幅 2.3–32 dB、中位數 17 dB（圖 6a）。",
+            "<b>資料與 SM 不熟這一區：</b>歷史上 1,030 張完全對稱圖形中，915 張是刻意製造的負樣本探針。評估 SM 時達標家族整族放在保留集，SM 對前一最佳的預測是 -12.2 dB，實測 -0.25 dB；最後 32 個變體中，SM 排序與實測的 Spearman 相關約 -0.09，達標者排第 27（圖 6b）。前一最佳本身不是由「預測較好」配額選出，而是在預測前 40% 的候選中，因模型分歧大而入選。",
+            "<b>達標解的形態罕見：</b>它有 13 個金屬連通塊；歷史上 3,546 個 WM 非負的不重複設計，中位數是 5 塊，13 塊以上只有 3 個（圖 6c）。",
+            "<b>再要求低頻抑制，目前沒有對稱先例：</b>歷史上 WM 非負、且 24–25.5 GHz 增益不高於 0 dBi 的 439 個設計全部明顯不對稱（不對稱度至少 0.33），但它們幾乎同屬一個家族（兩兩差異中位數 23 個像素），實質上只是一個案例；對稱達標解的低頻增益是 3.1 dBi（圖 6d）。"
+          ]
+        },
+        {
+          "p": "因此較準確的說法是：難的是「完全」對稱，不是對稱本身。快照中近對稱（不對稱度不超過 0.1）設計 WM 非負的比例（30.8%）反而高於不對稱度超過 0.1 者（5.8%；比例受選樣集中影響，僅供參考），早期實驗中部分對稱也在 4/5 個家族勝過全鏡射，保留少量不對稱似乎給了調整空間。這個對稱解的血統標記可追溯到自由圖形冠軍：冠軍事後對稱化後成為種子之一，由此衍生、經「模型分歧」配額選出的 -0.25 dB 設計（與最近的種子差 159 個像素，但仍比快照中其他圖形都近：其餘最近約 195、中位數 281 像素），再經研究者指定的鄰域列舉而達標。非對稱設計至少提供了起點；冠軍的結構有沒有功能上的貢獻，目前無法判斷。"
+        },
+        {
+          "figure": "symmetry-evidence",
+          "caption": "圖 6　完全對稱較難的證據。(a) 13 個既有設計以三種方式事後鏡射，共 34 個探針，虛線為「不變」(y = x)；(b) 前一最佳附近 32 個變體的 SM 選樣分數與 HFSS WM；(c) 歷史快照中 WM 非負設計的金屬連通塊數（對數縱軸），箭頭標出圖 2 與圖 5 的設計（後者不在快照內）；(d) 同一批設計的不對稱度（左右半邊不同像素的比例）與 24–25.5 GHz 最大增益，星號為對稱達標解（不在快照內）。歷史快照日期為 2026/08/10，快照中的 WM 皆為無橋條件，僅供描述。"
+        }
+      ]
+    },
+    {
+      "heading": "五、主要觀察與限制",
+      "blocks": [
+        {
+          "bullets": [
+            "<b>SM 是排名工具，不是精確預測器：</b>它適合從大量候選中挑出值得模擬的前幾名，但絕對預測仍有數 dB 誤差；遇到沒看過的區域（如完全對稱），排序也會失準。這時「模型分歧」與「隨機」配額提供了必要的探索。",
+            "<b>關鍵步驟常來自人與 agent 的介入：</b>對稱達標的最後一步，是研究者指定在前一最佳附近列舉約 5.3 萬個變體，再由 SM 選出 32 個；這次篩選沒有盲選對照，不能宣稱 SM 比隨機好。",
+            "<b>模擬條件會改變排名：</b>網格加嚴後，18 個選定案例的 WM 變化幅度（絕對值）中位數為 0.81 dB（選樣包含高差異案例），與許多設計的餘裕同量級；最終仍需實測確認。",
+            "<b>對稱的上限尚未確定：</b>達標後又測了約 1,500 筆，仍未超越 +0.022 dB；但這些批次以多樣性為主，尚未系統性搜尋新最佳解的鄰域，因此不能把 +0.022 dB 視為對稱設計的上限。"
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "六、下一步",
+      "blocks": [
+        {
+          "bullets": [
+            "<b>實測：</b>39 個交付設計的量測與模擬對照，確認模擬條件與製作誤差的影響。",
+            "<b>寬頻濾波器：</b>新版規格為通帶 26–30 GHz，16–20 與 36–40 GHz 阻帶不高於 -20 dB。",
+            "<b>對稱實驗收尾：</b>在新最佳解附近補做鄰域搜尋，再判斷對稱設計的餘裕能否拉高。",
+            "<b>論文與平台：</b>中文完整稿 V8.1 已成形，持續補實驗與圖；研究流程逐步遷移到 emforge。"
+          ]
+        }
       ]
     }
   ],
-  "table": {
-    "caption": "表 1　目前成果（數字皆為 HFSS 模擬；WM 為相對規格門檻的最差餘裕）",
-    "headers": [
-      "項目",
-      "結果"
-    ],
-    "rows": [
-      [
-        "天線（自由圖形）",
-        "約 2,500 個不重複設計通過帶內與 radiation pattern 規格；最佳 WM +0.79 dB（三次重測一致）。加 0.10 mm 對角橋的交付代表為 +0.77 dB、radiation pattern 窗口 +0.50 dB。"
-      ],
-      [
-        "天線（帶外抑制）",
-        "在 WM 不低於 0.15 dB 且 radiation pattern 合格下，24–25.5 GHz 增益最低壓到 -3.46 dBi（三次重測一致）。"
-      ],
-      [
-        "天線（完全對稱）",
-        "強制金屬左右鏡射，約 2,200 筆後首次達標：WM +0.022／+0.036 dB（兩次）、radiation pattern 窗口 +0.37 dB；就現有紀錄，為 0.10 mm 橋接下首例。"
-      ],
-      [
-        "濾波器（雙埠）",
-        "固定可製造幾何下，WM 由 -5.90 改善至 -2.39 dB；反射已合格，通帶與阻帶邊緣仍有 6 個採樣點未達。"
-      ],
-      [
-        "交付與平台",
-        "8/31 交付 25 個天線、14 個濾波器製作，重算 37/39 位元一致；emforge 三機驗收跨機差異 < 10^-5 dB。"
-      ]
-    ]
-  },
-  "figure_caption": "圖 1　(a) 自由圖形交付代表與 (b) 完全對稱達標解的金屬圖形（三角形為下緣饋入，虛線為鏡射軸；連通塊以對角相接計），以及兩者的 (c) S11 與 (d) 正向實現增益。灰底為 26.5–29.5 GHz 評分頻帶，虛線為門檻；兩者都有 0.10 mm 對角橋。",
   "qa_required": [
     "+0.79",
     "+0.77",
@@ -82,8 +237,27 @@
     "37/39",
     "13 個金屬連通塊",
     "圖 1",
+    "圖 2",
+    "圖 3",
+    "圖 4",
+    "圖 5",
+    "表 1",
+    "表 2",
     "0.81",
-    "0.57"
+    "0.57",
+    "624",
+    "324",
+    "592",
+    "970",
+    "-22.7",
+    "-0.09",
+    "3,546",
+    "439",
+    "17 dB",
+    "圖 6",
+    "+0.58",
+    "-0.32",
+    "159"
   ],
   "references": [
     {
@@ -102,20 +276,23 @@
     }
   ],
   "provenance": {
-    "audience": "Advisor: one-page research status. Detailed manuscript: docs/paper/manuscript-draft-2026-10.html.",
-    "version": "v3 (2026-10-10): rewritten as a status abstract; v1 (2026-10-08, f95d0c7) is in git history.",
+    "audience": "Advisor: research status, up to four pages (user, 2026-10-10). Detailed manuscript: docs/paper/manuscript-draft-2026-10.html.",
+    "version": "v4 (2026-10-10): four-page status abstract with six figures; v3 one-page version is commit 8446aba; v1 (f95d0c7) in git history.",
     "numbers": {
       "samples": "43,846 single-port samples with full radiation cuts (docs/log/assets/r80_factory_legacy_20261007.json, all dedust stores, no harvest) + R80 3,630; inherited harvest_single 24,189",
-      "qualified_designs": "2,513 unique patterns with wm>=0 and rad>=0 in the 2026-08-10 pattern browser snapshot (mixed bridge conditions)",
+      "qualified_designs": "2,513 unique patterns with wm>=0 and rad>=0 in the 2026-08-10 pattern-browser snapshot; main rows are no-bridge S0 (build_index.py excludes ~ variants)",
       "records": "docs/records.json (wm +0.79 c48nq1p05_16; usable_lo -3.46 c41grp2p02_02)",
       "delivery": "docs/paper/single-port-evidence.json; manuscript V-A; 九月份進度報告",
-      "filter": "manuscript V-C; docs/paper/final-candidate-response.json",
-      "symmetric": "docs/paper/symmetric-best-evidence.json; docs/log/round-80-symmetry-exploration.md",
+      "filter": "manuscript V-C; docs/paper/final-candidate-response.json; docs/paper/paper-evidence-data.json (17 best-so-far records); SM rho 0.57 = R72 holdout, min of six auxiliary margins (manuscript V-C)",
+      "symmetric": "docs/paper/symmetric-best-evidence.json; docs/log/round-80-symmetry-exploration.md (best unchanged at 3,688 samples, 2026-10-10 17:59)",
+      "symmetry_evidence": "docs/paper/extended-abstract-figure-data.json (frozen by freeze_extended_abstract_data.py: snapshot n8/asymmetry/lo, R55 34 probes, R80 local-32, symmetric radiation cuts); 439 lo<=0 designs pairwise Hamming median 23 / max 80; anchor 159 px from nearest seed, >=195 px (median 281) from all other snapshot patterns; disagreement arm eligibility = predicted mean >= pool 60th percentile (script/symmetry_sm_pool.py:573-579)",
       "online_vs_random": "June 2026 benchmark: three online-learning runs lost to random best-of-N at equal HFSS budget (memory project_benchmark_vs_random; harvest 5,000-sample ceiling study)",
-      "mesh": "manuscript VI-C (18 selected cases, S0->S1, median |dWM| 0.81 dB)",
-      "wide_filter_spec": "docs/log/round-81-wide-filter.md"
+      "mesh": "manuscript VI-C (18 selected cases incl. high-difference ones, S0->S1, median |dWM| 0.81 dB)",
+      "wide_filter_spec": "docs/log/round-81-wide-filter.md",
+      "bridge_conditions": "S0 mesh, R54 probe table (docs/log/assets/round-54/r54_close_analysis.md section 7, frozen in extended-abstract-figure-data.json r54_bridge_s0): c48nq1p05_16 +0.79 -> +0.58 with 0.10 mm bridges (Δ-0.21, reproduced across machines, round-54-diamond-bridge.md); c41grp2p02_02 +0.15 -> about -0.32 (Δ-0.47, single). Delivery design c48nq1p06_18 is 1 px from the champion: no-bridge +0.43, bridged +0.69 (R54 batch) / +0.77 (handoff re-solve). 3,318 bridged pairs median ΔWM -0.07 dB (manuscript VI-C). The snapshot db100_wm values for R54 probe parents (-0.44, -1.99) are S1-mesh and are NOT used.",
+      "lineage": "R80 anchor r80c91d71565g_00019_5a42476c (tmp/r80_best_render_20261009_v001 NPZ, sha 23524cf2...) is 159/235/213 px from the L/R/O R55 mirrors of c48nq1p05_16 and 4 px from the symmetric best."
     },
-    "symmetry_note": "docs/paper/symmetry-difficulty-zh-2026-10.json -> output/pdf/symmetry-difficulty-zh-2026-10.pdf (attachment)",
+    "symmetry_note": "docs/paper/symmetry-difficulty-zh-2026-10.json -> output/pdf/symmetry-difficulty-zh-2026-10.pdf (one-page handout for the senior; same evidence)",
     "scope": "Internal status draft for the advisor. All performance numbers are HFSS simulations; no new simulation, training or measurement was run for this abstract."
   },
   "footer": "中文延伸摘要 · 研究現況"
