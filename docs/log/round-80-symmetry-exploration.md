@@ -1507,3 +1507,12 @@ main身份／19來源與唯一inventory通過，scope仍因舊LOW部分失敗exi
 ### 2026-10-10 20:34：三台轉入新guided、SM reported v025
 
 唯一main身份／19來源及inventory通過；健康成功15／7／4且最近2／0／3分鐘，20:35真正jobs_state owners讀回216 LOW k9d45ab6568e0aedf、37／218 guided ce09c595g01／g02有15／7／5成功。g02 row r80cce09c595g_00013_3b88ebfc首次COM0x80070223 attempts1、無fail，不提前宣稱恢復或終態。舊LOW ka00的15成功／1COM attempts4、216／218fail與results/fail hash仍等於18:34，37仍eligible；保留partial-fail警報，近期新工作證據與舊fail分開。Reported v025僅runtime版本，沒有新model forward／accuracy或全量best結論。前d2451199退出active清單不等於完整批成功，另以既有三片done/no-fail與raw gate核對；只有通過後才分析saved predictions。沒有重啟、刪markers、NAS／runtime／queue mutation、額外HFSS或新census；latest full仍20:13的3,797／+.021682，下一21:04。[分cutoff健康](assets/r80_health_20261010_2034.json)。
+
+
+### 2026-10-10 20:34後：v024完整48真值、五筆COM恢復、選樣排序仍弱
+
+實際cycle d2451199…／data-v024／3685累積fit binding，三片claim＋done且無fail；48有效唯一精確LR、三arm各16，origin20 fresh／28 parent。沿用未改計算方法的v023 readout／gate／saved replay，只改身份、fit／origin、原生proof序列化與五筆恢復披露；root檢視helper差異，獨立Sol核對全部48 local frozen raw WM／pattern及96 sample+rad hashes、saved scalar算術／身分／模型檔hash bindings，沒有forward／新train或NAS mutation。
+
+批内best−5.0556001663／median−11.0773396492／mean−13.0614707122、0正WM；saved meanρ−.0233391229／MAE5.2224222662dB，LCBρ−.0622014763／MAE5.7401809933dB。本批SM排序幾乎無相關，尚未推進已核對全域最佳+.021682；不能由不同selected cohorts的相關係數判定版本因果退步／改善，也不據此宣稱模型可採用。Current及legacy exact-pattern overlap均0，pair Hamming min67／median308。
+
+20:04／20:05健康留下的g02 IDs16／34與g03 IDs2／23／26五筆首次COM目前皆ok，原sample／rad及raw WM核對通過，context health hash b249e6bf…一併綁定。這是本批恢復，沒有把舊LOW ka00之15/16兩機fail也宣稱恢復。沒有另派／刪markers／重啟／HFSS加跑、模型訓練／推論或新全量census；latest full仍20:13的3797，下一例行21:04。訓練3685只作累積資料binding，不當作全部train或v024實體optimizer／norm驗證。[完整結果及獨立證據](assets/r80_sm_v024_cohort48_result_20261010.json)。
