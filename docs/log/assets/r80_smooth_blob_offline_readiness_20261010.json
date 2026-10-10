@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "status": "passed_saved_current_geometry_readiness_only",
+  "observed_utc": "2026-10-10T00:12:34.474607+00:00",
+  "receipt_sha256": "edb463defbb0dc80da7f4334e784f3cebc461198d8345ebc8ec358309937d301",
+  "artifact_sha256": "2622c087fbcb6b45ff4fc0d2bac4b9a642122b4b9d76b001b846a92a94c261a7",
+  "probe_script_sha256": "f902e783ea8287055687a98fa929037f5174bcf1553f3f9a2f62f351de9f3ae8",
+  "root_review_script_sha256": "4a4e8abc9120095e424f6fe039fcd5c02346ecf52053230f9be262889a5b15d9",
+  "source_sha256": {
+    "tmp/r80_structured_blob_readiness_20261010_v001/freeze_schedule.py": "c39007c8fc3757c45762510045baf2112f91414bae30366d131ec802cbb5ba0b",
+    "antenna/measurement.py": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9",
+    "antenna/patch/patch_simulator/single_port.py": "1e137ff77e76c8437bffc4faee46a19cf233a313a8c30e5333e1f460924b385d",
+    "script/dedust.py": "4d203816826ca20179c2ae3a5c345dcc900117d33a671090d896db3c61ece05d",
+    "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+    "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+    "script/symmetry_sm_pool.py": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8",
+    "tests/test_dedust.py": "f6b442f2ec296369c21c892c36641300dd3ecaec164549885a1bbce795ff4b4d",
+    "docs/log/round-08-clean-mapping.md": "57decd309330ab408e43771f65a46a113dc21dd7304d86cffe31e3b77d557f9f",
+    "docs/log/round-08-report.md": "8451c199a6a1558ce5bdea88a3da58e3ca3bd8755b1366d05667b02372b23a36",
+    "docs/design_priors.md": "55e03cebeb3d5273f9231b639beb7f00f52204780b5dab75270562cf299b0fa1",
+    "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+    "tmp/r80_structured_blob_readiness_20261010_v001/probe_schedule.json": "a3d075b8d669667a7c99e277c7a8027a3dd50aba69eddeb716a1f00141155d10"
+  },
+  "historical_audit": {
+    "formal_generator_calls_found": [
+      "script/dedust.py:914 R8 select_r8, cNN_blob, seed=1000+s"
+    ],
+    "r8_usage": "20 default smooth_blob samples inside the 52-row C calibration arm",
+    "existing_test": "tests/test_dedust.py:82-88 checks determinism, feed, nonempty metal, and no 1px component",
+    "checked_in_outcome_boundary": "R8 grouped blob with random as out-of-pool geometry for old-SM calibration; reported grouped absolute error 4.4-5.5 dB and pessimistic bias about -3.6 to -5.5 dB",
+    "per_blob_hfss_or_performance_table_found": false,
+    "r11_smooth_blob_call_found": false,
+    "interpretation": "The family is reusable as an existing 25x25 geometry generator. Grouped old-SM calibration evidence and other R8 arm negatives are not blob performance labels."
+  },
+  "generator_semantics": {
+    "existing_function": "script.dedust.smooth_blob",
+    "helper_steps": [
+      "Gaussian-filter seeded random field",
+      "metal_frac quantile threshold",
+      "force feed pixel",
+      "dedust.strip_small(min_size=4)",
+      "conditional dedust._ensure_feed_pad"
+    ],
+    "helper_cleanup_and_feed_pad_are_generator_semantics": true,
+    "helper_cleanup_is_not_current_projection": true,
+    "post_helper_projection": "current exact-LR/feed enforcement plus current physical validator only"
+  },
+  "frozen_schedule": {
+    "path": "tmp/r80_structured_blob_readiness_20261010_v001/probe_schedule.json",
+    "sha256": "a3d075b8d669667a7c99e277c7a8027a3dd50aba69eddeb716a1f00141155d10",
+    "attempt_count": 256,
+    "base_seed": 80101061,
+    "metal_frac_grid": [
+      0.3,
+      0.4,
+      0.5,
+      0.6
+    ],
+    "sigma_grid": [
+      1.5,
+      2.5,
+      3.5,
+      4.5
+    ],
+    "min_size": 4,
+    "repeats_per_grid_cell": 16,
+    "retries": 0,
+    "quota_relaxation": false
+  },
+  "attempts": 256,
+  "profile_valid_unique": 256,
+  "duplicates": 0,
+  "failures": 0,
+  "final_geometry_descriptor_means": {
+    "metal_px": 286.53515625,
+    "metal_fraction": 0.45845625,
+    "component_count_4": 3.3203125,
+    "component_count_8": 3.22265625,
+    "largest_component_px": 229.06640625,
+    "feed_component_px": 123.0234375,
+    "feed_connected_fraction": 0.39764904931440637,
+    "fully_connected_4": 0.1953125,
+    "bridge_site_count": 0.125,
+    "bridge_skipped_count": 0.0,
+    "bridge_width_mean_mm": 0.005859375,
+    "bridge_mirror_set_equal": 1.0
+  },
+  "bridge_sites_total": 32,
+  "patterns_with_bridge_sites": 15,
+  "source_and_schedule_checked": true,
+  "final_npz_identity_profile_and_descriptors_replayed": true,
+  "raw_helper_outputs_independently_replayed": false,
+  "production_integration": false,
+  "model_execution_or_training": false,
+  "nas_access": false,
+  "hfss_or_dispatch": false,
+  "queue_or_controller_mutation": false,
+  "limits": [
+    "This is source/readiness evidence only; it does not adopt the family into a quota or full candidate pool.",
+    "No historical per-blob performance table was found in checked-in files, and prohibited NAS history was not read.",
+    "The fixed 256-row grid measures geometry uniqueness and descriptors, not antenna quality or SM ranking.",
+    "Historical grouped blob/random old-SM errors are preserved as calibration negatives and are not assigned to these geometries.",
+    "No model, surrogate, prediction, response, radiation, HFSS, queue, worker, controller, live data, or pilot truth is used.",
+    "Connectivity descriptors count 4/8 pixel adjacency; they are not electromagnetic performance metrics.",
+    "No measured/queued production exclusion scan or full20kpool yield check was performed."
+  ]
+}

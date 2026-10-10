@@ -1227,3 +1227,10 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 使用本機凍結v010的2840筆資料、既定32個parents，固定384次幾何探測。發現legacy symmetrize同時除塵／補feed pad，會改變全部32個已量測parents；v001保留，不能當成純算子變異。v002僅套用目前exact-LR enforcement與profile validator，32個parents均保持原hash；排程與helper參數不變。得到43個唯一有效圖形，皆來自group_mutate；add_block與resize_component各128次均回None。保存陣列、排程、parent lineage/canonical與來源雜湊經獨立核對通過。[產出紀錄](assets/r80_structured_parent_yield_v002_readiness_20261010.json)。
 
 這43個是離線候選，不是HFSS實測，未計入5000筆、未排名或派工。不能據此保證完整候選池產出率；先前元件來源配額仍是未驗證提案。收據的projection_diff_px實際為parent到candidate差，不是raw到鏡射的差，範圍更正保留。主線／32筆對照／模型／worker均未更動。
+
+
+### 2026-10-10：既有smooth_blob來源的離線準備
+
+歷史R8曾用smooth_blob作20筆校準圖形，checked-in報告只有blob/random合併的舊SM校準誤差，沒有可歸給每個blob的性能表，不挪用舊標籤。重用既有Gaussian／quantile／除塵／feed-pad generator後，單獨套目前exact-LR／physical profile validator；固定4×4參數格、每格16 seeds，共256次，256個final hashes唯一且有效。root核對保存陣列、參數排程、來源雜湊及幾何描述，15個圖形有共32個鏡射bridge sites。[準備紀錄](assets/r80_smooth_blob_offline_readiness_20261010.json)。
+
+仍只是geometry readiness：未SM排名、未做完整候選池／目前measured與queued排除、未送HFSS或計入5000筆。連通／金屬量描述不是場型或性能結果；未改主線policy、模型或固定32筆對照。
