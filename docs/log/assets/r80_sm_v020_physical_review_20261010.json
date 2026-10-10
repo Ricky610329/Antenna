@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "kind": "r80_sm_v020_independent_saved_physical_review_v001",
+  "status": "passed_saved_v020_no_forward",
+  "repo": {
+    "head": "bda0dcf34beb9ad6a134576172e87d81cae8811f",
+    "reviewed_source": [
+      {
+        "path": "script/symmetry_training.py",
+        "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+      },
+      {
+        "path": "script/exploration.py",
+        "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7"
+      }
+    ]
+  },
+  "evidence": {
+    "helper": {
+      "path": "tmp/r80_sm_v020_physical_review_20261010_v001/review_v020.py",
+      "sha256": "b8c97365268ab4cfdb592c26341f1614616e517c1bf03c88afc346d14ce74a13"
+    },
+    "physical_checks": {
+      "path": "tmp/r80_sm_v020_physical_review_20261010_v001/physical_checks.json",
+      "sha256": "b112dcb3d32abc33121ac9f6aa259c7eafe6837ee48aacf0bc6b91ff8e237bbd",
+      "status": "passed",
+      "check_count": 34,
+      "failures": [],
+      "elapsed_seconds": 8.908601760864258
+    }
+  },
+  "immutable_artifact_hashes": {
+    "data_v019_manifest": "372a55d317646c626a553f42f7b5187af562e8389ba88327646e55f540c438eb",
+    "data_v019_receipt": "1d060046fa8e885483f74b27fc8caed793093889fd32faf6a93e1a9624d41f7c",
+    "data_v020_manifest": "a397bee676812f7e39cdd8b6c801eae312436329de852462809788980f54e5d8",
+    "data_v020_receipt": "773b40b8f7dd25204d04db68f687bc5d75fbccee9358e2ebba9ea75785c0e33d",
+    "data_v020_summary": "30d2c959fdf859ea324db840269382ea6eae7e1573123277765c852b3d45a9ae",
+    "data_v020_member_0": "03676688ab470573cdd3537e09de23cdf7774415423b65eb4c0b1639790ed0ac",
+    "data_v020_member_1": "36acd5523300868da93f4df145c0e31cb5ca4b8e751861f254eae6266524b417",
+    "data_v020_member_2": "b37b1ae4ab8df03160e8ade0c455eec17a8840688d51d8e28bcdfac0e40fe4b2",
+    "protocol": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+    "legacy_manifest": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a"
+  },
+  "data_version_findings": {
+    "v019_manifest_id": "aab9aa36e45c216e3ff07802b3606e92d20dd79f30ae10204c29b734bfc2c3a8",
+    "v020_manifest_id": "2b426bc86b559488df720f35d75b27b5477c5bc67f0f499cacd13e0e99aca518",
+    "v019_rows": 3370,
+    "v020_rows": 3425,
+    "new_rows": 55,
+    "new_unique_patterns": 55,
+    "v019_rows_preserved_byte_semantically_in_v020": true,
+    "prior_row_loss_or_change_count": 0,
+    "all_v020_pattern_hashes_unique": true,
+    "manifest_content_ids_match_receipts": true,
+    "bound_bytes_unchanged_during_review": true
+  },
+  "split_findings": {
+    "effective_profile_train_rows": 2487,
+    "effective_profile_holdout_rows": 938,
+    "profile_train_holdout_alias_overlap": 0,
+    "profile_train_holdout_pattern_overlap": 0,
+    "legacy_train_rows": 10150,
+    "legacy_holdout_rows": 1850,
+    "legacy_train_holdout_lineage_overlap": 0,
+    "legacy_train_exclusions_for_current_holdout": 0,
+    "summary_ids_and_counts_match_manifests": true,
+    "development_policy": "whole_canonical_group_train_override_v1",
+    "validation_policy": "remaining_reference_group_holdouts_descriptive_only_no_early_stopping"
+  },
+  "checkpoint_findings": {
+    "member_seeds": [
+      0,
+      1,
+      2
+    ],
+    "all_member_hashes_match_summary": true,
+    "all_signatures_and_factory_bindings_match": true,
+    "phase_names": [
+      "legacy_pretrain",
+      "current_profile"
+    ],
+    "legacy_epochs": 30,
+    "current_epochs": 100,
+    "batch_size": 128,
+    "expected_and_actual_optimizer_steps_per_member": 4400,
+    "optimizer_state_entries_per_member": 8,
+    "all_optimizer_moments_and_model_tensors_finite": true,
+    "terminal_phase": 2,
+    "terminal_epoch": 0,
+    "all_complete": true,
+    "fresh_initialization_metadata_all_true": true,
+    "terminal_model_tensor_digests_distinct": true
+  },
+  "normalization_findings": {
+    "recomputed_from_saved_profile_train_rows": 2487,
+    "input_norm_exact_for_all_members": true,
+    "target_norm_exact_for_all_members": true,
+    "holdout_rows_used_in_recomputed_checkpoint_norm": 0,
+    "holdout_inclusive_norm_would_differ": true
+  },
+  "limits_and_unresolved": [
+    "Fresh initialization is supported by checkpoint metadata, distinct terminal tensor digests, and the reviewed source contract. Initial pre-training tensor bytes are not saved, so fresh initialization cannot be independently replayed byte-for-byte.",
+    "The 30+100 epoch history is supported by terminal phase metadata and exact Adam step tensors (4400 per member); no separate per-update history exists.",
+    "Saved metrics were not recomputed because that requires model forward inference. This review makes no SM-improvement, accuracy, or causal claim.",
+    "The development-family holdout is explicitly descriptive under the saved policy; it is not an untouched independent validation set.",
+    "data-v021 and its in-progress artifacts were not read or assessed."
+  ],
+  "prohibited_actions": {
+    "training": false,
+    "model_forward_or_inference": false,
+    "hfss": false,
+    "nas_read_or_mutation": false,
+    "queue_or_source_mutation": false,
+    "process_or_cim_query": false,
+    "broad_tests": false,
+    "commit": false
+  },
+  "readiness": "v020 saved data/model milestone passes bounded physical integrity review; no statement about v021 or SM improvement",
+  "independent_review_sha256": "3bd0488e54ec179a7cbe6a9d2e4b27186329606aae9fb73297391e57a9fff320",
+  "recording_script_sha256": "c8f63b9690de990a659fee5d864b5c0119201ce19689da6d3cfab0dbc668b5ed",
+  "physical_checks": {
+    "checks": {
+      "added_patterns_new_and_unique": true,
+      "all_bound_bytes_unchanged_during_review": true,
+      "all_profile_patterns_unique": true,
+      "checkpoint_bindings_exact": true,
+      "checkpoint_complete_terminal_phases": true,
+      "checkpoint_member_models_distinct": true,
+      "checkpoint_member_seeds_exact": true,
+      "checkpoint_optimizer_steps_exact": true,
+      "checkpoint_signatures_exact": true,
+      "checkpoint_tensors_finite": true,
+      "checkpoint_train_only_input_norm_exact": true,
+      "checkpoint_train_only_target_norm_exact": true,
+      "exactly_55_added_ids": true,
+      "holdout_inclusive_norm_differs": true,
+      "legacy_current_holdout_exclusion_exact": true,
+      "legacy_train_holdout_family_separated": true,
+      "loaded_train_holdout_counts_exact": true,
+      "manifest_ids_unique": true,
+      "member_hashes_exact": true,
+      "no_v019_row_loss_or_change": true,
+      "profile_split_counts_exact": true,
+      "profile_train_holdout_alias_separated": true,
+      "profile_train_holdout_pattern_separated": true,
+      "protocol_id_exact": true,
+      "receipt_growth_exact": true,
+      "receipt_unique_counts_exact": true,
+      "receipt_versions_exact": true,
+      "summary_binding_exact": true,
+      "summary_counts_exact": true,
+      "summary_member_seeds_exact": true,
+      "summary_profile_ids_exact": true,
+      "summary_protocol_manifest_exact": true,
+      "v019_manifest_id_exact": true,
+      "v020_manifest_id_exact": true
+    },
+    "elapsed_seconds": 8.908601760864258,
+    "failures": [],
+    "family_separation": {
+      "alias_overlap": [],
+      "legacy_holdout_lineages": 839,
+      "legacy_lineage_overlap": [],
+      "legacy_train_exclusions_for_current_holdout": 0,
+      "legacy_train_lineages": 3484,
+      "pattern_overlap_count": 0,
+      "profile_holdout_aliases": 212,
+      "profile_train_aliases": 912
+    },
+    "hashes_after": {
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v019/manifest.json": "372a55d317646c626a553f42f7b5187af562e8389ba88327646e55f540c438eb",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v019/receipt.json": "1d060046fa8e885483f74b27fc8caed793093889fd32faf6a93e1a9624d41f7c",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v020/manifest.json": "a397bee676812f7e39cdd8b6c801eae312436329de852462809788980f54e5d8",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v020/receipt.json": "773b40b8f7dd25204d04db68f687bc5d75fbccee9358e2ebba9ea75785c0e33d",
+      "tmp/r80_factory_20261007/training_familydev_v1/legacy/manifest.json": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v020/member-0.pt": "03676688ab470573cdd3537e09de23cdf7774415423b65eb4c0b1639790ed0ac",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v020/member-1.pt": "36acd5523300868da93f4df145c0e31cb5ca4b8e751861f254eae6266524b417",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v020/member-2.pt": "b37b1ae4ab8df03160e8ade0c455eec17a8840688d51d8e28bcdfac0e40fe4b2",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v020/summary.json": "30d2c959fdf859ea324db840269382ea6eae7e1573123277765c852b3d45a9ae",
+      "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e"
+    },
+    "hashes_before": {
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v019/manifest.json": "372a55d317646c626a553f42f7b5187af562e8389ba88327646e55f540c438eb",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v019/receipt.json": "1d060046fa8e885483f74b27fc8caed793093889fd32faf6a93e1a9624d41f7c",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v020/manifest.json": "a397bee676812f7e39cdd8b6c801eae312436329de852462809788980f54e5d8",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v020/receipt.json": "773b40b8f7dd25204d04db68f687bc5d75fbccee9358e2ebba9ea75785c0e33d",
+      "tmp/r80_factory_20261007/training_familydev_v1/legacy/manifest.json": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v020/member-0.pt": "03676688ab470573cdd3537e09de23cdf7774415423b65eb4c0b1639790ed0ac",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v020/member-1.pt": "36acd5523300868da93f4df145c0e31cb5ca4b8e751861f254eae6266524b417",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v020/member-2.pt": "b37b1ae4ab8df03160e8ade0c455eec17a8840688d51d8e28bcdfac0e40fe4b2",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v020/summary.json": "30d2c959fdf859ea324db840269382ea6eae7e1573123277765c852b3d45a9ae",
+      "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e"
+    },
+    "kind": "r80_sm_v020_saved_physical_checks_v001",
+    "limits": [
+      "No model was instantiated and no forward, inference, training, or prediction was run.",
+      "Fresh initialization is supported by checkpoint metadata, distinct terminal tensor digests, and the reviewed source contract; initial pre-training tensors are not saved, so their bytes cannot be replayed.",
+      "Saved metric values were not recomputed because that would require model forward inference; no SM-improvement claim is made.",
+      "Only local saved sample/radiation tensors referenced by completed v020 were loaded to reproduce normalization; data-v021 was not read."
+    ],
+    "manifest_delta": {
+      "added_ids": 55,
+      "added_patterns": 55,
+      "profile_holdout": 938,
+      "profile_train": 2487,
+      "v019_rows": 3370,
+      "v020_rows": 3425
+    },
+    "members": [
+      {
+        "binding_match": true,
+        "complete": true,
+        "development_metadata_match": true,
+        "expected_optimizer_steps": 4400,
+        "file_sha256": "03676688ab470573cdd3537e09de23cdf7774415423b65eb4c0b1639790ed0ac",
+        "fresh_initialization_metadata": true,
+        "legacy_manifest_match": true,
+        "member_seed": 0,
+        "model_tensor_count": 8,
+        "model_tensor_digest": "d28e6e527390a28989065a316891bc7b2d18b839935a28b71c210edc6bbeb544",
+        "model_tensors_finite": true,
+        "optimizer_moments_finite": true,
+        "optimizer_state_entries": 8,
+        "optimizer_steps": [
+          4400
+        ],
+        "optimizer_steps_match": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "signature_match": true,
+        "summary_hash_match": true,
+        "terminal_epoch": 0,
+        "terminal_phase": 2
+      },
+      {
+        "binding_match": true,
+        "complete": true,
+        "development_metadata_match": true,
+        "expected_optimizer_steps": 4400,
+        "file_sha256": "36acd5523300868da93f4df145c0e31cb5ca4b8e751861f254eae6266524b417",
+        "fresh_initialization_metadata": true,
+        "legacy_manifest_match": true,
+        "member_seed": 1,
+        "model_tensor_count": 8,
+        "model_tensor_digest": "9a46e17de48693f5e21d0caa4fe302ab02e0d2634bfa1c5fbf19350f9fb2c96d",
+        "model_tensors_finite": true,
+        "optimizer_moments_finite": true,
+        "optimizer_state_entries": 8,
+        "optimizer_steps": [
+          4400
+        ],
+        "optimizer_steps_match": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "signature_match": true,
+        "summary_hash_match": true,
+        "terminal_epoch": 0,
+        "terminal_phase": 2
+      },
+      {
+        "binding_match": true,
+        "complete": true,
+        "development_metadata_match": true,
+        "expected_optimizer_steps": 4400,
+        "file_sha256": "b37b1ae4ab8df03160e8ade0c455eec17a8840688d51d8e28bcdfac0e40fe4b2",
+        "fresh_initialization_metadata": true,
+        "legacy_manifest_match": true,
+        "member_seed": 2,
+        "model_tensor_count": 8,
+        "model_tensor_digest": "685e12ed9522556294c374d8db59f215d35c8647ae72eb8e4636255548607b5e",
+        "model_tensors_finite": true,
+        "optimizer_moments_finite": true,
+        "optimizer_state_entries": 8,
+        "optimizer_steps": [
+          4400
+        ],
+        "optimizer_steps_match": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "signature_match": true,
+        "summary_hash_match": true,
+        "terminal_epoch": 0,
+        "terminal_phase": 2
+      }
+    ],
+    "receipt19": {
+      "chunk_id": "15075d11c86b6ebb610b7872a8c4ff7d77dea1ea523c98c852139477d33882bc",
+      "cumulative_observations": 3370,
+      "cumulative_valid_unique": 3370,
+      "data_version": 19,
+      "manifest_id": "aab9aa36e45c216e3ff07802b3606e92d20dd79f30ae10204c29b734bfc2c3a8",
+      "new_observations": 59,
+      "new_valid_unique": 59,
+      "schema_version": 2,
+      "source_store_count": 1
+    },
+    "receipt20": {
+      "chunk_id": "3c8ffabdaff48152ebef36b176db0d0921b259b55e0f6891c98c0b99b5415616",
+      "cumulative_observations": 3425,
+      "cumulative_valid_unique": 3425,
+      "data_version": 20,
+      "manifest_id": "2b426bc86b559488df720f35d75b27b5477c5bc67f0f499cacd13e0e99aca518",
+      "new_observations": 55,
+      "new_valid_unique": 55,
+      "schema_version": 2,
+      "source_store_count": 1
+    },
+    "repo_head_expected": "bda0dcf",
+    "schema_version": 1,
+    "scope": "completed data-v019/data-v020 and models/data-v020 only; data-v021 not read",
+    "status": "passed",
+    "training_contract": {
+      "batch_size": 128,
+      "current_epochs": 100,
+      "current_train_rows": 2487,
+      "expected_optimizer_steps": 4400,
+      "holdout_inclusive_norm_differs": true,
+      "legacy_epochs": 30,
+      "legacy_train_rows": 10150,
+      "normalization_source": "recomputed from the 2487 profile_train rows only"
+    }
+  }
+}

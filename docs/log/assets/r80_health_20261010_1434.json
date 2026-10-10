@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "status": "passed_read_only_routine_health_not_new_census",
+  "observed_utc": "2026-10-10T06:34:32.5173061Z",
+  "source_health": {
+    "path": "tmp/r80_restored_health_20261010_v005/health_restored_20261010_1434.json",
+    "sha256": "47f87157ff4c2d33073c8ec3a7b211b9f4fa7b1c8b5c96566702b3e94f52fe12"
+  },
+  "process": {
+    "pid": 53228,
+    "creation_unix_ms": 1791602636766,
+    "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+    "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+  },
+  "launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+  "runtime_file_bindings_verified": 19,
+  "process_matches_restoration_receipt": true,
+  "watcher_inventory_exact": true,
+  "watch_status": "running_cycle",
+  "reported_sm_data_version": 20,
+  "claimed_progress": [
+    {
+      "store": "dedust_r80kf9839e61a70045af",
+      "completed": 7,
+      "total": 16,
+      "latest_minutes": 1
+    },
+    {
+      "store": "dedust_r80c96357896g02",
+      "completed": 10,
+      "total": 16,
+      "latest_minutes": 3
+    },
+    {
+      "store": "dedust_r80c96357896g03",
+      "completed": 12,
+      "total": 16,
+      "latest_minutes": 2
+    }
+  ],
+  "scope_alarm_count": 0,
+  "latest_full_census": "docs/log/assets/r80_best_status_20261010_1423.json",
+  "latest_full_census_sha256": "ee9b6d32c1cabf64da8a76beb18e874cdad59439f62b7f54f18de8e7d6f8c733",
+  "latest_full_census_unique": 3506,
+  "next_routine_health_taipei": "2026-10-10 15:04",
+  "sm_v020_physical_review": "docs/log/assets/r80_sm_v020_physical_review_20261010.json",
+  "R81_release_created": false,
+  "controller_restart": false,
+  "worker_signal": false,
+  "queue_mutation": false,
+  "model_mutation": false,
+  "new_best_assessed": false
+}
