@@ -158,7 +158,7 @@ R81派工前先執行`python -m script.prepare_symmetry_filter check-wide-inputs
 
 `script/start_r81_worker.ps1` 與 `script/r81_worker_entry.py` 已提交到 GAN。現有三台 R80 worker 繼續用原入口；不要現在切換。R81只使用鄒穎麒私人 `experiments/r81_wide_filter_20261007` 內的獨立 dataset，不將 dual jobs 混入 R80 queue。[版本、審查與限制](assets/r81_worker_entry_readiness_20261010.json)。
 
-啟用時由開發機交付實際 `Release` 檔、SHA256及 `Stage`，三台先pull GAN再執行新入口；目前尚無可執行 release 或 worker 指令。release會綁定Git版本、完整輸入、queue與R80最終證據：精確5,000唯一有效／零pending、已驗證的最終census及原始rows/proofs/producer。封存action/profile保留原producer_path，NAS位置另行綁hash；tracked census採repo-relative Git blob，各電腦clone路徑不同也可核對，不回寫原始證據。R80重測、真值稽核、統計及圖表亦须完成，不能單靠達額提前派R81。
+啟用時由開發機交付實際 `Release` 檔、SHA256及 `Stage`，三台先pull GAN再執行新入口；目前尚無可執行 release 或 worker 指令。release會綁定Git版本、完整輸入、queue與R80最終證據：精確5,000唯一有效／零pending、已驗證的最終census及原始rows/proofs/producer。封存action/profile保留原producer_path，NAS位置另行綁hash；tracked census採repo-relative Git blob，各電腦clone路徑不同也可核對，不回寫原始證據。10/11使用者最新指定「到5000筆就開始做」：達5,000立即開始R81備料，R80重測、完整凍結稽核、統計與圖表同步完成，不將全部圖表完成額外設為工程release前提。HFSS仍以實際validated5,000／零pending／獨立dataset及release部署為必要交接證據；既有入口本來只驗證這些真值與交接條件，無需改其runtime。
 
 先釋出`EngineeringOnly`的6 Fast＋2 Discrete＋2 mesh；正式60筆保留未排隊。四組實測曲線與五個margin的最大差異均≤0.3 dB後，才交付`Formal`。正式批次限三批、每批60：b1為history／specialist／random各20，b2/b3為best_min_margin／uncertainty／random各20，後批須綁定前批回填與SM模型。不預排三批，也不要求尚不存在的正WM重測才允許首批。
 
