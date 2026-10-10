@@ -11,7 +11,7 @@
 
 - **目前狀態（10/10 09:15 全量／09:32 健康）**：有效唯一對稱實測 **3,241/5,000（64.82%）**，比08:31增加34筆；沒有新最佳，WM仍 **+0.0216822624 dB**、獨立重測 +0.0364336967 dB。[全量證據](../docs/log/assets/r80_best_status_20261010_0915.json)。09:32原主線exact live，SM報v016／完成21輪／running_cycle；三個claimed批次15/16、14/16、13/16，最近結果1／0／2分鐘前，scope零警報，另有32筆guided及80筆LOW待跑。[健康證據](../docs/log/assets/r80_health_20261010_0932.json)。cached3,214不是新census；**下一例行檢查10:02**。
 - **固定32筆對照完成並通過獨立raw核對**：32有效、0終態錯誤、0正WM；批內最佳−4.6554374695 dB，沒有刷新全域最佳。共同32筆LCB Spearman原v010為0.2221、current-only為0.0238；current-only共同樣本預測誤差也較高，先不替換主線。[完整結果與圖](../docs/log/assets/r80_currentonly_prospective_v010_completed32_result_20261010.json)。current-only擁有樣本的best較好、median較差，不能宣稱全面優劣或pretrain因果；不是v016對照。舊drivers不得重啟，兩片不得重派。
-- **新多樣性候選池僅離線準備**：20k＝5k random＋5k smooth blob＋8k pixel mutation＋2k group mutation，幾何與保存資料通過獨立核對；[準備證據](../docs/log/assets/r80_structured_geometry_pool_offline_readiness_20261010.json)。這些不是實測筆數，只排除凍結v010的2,840個圖形，尚未採用或派HFSS；不得當作完整live measured／queued exclusion。R80目標仍是5,000個有效唯一實測；R81及後续spec尚未完成，先完成R80。
+- **新多樣性48筆輸入已完成，未派HFSS**：20k池完成固定v015排名；最新212個scoped輸入批次加主線保留名單共排除3,376個圖形。實際選出random／smooth blob／pixel mutation／group mutation各12筆，各8LCB＋4disagreement，整批Hamming最小64／canonical cap2，拆成3×16且每片各來源4筆。tensor／完整來源／保存分數與曲線／固定排序／shard hashes通過獨立核對。[48筆準備證據](../docs/log/assets/r80_structured48_preparation_readiness_20261010.json)。派工工具仍在審查，尚未建queue action或NAS input，不能計入實測或當作主線v016替換。派工前仍須fresh lock內capacity／duplicate／main guard；R80目標5,000，R81及後續spec仍待完成R80。
 
 下列較早時間戳為歷史操作紀錄；已被上述新狀態取代的程序不得重啟。
 

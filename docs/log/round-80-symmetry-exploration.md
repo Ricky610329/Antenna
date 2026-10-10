@@ -1277,3 +1277,11 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 ### 2026-10-10 09:32：例行健康核對通過
 
 原controller PID／creation／argv／launch與last receipt hash核對通過，running_cycle、completed21、reported SMv016；scope無警報。三個claimed批次15/16、14/16、13/16，最新結果1／0／2分鐘前，另有兩片guided與五片LOW待跑。[健康證據](assets/r80_health_20261010_0932.json)。cached3,214不當作新的完整census；最新完整仍是09:15的3,241／最佳+.0216822624。未重查全量真值、重啟controller或改queue。下一例行健康10:02。
+
+### 2026-10-10：多來源48筆實際選樣與輸入完成
+
+唯讀凍結全部212個scoped queue輸入及main protected reservations，3381筆manifest rows去重成3376個排除圖形，包含已測／待跑／失敗輸入的保守superset。queue bytes、input metadata與exact main waiting guard前後一致；未讀sample／rad／results，此snapshot不是新的census。獨立本機重播確認最新09:15全部3241個唯一實測都在此集合。初次import缺本機pilot_audit模組，在NAS讀取與輸出前失敗；加既有模組所在目錄後單次成功，沒有改原publisher。
+
+固定v015的20k保存排名，為四個來源各選12筆：fresh random及smooth blob各8 global LCB＋4 high disagreement；parent pixel及group各8 parent LCB＋4 high disagreement。共同p60仍−12.4235828898，整批Hamming最小64、canonical最大2，無配額借用或限制放寬。實際preparer exit0產出3×16，每片四來源各4筆；獨立saved-output核對48個physical tensors、完整nested source rows、保存分數與曲線、固定排序及全部bundle／shard hashes皆exact，exclusion overlap0。[實際準備證據](assets/r80_structured48_preparation_readiness_20261010.json)。
+
+仍是48個候選，沒有新增實測／NAS copy／queue action／HFSS dispatch，不替換主線v016。新publisher審查發現既有逐片commit不是rollback原子交易，必須保存exact append/readback且對部分prefix fail closed；正在完成窄修。任何後續派工均需fresh鎖內整批48＋主線保留量符合global5000／guided96、目前duplicate exclusion與exact等待窗口，不能只檢查第一片16筆或自動重送剩餘片。
