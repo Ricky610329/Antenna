@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "status": "restored_health_mutable_attempt_fix_verified",
+  "scope": "Read-only restored-controller health helper repair and one actual health observation; no controller restart, process signal, queue mutation, NAS write, HFSS start, or new full-data census.",
+  "historical_failure": {
+    "scheduled_local_time": "2026-10-10 11:57 Asia/Taipei",
+    "exact_seconds_known": false,
+    "exit_code": 1,
+    "error": "Immutable new-launch attempt bytes differ from the restoration receipt.",
+    "failed_before_CIM_or_scoped_status": true,
+    "health_receipt_created": false,
+    "interpretation": "The v004 health helper incorrectly treated the whole attempt record as immutable. This was a health-tool assumption failure, not a controller failure or restart."
+  },
+  "cause": {
+    "source": "script/symmetry_factory_watch.py",
+    "source_sha256": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+    "source_lines": "98-102",
+    "behavior": "Every cycle atomically rewrites current_watch_status inside the attempt record, so the full attempt bytes legitimately change while fixed launch and history fields remain bound."
+  },
+  "repair": {
+    "entry": {
+      "path": "tmp/r80_restored_health_20261010_v005/check_health_restored.ps1",
+      "sha256": "069c287b2733f9d7edde96c351a8375b2ef405d8dc18a8fea31ef251153af3f2"
+    },
+    "common": {
+      "path": "tmp/r80_restored_health_20261010_v005/check_health_restored_common.ps1",
+      "sha256": "2fad7b019348cd975323beb36acc5f13d38f08b1e8167648ab598734ce8ebd42"
+    },
+    "behavior": [
+      "Capture and hash the exact stable attempt bytes that are parsed, while validating fixed schema, launch, settings, prior stopped local_STOP history, profile, scope, search policy, and nested current bindings.",
+      "Continue deriving PID only from the immutable restoration receipt and require exact PID, creation time, executable, argv, and a single matching watch-controller inventory entry.",
+      "Before attempt or live health reads, rehash all 19 runtime files frozen in the immutable restoration receipt; fail closed on any missing file or mismatch."
+    ]
+  },
+  "verification": {
+    "focused_result": {
+      "path": "tmp/r80_restored_health_20261010_v005/focused_test_result.json",
+      "sha256": "130fd2cef6030ff9610bb0815e04dc9ebbb8554773bdb94826d8c956e22a8b85",
+      "cases_passed": 5,
+      "entry_sha256_at_test": "2b5c380f2acd5bdd893ba1612c8dbb3a2d351184c8405b60554b741a9fb9a6a1",
+      "common_sha256": "2fad7b019348cd975323beb36acc5f13d38f08b1e8167648ab598734ce8ebd42",
+      "note": "The five focused cases exercised the mutable-attempt/fixed-field core before the final nine-line runtime rehash guard was added. The common helper remained byte-identical; the actual health invocation below exercised the final entry including all 19 runtime rehashes."
+    },
+    "independent_reviews": [
+      {
+        "path": "tmp/r80_restored_health_20261010_v005/independent_health_fix_review.json",
+        "sha256": "5279ba0d6b105ce4d48588070f50bdf37ab2cf9a5c91db7476ca5565f81c5b6d",
+        "reviewed_entry_sha256": "2b5c380f2acd5bdd893ba1612c8dbb3a2d351184c8405b60554b741a9fb9a6a1",
+        "status": "PASS"
+      },
+      {
+        "path": "tmp/r80_restored_health_20261010_v005/independent_health_fix_review_v2.json",
+        "sha256": "3a2a90f15c983294df698aff2cf085e4ac2728770bdf45a0bafd855933bdb487",
+        "reviewed_entry_sha256": "069c287b2733f9d7edde96c351a8375b2ef405d8dc18a8fea31ef251153af3f2",
+        "reviewed_common_sha256": "2fad7b019348cd975323beb36acc5f13d38f08b1e8167648ab598734ce8ebd42",
+        "status": "PASS"
+      }
+    ]
+  },
+  "actual_health": {
+    "path": "tmp/r80_restored_health_20261010_v005/health_restored_20261010_1205.json",
+    "sha256": "6388df892ecad5678f0dc80b2a8cdbc1d9b1046b5d20f592ebe367bb6088ac57",
+    "filename_stamp_is_observation_time": false,
+    "observed_utc": "2026-10-10T04:03:34.0874973Z",
+    "observed_local_time": "2026-10-10 12:03:34 Asia/Taipei",
+    "status": "restored_main_health_observed",
+    "scoped_status_exit": 0,
+    "runtime_file_bindings_verified": 19,
+    "process": {
+      "pid": 53228,
+      "creation_unix_ms": 1791602636766,
+      "new_launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+      "matches_restoration_receipt": true,
+      "watcher_inventory_exact": true
+    },
+    "watch_status": {
+      "status": "running_cycle",
+      "latest_data_version": 18,
+      "latest_data_version_is_not_a_new_full_census": true,
+      "claimed_progress": [
+        "13/16",
+        "14/16",
+        "5/16"
+      ],
+      "latest_result_minutes": [
+        2,
+        2,
+        3
+      ],
+      "scope_alarms": 0
+    },
+    "automatic_restart": false,
+    "process_signal_or_stop": false,
+    "source_or_queue_mutation": false
+  },
+  "unchanged_scientific_status": {
+    "latest_full_census_local_time": "2026-10-10 11:40 Asia/Taipei",
+    "valid_unique": 3361,
+    "target": 5000,
+    "completion_percent": 67.22,
+    "new_best": false,
+    "best_factory_margin_db": 0.0216822624,
+    "interpretation": "The 12:03 health observation is not a full raw census and does not update the best result."
+  },
+  "next_routine_health_local_time": "2026-10-10 12:34 Asia/Taipei"
+}

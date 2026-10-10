@@ -1378,3 +1378,10 @@ native launcher exit_code實際為null，故只以原traceback及durable deferra
 ### 2026-10-10：publisher native exit code 保存缺陷完成窄修準備
 
 11:22已執行launcher的terminal receipt中exit code為null，歷史值維持未知，不回填猜測值。未來版只在`Start-Process`後立即保留native handle，`WaitForExit`後於任何`Refresh`前讀取整數exit code；其餘activation、lease、命令、PID absence、log、無kill與不自動重試契約不變。既有一次性private-Python `sys.exit(7)` probe實際取得7，獨立saved-source審查通過；未再執行probe或publisher。[來源、probe與限制](assets/r80_publisher_exitcode_capture_fix_20261010.json)。此版尚未綁定或執行，僅修正instrumentation，不是HFSS、WM或性能進展。
+
+
+### 2026-10-10 12:03：恢復後健康入口修正並實際通過
+
+11:57例行健康使用舊版入口時，在CIM／scoped status之前因「attempt整檔bytes不同」exit1；watch每輪本來就會重寫attempt內的`current_watch_status`，所以這是健康工具的錯誤不可變假設，不是controller故障或重啟。修正版改為一致快照並核對固定launch／settings／舊local_STOP歷史／profile／scope／search欄位，另在live觀測前重算restoration receipt綁定的19個runtime檔案；五個核心窄測與兩輪獨立source review通過。
+
+實際receipt的`observed_utc`為04:03:34Z，即台北12:03:34；檔名中的1205只是一個stamp。修正版唯讀健康exit0：仍是PID53228／同一new launch、唯一watch、running_cycle，19個runtime bindings全數吻合；三片claimed13/16、14/16、5/16，最新2／2／3分鐘，scope零警報，沒有restart、signal或queue/source mutation。[修正與實際健康證據](assets/r80_restored_health_mutable_attempt_fix_20261010.json)。controller報v18不當新census；全量仍以11:40的3,361／5,000與WM +0.0216822624 dB為準，沒有新最佳。下一例行健康12:34。
