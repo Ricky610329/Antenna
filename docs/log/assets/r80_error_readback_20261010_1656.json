@@ -1,0 +1,26 @@
+{
+  "observed_utc": "2026-10-10T08:56:26.510279+00:00",
+  "read_only": true,
+  "rows": [
+    {
+      "store": "dedust_r80cbbb8f9c1g03",
+      "id": "r80cbbb8f9c1g_00017_a4a33089",
+      "current_entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      },
+      "results_sha256": "5f45da8a287a18027421b5437338e15732560f8552fc13c03bb7624e95ec83a8"
+    },
+    {
+      "store": "dedust_r80cbbb8f9c1g03",
+      "id": "r80cbbb8f9c1g_00020_a059550e",
+      "current_entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      },
+      "results_sha256": "5f45da8a287a18027421b5437338e15732560f8552fc13c03bb7624e95ec83a8"
+    }
+  ]
+}
