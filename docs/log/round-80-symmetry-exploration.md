@@ -1385,3 +1385,10 @@ native launcher exit_code實際為null，故只以原traceback及durable deferra
 11:57例行健康使用舊版入口時，在CIM／scoped status之前因「attempt整檔bytes不同」exit1；watch每輪本來就會重寫attempt內的`current_watch_status`，所以這是健康工具的錯誤不可變假設，不是controller故障或重啟。修正版改為一致快照並核對固定launch／settings／舊local_STOP歷史／profile／scope／search欄位，另在live觀測前重算restoration receipt綁定的19個runtime檔案；五個核心窄測與兩輪獨立source review通過。
 
 實際receipt的`observed_utc`為04:03:34Z，即台北12:03:34；檔名中的1205只是一個stamp。修正版唯讀健康exit0：仍是PID53228／同一new launch、唯一watch、running_cycle，19個runtime bindings全數吻合；三片claimed13/16、14/16、5/16，最新2／2／3分鐘，scope零警報，沒有restart、signal或queue/source mutation。[修正與實際健康證據](assets/r80_restored_health_mutable_attempt_fix_20261010.json)。controller報v18不當新census；全量仍以11:40的3,361／5,000與WM +0.0216822624 dB為準，沒有新最佳。下一例行健康12:34。
+
+
+### 2026-10-10 12:14–12:16：使用者詢問，3,389筆／最佳未更新
+
+12:14只讀健康核對同一main PID53228／launch5a181a47…與19份runtime來源，三片claimed8/16、2/16、1/16，最近3／1／3分鐘有結果，scope無警報。12:16完成既有腳本全量raw重播：3,394個成功觀測含重測，去重3,389筆，較11:40增加28筆（67.78%）；最佳仍為r80localv1_00026_f6ffb938，WM +0.0216822624 dB、帶內最差S11 −10.0960884094 dB、最低Gain 4.0216822624 dBi，沒有新最佳。[本次raw及健康證據](assets/r80_best_status_20261010_1214.json)。
+
+raw保存1筆首次HFSS／COM錯誤，不計有效數；未清claim、重啟worker或派新HFSS。SM仍更新，性能停滯已向使用者說明；新48與最佳附近16尚未派工，隔離原生批次入口獨立24項窄測通過但尚未採用，不宣稱新性能提升。下一例行12:34；R80與後續spec尚未完成。
