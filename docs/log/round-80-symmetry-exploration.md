@@ -1488,3 +1488,8 @@ helper保留partial-fail警報exit1，但原main身份／19來源與唯一invent
 ### 2026-10-10 19:04後：v023 guided48完整真值與獨立核對
 
 原cycle af65883a…三片done且無fail，48/48有效唯一精確LR，三arm各16，actual origin16fresh／32parent。全部48原raw WM／pattern與96sample+rad hashes由獨立Sol重播通過；主控來源不變，無額外HFSS／forward／訓練／派工。該批最佳WM−4.9226799011，中位−12.7981538773、平均−13.5685837045，0正WM；saved meanρ.1929005645／MAE5.2488837325，LCBρ.2085323491／MAE5.0257001960，未超過17:59全量最佳+.0216822624。current/legacy exact overlap均0，physical pair Hamming min64／median309。g02原首次COM row r80caf65883ag_00016_8cb38c6f已final ok，raw與sample／rad hash已驗證；這不表示其他LOW錯誤恢復。沿用v022 readout／gate／saved replay，只改cycle/version/fit/origin與恢復row披露，計算方法未改。與獨立v023 model audit綁定同cycle／3630累積資料（2667train／963holdout）；不把3630都叫train、不從不同cohort推斷版本改善、精度提升或因果，也沒有新全量census。[完整原始與獨立核對證據](assets/r80_sm_v023_cohort48_result_20261010.json)。
+
+
+### 2026-10-10 19:34：三台guided有新結果、218上一LOW watchdog恢復16/16
+
+main身份／19來源與唯一inventory通過，scope仍因舊LOW部分失敗exit1。現在guided d2451199g01／g02／g03分屬216／37／218，11／7／3成功且最近1／3／1分鐘有saved結果；g02 row r80cd2451199g_00016_14194ece與g03 row r80cd2451199g_00002_ad048088各COM0x80070223 attempts1，fail不存在，不提前判終態。218已完成上一LOW k5f7985239fe04028：16/16成功、done存在／fail不存在，已按既有metric helper重算原watchdog row r80kl09_9becc84667fb WM−13.8992547989及sample/rad綁定，既有verify_completed全16通過，input/store metadata前後不變；只有該原error的WM另外重算，不誇大為16個WM獨立重播。舊LOW ka00bff601d27501e的15成功＋1COM attempts4、216／218 fail與18:34results/fail hashes不變，37仍可接管。沒有新全量count／best、沒有重啟／刪marker／queue修改／額外HFSS或SM性能宣稱。下一例行20:04。[完整健康及恢復證據](assets/r80_health_20261010_1934.json)。
