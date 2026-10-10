@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "status": "independent_actual_cpu_prediction_reproduction_passed_no_dispatch",
+  "candidate_count": 20000,
+  "model_fit_binding": {
+    "cumulative_valid_unique": 3147,
+    "data_version": 15,
+    "manifest_id": "01abc622b49d8291912783f7542db827bae2dfa6119e4f4494639b096430932e",
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+  },
+  "model_ids": [
+    {
+      "architecture": "CurveMLP-216",
+      "data_version": "15",
+      "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v015\\member-0.pt",
+      "manifest_id": "01abc622b49d8291912783f7542db827bae2dfa6119e4f4494639b096430932e",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "sha256": "3d46fb90ce326cb39ffa4ba9edbe40172bce48e3bd10e9760c0bc29c15cdcbba",
+      "source": "script.symmetry_training"
+    },
+    {
+      "architecture": "CurveMLP-216",
+      "data_version": "15",
+      "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v015\\member-1.pt",
+      "manifest_id": "01abc622b49d8291912783f7542db827bae2dfa6119e4f4494639b096430932e",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "sha256": "1c18b70b2f88cd5b18997ffddad6e812e0d203a9266442c2a3a2c573810b72a7",
+      "source": "script.symmetry_training"
+    },
+    {
+      "architecture": "CurveMLP-216",
+      "data_version": "15",
+      "file": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v015\\member-2.pt",
+      "manifest_id": "01abc622b49d8291912783f7542db827bae2dfa6119e4f4494639b096430932e",
+      "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "sha256": "3d397ec9c91d096be51fae1189978b9f30709a1c7014097c74d706c371534f24",
+      "source": "script.symmetry_training"
+    }
+  ],
+  "score_parameters": {
+    "radiation_weight": 0.2,
+    "uncertainty_weight": 0.1
+  },
+  "independent_review": {
+    "path": "tmp\\r80_structured_pool_sm_v015_20261010_v001\\independent_saved_review_v2.json",
+    "sha256": "ff642ba06cfa786a54a3e5560e94dcafeef2e2cee92ba26eafd8298abb5b0311"
+  },
+  "independent_forward": {
+    "assessment": "The separately persisted helper used the frozen package loader and models and exactly reproduced all saved member/mean/disagreement/radiation/theta arrays, all eight scores, and the full rank.",
+    "execution": {
+      "batch_size": 256,
+      "cpu_threads": 4,
+      "device": "cpu",
+      "elapsed_load_and_forward_s": 0.8161289999261498,
+      "loader": "script.symmetry_training.load_current_predictor(work_dir, 15)",
+      "predictor_method": "CurrentProfilePredictor.predict",
+      "row_count": 20000,
+      "score_function": "script.symmetry_sm_pool.score_predictions(defaults)",
+      "torch_interop_threads": 1
+    },
+    "helper": {
+      "bytes": 9050,
+      "path": "tmp/r80_structured_pool_sm_v015_20261010_v001/independent_forward_v15.py",
+      "sha256": "e889fb80e1b3bd7586d3ff44e38b119f3d949ec09df8388e5981e59bfa880168"
+    },
+    "lcb_rank_comparison": {
+      "dtype": "int32",
+      "exact": true,
+      "max_abs_diff": 0.0,
+      "shape": [
+        20000
+      ]
+    },
+    "prediction_array_comparisons": {
+      "predictor_response_disagreement": {
+        "dtype": "float32",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000
+        ]
+      },
+      "radiation": {
+        "dtype": "float32",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000,
+          2,
+          91
+        ]
+      },
+      "radiation_theta": {
+        "dtype": "float32",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          91
+        ]
+      },
+      "response_mean": {
+        "dtype": "float32",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000,
+          2,
+          17
+        ]
+      },
+      "response_members": {
+        "dtype": "float32",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          3,
+          20000,
+          2,
+          17
+        ]
+      }
+    },
+    "receipt": {
+      "bytes": 8025,
+      "path": "tmp/r80_structured_pool_sm_v015_20261010_v001/independent_forward_receipt_v15.json",
+      "sha256": "2138ca60eade0dabe2e98efa3289ee032545b21e4d387dc2159fee96c47841ab"
+    },
+    "score_array_comparisons": {
+      "factory_score": {
+        "dtype": "float64",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000
+        ]
+      },
+      "gain_margin": {
+        "dtype": "float64",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000
+        ]
+      },
+      "lcb_score": {
+        "dtype": "float64",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000
+        ]
+      },
+      "navigation_mean_score": {
+        "dtype": "float64",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000
+        ]
+      },
+      "navigation_score": {
+        "dtype": "float64",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000
+        ]
+      },
+      "radiation_margin": {
+        "dtype": "float64",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000
+        ]
+      },
+      "response_disagreement": {
+        "dtype": "float64",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000
+        ]
+      },
+      "s11_margin": {
+        "dtype": "float64",
+        "exact": true,
+        "max_abs_diff": 0.0,
+        "shape": [
+          20000
+        ]
+      }
+    }
+  },
+  "producer_receipt": {
+    "path": "tmp\\r80_structured_pool_sm_v015_20261010_v001\\run_receipt.json",
+    "sha256": "d224b1de36e92f52be5a7b5801ca397d81771e33fa7d88f63ff34a2d33390928"
+  },
+  "prediction_npz": {
+    "path": "tmp\\r80_structured_pool_sm_v015_20261010_v001\\predictions_and_metrics.npz",
+    "sha256": "c77565ea3348e620e001d836b518480ddb600a9bb7d21fd58c83a56fc6de7980"
+  },
+  "global_p60_capacity": {
+    "capacity_interpretation": "raw eligibility for four future disagreement rows per origin only, before cross-arm consumption, deduplication, ancestry, and diversity",
+    "cohort_selected": false,
+    "global_eligible_count": 8000,
+    "global_navigation_mean_p60": -12.423582889835039,
+    "per_origin": {
+      "fresh_random_pixel": {
+        "future_disagreement_quota_4_has_capacity": true,
+        "global_p60_eligible_count": 753,
+        "global_p60_eligible_fraction_of_origin": 0.1506,
+        "pool_count": 5000
+      },
+      "fresh_smooth_blob": {
+        "future_disagreement_quota_4_has_capacity": true,
+        "global_p60_eligible_count": 344,
+        "global_p60_eligible_fraction_of_origin": 0.0688,
+        "pool_count": 5000
+      },
+      "parent_group_mutation": {
+        "future_disagreement_quota_4_has_capacity": true,
+        "global_p60_eligible_count": 1834,
+        "global_p60_eligible_fraction_of_origin": 0.917,
+        "pool_count": 2000
+      },
+      "parent_pixel_mutation": {
+        "future_disagreement_quota_4_has_capacity": true,
+        "global_p60_eligible_count": 5069,
+        "global_p60_eligible_fraction_of_origin": 0.633625,
+        "pool_count": 8000
+      }
+    }
+  },
+  "top_lcb_origin_counts": {
+    "1024": {
+      "fresh_random_pixel": 2,
+      "fresh_smooth_blob": 1,
+      "parent_group_mutation": 609,
+      "parent_pixel_mutation": 412
+    },
+    "128": {
+      "fresh_random_pixel": 0,
+      "fresh_smooth_blob": 0,
+      "parent_group_mutation": 108,
+      "parent_pixel_mutation": 20
+    },
+    "32": {
+      "fresh_random_pixel": 0,
+      "fresh_smooth_blob": 0,
+      "parent_group_mutation": 30,
+      "parent_pixel_mutation": 2
+    },
+    "512": {
+      "fresh_random_pixel": 0,
+      "fresh_smooth_blob": 0,
+      "parent_group_mutation": 321,
+      "parent_pixel_mutation": 191
+    }
+  },
+  "surrogate_strict_positive_s11_and_gain_count": 0,
+  "original_inline_runner_provenance": {
+    "assessment": "The original runner was inline stdin and was not persisted. No runner-file hash can be independently checked or retrospectively invented; imported sources, frozen inputs/models, outputs, and the saved-output supplement helper are hash-bound.",
+    "execution_form": "PowerShell literal here-string piped to ant Python stdin",
+    "persisted_runner_path_at_execution": null,
+    "persisted_runner_sha256_at_execution": null,
+    "supplement_execution_history": {
+      "bytes": 1915,
+      "path": "tmp/r80_structured_pool_sm_v015_20261010_v001/supplement_execution_history.json",
+      "sha256": "5e761a13423c5692351f6d529b1e3252264a469368d50450d7c0c919133d61d4"
+    }
+  },
+  "source_pool_exclusions": "frozen v010 only; latest measured and queued exclusions still required",
+  "limits": {
+    "NAS_or_HFSS_or_worker_or_queue_or_pilot_truth_read": false,
+    "actual_model_forward_checked": true,
+    "actual_model_forward_scope": "one independent 20,000-row CPU forward with the frozen v15 package loader; exact saved-array/score/rank comparison",
+    "checkpoint_tensor_semantics_checked": "only as exercised and validated by the frozen loader and exact forward reproduction; no independent parameter-by-parameter audit",
+    "future_balanced_48": "saved evidence may inform a future proposal only after the frozen pilot is terminal; no policy or cohort is adopted here",
+    "selection_or_dispatch_or_adoption": false,
+    "training_or_retraining": false,
+    "v15_pilot_leakage_disclosure": "data-v015 training may include early-pilot outcomes; this artifact must never be used to judge the fixed-v010 two-scorer pilot."
+  },
+  "preparation_and_dispatch_status": "not selected or dispatched; fixed 32 pilot remains unchanged",
+  "predictions_are_hfss_truth": false,
+  "counted_toward_5000": false
+}

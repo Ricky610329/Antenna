@@ -1247,3 +1247,9 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 使用者查詢觸發完整只讀核對；08:29–08:31 各 store cutoff 共重播 3,212 筆成功觀測，含重測後有 3,207 個有效、不重複的對稱圖形，比 07:33 增加 57 個，達 5,000 目標的 64.14%。最佳仍為 r80localv1_00026_f6ffb938：WM +0.0216822624 dB、帶內最差 S11 −10.0960884094 dB、最低 Gain 4.0216822624 dBi；獨立重測 WM +0.0364336967 dB。保存原始摘要、cutoffs 與來源 hashes，未改 queue 或 controller。[查詢及健康紀錄](assets/r80_best_status_20261010_0831.json)。
 
 08:32 exact controller 身分核對通過，工廠無警報；三個已認領批次分別 15/16、13/16、11/16，最新結果均約兩分鐘前，另有待跑批次。主線 SM 已報 v015／完成 20 個 cycles；這是 controller 狀態，非新的全資料 census。固定 32 筆對照第一批已完成，第二批 13/16 尚非 terminal，因此未做完整對照 truth readout，未採用 current-only 模型。两筆首試 HFSS COM 例外仍交由既有重試機制處理，未刪 claims 或重啟 workers。下一次例行健康檢查 09:02；R80 與 R81 spec 任務尚未完成。
+
+### 2026-10-10：新20k池完成v015預測與獨立實際重播
+
+以凍結 v015 三模型（fit snapshot 3,147）及既有 predictor／score function 完成全部20,000候選的 S11、Gain、radiation 與排名；另一代理以保存來源、相同模型、CPU4threads／batch256實際 forward，全部 member／mean／rad、八個 scores 及完整排序逐值相同。原產生程式是未保存的 inline stdin，不虛構原 runner hash；另保存獨立 forward helper／receipt。[預測準備證據](assets/r80_structured_pool_sm_v015_readiness_20261010.json)。
+
+全體 LCB top32 為30個 group mutation、2個 pixel mutation，預測偏向parent來源。global navigation mean p60為−12.4235828898，disagreement eligible有random753／blob344／group1,834／pixel5,069；只是原始資格數，尚未證明 joint Hamming64／canonical cap2 下能選滿48。模型預測雙margin嚴格正值的候選為0，不把此當作HFSS不可行。尚未選樣或派工，最新measured／queued排除仍必需；v015可能已學到早期pilot結果，禁止拿它評判固定v010雙scorer對照。
