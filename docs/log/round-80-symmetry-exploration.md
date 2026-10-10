@@ -1419,3 +1419,9 @@ raw保存1筆首次HFSS／COM錯誤，不計有效數；未清claim、重啟work
 13:34:18至13:36:00沿用相同hash的既有query腳本，唯讀重播3,467個成功觀測（含重測），去重3,462筆，較12:46增加44筆，達5,000目標69.24%。保存摘要、去重、最佳sample/rad與頻帶WM核對通過。[完整收據](assets/r80_best_status_20261010_1336.json)。最佳仍是r80localv1_00026_f6ffb938，WM +0.0216822624 dB，26.5–29.5 GHz最差S11 −10.0960884094 dB、最低Gain 4.0216822624 dBi；既有重測+0.0364336967屬同一圖形，沒有新最佳，沿用既有極座標圖。資料增加尚未推進最佳性能，性能停滯仍存在。
 
 13:34:07健康核對同一main PID53228／launch5a181a47…與19份runtime來源，三片claimed13/16、14/16、10/16，最新2／1／1分鐘有結果，scope零警報，guided及LOW均有待跑工作。raw保存兩筆首次HFSS／COM錯誤，未計有效資料，依原worker重試規則處理，不宣稱已恢復或終態。第一次查詢因呼叫端缺PYTHONPATH在匯入前失敗；補上repo import path後執行原hash腳本，未改主控、queue、claims或worker。新的多樣性48仍備妥未派，主控交接明確授權待回覆；下一例行健康14:04，R80與R81/spec尚未完成。
+
+### 2026-10-10 14:04：例行健康通過，R81入口與歷史訓練設定已備妥
+
+14:04:22原main PID53228／creation1791602636766／launch5a181a47…與19份runtime sources均吻合，running_cycle、reported SM v20；三片claimed11/16、4/16、3/16，最新0／3／2分鐘有結果，scope無警報、LOW有待跑工作。[健康收據](assets/r80_health_20261010_1404.json)。本次不做新全量census／最佳判讀，最近仍是13:36的3,462／WM +0.0216822624；reported模型版本不是新性能證明，也未查證先前兩筆raw錯誤是否已恢復。
+
+R81新入口267af9c及歷史masked-prior config-only builder103517c均已推送GAN，來源審查／實際committed metadata gate與實際manifest config生成分開保存。R80原來源與三台worker不變；沒有R81 release、SM訓練或HFSS。多樣性48主控切換仍等明確授權，不寫STOP或重送舊action；下一例行14:34 notify-only timer593，屆時先重驗身分，不自動重啟。

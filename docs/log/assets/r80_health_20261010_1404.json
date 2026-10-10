@@ -1,0 +1,53 @@
+{
+    "schema_version":  1,
+    "status":  "passed_read_only_routine_health_not_new_census",
+    "observed_utc":  "2026-10-10T06:04:22.7119024Z",
+    "source_health":  {
+                          "path":  "tmp/r80_restored_health_20261010_v005/health_restored_20261010_1404.json",
+                          "sha256":  "648a0e1c4634ce25d473600188d41c7ca7801022ed7f24a4a57603152e97844e"
+                      },
+    "process":  {
+                    "pid":  53228,
+                    "creation_unix_ms":  1791602636766,
+                    "executable":  "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+                    "argv":  "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+                },
+    "launch_id":  "5a181a47c95a4ab1a8377d803f9da3c1",
+    "runtime_file_bindings_verified":  19,
+    "process_matches_restoration_receipt":  true,
+    "watcher_inventory_exact":  true,
+    "watch_status":  "running_cycle",
+    "reported_sm_data_version":  20,
+    "claimed_progress":  [
+                             {
+                                 "store":  "dedust_r80c96357896g01",
+                                 "completed":  11,
+                                 "total":  16,
+                                 "latest_minutes":  0
+                             },
+                             {
+                                 "store":  "dedust_r80c96357896g02",
+                                 "completed":  4,
+                                 "total":  16,
+                                 "latest_minutes":  3
+                             },
+                             {
+                                 "store":  "dedust_r80c96357896g03",
+                                 "completed":  3,
+                                 "total":  16,
+                                 "latest_minutes":  2
+                             }
+                         ],
+    "scope_alarm_count":  0,
+    "latest_full_census":  "docs/log/assets/r80_best_status_20261010_1336.json",
+    "latest_full_census_unique":  3462,
+    "next_routine_health_taipei":  "2026-10-10 14:34",
+    "R81_worker_entry_commit":  "267af9c",
+    "R81_prior_recipe_commit":  "103517c",
+    "R81_release_created":  false,
+    "controller_restart":  false,
+    "worker_signal":  false,
+    "queue_mutation":  false,
+    "model_mutation":  false,
+    "new_best_assessed":  false
+}
