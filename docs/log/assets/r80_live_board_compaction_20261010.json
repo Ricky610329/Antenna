@@ -1,0 +1,23 @@
+{
+  "status": "passed_exact_history_preservation_and_live_link_check",
+  "source": "configs/ONGOING.md",
+  "original_file_sha256": "0a4657e7ee0a1d8a5352076669e9f2743d212c7c517d51f7a400c790d355d4a7",
+  "original_file_bytes": 111334,
+  "original_section_bytes": 53137,
+  "original_section_sha256": "2ab41d677ae75a634e175fe62095022ed3fee9a64b7f7bb74d00251d09b9dc80",
+  "archive": "docs/log/assets/round-80/ongoing-r80-snapshot-20261010-1604.zip",
+  "archive_sha256": "3c76edf0ec21ba12b79950246bef92174d02a9ffdb900386665528c2d25dd773",
+  "archive_member": "configs/ONGOING-R80-section.md",
+  "archive_member_sha256": "2ab41d677ae75a634e175fe62095022ed3fee9a64b7f7bb74d00251d09b9dc80",
+  "current_file_sha256": "1d766e9a05949085f4c688f77924a4d9941232af506846d26970fa8e676bf47d",
+  "scope": "R80/R81 section only; older-history suffix is byte-unchanged",
+  "compact_section_bytes": 5309,
+  "unchanged_prefix_sha256": "8d1f903f0e1881e9cb319cbf98d35a12f1e745323d1fe5840ea3fe63b72902be",
+  "unchanged_older_history_suffix_sha256": "ef349a069ca2058a39d5c8b00f0b1adcf58851690212fcc7227b7d230ad95050",
+  "helper_sha256": "f65bee139ea3e9b63252072005ee392be22298996297f622af970fd4613ac31b",
+  "runtime_or_queue_changes": false,
+  "limits": [
+    "Documentation only; no new solver, model, scientific truth or release proof.",
+    "Archived relative links retain the original configs/ONGOING.md base."
+  ]
+}
