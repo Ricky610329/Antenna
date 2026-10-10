@@ -1660,3 +1660,11 @@ v029完成action綁fit4009／本輪新增92；獨立Sol有界實體核對43/43�
 舊ka00 results/fail SHA與23:04完整性proof不變，15有效／三機終態／eligible空沿用；scoped status1保留舊partial alarm，不等同main停機。Completed action仍6677fa77/v029、14完成cycles，與01:39 full收據SHA相同；fit4009／實體43項與92增量不重複核對。Latest full仍01:39的4,074與best+.021682，這次無全量census／global best刷新、model forward／audit、15raw重播或額外HFSS。下一例行02:34。[健康與分cutoff證據](assets/r80_health_20261011_0204.json)。
 
 使用者最新要求達5,000即開始濾波器，R80統計圖表同步收尾；平緩、相對下壓的過渡帶是R81軟目標，不入WM。已記錄於R81最新政策與runbook，不更改R80 live來源或提前混用queue。
+
+### 2026-10-11：準備沿用既有工具的5,000收尾薄層，未提前宣稱完成
+
+v004沿用未修改的`script.r81_worker_entry._validate_r80`，在exact5,000門檻後核對原生watch／action／audit與不可變final census binding；caller的raw／rows／proofs／jobs SHA必須對應同一cutoff，再调用既有snapshot、profile統計及圖表入口。unique代表與各repeat store分開凍結，按pattern對齊曲線與WM殘差；同store同hash多觀測或來源歧義拒絕，不靜默丟掉repeat。原生aggregate完成證據仍是完成權威，薄層不另宣稱逐job終態receipt全重播。
+
+root審查發現v001自訂terminal證據不足，保留但禁止其valid執行；v002停用版本保留，v003改用原生完成門檻，v004再窄修為explicit ancestor與49個相關來源的原生scoped Git檢查，不要求無關文件WIP清空。實際import原生scoped檢查通過；source/evidence與封存16個payload及manifest的SHA／CRC核對通過。既有一組原件／repeat的保存NPZ殘差算術已驗證，非新HFSS或穩定性證明。
+
+保存4,074 census的exact5,000拒絕已驗證，未讀rows／proof／NAS、未建立destination或呼叫native final gate。這個里程碑只備妥收尾工具；真實5,000／零pending完成binding、完整凍結、所有repeat分析與最終圖仍未完成。達5,000就開始R81備料，R80統計圖表同步完成，不以工具準備或4074舊cutoff當作R81 Release。沒有live runtime、worker、queue、marker或模型變更。[完整準備證據](assets/r80_final_closeout_readiness_20261011.json)／[保留版本與依賴封存](assets/round-80/r80-final-closeout-adapter-20261011-v004.zip)。

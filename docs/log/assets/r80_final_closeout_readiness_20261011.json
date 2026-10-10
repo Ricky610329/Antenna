@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "status": "prepared_reused_closeout_adapter_native_final_gate_still_unexercised",
+  "prepared_receipt": {
+    "schema_version": 4,
+    "status": "prepared_executable_future_closeout_with_scoped_release_git_gate",
+    "adapter_sha256": "79e2a01f77949bbe1bae9b645a25c82442cdfb3c9438071c887323d5ab7119a0",
+    "source_bindings_sha256": "61df863a5d43ca383cbaf8be25df185d3739477513279b97cd0b57e99190fece",
+    "preserved_v003_sha256": "86645744c929d0286b2904310cf3cdfe7d9e5cad09c6083085bf642c0b262e99",
+    "change": {
+      "whole_checkout_clean_requirement_removed": true,
+      "release_commit_must_be_ancestor": true,
+      "scoped_producers_clean_before_and_after": true,
+      "exact_scoped_producer_count": 49,
+      "exact_scoped_producer_list_bound_in_outputs": true,
+      "native_r80_gate_unchanged": true,
+      "source_and_census_byte_hash_before_after_checks_unchanged": true
+    },
+    "verification": {
+      "syntax_compile": "pass",
+      "scoped_clean_evaluation": "pass",
+      "release_commit": "fbb17f98360e7540f9bf7d1ae244be02d3a1f0db",
+      "native_r80_release_gate_called": false,
+      "census_or_pair_replay_called": false
+    },
+    "scope": {
+      "unrelated_tracked_documents_examined": false,
+      "nas_reads": false,
+      "hfss_training_or_inference": false,
+      "tracked_edits_or_commits": false
+    },
+    "limitations": [
+      "The current evaluation checks Git ancestry and scoped producer cleanliness only; it does not claim FINAL5000 readiness.",
+      "The native final gate still supplies saved watch/action/audit and immutable final-census authority in future valid mode.",
+      "The adapter does not independently replay every per-job terminal receipt.",
+      "R81 preparation is not gated on completion of R80 statistics or figures."
+    ]
+  },
+  "prepared_receipt_sha256": "ac1fc0aca34e7cafd05b67cd978aea6506c8fd15fb8ac66e2a33b8a4aa5e3254",
+  "source_bindings": {
+    "schema_version": 4,
+    "adapter": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_final_closeout_driver_20261011_v004\\final_closeout_driver.py",
+      "sha256": "79e2a01f77949bbe1bae9b645a25c82442cdfb3c9438071c887323d5ab7119a0"
+    },
+    "readme": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_final_closeout_driver_20261011_v004\\README.md",
+      "sha256": "4f0db4ee90c3f56da2a35f3068f7cb9b8833567d51be3b412cc7024c116de9a4"
+    },
+    "scoped_clean_evaluation": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_final_closeout_driver_20261011_v004\\scoped_clean_evaluation.json",
+      "sha256": "a750dc5393d73785f74970099b9fe78b50d4de14ae5fa501d7fa91581ff203c7",
+      "release_commit": "fbb17f98360e7540f9bf7d1ae244be02d3a1f0db",
+      "scoped_producer_count": 49
+    },
+    "preserved_v003": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_final_closeout_driver_20261011_v003\\final_closeout_driver.py",
+      "sha256": "86645744c929d0286b2904310cf3cdfe7d9e5cad09c6083085bf642c0b262e99"
+    },
+    "native_validator": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\script\\r81_worker_entry.py",
+      "sha256": "cd578a22c4f0ca33374bee12cee0c2b7ada1a98abc54530a2f54a3fb79aa023c"
+    },
+    "git_scope": {
+      "policy": "full explicit commit must be an ancestor; exact scoped producers must satisfy native _git_path_clean(commit,path)",
+      "native_runtime_files_source": "script.r81_worker_entry.RUNTIME_FILES",
+      "additional_closeout_tracked_producers": [
+        "script/profiled_shards.py",
+        "script/symmetry_factory_cycle.py",
+        "script/symmetry_analysis.py",
+        "script/figs/symmetry_profile.py",
+        "script/figs/report_r1r10_style.py"
+      ],
+      "exact_scoped_producer_files": [
+        "antenna/__init__.py",
+        "antenna/legacy/__init__.py",
+        "antenna/legacy/data.py",
+        "antenna/losses.py",
+        "antenna/measurement.py",
+        "antenna/models/__init__.py",
+        "antenna/models/generators.py",
+        "antenna/models/shell.py",
+        "antenna/models/surrogates.py",
+        "antenna/optim/__init__.py",
+        "antenna/optim/ranger.py",
+        "antenna/optim/scheduler.py",
+        "antenna/patch/__init__.py",
+        "antenna/patch/patch_simulator/__init__.py",
+        "antenna/patch/patch_simulator/dual_port.py",
+        "antenna/patch/patch_simulator/single_port.py",
+        "antenna/patch/patch_simulator/single_port_rad.py",
+        "antenna/pattern.py",
+        "antenna/response.py",
+        "antenna/training.py",
+        "antenna/utils/__init__.py",
+        "antenna/utils/figure.py",
+        "antenna/utils/monitor.py",
+        "antenna/utils/record.py",
+        "antenna/utils/replay.py",
+        "antenna/utils/run_setup.py",
+        "antenna/utils/runstate.py",
+        "antenna/utils/store.py",
+        "antenna/utils/torch_utils.py",
+        "antenna/utils/types.py",
+        "antenna/utils/utils.py",
+        "antenna/utils/web.py",
+        "antenna/zoo.py",
+        "configs/dual_r81_wide_filter.yaml",
+        "configs/single_r80_symmetry_factory.yaml",
+        "script/batch_scope.py",
+        "script/dedust.py",
+        "script/exploration.py",
+        "script/figs/report_r1r10_style.py",
+        "script/figs/symmetry_profile.py",
+        "script/filter_training.py",
+        "script/kill.py",
+        "script/prepare_symmetry_filter.py",
+        "script/profiled_batch.py",
+        "script/profiled_shards.py",
+        "script/r81_worker_entry.py",
+        "script/start_r81_worker.ps1",
+        "script/symmetry_analysis.py",
+        "script/symmetry_factory_cycle.py"
+      ],
+      "unrelated_tracked_paths_examined": false
+    },
+    "byte_stability": {
+      "code_and_bound_evidence_sha256_before_after_preserved": true,
+      "tracked_census_native_git_binding_preserved": true
+    }
+  },
+  "source_bindings_sha256": "61df863a5d43ca383cbaf8be25df185d3739477513279b97cd0b57e99190fece",
+  "conductor_review": {
+    "v001_unchecked_terminal_evidence_gap_identified": true,
+    "v001_not_approved_for_valid_execution": true,
+    "v002_disabled_preserved": true,
+    "v003_uses_unchanged_native_completion_validator": true,
+    "v004_minimal_scope_diff_reviewed": true,
+    "actual_imported_native_scoped_clean_passed": true,
+    "scoped_producer_count": 49,
+    "release_commit": "fbb17f98360e7540f9bf7d1ae244be02d3a1f0db",
+    "source_and_artifact_hashes_verified": true,
+    "raw_pair_or_census_replayed": false,
+    "native_final_gate_executed": false,
+    "HFSS_training_or_model_forward": false,
+    "NAS_read_or_write": false
+  },
+  "archive": {
+    "path": "docs\\log\\assets\\round-80\\r80-final-closeout-adapter-20261011-v004.zip",
+    "sha256": "e1ae7e0450a57eecd428003f00738131e6184c5e0c37741de74b862b4cf7aed2",
+    "bytes": 38721,
+    "payloads": {
+      "r80_final_closeout_driver_20261011_v001/final_closeout_driver.py": {
+        "sha256": "f602a69122772b87887ad292e1b8588d4c509ddca79a58653b420a810654cbc5",
+        "bytes": 32717
+      },
+      "r80_final_closeout_driver_20261011_v001/prepared_receipt.json": {
+        "sha256": "626deba171e5839f938affaf991184a97ddb6518cd2f19c1c9b47ed23eb701f5",
+        "bytes": 3919
+      },
+      "r80_final_closeout_driver_20261011_v001/current4074_rejection.json": {
+        "sha256": "14692d9b76f9331dd969a24871cfebf2fff72d5443d73ed2a2bb768a7005fd66",
+        "bytes": 917
+      },
+      "r80_final_closeout_driver_20261011_v001/existing_pair_residual_replay_final.json": {
+        "sha256": "417d099db85abe48b441aa3da2b4b65e24b6ade73738095070a68df24745b865",
+        "bytes": 3130
+      },
+      "r80_final_closeout_driver_20261011_v002/final_closeout_driver.py": {
+        "sha256": "d76ad4dbe49560bd3252cb9b2346abafd5138e791eb079ceb91daf2409d6369f",
+        "bytes": 5830
+      },
+      "r80_final_closeout_driver_20261011_v002/corrected_receipt.json": {
+        "sha256": "fa132d4745e39f67dedec34620709c1717abe6c56791fce83abbf7e8ed0ea6de",
+        "bytes": 3305
+      },
+      "r80_final_closeout_driver_20261011_v003/final_closeout_driver.py": {
+        "sha256": "86645744c929d0286b2904310cf3cdfe7d9e5cad09c6083085bf642c0b262e99",
+        "bytes": 18043
+      },
+      "r80_final_closeout_driver_20261011_v003/README.md": {
+        "sha256": "8772dca18427519f1f876f1e1e150a4c60e08e2fc571e64e3dc84c0263f148bb",
+        "bytes": 1827
+      },
+      "r80_final_closeout_driver_20261011_v003/current4074_rejection.json": {
+        "sha256": "92af3f4125c6ec8d30bab7eb202b087516fc868a7071106ae3b65464a80e1833",
+        "bytes": 939
+      },
+      "r80_final_closeout_driver_20261011_v003/source_bindings.json": {
+        "sha256": "a786806e0e72826addd698f7767fd0fc27629e671466e534b80d50f29baaf3cf",
+        "bytes": 2388
+      },
+      "r80_final_closeout_driver_20261011_v003/prepared_receipt.json": {
+        "sha256": "734dfd9333c3e2faac986b0a8639d8d65c9890c6e5a0f5e97e01bf2a68bfa8a7",
+        "bytes": 4216
+      },
+      "r80_final_closeout_driver_20261011_v004/final_closeout_driver.py": {
+        "sha256": "79e2a01f77949bbe1bae9b645a25c82442cdfb3c9438071c887323d5ab7119a0",
+        "bytes": 18504
+      },
+      "r80_final_closeout_driver_20261011_v004/README.md": {
+        "sha256": "4f0db4ee90c3f56da2a35f3068f7cb9b8833567d51be3b412cc7024c116de9a4",
+        "bytes": 2215
+      },
+      "r80_final_closeout_driver_20261011_v004/scoped_clean_evaluation.json": {
+        "sha256": "a750dc5393d73785f74970099b9fe78b50d4de14ae5fa501d7fa91581ff203c7",
+        "bytes": 3920
+      },
+      "r80_final_closeout_driver_20261011_v004/source_bindings.json": {
+        "sha256": "61df863a5d43ca383cbaf8be25df185d3739477513279b97cd0b57e99190fece",
+        "bytes": 7405
+      },
+      "r80_final_closeout_driver_20261011_v004/prepared_receipt.json": {
+        "sha256": "ac1fc0aca34e7cafd05b67cd978aea6506c8fd15fb8ac66e2a33b8a4aa5e3254",
+        "bytes": 2105
+      }
+    },
+    "all_member_sha_and_crc_verified": true
+  },
+  "actual_pair_arithmetic_reference": {
+    "schema_version": 1,
+    "status": "passed_existing_saved_pair_aligned_npz_residual_replay",
+    "checks": {
+      "original_wm_db": true,
+      "repeat_wm_db": true,
+      "repeat_minus_original_wm_db": true,
+      "s11_gain_curve_max_abs_repeat_delta_db": true,
+      "phi0_phi90_curve_max_abs_repeat_delta_db": true
+    },
+    "record": {
+      "repeat_profile": "existing_saved_pair",
+      "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+      "original_id": "r80localv1_00026_f6ffb938",
+      "repeat_id": "r80bestrep01_f6ffb938",
+      "original_wm_db": 0.021682262420654297,
+      "repeat_wm_db": 0.03643369674682617,
+      "repeat_minus_original_wm_db": 0.014751434326171875,
+      "repeat_minus_original_s11_margin_db": 0.0,
+      "repeat_minus_original_gain_margin_db": 0.014751434326171875,
+      "s11_gain_curve_max_abs_repeat_delta_db": [
+        0.005123615264892578,
+        0.14389419555664062
+      ],
+      "phi0_phi90_curve_max_abs_repeat_delta_db": [
+        0.0,
+        0.0
+      ],
+      "original_source_store_index": 0,
+      "repeat_source_store_index": 0
+    },
+    "inputs_before": {
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\combined.json": "50d0b8c5c74f3147cf71e75557549e854a83d81390787fba8974fbba5363c6d1",
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\combined.npz": "6f17aaf4f3f111b2e871a6166c819d251689cc674a074ebac4f66b20e22f5890",
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\repeat.json": "37d50e0220403d5937936b57639c2d16941ca13992777dc4f2b14be5b3ac696d",
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\repeat.npz": "e3420190c223385f7610ebac3a16325866aa03cc1e11b3d7871a239fa0459c71",
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\result.json": "93f5ae1130d6ebefad33598f90d4172f04b208e7a3c2c0e8c6ad4d052ad7c053"
+    },
+    "inputs_after": {
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\combined.json": "50d0b8c5c74f3147cf71e75557549e854a83d81390787fba8974fbba5363c6d1",
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\combined.npz": "6f17aaf4f3f111b2e871a6166c819d251689cc674a074ebac4f66b20e22f5890",
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\repeat.json": "37d50e0220403d5937936b57639c2d16941ca13992777dc4f2b14be5b3ac696d",
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\repeat.npz": "e3420190c223385f7610ebac3a16325866aa03cc1e11b3d7871a239fa0459c71",
+      "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_repeat_closeout_reuse_20261010_v001\\result.json": "93f5ae1130d6ebefad33598f90d4172f04b208e7a3c2c0e8c6ad4d052ad7c053"
+    },
+    "inputs_unchanged": true,
+    "nas_read_or_write": false,
+    "hfss_training_model_or_profile_rerun": false,
+    "scope": "One existing local saved original/repeat pair; not FINAL5000 readiness or repeat coverage."
+  },
+  "current4074_rejection_reference": {
+    "schema_version": 3,
+    "status": "rejected_before_native_gate_or_closeout_side_effects",
+    "reason": "exact5000_not_ready",
+    "required_unique_successful_patterns": 5000,
+    "observed_unique_successful_patterns": 4074,
+    "gap": 926,
+    "census_report": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_best_render_20261011_v034\\report.json",
+    "census_report_sha256": "e47fe37ada4de4ffd4fa12b547028cd3065b6d68ec300b964e08bd25e8a3e2a6",
+    "rows_read": false,
+    "pair_proofs_read": false,
+    "readiness_evidence_read": false,
+    "terminal_evidence_read": false,
+    "source_metadata_or_artifacts_read": false,
+    "destination_checked_or_created": false,
+    "nas_read_or_write": false,
+    "snapshot_profile_figures_or_hfss": false,
+    "native_r80_release_gate_called": false,
+    "limitations": [
+      "This is a readiness-gap receipt, not a FINAL5000 closeout.",
+      "No native completion or terminal claim is made before exact 5,000."
+    ]
+  },
+  "record_producer_sha256": "fd304ab9e34b508f42ddc016e5b063bd4c5d634621d4646741224cb1d1f93c11",
+  "limits": [
+    "Preparation only; no actual5000 freeze, native5000 completion validation, all-repeat analysis or final figures.",
+    "Use only v004 with unchanged hash-pinned v001 utility dependency; do not invoke v001 closeout or v002 disabled mode.",
+    "Native watch/action/audit plus immutable final census is the existing accepted completion authority; adapter does not independently replay every terminal job receipt.",
+    "Future final binding must be produced and verified at real stable5000/zero-pending cutoff.",
+    "R81 preparation/engineering does not wait for completion of R80 statistics or figures.",
+    "Unrelated tracked documents and all live runtime sources/worker/queue/markers were preserved."
+  ]
+}
