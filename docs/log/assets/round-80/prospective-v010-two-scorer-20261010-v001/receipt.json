@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "frozen local v010 two-scorer pilot; 32 valid single HFSS observations; descriptive visualization only",
+  "limitations": [
+    "no quantitative causal claim",
+    "no current-only model adoption decision",
+    "best sample is not the global incumbent",
+    "best sample has one HFSS solve and no repeat certification"
+  ],
+  "report": {
+    "sha256": "9dc1451a055093918fcfc78de6ca7c2d91429f92101b3665cf0b8c88693e605a",
+    "valid": 32,
+    "failed": 0,
+    "positive": 0
+  },
+  "profile": {
+    "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+    "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+    "validated": 32,
+    "unique": 32
+  },
+  "analysis": {
+    "json_sha256": "4db69cfe1cd29a2b8baf41d73bbfea58c43bfcdc03552abba3ef9316e32b6980",
+    "npz_sha256": "47d084f3bce4ce5a846122a3e4e363e194d5402a5a01593c6c049047a074b98c"
+  },
+  "frozen_source": {
+    "manifest.json": "a24a1cc22ac1d2acd6a2ac82bbb35745fb188c62211d4bb9b61abe366dc7afc8",
+    "results.json": "42e93367246a86ab79b3eeedb02b66b6be39fff136aa90efb1eae80822557005",
+    "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+    "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca",
+    "source_bindings.json": "7d0ff4a97301a2ccd5c1cef408b73dc0e476545518e319548e18142731e04e65"
+  },
+  "best_in_this_32": {
+    "id": "r80p10_00022_6e5e7f7f",
+    "wm_db": -4.655437469482422,
+    "global_incumbent_wm_db": 0.021682,
+    "observation_note": "v010雙模型32筆對照的批內最佳；非全域最佳；單次HFSS、未重測",
+    "pattern_sha256": "6e5e7f7ffc3f1421833fe40ca55275d490c5dc1199541c6c6ccb16a4134bb9d4",
+    "sample_sha256": "60e2d65fb8af87c7213b6b6e91b6882499b7d4a1adef4a7cb0aef380ac8073b3",
+    "radiation_sha256": "e437e85b0c8853fc0bd7e57c7cdb565fa12cf41de0e807e8bfe7f34da0cd9d16"
+  },
+  "producer": {
+    "analysis": "945b20ce399dab5dbf18e659d34d1860c28d5c5c21c0627d44c5ab5195e58571",
+    "renderer": "428e65abb66ea6dcc2b883609569dca06d1f4892523f907953bf865a60507bfb",
+    "polar_helper": "c3399a2a3b600a5922d130a655acb1e79ca8fc5780e7cc079fbcd97b7ee867b4",
+    "publisher": "c6a9a07433e2b05e6becc7ddec256be7ac871de9a93166006c5e4ec25f7af925"
+  },
+  "renderer_receipts": {
+    "population_sha256": "2335f51e7a5b18fd8ff119525dbe6bd1036df00d0eafed055af0747b69cfe713",
+    "sample_sha256": "efc19809d37e511ca75c40ffc2b1be4e9a850d860479518208bf830e4593bc88",
+    "sample_observation_note": "v010雙模型32筆對照的批內最佳；非全域最佳；單次HFSS、未重測",
+    "population_unique_patterns": 32
+  },
+  "figures": {
+    "population_geometry_terrain.png": "51dfd95f8a3db6ff97ca629f5bed50bd5081e974565370d0377b70fa7b1d8033",
+    "population_frequency_responses.png": "e15ce5c0c64657eada6ca8b01fc87c0ae00b4986a7babf15425b3d8ad7a83efe",
+    "best_in_this_32.png": "b8b16774fe99b9b8f5475d3ff982d1b23fb9c3854230cdd1fcbd61aaec48b1fb"
+  }
+}

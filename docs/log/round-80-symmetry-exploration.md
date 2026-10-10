@@ -1259,3 +1259,17 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 原controller身分及immutable last receipt核對通過，scope無警報；三個claimed批次7/16、5/16、1/16，最新均約1分鐘前，guided與LOW均有待跑。[健康紀錄](assets/r80_health_20261010_0902.json)。reported v015／completed20／cached3,159，只是controller快照，未再做完整census或重啟程序。
 
 兩片固定pilot皆done、無fail；原v9 readout單次exit0，32有效、0終態錯誤，report／rows／frozen sample-rad已保存，正在獨立核對。未換模型／再派相同候選，舊driver不可重啟；下一例行健康09:32。R80 5,000及R81 spec仍未完成。
+
+### 2026-10-10：固定v010雙模型32筆實測對照完成
+
+全部32筆sample／rad、來源與派工seal通過獨立本機重播：32有效唯一、0終態錯誤、0正WM；批內best −4.6554374695、median −8.9835526943 dB。原v010與current-only v010在共同32筆的LCB Spearman為0.2221／0.0238，S11 MAE為2.4755／2.6286、Gain MAE為4.4798／4.5912 dB，full216 MAE為2.8727／2.9289 dB。先保留既有主線模型政策，不採用current-only。[結果及證據綁定](assets/r80_currentonly_prospective_v010_completed32_result_20261010.json)。
+
+兩owner各16筆，原模型best／median為−6.8366／−8.9836，current-only為−4.6554／−11.5472 dB；單一best較好但median較差，不能當成全面優勢。這是開發中的固定v010對照，不能拿已學到後續資料的v015／v016重新評判，也不能歸因於pretrain或架構；所有選樣及預測先凍結，但capacity checks可讀已完成資料，不宣稱完整盲測。這32筆不能直接加到全量census。
+
+沿用既有renderer及極座標helper，保存[批內最佳卡](assets/round-80/prospective-v010-two-scorer-20261010-v001/best_in_this_32.png)、[頻率分布](assets/round-80/prospective-v010-two-scorer-20261010-v001/population_frequency_responses.png)及[幾何地形](assets/round-80/prospective-v010-two-scorer-20261010-v001/population_geometry_terrain.png)。原始資料與三圖hash已核對，圖中明示批內最佳並非全域最佳、單次HFSS未重測。
+
+### 2026-10-10 09:15：3,241筆，最佳仍未提升
+
+使用者現況查詢觸發完整唯讀核對；09:13–09:15重播3,246個成功觀測，扣除重測有3,241個有效唯一對稱圖形，達5,000目標64.82%，比08:31增加34筆。最佳仍是r80localv1_00026_f6ffb938，WM +0.0216822624 dB、26.5–29.5GHz最差S11 −10.0960884094 dB／最低Gain4.0216822624 dBi；獨立重測WM +0.0364336967 dB。[完整查詢與健康](assets/r80_best_status_20261010_0915.json)。
+
+09:14三台claimed10/16、8/16、5/16，最新結果1／3／1分鐘前、scope零警報；原controller exact live、waiting、completed21、reported SMv016。資料仍增加但最佳性能停滯；新20k多來源池已完成v015排名，尚未送HFSS。一次COM首試例外由既有重試處理，未改claims或restart。下一例行檢查仍09:32；R81未啟動，R80及spec任務尚未完成。

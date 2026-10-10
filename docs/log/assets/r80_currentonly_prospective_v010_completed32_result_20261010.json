@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "status": "passed_completed32_raw_independent_review_and_figure_bindings",
+  "observed_utc": "2026-10-10T01:02:33.236798+00:00",
+  "denominators": {
+    "all_proposed": 32,
+    "live_owned_proposed": 16,
+    "current_only_owned_proposed": 16,
+    "successful_valid_unique": 32,
+    "terminal_error_attempts": 0
+  },
+  "actual_truth": {
+    "actual_best_wm_db": -4.655437469482422,
+    "actual_median_wm_db": -8.983552694320679,
+    "actual_min_wm_db": -27.955856323242188,
+    "actual_positive_count": 0,
+    "per_arm": {
+      "global_lcb": {
+        "best_wm_db": -8.555091381072998,
+        "count": 12,
+        "median_wm_db": -10.773331880569458,
+        "min_wm_db": -24.009565353393555,
+        "positive_count": 0
+      },
+      "high_disagreement": {
+        "best_wm_db": -4.655437469482422,
+        "count": 10,
+        "median_wm_db": -11.241458892822266,
+        "min_wm_db": -23.884559631347656,
+        "positive_count": 0
+      },
+      "parent_lcb": {
+        "best_wm_db": -6.698518514633179,
+        "count": 10,
+        "median_wm_db": -8.165254831314087,
+        "min_wm_db": -27.955856323242188,
+        "positive_count": 0
+      }
+    },
+    "per_owner": {
+      "current_only": {
+        "best_wm_db": -4.655437469482422,
+        "count": 16,
+        "median_wm_db": -11.547224938869476,
+        "min_wm_db": -27.955856323242188,
+        "positive_count": 0
+      },
+      "live": {
+        "best_wm_db": -6.836649417877197,
+        "count": 16,
+        "median_wm_db": -8.983552694320679,
+        "min_wm_db": -23.884559631347656,
+        "positive_count": 0
+      }
+    },
+    "per_owner_arm": {
+      "current_only": {
+        "global_lcb": {
+          "best_wm_db": -8.555091381072998,
+          "count": 6,
+          "median_wm_db": -14.586151599884033,
+          "min_wm_db": -24.009565353393555,
+          "positive_count": 0
+        },
+        "high_disagreement": {
+          "best_wm_db": -4.655437469482422,
+          "count": 5,
+          "median_wm_db": -6.401103496551514,
+          "min_wm_db": -23.216955184936523,
+          "positive_count": 0
+        },
+        "parent_lcb": {
+          "best_wm_db": -6.698518514633179,
+          "count": 5,
+          "median_wm_db": -7.2976813316345215,
+          "min_wm_db": -27.955856323242188,
+          "positive_count": 0
+        }
+      },
+      "live": {
+        "global_lcb": {
+          "best_wm_db": -8.926378726959229,
+          "count": 6,
+          "median_wm_db": -9.659662008285522,
+          "min_wm_db": -11.645269393920898,
+          "positive_count": 0
+        },
+        "high_disagreement": {
+          "best_wm_db": -7.237492799758911,
+          "count": 5,
+          "median_wm_db": -19.92598533630371,
+          "min_wm_db": -23.884559631347656,
+          "positive_count": 0
+        },
+        "parent_lcb": {
+          "best_wm_db": -6.836649417877197,
+          "count": 5,
+          "median_wm_db": -8.38649320602417,
+          "min_wm_db": -9.351047039031982,
+          "positive_count": 0
+        }
+      }
+    },
+    "valid_count": 32
+  },
+  "saved_prediction_comparisons": {
+    "live": {
+      "all_valid_32_policy": {
+        "valid_count": 32,
+        "factory_vs_actual_wm_spearman": {
+          "n": 32,
+          "rho": 0.21407624633431083
+        },
+        "lcb_vs_actual_wm_spearman": {
+          "n": 32,
+          "rho": 0.22214076246334308
+        },
+        "band_s11_mae_db": 2.4754775299557616,
+        "band_gain_mae_db": 4.479794907217313,
+        "response_full_curve_mae_db": 3.1758394617662655,
+        "radiation_full_curve_mae_db": 2.816018331430114,
+        "full_vector_216_mae_db": 2.8726568426867307,
+        "predicted_factory_positive_count": 0,
+        "predicted_lcb_positive_count": 0,
+        "predicted_factory_best_db": -1.1513808568318684,
+        "predicted_factory_median_db": -9.112449367841085,
+        "predicted_lcb_best_db": -2.335769992778673,
+        "predicted_lcb_median_db": -9.789584189589508
+      },
+      "owned_valid_subset": {
+        "valid_count": 16,
+        "factory_vs_actual_wm_spearman": {
+          "n": 16,
+          "rho": 0.411764705882353
+        },
+        "lcb_vs_actual_wm_spearman": {
+          "n": 16,
+          "rho": 0.5
+        },
+        "band_s11_mae_db": 1.7817744048578399,
+        "band_gain_mae_db": 2.877923976995849,
+        "response_full_curve_mae_db": 2.5162692219224376,
+        "radiation_full_curve_mae_db": 2.2393099726102195,
+        "full_vector_216_mae_db": 2.2829054100019572,
+        "predicted_factory_positive_count": 0,
+        "predicted_lcb_positive_count": 0,
+        "predicted_factory_best_db": -4.8441386222839355,
+        "predicted_factory_median_db": -9.05374832948049,
+        "predicted_lcb_best_db": -5.177226841296866,
+        "predicted_lcb_median_db": -9.776131032436439
+      }
+    },
+    "current_only": {
+      "all_valid_32_policy": {
+        "valid_count": 32,
+        "factory_vs_actual_wm_spearman": {
+          "n": 32,
+          "rho": 0.14589442815249265
+        },
+        "lcb_vs_actual_wm_spearman": {
+          "n": 32,
+          "rho": 0.02382697947214076
+        },
+        "band_s11_mae_db": 2.628594545913594,
+        "band_gain_mae_db": 4.5912148718655645,
+        "response_full_curve_mae_db": 3.3535986707052765,
+        "radiation_full_curve_mae_db": 2.8495474801764376,
+        "full_vector_216_mae_db": 2.928888871278199,
+        "predicted_factory_positive_count": 0,
+        "predicted_lcb_positive_count": 0,
+        "predicted_factory_best_db": -1.2380088170369465,
+        "predicted_factory_median_db": -9.447599212328592,
+        "predicted_lcb_best_db": -1.869287156271477,
+        "predicted_lcb_median_db": -10.037843214609405
+      },
+      "owned_valid_subset": {
+        "valid_count": 16,
+        "factory_vs_actual_wm_spearman": {
+          "n": 16,
+          "rho": -0.09999999999999999
+        },
+        "lcb_vs_actual_wm_spearman": {
+          "n": 16,
+          "rho": -0.14705882352941177
+        },
+        "band_s11_mae_db": 3.56833815574646,
+        "band_gain_mae_db": 6.18466319971984,
+        "response_full_curve_mae_db": 4.0679926603744905,
+        "radiation_full_curve_mae_db": 3.449808973405167,
+        "full_vector_216_mae_db": 3.547115664872561,
+        "predicted_factory_positive_count": 0,
+        "predicted_lcb_positive_count": 0,
+        "predicted_factory_best_db": -1.2380088170369465,
+        "predicted_factory_median_db": -8.883561531702679,
+        "predicted_lcb_best_db": -1.869287156271477,
+        "predicted_lcb_median_db": -9.407328748276523
+      }
+    }
+  },
+  "report_path": "tmp\\r80_currentonly_prospective_pilot_20261010_v001\\readout_v9\\report.json",
+  "report_sha256": "9dc1451a055093918fcfc78de6ca7c2d91429f92101b3665cf0b8c88693e605a",
+  "independent_review_path": "tmp\\r80_currentonly_prospective_pilot_20261010_v001\\readout_v9\\independent_truth_review.json",
+  "independent_review_sha256": "980a21185d585d230a4043f65ab5a223a636ebea834faf1226f10ae30ea0c98b",
+  "figure_receipt": "docs\\log\\assets\\round-80\\prospective-v010-two-scorer-20261010-v001\\receipt.json",
+  "figure_receipt_sha256": "346cb295a6a9c41a8b3ba178c42591fd78b84ca82bde69d81c1be6a2db6350f2",
+  "figures": {
+    "population_geometry_terrain.png": "51dfd95f8a3db6ff97ca629f5bed50bd5081e974565370d0377b70fa7b1d8033",
+    "population_frequency_responses.png": "e15ce5c0c64657eada6ca8b01fc87c0ae00b4986a7babf15425b3d8ad7a83efe",
+    "best_in_this_32.png": "b8b16774fe99b9b8f5475d3ff982d1b23fb9c3854230cdd1fcbd61aaec48b1fb"
+  },
+  "validator_sha256": "06eef5895847562dce98c3a138915ee726f1a2d0933d0b7800744ab29d38224d",
+  "decision": "Keep existing main model policy; do not adopt current-only model from this pilot.",
+  "main_model_or_queue_mutated": false,
+  "limits": [
+    "Fixed v010 two-scorer comparison; not a comparison against current main v015.",
+    "Single development pilot; no causal claim about pretraining or architecture.",
+    "All 32 choices and predictions frozen before dispatch; capacity checks could read early results.",
+    "Current-only has a better owned best but worse owned median and common32 ranking/errors.",
+    "These 32 results must not be added blindly to the latest whole-dataset census.",
+    "Batch best remains below the global incumbent; no repeat certification of batch best."
+  ]
+}
