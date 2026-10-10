@@ -126,6 +126,8 @@ python -m script.symmetry_analysis profile --store <某個repeat_frozen> --out-j
 
 ## R81 正 WM 候選的確認入口（待後續濾波器階段使用）
 
+2026-10-11新增研究偏好：20–26／30–36 GHz過渡帶仍希望相對下壓、往阻帶平緩衰減並減少波紋／突起，作軟性優化與曲線比較，**不參與WM**。門檻與正WM確認仍用原五段；WM可比時可依具名、保存來源的過渡響應偏好選候選／親代。五margin SM目前沒有此軟目標輸出，不能把未接入的偏好說成已訓練；後續R81選樣須明確記錄如何利用實測過渡曲線。[最新解釋與限制](round-81-wide-filter.md)。
+
 R81派工前先執行`python -m script.prepare_symmetry_filter check-wide-inputs --dataset-root <R81備妥dataset>`：只驗證正式60筆與6+2+2工程輸入、來源組、親代及Fast／Discrete／mesh設定，不啟動HFSS。完成量測後才用同模組`check-wide`重播完整觀測並比較四組曲線／margin，任一差異>0.3 dB不放行。
 
 `python -m script.filter_confirmation --profile-config configs/dual_r81_wide_filter.yaml --candidate-store <原件store> --candidate-id <原件id> --repeat-store <重測store> --repeat-id <重測id> --out <來源store以外的新收據.json>`
