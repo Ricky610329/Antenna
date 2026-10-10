@@ -1338,3 +1338,12 @@ v001獨立審查找到metadata-only exhausted store會中止整批分母的阻�
 v001獨立review攔下完整old_controller欄位缺失與CIM image-name限制兩項blocker，原source/review保留。v002只補原9欄contract、查all CIM rows中舊PID或watcher commandline（排除查詢PowerShell自身）；不按Python名稱篩選。獨立四窄測試與一次current prepared validation通過：116files、48unique、3×16，現行main後續state更新不影響這組immutable prediction_package/model bindings。publisher接受相符review。[來源與實際準備收據](assets/r80_structured48_quiescent_publisher_readiness_20261010.json)。
 
 本機request已create-only寫入，prepare-action建立cycle0bd85653…的三片；action仍prepared，沒有capacity proof/append/readback/lease/NAS copy。最初CLI prepare被argparse於body前拒絕，既有request保留，改用文件中的prepare-action後成功，不是dispatch重試。主控暫停只能在自然waiting且無active/reservation時啟動；publisher每次append前後驗真實STOP/lease/全watch absence，整批48/5000/96仍鎖內檢查。逐片append不可rollback，prefix禁止自動續送；任何terminal success/defer/failure皆須恢復原main。activation/restoration與new-cycle readout仍另審查，尚未STOP／改worker／HFSS。
+
+
+### 2026-10-10 11:04：全量raw重播新增20筆，最佳仍未變
+
+沿用原query_and_freeze.py相同bytes，在新local v022輸出固定各store cutoff並raw重播3,336筆成功觀測，去除重測後為3,331個唯一有效對稱圖形，完成5,000目標的66.62%，較10:30增加20筆。代表列選擇、rows／pair proofs／query hashes及最佳列由獨立saved-artifact helper重算一致。最佳仍是r80localv1_00026_f6ffb938，WM +0.0216822624 dB，帶內最差S11 −10.0960884094 dB、最低Gain 4.0216822624 dBi；既有獨立重測+0.0364336967 dB，沒有新最佳或新圖。[完整查詢與健康](assets/r80_best_status_20261010_1104.json)。
+
+查詢保留dedust_r80c65d3e9ffg01的一筆首次HFSS watchdog／RPC timeout（r80c65d3e9ffg_00003_c858e6c4，attempts1）；218 worker的claim仍在，無done／fail，最新results仍無較新成功，既有dedust batch-tail retry尚會處理attempts<3。11:04健康快照scope無警報，因此只記為待既有重試，不視為終態poison、不宣稱已恢復，也不清claim或重派；本段不能解讀為所有raw樣本皆健康。
+
+同次健康確認原main PID15944身分與launch不變、running_cycle；controller報SM v017／completed22／cached3,270，和本次全量census3,331是不同口徑。三個claimed批次3/16、9/16、6/16，最新結果11／0／4分鐘前，guided及LOW仍有待跑工作。next-shell 16筆只完成本機saved-output核對，尚未派HFSS，不計入3,331。下一例行健康11:34；R80 5,000與R81/spec仍未完成。
