@@ -137,7 +137,7 @@ def workflow() -> dict:
         (21.5, 39.5, "候選池", "像素翻轉、嫁接重組\n隨機與對稱取樣", TEAL),
         (43.5, 61.5, "SM ensemble 篩選", "三種配額：預測較好\n／模型分歧／隨機", BLUE),
         (65.5, 80.5, "HFSS 批次模擬", "三台工作站\n並行求解", TEAL),
-        (84.5, 99.5, "資料庫", "有效結果全部入庫\n（含不合格）", BLUE),
+        (84.5, 99.5, "資料庫", "有效結果全部入庫\n不合格者也保留", BLUE),
     ]
     y0, y1 = 9.2, 18.4
     for x0, x1, head, body, edge in boxes:
@@ -159,7 +159,7 @@ def workflow() -> dict:
     ax.text(50.5, 21.6, "每批結果分析 → 調整策略比例或提出新算子", ha="center", va="bottom", fontsize=6.3, color=BLUE)
     ax.add_patch(FancyBboxPatch((21.5, .6), 78, 3.6, boxstyle="round,pad=0,rounding_size=.8",
                                 fc="#eef1f4", ec="none"))
-    ax.text(60.5, 2.4, "emforge 平台：派工、去重、收件、評分（三台工作站共用）", ha="center", va="center",
+    ax.text(60.5, 2.4, "批次線 script/dedust.py：NAS 佇列派工、查重、收件與評分，三台工作站共用", ha="center", va="center",
             fontsize=6.3, color="#33414d")
     return {"path": save(fig, "workflow"), "facts": {"boxes": [b[2] for b in boxes]}}
 
@@ -225,7 +225,7 @@ def oob() -> dict:
     freq_axis(ax, "(c) 正向實現增益（dBi）")
     ax.axvspan(24, 25.5, color="#f6e9e0", lw=0)
     limit(ax, 26.5, 29.5, 4)
-    ax.plot(f, free_gain, color=MUTED, lw=.9, ls=(0, (2.5, 1.5)), label="圖 2 交付代表")
+    ax.plot(f, free_gain, color=MUTED, lw=.9, ls=(0, (2.5, 1.5)), label="圖 2 代表設計")
     ax.plot(f, gain, color=TEAL, lw=1.1, marker="o", ms=1.6, label=f"本設計 WM +{min(m_s11, m_gain):.2f}")
     peak = f[f <= 25.5][np.argmax(gain[f <= 25.5])]
     ax.annotate(f"低頻最大\n{lo:.2f} dBi", (peak, lo), xytext=(24.25, -.4), textcoords="data", fontsize=6,

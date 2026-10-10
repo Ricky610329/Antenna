@@ -105,7 +105,7 @@ def snapshot() -> dict:
                    "resp_sha256": sha(SNAP / "resp.npz"), "rad_sha256": sha(SNAP / "rad.npz"),
                    "patterns": rel(SNAP / "patterns.npz"), "patterns_sha256": sha(SNAP / "patterns.npz"),
                    "snapshot_date": "2026-08-10", "rows": len(meta),
-                   "note": "Pattern-browser snapshot; mixed bridge conditions and selection purposes, descriptive only."},
+                   "note": "Pattern-browser snapshot; main rows exclude ~ bridge variants (build_index.py), per-row mesh/bridge not recorded (analysis-18 section 0); mixed selection purposes, descriptive only."},
         "asymmetry_definition": "A = mean XOR of the left 12 columns vs the mirrored right 12 columns (0 = exact left-right mirror).",
         "passing_unique": {
             "definition": "distinct patterns with wm >= 0 (first occurrence)",
