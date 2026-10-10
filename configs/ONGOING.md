@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **最新全量（10/10 15:59／15:57健康）**：3,584/5,000有效唯一對稱實測（71.68%），較14:23增加78筆；全3,589成功觀測raw重算／零快取／cutoff零error，**沒有新最佳**，WM仍+.0216822624、既有同圖形獨立重測+.0364336967。三台claimed8/16、6/16、0/16，主控exact PID53228／launch5a181a47…與19來源吻合，scope無警報、LOW與guided有待跑工作、reported SM v021。[本次raw及健康](../docs/log/assets/r80_best_status_20261010_1559.json)。資料持續增加但最佳性能停滯，未改模型／queue／worker；下一routine16:04沿用計時器，R80/R81/spec未完成。
+
 - **SM v020完整48筆真值完成／未刷新最佳**：cycle96357896三片native claim+done／無fail，48有效唯一／exactLR；global-LCB、parent-LCB、disagreement各16，來源fresh20／parent28，physical Hamming min68／median309。[完整結果與root replay](../docs/log/assets/r80_sm_v020_cohort48_result_20261010.json)。批內WM best−0.5609149933／median−13.2332506180、0正WM；保存mean-WM對實測ρ0.5660／MAE6.0001，LCBρ0.5567／MAE4.7378，Gain曲線MAE4.8639仍有誤差。root從48本機凍結raw sample獨立重算S11/Gain WM、LR、Hamming及保存分數相關，96 sample/rad hashes吻合；rad曲線只hash核對、未第二次算rad metrics。48圖形不在bound v020 current或legacy exact-pattern集合；前瞻來源由hash／流程metadata支持，非外部時間認證。單cohort不能宣稱穩定排序／策略因果改善，沒有改arm配比／模型。首次本機round-robin讀回順序假設失敗與範圍文字更正保留，未重派HFSS；actual read-only NAS讀取與零NAS mutation已明確區分。
 
 - **目前狀態（10/10 15:34健康）**：exact主控PID53228／launch5a181a47…與19來源吻合，三台claimed14/16、10/16、1/16，最新2／2／1分鐘，scope無警報、LOW與guided有待跑工作。主控reported SM v021，該版尚未做獨立model核對。[本次健康](../docs/log/assets/r80_health_20261010_1534.json)。先前三笔COM重試成功以15:04狀態讀回為準，本次未再讀error entries；v020全48已另完成raw truth稽核。最新全量仍14:23的3,506/5,000／最佳+.021682；本次未重算census／最佳。**下一例行16:04**計時器已掛；沒有重啟主控或worker、沒有queue／模型變更。R80/R81/spec未完成，新多樣性48切換仍待既有明確授權回覆。
