@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "status": "passed_current_controller_and_scoped_worker_health",
+  "observed_utc": "2026-10-10T00:02:10.1898975Z",
+  "physical_pid": 15944,
+  "creation_unix_ms": 1791541659267,
+  "argv_matches": true,
+  "controller_status": "running_cycle",
+  "completed_cycles": 19,
+  "latest_controller_reported_data_version": 14,
+  "controller_cached_valid_unique_not_new_census": 3101,
+  "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\570c0d3fae4a1806ba5356c604fbc44397e4ff057e9e4053342a3b27a4ab59ca\\action_receipt.json",
+  "last_receipt_sha256": "687ce121aef44aa5a16a21c7ee9a059f606bbda42583948f467b383f4d390484",
+  "source_health_sha256": "b6413b3dd9f6380e3f4917dcec01bc42a134dcaed0696f90dc6042fcf46245bb",
+  "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80k2d939ab4ed2e43a3: 0/16（排隊中）\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c570c0d3fg02: 7/16 完成,最新結果 0 分前（已認領）\r\n  job dedust_r80c8c708075g01: 2/16 完成,最新結果 1 分前（已認領）\r\n  job dedust_r80c5c0c6075g01: 0/16（已認領）\r\n  job dedust_r80c5c0c6075g02: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+  "pilot_terminal_marker_sha256": "b09b0f1a61166c823b0869e0b18491b02a75b0da251bfc01b4f1a1dff03f80b9",
+  "pilot_phase1_done": true,
+  "pilot_phase2_terminal": false,
+  "quantitative_comparative_truth_readout": false,
+  "shadow_model_adoption": false,
+  "last_full_census": "docs\\log\\assets\\r80_best_status_20261010_0733.json",
+  "last_full_census_sha256": "ad574ba06f78f44706f7f732ad0e488a2dcd6bda7d354293e5cc5bd04f83b7c9",
+  "last_full_census_unique": 3150,
+  "last_full_census_best_wm_db": 0.021682262420654297,
+  "next_routine_health_taipei": "2026-10-10 08:32",
+  "validation_script_sha256": "738a8ac885e5e4ce089171851a890ad8c451dd8d1a4a9d0a2e3e4d5d0577f1fc",
+  "queue_or_controller_mutation": false,
+  "limits": [
+    "Health and terminal markers only; no new full-census or new-best conclusion.",
+    "Wait for both fixed-cohort stores to become terminal before quantitative truth readout."
+  ]
+}

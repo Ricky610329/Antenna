@@ -1215,3 +1215,8 @@ controller exact身分通過、running_cycle、completed18／reported v013；三
 核對R14/R15元件空間、R41群組變異，以及R32/R48的歷史負結果後，在本機tmp重用既有add_block、resize_component、_group_mutate做3個synthetic候選。左右對稱、feed、現行profile與packed-bit identity核對通過；另以獨立synthetic fixture實測兩個0.10mm鏡射橋接點。root重新核對保存陣列、單一parent lineage/canonical與來源雜湊。[離線準備紀錄](assets/r80_structured_geometry_offline_readiness_20261010.json)。
 
 這是離線準備，尚未測目前parent的產出率、排名或HFSS性能，也未整合進主線。現行bundle writer靜態上會保留origin/operator，但diversity audit及feedback reload沒有完整綁定／保留這些欄位；正式接續前需補足來源追蹤。32筆模型對照、主線模型／選樣／queue均未改動。
+
+
+### 2026-10-10 08:02：第一批對照終止，主線持續工作
+
+controller exact身分通過、running_cycle，reported v014／completed19；這是controller狀態，cached3101不當作新census。三個claimed工作7/16、2/16、0/16，前兩個最新0／1分鐘，第三個新認領；scope無警報。固定對照第一批.done、無.fail，第二批仍2/16且非terminal，因此未讀取完整定量對照結果。[健康紀錄](assets/r80_health_20261010_0802.json)。最新完整實測仍為07:33的3150唯一圖形、WM+.021682；未採用shadow模型，下一routine08:32。
