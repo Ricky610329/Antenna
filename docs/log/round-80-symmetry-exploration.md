@@ -1295,3 +1295,9 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 ### 2026-10-10 09:46：48筆背景等待driver實際啟動
 
 獨立hash／static與四種mock終態核對通過後，hidden driver於09:46:43啟動；09:52 native CIM核對PID64504、creation、完整argv與executable，claim來源吻合、stderr空、waiting／publisher calls0。[啟動收據](assets/r80_structured48_deferred_launch_20261010.json)。原main未重啟；本機狀態每30秒、最多2小時，waiting elapsed至少300秒且remaining至少600秒才單次呼叫reviewed publisher。publisher另做fresh容量／duplicate／exact main窗口核對；不自動重試、刪claim或殺程序。此刻action仍prepared，未新增NAS派工或HFSS實測，例行健康仍10:02。
+
+### 2026-10-10 09:53：使用者詢問現況，全量實測重新核對
+
+唯讀逐store凍結cutoff並raw重播3282筆成功（含重測），得到3277個唯一有效對稱圖形，較09:15增加36，5000目標完成65.54%。沒有新最佳：r80localv1_00026_f6ffb938仍WM +0.0216822624 dB，26.5–29.5GHz最差S11 −10.0960884094 dB、最低Gain 4.0216822624 dBi；sample／rad／pattern hashes與原最佳一致。既有獨立重測WM +0.0364336967 dB。此次cutoff沒有error entries，沒有queue／source修改。[全量收據](assets/r80_best_status_20261010_0953.json)。
+
+09:52 exact main PID／creation／argv／launch核對通過，SM reported v016／completed21／running_cycle；三台claimed各4/16、最新2／0／0分鐘、scope無警報。有效資料持續增加，但近期多批探索未刷新最佳，性能推進仍停滯；新48多來源候選driver已啟動等待安全窗口，尚非48筆新truth。保留每30分鐘routine，下一10:02；未啟動R81或重啟worker。
