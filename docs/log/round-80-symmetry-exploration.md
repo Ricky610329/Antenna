@@ -1305,3 +1305,9 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 ### 2026-10-10 10:02：例行健康通過，背景driver持續等待
 
 原main PID／creation／argv／launch與last receipt hashes一致；running_cycle／completed21／reported SMv016。三台claimed7/16、6/16、7/16，最新結果0／3／0分鐘，scope無警報；另四片LOW及一片guided待跑。[健康收據](assets/r80_health_20261010_1002.json)。同次native CIM確認背景driver64504 creation／argv／executable仍吻合，result為waiting／publisher calls0，沒有重啟或手動派工。latest全量仍09:53的3277／最佳+.021682；未重查census或新48truth，下一routine10:32。新48終態判讀入口正在沿用既有raw/seal helper準備，需完成派工及全cohort終態才執行。
+
+### 2026-10-10：本機SM主線效率稽核，未改執行中流程
+
+只讀三個來源及本機terminal artifacts。[效率稽核](assets/r80_main_efficiency_review_20261010.json)確認watch以cycle start的1800秒節點排程；前輪2320.734秒後實際等待1279.266秒，start-to-start約3600秒，並非再等完整1800秒。v016實際模型納入3204筆，terminal refreshed view3214筆，10筆留待下輪；沒有threshold-cross時間戳，不宣稱已量到固定30分鐘延遲。這些版本資料量不當新的global census。
+
+來源控制流程在正常trained／proof-backed／3片路徑有17次全raw-success rehash；append cache沒有跳過原raw hash。最近四輪bundle完成到terminal receipt約901／919／1288／1302秒，兩片與三片的artifact landmark有相關，但無phase timer，不能說重hash實際占幾秒或保證加速。legacy12000與current3204每版hash/load一次、三個members共用，30／100epochs是固定配方，不為省時刪掉。root核對source及terminal receipt SHA、scheduler算式；沒有NAS／queue／CIM／HFSS／模型／測試或runtime改動。下一步若優化，先記phase／bytes計時，再review合併重複掃描，保留訓練快照及派工首尾full-byte、source／profile、5000／96、duplicate、exact append與partial recovery閘門；不能直接把proof改成只信metadata。

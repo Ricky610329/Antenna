@@ -1,0 +1,375 @@
+{
+  "schema_version": 1,
+  "status": "completed_bounded_local_efficiency_review_no_runtime_change",
+  "reviewed_at_utc": "2026-10-10T02:12:04.8109801Z",
+  "scope": {
+    "purpose": "Identify locally evidenced avoidable controller overhead and update latency before the 5000-valid goal without changing or interrupting the live campaign.",
+    "read_scope": [
+      "script/symmetry_factory_cycle.py",
+      "script/symmetry_factory_watch.py",
+      "script/symmetry_training.py",
+      "tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1 local status and completed cycle artifacts",
+      "tmp/r80_factory_20261007/training_familydev_v1 local protocol, legacy manifest, data receipts, and model summaries"
+    ],
+    "operations_not_performed": [
+      "NAS access",
+      "queue or CIM scan",
+      "HFSS execution or truth read",
+      "model forward, training, or prediction",
+      "tests",
+      "process query, signal, stop, restart, or dispatch",
+      "runtime or source edit"
+    ],
+    "only_created_file": "tmp/r80_main_efficiency_review_20261010_v001/analysis.json",
+    "operator_context_not_independently_process_queried": {
+      "reported_git_head": "bd64b32",
+      "reported_main_pid": 15944,
+      "reported_main_source_contract_prefix": "5802",
+      "reported_worker_health_marker": 1002,
+      "interpretation": "Context supplied by root; this review binds the three source files by their full local SHA256 values below and does not claim an independent live-process identity check."
+    }
+  },
+  "source_bindings": [
+    {
+      "path": "script/symmetry_factory_cycle.py",
+      "sha256": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e",
+      "bytes": 138346,
+      "mtime_utc": "2026-10-09T10:24:14.1708364Z"
+    },
+    {
+      "path": "script/symmetry_factory_watch.py",
+      "sha256": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+      "bytes": 19717,
+      "mtime_utc": "2026-10-09T10:04:00.0616386Z"
+    },
+    {
+      "path": "script/symmetry_training.py",
+      "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+      "bytes": 60711,
+      "mtime_utc": "2026-10-09T07:51:37.6745842Z"
+    }
+  ],
+  "evidence_bindings": {
+    "settings": {
+      "path": "tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json",
+      "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+      "interval_seconds": 1800,
+      "update_range_new_valid": [
+        48,
+        96
+      ],
+      "low_backlog": {
+        "poll_seconds": 90,
+        "low_watermark": 48,
+        "target_pending": 96,
+        "shard_size": 16
+      }
+    },
+    "watch_status_snapshot": {
+      "path": "tmp/r80_factory_20261007/controller_diverse_sm_v1/watch_status.json",
+      "sha256": "cccf043afb7b4c5206789d3353222c5a1b212448bce03da4628ba11ca88250f3",
+      "mtime_utc": "2026-10-10T01:27:44.9610028Z",
+      "status_at_snapshot": "running_cycle",
+      "completed_cycles": 21,
+      "cycle_started_utc": "2026-10-10T01:27:44.961002+00:00",
+      "last_completed_utc": "2026-10-10T01:06:25.673000+00:00",
+      "last_cycle_seconds": 2320.7340000001714,
+      "next_cycle_in_seconds_recorded_after_last_completion": 1279.2659999998286,
+      "last_terminal_valid_unique": 3214,
+      "last_terminal_data_version": 16,
+      "warning": "The watcher is live, so this hash is a point-in-time local snapshot and not a terminal campaign state."
+    },
+    "last_terminal_cycle": {
+      "cycle_id": "93ca0657c3e32f42e8097713920d3c6315d5faf6a299964fc8940604f89441db",
+      "receipt_path": "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/93ca0657c3e32f42e8097713920d3c6315d5faf6a299964fc8940604f89441db/action_receipt.json",
+      "receipt_sha256": "49110a1ea19c04792e02daf94e6e20d0ec9756469bcb7d0db456b160fb8e490f",
+      "receipt_mtime_utc": "2026-10-10T01:06:25.6391247Z",
+      "status": "dispatched",
+      "trained_this_cycle": true,
+      "new_unique_available_before_training": 57,
+      "training_snapshot_count": 57,
+      "valid_unique_after_refresh": 3214,
+      "data_version": 16,
+      "data_version_cumulative_valid_unique": 3204,
+      "untrained_valid_unique_visible_at_terminal": 10,
+      "pending_unique": 114,
+      "guided_pending_unique": 34,
+      "planned_jobs": 3,
+      "planned_patterns": 48,
+      "model_counts": {
+        "profile_train": 2283,
+        "profile_holdout": 921,
+        "legacy_train": 10150,
+        "legacy_holdout": 1850
+      }
+    },
+    "training_protocol": {
+      "path": "tmp/r80_factory_20261007/training_familydev_v1/protocol.json",
+      "sha256": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "batch_size": 128,
+      "legacy_epochs": 30,
+      "current_epochs": 100,
+      "ensemble_members": 3,
+      "fresh_initialization_each_version": true
+    },
+    "legacy_manifest": {
+      "path": "tmp/r80_factory_20261007/training_familydev_v1/legacy/manifest.json",
+      "sha256": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+      "bytes": 9240493,
+      "rows": 12000,
+      "legacy_train": 10150,
+      "legacy_holdout": 1850
+    }
+  },
+  "last_terminal_cycle_artifact_landmarks": [
+    {
+      "name": "cycle_started",
+      "utc": "2026-10-10T00:27:44.939000+00:00",
+      "derivation": "last_completed_utc minus monotonic last_cycle_seconds; approximate wall-clock mapping, not an instrumented phase timestamp"
+    },
+    {
+      "name": "training_snapshot_source_bindings_written",
+      "utc": "2026-10-10T00:36:44.4084201Z",
+      "sha256": "ed45ab68fa4341e31ccfa20b50d210e52c3bcd5ce00a2b97ace50fca71294948"
+    },
+    {
+      "name": "pretrain_prediction_audit_written",
+      "utc": "2026-10-10T00:38:31.4758341Z",
+      "sha256": "f8968a93274afdc326d9bd48941ab957bc2788af98989c4bf68943bc56cec43c"
+    },
+    {
+      "name": "data_v016_receipt_written",
+      "utc": "2026-10-10T00:38:32.0918275Z",
+      "sha256": "5a053a3e9db0f36453c64bbadd31837542b104957d5e03e9589c431c76678d45"
+    },
+    {
+      "name": "model_v016_summary_written",
+      "utc": "2026-10-10T00:40:15.7931764Z",
+      "sha256": "23cbd58b91ef9d9e9a55b4c919dd4316c41753dbc5600717e9f876d253843ce4"
+    },
+    {
+      "name": "guided_bundle_complete_written",
+      "utc": "2026-10-10T00:44:43.5225793Z",
+      "sha256": "656f2b10f077c184e297679877ceac4862516cf8ca068b51a05fac3ceed888db"
+    },
+    {
+      "name": "terminal_action_receipt_written",
+      "utc": "2026-10-10T01:06:25.6391247Z",
+      "sha256": "49110a1ea19c04792e02daf94e6e20d0ec9756469bcb7d0db456b160fb8e490f"
+    }
+  ],
+  "recent_terminal_landmark_comparison": [
+    {
+      "data_version": 13,
+      "new_valid_unique": 73,
+      "planned_jobs": 2,
+      "data_receipt_utc": "2026-10-09T21:37:49.7884702Z",
+      "model_summary_utc": "2026-10-09T21:39:28.5332894Z",
+      "guided_bundle_complete_utc": "2026-10-09T21:43:38.391570Z",
+      "terminal_receipt_utc": "2026-10-09T21:58:39.6695816Z",
+      "bundle_to_terminal_receipt_seconds": 901.2780116
+    },
+    {
+      "data_version": 14,
+      "new_valid_unique": 50,
+      "planned_jobs": 2,
+      "data_receipt_utc": "2026-10-09T22:38:07.9822703Z",
+      "model_summary_utc": "2026-10-09T22:39:46.8823765Z",
+      "guided_bundle_complete_utc": "2026-10-09T22:44:01.458627Z",
+      "terminal_receipt_utc": "2026-10-09T22:59:20.8120335Z",
+      "bundle_to_terminal_receipt_seconds": 919.3534065
+    },
+    {
+      "data_version": 15,
+      "new_valid_unique": 57,
+      "planned_jobs": 3,
+      "data_receipt_utc": "2026-10-09T23:38:24.8316158Z",
+      "model_summary_utc": "2026-10-09T23:40:03.7835316Z",
+      "guided_bundle_complete_utc": "2026-10-09T23:44:22.671509Z",
+      "terminal_receipt_utc": "2026-10-10T00:05:50.2091398Z",
+      "bundle_to_terminal_receipt_seconds": 1287.5376308
+    },
+    {
+      "data_version": 16,
+      "new_valid_unique": 57,
+      "planned_jobs": 3,
+      "data_receipt_utc": "2026-10-10T00:38:32.0918275Z",
+      "model_summary_utc": "2026-10-10T00:40:15.7931764Z",
+      "guided_bundle_complete_utc": "2026-10-10T00:44:43.5225793Z",
+      "terminal_receipt_utc": "2026-10-10T01:06:25.6391247Z",
+      "bundle_to_terminal_receipt_seconds": 1302.1165454
+    }
+  ],
+  "findings": [
+    {
+      "id": "scheduler_not_2320_plus_1800",
+      "confidence": "high",
+      "conclusion": "The observed schedule is not a 2320-second cycle followed by a full 1800-second wait. _next_scheduled_due starts at cycle_start + 1800 and advances by 1800 while due <= now. A 2320.734-second cycle therefore advances to cycle_start + 3600 and leaves 1279.266 seconds, exactly matching watch_status. The last observed start-to-start cadence is approximately 3600 seconds.",
+      "source_evidence": [
+        "script/symmetry_factory_watch.py:105-109",
+        "script/symmetry_factory_watch.py:286-288",
+        "script/symmetry_factory_watch.py:344-357"
+      ]
+    },
+    {
+      "id": "sm_update_can_wait_for_next_start",
+      "confidence": "high for mechanism, unknown for exact realized threshold-cross delay",
+      "conclusion": "A new 48-96-point SM update is evaluated only when a cycle performs its cutoff scan. Late successes observed by the fresh post-training queue scan are reserved for capacity but are not ingested into the model trained earlier in that cycle. Version 16 trained through 3204 valid unique while its terminal refreshed receipt saw 3214, leaving 10 visible valid points for a later version. If the 48-point threshold is crossed after a cutoff, it waits for the next scheduled cycle start. Depending on when the crossing occurs, structural delay can range from near zero to nearly the start-to-start cadence; the local receipts do not record the actual threshold-cross timestamp, so no realized 30-minute delay is claimed.",
+      "source_evidence": [
+        "script/symmetry_factory_cycle.py:1600-1608",
+        "script/symmetry_factory_cycle.py:1631-1722",
+        "script/symmetry_factory_cycle.py:1736-1763"
+      ]
+    },
+    {
+      "id": "repeated_full_raw_rehash_is_structurally_real",
+      "confidence": "high for call count, unknown for elapsed-time share",
+      "conclusion": "_recheck_queue_proof calls _recheck_pair_proof for every pair, and _recheck_pair_proof unconditionally calls _recheck_success_raw, which rehashes every counted successful sample and radiation file. On the normal trained, proof-backed, three-shard path matching version 16, source control flow invokes 5 full proof rechecks before the training refresh, 2 on the refreshed preparation proof, and 10 on the separate dispatch proof (one initial plus three per shard), for 17 full raw-success rehash passes in addition to the queue_view validations. append_validation_cache avoids repeated validate_store work for unchanged appended results but does not skip the unconditional frozen raw rehash at line 893.",
+      "source_evidence": [
+        "script/symmetry_factory_cycle.py:803-815",
+        "script/symmetry_factory_cycle.py:831-898",
+        "script/symmetry_factory_cycle.py:918-940",
+        "script/symmetry_factory_cycle.py:1552-1556",
+        "script/symmetry_factory_cycle.py:1599-1602",
+        "script/symmetry_factory_cycle.py:1632-1647",
+        "script/symmetry_factory_cycle.py:1739-1744",
+        "script/symmetry_factory_cycle.py:2141-2142",
+        "script/symmetry_factory_cycle.py:2403-2407",
+        "script/symmetry_factory_cycle.py:2432-2495"
+      ],
+      "limit": "No phase timer or byte counter proves how many seconds these hashes consumed. The four-cycle landmark comparison shows a repeatable long bundle-to-terminal interval and a shard-count correlation, but it is not a causal benchmark."
+    },
+    {
+      "id": "legacy_and_current_local_cache_reload_each_version",
+      "confidence": "high for behavior, unknown for elapsed-time share",
+      "conclusion": "Every new model version calls _load_dataset separately for current train, current holdout, legacy train, and legacy holdout. Each included row hashes both cached files and torch.loads both through _target. For version 16 that is 3204 current rows plus 12000 legacy rows, or 15204 sample/radiation pairs, loaded once before the three-member training loop. The legacy 30 epochs and current 100 epochs per member are explicit protocol work and must not be removed as an efficiency shortcut.",
+      "source_evidence": [
+        "script/symmetry_training.py:668-682",
+        "script/symmetry_training.py:712-759",
+        "script/symmetry_training.py:771-855"
+      ],
+      "limit": "The dataset tensors are loaded once per version, not once per ensemble member. The current evidence does not show that legacy loading dominates runtime."
+    },
+    {
+      "id": "profile_cache_is_incremental_on_ingest",
+      "confidence": "high",
+      "conclusion": "The local profile cache does not recopy all historical profile tensors on each version. ingest_profile_stores copies only pending new sample/radiation files into content-addressed profile paths and writes a new cumulative manifest. Optimization should target reload/rehash, not replace this already-incremental ingest path.",
+      "source_evidence": [
+        "script/symmetry_training.py:340-469"
+      ]
+    },
+    {
+      "id": "measured_landmarks_do_not_identify_one_main_cause",
+      "confidence": "high",
+      "conclusion": "For terminal version 16, the model summary followed the data receipt by about 103.7 seconds, guided bundle completion followed the model summary by about 267.7 seconds, and the terminal action receipt followed guided bundle completion by about 1302.1 seconds. Versions 13-14 with two planned shards show about 901-919 seconds from bundle completion to terminal receipt; versions 15-16 with three shards show about 1288-1302 seconds. This is strong motivation to instrument preparation/dispatch proof work, but filesystem mtimes are landmarks rather than exclusive phase timers, and concurrent worker changes or lock/network behavior are not separately measured here.",
+      "source_evidence": [
+        "local artifact mtimes in last_terminal_cycle_artifact_landmarks",
+        "local artifact mtimes in recent_terminal_landmark_comparison"
+      ]
+    },
+    {
+      "id": "guided_pool_is_version_specific",
+      "confidence": "high",
+      "conclusion": "The 20000-candidate guided pool is deliberately regenerated with predictor, exclusions, parent state, and pool_seed = policy_seed + data_version. Reusing an old selected pool across versions would violate provenance. Only lower-level immutable geometry/descriptor caching keyed by all generation inputs is potentially safe.",
+      "source_evidence": [
+        "script/symmetry_factory_cycle.py:1875-1992",
+        "script/symmetry_factory_cycle.py:2002-2059"
+      ]
+    }
+  ],
+  "minimal_improvement_proposals": [
+    {
+      "priority": 0,
+      "proposal": "Add receipt-only monotonic phase timing and byte/count counters before changing behavior.",
+      "details": [
+        "Record initial queue scan, each full raw-proof pass, frozen snapshot, prediction audit, ingest, dataset materialization, per-member training, 20000-candidate generation/scoring, bundle split, pre-dispatch scan, each shard copy/append/readback, and final receipt durations.",
+        "Record number and bytes of sample/radiation files hashed or loaded, cache hits, queue jobs, successful observations, and planned shards.",
+        "Record the post-training count of valid hashes absent from the current data manifest and whether it already meets 48."
+      ],
+      "why_minimal": "It changes local evidence only and resolves the current main uncertainty without touching worker, model, scoring, capacity, or queue semantics."
+    },
+    {
+      "priority": 1,
+      "proposal": "Use the already refreshed post-training queue proof to request one bounded catch-up cycle only when at least 48 valid hashes are absent from the just-trained manifest and at least 1800 seconds have elapsed since the prior cycle start.",
+      "details": [
+        "Do not perform an extra NAS poll merely to decide this; consume the queue view already required after training.",
+        "Otherwise retain the existing scheduled boundary.",
+        "Keep the same exclusive locks, 48-96 ingest rule, 96 guided limit, and 5000 valid-plus-reserved target gate."
+      ],
+      "expected_effect": "Avoids the residual scheduled wait after a long cycle only when enough newly completed data already exist. No quantitative saving is claimed until phase/threshold timestamps are recorded.",
+      "risk": "Needs focused scheduler and recovery review because consecutive long cycles may increase controller/NAS duty cycle."
+    },
+    {
+      "priority": 1,
+      "proposal": "Collapse repeated historical raw rehashes within one cycle into explicit full-validation boundaries, while retaining exact fail-closed bytes at the training snapshot and final dispatch boundary.",
+      "details": [
+        "Keep one full physical cutoff validation before selecting/copying the 48-96 training snapshot.",
+        "Between local compute stages, recheck only mutable jobs/results/markers and validate newly appended successes; do not repeatedly reread unchanged historical raw files.",
+        "Perform a final full raw validation under the existing dataset lock before queue append completion, and fail if any bound byte differs.",
+        "For per-shard exact appends, extend the single locked proof as today but avoid full historical raw rereads after every shard; validate the appended shard and exact jobs transition each time."
+      ],
+      "expected_effect": "Targets the source-proven 17-pass three-shard repeat while preserving two full byte boundaries. Actual speedup is unknown until counters exist.",
+      "risk": "This is safe only if the frozen training snapshot remains the sole training input and the final full validation covers every counted source before dispatch; a metadata-only shortcut is insufficient."
+    },
+    {
+      "priority": 2,
+      "proposal": "Introduce versioned local tensor caches for immutable legacy data and incremental current-profile data.",
+      "details": [
+        "Key legacy tensors by legacy manifest SHA256, frequencies, decoder/source SHA256, ordered per-file SHA256 list, and tensor dtype/shape schema.",
+        "Key current tensors by prior cache receipt plus the new 48-96 source bindings and the cumulative manifest ID, so only new rows are decoded and appended.",
+        "Write an atomic cache receipt and verify the packed cache content hash before use; fall back to the current full load on any mismatch.",
+        "Do not change normalization, row weights, splits, epoch order, fresh initialization, epochs, seeds, or model outputs."
+      ],
+      "expected_effect": "Avoids rehashing and torch.loading 12000 immutable legacy pairs and most cumulative current pairs every version. No runtime saving is claimed without instrumentation.",
+      "risk": "Requires byte-identical tensor and model-summary comparison on a bounded saved local fixture before adoption."
+    },
+    {
+      "priority": 3,
+      "proposal": "Retain completed checkpoint metadata and loaded member states in memory while producing the same summary, instead of reloading each checkpoint for summaries, ensemble holdout, and member IDs.",
+      "source_evidence": "script/symmetry_training.py:856-870",
+      "expected_effect": "Small local I/O reduction; lower priority than proof hashing and dataset materialization."
+    }
+  ],
+  "safety_invariants_for_any_future_change": [
+    "Do not stop, restart, or alter the main watcher or any of the three HFSS workers during optimization rollout.",
+    "HFSS remains truth; no model score can release capacity, mark success, or replace saved response/radiation validation.",
+    "Preserve exact profile, measurement, score-spec, search-policy, controller roster, lineage, and source-file SHA256 bindings.",
+    "Preserve 48 <= new valid unique <= 96 for each training version, fresh initialization, three fixed ensemble seeds, 30 legacy epochs, 100 current epochs, and current-profile validation policy unless a separately reviewed protocol explicitly changes them.",
+    "Preserve max guided outstanding 96, target valid plus all pending/reserved/planned <= 5000, shard size 16 except the existing exact final-tail rule, and append-only exact queue transitions.",
+    "Preserve same-cycle exclusion of all measured, queued, protected, and newly appended patterns and all canonical/diversity constraints.",
+    "A cache hit must never be accepted solely from path, size, or mtime. It needs a content-bound receipt and atomic validation, with fail-closed fallback.",
+    "Do not reuse a guided candidate selection across changed model IDs, data version, exclusions, parents, search policy, or seed.",
+    "Keep crash recovery idempotent and keep prepared/dispatching receipts truthful; no automatic retry or duplicate append.",
+    "Add phase evidence first; do not adopt an optimization based only on filesystem landmark correlation."
+  ],
+  "unknowns_and_limits": [
+    "No saved receipt contains exclusive function-level timings, hash byte totals, cache hit counts, lock-wait duration, NAS throughput, or threshold-cross timestamps.",
+    "Filesystem mtimes identify artifact-write landmarks but do not prove that all time between two writes belongs to the intervening named operation.",
+    "The 2-shard versus 3-shard bundle-to-terminal correlation covers four recent terminal cycles and is not a controlled benchmark.",
+    "The current nonterminal cycle locally produced data/model version 17 artifacts during review, but it was excluded from terminal-status conclusions.",
+    "No readouts directory exists under the reviewed controller or training root; the available saved evidence consists of action receipts, split/audit artifacts, data receipts, model summaries, training state, settings, and watch_status.",
+    "This review does not independently verify the supplied PID/source-contract/worker-health context and makes no claim about current remote worker liveness."
+  ],
+  "readiness": {
+    "runtime_change_ready": false,
+    "instrumentation_proposal_ready_for_owner_review": true,
+    "catch_up_scheduler_proposal_ready_for_focused_design_review": true,
+    "raw_rehash_consolidation_ready_for_focused_design_review": true,
+    "tensor_cache_ready_for_implementation": false,
+    "reason": "Structural repeat work and scheduling behavior are proven locally, but phase attribution and speedup remain unmeasured."
+  },
+  "source_analysis": {
+    "path": "tmp\\r80_main_efficiency_review_20261010_v001\\analysis.json",
+    "sha256": "2f5c0ce76b14c2f95bd4a706b8b0f8f1e5ce3fc96dd45d5ce37271c1f828bdd6"
+  },
+  "root_validation": {
+    "source_files_rehashed": true,
+    "immutable_terminal_receipt_rehashed": true,
+    "scheduler_arithmetic_replayed": true,
+    "full_runtime_timing_measured": false,
+    "live_controller_mutated": false,
+    "worker_or_HFSS_restarted": false,
+    "validator_sha256": "b37daa26dbf917988259a70b58022595156da2165622cd497a5c76a384af3414"
+  }
+}
