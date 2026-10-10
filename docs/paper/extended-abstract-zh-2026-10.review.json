@@ -7,8 +7,8 @@
     595.2755737304688,
     841.8897705078125
   ],
-  "sha256": "693e0cece472cabe2e156c17d70e19718c5d872ad68a19324d4100b9015094e4",
-  "source_sha256": "234c5e97161ee3869f7920a892e1b43fe8589f714e655e59b6129342b9f1fd6a",
+  "sha256": "c58503e8de873494a1939c1ec30a75f257c19e2c07376a208aaf1a7c7516fdbb",
+  "source_sha256": "33e2ae5efb33d4a0f284311f9d00d2f7be7d8ccbf7dbbc323785d2975ad10efa",
   "figures": {
     "workflow": {
       "path": "docs/paper/figures/extended-abstract-workflow.png",
@@ -82,7 +82,7 @@
       }
     }
   },
-  "characters": 5205,
+  "characters": 5096,
   "required_text_pass": true,
   "glyph_coverage_pass": true,
   "embedded_chinese_fonts": [
@@ -112,6 +112,6 @@
   },
   "v5_changes": "Highlight box and bold-led bullets removed (prose; tables, figures and section headings kept); body 10/17.5 pt, 20 mm margins, conditional page breaks, no widows. Sample count corrected from 4.7 萬 (single-port with full radiation cuts only) to >7.6 萬: local backup 2026-08-28 single 43,694 + dual 26,203 (port read from one file per store), online 2,943, R80 3,688; harvest 34,215. Fig 6 rebuilt as two single-claim panels: (a) the same 13 designs before/after forcing a mirror (34 versions, all worse) and (b) SM predicted vs HFSS WM for the 32 neighbours and the anchor (predictions -10.97..-10.35, HFSS -22.72..+0.02, Spearman mean -0.106); the n8 histogram and asymmetry-vs-lo scatter moved to text as descriptive notes. Section 4 reasons labelled by evidence strength (direct contrast / direct observation / descriptive / inference) with limitations.",
   "v5_review": "Conductor-verified (counts recomputed read-only from the local backup; figure numbers asserted in extended_abstract_figures.py). No second independent review of v5; v4 claims reused unchanged were independently reviewed.",
-  "v6_changes": "Section 4 cut to three paragraphs plus Fig 5: result; the constraint (624 -> 324 free pixels, 2^300 fewer patterns, paired flips) as the main reason; free-form vs symmetric counts as a consistent but uncontrolled observation. Removed: post-hoc mirroring of 13 designs (R55), Fig 6 and its builder/PNG, lineage (159 px), connected-component and low-band notes, the evidence-strength labels. SM-in-symmetric-region numbers (-11.0..-10.3 predicted vs -22.7..+0.02) moved into section 5. Table 2 wording 'forced mirroring' -> 'mirroring imposed at generation'. Builder: fullwidth ，；：！？ added to reportlab's no-line-start table (textsplit and paragraph copies). Page count 6 -> 5. Section 1: the online-vs-random sentence now says the baseline was blind draws from the senior's harvested pool (his search trajectories, already a good region), not uniform random HFSS search, and draws the conclusion 'where candidates come from matters more than step-wise optimisation' (user correction 2026-10-11).",
+  "v6_changes": "Section 4 cut to three paragraphs plus Fig 5: result; the constraint (624 -> 324 free pixels, 2^300 fewer patterns, paired flips) as the main reason; free-form vs symmetric counts as a consistent but uncontrolled observation. Removed: post-hoc mirroring of 13 designs (R55), Fig 6 and its builder/PNG, lineage (159 px), connected-component and low-band notes, the evidence-strength labels. SM-in-symmetric-region numbers (-11.0..-10.3 predicted vs -22.7..+0.02) moved into section 5. Table 2 wording 'forced mirroring' -> 'mirroring imposed at generation'. Builder: fullwidth ，；：！？ added to reportlab's no-line-start table (textsplit and paragraph copies). Page count 6 -> 5. Section 1: the online-vs-random sentence now says the baseline was blind draws from the senior's harvested pool (his search trajectories, already a good region), not uniform random HFSS search, and draws the conclusion 'where candidates come from matters more than step-wise optimisation' (user correction 2026-10-11). Table 2: the '天線（帶外抑制）' row removed at the user's request (2026-10-11); section 3.1 text and Fig 3 unchanged.",
   "v6_review": "Conductor-verified only; no new numbers were introduced (all reused figures were in v4/v5). 2^300 = 2^624 / 2^324 (feed pixel fixed). Data cutoff kept at R80 3,688 (2026-10-10 17:59) although the live run reached 4,002 unique by 2026-10-11 00:14 with the best unchanged."
 }
