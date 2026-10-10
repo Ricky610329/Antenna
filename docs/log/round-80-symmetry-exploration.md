@@ -1,6 +1,6 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
-最新狀態（2026-10-11 01:39）：4,074有效唯一實測／5,000（81.48%），尚差926，較00:14增加72；全4,079含5筆repeat原始觀測重算、零cached metrics。沒有新最佳，仍f6ffb938／WM+.0216822624dB，獨立同圖形重測+.0364336967不計new unique。02:34原主控／唯一inventory／19來源吻合；37 LOW11、218新g01=3、216新g02 startup0，active無error。前次兩筆COM保存status=ok、舊g02共16成功且done/no fail，未另做全store實體audit。SM最新reported v030；新54增量raw重算0正WM／best−4.8460984230，未觸發full；latest physical review仍v029、實際fit4009／43項通過；v029當輪新增92，v026以來跨三版+200，模型更新不等於性能進步。v028完整48／fit3917、兩筆watchdog finalok、0正WM與排序ρ.1165的弱效果保留。舊LOW15有效／三機終態SHA不變，未新增終態錯誤。[01:39全量及SM證據](assets/r80_best_status_20261011_0139.json)／[v028批次](assets/r80_sm_v028_cohort48_result_20261011.json)／[既有最佳極座標圖](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)。[02:34健康](assets/r80_health_20261011_0234.json)。下一例行03:04；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer屬歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
+最新狀態（2026-10-11 01:39）：4,074有效唯一實測／5,000（81.48%），尚差926，較00:14增加72；全4,079含5筆repeat原始觀測重算、零cached metrics。沒有新最佳，仍f6ffb938／WM+.0216822624dB，獨立同圖形重測+.0364336967不計new unique。03:04原主控／唯一inventory／19來源吻合，218／216／37三片12／9／3成功，最新4／0／2分鐘。218 g01兩筆新COM各attempt1、無done/fail，留既有補測；前次g02恢復引用02:34保存證據。SM最新reported v030；新54增量raw重算0正WM／best−4.8460984230，未觸發full；latest physical review仍v029、實際fit4009／43項通過；v029當輪新增92，v026以來跨三版+200，模型更新不等於性能進步。v028完整48／fit3917、兩筆watchdog finalok、0正WM與排序ρ.1165的弱效果保留。舊LOW15有效／三機終態SHA不變，未新增終態錯誤。[01:39全量及SM證據](assets/r80_best_status_20261011_0139.json)／[v028批次](assets/r80_sm_v028_cohort48_result_20261011.json)／[既有最佳極座標圖](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)。[03:04健康](assets/r80_health_20261011_0304.json)。下一例行03:34；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer屬歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
 
 歷史全量狀態（2026-10-10 16:55）：3,630有效唯一實測／5,000（72.60%），較15:59增加46筆；全3,635成功觀測重新raw核對，最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。16:54三台worker有claimed工作，scope無警報，SM reported v022持續批次更新；兩筆首次COM失敗未計入有效數，16:56讀回各attempts1，尚未宣稱恢復。最新證據見[本次收據](assets/r80_best_status_20261010_1655.json)／[錯誤讀回](assets/r80_error_readback_20261010_1656.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
@@ -1675,3 +1675,10 @@ root審查發現v001自訂terminal證據不足，保留但禁止其valid執行�
 實際CIM確認原PID53228／creation／argv存活，唯一inventory與19來源吻合。37 LOW11成功、218新guided g01=3、216 g02 startup0，active沒有error；新批startup0不當停機證據。前次g02兩筆COM已由既有流程變status=ok，整store保存16成功且真正jobs_state done存在、fail不存在；不是新全store raw／profile稽核，也不獨立证明遠端worker PID。它們不在本次54筆凍結增量中，兩種核對不混稱。舊LOW15有效／三機終態results/fail SHA不變，不重播15raw或重派。
 
 新完成action1ac13397/v030、15完成cycles，54本機immutable sample/rad實測重算0正WM、best−4.8460984230，未超01:39 full參考+.021682，依既有trigger不再全量掃描或出同圖。Action保存4081有效／78pending只屬當時截點，不更新4074的全量census數字；reported model v030尚未獨立實體核對，最後model實體review仍v029 fit4009。沒有新性能改善主張、model forward／training、手動重啟／redispatch／marker／runtime／queue修改或額外HFSS。Notify-only下一03:04已掛，R80真實5000與R81仍未完成。[本次保存證據](assets/r80_health_20261011_0234.json)。
+
+
+### 2026-10-11 03:04：三台持續前進，兩筆新首次COM待既有補測
+
+原main實際CIM／creation／argv、唯一inventory及19來源吻合；218／216／37各12／9／3成功、最新4／0／2分鐘，真正jobs_state owners吻合。LOW依原低水位機制再補四片，六片待跑，沒有agent補派或改priority。218 g01的r80c1ac13397g_00015_bb12f64f及r80c1ac13397g_00030_f746139a為COM0x80070223／attempt1，無done/fail，未宣稱恢復、終態／毒樣本或root cause；既有流程繼續，其餘兩片active沒有error。
+
+舊LOW15有效與三機終態results/fail SHA不變。原completed action1ac13397/v030／15cycles與02:34收據相同，54增量與前次g02恢復不重讀；最新獨立model實體review仍v029 fit4009，最新全量仍01:39的4074／WM+.021682，不以health刷新全域筆數或best。下一03:34 notify-only已掛；沒有NAS寫入、額外HFSS、model forward／training、restart／redispatch／marker／queue／runtime修改。[本次健康與hash證據](assets/r80_health_20261011_0304.json)。
