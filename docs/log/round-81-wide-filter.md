@@ -156,3 +156,11 @@ python -m script.r81_transition_soft rank --sidecar <該sidecar.json> --output <
 ```
 
 两命令使用同一不變cutoff；訓練或新feedback更新state後，舊sidecar會被拒絕，須在新cutoff建立新版本。跨批親代pool的合併、geometry diversity與正式`select_batch`／release consumer仍待接入；目前五margin SM沒有transition輸出，未宣稱學會此軟目標，三批60／各臂配額均未更動。沒有改原R80 live來源或44個R81 runtime檔，沒有NAS／HFSS／模型訓練／forward或實際R81工程真值。這是軟目標的診斷與排序核心準備，不能當正式優化已啟用或有效性的證據。[最終source／測試與限制](assets/r81_transition_soft_readiness_20261011.json)。
+
+
+### 2026-10-11：過渡帶親代偏好接點已提交隔離版本，尚未部署
+隔離commit `7928468`沿用既有五餘裕SM候選排名與20/20/20配額，僅對已實測親代以WM及平緩／相對衰減軟偏好選出多樣親代；0.1dB偏好上限是設計選擇，不是noise估計，transition不進WM，也沒有新SM輸出head。選樣可重播完整1,024候選與精確60筆ordered manifest／pattern bytes，不接受被替換候選、額外truth aliases、重算hash的錯誤receipt或缺漏transition來源閉合。前次審查五個缺口及修正均保留；完成寫入最後，部分state沒有receipt不能放行。
+
+生成資料的batch2／3生命周期包含60／120 feedback、實際CPU小MLP訓練與forward；主／獨立核心6tests及最後受影響lifecycle各1通過，限定regression14實際通過。提交後真正Git blob／scoped-clean原44及選用46來源閉合均通過，這不是full `validate_release`。Exact CPU predictions跨三台Torch／BLAS／threads重播尚無實證，正式Release前需核對；未調數值規則／tolerance或宣稱可跨機部署。
+
+主GAN的19 live R80來源與原native entry未改、無新selection模組；完整源碼與審查封存於[隔離準備包](assets/round-81/r81-transition-selection-prep-20261011-v001.zip)，[版本／範圍／限制收據](assets/r81_transition_selection_readiness_20261011.json)。不得把封包解壓覆蓋live checkout；待R80原生收尾binding完成後再整合。R81仍無工程真值／派工／正式Release；達validated5,000時先開始備料，統計與圖表同步收尾。

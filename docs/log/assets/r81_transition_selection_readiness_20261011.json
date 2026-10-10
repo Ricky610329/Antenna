@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "status": "reviewed_committed_isolated_preparation_not_deployed",
+  "recorded_utc": "2026-10-10T19:56:26.678885+00:00",
+  "isolated_commit": "7928468be57fa86dc81015320d948b98d4d105d9",
+  "branch": "r81-transition-soft-integration-prep",
+  "base_commit": "1c1994f1f49b1cb7f8991c87d1ac5bec6b66977c",
+  "isolated_physical_file_sha256": {
+    "script/exploration.py": "61aa837f344942b5097c16dc6b91ca32ebab7b3950cd5737a3e09c2a9f91405b",
+    "script/r81_transition_soft.py": "eab0ca49a62e813be36b61b69e29e0ad7daa921eb8b95984f23be1da82855d06",
+    "script/r81_transition_selection.py": "1c274bf2e4c88164f5b1f8a5ef10b31b607d3e7e7cf32399de0d559b55792cb2",
+    "script/r81_worker_entry.py": "8ef06e49d5cc4c5f6f526918d8ecd294ca218674f8d0c9e5212074443a7803ce",
+    "tests/test_r81_transition_selection.py": "ceca7c67eb768974f4ffc3c65524b201e67a25223b1230f9825fa9f2c36fc4e9"
+  },
+  "git_blob_files": {
+    "script/exploration.py": {
+      "sha256": "62472fe126c7602f3b1b47eb0c9c7754c80cd6666c32788443228a0eeb360e01",
+      "bytes": 76375
+    },
+    "script/r81_transition_soft.py": {
+      "sha256": "09df57eea5efe2bc16e7d6e45265b9c0e74a6727546be6824bb6987bab9ddfd4",
+      "bytes": 29618
+    },
+    "script/r81_transition_selection.py": {
+      "sha256": "1c274bf2e4c88164f5b1f8a5ef10b31b607d3e7e7cf32399de0d559b55792cb2",
+      "bytes": 31675
+    },
+    "script/r81_worker_entry.py": {
+      "sha256": "56aff94ad683db1ea966b7ab7377fe0fb8ffaa2e3099677ea4918e6d23e34c2a",
+      "bytes": 40389
+    },
+    "tests/test_r81_transition_selection.py": {
+      "sha256": "ceca7c67eb768974f4ffc3c65524b201e67a25223b1230f9825fa9f2c36fc4e9",
+      "bytes": 17707
+    },
+    "review/baseline.json": {
+      "sha256": "671792df8e86207b470f1b5e0ae8e2c5118581df3c6bf3f6dcb992fe173b7b5d",
+      "bytes": 7900
+    },
+    "review/final.json": {
+      "sha256": "f1d78a11bfc4ff5a48247abbddd8aa2e0bc9cdd526c4757180499fd9f458782c",
+      "bytes": 7158
+    },
+    "README.txt": {
+      "sha256": "f3805f45e682d93184c055acf5a7680c087dfe28f31debf9d7f89dc29f32d4eb",
+      "bytes": 711
+    }
+  },
+  "archive": {
+    "path": "docs/log/assets/round-81/r81-transition-selection-prep-20261011-v001.zip",
+    "bytes": 56318,
+    "sha256": "7db9ae0182c741951e13ea8eb967697213409295e43c8150ccdeba77cc7c023e",
+    "crc_and_all_payloads_verified": true
+  },
+  "independent_review": {
+    "sha256": "f1d78a11bfc4ff5a48247abbddd8aa2e0bc9cdd526c4757180499fd9f458782c",
+    "payload": {
+      "schema_version": 1,
+      "review_id": "r81_transition_independent_review_v002",
+      "reviewed_head": "1c1994f1f49b1cb7f8991c87d1ac5bec6b66977c",
+      "reviewed_branch": "r81-transition-soft-integration-prep",
+      "review_scope": "final uncommitted opt-in R81 measured-transition selection preparation",
+      "disposition": "preparation_review_pass",
+      "release_ready": false,
+      "validate_release_claimed": false,
+      "files": {
+        "script/exploration.py": "61aa837f344942b5097c16dc6b91ca32ebab7b3950cd5737a3e09c2a9f91405b",
+        "script/r81_transition_soft.py": "eab0ca49a62e813be36b61b69e29e0ad7daa921eb8b95984f23be1da82855d06",
+        "script/r81_worker_entry.py": "8ef06e49d5cc4c5f6f526918d8ecd294ca218674f8d0c9e5212074443a7803ce",
+        "script/r81_transition_selection.py": "1c274bf2e4c88164f5b1f8a5ef10b31b607d3e7e7cf32399de0d559b55792cb2",
+        "tests/test_r81_transition_selection.py": "ceca7c67eb768974f4ffc3c65524b201e67a25223b1230f9825fa9f2c36fc4e9"
+      },
+      "resolved_findings": [
+        {
+          "id": "R81-TR-001",
+          "status": "resolved_in_preparation",
+          "evidence": "The plan now replays the actual predecessor ensemble and production arm selector, binds exact ordered manifest rows plus physical float32 pattern hashes, and rejects a same-pool substitution after all caller-controlled hashes are recomputed."
+        },
+        {
+          "id": "R81-TR-002",
+          "status": "resolved_in_preparation",
+          "evidence": "Transition use is independently detected from the complete bound controller tree and later-row provenance; omission of transition_selection_receipts now rejects and forces the transition runtime producer set."
+        },
+        {
+          "id": "R81-TR-003",
+          "status": "resolved_in_preparation",
+          "evidence": "Canonical plan path, pre-state hash, input path, input manifest hash, arm counts, and post-state hash are recomputed and compared rather than trusted from the self-hashed receipt."
+        },
+        {
+          "id": "R81-TR-004",
+          "status": "resolved_in_preparation",
+          "evidence": "Current lifecycle state now requires the frozen top-level schema, exact contiguous batch range and next_batch, measured_budget equality, exact per-batch field schemas, physical input binding, predecessor model lineage, and validated feedback/model evidence."
+        },
+        {
+          "id": "R81-TR-005",
+          "status": "resolved_in_preparation",
+          "evidence": "The final exact-row patch compares each entire manifest row with its canonical production row, so an arbitrary soft_target or other extra truth alias rejects even after manifest, state, and receipt hashes are recomputed."
+        }
+      ],
+      "verified_properties": [
+        "The soft 0.1 dB preference remains bounded and applies only to authenticated measured parents; candidate scoring and five-margin SM output are unchanged.",
+        "The deterministic pool remains 1024 unique candidates with 512 fresh and 512 parent variants, 32 geometry-first parents, and the existing 20/20/20 later-arm quotas.",
+        "Fresh and mutated candidates carry no measured truth fields; parent variants retain only a narrow provenance reference, and the exact row schema rejects added truth aliases.",
+        "Frozen state, dataset rows, prior feedback, prior models, implementation sources, selector sources, model files, candidate pool, exact selected bundle, and physical pattern bytes are replayed or hash-bound.",
+        "The initial state is an exact successor. Later lifecycle state is narrow and contiguous. The completion receipt is last, existing receipts are never overwritten, and finalize is the explicit recovery path after state publication.",
+        "Transition receipt/source/runtime closure is opt-in but cannot be downgraded by omitting the receipt field once transition evidence or row provenance exists.",
+        "The ordinary exploration defaults and native R80 validation path remain unchanged by the opt-in call sites reviewed here."
+      ],
+      "tests": [
+        {
+          "scope": "all six focused transition integration tests on the stable core-fix state before the final exact-row-only refinement",
+          "result": "6 passed in 31.72s",
+          "covered": [
+            "geometry-first preference",
+            "default manifest compatibility",
+            "opt-in runtime closure",
+            "batch 2 and batch 3 lifecycle with 120 authenticated measured records",
+            "recomputed receipt claim rejection",
+            "unexpected state-field rejection",
+            "receipt omission downgrade rejection",
+            "recomputed same-pool candidate substitution rejection",
+            "tampered plan rejection",
+            "crash finalization without silent rerun"
+          ]
+        },
+        {
+          "scope": "test_complete_opt_in_lifecycle_and_authenticated_replay only, after the final exact-row patch",
+          "result": "1 passed in 25.62s",
+          "covered": [
+            "all lifecycle and same-pool adversarial checks above",
+            "arbitrary soft_target extra-field insertion with recomputed manifest, state, and receipt hashes"
+          ],
+          "note": "The other five focused tests were not repeated because the final patch touched only canonical selected-row construction, exact bundle comparison, and this affected test."
+        },
+        {
+          "scope": "git diff --check",
+          "result": "passed with no output"
+        }
+      ],
+      "remaining_limits": [
+        {
+          "id": "R81-TR-L001",
+          "severity": "release_blocking_evidence_gap",
+          "title": "Cross-host exact CPU prediction replay is unverified",
+          "detail": "Plan regeneration stores raw CPU ensemble prediction and uncertainty floats and requires exact plan equality. Different worker hosts, Torch builds, BLAS implementations, or thread schedules may produce tiny float differences even when candidate IDs, arm assignments, and model bytes agree. No actual three-host replay evidence exists.",
+          "required_before_release": "Run the committed, Git-bound receipt validator on all three intended worker environments against the same frozen evidence and confirm byte-identical plan replay, or explicitly revise the receipt contract to bind stable selection decisions without claiming unverified raw-float portability. This review does not choose or validate a numerical relaxation."
+        },
+        {
+          "id": "R81-TR-L002",
+          "severity": "release_blocking_state",
+          "title": "Preparation is uncommitted",
+          "detail": "The runtime validator requires committed Git blobs and a clean path binding. A real validate_release execution cannot truthfully pass against these uncommitted files."
+        }
+      ],
+      "review_limits": [
+        "No real Release metadata was generated or validated.",
+        "No broad legacy suite was repeated after the final exact-row refinement.",
+        "No production data, HFSS execution, worker dispatch, NAS access, merge, commit, or push was performed.",
+        "Preparation review pass means the reviewed local logic and focused generated evidence are coherent; it is not a Release, cross-host portability, or production readiness claim."
+      ],
+      "prior_review": {
+        "path": "tmp/r81_transition_independent_review_v001/review.json",
+        "sha256": "671792df8e86207b470f1b5e0ae8e2c5118581df3c6bf3f6dcb992fe173b7b5d",
+        "disposition": "changes_requested"
+      }
+    }
+  },
+  "actual_post_commit_git_scope_checks": {
+    "commit": "7928468be57fa86dc81015320d948b98d4d105d9",
+    "default44": "passed",
+    "opt_in46": "passed",
+    "method": "Actual imported _validate_runtime; Git blob hashes and scoped clean, no mocked Git functions. Captured conductor tool output after commit."
+  },
+  "tests": {
+    "implementer_core": "6 passed 32.80s",
+    "independent_core": "6 passed 31.72s",
+    "implementer_final_affected_lifecycle": "1 passed 26.12s",
+    "independent_final_affected_lifecycle": "1 passed 25.62s",
+    "bounded_regressions": "13 passed / 1 opt-in skip, then explicitly authorized synthetic CPU test passed: 14 actual passes",
+    "scope": "Generated 60 then120 feedback rows, real CPU MLP training/forward, 1024 deterministic pool, batch2/batch3 exact selection, adversarial rehashed same-pool substitution/extra truth alias/state/receipt/downgrade. No real HFSS data or model efficacy."
+  },
+  "main_runtime_untouched": {
+    "worker_entry_sha256": "cd578a22c4f0ca33374bee12cee0c2b7ada1a98abc54530a2f54a3fb79aa023c",
+    "new_selection_module_absent": true
+  },
+  "changes": [
+    "Existing selector replay verifies exact ordered manifest rows and physical f32 pattern bytes.",
+    "Immutable prior metadata, source/model hashes and bounded feedback/training lifecycle are revalidated.",
+    "Actual transition annotations/evidence require receipts and opt-in46 producers; native44 default remains supported.",
+    "Only measured current parents receive transition preferences; fresh or unmeasured seed parents cannot inherit truth."
+  ],
+  "release_ready": false,
+  "production_release": null,
+  "limits": [
+    "No actual5000 cutoff, R81 engineering, queue dispatch, NAS writes or HFSS execution.",
+    "No full validate_release pass; actual runtime closure is narrower evidence.",
+    "Exact CPU float prediction replay across216/218/37 is unverified: validate actual environments before a future Release.",
+    "No main merge/hotpatch; R80 closeout v004 pins original native entry and must remain intact until its phase completes.",
+    "0.1dB preference cap is a design choice, not a noise estimate; five-margin SM has no transition head."
+  ],
+  "helper_sha256": "d158cb33c8d2d808a83ad130f594a73a11a7d61f6c836e820b26b662bbb829ef"
+}
