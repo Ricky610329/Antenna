@@ -1359,3 +1359,10 @@ transition v002/v003的實際復原鏈缺陷已留存BLOCKED審查，v004以真�
 ### 2026-10-10：單次publisher launcher與恢復後健康入口審查通過
 
 launcher只有一次hidden private-ant publisher start、native wait、實際exit code與PID absence讀回；有限lease 3,600秒，existing output禁止重試，無kill或自動restore。另已準備讀取immutable restoration receipt＋指定SHA的健康工具，以exact新PID／creation／argv／launch／attempt及原profile/search/settings核對主控，不從mutable status自行選PID。兩項独立窄審與parser/一個純健康fixture通過，未執行CIM／STOP／NAS／publisher。launcher另行hash綁定；wrapper start/I/O failure須依真實已達證據人工核對，不能虛構PID或盲目重送。[來源與限制](assets/r80_structured48_execution_entry_readiness_20261010.json)。下一步才用本里程碑HEAD建立activation config並執行自然waiting handoff，直到恢復完成前不變更HEAD。
+
+
+### 2026-10-10 11:19–11:26：新48容量defer；原設定主控已恢復
+
+自然waiting、無active/recovered reservation時寫入exact owned local STOP；11:19:29原15944乾淨退出，無worker／HFSS signal。有限lease下單次publisher52244於11:22返回durable guided96 capacity-deferred，action仍prepared，未copy／append／產生capacity proof或readback。root後續直接核對私人NAS：三個planned job/input都不存在。同一action終態不得自動重送，容量限制未放寬。[實際完整證據](assets/r80_structured48_capacity_deferral_and_restore_20261010.json)。
+
+native launcher exit_code實際為null，故只以原traceback及durable deferral分類，不虛構exit1。最初default PowerShell dot-source因execution policy在handoff/restore前被拒絕；獨立Bypass-file入口才建立真實capacity handoff並執行原reviewed restorer。11:24:02已移除自己的STOP、hidden啟動原settings/source主控53228，creation1791602636766／newlaunch5a181a47c95a4ab1a8377d803f9da3c1／prior stopped SHA與attempt鏈吻合。11:26:51恢復後健康核對exact新身分、唯一watch、原profile/search/settings、三worker都有claimed工作、scope無警報。主控SM與LOW補池續跑；舊15944入口不得再用，下一例行11:57。三worker從未重啟；R80及R81未完成。後續先解決同tier預備cohort與主線補池的入場排程，避免反覆STOP而仍超容量；不以改tier或放寬96偷過此實際結果。

@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "scope": "saved-only independent review of the actual quiescence, deferred publisher, restoration, and health evidence chain",
+  "activation_git_head": "7209806b3fb7245c7ce0d3981e3f32bc540df9ea",
+  "evidence": {
+    "transition_config": {"sha256": "8a3afdaaa50cc7ae5567d94ebd1134696929cf90210bfd61041ccf675f674bdc", "bytes": 7648},
+    "activation_complete": {"sha256": "f54a9f414473252d0e17795d44f0788c97df6780032c87867c623c10a9f5f6e3", "bytes": 1402},
+    "publisher_lease": {"sha256": "cbd351161eeb15e23ddc577bedcb7c5b790b41aadbc4fcc999d8c569979b8407", "bytes": 705},
+    "publisher_process_created": {"sha256": "51cbc88ab1e25b0719bfc5f1f406645de2ddac2d522b8ea36a950abc47564186", "bytes": 1999},
+    "publisher_process_terminal": {"sha256": "6008f2892f346c3a1041539448d11b4fbe3ef576d54ee8ae6b9a581be4dfefdd", "bytes": 1528},
+    "publisher_stderr": {"sha256": "b3b53cdc4ad532f71e7a8e2841f3853f4fda5fb45f04a05b566de6c127cd8cad", "bytes": 1251},
+    "prepared_action": {"sha256": "8bf46453d067f82ec3ffcfe448d36dec2cb0c74e51b990771e346bce03038bc7", "bytes": 19194},
+    "capacity_deferral": {"sha256": "b77e5a94a394e4f0ccf09630d9edd137f37803a4ca65424080375f9e31adaf11", "bytes": 883},
+    "root_handoff_source": {"sha256": "49cf9b3c4f8301c7b8cdd6d7fc8bdd039af4f5dbd4c1df33893192712bef3b57", "bytes": 2161},
+    "publisher_terminal_handoff": {"sha256": "5e0ee609fb769cef99884359ef106b1f1e18be69bbf7aa3bd061b80f228c9e9a", "bytes": 2103},
+    "restoration_intent": {"sha256": "bc78138e3565808247559db34db234587c1ac8818c8ba1ab25f16f24066b4d3e", "bytes": 1190},
+    "restored_process_created": {"sha256": "f35f01f0b4f7a461136d9345b7afdfb0253edc0b41cf06aab1ecbc433ee7a3eb", "bytes": 985},
+    "restoration_complete": {"sha256": "fb73424b28104a575f9f9b5f146aad4ff3918b76fdf6f6a596e61ae6103afb0b", "bytes": 4275},
+    "new_attempt": {"sha256": "4577413adc57fc004489c92c545a705c956bf404bf2760dab0d366580e17789b", "bytes": 12259},
+    "health": {"sha256": "2ca74d4f40ea78d90067317e498c381b4bc197d1d486bb4ba158da5afd34f9b0", "bytes": 12652}
+  },
+  "verified": {
+    "all_19_runtime_bindings_match_saved_config": true,
+    "all_6_transition_source_bindings_match_saved_config": true,
+    "publisher_source_and_config_match_saved_config": true,
+    "activation_completed_before_lease_and_publisher_start": true,
+    "activation_records_old_pid_15944_absent_zero_watchers_stopped_local_STOP_and_no_process_signal": true,
+    "publisher_pid_52244_start_identity_source_request_and_lease_chain_match": true,
+    "publisher_terminal_is_confirmed_absent_and_hash_binds_start_action_stdout_stderr": true,
+    "publisher_terminal_exit_code_is_unknown_null": true,
+    "stderr_and_capacity_receipt_consistently_record_guided_outstanding_plus_48_exceeding_96": true,
+    "action_remains_prepared": true,
+    "action_directory_contains_only_action_receipt_and_capacity_deferral": true,
+    "capacity_receipt_explicitly_records_no_retry_no_copy_no_append": true,
+    "root_handoff_hash_binds_prepared_action_capacity_deferral_activation_and_native_terminal": true,
+    "root_handoff_preserves_unknown_native_exit_code_without_fabrication": true,
+    "restoration_intent_binds_config_activation_handoff_stopped_status_and_owned_STOP": true,
+    "restored_pid_53228_creation_executable_and_argv_match_process_created_and_completion": true,
+    "new_launch_5a181a47c95a4ab1a8377d803f9da3c1_attempt_is_rehashed": true,
+    "new_attempt_history_binds_prior_stopped_local_STOP_status_and_runtime_profile_search_settings": true,
+    "health_rehashes_restoration_receipt_and_matches_new_pid_launch_attempt_and_exact_single_watcher": true,
+    "health_factory_status_exit_zero_and_reports_no_alert": true,
+    "health_records_all_three_prior_planned_job_done_markers_without_fail_markers": true
+  },
+  "blockers": [],
+  "limits": [
+    "This is a saved-artifact and hash-chain review; it did not independently query CIM, NAS, workers, HFSS, queues, models, or current controller state.",
+    "The native publisher exit code was not observed and remains null. The saved traceback and capacity-deferral receipt establish the failure reason, not an OS exit code.",
+    "The initial restricted-shell dot-source failure occurred before the handoff and restoration artifacts; this review verifies that the corrected handoff source and resulting saved metadata are mutually consistent, not the interactive shell history.",
+    "No append proof or readback exists because dispatch was capacity-deferred before copy or append; this review makes no claim that the structured48 jobs were published.",
+    "The later health receipt is historical saved evidence from 2026-10-10T03:26:51.8482806Z and is not a live health assertion."
+  ],
+  "operations_performed_by_review": {
+    "live_cim_query": false,
+    "nas_access": false,
+    "process_action": false,
+    "helper_execution": false,
+    "model_or_readout_action": false,
+    "tests": false,
+    "source_change": false
+  }
+}

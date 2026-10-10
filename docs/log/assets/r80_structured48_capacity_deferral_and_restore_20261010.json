@@ -1,0 +1,662 @@
+{
+  "schema_version": 1,
+  "status": "actual_capacity_deferral_original_controller_restored_and_health_verified",
+  "created_utc": "2026-10-10T03:32:28.231938+00:00",
+  "record_helper": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_transition_milestone_20261010_v001\\record_actual_deferral.py",
+    "sha256": "73527122921abf122645ac124d5c2e123e533ccf96e87e54310135ae202b80a3",
+    "bytes": 8659
+  },
+  "evidence": {
+    "transition_config.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\transition_config.json",
+        "sha256": "8a3afdaaa50cc7ae5567d94ebd1134696929cf90210bfd61041ccf675f674bdc",
+        "bytes": 7648
+      },
+      "content": {
+        "schema_version": 1,
+        "kind": "r80_structured48_controller_transition_config_v001",
+        "activation_git_head": "7209806b3fb7245c7ce0d3981e3f32bc540df9ea",
+        "repo": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna",
+        "private_python": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+        "module": "script.symmetry_factory_watch",
+        "settings": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+        "local_workdir": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1",
+        "old_controller": {
+          "pid": 15944,
+          "creation_unix_ms": 1791541659267,
+          "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+          "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+          "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\"",
+          "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+          "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+          "watcher_source_sha256": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+          "interval_seconds": 1800
+        },
+        "runtime_bindings": {
+          "script/symmetry_factory_watch.py": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+          "script/symmetry_factory_cycle.py": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e",
+          "script/symmetry_factory_backlog.py": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84",
+          "script/symmetry_factory.py": "c9e5db41485e4d2907bf42cd231a5a77b583e5861a55b77378ee173d31931f93",
+          "script/symmetry_diverse_sm.py": "2cf599ab1bbba24e04b853df9d1485d8b30f7a99b98e7b7691e03a8c9e0db274",
+          "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+          "script/symmetry_sm_pool.py": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8",
+          "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+          "script/profiled_shards.py": "c1571849d769c6731ab3df005f920e75cf212e1c439da4f50a20ca1a6a3628c9",
+          "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+          "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+          "antenna/measurement.py": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9",
+          "antenna/training.py": "288fee2c5963c0a9e08ad0e05091d164a4767495dda6a3942ac917ad5c2d23a7",
+          "antenna/models/__init__.py": "fd31814fd76678b7ed410ced2489758ede058223731a76e44123e1d10b59a578",
+          "antenna/models/surrogates.py": "f6168c7e4d1bc170bcc3b93f806df0db544abd1e6d91fdd7dfa7988a29518235",
+          "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+          "configs/r80_diverse_sm_search_v1.json": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+          "tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+          "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e"
+        },
+        "cancelled_driver_receipt": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_publisher_20261010_v001\\root_cancel_waiting_driver_20261010.json",
+          "sha256": "925d03311f2ba53b234098e5872ec1b60abe0d750404d855cdd1bad5fd07190e"
+        },
+        "publisher_source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publisher_quiescent48.py",
+        "publisher_source_sha256": "4ead9cf86cb29f366c0473e1ff78a7884b0e4c7fb507db1982f162658cf3a160",
+        "publisher_config": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\quiescent_config.json",
+        "publisher_config_sha256": "f0cc69149f40c98d3182b0c313e3644fc5b71d88c26a4aa8962feda949f742e5",
+        "poll_seconds": 30,
+        "maximum_wait_seconds": 7200,
+        "minimum_waiting_remaining_seconds": 120,
+        "terminal_wait_seconds": 600,
+        "launch_verification_seconds": 120,
+        "workers_started_here": false,
+        "publisher_called_here": false,
+        "stop_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\STOP",
+        "stop_payload": {
+          "schema_version": 1,
+          "kind": "r80_structured48_quiescent_local_stop_v001",
+          "owner": "structured48-quiescent-publisher-20261010-v001",
+          "nonce": "78691a6722c12a59131d1694c7d8792d",
+          "scope": "local_watch_only_no_worker_stop",
+          "old_launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+          "global_NAS_STOP_created": false
+        },
+        "stop_bytes_base64": "ewogICJzY2hlbWFfdmVyc2lvbiI6IDEsCiAgImtpbmQiOiAicjgwX3N0cnVjdHVyZWQ0OF9xdWllc2NlbnRfbG9jYWxfc3RvcF92MDAxIiwKICAib3duZXIiOiAic3RydWN0dXJlZDQ4LXF1aWVzY2VudC1wdWJsaXNoZXItMjAyNjEwMTAtdjAwMSIsCiAgIm5vbmNlIjogIjc4NjkxYTY3MjJjMTJhNTkxMzFkMTY5NGM3ZDg3OTJkIiwKICAic2NvcGUiOiAibG9jYWxfd2F0Y2hfb25seV9ub193b3JrZXJfc3RvcCIsCiAgIm9sZF9sYXVuY2hfaWQiOiAiNDJhZmU5MWMyNjNmNGJhY2I3NGY2ZDZjNWM2YmJjYjciLAogICJnbG9iYWxfTkFTX1NUT1BfY3JlYXRlZCI6IGZhbHNlCn0K",
+        "stop_sha256": "8f0f8817128864c47b7b428a01c62226be050cca7f9f228100f4a5f45773c24f",
+        "transition_sources": {
+          "transition_common.ps1": {
+            "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\transition_common.ps1",
+            "sha256": "203fb2fa9a736d3af005918be2cb86da471e3a7194d5a50e94d2fd57f7307ceb",
+            "bytes": 7153
+          },
+          "activate_quiescence.ps1": {
+            "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\activate_quiescence.ps1",
+            "sha256": "c0539817e3767a89ed2887b5c49f563a9b15dac89487179c60675cfed36efe27",
+            "bytes": 7987
+          },
+          "recover_failed_activation.ps1": {
+            "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\recover_failed_activation.ps1",
+            "sha256": "4432af8c0b401da9fc76054c22368d423cf704bb55cdba4a123e33b753dec8de",
+            "bytes": 4761
+          },
+          "restore_controller.ps1": {
+            "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\restore_controller.ps1",
+            "sha256": "5dbd82642210284cb882071878cf66459cc90d2229059e92302c2f04f1a444dc",
+            "bytes": 9587
+          },
+          "build_transition_config.py": {
+            "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\build_transition_config.py",
+            "sha256": "206fd9945838ed2d7b6134475515fdedc2d17234ff81e2d205596c935872c649",
+            "bytes": 3347
+          },
+          "transition_config.template.json": {
+            "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\transition_config.template.json",
+            "sha256": "27d072150ca3968355d52ab82c56e1e3b638ad8ed11d2f54f95635a85ce2f824",
+            "bytes": 4407
+          }
+        },
+        "builder": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\build_transition_config.py",
+          "sha256": "206fd9945838ed2d7b6134475515fdedc2d17234ff81e2d205596c935872c649",
+          "bytes": 3347
+        }
+      }
+    },
+    "activation_evidence/waiting_boundary.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\activation_evidence\\waiting_boundary.json",
+        "sha256": "aeb26210441b6adb40c98527fd8158f664cb6e94a5cbc90abf563443b96d075b",
+        "bytes": 1874
+      },
+      "content": {
+        "schema_version": 1,
+        "status": "stable_waiting_boundary_before_owned_stop",
+        "observed_utc": "2026-10-10T03:19:12.5253423Z",
+        "old_controller": {
+          "pid": 15944,
+          "creation_unix_ms": 1791541659267,
+          "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+          "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+        },
+        "watch_status": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+          "sha256": "45f6a2dcecdfd6168a449b876b482a944150bc152e4b0f85281ce3055881afbd",
+          "bytes": 5048
+        },
+        "last_receipt": {
+          "sha256": "bb1b6c0c963c20b76b1e8dda8ed999543185a04c7e9f90a79784393295c0a806",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\480d052331cfdc1204c27cae6fd2563aa4a67c8eee6d71261006edee5e01f163\\action_receipt.json"
+        },
+        "recorded_next_cycle_in_seconds": 1015.03199999989,
+        "computed_due_utc": "2026-10-10T03:27:44.9618860+00:00",
+        "actual_remaining_seconds": 512.6151646999999,
+        "active_cycle_absent": true,
+        "recovered_reservation_absent": true,
+        "cancelled_driver_absent": true,
+        "watcher_count": 1,
+        "config_sha256": "8a3afdaaa50cc7ae5567d94ebd1134696929cf90210bfd61041ccf675f674bdc",
+        "activation_git_head": "7209806b3fb7245c7ce0d3981e3f32bc540df9ea"
+      }
+    },
+    "activation_evidence/stop_written.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\activation_evidence\\stop_written.json",
+        "sha256": "f2cbc7c09cc0fc52339715c4b138f250e25a9bc895ce48ca4403d084e5fb63c7",
+        "bytes": 563
+      },
+      "content": {
+        "schema_version": 1,
+        "status": "owned_local_stop_written_no_process_signal",
+        "completed_utc": "2026-10-10T03:19:12.5712714Z",
+        "stop_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\STOP",
+        "stop_sha256": "8f0f8817128864c47b7b428a01c62226be050cca7f9f228100f4a5f45773c24f",
+        "waiting_boundary_sha256": "aeb26210441b6adb40c98527fd8158f664cb6e94a5cbc90abf563443b96d075b",
+        "main_signal": false,
+        "worker_or_HFSS_signal": false,
+        "publisher_called": false
+      }
+    },
+    "activation_evidence/activation_complete.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\activation_evidence\\activation_complete.json",
+        "sha256": "f54a9f414473252d0e17795d44f0788c97df6780032c87867c623c10a9f5f6e3",
+        "bytes": 1402
+      },
+      "content": {
+        "schema_version": 1,
+        "status": "quiescent_old_watch_stopped_local_STOP",
+        "completed_utc": "2026-10-10T03:19:29.3180672Z",
+        "old_pid_absent": 15944,
+        "watcher_count": 0,
+        "stopped_status": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+          "sha256": "f66b009f65dcb5fa5f742b4313dd17667c164e90c87c84f2507c90d1c02b8c62",
+          "bytes": 5135
+        },
+        "last_receipt": {
+          "sha256": "bb1b6c0c963c20b76b1e8dda8ed999543185a04c7e9f90a79784393295c0a806",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\480d052331cfdc1204c27cae6fd2563aa4a67c8eee6d71261006edee5e01f163\\action_receipt.json"
+        },
+        "active_cycle_absent": true,
+        "recovered_reservation_absent": true,
+        "stop_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\STOP",
+        "stop_sha256": "8f0f8817128864c47b7b428a01c62226be050cca7f9f228100f4a5f45773c24f",
+        "maintainer_exit_inferred_from_watch_process_exit": true,
+        "main_signal": false,
+        "worker_or_HFSS_signal": false,
+        "publisher_called": false
+      }
+    },
+    "publisher_lease.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_lease.json",
+        "sha256": "cbd351161eeb15e23ddc577bedcb7c5b790b41aadbc4fcc999d8c569979b8407",
+        "bytes": 705
+      },
+      "content": {
+        "schema_version": 1,
+        "owner": "structured48-quiescent-publisher-20261010-v001",
+        "created_utc": "2026-10-10T03:19:50.3770957+00:00",
+        "expires_utc": "2026-10-10T04:19:50.3770957+00:00",
+        "activation_evidence": {
+          "sha256": "f54a9f414473252d0e17795d44f0788c97df6780032c87867c623c10a9f5f6e3",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\activation_evidence\\activation_complete.json"
+        },
+        "config_sha256": "8a3afdaaa50cc7ae5567d94ebd1134696929cf90210bfd61041ccf675f674bdc",
+        "automatic_retry": false
+      }
+    },
+    "publisher_process_created.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_process_created.json",
+        "sha256": "51cbc88ab1e25b0719bfc5f1f406645de2ddac2d522b8ea36a950abc47564186",
+        "bytes": 1999
+      },
+      "content": {
+        "schema_version": 1,
+        "status": "owned_single_publisher_process_created",
+        "pid": 52244,
+        "process": {
+          "pid": 52244,
+          "creation_unix_ms": 1791602390404,
+          "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+          "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publisher_quiescent48.py\" dispatch --request \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publish_request.json\" --lease \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_lease.json\""
+        },
+        "started_utc": "2026-10-10T03:19:50.5569939Z",
+        "arguments": "\"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publisher_quiescent48.py\" dispatch --request \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publish_request.json\" --lease \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_lease.json\"",
+        "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+        "stdout": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_stdout.log",
+        "stderr": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_stderr.log",
+        "source_sha256": "4ead9cf86cb29f366c0473e1ff78a7884b0e4c7fb507db1982f162658cf3a160",
+        "request_sha256": "f448b1352de5da0f42280cb1e37ffb1f15d5db54c37e1fca459e762b22fde0ac",
+        "lease_sha256": "cbd351161eeb15e23ddc577bedcb7c5b790b41aadbc4fcc999d8c569979b8407",
+        "automatic_retry": false
+      }
+    },
+    "publisher_process_terminal.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_process_terminal.json",
+        "sha256": "6008f2892f346c3a1041539448d11b4fbe3ef576d54ee8ae6b9a581be4dfefdd",
+        "bytes": 1528
+      },
+      "content": {
+        "schema_version": 1,
+        "status": "owned_single_publisher_exited",
+        "pid": 52244,
+        "completed_utc": "2026-10-10T03:22:04.5546627Z",
+        "exit_code": null,
+        "confirmed_absent": true,
+        "start_receipt": {
+          "sha256": "51cbc88ab1e25b0719bfc5f1f406645de2ddac2d522b8ea36a950abc47564186",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_process_created.json"
+        },
+        "action": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\structured48-quiescent-action-v1\\action_receipt.json",
+          "sha256": "8bf46453d067f82ec3ffcfe448d36dec2cb0c74e51b990771e346bce03038bc7",
+          "status": "prepared"
+        },
+        "stdout": {
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_stdout.log"
+        },
+        "stderr": {
+          "sha256": "b3b53cdc4ad532f71e7a8e2841f3853f4fda5fb45f04a05b566de6c127cd8cad",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_stderr.log"
+        },
+        "automatic_retry": false
+      }
+    },
+    "publisher_terminal_handoff.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_terminal_handoff.json",
+        "sha256": "5e0ee609fb769cef99884359ef106b1f1e18be69bbf7aa3bd061b80f228c9e9a",
+        "bytes": 2103
+      },
+      "content": {
+        "schema_version": 1,
+        "kind": "r80_structured48_publisher_terminal_handoff_v001",
+        "status": "capacity_deferred",
+        "publisher_process": {
+          "pid": 52244,
+          "creation_unix_ms": 1791602390404,
+          "confirmed_absent": true
+        },
+        "publisher_action": {
+          "sha256": "8bf46453d067f82ec3ffcfe448d36dec2cb0c74e51b990771e346bce03038bc7",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\structured48-quiescent-action-v1\\action_receipt.json"
+        },
+        "terminal_evidence": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\structured48-quiescent-action-v1\\capacity-deferred-no-retry-20261010T032203998294.json",
+          "sha256": "b77e5a94a394e4f0ccf09630d9edd137f37803a4ca65424080375f9e31adaf11",
+          "bytes": 883
+        },
+        "activation_evidence": {
+          "sha256": "f54a9f414473252d0e17795d44f0788c97df6780032c87867c623c10a9f5f6e3",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\activation_evidence\\activation_complete.json"
+        },
+        "publisher_not_started": false,
+        "publisher_automatic_retry": false,
+        "root_reviewed": true,
+        "native_process_terminal": {
+          "sha256": "6008f2892f346c3a1041539448d11b4fbe3ef576d54ee8ae6b9a581be4dfefdd",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_process_terminal.json"
+        },
+        "native_exit_code": null,
+        "native_exit_code_not_observed": true
+      }
+    },
+    "restoration_intent.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\restoration_intent.json",
+        "sha256": "bc78138e3565808247559db34db234587c1ac8818c8ba1ab25f16f24066b4d3e",
+        "bytes": 1190
+      },
+      "content": {
+        "schema_version": 1,
+        "status": "restoration_intent_before_owned_stop_removal",
+        "created_utc": "2026-10-10T03:23:56.7497535Z",
+        "config_sha256": "8a3afdaaa50cc7ae5567d94ebd1134696929cf90210bfd61041ccf675f674bdc",
+        "activation_complete_sha256": "f54a9f414473252d0e17795d44f0788c97df6780032c87867c623c10a9f5f6e3",
+        "publisher_terminal_handoff": {
+          "sha256": "5e0ee609fb769cef99884359ef106b1f1e18be69bbf7aa3bd061b80f228c9e9a",
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_terminal_handoff.json"
+        },
+        "stopped_status_sha256": "f66b009f65dcb5fa5f742b4313dd17667c164e90c87c84f2507c90d1c02b8c62",
+        "stop_sha256": "8f0f8817128864c47b7b428a01c62226be050cca7f9f228100f4a5f45773c24f",
+        "expected_command": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\"",
+        "automatic_retry": false
+      }
+    },
+    "restored_process_created.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\restored_process_created.json",
+        "sha256": "f35f01f0b4f7a461136d9345b7afdfb0253edc0b41cf06aab1ecbc433ee7a3eb",
+        "bytes": 985
+      },
+      "content": {
+        "schema_version": 1,
+        "status": "new_owned_watch_process_created_pending_verification",
+        "created_utc": "2026-10-10T03:23:56.9003214Z",
+        "process": {
+          "pid": 53228,
+          "creation_unix_ms": 1791602636766,
+          "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+          "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+        },
+        "stdout": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\restored_watch_stdout.log",
+        "stderr": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\restored_watch_stderr.log",
+        "stop_removed": true,
+        "automatic_retry": false
+      }
+    },
+    "restoration_complete.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\restoration_complete.json",
+        "sha256": "fb73424b28104a575f9f9b5f146aad4ff3918b76fdf6f6a596e61ae6103afb0b",
+        "bytes": 4275
+      },
+      "content": {
+        "schema_version": 1,
+        "status": "restored_new_owned_main_verified",
+        "completed_utc": "2026-10-10T03:24:02.5314415Z",
+        "process": {
+          "pid": 53228,
+          "creation_unix_ms": 1791602636766,
+          "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+          "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+        },
+        "new_launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+        "watch_status": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+          "sha256": "0fd7f14708854bf961509da31c859cec16303f546bb78e9f86d963f9c7c12718",
+          "bytes": 3672
+        },
+        "attempt": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\5a181a47c95a4ab1a8377d803f9da3c1.json",
+          "sha256": "4577413adc57fc004489c92c545a705c956bf404bf2760dab0d366580e17789b",
+          "bytes": 12259
+        },
+        "prior_stopped_status_sha256": "f66b009f65dcb5fa5f742b4313dd17667c164e90c87c84f2507c90d1c02b8c62",
+        "runtime_bindings": {
+          "script/symmetry_factory_watch.py": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+          "script/symmetry_factory_cycle.py": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e",
+          "script/symmetry_factory_backlog.py": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84",
+          "script/symmetry_factory.py": "c9e5db41485e4d2907bf42cd231a5a77b583e5861a55b77378ee173d31931f93",
+          "script/symmetry_diverse_sm.py": "2cf599ab1bbba24e04b853df9d1485d8b30f7a99b98e7b7691e03a8c9e0db274",
+          "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+          "script/symmetry_sm_pool.py": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8",
+          "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+          "script/profiled_shards.py": "c1571849d769c6731ab3df005f920e75cf212e1c439da4f50a20ca1a6a3628c9",
+          "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+          "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+          "antenna/measurement.py": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9",
+          "antenna/training.py": "288fee2c5963c0a9e08ad0e05091d164a4767495dda6a3942ac917ad5c2d23a7",
+          "antenna/models/__init__.py": "fd31814fd76678b7ed410ced2489758ede058223731a76e44123e1d10b59a578",
+          "antenna/models/surrogates.py": "f6168c7e4d1bc170bcc3b93f806df0db544abd1e6d91fdd7dfa7988a29518235",
+          "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+          "configs/r80_diverse_sm_search_v1.json": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+          "tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+          "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e"
+        },
+        "activation_git_head": "7209806b3fb7245c7ce0d3981e3f32bc540df9ea",
+        "workers_restarted": false,
+        "HFSS_started_here": false,
+        "automatic_retry": false
+      }
+    },
+    "health_restored_20261010_1124.json": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\health_restored_20261010_1124.json",
+        "sha256": "2ca74d4f40ea78d90067317e498c381b4bc197d1d486bb4ba158da5afd34f9b0",
+        "bytes": 12652
+      },
+      "content": {
+        "schema_version": 1,
+        "status": "restored_main_health_observed",
+        "observed_utc": "2026-10-10T03:26:51.8482806Z",
+        "restoration_receipt": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\restoration_complete.json",
+          "sha256": "fb73424b28104a575f9f9b5f146aad4ff3918b76fdf6f6a596e61ae6103afb0b",
+          "bytes": 4275,
+          "schema_version": 1,
+          "status": "restored_new_owned_main_verified"
+        },
+        "health_source": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\check_health_restored.ps1",
+          "sha256": "cd69d148db9775d90a0ee2da451a740271f8557d9aa6fcfbd61a20d9285910a3",
+          "common_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\check_health_restored_common.ps1",
+          "common_sha256": "31962c3d5e895bce8e64717c81a19b89df1ac5c3b93e967342bcc510bd4cf4a2"
+        },
+        "process": {
+          "pid": 53228,
+          "creation_unix_ms": 1791602636766,
+          "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+          "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+        },
+        "process_matches_restoration_receipt": true,
+        "watcher_inventory_count_excluding_query": 1,
+        "watcher_inventory_exact": true,
+        "new_launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+        "attempt": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\5a181a47c95a4ab1a8377d803f9da3c1.json",
+          "sha256": "4577413adc57fc004489c92c545a705c956bf404bf2760dab0d366580e17789b",
+          "bytes": 12259
+        },
+        "watch_status": {
+          "schema_version": 1,
+          "status": "running_cycle",
+          "started_utc": "2026-10-10T03:23:58.664117+00:00",
+          "launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+          "attempt_record": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\5a181a47c95a4ab1a8377d803f9da3c1.json",
+          "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+          "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+          "profile_binding": {
+            "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+            "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+            "scope": "symmetry_filter_20261007"
+          },
+          "expected_retry_workers": [
+            "140.123.106.216",
+            "140.123.106.218",
+            "140.123.106.37"
+          ],
+          "interval_seconds": 1800,
+          "completed_cycles": 0,
+          "hfss_started_here": false,
+          "low_backlog": {
+            "poll_seconds": 90,
+            "low_watermark": 48,
+            "target_pending": 96,
+            "max_refill": 96,
+            "min_refill": 48,
+            "shard_size": 16,
+            "priority": 6,
+            "owner": "r80-low-backlog-v1",
+            "reservoir_seed": 80100791,
+            "reservoir_size": 2048
+          },
+          "search_policy": {
+            "schema_version": 1,
+            "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\r80_diverse_sm_search_v1.json",
+            "sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+            "policy_id": "27937e8f03647431256a31ad47acf4124fc30f8b7195afb1f731d079d6e01d75",
+            "policy": {
+              "arm_order": [
+                "global_lcb",
+                "parent_lcb",
+                "high_disagreement"
+              ],
+              "arm_weights": [
+                1,
+                1,
+                1
+              ],
+              "candidate_pool_size": 20000,
+              "disagreement_mean_percentile": 60,
+              "dispatch": "existing factory transaction, same priority1 and 16-pattern shards, existing 96 outstanding and 5000 valid-plus-reserved limits",
+              "limits": [
+                "Predictions guide candidate selection; HFSS remains the truth.",
+                "This changes pool generation and arm allocation together; it is not a single-factor causal diversity comparison.",
+                "Top-quartile parent descriptors are development information, not independent model-validation evidence.",
+                "LOW blind backlog remains enabled and unchanged.",
+                "No bridge-width, frequency, score-spec, emforge or worker runtime change.",
+                "First new cohort must be evaluated by origin, saved prediction error, actual WM and geometry coverage before claiming improvement."
+              ],
+              "max_parents_per_canonical_group": 2,
+              "max_selected_per_canonical_group": 2,
+              "measurement_changes": false,
+              "measurement_profile": "configs/single_r80_symmetry_factory.yaml",
+              "min_parent_groups": 8,
+              "min_parent_physical_hamming": 64,
+              "min_selected_physical_hamming": 64,
+              "name": "r80_diverse_sm_v1",
+              "parent_count": 32,
+              "parent_ranking": "actual WM top quartile; highest-WM first, then existing maxmin_hamming_indices with canonical-group cap",
+              "parent_top_fraction": 0.25,
+              "ranking": "descending score, then pattern_sha256; greedily take the highest feasible candidate under whole-cohort constraints",
+              "schema_version": 1,
+              "seed": 80100956,
+              "source_pool_fractions": {
+                "fresh_random": 0.5,
+                "parent_variant": 0.5
+              },
+              "strict_no_relaxation": true,
+              "training_protocol_changes": false
+            }
+          },
+          "cycle_started_utc": "2026-10-10T03:23:58.671867+00:00"
+        },
+        "watch_status_snapshot": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+          "sha256": "0fd7f14708854bf961509da31c859cec16303f546bb78e9f86d963f9c7c12718",
+          "bytes": 3672
+        },
+        "settings": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+          "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+        },
+        "scoped_status_exit": 0,
+        "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c65d3e9ffg01: 8/16 完成,最新結果 1 分前（已認領）\r\n  job dedust_r80c65d3e9ffg03: 13/16 完成,最新結果 0 分前（已認領）\r\n  job dedust_r80c480d0523g01: 0/16（已認領）\r\n  job dedust_r80c480d0523g02: 0/16（排隊中）\r\n  job dedust_r80c480d0523g03: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+        "correct_jobs_state_markers": {
+          "dedust_r80c7e26901fg01": {
+            "done": true,
+            "fail": false
+          },
+          "dedust_r80c7e26901fg02": {
+            "done": true,
+            "fail": false
+          },
+          "dedust_r80c7e26901fg03": {
+            "done": true,
+            "fail": false
+          }
+        },
+        "automatic_restart": false,
+        "process_signal_or_stop": false,
+        "source_or_queue_mutation": false
+      }
+    }
+  },
+  "new_attempt": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\5a181a47c95a4ab1a8377d803f9da3c1.json",
+    "sha256": "4577413adc57fc004489c92c545a705c956bf404bf2760dab0d366580e17789b",
+    "bytes": 12259
+  },
+  "deferral": {
+    "binding": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\structured48-quiescent-action-v1\\capacity-deferred-no-retry-20261010T032203998294.json",
+      "sha256": "b77e5a94a394e4f0ccf09630d9edd137f37803a4ca65424080375f9e31adaf11",
+      "bytes": 883
+    },
+    "content": {
+      "schema_version": 1,
+      "status": "capacity_deferred_no_retry_no_copy_no_append",
+      "action": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\structured48-quiescent-action-v1\\action_receipt.json",
+        "sha256": "8bf46453d067f82ec3ffcfe448d36dec2cb0c74e51b990771e346bce03038bc7",
+        "bytes": 19194
+      },
+      "lease": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_lease.json",
+        "sha256": "cbd351161eeb15e23ddc577bedcb7c5b790b41aadbc4fcc999d8c569979b8407",
+        "bytes": 705
+      },
+      "jobs_sha256": "814a78f01e4594ff7a72552caf940c9f5e4ee218ce6bc2e91212b1f79901cea6",
+      "reason": "dispatch would exceed guided outstanding budget",
+      "automatic_retry": false,
+      "completed_utc": "2026-10-10T03:22:03.999293+00:00"
+    }
+  },
+  "publisher_action": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\structured48-quiescent-action-v1\\action_receipt.json",
+    "sha256": "8bf46453d067f82ec3ffcfe448d36dec2cb0c74e51b990771e346bce03038bc7",
+    "bytes": 19194
+  },
+  "publisher_action_status": "prepared",
+  "publisher_stderr": {
+    "binding": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\publisher_stderr.log",
+      "sha256": "b3b53cdc4ad532f71e7a8e2841f3853f4fda5fb45f04a05b566de6c127cd8cad",
+      "bytes": 1251
+    },
+    "text": "Traceback (most recent call last):\n  File \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publisher_quiescent48.py\", line 889, in <module>\n    main()\n  File \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publisher_quiescent48.py\", line 884, in main\n    else dispatch(args.request, args.lease))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publisher_quiescent48.py\", line 786, in dispatch\n    counts, all_main, guided_main = reservation_capacity(\n                                    ^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publisher_quiescent48.py\", line 523, in reservation_capacity\n    counts = v9.extended_capacity_check(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\publisher_v9.py\", line 613, in extended_capacity_check\n    raise ValueError(\"dispatch would exceed guided outstanding budget\")\nValueError: dispatch would exceed guided outstanding budget\n"
+  },
+  "targeted_NAS_no_dispatch_observation": {
+    "observed_utc": "2026-10-10T03:32:28.235495+00:00",
+    "jobs_sha256": "814a78f01e4594ff7a72552caf940c9f5e4ee218ce6bc2e91212b1f79901cea6",
+    "checks": [
+      {
+        "input": "dedust_r80c0bd85653g01_input",
+        "store": "dedust_r80c0bd85653g01",
+        "queued": false,
+        "NAS_input_exists": false
+      },
+      {
+        "input": "dedust_r80c0bd85653g02_input",
+        "store": "dedust_r80c0bd85653g02",
+        "queued": false,
+        "NAS_input_exists": false
+      },
+      {
+        "input": "dedust_r80c0bd85653g03_input",
+        "store": "dedust_r80c0bd85653g03",
+        "queued": false,
+        "NAS_input_exists": false
+      }
+    ]
+  },
+  "new_main_pid": 53228,
+  "new_main_launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+  "native_publisher_exit_code": null,
+  "native_exit_code_capture_failed": true,
+  "actual_failure_classification": "full48 admission would exceed guided96; explicit source traceback and durable deferral, not an invented native exit code",
+  "worker_restarts_or_HFSS_signals": false,
+  "new48_HFSS_dispatched": false,
+  "next_routine_health_taipei": "2026-10-10 11:57",
+  "no_retry_same_action": true,
+  "global5000_or_guided96_limits_relaxed": false,
+  "limits": [
+    "The live NAS observation proves absence of these three planned inputs/jobs, not that unrelated workers or the restored main made no other changes.",
+    "The initial default-shell dot-source was rejected by PowerShell execution policy before handoff/restore; the separate Bypass-file invocation then restored successfully.",
+    "The launcher native exit_code was null. Preserve the original record; future instrumentation must be fixed separately."
+  ]
+}
