@@ -9,6 +9,12 @@
 
 ## 2026-10-07：R80 已啟動；每30分鐘監看，之後接續 spec 驗證
 
+- **目前狀態（10/10 08:31 全量／08:32 健康）**：有效唯一對稱實測 **3,207/5,000**，較07:33增加57；最佳仍為 WM **+0.0216822624 dB**，獨立重測 +0.0364336967 dB。[查詢及健康證據](../docs/log/assets/r80_best_status_20261010_0831.json)。原主線 PID15944／creation1791541659267／launch42afe91c263f4bacb74f6d6c5c6bbcb7 現場 exact live，報 SM v015、完成20輪、running_cycle；三台已認領15/16、13/16、11/16且結果約2分鐘前，scope零警報。**下一例行檢查09:02**，不按分鐘重查HFSS。
+- **固定32筆模型對照已全部派工／尚待完整真值讀回**：v9第一片 `dedust_r80cf0b21c1bg01` 已done，第二片 `dedust_r80c8c708075g01` 08:32為13/16、非terminal。所有32筆選樣／雙預測與combined seal已固定；[派工及seal](../docs/log/assets/r80_currentonly_prospective_v010_combined32_dispatch_seal_20261010.json)。舊driver9960格式失敗已由新v9處理，phase1／phase2派工程序皆已終態；**不重啟driver、不再派相同批次、不採用尚未評估的current-only模型**。
+- **新多樣性候選池僅離線準備**：20k＝5k random＋5k smooth blob＋8k pixel mutation＋2k group mutation，幾何與保存資料通過獨立核對；[準備證據](../docs/log/assets/r80_structured_geometry_pool_offline_readiness_20261010.json)。這些不是實測筆數，只排除凍結v010的2,840個圖形，尚未採用或派HFSS；不得當作完整live measured／queued exclusion。R80目標仍是5,000個有效唯一實測；R81及後续spec尚未完成，先完成R80。
+
+下列較早時間戳為歷史操作紀錄；已被上述新狀態取代的程序不得重啟。
+
 - **10/10 06:03 主線健康／前瞻派工格式錯誤已定位**：三台claimed10/16、10/16、8/16，最新14／2／2分鐘、scope零警報；主線完成18輪、reported v013，cached3,052不是新全量census。phase1 driver9960於05:59單次呼叫publisher8，06:01在copy／append前exit失敗，兩action仍prepared、無capacity proof；不重啟舊driver。實際40,800B佇列檔使用Windows CRLF，helper計算LF bytes而誤判；診斷cutoff前後相同，正在窄修新版本，不改模型／選樣／容量限制。[失敗與診斷](../docs/log/assets/r80_currentonly_prospective_v010_publication_failure_20261010.json)。最新全量05:04的3,015／+.021682；下一routine06:33，R80/R81未完成。
 
 - **10/10 05:40 前瞻phase1背景等待已實際啟動**：driver PID9960／creation1791581986675／argv／claim现场吻合，原main15944仍exact live；只讀本機狀態，每30秒、最多2小時，剩餘窗口至少360秒才單次呼叫原publisher v8。不自動重試／殺程序／改模型；所有global5000／guided96、來源、duplicate及append前180秒guard照舊。[啟動](../docs/log/assets/r80_currentonly_prospective_v010_deferred_publication_launch_20261010.json)。尚未派HFSS／改queue，phase2之後接續；05:33三台健康、舊三筆HFSS錯誤已由既有worker重試成ok。最新全量05:04的3,015、WM+.021682。下一routine06:03；R80/R81未完成。
