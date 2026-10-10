@@ -1458,3 +1458,8 @@ R81新入口267af9c及歷史masked-prior config-only builder103517c均已推送G
 ### 2026-10-10 17:58：v022 導引48筆完整真值與獨立重播
 
 三個16筆分片皆done且無fail，48/48有效唯一精確LR。最佳WM−5.4882216454dB、中位−11.1421847343、0正WM，未超過16:55全量最佳+.0216822624。saved mean排名ρ.2813、MAE4.7729dB；LCBρ.2465、MAE4.6769dB。主控以3,534累積有效資料的v022模型產生此批；不是宣稱3,534全部用於train。沿用既有readout及saved replay，獨立Sol核對96個凍結檔hash、48個raw WM／pattern、預測算術及來源身份，無NAS／model forward／訓練／派工。零current或legacy exact pattern重疊。不同比較批次不能推論v022改善、性能停滯原因或模型採用；本收據不是新全量census。[完整證據](assets/r80_sm_v022_cohort48_result_20261010.json)。
+
+
+### 2026-10-10 17:59：使用者現況詢問，全量3,688、最佳未變
+
+沿用原query_and_freeze.py（SHA da6a0034…31ac）重新讀私人NAS，17:57:25–17:59:24逐store cutoff。全3,693含repeat raw重算、零cached metric，3,688有效唯一精確LR，比16:55多58，目標73.76%。最佳WM+.0216822624未變，原sample／rad／pattern及既有極座標圖hash一致；沒有重畫相同圖。cutoff有1筆首次COM error，不計有效数，不能把scope無警報誤稱全結果零錯誤。同期健康唯一main及19來源通過，三個claimed13/16、10/16、1/16，最近2／2／1分鐘成功，guided／LOW仍有待跑，reported SM v023僅代表狀態未做模型性能稽核。未重派／重啟／改來源或queue。資料仍增但最佳性能停滯，v022完整48筆亦無正WM；此為結果通知，不是停止收集條件。[全量與健康收據](assets/r80_best_status_20261010_1759.json)。下一既定18:04健康檢查保留。
