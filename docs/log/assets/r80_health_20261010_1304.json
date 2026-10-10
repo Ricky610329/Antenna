@@ -1,0 +1,63 @@
+{
+    "schema_version":  1,
+    "status":  "passed_read_only_routine_health_not_new_census",
+    "observed_utc":  "2026-10-10T05:04:49.3130776Z",
+    "observed_taipei":  "2026-10-10 13:04:49",
+    "source_health":  {
+                          "sha256":  "14cd7e564e882e5fa7422a38ebc3dce0c6abfddc77fd0377bdb4c5ef91e2fd40",
+                          "path":  "tmp/r80_restored_health_20261010_v005/health_restored_20261010_1304.json"
+                      },
+    "source_helper":  {
+                          "path":  "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_restored_health_20261010_v005\\check_health_restored.ps1",
+                          "sha256":  "069c287b2733f9d7edde96c351a8375b2ef405d8dc18a8fea31ef251153af3f2",
+                          "common_path":  "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_restored_health_20261010_v005\\check_health_restored_common.ps1",
+                          "common_sha256":  "2fad7b019348cd975323beb36acc5f13d38f08b1e8167648ab598734ce8ebd42"
+                      },
+    "process":  {
+                    "pid":  53228,
+                    "creation_unix_ms":  1791602636766,
+                    "executable":  "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+                    "argv":  "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+                },
+    "launch_id":  "5a181a47c95a4ab1a8377d803f9da3c1",
+    "runtime_file_bindings_verified":  19,
+    "process_matches_restoration_receipt":  true,
+    "watcher_inventory_exact":  true,
+    "watch_status":  "running_cycle",
+    "reported_sm_data_version":  19,
+    "scoped_status_exit":  0,
+    "claimed_progress":  [
+                             {
+                                 "latest_minutes":  0,
+                                 "completed":  6,
+                                 "total":  16
+                             },
+                             {
+                                 "latest_minutes":  1,
+                                 "completed":  3,
+                                 "total":  16
+                             },
+                             {
+                                 "latest_minutes":  0,
+                                 "completed":  1,
+                                 "total":  16
+                             }
+                         ],
+    "scope_alarm_count":  0,
+    "latest_full_census":  "docs/log/assets/r80_best_status_20261010_1246.json",
+    "latest_full_census_unique":  3418,
+    "next_routine_health_taipei":  "2026-10-10 13:34",
+    "invocation_diagnosis":  {
+                                 "sha256":  "f23486a43b2b261a5a247327627cde159b2c613155ade31d1ad996a3ca551e44",
+                                 "initial_query_failed":  true,
+                                 "path":  "tmp/r80_restored_health_20261010_v005/health_invocation_inventory_false_positive_20261010_1304.json",
+                                 "correction":  "Invoke existing helper alone, after separate identity-precheck caller exits.",
+                                 "helper_source_changed":  false,
+                                 "actual_duplicate_controller":  false
+                             },
+    "controller_restart":  false,
+    "worker_signal":  false,
+    "queue_mutation":  false,
+    "model_mutation":  false,
+    "new_best_assessed":  false
+}

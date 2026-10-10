@@ -1407,3 +1407,9 @@ raw保存1筆首次HFSS／COM錯誤，不計有效數；未清claim、重啟work
 沿用相同hash的既有query腳本，12:44:24至12:46:11只讀重播3,423個成功觀測（含重測），去重3,418筆，較12:16增加29筆，達目標68.36%；不沿用prior metrics。保存摘要、去重與最佳sample/rad來源核對通過。[本次完整收據](assets/r80_best_status_20261010_1246.json)。最佳仍為r80localv1_00026_f6ffb938，WM +0.0216822624 dB、帶內最差S11 −10.0960884094 dB、最低Gain 4.0216822624 dBi；既有重測+0.0364336967不算新圖形，沒有新最佳，因此沿用既有極座標圖。
 
 12:44:45健康核對main PID53228／launch5a181a47…與19份runtime未變，三片claimed10/16、13/16、0/16，最新3／2／2分鐘，scope零警報，guided及LOW均有待跑工作；SM reported v19。raw保存1笔首次HFSS／COM錯誤，不計有效數，依既有worker規則重試；未清claims、重啟worker、修改queue或切換controller。性能停滯再次告知使用者；新的多樣性48仍未派工，主控交接明確授權待回覆。下一例行13:04；R80與spec任務未完成。
+
+### 2026-10-10 13:04：例行健康通過，修正查詢方式的inventory誤判
+
+先前將CIM預檢與health入口放在同一外層PowerShell命令，命令包含主控module字串，被既有v005的substring inventory當成第二個主控而拒絕。只讀診斷確認唯一真正Python主控仍為53228；保留失敗，待查詢caller退出後單獨呼叫原helper即通過，helper來源及19份runtime均未改動，不是controller重啟或實際雙主控。[本次收據與診斷hash](assets/r80_health_20261010_1304.json)。
+
+13:04:49同一launch為running_cycle；三片claimed6/16、3/16、1/16，最新0／1／0分鐘，scope零警報、LOW有待跑工作，reported SM v19。沒有新全量census或最佳判讀，仍以12:46的3,418／WM +0.0216822624為準。原生48交接仍未獲明確回覆，不寫STOP、不改queue或HFSS；next13:34 notify-only timer已綁定原main PID，當時需重新核對launch。
