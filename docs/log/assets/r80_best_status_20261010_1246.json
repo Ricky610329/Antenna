@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-10T04:44:24.107413+00:00",
+  "completed_utc": "2026-10-10T04:46:11.259285+00:00",
+  "status": "read_only_query_complete",
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "unique_successful_patterns": 3418,
+  "successful_including_repeats": 3423,
+  "raw_replayed_this_query": 3423,
+  "exact_prior_metrics_reused": 0,
+  "reported_best_independently_raw_replayed": true,
+  "best": {
+    "id": "r80localv1_00026_f6ffb938",
+    "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+    "s11_margin_db": 0.09608840942382812,
+    "gain_margin_db": 0.021682262420654297,
+    "factory_margin_db": 0.021682262420654297,
+    "radiation_margin_db": 0.3709280490875244,
+    "radiation_margin_clipped_db": 0.3709280490875244,
+    "store": "dedust_r80c83e6601eg01",
+    "sample_sha256": "f79add39e27605d2f54ab48a36a7e206d6bef672ca407efdfe8d0a237d1bca0c",
+    "rad_sha256": "e11aee92cc03340a6bebfd97ef713059904598fbc6f8fb39b0822184e5249b40",
+    "repeat": false,
+    "pair_index": 137,
+    "row_index": 13,
+    "worst_inband_s11_db": -10.096088409423828,
+    "minimum_inband_gain_dbi": 4.021682262420654
+  },
+  "result_errors": [
+    {
+      "store": "dedust_r80cbc442eb8g02",
+      "id": "r80cbc442eb8g_00001_565c7e0c",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070223 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024349), None)",
+        "attempts": 1,
+        "error_kind": "hfss_simulation"
+      }
+    }
+  ],
+  "jobs_sha256_at_scan_start": "93386acc32828061ce2f4d3aa02ae8bf8ae11e7f1abd2b3a864af804465825fc",
+  "rows_sha256": "733d2ac9d4426bcae7306f4ce32a0026e46a8aa9daeb94889014a2abbe715d53",
+  "pair_proofs_sha256": "1defca9268dd655c485e64d1d839b52f7e99c76ac6b0e535f607022d950b0244",
+  "query_script_sha256": "da6a0034241d4d6f22ecfd1ce0272b4dbd06ec252737278b0539b4bec2b631ac",
+  "controller_locks_acquired": false,
+  "queue_or_source_mutation": false,
+  "limits": [
+    "Each store has its own saved cutoff; later worker results or queue additions are excluded.",
+    "Unique representatives prefer nonrepeat observations, then queue/manifest order.",
+    "Single HFSS solve performance, not repeat certification or field-symmetry proof."
+  ],
+  "validation_status": "passed_saved_raw_summary_validation",
+  "new_best": false,
+  "target_unique": 5000,
+  "new_unique_since_prior": 29,
+  "prior_receipt": "docs\\log\\assets\\r80_best_status_20261010_1214.json",
+  "prior_receipt_sha256": "4b9686031cfec55d2bdac965f1ade14a255bf4e62c71bae66ec3140ad4a08a1a",
+  "query_report_sha256": "3ca8ac4f9d248aeb711cabda30b6275efd7d825b18eeb6eef543798c6954f12d",
+  "validation_script_sha256": "e27c5d4f72aac2d898651ebe0febd87adda1ba5d3f46d43ce97c1605d256ebc0",
+  "known_independent_repeat_wm_db": 0.03643369674682617,
+  "source_health_sha256": "9c519afa1bc58b92fc799b8550e3090c14d0ae506671eebba9458c3a0a8971e7",
+  "source_health": {
+    "schema_version": 1,
+    "status": "restored_main_health_observed",
+    "observed_utc": "2026-10-10T04:44:45.9867716Z",
+    "restoration_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\restoration_complete.json",
+      "sha256": "fb73424b28104a575f9f9b5f146aad4ff3918b76fdf6f6a596e61ae6103afb0b",
+      "bytes": 4275,
+      "schema_version": 1,
+      "status": "restored_new_owned_main_verified"
+    },
+    "health_source": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_restored_health_20261010_v005\\check_health_restored.ps1",
+      "sha256": "069c287b2733f9d7edde96c351a8375b2ef405d8dc18a8fea31ef251153af3f2",
+      "common_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_restored_health_20261010_v005\\check_health_restored_common.ps1",
+      "common_sha256": "2fad7b019348cd975323beb36acc5f13d38f08b1e8167648ab598734ce8ebd42"
+    },
+    "process": {
+      "pid": 53228,
+      "creation_unix_ms": 1791602636766,
+      "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+      "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+    },
+    "process_matches_restoration_receipt": true,
+    "watcher_inventory_count_excluding_query": 1,
+    "watcher_inventory_exact": true,
+    "new_launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+    "runtime_file_bindings_verified": 19,
+    "attempt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\5a181a47c95a4ab1a8377d803f9da3c1.json",
+      "sha256": "8b9a16cd897da839ad18340e90ad67f46ef9f15f2f6e1653f8a20ae1061dfa25",
+      "bytes": 12781,
+      "initial_restoration_snapshot_sha256": "4577413adc57fc004489c92c545a705c956bf404bf2760dab0d366580e17789b",
+      "mutable_current_watch_status": true,
+      "fixed_launch_history_bindings_verified": true
+    },
+    "watch_status": {
+      "schema_version": 1,
+      "status": "waiting",
+      "started_utc": "2026-10-10T03:23:58.664117+00:00",
+      "launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+      "attempt_record": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\5a181a47c95a4ab1a8377d803f9da3c1.json",
+      "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+      "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+      "profile_binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "scope": "symmetry_filter_20261007"
+      },
+      "expected_retry_workers": [
+        "140.123.106.216",
+        "140.123.106.218",
+        "140.123.106.37"
+      ],
+      "interval_seconds": 1800,
+      "completed_cycles": 2,
+      "hfss_started_here": false,
+      "low_backlog": {
+        "poll_seconds": 90,
+        "low_watermark": 48,
+        "target_pending": 96,
+        "max_refill": 96,
+        "min_refill": 48,
+        "shard_size": 16,
+        "priority": 6,
+        "owner": "r80-low-backlog-v1",
+        "reservoir_seed": 80100791,
+        "reservoir_size": 2048
+      },
+      "search_policy": {
+        "schema_version": 1,
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\r80_diverse_sm_search_v1.json",
+        "sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+        "policy_id": "27937e8f03647431256a31ad47acf4124fc30f8b7195afb1f731d079d6e01d75",
+        "policy": {
+          "arm_order": [
+            "global_lcb",
+            "parent_lcb",
+            "high_disagreement"
+          ],
+          "arm_weights": [
+            1,
+            1,
+            1
+          ],
+          "candidate_pool_size": 20000,
+          "disagreement_mean_percentile": 60,
+          "dispatch": "existing factory transaction, same priority1 and 16-pattern shards, existing 96 outstanding and 5000 valid-plus-reserved limits",
+          "limits": [
+            "Predictions guide candidate selection; HFSS remains the truth.",
+            "This changes pool generation and arm allocation together; it is not a single-factor causal diversity comparison.",
+            "Top-quartile parent descriptors are development information, not independent model-validation evidence.",
+            "LOW blind backlog remains enabled and unchanged.",
+            "No bridge-width, frequency, score-spec, emforge or worker runtime change.",
+            "First new cohort must be evaluated by origin, saved prediction error, actual WM and geometry coverage before claiming improvement."
+          ],
+          "max_parents_per_canonical_group": 2,
+          "max_selected_per_canonical_group": 2,
+          "measurement_changes": false,
+          "measurement_profile": "configs/single_r80_symmetry_factory.yaml",
+          "min_parent_groups": 8,
+          "min_parent_physical_hamming": 64,
+          "min_selected_physical_hamming": 64,
+          "name": "r80_diverse_sm_v1",
+          "parent_count": 32,
+          "parent_ranking": "actual WM top quartile; highest-WM first, then existing maxmin_hamming_indices with canonical-group cap",
+          "parent_top_fraction": 0.25,
+          "ranking": "descending score, then pattern_sha256; greedily take the highest feasible candidate under whole-cohort constraints",
+          "schema_version": 1,
+          "seed": 80100956,
+          "source_pool_fractions": {
+            "fresh_random": 0.5,
+            "parent_variant": 0.5
+          },
+          "strict_no_relaxation": true,
+          "training_protocol_changes": false
+        }
+      },
+      "cycle_started_utc": "2026-10-10T03:53:58.677548+00:00",
+      "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\4443de5ef847600b7d443c9eacf8d560e471eb6ec6f0ee351e0a32204df7bfc4\\action_receipt.json",
+      "last_receipt_sha256": "0ca7965c2b4a90092015710eed02759636f8d615d3fa7413484817d80c6c4a00",
+      "last_cycle_seconds": 2152.15699999989,
+      "valid_unique": 3383,
+      "latest_data_version": 19,
+      "last_completed_utc": "2026-10-10T04:29:50.833706+00:00",
+      "next_cycle_in_seconds": 1447.84300000011
+    },
+    "watch_status_snapshot": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+      "sha256": "05dfb318c4edc9539679ea78337b3e54534ef025357011a12b28148e53e09b7c",
+      "bytes": 4180
+    },
+    "settings": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+      "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+    },
+    "scoped_status_exit": 0,
+    "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80kf9839e61a70045af: 0/16（排隊中）\r\n  job dedust_r80ka00bff601d27501e: 0/16（排隊中）\r\n  job dedust_r80k5f7985239fe04028: 0/16（排隊中）\r\n  job dedust_r80k9d45ab6568e0aedf: 0/16（排隊中）\r\n  job dedust_r80c480d0523g03: 10/16 完成,最新結果 3 分前（已認領）\r\n  job dedust_r80cbc442eb8g01: 13/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80cbc442eb8g02: 0/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80c4443de5eg01: 0/16（排隊中）\r\n  job dedust_r80c4443de5eg02: 0/16（排隊中）\r\n✓ 工廠無警報\r\n",
+    "correct_jobs_state_markers": {
+      "dedust_r80c7e26901fg01": {
+        "done": true,
+        "fail": false
+      },
+      "dedust_r80c7e26901fg02": {
+        "done": true,
+        "fail": false
+      },
+      "dedust_r80c7e26901fg03": {
+        "done": true,
+        "fail": false
+      }
+    },
+    "automatic_restart": false,
+    "process_signal_or_stop": false,
+    "source_or_queue_mutation": false
+  },
+  "health_observed_utc": "2026-10-10T04:44:45.9867716Z",
+  "raw_result_error_count": 1,
+  "next_routine_health_taipei": "2026-10-10 13:04",
+  "new_NAS_archive_created": false,
+  "shadow_models_adopted": false,
+  "existing_best_figure": "docs/log/assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png",
+  "existing_best_figure_sha256": "39fda87412acaa7b0c5d82f78865c1e38326f6852bd8342c9a177ef1cfeaf969"
+}

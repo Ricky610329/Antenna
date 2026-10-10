@@ -1401,3 +1401,9 @@ raw保存1筆首次HFSS／COM錯誤，不計有效數；未清claim、重啟work
 12:35唯讀健康仍核對同一PID53228／launch `5a181a47…`、19份runtime bindings；三片claimed14/16、8/16、10/16，最近3／1／1分鐘有結果，scope零警報，SM reported v19不當全量census。全量結果仍是12:16的3,389筆與WM +0.0216822624 dB，沒有新最佳。
 
 12:37實際嘗試進入切換時，自動審批因exact live-controller STOP／relaunch缺少明確授權而在CreateProcess前拒絕；保存的唯讀觀察證明沒有transition intent、local STOP、新launch、automatic retry或worker／HFSS signal，原main與19份runtime仍相同。此處不宣稱controller stop、feature採用、原生48派工或新性能。明確授權仍待處理；而本文件里程碑commit會推進root HEAD，因此未來執行前必須以新HEAD另建版本化transition config並重新獨立審查，舊config／action不得重試。下一例行健康13:04。
+
+### 2026-10-10 12:46：使用者現況詢問；3,418筆，最佳未變
+
+沿用相同hash的既有query腳本，12:44:24至12:46:11只讀重播3,423個成功觀測（含重測），去重3,418筆，較12:16增加29筆，達目標68.36%；不沿用prior metrics。保存摘要、去重與最佳sample/rad來源核對通過。[本次完整收據](assets/r80_best_status_20261010_1246.json)。最佳仍為r80localv1_00026_f6ffb938，WM +0.0216822624 dB、帶內最差S11 −10.0960884094 dB、最低Gain 4.0216822624 dBi；既有重測+0.0364336967不算新圖形，沒有新最佳，因此沿用既有極座標圖。
+
+12:44:45健康核對main PID53228／launch5a181a47…與19份runtime未變，三片claimed10/16、13/16、0/16，最新3／2／2分鐘，scope零警報，guided及LOW均有待跑工作；SM reported v19。raw保存1笔首次HFSS／COM錯誤，不計有效數，依既有worker規則重試；未清claims、重啟worker、修改queue或切換controller。性能停滯再次告知使用者；新的多樣性48仍未派工，主控交接明確授權待回覆。下一例行13:04；R80與spec任務未完成。
