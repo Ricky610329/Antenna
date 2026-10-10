@@ -1473,3 +1473,8 @@ R81新入口267af9c及歷史masked-prior config-only builder103517c均已推送G
 ### 2026-10-10 18:18：v023累積資料與三個實體SM更新核對
 
 沿用v020已用helper作有界local physical audit，獨立Sol 39/39通過，conductor審查改動及source／artifact hashes。v022 3534→v023 3630，96筆全新唯一且舊rows不變，其中新增88train／8holdout；共2667train／963holdout且alias／pattern無交集。三checkpoint各4500Adam steps，符合legacy10150行30ep＋current2667行100ep／batch128，terminal phase完整、三seed／signature／tensor digest不同、有限模型及moment tensors；train-only normalization精確重算吻合，含holdout則不同。cycle af65883a…已完成的receipt bind model至3630；cycle後來3644不是model fit count。fresh initialization由metadata與source契約支持，沒有保存初始tensor bytes；沒有逐epoch日誌，不宣稱逐epoch replay。無forward／訓練／新推論／NAS／HFSS／queue mutation，亦未稽核v024。此證明更新實際發生，不能證明SM精度或最佳性能改善。[完整核對與限制](assets/r80_sm_v023_physical_review_20261010.json)。
+
+
+### 2026-10-10 18:34：LOW部分失敗保留，三台續跑、尚待37跨機補測
+
+例行helper因scope partial-fail警報exit1，原main身份／19來源仍通過，沒有把health error誤認主控消失。LOW ka00bff601d27501e的r80kl05_d436793fe129 COM0x80070203 attempts4，15/16成功；fail記216／218與worker_continues=true，done不存在，claim218殘留保留。沿用既有讀回與verify_incomplete_hfss_batch，全15成功observation完整性通過，error分類合法；精確roster仍缺37，不能釋放失敗保留名額或宣稱毒樣本終態。後續marker/result cutoff確認218已接下一LOW7/16且無error；37 g02 10/16另1筆COM0x80070223 attempts1、fail不存在；216 g03 8/16無error。三台當前claimed與近期saved結果支持續跑，不等於remote PID驗證；既有優先序使37先做guided，未保證補測時間。沒有新全量census／性能結論、手動刪marker／重派／restart／source hotpatch。依既有容錯等跨機補測與下次19:04健康。[完整證據](assets/r80_health_20261010_1834.json)。
