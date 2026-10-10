@@ -1483,3 +1483,8 @@ R81新入口267af9c及歷史masked-prior config-only builder103517c均已推送G
 ### 2026-10-10 19:04：保留LOW失敗；兩台已認領新guided，218續跑
 
 helper保留partial-fail警報exit1，但原main身份／19來源與唯一inventory通過。19:06marker讀回舊LOW ka00bff601d27501e仍15/16，COM attempts4，216／218 fail及results bytes完全與18:34相同；引用先前15成功partial verifier，不重複宣稱本次raw replay。37仍可依法接管，但正做較高priority guided。218下一LOW10成功並有1筆首次watchdog RPC_S_CALL_FAILED attempts1，fail不存在，尚非批次終態；216新guided d2451199g01 claim19:01已有1成功；37新g02 claim19:03在19:06尚無results，只支持新認領startup，不是remote process或成功證明。未因helperexit1重新開主控／刪markers／重派，沒有全量census。上一v023 guided是否全48完成及其性能由單獨gate／readout處理，不從本健康缺列直接推論完成。最初本機inline adapter shell parsing失敗在任何NAS讀寫前；改為file-based adapter後實際兩個readonly讀回exit0，沒有controller／worker改動。下一例行19:34。[完整證據](assets/r80_health_20261010_1904.json)。
+
+
+### 2026-10-10 19:04後：v023 guided48完整真值與獨立核對
+
+原cycle af65883a…三片done且無fail，48/48有效唯一精確LR，三arm各16，actual origin16fresh／32parent。全部48原raw WM／pattern與96sample+rad hashes由獨立Sol重播通過；主控來源不變，無額外HFSS／forward／訓練／派工。該批最佳WM−4.9226799011，中位−12.7981538773、平均−13.5685837045，0正WM；saved meanρ.1929005645／MAE5.2488837325，LCBρ.2085323491／MAE5.0257001960，未超過17:59全量最佳+.0216822624。current/legacy exact overlap均0，physical pair Hamming min64／median309。g02原首次COM row r80caf65883ag_00016_8cb38c6f已final ok，raw與sample／rad hash已驗證；這不表示其他LOW錯誤恢復。沿用v022 readout／gate／saved replay，只改cycle/version/fit/origin與恢復row披露，計算方法未改。與獨立v023 model audit綁定同cycle／3630累積資料（2667train／963holdout）；不把3630都叫train、不從不同cohort推斷版本改善、精度提升或因果，也沒有新全量census。[完整原始與獨立核對證據](assets/r80_sm_v023_cohort48_result_20261010.json)。
