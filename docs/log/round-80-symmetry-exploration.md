@@ -1285,3 +1285,9 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 固定v015的20k保存排名，為四個來源各選12筆：fresh random及smooth blob各8 global LCB＋4 high disagreement；parent pixel及group各8 parent LCB＋4 high disagreement。共同p60仍−12.4235828898，整批Hamming最小64、canonical最大2，無配額借用或限制放寬。實際preparer exit0產出3×16，每片四來源各4筆；獨立saved-output核對48個physical tensors、完整nested source rows、保存分數與曲線、固定排序及全部bundle／shard hashes皆exact，exclusion overlap0。[實際準備證據](assets/r80_structured48_preparation_readiness_20261010.json)。
 
 仍是48個候選，沒有新增實測／NAS copy／queue action／HFSS dispatch，不替換主線v016。新publisher審查發現既有逐片commit不是rollback原子交易，必須保存exact append/readback且對部分prefix fail closed；正在完成窄修。任何後續派工均需fresh鎖內整批48＋主線保留量符合global5000／guided96、目前duplicate exclusion與exact等待窗口，不能只檢查第一片16筆或自動重送剩餘片。
+
+### 2026-10-10：48筆發布工具與本機action通過獨立核對
+
+新publisher沿用原dataset lock、原factory commit及native Windows CRLF writer；每次保留整批48＋主線未queued保留量，global5000／guided96／priority1不變。審查發現的hard-loss prefix自動續送、缺少完整append讀回及末片後guard問題已窄修：1／2片prefix必須fail closed，正常成功保存exact before＋3 ordered jobs＝after；已存在3片的恢復也要求相容原capacity proof及完整readback。獨立審查通過，9 focused tests通過；獨立測試在pre-final candidate，final search-policy binding追加以static review核對，不宣稱重跑全部final tests。
+
+實際hash-bound request／本機prepare-action均exit0，cycle`1f4988602a631ddd48667c50b22b262b9092fcf997dd74025c2a8b3cf7ab3845`、3×16 planned stores`dedust_r80c1f498860g01`–`g03`，priority1、once、prepared。獨立expected_action完整重播与保存action逐值相同；action目錄僅收據，沒有NAS input／capacity proof／queue append／readback。核心逐片append、無rollback，任何部分提交都保留證據並禁止自動重試，不把它說成原子all-or-nothing。[發布準備證據](assets/r80_structured48_publisher_readiness_20261010.json)。背景driver尚待獨立核對及實際啟動；這些都不是新HFSS實測。

@@ -1,0 +1,382 @@
+{
+  "schema_version": 1,
+  "status": "passed_publisher_and_actual_local_action_no_dispatch",
+  "publisher_review": {
+    "path": "tmp\\r80_structured48_publisher_20261010_v001\\independent_review.json",
+    "sha256": "aa9c251d82becfba62c4753825475eb75f0f66ec862ee0d15677527eec5ab430",
+    "bytes": 6295
+  },
+  "publisher_review_evidence": {
+    "schema_version": 1,
+    "kind": "r80_structured48_publisher_independent_review_v001",
+    "status": "passed_structured48_publisher_no_execution",
+    "reviewed_bindings": {
+      "publisher_source": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_publisher_20261010_v001\\publisher_structured48.py",
+        "sha256": "a142fed46a154eb2fa10eb6af41920ad3e741340d81d05c7d70ec8dc85c371df",
+        "bytes": 41438
+      },
+      "publisher_v9_source": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_currentonly_prospective_pilot_20261010_v001\\publisher_v9.py",
+        "sha256": "38af0483fa4d15b80fbd910d5b93700cbcf451c2d9054d964935b415d3da5ddb",
+        "bytes": 50016
+      },
+      "preparer_source": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparer_20261010_v001\\prepare_structured48.py",
+        "sha256": "3b732a1ffa12a5874e525cd07d726e2e16c890a14da3f3c0a0510b703723f0dc",
+        "bytes": 39961
+      },
+      "profile": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "bytes": 1072
+      },
+      "settings": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+        "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+        "bytes": 1734
+      },
+      "controller_contract": {
+        "pid": 15944,
+        "creation_unix_ms": 1791541659267,
+        "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+        "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\"",
+        "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+        "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+        "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+        "watcher_source_sha256": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+        "interval_seconds": 1800
+      }
+    },
+    "focused_test": {
+      "binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_publisher_20261010_v001\\test_publisher_structured48.py",
+        "sha256": "852e668d4554c34bb066e1d6b506ae70126dbe20a4c0f74d0f35f3844a20e2ca",
+        "bytes": 8023
+      },
+      "command": "C:/Users/ricky/miniforge3/envs/ant/python.exe -B -m unittest -v tmp.r80_structured48_publisher_20261010_v001.test_publisher_structured48",
+      "independent_run": {
+        "result": "9 tests passed; 0 failures; 0 errors; 0.003 seconds",
+        "publisher_candidate_sha256": "37b4612688beb0f7a9f28f8764ca75305bef66a9d03651348512b357ff6561b5",
+        "runs": 1
+      },
+      "final_source_result": "producer-reported 9 passed after the narrow frozen-search-policy binding delta; not independently rerun"
+    },
+    "prepared_output": {
+      "root": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared",
+        "tree_sha256": "b8c917a39fa14b746c4f447277fdd5a7d6e8101df7d173f7fd6341498f268ccb"
+      },
+      "receipt": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared\\preparation_receipt.json",
+        "sha256": "62e0eb7c42d510a2db808c1a2af69d6ff3b938a758db834fc99ec1270924e893",
+        "bytes": 12716
+      },
+      "independent_saved_review": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\independent_prepared_saved_audit.json",
+        "sha256": "f49974e812884bbd8090d10e8a6a03495ebbdac7f48f6c99c060eaa31ea63fef",
+        "bytes": 11225
+      },
+      "selected_count": 48,
+      "shard_count": 3,
+      "rows_per_shard": [
+        16,
+        16,
+        16
+      ],
+      "origin_counts": {
+        "fresh_random_pixel": 12,
+        "fresh_smooth_blob": 12,
+        "parent_pixel_mutation": 12,
+        "parent_group_mutation": 12
+      },
+      "selected_minimum_physical_hamming": 64,
+      "selected_canonical_max": 2
+    },
+    "findings": {
+      "all_48_reserved_together_before_first_append": true,
+      "global_5000_and_guided_96_limits_cover_full_48": true,
+      "latest_measured_queued_and_main_protected_duplicate_gate": true,
+      "controller_CIM_status_active_receipt_last_receipt_and_wait_180_bound": true,
+      "native_windows_CRLF_queue_hash_matches_authoritative_writer": true,
+      "three_shards_use_one_existing_dataset_lock_and_one_core_commit_call": true,
+      "one_or_two_existing_jobs_fail_closed_before_scan_copy_or_append": true,
+      "caught_partial_failure_records_exact_prefix_and_reraises": true,
+      "normal_readback_binds_exact_before_plus_three_ordered_transition": true,
+      "existing_three_recovery_requires_one_full48_proof_current_guard_and_readback": true,
+      "post_third_append_guard_precedes_dispatched_status": true,
+      "complete_preparation_source_prediction_profile_and_saved_review_chain": true,
+      "frozen_guided_search_policy_binding_required_by_core": true,
+      "prepare_action_is_local_only_and_separate_from_dispatch": true,
+      "automatic_retry_or_selected_replacement": false,
+      "rollback_atomicity_claimed": false
+    },
+    "limits": [
+      "The underlying core commits one shard at a time. A caught or hard-loss prefix can persist and is not rolled back.",
+      "A one/two-job prefix cannot continue from this action; it requires independent queue, measured, and main-controller review.",
+      "The review validates code and saved local inputs only. It does not establish current live capacity or a safe waiting window.",
+      "A future dispatch must pass the full-48 capacity, duplicate, controller, receipt, and >=180-second gates under the dataset lock.",
+      "No publisher request or action receipt existed during this review."
+    ],
+    "readiness": "ready_for_hash_bound_request_and_local_prepare_action; dispatch remains live-gated",
+    "NAS_or_queue_mutation": false,
+    "HFSS_or_process_execution": false,
+    "model_forward_training_or_truth_read": false,
+    "publisher_request_or_action_created": false
+  },
+  "request_action_review": {
+    "path": "tmp\\r80_structured48_publisher_20261010_v001\\request_action_review.json",
+    "sha256": "a4edf35f40332f4d3c45e86a29a4c5385f3524efedc241fd44dd0adb0d409682",
+    "bytes": 5784
+  },
+  "request_action_review_evidence": {
+    "schema_version": 1,
+    "kind": "r80_structured48_publish_request_action_independent_review_v001",
+    "status": "passed_exact_local_request_and_prepared_action_no_dispatch",
+    "reviewed_bindings": {
+      "publish_request": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_publisher_20261010_v001\\publish_request.json",
+        "sha256": "d778f3feb9bccd353f40f852e0ccc1ab617fae06102852e603dc660e53cef0f1",
+        "bytes": 1249
+      },
+      "action_receipt": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_publisher_20261010_v001\\structured48-action-v1\\action_receipt.json",
+        "sha256": "e0339c2956ee733cf00695ca5b29276592fb41777fa5a7675a1004540caea0e4",
+        "bytes": 18885
+      },
+      "publisher_source": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_publisher_20261010_v001\\publisher_structured48.py",
+        "sha256": "a142fed46a154eb2fa10eb6af41920ad3e741340d81d05c7d70ec8dc85c371df",
+        "bytes": 41438
+      },
+      "publisher_independent_review": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_publisher_20261010_v001\\independent_review.json",
+        "sha256": "aa9c251d82becfba62c4753825475eb75f0f66ec862ee0d15677527eec5ab430",
+        "bytes": 6295
+      },
+      "prepared_tree": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared",
+        "tree_sha256": "b8c917a39fa14b746c4f447277fdd5a7d6e8101df7d173f7fd6341498f268ccb"
+      },
+      "prepared_independent_review": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\independent_prepared_saved_audit.json",
+        "sha256": "f49974e812884bbd8090d10e8a6a03495ebbdac7f48f6c99c060eaa31ea63fef",
+        "bytes": 11225
+      },
+      "profile": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "bytes": 1072
+      }
+    },
+    "deterministic_replay": {
+      "publisher_expected_action_equals_saved_action": true,
+      "publisher_validate_prepared_passed": true,
+      "publisher_validate_publisher_review_passed": true,
+      "cycle_id": "1f4988602a631ddd48667c50b22b262b9092fcf997dd74025c2a8b3cf7ab3845",
+      "status": "prepared",
+      "once": true,
+      "phase": "structured48",
+      "canonical_selected_count": 48,
+      "selected_pattern_hashes_sha256": "d2c48c21b3aad9457b7f2cdc9561e6f41ff5b7892b6712c221ddc7170ebb076b",
+      "round_robin_shard_hashes_restore_exact_canonical_48": true,
+      "action_directory_contains_only_action_receipt": true
+    },
+    "planned_jobs": [
+      {
+        "input": "dedust_r80c1f498860g01_input",
+        "store": "dedust_r80c1f498860g01",
+        "count": 16,
+        "priority": 1,
+        "tree_sha256": "99971c32f03fa51ebc7b7cb4046d5f572641d04d312a97badc08ade1d2a1a033",
+        "pattern_hashes_sha256": "ae1c9596b5f8cd10873339bb3a6a5329e1546f48709c7f39eac0e56430737434"
+      },
+      {
+        "input": "dedust_r80c1f498860g02_input",
+        "store": "dedust_r80c1f498860g02",
+        "count": 16,
+        "priority": 1,
+        "tree_sha256": "db6172b0ed0d28d05943621be4dc2f19a02276a06dd67620053a37d8aa6f8d35",
+        "pattern_hashes_sha256": "afed6cbc69e5b3920249ad2f63b63545e7da933a4c60fbd885c4dcb0a13236a0"
+      },
+      {
+        "input": "dedust_r80c1f498860g03_input",
+        "store": "dedust_r80c1f498860g03",
+        "count": 16,
+        "priority": 1,
+        "tree_sha256": "c397f8b00a339d22cadfa5a4e8351a252b94015d68fc70ee68cd1fc5434e6154",
+        "pattern_hashes_sha256": "42dea3c5998244ac5cb555b32d754c31ce9f60f125f0269a790cd27ce94a74c3"
+      }
+    ],
+    "fixed_contracts": {
+      "scope": "symmetry_filter_20261007",
+      "profile_sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+      "training_protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+      "training_protocol_sha256": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "search_policy_sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+      "search_policy_id": "27937e8f03647431256a31ad47acf4124fc30f8b7195afb1f731d079d6e01d75",
+      "guided_priority": 1,
+      "target_valid_plus_reserved": 5000,
+      "maximum_guided_outstanding": 96,
+      "full_sibling_reservation_count": 48,
+      "controller_pid": 15944,
+      "controller_creation_unix_ms": 1791541659267,
+      "controller_launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+      "minimum_wait_seconds_at_dispatch": 180
+    },
+    "scope": {
+      "request_and_action_paths_local": true,
+      "dynamic_NAS_read_during_prepare": false,
+      "candidate_truth_read": false,
+      "selected_truth_read": false,
+      "HFSS_started_here": false,
+      "NAS_or_queue_read_or_mutation_by_review": false,
+      "model_forward_or_training_by_review": false,
+      "dispatch_or_process_execution_by_review": false
+    },
+    "limits": [
+      "This review proves the saved request/action are the exact deterministic local preparation for the reviewed 48 rows; it does not prove current live capacity or controller timing.",
+      "The action is prepared only. It contains no capacity proof, partial-failure record, dispatch readback, or dispatched status.",
+      "A later dispatch must independently pass the current measured/queued duplicate scan, full-48 5000/96 capacity reservation, exact controller/main-receipt guard, and waiting-window gate under the dataset lock.",
+      "The core commit remains per-shard append and does not provide rollback atomicity."
+    ],
+    "blockers_to_local_waiting_driver": [],
+    "blockers_to_immediate_dispatch": [
+      "current live capacity and controller waiting window were intentionally not read by this review"
+    ]
+  },
+  "publish_request": {
+    "path": "tmp\\r80_structured48_publisher_20261010_v001\\publish_request.json",
+    "sha256": "d778f3feb9bccd353f40f852e0ccc1ab617fae06102852e603dc660e53cef0f1",
+    "bytes": 1249
+  },
+  "actual_action": {
+    "path": "tmp\\r80_structured48_publisher_20261010_v001\\structured48-action-v1\\action_receipt.json",
+    "sha256": "e0339c2956ee733cf00695ca5b29276592fb41777fa5a7675a1004540caea0e4",
+    "bytes": 18885
+  },
+  "local_prepare_action_exit_code": 0,
+  "planned_jobs": [
+    {
+      "kind": "g",
+      "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared\\shards\\shard-001_input",
+      "input": "dedust_r80c1f498860g01_input",
+      "store": "dedust_r80c1f498860g01",
+      "prio": 1,
+      "count": 16,
+      "tree_sha256": "99971c32f03fa51ebc7b7cb4046d5f572641d04d312a97badc08ade1d2a1a033",
+      "pattern_hashes": [
+        "800d4365c213ba39a5b51f8fced45e92a7bc314189c0a69336b38eb68a3a18da",
+        "575a8be67a55244984038d3d917b20280f059e3737b5d326ccf1736e51b767ec",
+        "3ab4942d785eec8208ae9d7a9f58f45587e22d3821897ff4152ead369e4dac6c",
+        "022b69600a20714308952cef246b6cdd841eb32232f3b448da650c8160380ef1",
+        "79836db42d238044c578797c04c30c1fdf6ad824ffbf8bd49d70372a2922d07d",
+        "a65a8c8d65a1fdc39f9963c26d8b22c67066b3f3df2485d9a16b087e361a5d1a",
+        "1c04bf5141fd1e4b0a52380afba9fdabc5941253033c5a77289e8a88389f0cbd",
+        "3b1dfc66e33b4d9d472e4e27a977df3cf71e9c899cce06e0207054d35ddbf845",
+        "e0ea4a174032a3a7afe5510a43b98e49d2192ccaa908127774ef91abf57eb14a",
+        "9f847d5eb75776cb895bad7d46254413ba1f8852924cc73eb3b8e82dfc279178",
+        "53a378890fc03ba192d665b8f4317261ca9d7e94815c932a61afed7c3fa6310b",
+        "8b7c8a41cc39474b9a391a2a487dd510a27717f0d2a72eba7c00ed285dd52e00",
+        "202000ad6f1f72242f8a30379dd6524475003dab230f5e4b3f31af40e6639b0a",
+        "0de985fc8c01e06cfdd8c3ff610f5d813de42bcd383cb10165f96ecd3dd9b961",
+        "d809a3875d31f7d8671608ab11511c70f8f9b04479478624bf89a95773185f25",
+        "d18704abe71b46b59193d620722e87fc9d3449c50d5360dc4692293550bbb9fc"
+      ],
+      "pattern_hashes_sha256": "ae1c9596b5f8cd10873339bb3a6a5329e1546f48709c7f39eac0e56430737434"
+    },
+    {
+      "kind": "g",
+      "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared\\shards\\shard-002_input",
+      "input": "dedust_r80c1f498860g02_input",
+      "store": "dedust_r80c1f498860g02",
+      "prio": 1,
+      "count": 16,
+      "tree_sha256": "db6172b0ed0d28d05943621be4dc2f19a02276a06dd67620053a37d8aa6f8d35",
+      "pattern_hashes": [
+        "e8f44a834115d27f95f4727c25594b0c5bb4ea2d60f026791dc787e00a92a9fa",
+        "70b74b575c38c04758a307826938b409c68bfeb949bb8f14e6c81ae24b13cbf3",
+        "de46eb31e8a79b7ae61483ebcc8293a0ce17d3e86184bd8b381ac1adfb9164a2",
+        "bffefbb418826324a8062f3d3586a57aced3c62a7863785594c008815ff22db3",
+        "d69a1f4612e13dd3ac1d143bcc99890d49bbedcdbc71ebfc6c3f8301090f1b6c",
+        "d141f196ccf2d6338a1fd8d4213906baccaa0d93783929ce98e0a19c5908961c",
+        "4333bf6f8c709f4b0a2fd5b2ffc54c49f7fc657944c9cbf4e206f02cef71f3b2",
+        "c85da3303641c299157e3ac83cf67b8edf9dfaf4fc3d9e7e2311dda74492ee84",
+        "b48c2cbd6b5be6e289779dc585cff77f07dfbbe995436305b189f88f00b921ce",
+        "135869617a262c8e63edbf99fcf3ad982a910ed20e3fee8a6b182d3a2af51fd8",
+        "41fc246e3725c5cf6097b3624a8a59022dec557501ac22bd0de2570b61cfd487",
+        "27adf68bd8239f5f87119c585364295fac237eedec6c524bec8e780be8422a35",
+        "c801fc38348f54f6c1af070b01c956632ccd5fa663f0df4da1c07b949faabc8c",
+        "c19fa7078b9eb13cbf553cb885086295371a194f149866d5b3947803a0486589",
+        "3e44e14f36e2f292ccf0d4cba0b5bd2653be77ad210aef26e2f6a8720f595652",
+        "08698f77654704dc3e918ec5e7c8ac5bdb36e72e8aacc08e37a56455264df89e"
+      ],
+      "pattern_hashes_sha256": "afed6cbc69e5b3920249ad2f63b63545e7da933a4c60fbd885c4dcb0a13236a0"
+    },
+    {
+      "kind": "g",
+      "staged_input": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared\\shards\\shard-003_input",
+      "input": "dedust_r80c1f498860g03_input",
+      "store": "dedust_r80c1f498860g03",
+      "prio": 1,
+      "count": 16,
+      "tree_sha256": "c397f8b00a339d22cadfa5a4e8351a252b94015d68fc70ee68cd1fc5434e6154",
+      "pattern_hashes": [
+        "2256827261e7754a03d2b3207269bfbd5534a7fc2f51a91af9003812605307e1",
+        "5f1c001760d209f3bc8bd247ddee699a6de4991454fb04a18ffcd8b70d002262",
+        "f32502e5c152461a6ada72d4eb3948508866bd7cecb75b4a7e812e5d5fc05501",
+        "afcfa5a10d2456a690e4a2137a113479c4b47d57bf92d53a154ef25f8843e54d",
+        "07ebe97578147ddb22256f9cc17b0287dc774c538cb4b0bfff4b8e18acdf4d0a",
+        "93aec32211367f37d7079b196a99445cccf83e7e9dc94acf74ce9e0ab4bbc8b1",
+        "9f8bc09036afb9d72a252b8343f3e6cdad292206b8af36d04ef60dd69ef564ef",
+        "05ff7c156d9707623e385db60ef4235d64e88a3884df3779b0705bfb3676d2f9",
+        "f2950830f16f55fdebdec508abb69557f580bd59311355696b8b2effa694d910",
+        "2f08338fd8715afbf184c79636b52fb556a775941c567e51807bde516268ed16",
+        "fd9beec48641381c4739dc64636955ec33b80bd3bc730cd03c817ee521a6696b",
+        "f4704d55ea45a44d68baba92ec7e076791226c7e127d1c9bbb5a88770a327999",
+        "37db7ef49e93861e5b54d4fc110498a54805cbc2153fec640102269b1c4a242e",
+        "f6d6eb4d88a000c40375ae6f4a6e3318ce05abfe0820a880b15cf1b7459eb712",
+        "fa29bdd4b24be93a7df2746f87eb68f095fd2f7e66f81dd8f8a5987fe74f6666",
+        "74a3ff3bc5ba00464c666d624eba97f09568d1096a01d02cc6b5f77675f4e1a9"
+      ],
+      "pattern_hashes_sha256": "42dea3c5998244ac5cb555b32d754c31ce9f60f125f0269a790cd27ce94a74c3"
+    }
+  ],
+  "cycle_id": "1f4988602a631ddd48667c50b22b262b9092fcf997dd74025c2a8b3cf7ab3845",
+  "selection": {
+    "same_global_navigation_mean_p60": -12.423582889835039,
+    "cell_counts": {
+      "fresh_random_pixel:global_lcb": 8,
+      "fresh_random_pixel:high_disagreement": 4,
+      "fresh_smooth_blob:global_lcb": 8,
+      "fresh_smooth_blob:high_disagreement": 4,
+      "parent_pixel_mutation:parent_lcb": 8,
+      "parent_pixel_mutation:high_disagreement": 4,
+      "parent_group_mutation:parent_lcb": 8,
+      "parent_group_mutation:high_disagreement": 4
+    },
+    "origin_counts": {
+      "fresh_random_pixel": 12,
+      "fresh_smooth_blob": 12,
+      "parent_pixel_mutation": 12,
+      "parent_group_mutation": 12
+    },
+    "selected_count": 48,
+    "selected_minimum_physical_hamming": 64,
+    "selected_canonical_max": 2,
+    "selected_pattern_list_sha256": "d2c48c21b3aad9457b7f2cdc9561e6f41ff5b7892b6712c221ddc7170ebb076b",
+    "quota_borrowing": false,
+    "constraint_relaxation": false
+  },
+  "full_sibling_reservation_count": 48,
+  "rollback_atomicity_claimed": false,
+  "new_NAS_input_or_queue_mutation": false,
+  "HFSS_dispatch_performed": false,
+  "validator_sha256": "31660dfab17efce6dd8a79d82ab353ae8c27e2f43e691ff490e920bf2dbd9b7f",
+  "limits": [
+    "Actual dispatch still requires fresh locked live capacity, duplicates, main guards and exact readback.",
+    "The unchanged core appends per shard; a partial prefix cannot be automatically retried or rolled back.",
+    "Nine focused tests were independently run on pre-final candidate; final search-policy binding was independently statically reviewed.",
+    "Background driver review and verified process launch remain separate milestones."
+  ]
+}
