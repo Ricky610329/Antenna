@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "status": "passed_v002_source_review_actual_seal_and_truth_not_executed",
+  "independent_review": {
+    "schema_version": 1,
+    "kind": "r80_structured48_seal_readout_v002_independent_review_v001",
+    "status": "passed_frozen_v002_source_and_generated_review_no_truth_read",
+    "reviewer": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v002\\independent_review_helper.py",
+      "sha256": "9b58994f50d97a5b81ebc820d06d48936e4a888aca6d3e67d93419afe798f2f1",
+      "bytes": 11892
+    },
+    "v002_frozen_bindings": {
+      "seal_structured48_v1.py": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v002\\seal_structured48_v1.py",
+        "sha256": "c9bdb823150f8f248d5125f5fac2814b195eeb3d81597085c299ad781a30ecfa",
+        "bytes": 17533
+      },
+      "truth_readout_structured48_v1.py": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v002\\truth_readout_structured48_v1.py",
+        "sha256": "adb30e81e5ccc112d7a99320d0ea0f4fe3d32ea7e79b45ed3e22151d696e88b6",
+        "bytes": 33124
+      },
+      "readout_config.json": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v002\\readout_config.json",
+        "sha256": "7c0b5abcd4f1c405578bb48dbc3a55e11f7688413b9ee63d50017001a1b5981c",
+        "bytes": 4483
+      },
+      "test_structured48_readout.py": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v002\\test_structured48_readout.py",
+        "sha256": "a63426776e28ebcc40fe17c3ec66c73512063d251c474afd637fd568b1708b4c",
+        "bytes": 8390
+      }
+    },
+    "preserved_v001_blocker_evidence": {
+      "seal_structured48_v1.py": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v001\\seal_structured48_v1.py",
+        "sha256": "2ce0c3f16d67725ac165ee305d59b5e51ad5ab49489231f5a5e61c4630579468",
+        "bytes": 17497
+      },
+      "truth_readout_structured48_v1.py": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v001\\truth_readout_structured48_v1.py",
+        "sha256": "7f888307f12c0fac10cee161eff9a43ec7e79e5818fc24e77814dae95f873465",
+        "bytes": 30774
+      },
+      "readout_config.json": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v001\\readout_config.json",
+        "sha256": "3d79b4d8c752462cb33b57a2488f509d8aaf0036d5a9d75ef46b671648154f09",
+        "bytes": 4471
+      },
+      "independent_review_helper.py": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v001\\independent_review_helper.py",
+        "sha256": "74cffc92e129d32a42e49367bfa009af4aff69c5404edfa95f79ee85fd894e5c",
+        "bytes": 12106
+      },
+      "independent_review.json": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v001\\independent_review.json",
+        "sha256": "8e0176bc56e4a16c2d9a201424a67a899f77f0a446937416d29c9e007b0c9993",
+        "bytes": 5660
+      }
+    },
+    "exact_v001_to_v002_diffs": {
+      "seal_structured48_v1.py": {
+        "sha256": "8bda3d065da95d5d081b11941542c7c4cdb619da9db05e496d0483cc9c5bd9c3",
+        "bytes": 441,
+        "added_lines": 2,
+        "removed_lines": 1
+      },
+      "truth_readout_structured48_v1.py": {
+        "sha256": "e40a4331cfaa12b925698c774a999ed3337a8d9863e7f53a6d437f78de75d69d",
+        "bytes": 4185,
+        "added_lines": 43,
+        "removed_lines": 2
+      },
+      "readout_config.json": {
+        "sha256": "7b9a99353a5358fa8e16a495b483e308f3c99365d90d26ee6c438dea683b0935",
+        "bytes": 293,
+        "added_lines": 1,
+        "removed_lines": 1
+      }
+    },
+    "focused_test_execution": {
+      "command": "conda run -n ant python -m unittest tmp/r80_structured48_readout_20261010_v002/test_structured48_readout.py -v",
+      "executions_by_independent_reviewer": 1,
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "elapsed_seconds": 0.028,
+      "test_source_sha256": "a63426776e28ebcc40fe17c3ec66c73512063d251c474afd637fd568b1708b4c"
+    },
+    "generated_checks": {
+      "exhausted_absent_empty_exact_metadata_accepted": true,
+      "unknown_or_raw_without_results_rejected": true,
+      "done_error_count_and_ids_exact": true,
+      "seal_open_x_create_only_preserves_first_writer": true
+    },
+    "findings": {
+      "blocking": [],
+      "nonblocking": []
+    },
+    "confirmed": {
+      "v001_metadata_only_exhausted_store_blocker_fixed": true,
+      "absent_empty_or_exact_three_metadata_files_only": true,
+      "metadata_identity_matches_profile_and_exact_rows": true,
+      "unknown_partial_or_raw_without_results_rejected": true,
+      "missing_rows_remain_explicit_nonfabricated_terminal_errors": true,
+      "metadata_only_store_state_rechecked_after_shard_processing": true,
+      "new_results_or_files_appearing_during_readout_rejected": true,
+      "done_marker_errors_and_error_ids_match_exact_result_errors": true,
+      "incumbent_uses_exact_unrounded_value": true,
+      "seal_is_atomic_create_only_via_open_x": true,
+      "v002_defaults_and_created_seal_bind_v002_namespace": true
+    },
+    "execution_decision": {
+      "pretruth_seal_source_review": "pass",
+      "terminal_readout_source_review": "pass",
+      "actual_execution_performed_here": false
+    },
+    "scope": {
+      "NAS_or_truth_read": false,
+      "seal_or_readout_created": false,
+      "model_load_forward_training_or_rescore": false,
+      "CIM_controller_driver_worker_HFSS_or_queue_action": false,
+      "source_mutation_or_commit": false,
+      "generated_tiny_local_fixtures_only": true
+    }
+  },
+  "independent_review_binding": {
+    "path": "tmp\\r80_structured48_readout_20261010_v002\\independent_review.json",
+    "sha256": "4686b235f5d4d492641e3e60b99ceaffb522e0058a73200f8a354702936824c0"
+  },
+  "root_validation_script_sha256": "2e49af58668fe837ddd3a33389c2e64fcf8869752fba918888447764c6cfa895",
+  "root_focused_tests": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "elapsed_seconds": 0.034
+  },
+  "activation_requirements": [
+    "A complete compatible exact48 dispatch and capacity/readback must exist before seal.",
+    "Any new quiescent publisher/action requires explicitly rebound config and reviewed dispatch-seal compatibility.",
+    "All48 proposed rows must be accounted after three exact terminal jobs; failures do not become fabricated metrics."
+  ],
+  "workers_restarted": false,
+  "queue_mutated": false,
+  "new_HFSS_or_model_execution": false,
+  "campaign_complete": false
+}

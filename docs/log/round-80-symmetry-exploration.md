@@ -1311,3 +1311,9 @@ controller exact身分通過、running_cycle，reported v014／completed19；這
 只讀三個來源及本機terminal artifacts。[效率稽核](assets/r80_main_efficiency_review_20261010.json)確認watch以cycle start的1800秒節點排程；前輪2320.734秒後實際等待1279.266秒，start-to-start約3600秒，並非再等完整1800秒。v016實際模型納入3204筆，terminal refreshed view3214筆，10筆留待下輪；沒有threshold-cross時間戳，不宣稱已量到固定30分鐘延遲。這些版本資料量不當新的global census。
 
 來源控制流程在正常trained／proof-backed／3片路徑有17次全raw-success rehash；append cache沒有跳過原raw hash。最近四輪bundle完成到terminal receipt約901／919／1288／1302秒，兩片與三片的artifact landmark有相關，但無phase timer，不能說重hash實際占幾秒或保證加速。legacy12000與current3204每版hash/load一次、三個members共用，30／100epochs是固定配方，不為省時刪掉。root核對source及terminal receipt SHA、scheduler算式；沒有NAS／queue／CIM／HFSS／模型／測試或runtime改動。下一步若優化，先記phase／bytes計時，再review合併重複掃描，保留訓練快照及派工首尾full-byte、source／profile、5000／96、duplicate、exact append與partial recovery閘門；不能直接把proof改成只信metadata。
+
+### 2026-10-10：48筆終態判讀入口窄修與獨立審查完成
+
+v001獨立審查找到metadata-only exhausted store會中止整批分母的阻塞，原檔及review保留。v002只允許absent／empty／完整且相符三份metadata，在exact3-worker exhausted marker下每個missing row明列terminal error；未知／不完整metadata／raw-without-results仍拒絕，片尾重驗store狀態。done errors／error_ids與結果精確交叉核對，incumbent保留原+.021682262420654297精度，seal以open x保護首個writer。[來源與review收據](assets/r80_structured48_readout_readiness_20261010.json)。root6focused／獨立6focused及tiny checks通過；未建立actual seal、未讀NAS／truth或跑模型。
+
+入口保留完整48分母、success-only rank／MAE、四origin／eight cells、SM保存曲線與raw重新核對；批內最佳與固定incumbent分開，不作adoption或global-best宣稱。新48原waiting driver仍0 calls；main新輪2871.281秒、剩等待728.719秒，小於driver的300＋600秒門檻，這個窗口無法触發。正在準備hash-owned本機STOP的主控quiescent單次派工／恢復方案，worker保留既有guided／LOW，不設global STOP。未實際停止任何程序或變更queue；新publisher/action若採用，readout配置須另rebind並review，不能直接執行本版原action seal。
