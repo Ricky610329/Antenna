@@ -1,6 +1,6 @@
 {
   "title": "用於天線與濾波器設計的多策略批次代理學習框架",
-  "subtitle": "延伸摘要｜研究現況｜鄒穎麒｜2026 年 10 月 10 日",
+  "subtitle": "延伸摘要｜研究現況｜鄒穎麒｜2026 年 10 月 11 日",
   "keywords": "像素化天線；濾波器；HFSS；代理模型；批次學習；人機協作",
   "max_pages": 6,
   "sections": [
@@ -90,7 +90,7 @@
             "rows": [
               [
                 "資料量",
-                "自行累積超過 7.6 萬筆 HFSS 結果：天線約 5.0 萬筆（其中約 4.4 萬筆附完整 radiation pattern 切面），濾波器約 2.6 萬筆；承接資料為 3.4 萬筆。"
+                "自行累積超過 7.6 萬筆 HFSS 結果：天線約 5.0 萬筆、濾波器約 2.6 萬筆；天線中約 4.4 萬筆附完整 radiation pattern 切面。承接資料為 3.4 萬筆。"
               ],
               [
                 "天線（自由圖形）",
@@ -102,7 +102,7 @@
               ],
               [
                 "天線（完全對稱）",
-                "強制金屬左右鏡射，約 2,200 筆後首次達標：WM +0.022／+0.036 dB（兩次）、radiation pattern 窗口 +0.37 dB；就現有紀錄，為 0.10 mm 橋接下首例。"
+                "生成時即限制金屬左右鏡射，約 2,200 筆後首次達標：WM +0.022／+0.036 dB（兩次）、radiation pattern 窗口 +0.37 dB；就現有紀錄，為 0.10 mm 橋接下首例。"
               ],
               [
                 "濾波器（雙埠）",
@@ -126,7 +126,7 @@
           "caption": "圖 2　天線自由圖形交付代表（0.10 mm 對角橋）。(a) 金屬圖形，三角形為下緣饋入；(b) S11 與 (c) 正向實現增益，灰底為 26.5–29.5 GHz 評分頻帶、虛線為門檻；(d) 28 GHz radiation pattern，各切面以正向值歸一化，灰色扇形為 ±45° 窗口、虛線為 -3 dB 門檻，同心圓為 -20、-10、-3 dB。"
         },
         {
-          "p": "帶外方面，低頻（24–25.5 GHz）這一側最難壓。圖 3 的設計在無橋條件下帶內 WM +0.15 dB、radiation pattern 也合格，並把低頻最大增益壓到 -3.46 dBi；但它的餘裕很薄，又有 22 處對角相接，同網格加 0.10 mm 橋後 WM 約 -0.32 dB（單次），不再合格。如何同時做到可製造與深度低頻抑制，仍是未解的問題；低頻抑制也與第四節對稱設計的困難有關。"
+          "p": "帶外方面，低頻（24–25.5 GHz）這一側最難壓。圖 3 的設計在無橋條件下帶內 WM +0.15 dB、radiation pattern 也合格，並把低頻最大增益壓到 -3.46 dBi；但它的餘裕很薄，又有 22 處對角相接，同網格加 0.10 mm 橋後 WM 約 -0.32 dB（單次），不再合格。如何同時做到可製造與深度低頻抑制，仍是未解的問題。"
         },
         {
           "figure": "oob",
@@ -151,36 +151,20 @@
       ]
     },
     {
-      "heading": "四、完全對稱：做得到，但比自由圖形難",
+      "heading": "四、完全對稱：做得到，但搜尋空間小得多",
       "blocks": [
         {
-          "p": "饋入在下緣中央，因此只能要求左右對稱。對稱實驗在生成時就強制金屬左右精確鏡射，可變像素由 624 個降為 324 個。約 2,200 筆實測後首次達標：兩次 HFSS 的 WM 為 +0.022 與 +0.036 dB，radiation pattern 窗口餘裕 +0.37 dB（圖 5）。就現有紀錄，這是 0.10 mm 橋接條件下第一個達標的完全對稱設計；先前曾有完全對稱設計在無橋條件下過線（+0.09 dB），加橋後掉到 -0.22 dB。"
+          "p": "饋入在下緣中央，因此只能要求左右對稱。對稱實驗在生成時就讓金屬左右精確鏡射，約 2,200 筆模擬後首次達標：兩次 HFSS 的 WM 為 +0.022 與 +0.036 dB，radiation pattern 窗口餘裕 +0.37 dB（圖 5）。就現有紀錄，這是 0.10 mm 橋接條件下第一個達標的完全對稱設計。"
         },
         {
           "figure": "symmetry",
           "caption": "圖 5　完全對稱達標解。(a) 金屬圖形，虛線為鏡射軸；(b) S11 與 (c) 正向實現增益，灰色虛線為圖 2 的自由圖形交付代表；(d) 28 GHz radiation pattern：φ = 90° 切面因鏡射而對稱，φ = 0° 則否。兩者都有 0.10 mm 對角橋；連通塊以對角相接算相連。"
         },
         {
-          "p": "為什麼完全對稱比較難？目前的紀錄可以把原因分成三類。它們的證據強度不同，下面分開說明，並註明各自的限制。"
+          "p": "對稱比較難，我們認為主要是約束太多、搜尋空間變小。左右精確鏡射後，右半邊完全由左半邊決定，可自由調整的像素由 624 個降為 324 個，可能的圖形數少了 2<sup>300</sup> 倍；離開中軸的修改都要兩格一起翻，能做的微調也比較粗。自由圖形的空間包含所有對稱設計，還多出大得多的其他部分，可行的設計和通往它們的路徑都多得多，所以非對稱設計比較快、也比較容易找到。"
         },
         {
-          "p": "<b>第一，對稱約束本身會破壞既有設計（直接對照）。</b>把 13 個既有設計（WM -0.89 至 +0.79 dB）用三種方式強制左右鏡射、其他條件不變，34 個版本全部變差，降幅 2.3–32 dB、中位數 17 dB；連 +0.79 dB 的冠軍也只剩 -1.48 dB（圖 6a）。因為只改了「是否對稱」這一件事，這個退步可以直接歸因於對稱約束。限制是：這 13 個設計原本都不是為對稱而設計的。"
-        },
-        {
-          "p": "<b>第二，SM 在對稱區沒有導航能力（直接觀察）。</b>歷史上 1,030 張完全對稱圖形中，915 張是刻意製造的負樣本探針，能讓 SM 學到「好的對稱設計」的資料極少。對稱達標解附近的 32 個變體，SM 的預測全擠在 -11.0 到 -10.3 dB 之間，實測卻從 -22.7 到 +0.02 dB，排序相關約 -0.1（圖 6b）；SM 對前一最佳的預測是 -12.2 dB，實測是 -0.25 dB。也就是說，SM 分辨不出這一區的好壞；最後一步能成功，較可能來自研究者指定的鄰域列舉（只改 4 個像素），而不是 SM 的排序。限制是：這個家族在評估時刻意不放進 SM 訓練，SM 在看過的家族上可能表現較好。"
-        },
-        {
-          "figure": "symmetry-evidence",
-          "caption": "圖 6　完全對稱較難的兩項直接證據。(a) 13 個既有設計（實心點）以三種鏡射方式強制左右對稱後的 WM（空心點），每一欄是同一個設計，只差在有沒有強制對稱；(b) 對稱達標解附近 32 個變體的 SM 預測 WM 與 HFSS 實測 WM，虛線為「預測 = 實測」，菱形為前一最佳、星號為達標解；這個家族不在 SM 的訓練資料中。"
-        },
-        {
-          "p": "<b>第三，好的「完全」對稱解本來就少（描述性）。</b>歷史快照中 WM 達 0.3 dB 的 592 個不重複設計，完全對稱 0 個、近對稱 225 個；對稱實驗的前 970 筆沒有一筆同時通過 S11 與增益，約 2,200 筆後才出現第一個達標解。各批的選樣目的不同，這些數字只能描述現況，不能當成對照實驗。"
-        },
-        {
-          "p": "<b>可能的機制（推論，尚未驗證）。</b>對稱設計離開中軸的修改都是成對翻轉，改 1 格就動 2 個實體像素，微調的步長比自由圖形粗；達標解附近只差 4 個實體像素的變體，實測 WM 從 +0.02 到 -22.7 dB，響應對小修改非常敏感。不過我們沒有做過「1 像素 vs 2 像素修改」的直接對照。另外，達標解有 13 個金屬連通塊，歷史上 3,546 個 WM 非負設計的中位數是 5 塊；而能把低頻增益壓到 0 dBi 以下的設計，目前只有一個非對稱家族（439 個設計，兩兩只差中位數 23 個像素），對稱設計還沒有先例。"
-        },
-        {
-          "p": "綜合來看，難的是「完全」對稱，不是對稱本身：快照中近對稱（不對稱度不超過 0.1）設計 WM 非負的比例（30.8%）反而高於更不對稱者（5.8%；受選樣影響，僅供參考），早期實驗中部分對稱也在 4/5 個家族勝過全鏡射。這個對稱解的血統標記可追溯到自由圖形冠軍：冠軍事後對稱化成為種子之一，由此衍生的 -0.25 dB 設計與最近的種子差 159 個像素（仍比快照中其他圖形都近），再經鄰域列舉而達標。非對稱設計至少提供了起點，但冠軍的結構有沒有功能上的貢獻，目前無法判斷。"
+          "p": "實際搜尋的結果與這個看法一致。不限制對稱時，歷史快照（約 3.9 萬張圖形，無橋）中已有約 2,500 個通過規格的不重複設計；對稱實驗的前 970 筆沒有一筆同時通過 S11 與增益，到約 3,700 筆時最佳仍是 +0.022 dB。兩邊的模擬量、橋接條件與搜尋策略都不同，這只是與看法一致的觀察，不是對照實驗。"
         }
       ]
     },
@@ -188,7 +172,7 @@
       "heading": "五、主要觀察與限制",
       "blocks": [
         {
-          "p": "SM 是排名工具，不是精確預測器。它適合從大量候選中挑出值得模擬的前幾名，但絕對預測仍有數 dB 誤差；遇到沒看過的區域（如完全對稱），連排序也會失準，這時「模型分歧」與「隨機」配額提供了必要的探索。對稱達標的最後一步是研究者指定鄰域、再由 SM 從約 5.3 萬個變體中選出 32 個；這次篩選沒有盲選對照，不能宣稱 SM 比隨機好。"
+          "p": "SM 是排名工具，不是精確預測器。它適合從大量候選中挑出值得模擬的前幾名，但絕對預測仍有數 dB 誤差，遇到沒看過的區域連排序也會失準。例如對稱達標解附近的 32 個變體，SM 預測都擠在 -11.0 到 -10.3 dB 之間，實測卻從 -22.7 到 +0.02 dB；這時「模型分歧」與「隨機」配額提供了必要的探索。對稱達標的最後一步是研究者指定鄰域、再由 SM 從約 5.3 萬個變體中選出 32 個；這次篩選沒有盲選對照，不能宣稱 SM 比隨機好。"
         },
         {
           "p": "模擬條件會改變結果。網格加嚴後，18 個選定案例的 WM 變化幅度（絕對值）中位數為 0.81 dB（選樣包含高差異案例），與許多設計的餘裕同量級；加 0.10 mm 橋的影響通常較小（3,318 組配對的中位數約 -0.07 dB），但個別設計可能掉得更多。最終仍需實測確認。"
@@ -223,30 +207,22 @@
     "-5.90",
     "-2.39",
     "37/39",
-    "13 個金屬連通塊",
     "圖 1",
     "圖 2",
     "圖 3",
     "圖 4",
     "圖 5",
-    "圖 6",
     "表 1",
     "表 2",
     "0.81",
     "0.57",
     "624",
     "324",
-    "592",
     "970",
     "-22.7",
-    "-12.2",
-    "3,546",
-    "439",
-    "159",
-    "直接對照",
-    "直接觀察",
-    "描述性",
-    "推論"
+    "搜尋空間",
+    "2,500",
+    "-11.0"
   ],
   "references": [
     {
@@ -266,7 +242,7 @@
   ],
   "provenance": {
     "audience": "Advisor: research status; user allowed up to six pages with light formatting and room to breathe (2026-10-10). Detailed manuscript: docs/paper/manuscript-draft-2026-10.html.",
-    "version": "v5 (2026-10-10): less formatting, looser layout, sample count corrected, Fig 6 rebuilt as two single-claim panels; v4 = 48d1337; v3 one-page = 8446aba.",
+    "version": "v6 (2026-10-11): section 4 rebuilt around the search-space argument (user, 2026-10-11); post-hoc mirroring (R55) and Fig 6 removed; v5 = d8798a8; v4 = 48d1337; v3 one-page = 8446aba.",
     "numbers": {
       "samples": "Local NAS backup 2026-08-28 (BACKUP_INFO.md verify tally): our batch-line .pt results 69,900 = single-port 43,694 (791 stores) + dual-port 26,203 (524 stores) + 3 unknown; port classified by the response shape of one file per store (read-only scratch count of the local backup). Online-training results 2,943 (result/*/online). Plus the R80 symmetric run 3,688 (log, 2026-10-10 17:59; not in the backup). Total >= 76,531 including repeats; antenna 43,694 + 2,943 + 3,688 = 50,325. Inherited harvest 34,215 (single 24,189 + dual 10,026). About 44k single-port results carry full radiation cuts (43,846 accepted in r80_factory_legacy_20261007.json; rad/ 43,949).",
       "qualified_designs": "2,513 unique patterns with wm>=0 and rad>=0 in the 2026-08-10 pattern-browser snapshot; main rows are no-bridge S0 (build_index.py excludes ~ variants)",
@@ -274,12 +250,11 @@
       "delivery": "docs/paper/single-port-evidence.json; manuscript V-A; 九月份進度報告",
       "filter": "manuscript V-C; docs/paper/final-candidate-response.json; docs/paper/paper-evidence-data.json (17 best-so-far records); SM rho 0.57 = R72 holdout, min of six auxiliary margins (manuscript V-C)",
       "symmetric": "docs/paper/symmetric-best-evidence.json; docs/log/round-80-symmetry-exploration.md (best unchanged at 3,688 samples, 2026-10-10 17:59)",
-      "symmetry_evidence": "docs/paper/extended-abstract-figure-data.json (frozen by freeze_extended_abstract_data.py: snapshot n8/asymmetry/lo, R55 34 probes, R80 local-32, symmetric radiation cuts); 439 lo<=0 designs pairwise Hamming median 23 / max 80; anchor 159 px from nearest seed, >=195 px (median 281) from all other snapshot patterns; disagreement arm eligibility = predicted mean >= pool 60th percentile (script/symmetry_sm_pool.py:573-579)",
+      "symmetry_evidence": "Search space: 624 free pixels (feed fixed) vs 324 under an exact left-right mirror (left 300 + centre column 24), ratio 2^300. Free-form: 2,513 unique wm>=0 & rad>=0 patterns in the 39,111-row 2026-08-10 snapshot (no-bridge S0). Symmetric: first 970 R80 samples have no S11-and-gain pass (round-80 log), first pass at about 2,200, best unchanged at 3,688 (2026-10-10 17:59). Budgets, bridge conditions and strategies differ; descriptive only.",
       "online_vs_random": "June 2026 benchmark: three online-learning runs lost to random best-of-N at equal HFSS budget (memory project_benchmark_vs_random; harvest 5,000-sample ceiling study)",
       "mesh": "manuscript VI-C (18 selected cases incl. high-difference ones, S0->S1, median |dWM| 0.81 dB)",
       "wide_filter_spec": "docs/log/round-81-wide-filter.md",
       "bridge_conditions": "S0 mesh, R54 probe table (docs/log/assets/round-54/r54_close_analysis.md section 7, frozen in extended-abstract-figure-data.json r54_bridge_s0): c48nq1p05_16 +0.79 -> +0.58 with 0.10 mm bridges (Δ-0.21, reproduced across machines, round-54-diamond-bridge.md); c41grp2p02_02 +0.15 -> about -0.32 (Δ-0.47, single). Delivery design c48nq1p06_18 is 1 px from the champion: no-bridge +0.43, bridged +0.69 (R54 batch) / +0.77 (handoff re-solve). 3,318 bridged pairs median ΔWM -0.07 dB (manuscript VI-C). The snapshot db100_wm values for R54 probe parents (-0.44, -1.99) are S1-mesh and are NOT used.",
-      "lineage": "R80 anchor r80c91d71565g_00019_5a42476c (tmp/r80_best_render_20261009_v001 NPZ, sha 23524cf2...) is 159/235/213 px from the L/R/O R55 mirrors of c48nq1p05_16 and 4 px from the symmetric best.",
       "sm_symmetric": "r80_local_variation_prepare/result receipts: anchor predicted mean -12.16 vs -0.25; 32 neighbours predicted mean -10.97..-10.35, HFSS -22.72..+0.02; Spearman mean -0.106 / LCB -0.090"
     },
     "symmetry_note": "docs/paper/symmetry-difficulty-zh-2026-10.json -> output/pdf/symmetry-difficulty-zh-2026-10.pdf (one-page handout for the senior; same evidence)",

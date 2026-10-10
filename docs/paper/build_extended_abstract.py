@@ -43,8 +43,15 @@ from reportlab.platypus import (
     BaseDocTemplate, CondPageBreak, Frame, Image, KeepTogether, PageBreak, PageTemplate,
     Paragraph, Spacer, Table, TableStyle,
 )
+from reportlab.lib import textsplit as rl_textsplit
+from reportlab.platypus import paragraph as rl_paragraph
 
 import extended_abstract_figures as figures
+
+# reportlab's line-start table is Japanese-oriented; let fullwidth Chinese punctuation hang in the margin too.
+# Single-fragment paragraphs wrap through textsplit, multi-fragment ones through paragraph; each holds a copy.
+for module in (rl_textsplit, rl_paragraph):
+    module.ALL_CANNOT_START += "，；：！？"
 
 BASE = Path(__file__).resolve().parent
 SOURCE = BASE / "extended-abstract-zh-2026-10.json"   # default source
