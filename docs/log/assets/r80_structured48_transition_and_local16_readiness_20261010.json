@@ -1,0 +1,560 @@
+{
+  "schema_version": 1,
+  "status": "verified_local_selection_and_reviewed_transition_preparation_only",
+  "created_utc": "2026-10-10T03:13:00.267916+00:00",
+  "record_helper": {
+    "path": "tmp\\r80_structured48_transition_milestone_20261010_v001\\record_milestone.py",
+    "sha256": "594d97dbb0b17aee66f6cf0873f26320a04db753d27d75b4da67028fc7e2d270",
+    "bytes": 6463
+  },
+  "incumbent_next_shell": {
+    "review": {
+      "path": "tmp\\r80_incumbent_next_shell_20261010_v001\\saved_output_review.json",
+      "sha256": "751fc9c8b149198849a3b2dc43aab4b8dec63d106c85692f49b0a7067a12b0bc",
+      "bytes": 10726
+    },
+    "review_content": {
+      "schema_version": 1,
+      "kind": "r80_incumbent_next_shell_independent_saved_output_review_v001",
+      "status": "passed_saved_outputs_with_expected_live_loader_state_drift",
+      "created_utc": "2026-10-10T02:59:29.5735990+00:00",
+      "reviewer": {
+        "agent": "/root/r80_v7_namespace_review",
+        "model": "gpt-5.6-sol",
+        "role": "independent_bounded_saved_output_reviewer"
+      },
+      "producer": {
+        "recipe_sha256": "fbaf7208d5c2ab07b59ac05d82e7aa034aa2ee3b47e10298c0ac2f95e8f9f045",
+        "preparer_sha256": "2ca6b0f474ff30e7de338ef824bc5e9520c5dae0734c422380fb359edd63d932",
+        "preparation_receipt_sha256": "89470ba2c50134f82ac1f4850ff66ee3366ca8216381e0277b72482a88e795fe",
+        "completed_utc": "2026-10-10T02:38:28.789580+00:00",
+        "status": "complete_offline_no_dispatch_no_truth_read"
+      },
+      "review_helper": {
+        "path": "tmp/r80_incumbent_next_shell_20261010_v001/saved_output_review_helper.py",
+        "sha256": "1e4976378fa0314eafbaa4d1233e94a1adbebcd83c9aef60ef3736bdba7ec3dc",
+        "bytes": 25950,
+        "final_run_exit_code": 0,
+        "result": "passed_independent_saved_output_replay_no_model_forward_no_hfss",
+        "implementation_note": "The final replay reconstructs the exact bound mirror/feed projection in one vectorized array, checks four boundary sentinels through the bound prior make_pattern function, and then checks every saved pattern/hash/source row. Vectorization changes only review efficiency, not the reviewed producer or arithmetic."
+      },
+      "saved_output_bindings": {
+        "candidate_patterns.npz": "24b9f41f93e2be1583898e93d0e0368434404a710e201dbb9d9abe54f258c37b",
+        "candidate_predictions.npz": "69e0130b4757a75e1c2b43e5d99eaed3de87601a9ee1af01fe4ab8552ea7fbc4",
+        "candidate_source_rows.json": "6c82a1972b1bad897b0421f5cf1cd82c027ed44dcf90ca3e29eee7809a10a632",
+        "selected_rows.json": "1497fcad7ae8158737822b10a4a329af0fe9341b9d6e2fa17ee28dec1e9ae061",
+        "next_shell_audit.json": "f57c1f8790f724fbe7ba6da887c0a1cc81202c57ca53af877034b31e4683cf44",
+        "bundle/manifest.json": "8ed71a7921fba5a99df6c03700c6693c04604022b4be2aa4ee8c9db9ffcbce93",
+        "bundle/sm_pool_audit.json": "0ef08d2cbf3231704a74ad1bcb2adc1f306401f5e0870c07a11a3774a4692370",
+        "shards/split_receipt.json": "b1b32143d20c5c78393e40f3313937a8a5bd7c042402cff7aa1b0287ae80ec2c"
+      },
+      "immutability": {
+        "producer_execution_time_input_bindings_before_after_exact": true,
+        "review_start_end_current_input_bytes_exact": true,
+        "review_start_end_all_48_prepared_file_bytes_exact": true,
+        "all_current_inputs_match_recipe": false,
+        "current_mismatch": {
+          "one_physical_path_two_recipe_labels": true,
+          "labels": [
+            "v015_frozen_files[11]",
+            "v015_loader_state"
+          ],
+          "path": "tmp/r80_factory_20261007/training_familydev_v1/state.json",
+          "recipe_sha256": "28e166dc8e5ef2e6c4a9059c6c224f53189fac65aee3ba3e79c17db895d65752",
+          "recipe_bytes": 74294,
+          "review_sha256": "bbfdd20502d7c40e13ce08305eb6fe5fe1749b2e675b663e4adbedc9f7dcb082",
+          "review_bytes": 78279,
+          "review_latest_data_version": 18,
+          "classification": "expected live training-state progress after producer completion; not a saved-output integrity failure",
+          "consequence": "The producer receipt proves the old state hash was identical before and after preparation, but this review does not claim current all-binding equality. The exact frozen recipe cannot be re-executed now without failing its metadata gate; no rerun is authorized or needed for this saved-output review."
+        }
+      },
+      "explicit_v015_identity": {
+        "result": "pass",
+        "predictor_binding": {
+          "cumulative_valid_unique": 3147,
+          "data_version": 15,
+          "manifest_id": "01abc622b49d8291912783f7542db827bae2dfa6119e4f4494639b096430932e",
+          "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+          "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+          "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+        },
+        "member_checkpoint_sha256": [
+          "3d46fb90ce326cb39ffa4ba9edbe40172bce48e3bd10e9760c0bc29c15cdcbba",
+          "1c18b70b2f88cd5b18997ffddad6e812e0d203a9266442c2a3a2c573810b72a7",
+          "3d397ec9c91d096be51fae1189978b9f30709a1c7014097c74d706c371534f24"
+        ],
+        "model_checkpoints_opened": false,
+        "loader_reasoning": "The exact bound loader receives version=15. It reads state.json, but latest_data_version is used only when version is None. With explicit 15 it constructs data-v015 receipt, models/data-v015 summary and member paths, verifies summary binding and member hashes, then supplies the expected binding to the predictor. Current live version 18 therefore cannot substitute different weights into this saved run.",
+        "saved_shapes": {
+          "response_members": [
+            3,
+            52650,
+            2,
+            17
+          ],
+          "response_mean": [
+            52650,
+            2,
+            17
+          ],
+          "radiation": [
+            52650,
+            2,
+            91
+          ],
+          "radiation_theta": [
+            91
+          ]
+        },
+        "all_saved_numeric_arrays_finite": true,
+        "member_mean_exact": true,
+        "member_mean_max_abs_diff": 0.0,
+        "anchor_member_mean_exact": true,
+        "anchor_member_mean_max_abs_diff": 0.0
+      },
+      "geometry_replay": {
+        "result": "pass",
+        "rows": 52650,
+        "radius_counts": {
+          "1": 324,
+          "2": 52326
+        },
+        "unique_projected_pattern_hashes": 52650,
+        "excluded_in_pool": 13,
+        "projection_diff_px_counts": {
+          "0": 300,
+          "1": 7500,
+          "2": 44850
+        },
+        "physical_hamming_counts": {
+          "1": 24,
+          "2": 576,
+          "3": 7200,
+          "4": 44850
+        },
+        "checks": [
+          "saved coordinate array and radii equal the bound row-major singles then itertools.combinations source",
+          "all raw and projected pattern bytes equal independent reconstruction",
+          "all raw and projected pattern SHA-256 values equal saved values",
+          "every projected pattern has exact left-right mirror and feed pixel [24,12] on",
+          "all raw-to-projection deltas and physical Hamming counts equal saved arrays",
+          "all 52,650 source rows have exact index, coordinates, independent indices, raw/projected hashes, delta, lineage, generation and content ID",
+          "saved exclusion flags exactly equal membership in the fixed 3,424-hash union"
+        ]
+      },
+      "score_replay": {
+        "result": "pass_exact",
+        "arithmetic": "script.symmetry_sm_pool.score_predictions using only saved member/mean/radiation arrays and the bound defaults radiation_weight=0.20, uncertainty_weight=0.10",
+        "max_abs_diff": {
+          "s11_margin": 0.0,
+          "gain_margin": 0.0,
+          "factory_score": 0.0,
+          "radiation_margin": 0.0,
+          "response_disagreement": 0.0,
+          "navigation_mean_score": 0.0,
+          "lcb_score": 0.0,
+          "navigation_score": 0.0
+        },
+        "anchor_max_abs_diff_all_scores": 0.0,
+        "anchor_factory_score": -2.995751698811849,
+        "anchor_lcb_score": -4.005310312396126
+      },
+      "selection_replay": {
+        "result": "pass_exact",
+        "available_nonexcluded": 52637,
+        "relative_lcb_and_factory_eligible": 6603,
+        "remaining_relative_factory_eligible_after_lcb8": 8384,
+        "blind_remaining_radius2_capacity_before_draw": 52301,
+        "arm_counts": {
+          "lcb_performance": 8,
+          "high_disagreement": 4,
+          "blind_random": 4
+        },
+        "selected_radius_counts": {
+          "2": 16
+        },
+        "blind_radius_targets": [
+          2,
+          2,
+          2,
+          2
+        ],
+        "blind_reference_model_ranks_one_based": [
+          1,
+          4,
+          7,
+          10
+        ],
+        "selected_candidate_indices": [
+          13307,
+          41834,
+          49161,
+          13191,
+          7658,
+          41777,
+          15519,
+          8795,
+          44227,
+          20665,
+          37119,
+          10973,
+          49304,
+          51547,
+          40103,
+          41428
+        ],
+        "tie_order": "descending score then pattern_sha256 reproduced exactly",
+        "blind_draw": "hash-sorted remaining radius pool plus PCG64 seed 20261010 reproduced exactly",
+        "no_quota_borrowing_relaxation_or_fallback": true
+      },
+      "bundle_and_shard": {
+        "result": "pass",
+        "bundle_manifest_rows": 16,
+        "shards": 1,
+        "shard_size": 16,
+        "bundle_and_shard_manifest_byte_identical": true,
+        "bundle_and_shard_pattern_tensor_bytes_identical": true,
+        "all_16_pattern_tensors_equal_selected_projected_patterns": true,
+        "all_selected_source_and_lineage_metadata_exact": true,
+        "config_measurement_score_manifest_and_profile_validation_passed": true,
+        "combined_model_hash": "f4584ba54ab9cc9e49a99769b6f4e2143a016e6e51b46d798e31604480f8ebb2"
+      },
+      "incumbent": {
+        "result": "unchanged",
+        "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+        "raw_hfss_wm_db": 0.021682262420654297,
+        "known_repeat_hfss_wm_db": 0.03643369674682617,
+        "scope_note": "The saved historical anchor sample was opened on CPU only to extract its pattern; its stored response was not used for score or selection replay. Raw incumbent WM values were checked against the already bound local report and rows."
+      },
+      "findings": {
+        "blocking_for_saved_output_integrity": [],
+        "blocking_for_exact_recipe_rerun_now": [
+          "The live mutable state.json no longer has the recipe-bound execution-time bytes."
+        ],
+        "nonblocking": [
+          "All 16 selected candidates are radius 2 because fixed model ranks 1/4/7/10 are radius 2 and all twelve scored selections are radius 2; this is the reproduced policy outcome, not an imposed 2/2 radius quota.",
+          "The prior selected32 LCB-versus-HFSS WM Spearman rho remains -0.09017595307917887; exact saved-score reproduction does not validate ranking efficacy."
+        ]
+      },
+      "scope": {
+        "actual_model_checkpoint_open_or_forward": false,
+        "training_or_retraining": false,
+        "NAS_queue_controller_or_new_truth_read": false,
+        "HFSS_or_dispatch_or_publication": false,
+        "generator_recipe_or_prepared_output_mutation": false,
+        "saved_local_npz_json_and_pattern_tensor_replay_only": true
+      },
+      "limits": [
+        "This review proves saved geometry, provenance, arithmetic, deterministic selection and bundle serialization. It does not independently reproduce the neural forward from checkpoint tensors.",
+        "The earlier frozen-v015 independent CPU-forward receipt remains the model-forward evidence; it was hash-bound and not repeated here.",
+        "The selected shell is development-exposed navigation around the f6 incumbent. No SM improvement, HFSS benefit, adoption, capacity, dispatch or global-best claim follows.",
+        "A later HFSS or publisher action must independently bind current terminal/readout, exclusion, capacity, controller and queue evidence."
+      ],
+      "decision": {
+        "saved_output_review": "pass",
+        "prepared_bundle_readiness": "saved offline bundle internally consistent; no dispatch authorization",
+        "model_efficacy_or_improvement": "not assessed"
+      }
+    },
+    "audit": {
+      "path": "tmp\\r80_incumbent_next_shell_20261010_v001\\prepared\\next_shell_audit.json",
+      "sha256": "f57c1f8790f724fbe7ba6da887c0a1cc81202c57ca53af877034b31e4683cf44",
+      "bytes": 2670
+    },
+    "audit_content": {
+      "schema_version": 1,
+      "status": "incumbent_next_shell_prepared_offline",
+      "pool": {
+        "radius_1": 324,
+        "radius_2": 52326,
+        "total": 52650
+      },
+      "selection_arm_counts": {
+        "lcb_performance": 8,
+        "high_disagreement": 4,
+        "blind_random": 4
+      },
+      "selected_pattern_hashes": [
+        "d92ea346d40989838c185c5c83bb5b73a15581421f4d94b7c89f6edcd0b49abe",
+        "4806e58123ae1647e005f7043e61b42fc941d8a4a9d665dc0ba57bd3058b908b",
+        "4617aac925ff8bb2283efe3180a7584f55ae34071d04175d7d35192d534270c0",
+        "d7d1db7965cd21038841f6d81479a737f421f44b4e28aee587dd063db1f77431",
+        "b69db0c4be1c620a0e609b56d4f166a932ac75fe5ad3ef25e268827e24171e34",
+        "2deed73e7dc12354ecc900123ed30165c9821cfd0369d1d9c53cb2a94abf160c",
+        "368d5270f582cbb51792fab5328c1e606e40bd8db7f17d3029f0689fff909a83",
+        "51ce32d2cb3d1ab41d74e011a0547e390fcb561182f9ee2389677de447a9bc14",
+        "dc992bdcee7d55be62942407ff30899b5fcce4b623821e185870e4efaf166e76",
+        "665aeea2004794de1d2d15985b4cde65cf5c854d9304b4b48c9b5be47ed84544",
+        "96651671d05e4e881ee68c13eb1ce8aa138a87c97f51a48dbc88cf8cc5f305de",
+        "ce0725cc80222389cfc58509410f045e9cc9afba05fa14f81cb17ded617bafa5",
+        "1f947b9085a047cde56e3ae30d5bd8242be61d76becfb2f4624ff4e74c149154",
+        "587dc7810137db0f8e9aa017210ff4d439e2cfebae359cb09d48199d77a3ffa4",
+        "9aa25d3171d848b343e4774f018c4594bfc2219ff394546c08ab1d5cb4ce541d",
+        "3935a0d51861a5218a770cc38f983853facd37d5adf1a5882e0eff4ffd9fd8cc"
+      ],
+      "anchor_scores": {
+        "s11_margin": -1.163063367207845,
+        "gain_margin": -2.995751698811849,
+        "factory_score": -2.995751698811849,
+        "radiation_margin": 0.151556134223938,
+        "response_disagreement": 1.039869840429064,
+        "navigation_mean_score": -2.9654404719670615,
+        "lcb_score": -4.005310312396126,
+        "navigation_score": -3.0694274560099677
+      },
+      "predictor_binding": {
+        "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+        "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+        "protocol_id": "58404dbfe37291e7275843bd031e53b60071643c5a63788af974d2dd60d57b9b",
+        "data_version": 15,
+        "manifest_id": "01abc622b49d8291912783f7542db827bae2dfa6119e4f4494639b096430932e",
+        "cumulative_valid_unique": 3147
+      },
+      "excluded_union_count": 3424,
+      "excluded_candidates_in_pool": 13,
+      "no_quota_borrowing_or_relaxation": true,
+      "minimum_hamming_filter": null,
+      "development_exposed_not_blind_holdout": true,
+      "previous_selected32_lcb_rho": -0.09017595307917887,
+      "dispatch_or_capacity_or_nas_or_truth_read": false,
+      "mainline_replacement_or_adoption": false
+    },
+    "selected_count": 16,
+    "HFSS_dispatched": false
+  },
+  "controller_transition": {
+    "review": {
+      "path": "tmp\\r80_structured48_controller_transition_20261010_v004\\independent_review.json",
+      "sha256": "b35fae28f82a2ced5fd6245cad0577656a1978fd38988cce8228d40c8a73e8ae",
+      "bytes": 3961
+    },
+    "review_content": {
+      "schema_version": 1,
+      "kind": "r80_structured48_controller_transition_independent_review_v004",
+      "status": "PASS",
+      "scope": "changed-gate-only review of the v003 publisher-not-started activation-failure cross-binding blocker",
+      "supersedes_review_outcome": {
+        "path": "tmp/r80_structured48_controller_transition_20261010_v003/independent_review_v003.json",
+        "sha256": "26d3b7166edf166134a0095222aaa51b5355ebf4a2b1e044307c75a3b12d6c68",
+        "status": "BLOCKED"
+      },
+      "reviewed_frozen_inputs": {
+        "readiness.json": {
+          "sha256": "ceee23a07107df8a52a26e6ac739e532b574d00390637c645a28ec66b2a65b8b",
+          "bytes": 1534
+        },
+        "transition_common.ps1": {
+          "sha256": "203fb2fa9a736d3af005918be2cb86da471e3a7194d5a50e94d2fd57f7307ceb",
+          "bytes": 7153
+        },
+        "restore_controller.ps1": {
+          "sha256": "5dbd82642210284cb882071878cf66459cc90d2229059e92302c2f04f1a444dc",
+          "bytes": 9587
+        },
+        "publisher_terminal_handoff.template.json": {
+          "sha256": "35d47538b802a28e431fafc2e828cdf7fdd35f5ed15a98085a6e7285865fc0ab",
+          "bytes": 602
+        },
+        "test_failure_crossbinding.ps1": {
+          "sha256": "5700b106b58510e7b90463fad63a60c39607f193699f994811b3e3c90422654b",
+          "bytes": 2578
+        },
+        "recover_failed_activation.ps1": {
+          "sha256": "4432af8c0b401da9fc76054c22368d423cf704bb55cdba4a123e33b753dec8de",
+          "bytes": 4761,
+          "unchanged_from_v003": true
+        }
+      },
+      "findings": [
+        {
+          "id": "exact_recovery_failure_identity",
+          "status": "pass",
+          "evidence": "TaskValidatePublisherNotStartedFailureBinding requires both identities to contain exactly bytes,path,sha256; normalizes both paths with IO.Path.GetFullPath; and requires normalized path, SHA-256, and byte count equality."
+        },
+        {
+          "id": "fresh_existing_failure_rehash",
+          "status": "pass",
+          "evidence": "The helper requires the recovery-bound path to exist, freshly hashes that exact path, and checks its current length against the selected recovery receipt."
+        },
+        {
+          "id": "no_publisher_branch_integration",
+          "status": "pass",
+          "evidence": "restore_controller invokes the exact-binding helper only after requiring publisher_not_started_after_activation_failure, a null publisher process, publisher_not_started=true, recovered activation status, and a recovery-bound activation_failure; the action must remain prepared."
+        },
+        {
+          "id": "general_terminal_length_binding",
+          "status": "pass",
+          "evidence": "The general handoff gate now verifies terminal_evidence SHA-256 and byte count before branch-specific validation."
+        },
+        {
+          "id": "prior_transition_guards_preserved",
+          "status": "pass",
+          "evidence": "The v003-to-v004 diff adds only the cross-binding helper, its call, terminal-evidence byte checking, and the template/fixture. TaskValidateConfig HEAD/runtime/source bindings, all-watch inventory, exact old-PID absence, owned STOP checks, create-only intent, and no-auto-retry restoration behavior remain intact."
+        }
+      ],
+      "bounded_validation": {
+        "changed_powershell_files_parsed": [
+          "transition_common.ps1",
+          "restore_controller.ps1",
+          "test_failure_crossbinding.ps1"
+        ],
+        "parser_errors": 0,
+        "single_fixture_stdout": "FAILURE_CROSSBINDING_FIXTURE_PASS",
+        "fixture_cases": [
+          "valid",
+          "unrelated_substitution_rejected",
+          "missing_rejected",
+          "changed_bytes_rejected"
+        ],
+        "broad_suite_run": false
+      },
+      "limitations": [
+        "This is a static and generated-local-fixture review. It does not claim a real transition, process restoration, publisher run, or runtime receipt.",
+        "No transition_config.json or action was created."
+      ],
+      "operations": {
+        "configuration_built": false,
+        "CIM_queried": false,
+        "STOP_touched": false,
+        "process_started_or_signalled": false,
+        "NAS_queue_dispatch_HFSS_model_truth_touched": false
+      },
+      "conclusion": "PASS: v004 closes the sole v003 blocker by cross-binding and freshly revalidating the exact activation failure used for an explicit publisher-not-started restoration handoff."
+    },
+    "config_built": false,
+    "STOP_written": false,
+    "controller_stopped_or_restored": false,
+    "scope": "One natural waiting-boundary local STOP, one finite publisher attempt, reviewed restoration for success/defer/failure."
+  },
+  "structured48_readout": {
+    "review": {
+      "path": "tmp\\r80_structured48_readout_20261010_v003\\independent_review.json",
+      "sha256": "a4f4c30335d73af26767989e62b468c560815955b2483303e4b3536019af3a8b",
+      "bytes": 4843
+    },
+    "review_content": {
+      "schema_version": 1,
+      "kind": "r80_structured48_readout_v003_independent_preparation_review",
+      "status": "pass_preparation_only_no_seal_no_truth_actual_dispatch_still_pending",
+      "reviewed_sources": {
+        "seal_structured48_v3.py": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v003\\seal_structured48_v3.py",
+          "sha256": "05d8b811f2f422be2007dcf4ddddd3767f4e69ca1f0fbbf8709384aa3d3f8210",
+          "bytes": 24393
+        },
+        "truth_readout_structured48_v3.py": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v003\\truth_readout_structured48_v3.py",
+          "sha256": "dfeaf0f849a4d3732628effe3fa2cf1a945ef8ed63fa85fefbeb70b5e28cbd7a",
+          "bytes": 34717
+        },
+        "readout_config.json": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v003\\readout_config.json",
+          "sha256": "643d0f34ef4188ece52aeace11b12526f436266d3f5c2af1fbe8c48aa26f16fb",
+          "bytes": 6803
+        },
+        "readiness.json": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v003\\readiness.json",
+          "sha256": "6ce535a0d5e52024ab04d1de22e5d63f28bde6cd053638ddb2ccebf7c3c85a7d",
+          "bytes": 8550
+        },
+        "test_structured48_readout_v3.py": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v003\\test_structured48_readout_v3.py",
+          "sha256": "c5b4bf46e3bf37b6f609b0c8b6ecf3a33f4267cc3e8cad415c5a1fcf77c2a6ee",
+          "bytes": 6799
+        }
+      },
+      "review_helper": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_readout_20261010_v003\\independent_review_helper.py",
+        "sha256": "0519e1e9aa026752260509f8006409dc2eff2bae3b57a96b013ab40d0592ccb7",
+        "bytes": 7829
+      },
+      "lineage": {
+        "publisher_source": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publisher_quiescent48.py",
+          "sha256": "4ead9cf86cb29f366c0473e1ff78a7884b0e4c7fb507db1982f162658cf3a160",
+          "bytes": 47418
+        },
+        "publish_request": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publish_request.json",
+          "sha256": "f448b1352de5da0f42280cb1e37ffb1f15d5db54c37e1fca459e762b22fde0ac",
+          "bytes": 1553
+        },
+        "prepared_action": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\structured48-quiescent-action-v1\\action_receipt.json",
+          "sha256": "8bf46453d067f82ec3ffcfe448d36dec2cb0c74e51b990771e346bce03038bc7",
+          "bytes": 19194
+        },
+        "publisher_review": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\independent_review.json",
+          "sha256": "064695b9b0b3d451c87f1b5052e0cbf9f48fb29e7db15ad2354a4cda0a400543",
+          "bytes": 6777
+        },
+        "quiescent_config": {
+          "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_quiescent_publisher_20261010_v002\\quiescent_config.json",
+          "sha256": "f0cc69149f40c98d3182b0c313e3644fc5b71d88c26a4aa8962feda949f742e5",
+          "bytes": 2927
+        },
+        "cycle_id": "0bd8565334a9a8d628fa7f0fb21369c1a01c5b88a6bbbb2a448d6edfbd4f9398"
+      },
+      "verified_design": {
+        "historic_guard_supports_main_restored_before_seal": true,
+        "requires_empty_all_watch_inventory_and_old_pid_absence_via_reviewed_publisher": true,
+        "requires_exact_owner_nonce_STOP_hash_and_finite_lease": true,
+        "requires_zero_active_and_recovered_reservations": true,
+        "requires_exact_native_three_job_append_and_input_tree_readback": true,
+        "partial_prefix_or_capacity_defer_cannot_seal": true,
+        "truth_functions_changed_from_v002": [
+          "validate_seal"
+        ],
+        "terminal_denominator": 48,
+        "incumbent_wm_db": 0.021682262420654297,
+        "seal_and_truth_create_only": true
+      },
+      "focused_tests": {
+        "count": 3,
+        "failures": 0,
+        "errors": 0,
+        "elapsed_seconds": 0.003,
+        "generated_or_local_metadata_only": true
+      },
+      "actual_state": {
+        "action_status": "prepared",
+        "capacity_proof_present": false,
+        "dispatch_readback_present": false,
+        "seal_present": false,
+        "truth_output_present": false
+      },
+      "scope": {
+        "NAS": false,
+        "CIM": false,
+        "STOP": false,
+        "process": false,
+        "queue_or_action_mutation": false,
+        "model": false,
+        "actual_seal": false,
+        "actual_truth": false
+      },
+      "limitations": [
+        "No genuine capacity proof/readback exists yet; this passes only the fail-closed preparation design.",
+        "Historic per-append guard snapshots are enforced by the exact reviewed publisher source but are not separately persisted."
+      ]
+    },
+    "seal_or_truth_executed": false
+  },
+  "publisher_action": {
+    "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\structured48-quiescent-action-v1\\action_receipt.json",
+    "sha256": "8bf46453d067f82ec3ffcfe448d36dec2cb0c74e51b990771e346bce03038bc7",
+    "bytes": 19194
+  },
+  "publisher_action_status": "prepared",
+  "NAS_or_queue_mutation": false,
+  "worker_or_HFSS_restart": false,
+  "limits": [
+    "The 16 next-shell candidates and 48 structured candidates are preparations, not new measured HFSS successes.",
+    "Live loader state advanced after the next-shell execution; original before/after execution receipt is preserved. The saved explicit v015 models and outputs were reviewed, not rerun.",
+    "Transition review binds source files and runtime source hashes, not a child compiled-module probe.",
+    "Whole48 capacity and duplicates must be checked on actual dispatch. Per-shard queue append is not rollback atomic.",
+    "Root must preserve the activation HEAD until the reviewed controller restoration is complete."
+  ]
+}

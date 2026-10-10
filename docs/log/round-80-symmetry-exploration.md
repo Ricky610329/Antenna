@@ -1347,3 +1347,10 @@ v001獨立review攔下完整old_controller欄位缺失與CIM image-name限制兩
 查詢保留dedust_r80c65d3e9ffg01的一筆首次HFSS watchdog／RPC timeout（r80c65d3e9ffg_00003_c858e6c4，attempts1）；218 worker的claim仍在，無done／fail，最新results仍無較新成功，既有dedust batch-tail retry尚會處理attempts<3。11:04健康快照scope無警報，因此只記為待既有重試，不視為終態poison、不宣稱已恢復，也不清claim或重派；本段不能解讀為所有raw樣本皆健康。
 
 同次健康確認原main PID15944身分與launch不變、running_cycle；controller報SM v017／completed22／cached3,270，和本次全量census3,331是不同口徑。三個claimed批次3/16、9/16、6/16，最新結果11／0／4分鐘前，guided及LOW仍有待跑工作。next-shell 16筆只完成本機saved-output核對，尚未派HFSS，不計入3,331。下一例行健康11:34；R80 5,000與R81/spec仍未完成。
+
+
+### 2026-10-10：最佳附近16筆完成本機排名；新48單次派工與恢复入口準備通過
+
+目前最佳f6ffb938的52,650個radius1/2候選完成一次固定v015模型排名；獨立保存結果重播通過完整幾何、來源、member均值、八項分數與8LCB／4disagreement／4blind選擇，共16筆。anchor模型預測WM為−2.99575，與實測+.021682差距明顯，因此不聲稱SM或候選性能改善。主線之後更新live loader state至v18，原執行前後hash相同；保留saved-output通過及目前配方不可原樣重跑的限制，未回退live state、未再forward。
+
+transition v002/v003的實際復原鏈缺陷已留存BLOCKED審查，v004以真實觀察的failed-activation復原receipt、exact failure path/hash/bytes與當下rehash修正。新48 readout v003亦通過獨立準備審查；可在恢復main後用歷史全48 dispatch proof封存，partial/defer不會誤封存。全部仍preparation-only；尚未建立activation config／STOP／停止main／派HFSS。[完整來源、結果與限制](assets/r80_structured48_transition_and_local16_readiness_20261010.json)。接下來先在自然waiting且無active reservation時補新48，無論成功、容量defer或failure均恢復原設定main；不改三台worker／HFSS，實際鎖內whole48容量與duplicate驗證仍必需。
