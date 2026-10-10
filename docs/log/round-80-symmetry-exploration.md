@@ -1585,3 +1585,10 @@ Main原identity／19bindings／唯一inventory通過。37在22:52:40依原流程
 37已接下一LOW k82c7b305d87c08e9並有2成功；218／216在801d878dg02／g03有10／12成功，最近2／1／2分鐘。g02 rows22與31分別watchdog／COM0x80070223各attempts1，目前無fail，單樣本錯誤不等於worker停止或已恢復，不推論遠端磁碟／資源原因。三台claim及近期saved結果持續推進，沒有手工標記刪除、重派、重啟或額外HFSS。
 
 Health scope仍exit1保留舊partial alarm，主控running_cycle／reported27／completed11；不宣稱模型性能改善、remote PID、raw WM重算或新全量，latest full仍21:57的3888／+.021682。下一例行23:34。[本次health／markers／15筆物理完整性](assets/r80_health_20261010_2304.json)。
+
+
+### 2026-10-10：例行新最佳觸發改用既有local增量raw，避免反覆全NAS掃描
+
+只增加agent-side只讀adapter、不改live factory／worker來源：從已核對health的last completed action讀existing training_snapshot，先綁receipt／manifest／results／source bindings hashes、measurement／spec／scope／row count／unique identities，再沿現有_metric_from_observation逐raw重算S11/Gain WM及radiation完整性；前後metadata與action SHA不變。候選超過最近full reference才要求fresh full census，未超過只代表該增量、不是當下全量無新best。
+
+實際801d878d／reported data-v027 snapshot54 rows用2.328s完成，best−1.3675212860、0positive，無需新full census；這54列早於21:57全量，因此不把本次執行當晚於該cutoff的全域查核、v027weights驗證或SM因果進步。沒有model forward／train、NAS read／mutation、HFSS、queue／source／marker動作或重覆廣泛tests；未新增主控／timer，下次23:34沿原timer。Helper完整source連同exact SHA存入收據便於pull後review。[實際執行與範圍](assets/r80_increment_best_trigger_20261010.json)。

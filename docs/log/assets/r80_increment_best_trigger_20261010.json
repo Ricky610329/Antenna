@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "status": "passed_actual_local_increment_best_trigger",
+  "result": {
+    "schema_version": 1,
+    "status": "passed_local_existing_increment_raw_replay",
+    "observed_utc": "2026-10-10T15:15:45.258778+00:00",
+    "cycle_id": "801d878de520d316d0558ded4e81a58ea16eb8ac196ea8c00f43ab472330ac6b",
+    "completed_cycle_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\801d878de520d316d0558ded4e81a58ea16eb8ac196ea8c00f43ab472330ac6b\\action_receipt.json",
+      "sha256": "f8d6061e9fd6980a184e3aaf71d990186782f7aa2659b186b18ffa22c1f072c4"
+    },
+    "source_health": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_restored_health_20261010_v005\\health_restored_20261010_2304.json",
+      "sha256": "fa6f21707d749962a7883f69b84e619bc51d125f35e0929698ac17625e470d95",
+      "observed_utc": "2026-10-10T15:04:18.6551607Z"
+    },
+    "existing_training_snapshot": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\801d878de520d316d0558ded4e81a58ea16eb8ac196ea8c00f43ab472330ac6b\\training_snapshot",
+      "count": 54,
+      "hashes": {
+        "manifest.json": "6272a580b57284eb1877f06bbc7ebcd150bebd89ecac262b7ad23495924f4c7c",
+        "results.json": "024197fe21102bef2e674933f3ff7bc45dd7aa4347b88ad7df1140560ae07b9c",
+        "source_bindings.json": "b314d9226514c6449efd66b3a02409b3b2973d11bd8e9bc410fcf2eaecb4f1f5"
+      }
+    },
+    "prospective_model_data_version": 27,
+    "reference": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\docs\\log\\assets\\r80_best_status_20261010_2157.json",
+      "sha256": "dd238b7db6aa68fab5e61c8b831013c04a045c0ed4d60b08c6dce4dbd272aab3",
+      "wm_db": 0.021682262420654297
+    },
+    "increment_best": {
+      "id": "r80cce09c595g_00017_30af16ba",
+      "pattern_sha256": "30af16bab5bfd7a08c129ce7ab805d2678bacd109907153e47e0a781fa109e38",
+      "s11_margin_db": -1.3675212860107422,
+      "gain_margin_db": -0.6600894927978516,
+      "factory_margin_db": -1.3675212860107422,
+      "radiation_margin_db": -3.29139606654644,
+      "radiation_margin_clipped_db": -3.29139606654644,
+      "sample_sha256": "94dc3b6641af7a0a10c65a0100e4ee539248fb076f5cf0dc363f31cc79b9db83",
+      "rad_sha256": "cafbfc603c68676373a93f9689481953658bfa201f7c6c43b7b25a4b0e97ba40",
+      "sample_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\801d878de520d316d0558ded4e81a58ea16eb8ac196ea8c00f43ab472330ac6b\\training_snapshot\\84d7a234e2ce70b3.pt",
+      "rad_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\801d878de520d316d0558ded4e81a58ea16eb8ac196ea8c00f43ab472330ac6b\\training_snapshot\\rad\\r80cce09c595g_00017_30af16ba.pt"
+    },
+    "raw_rows_replayed": 54,
+    "positive_rows": 0,
+    "requires_full_census": false,
+    "helper_sha256": "227479d7f7ac05b67fe8c32dc191eec140e3e9babaea268cbd53c114dfce6110",
+    "metric_reader_sha256": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+    "limits": [
+      "Only the existing immutable completed-cycle increment is checked, not current live results, full model data, repeat certification or global best.",
+      "A candidate exceeding the full-census reference triggers fresh full raw census before any new-best announcement.",
+      "Reuses established raw sample/radiation reader; no model load, forward, training, NAS read/mutation, queue/marker action or HFSS."
+    ]
+  },
+  "result_sha256": "b2e95ecb9af09ff60fca3e305e303d74f2692eef7287e1d6353c9b10a67e99f4",
+  "helper_source": "\"\"\"Read an existing completed cycle's frozen increment; never query NAS or dispatch.\"\"\"\nimport argparse\nimport hashlib\nimport json\nfrom datetime import datetime, timezone\nfrom pathlib import Path\n\nimport torch\nfrom antenna.measurement import measurement_id, score_spec_id\nfrom script import profiled_batch as pb\nfrom script.symmetry_incumbent_shell_pilot import _metric_from_observation\n\ntorch.set_num_threads(4)\nhere=Path(__file__).resolve().parent\nroot=here.parents[1]\ndef read(p):return json.loads(p.read_text(encoding='utf-8-sig'))\ndef sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()\ndef local(p):\n    p=Path(p).resolve()\n    assert p.is_relative_to(root), 'only existing local evidence may be read'\n    return p\n\nparser=argparse.ArgumentParser()\nparser.add_argument('--health',required=True)\nparser.add_argument('--reference',required=True)\nparser.add_argument('--out',required=True)\nargs=parser.parse_args()\nhp=local(args.health)\nrp=local(args.reference)\nout=local(args.out)\nassert not out.exists()\nh=read(hp)\nreference=read(rp)\nassert h['process']['pid']==53228 and h['process']['creation_unix_ms']==1791602636766\nassert h['process_matches_restoration_receipt'] and h['watcher_inventory_exact']\nassert h['runtime_file_bindings_verified']==19\nap=local(h['watch_status']['last_receipt'])\naction_sha=sha(ap)\naction=read(ap)\nassert action['status']=='dispatched' and action['once'] is True\nassert ap.parent.name==action['cycle_id']\nsnapshot=action['training_snapshot']\nstore=local(snapshot['path'])\nassert store==ap.parent/'training_snapshot'\nexpected={\n    'manifest.json':snapshot['manifest_sha256'],\n    'results.json':snapshot['results_sha256'],\n    'source_bindings.json':snapshot['source_bindings_sha256']}\nfor name,digest in expected.items():assert sha(store/name)==digest\ncfg=pb.load_profile_config(store/'config.yaml')\nassert measurement_id(cfg.measurement)==reference['measurement_id']\nassert score_spec_id(cfg.score_spec)==reference['score_spec_id']\nassert cfg.scope==action['scope']=='symmetry_filter_20261007'\nrows=read(store/'manifest.json')\nresults=read(store/'results.json')\nassert len(rows)==len(results)==snapshot['count']\nassert len({r['id'] for r in rows})==len(rows)\nassert len({r['pattern_sha256'] for r in rows})==len(rows)\nmetrics=[]\nfor row in rows:\n    entry=results[row['id']]\n    assert entry.get('status')=='ok' and 'error' not in entry\n    assert entry['measurement_id']==reference['measurement_id']\n    assert entry['score_spec_id']==reference['score_spec_id']\n    metric,binding=_metric_from_observation(store,row,entry,cfg)\n    metrics.append({**metric,**binding})\nassert metrics\nbest=max(metrics,key=lambda r:r['factory_margin_db'])\nfor name,digest in expected.items():assert sha(store/name)==digest\nassert sha(ap)==action_sha\nrecord=dict(schema_version=1,status='passed_local_existing_increment_raw_replay',\n    observed_utc=datetime.now(timezone.utc).isoformat(),cycle_id=action['cycle_id'],\n    completed_cycle_receipt=dict(path=str(ap),sha256=action_sha),\n    source_health=dict(path=str(hp),sha256=sha(hp),observed_utc=h['observed_utc']),\n    existing_training_snapshot=dict(path=str(store),count=len(rows),hashes=expected),\n    prospective_model_data_version=action['latest_data_version'],\n    reference=dict(path=str(rp),sha256=sha(rp),wm_db=reference['best']['factory_margin_db']),\n    increment_best=best,raw_rows_replayed=len(metrics),positive_rows=sum(m['factory_margin_db']>0 for m in metrics),\n    requires_full_census=best['factory_margin_db']>reference['best']['factory_margin_db'],\n    helper_sha256=sha(Path(__file__)),metric_reader_sha256=sha(root/'script/symmetry_incumbent_shell_pilot.py'),\n    limits=['Only the existing immutable completed-cycle increment is checked, not current live results, full model data, repeat certification or global best.',\n        'A candidate exceeding the full-census reference triggers fresh full raw census before any new-best announcement.',\n        'Reuses established raw sample/radiation reader; no model load, forward, training, NAS read/mutation, queue/marker action or HFSS.'])\nwith out.open('x',encoding='utf-8') as f:f.write(json.dumps(record,ensure_ascii=False,indent=2)+'\\n')\nprint(json.dumps({k:record[k] for k in ('cycle_id','prospective_model_data_version','raw_rows_replayed','positive_rows','requires_full_census')},ensure_ascii=False))\nprint(json.dumps({'increment_best':best['id'],'wm_db':best['factory_margin_db']},ensure_ascii=False))\n",
+  "conductor_review": "Inspected the complete read-only adapter and actual execution on54 existing immutable increment rows, using established _metric_from_observation. No broad tests or duplicated full census.",
+  "limits": [
+    "Source included for review; this is an agent-side monitor adapter, not live factory or worker source.",
+    "The tested increment predates the21:57 full census and must not be called a later all-data best check.",
+    "Same-cycle observations are not a causal SM improvement check. Later untrained live results remain excluded."
+  ]
+}
