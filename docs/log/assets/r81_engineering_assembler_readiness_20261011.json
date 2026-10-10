@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "kind": "r81_engineering_assembler_offline_preparation_v002",
+  "status": "reviewed_preparation_only_actual_release_unexecuted",
+  "archive": {
+    "path": "docs/log/assets/round-81/r81-engineering-assembler-prep-20261011-v002.zip",
+    "sha256": "2404d800b546b35bc8ed6ab003897cac3383bd68d6d09c8bd5a558bbae75c1ba",
+    "bytes": 35293,
+    "payload_files": 12
+  },
+  "payload_sha256": {
+    "tmp/r81_engineering_handoff_map_20261011_v001/map.json": "a2676c848753dd7f88f908d318610b0bbd2fd3538da50b78eae41d1740ffb853",
+    "tmp/r81_engineering_release_assembler_20261011_v001/assemble_r81_engineering_release.py": "61e7c42d53f4ea7c6b491fe83707b5cf5ddea27c287aa12faa5d6a16999cfa27",
+    "tmp/r81_engineering_release_assembler_20261011_v001/README.md": "f7acfeb0fe5e7a2cec28be0ae2d30a1b35c448ca3cb88ee7c15805ed9e1d4ec0",
+    "tmp/r81_engineering_release_assembler_20261011_v001/test_assembler.py": "a66c67b83b65806a7b9de577020756d58ff3c8b751eaef94d0f943a96959f0d5",
+    "tmp/r81_engineering_release_assembler_20261011_v001/preparation_receipt.json": "26b2b53936f07e147b095ac0202b3ad29b176ac8c6e70caf563ebc436771b57a",
+    "tmp/r81_engineering_release_assembler_20261011_v001/correction_receipt_v002.json": "f882d609de7f0b44c11005e114814fdeadd4ed77256b4de2d089452770bc36a2",
+    "tmp/r81_engineering_assembler_review_20261011_v001/review.md": "bed8c7e7bf2021e1510bc43e5e6045ba8111668adf950f025393f09fdad83778",
+    "tmp/r81_engineering_assembler_review_20261011_v001/review_receipt.json": "e417298a592d44389adc4c9245c6bfd85c82e814b9a3e153d792ec3a9bdc33a4",
+    "tmp/r81_engineering_assembler_review_20261011_v001/test_review.py": "c63aed80f8b7cf712acb214c60b6591c9e462a494164cf18b48d2e84dada51aa",
+    "tmp/r81_engineering_assembler_review_20261011_v001/final_review_v002.md": "99865cdfd0fb06c1384bb78e929ec825a0144d114fa93bd6b1d478011fa6dc5f",
+    "tmp/r81_engineering_assembler_review_20261011_v001/final_review_receipt_v002.json": "6c362c6ae5d2b3d19ca8e304530c55d040e0819db2f48f7a8d7b8448bfb0e587",
+    "tmp/r81_engineering_assembler_review_20261011_v001/test_review_v002.py": "19767c83597ce6be444d712cb1d453c335368d649755e5dcc1af6b15639211b7"
+  },
+  "unchanged_physical_source_bindings": {
+    "script/r81_worker_entry.py": "cd578a22c4f0ca33374bee12cee0c2b7ada1a98abc54530a2f54a3fb79aa023c",
+    "script/start_r81_worker.ps1": "967b54149e76cf1f47d4273297f013542cc3993985534f5ddf7fef3689a8b49f",
+    "script/prepare_symmetry_filter.py": "e79cda6790c6664977bd068764f234189927bb76caa0edecfe7afe910b5d8a1f",
+    "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+    "script/filter_training.py": "ac2b211db969fcbde357c23b2fd645db291baee6ecd1ead28f2929b3e75106a6",
+    "script/r81_prior_recipe.py": "3a5f82fb0f388df41b63d40dd05e7945f43c83b06d874a581589dc863bf3a14d",
+    "configs/dual_r81_wide_filter.yaml": "1ca15eba360b44dc1246b98640c199c3d44538fe29a91e11a661222ae6cc121a"
+  },
+  "latest_r80_reference": {
+    "path": "docs/log/assets/r80_health_20261011_0704.json",
+    "sha256": "9c21916ec553c5c07d38fb073146adfbfe53861d46c87af08765e3080a595a25",
+    "action_valid_unique": 4298,
+    "not_independent_full_census": true
+  },
+  "correction": {
+    "schema_version": 1,
+    "artifact_id": "r81_engineering_release_assembler_20261011_v001_recipe_binding_correction_v002",
+    "status": "offline_frozen_recipe_binding_corrected_affected_fixture_validation_passed_no_actual_release",
+    "date": "2026-10-11",
+    "finding_corrected": {
+      "id": "F1",
+      "summary": "The assembler previously accepted a validated masked-prior config whose non-override fields drifted from the first fixed R81 recipe when the caller supplied a coherent file SHA-256.",
+      "resolution": "The complete validated masked-prior config must now equal script.r81_prior_recipe.build_recipe using the supplied absolute prior manifest and sample-root paths.",
+      "allowed_caller_variation": [
+        "exploration.filter_prior.manifest absolute path",
+        "exploration.filter_prior.sample_root absolute path"
+      ],
+      "future_change_policy": "An intentional seed or other recipe change requires a separately reviewed versioned recipe; this first-release assembler will reject it."
+    },
+    "implementation": {
+      "path": "tmp/r81_engineering_release_assembler_20261011_v001/assemble_r81_engineering_release.py",
+      "bytes": 21552,
+      "sha256": "61e7c42d53f4ea7c6b491fe83707b5cf5ddea27c287aa12faa5d6a16999cfa27"
+    },
+    "documentation": {
+      "path": "tmp/r81_engineering_release_assembler_20261011_v001/README.md",
+      "bytes": 7258,
+      "sha256": "f7acfeb0fe5e7a2cec28be0ae2d30a1b35c448ca3cb88ee7c15805ed9e1d4ec0"
+    },
+    "tests": {
+      "path": "tmp/r81_engineering_release_assembler_20261011_v001/test_assembler.py",
+      "bytes": 9462,
+      "sha256": "a66c67b83b65806a7b9de577020756d58ff3c8b751eaef94d0f943a96959f0d5",
+      "command": "C:/Users/ricky/miniforge3/envs/ant/python.exe -m pytest -q tmp/r81_engineering_release_assembler_20261011_v001/test_assembler.py::test_noncanonical_prior_seed_rejected_before_any_output tmp/r81_engineering_release_assembler_20261011_v001/test_assembler.py::test_complete_release_shape_uses_actual_native_validator",
+      "result": "2 passed in 10.77s",
+      "cases": [
+        "a changed exploration.seed with a coherent config SHA-256 is rejected before the runtime gate and before dataset/controller/seed/candidate/receipt/release creation",
+        "the unchanged canonical masked-prior config still completes the bounded actual-native-validator release-shape fixture"
+      ]
+    },
+    "canonical_bindings": {
+      "script/r81_prior_recipe.py": "3a5f82fb0f388df41b63d40dd05e7945f43c83b06d874a581589dc863bf3a14d",
+      "configs/dual_r81_wide_filter.yaml": "1ca15eba360b44dc1246b98640c199c3d44538fe29a91e11a661222ae6cc121a",
+      "tmp/r81_masked_prior_config_20261010_v001/config.yaml": "b3ff008492862593b361bc217eb39a5c56943e158e2f04dab50b0078c6d279b6"
+    },
+    "preserved_evidence": {
+      "original_preparation_receipt": {
+        "path": "tmp/r81_engineering_release_assembler_20261011_v001/preparation_receipt.json",
+        "sha256": "26b2b53936f07e147b095ac0202b3ad29b176ac8c6e70caf563ebc436771b57a"
+      },
+      "independent_review": {
+        "path": "tmp/r81_engineering_assembler_review_20261011_v001/review.md",
+        "sha256": "bed8c7e7bf2021e1510bc43e5e6045ba8111668adf950f025393f09fdad83778"
+      },
+      "independent_review_receipt": {
+        "path": "tmp/r81_engineering_assembler_review_20261011_v001/review_receipt.json",
+        "sha256": "e417298a592d44389adc4c9245c6bfd85c82e814b9a3e153d792ec3a9bdc33a4"
+      },
+      "independent_review_test": {
+        "path": "tmp/r81_engineering_assembler_review_20261011_v001/test_review.py",
+        "sha256": "c63aed80f8b7cf712acb214c60b6591c9e462a494164cf18b48d2e84dada51aa"
+      }
+    },
+    "mocked_boundaries": [
+      "The complete-shape case uses the existing generated native wide-input fixture and redirects tracked-census Git-path lookup to the existing generated census fixture.",
+      "No real prior is loaded and no controller training or model forward executes."
+    ],
+    "unexecuted": [
+      "actual exact-5000 R80 native completion validation",
+      "actual private R81 or NAS destination creation",
+      "actual prior load, controller preparation, training, or model forward",
+      "actual release validation against a real final R80 completion record",
+      "actual three-host CheckOnly, worker start, HFSS, or transition CPU replay"
+    ],
+    "tracked_or_runtime_mutation": false,
+    "git_commit_stage_or_push": false
+  },
+  "independent_final_review": {
+    "schema_version": 1,
+    "artifact_id": "r81_engineering_assembler_final_review_v002",
+    "status": "f1_corrected_offline_preparation_ready_actual_execution_unverified",
+    "supersedes_finding_status_in": {
+      "path": "tmp/r81_engineering_assembler_review_20261011_v001/review_receipt.json",
+      "sha256": "e417298a592d44389adc4c9245c6bfd85c82e814b9a3e153d792ec3a9bdc33a4"
+    },
+    "corrected_assembler": {
+      "path": "tmp/r81_engineering_release_assembler_20261011_v001/assemble_r81_engineering_release.py",
+      "sha256": "61e7c42d53f4ea7c6b491fe83707b5cf5ddea27c287aa12faa5d6a16999cfa27"
+    },
+    "correction_receipt": {
+      "path": "tmp/r81_engineering_release_assembler_20261011_v001/correction_receipt_v002.json",
+      "sha256": "f882d609de7f0b44c11005e114814fdeadd4ed77256b4de2d089452770bc36a2"
+    },
+    "finding_resolution": {
+      "id": "F1",
+      "resolved": true,
+      "reviewed_behavior": "complete validated prior config equals canonical recipe rebuilt with the supplied absolute prior paths",
+      "adversarial_seed_drift_rejected_before_runtime_or_output": true
+    },
+    "validation": {
+      "affected_implementation_tests": "2 passed in 8.95s",
+      "adapted_independent_adversarial_test": "1 passed in 2.06s",
+      "independent_test_path": "tmp/r81_engineering_assembler_review_20261011_v001/test_review_v002.py",
+      "independent_test_sha256": "19767c83597ce6be444d712cb1d453c335368d649755e5dcc1af6b15639211b7",
+      "materializer_retest": "not repeated; reviewed 6+2+2 and jobs blocks are unchanged"
+    },
+    "preserved_originals": {
+      "preparation_receipt_sha256": "26b2b53936f07e147b095ac0202b3ad29b176ac8c6e70caf563ebc436771b57a",
+      "independent_review_markdown_sha256": "bed8c7e7bf2021e1510bc43e5e6045ba8111668adf950f025393f09fdad83778",
+      "independent_review_receipt_sha256": "e417298a592d44389adc4c9245c6bfd85c82e814b9a3e153d792ec3a9bdc33a4",
+      "independent_review_test_sha256": "c63aed80f8b7cf712acb214c60b6591c9e462a494164cf18b48d2e84dada51aa"
+    },
+    "actual_r80_5000_validation_performed": false,
+    "actual_release_created": false,
+    "nas_accessed": false,
+    "raw_prior_loaded": false,
+    "preparation_or_training_performed": false,
+    "hfss_started": false,
+    "queue_marker_or_process_action_performed": false,
+    "git_action_performed": false
+  },
+  "conductor_review": "Read final assembler, actual canonical recipe builder, correction regression, README and both independent reviews; inspected existing API/schema/mutation ordering. Archive CRC and all12 payload bytes/hash verified; seven native/preparation/profile source hashes remain unchanged before/after. No extra model/raw replay or broad test suite run.",
+  "behavior": [
+    "Native44 runtime and exact5000/zero-pending R80 gates run before any output creation.",
+    "One authoritative masked-prior controller; first formal60=20history+20specialist+20random, unqueued but release-bound.",
+    "Existing materializer functions derive6Fast(two per arm)+2Discrete+2mesh(same firsttwo history representatives).",
+    "Native jobs_add creates only engineering three jobs; native validate_release validates exact candidate bytes before final exclusive release write.",
+    "Failed output prefixes are preserved and paths cannot be reused automatically; extract package into original repo/tmp locations, bind manifest SHA before use."
+  ],
+  "fixture_limits": [
+    "Complete-shape fixture redirects tracked-census Git lookup to generated fixture and replaces actual prior/controller preparation; no actual5000 evidence.",
+    "Independent materializer fixture exercises actual6+2+2 derivation while replacing real prepare_run/history ingestion; no production prior load.",
+    "Only affected config-drift rejection/native shape regressions repeated after correction; unchanged materializer blocks not rerun.",
+    "Original preparation/review receipts retained as historical versions; first pre-correction helper bytes are not in this package, so those earlier receipts are not complete replay bundles."
+  ],
+  "unexecuted": [
+    "actual R80 stable5000 nativegate/finalcloseout",
+    "actual privateNAS/R81 dataset/release",
+    "actual historical prior loader and authoritative controller prepare",
+    "three-host CheckOnly/worker start/engineering HFSS/measurement comparison",
+    "later Formal transition CPU prediction replay"
+  ],
+  "hfss_started": false,
+  "nas_written": false,
+  "runtime_or_queue_or_marker_changed": false,
+  "policy": "At validated5000 immediately start R81preparation; R80 stats/figures/repeats run in parallel. Do not merge transition7928468 before R80 closeout; firstEngineeringOnly uses unchangednative44 and does not depend on later transition portability."
+}

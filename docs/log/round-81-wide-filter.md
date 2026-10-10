@@ -164,3 +164,11 @@ python -m script.r81_transition_soft rank --sidecar <該sidecar.json> --output <
 生成資料的batch2／3生命周期包含60／120 feedback、實際CPU小MLP訓練與forward；主／獨立核心6tests及最後受影響lifecycle各1通過，限定regression14實際通過。提交後真正Git blob／scoped-clean原44及選用46來源閉合均通過，這不是full `validate_release`。Exact CPU predictions跨三台Torch／BLAS／threads重播尚無實證，正式Release前需核對；未調數值規則／tolerance或宣稱可跨機部署。
 
 主GAN的19 live R80來源與原native entry未改、無新selection模組；完整源碼與審查封存於[隔離準備包](assets/round-81/r81-transition-selection-prep-20261011-v001.zip)，[版本／範圍／限制收據](assets/r81_transition_selection_readiness_20261011.json)。不得把封包解壓覆蓋live checkout；待R80原生收尾binding完成後再整合。R81仍無工程真值／派工／正式Release；達validated5,000時先開始備料，統計與圖表同步收尾。
+
+
+### 2026-10-11：首輪工程 Release 組裝工具已隔離備妥
+交接核對找到 production R81-only assembler 缺口，已補薄層並獨立審查，來源仍只放repo/tmp封存、不改live runtime。沿用原生44來源與R80 exact5000／零pending gate，建立輸出前驗證；單一masked-prior controller產生formal60並bound但不排入工程queue，再用既有函式取每arm兩筆共6Fast、相同前兩history樣本2Discrete／2mesh，native jobs_add只建三工作。Exact candidate先native validate_release、final release最後exclusive寫入，失敗prefix保留／不覆寫。
+
+獨立review發現原工具只鎖4override、coherentSHA的seed漂移可通過；已改為完整canonical recipe equality（只有manifest／sample_root絕對路徑可換），pre-output拒絕fixture通過。初版3tests與独立2fixtures；窄修後實作者affected2pass10.77s、独立affected2pass8.95s＋独立adversary1pass2.06s，unchanged6+2+2不重跑。Complete-shape的prior/controller与tracked census lookup有generated fixture替換，不是實際5000或HFSS證據。Conductor核對12payload／CRC、七個native／profile來源SHA前後不變。[準備／版本與限制](assets/r81_engineering_assembler_readiness_20261011.json)／[保留原repo/tmp路徑的封存](assets/round-81/r81-engineering-assembler-prep-20261011-v002.zip)。
+
+實際R80最新action4298（07:04切點），5000/finalgate、私人NAS/R81release、真實prior/controller、三機CheckOnly與HFSS均未執行。使用時將封存按manifest核對、保持documented repo/tmp位置。原初版helper bytes未封存，保留的初版review/receipt只屬歷史，不能當其完整replay包。先以native44完成R80 closeout／EngineeringOnly，isolated transition7928468及三機CPU prediction replay留Formal後段，不讓這個後段gap阻擋first engineering。達validated5000即開始實際R81備料，R80統計圖表同步。
