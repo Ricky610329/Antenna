@@ -1,6 +1,6 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
-最新狀態（2026-10-11 00:14）：4,002有效唯一實測／5,000（80.04%），尚差998，較10/10 21:57增加114；全4,007含5筆repeat原始觀測重算、零cached metrics。沒有新最佳，仍f6ffb938／WM+.0216822624dB，独立同圖形重測+.0364336967不計new unique。00:13主控／唯一inventory／19來源吻合，三台近期owners218／37／216各10／3／4成功；一筆首次watchdog尚待重試。Latest action ddcdbca9沿用v028（新增46未達重訓門檻），13 completed cycles，不稱新v029模型；舊LOW三機終態已納入action、不再retryable。[本次全量／健康／owner證據](assets/r80_best_status_20261011_0014.json)／[既有最佳極座標圖](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)。v026實體訓練與48完整真值核對保留，但不把模型更新當性能進步。下一例行00:34；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer是當時歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
+最新狀態（2026-10-11 00:14）：4,002有效唯一實測／5,000（80.04%），尚差998，較10/10 21:57增加114；全4,007含5筆repeat原始觀測重算、零cached metrics。沒有新最佳，仍f6ffb938／WM+.0216822624dB，独立同圖形重測+.0364336967不計new unique。00:34主控／唯一inventory／19來源吻合，三台近期owners218／37／216各11／9／12成功，較00:13同stores增加15成功；兩筆首次watchdog尚待重試。Latest completed action仍ddcdbca9/v028，main running_cycle不稱新模型；舊LOW三機終態與15有效SHA不變、已納入action。[00:14全量證據](assets/r80_best_status_20261011_0014.json)／[00:34健康](assets/r80_health_20261011_0034.json)／[既有最佳極座標圖](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)。v026實體訓練與48完整真值核對保留，但不把模型更新當性能進步。下一例行01:04；R80完整5,000收尾與R81/spec仍未完成。以下較早狀態、PID與timer是當時歷史，當前操作以本段及[live板](../../configs/ONGOING.md)為準。
 
 歷史全量狀態（2026-10-10 16:55）：3,630有效唯一實測／5,000（72.60%），較15:59增加46筆；全3,635成功觀測重新raw核對，最佳仍為f6ffb938、WM +0.0216822624 dB，沒有新最佳。16:54三台worker有claimed工作，scope無警報，SM reported v022持續批次更新；兩筆首次COM失敗未計入有效數，16:56讀回各attempts1，尚未宣稱恢復。最新證據見[本次收據](assets/r80_best_status_20261010_1655.json)／[錯誤讀回](assets/r80_error_readback_20261010_1656.json)。開篇與中間紀錄為當時設計／歷史狀態，後續使用者5,000目標及操作紀錄覆蓋最初三批上限。
 
@@ -1617,3 +1617,10 @@ Health scope仍exit1保留舊partial alarm，主控running_cycle／reported27／
 00:13 health確認主控原identity／唯一inventory／19來源；三台owner有近期10／3／4結果，不宣稱remote process查驗。Error cutoff仍2筆：舊LOW COM attempts5（三機終態，15成功保留）及541a6576g02 row4首次watchdog attempts1。最新完成ddcdbca9 action列舊LOW為terminal_failed，retryable空；較早prepared state未更新的歷史披露由此新cutoff覆蓋。Action valid3963是其舊cutoff，不混用新full4002。這輪新增46、trained_this_cycle=false，report v028與13cycles，不把新派工或cycle完成誤稱模型更新；較新的reported模型仍不代替v026物理審查。
 
 最佳性能仍停滯、SM排序改善未獲證明，但三台持續產資料；不因低分停止收集。沒有NAS寫入／HFSS啟動／訓練／派工／marker刪除／source hotpatch；下一例行00:34，先完成5,000與統計重測再啟R81。[全量與控制狀態](assets/r80_best_status_20261011_0014.json)。
+
+
+### 2026-10-11 00:34：同三store增加15成功，兩筆首次watchdog保留重試
+
+原main identity／19來源／唯一inventory吻合，health三台218／37／216有11／9／11成功、最新1／1／3分鐘；稍後owner讀回216到12，其餘11／9，同stores較00:13 owners共增加15成功。此數不是新全域unique，也沒有再讀4,007 raw或相同local increment。218保存row4 4a302333與row34 a1af88a5兩筆watchdog/RPC attempts1，無active fail/done，不推導已恢復、worker終態或根因；既有流程處理後續重試。
+
+舊ka00 results／三機fail SHA與23:04 partial proof完全相同，15有效與eligible空沿用；最新completed ddcdbca9 action SHA與00:14綁定不變，已列terminal_failed／無retryable。Main running_cycle／reported28／13cycles不證明新v029模型完成。維持最新full00:14的4,002／5,000和最佳+.021682；下一例行01:04。無NAS mutation／queue／HFSS啟動／restart／redispatch／marker刪除／source hotpatch。[本次只讀健康](assets/r80_health_20261011_0034.json)。
