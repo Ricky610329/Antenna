@@ -1331,3 +1331,10 @@ v001獨立審查找到metadata-only exhausted store會中止整批分母的阻�
 固定f6ffb938最佳與既有v015三模型（fit3147），重用舊coordinate_array/make_pattern與現有投影；完整radius1=324、radius2=52326，共52650。排除3376既有snapshot與新structured48，聯集3424；預定16＝8相對anchor LCB／4高disagreement（兩者mean WM均不得低於同模型anchor）／4固定seed、與rank1/4/7/10半徑匹配的score-blind控制；不借配額、不放寬、不施Ham64。獨立45檔binding／靜態枚舉與六窄測試通過，尚未pool/forward，將先commit再做一次本機CPU，非主線替換或HFSS派工。[配方與來源](assets/r80_incumbent_next_shell_readiness_20261010.json)。
 
 10:36 exact PID64504／creation／完整argv／source/config、waiting calls0、無publisher child及原action只有prepared確認後，只取消這個owned等待driver；原result/claim/action保留，publisher calls0，main15944与HFSS worker未signal、NAS未變。首次helper因PowerShell false字面值在signal前失敗，原source保留，v002僅修boolean後成功，取消收據與hash已保存。原短waiting窗口無法容納完整派工；quiescent publisher另審查，尚未local STOP或恢復main。既有SM／HFSS继续。
+
+
+### 2026-10-10 10:47：quiescent派工入口窄修、實際本機request/action準備完成
+
+v001獨立review攔下完整old_controller欄位缺失與CIM image-name限制兩項blocker，原source/review保留。v002只補原9欄contract、查all CIM rows中舊PID或watcher commandline（排除查詢PowerShell自身）；不按Python名稱篩選。獨立四窄測試與一次current prepared validation通過：116files、48unique、3×16，現行main後續state更新不影響這組immutable prediction_package/model bindings。publisher接受相符review。[來源與實際準備收據](assets/r80_structured48_quiescent_publisher_readiness_20261010.json)。
+
+本機request已create-only寫入，prepare-action建立cycle0bd85653…的三片；action仍prepared，沒有capacity proof/append/readback/lease/NAS copy。最初CLI prepare被argparse於body前拒絕，既有request保留，改用文件中的prepare-action後成功，不是dispatch重試。主控暫停只能在自然waiting且無active/reservation時啟動；publisher每次append前後驗真實STOP/lease/全watch absence，整批48/5000/96仍鎖內檢查。逐片append不可rollback，prefix禁止自動續送；任何terminal success/defer/failure皆須恢復原main。activation/restoration與new-cycle readout仍另審查，尚未STOP／改worker／HFSS。

@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "status": "reviewed_quiescent_publication_request_and_action_prepared_no_dispatch",
+  "sources": {
+    "publisher_quiescent48.py": {
+      "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publisher_quiescent48.py",
+      "sha256": "4ead9cf86cb29f366c0473e1ff78a7884b0e4c7fb507db1982f162658cf3a160",
+      "bytes": 47418
+    },
+    "quiescent_config.json": {
+      "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\quiescent_config.json",
+      "sha256": "f0cc69149f40c98d3182b0c313e3644fc5b71d88c26a4aa8962feda949f742e5",
+      "bytes": 2927
+    },
+    "build_publish_request.py": {
+      "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\build_publish_request.py",
+      "sha256": "63fa8f6d5c35f43db4584702c4e7136945af4ab6cb7064098dfcf2d55175a757",
+      "bytes": 2670
+    },
+    "independent_review.json": {
+      "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\independent_review.json",
+      "sha256": "064695b9b0b3d451c87f1b5052e0cbf9f48fb29e7db15ad2354a4cda0a400543",
+      "bytes": 6777
+    },
+    "independent_review_v002.py": {
+      "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\independent_review_v002.py",
+      "sha256": "742f86859cb3ff7d3fedf6edf641c8441199e9e4793463dc717bd86cf8f36a97",
+      "bytes": 11374
+    },
+    "readiness.json": {
+      "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\readiness.json",
+      "sha256": "9b861bc70d4fd3d07bff82a0d359061f9420e4ca9231364ae8a1209b34dcbeaf",
+      "bytes": 2570
+    },
+    "record_readiness.py": {
+      "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\record_readiness.py",
+      "sha256": "4f27b68b9e6d2cb6a548de72599409138473bd0896d125cb320c3aab8ffce667",
+      "bytes": 5339
+    }
+  },
+  "prior_blocked_review": {
+    "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v001\\independent_review.json",
+    "sha256": "37609406c9ca16f6c6521cfebe14a8596fdeaba283093eb49f42ccc954125f83",
+    "bytes": 8652
+  },
+  "actual_request": {
+    "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\publish_request.json",
+    "sha256": "f448b1352de5da0f42280cb1e37ffb1f15d5db54c37e1fca459e762b22fde0ac",
+    "bytes": 1553
+  },
+  "actual_action": {
+    "path": "tmp\\r80_structured48_quiescent_publisher_20261010_v002\\structured48-quiescent-action-v1\\action_receipt.json",
+    "sha256": "8bf46453d067f82ec3ffcfe448d36dec2cb0c74e51b990771e346bce03038bc7",
+    "bytes": 19194
+  },
+  "cycle_id": "0bd8565334a9a8d628fa7f0fb21369c1a01c5b88a6bbbb2a448d6edfbd4f9398",
+  "planned_jobs": [
+    {
+      "input": "dedust_r80c0bd85653g01_input",
+      "store": "dedust_r80c0bd85653g01",
+      "prio": 1,
+      "count": 16,
+      "pattern_hashes_sha256": "ae1c9596b5f8cd10873339bb3a6a5329e1546f48709c7f39eac0e56430737434"
+    },
+    {
+      "input": "dedust_r80c0bd85653g02_input",
+      "store": "dedust_r80c0bd85653g02",
+      "prio": 1,
+      "count": 16,
+      "pattern_hashes_sha256": "afed6cbc69e5b3920249ad2f63b63545e7da933a4c60fbd885c4dcb0a13236a0"
+    },
+    {
+      "input": "dedust_r80c0bd85653g03_input",
+      "store": "dedust_r80c0bd85653g03",
+      "prio": 1,
+      "count": 16,
+      "pattern_hashes_sha256": "42dea3c5998244ac5cb555b32d754c31ce9f60f125f0269a790cd27ce94a74c3"
+    }
+  ],
+  "prepared_tree": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared",
+    "tree_sha256": "b8c917a39fa14b746c4f447277fdd5a7d6e8101df7d173f7fd6341498f268ccb"
+  },
+  "prepared_review": {
+    "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\independent_prepared_saved_audit.json",
+    "sha256": "f49974e812884bbd8090d10e8a6a03495ebbdac7f48f6c99c060eaa31ea63fef",
+    "bytes": 11225
+  },
+  "prediction_models": [
+    {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v015\\member-0.pt",
+      "sha256": "3d46fb90ce326cb39ffa4ba9edbe40172bce48e3bd10e9760c0bc29c15cdcbba",
+      "bytes": 9269472
+    },
+    {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v015\\member-1.pt",
+      "sha256": "1c18b70b2f88cd5b18997ffddad6e812e0d203a9266442c2a3a2c573810b72a7",
+      "bytes": 9269472
+    },
+    {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\training_familydev_v1\\models\\data-v015\\member-2.pt",
+      "sha256": "3d397ec9c91d096be51fae1189978b9f30709a1c7014097c74d706c371534f24",
+      "bytes": 9269472
+    }
+  ],
+  "source_shards": [
+    {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared\\shards\\shard-001_input",
+      "tree_sha256": "99971c32f03fa51ebc7b7cb4046d5f572641d04d312a97badc08ade1d2a1a033"
+    },
+    {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared\\shards\\shard-002_input",
+      "tree_sha256": "db6172b0ed0d28d05943621be4dc2f19a02276a06dd67620053a37d8aa6f8d35"
+    },
+    {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_preparation_20261010_v001\\prepared\\shards\\shard-003_input",
+      "tree_sha256": "c397f8b00a339d22cadfa5a4e8351a252b94015d68fc70ee68cd1fc5434e6154"
+    }
+  ],
+  "original_controller_contract": {
+    "pid": 15944,
+    "creation_unix_ms": 1791541659267,
+    "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+    "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\"",
+    "launch_id": "42afe91c263f4bacb74f6d6c5c6bbcb7",
+    "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+    "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+    "watcher_source_sha256": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+    "interval_seconds": 1800
+  },
+  "full_capacity_required": {
+    "target_valid_unique": 5000,
+    "max_guided_outstanding": 96,
+    "phase_unique": 48,
+    "priority": 1
+  },
+  "actual_capacity_or_readback_observed": false,
+  "local_STOP_or_main_restart_performed": false,
+  "HFSS_NAS_queue_or_truth_mutation": false,
+  "requires_before_dispatch": [
+    "Reviewed actual waiting-boundary STOP and guaranteed original-main restoration",
+    "Readout helper bound to this new cycle and genuine historical quiescence guard",
+    "Fresh actual stopped local main, finite lease, all48 locked capacity and duplicate proof"
+  ],
+  "prebody_command_error": "Initial root command prepare rejected by argparse before action creation; request preserved and only documented prepare-action then executed successfully"
+}
