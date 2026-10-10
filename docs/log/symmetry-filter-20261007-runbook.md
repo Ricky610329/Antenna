@@ -2,7 +2,7 @@
 
 目前先執行 R80 金屬左右對稱量測；使用者已啟動worker，並於2026-10-07授權每30分鐘監看，完成對稱任務後接續spec調整與R81驗證。R81工程檢查及正式批次待R80完成才派送。最新量測狀態以[操作板](../../configs/ONGOING.md)為準。
 
-scope 固定為 `symmetry_filter_20261007`，worker 固定使用 `--selfgen 0 --poll 60 --stale 120`。啟動器會拒絕 scope 內任何 dual/filter job。
+scope 固定為 `symmetry_filter_20261007`，worker 固定使用 `--selfgen 0 --poll 60 --stale 120`。目前使用的 `start_scoped_worker.ps1` 只接受 R80，會拒絕 scope 內任何 dual/filter job；後續 R81 必須用獨立 dataset 與下述新入口。
 
 ## 私人佇列與初始 pilot
 
@@ -53,7 +53,7 @@ python -m script.prepare_symmetry_filter prepare `
   --out tmp/r80_symmetry_20261007_single
 ```
 
-預設 `--phase single`；目前不使用 `--phase combined`，它保留給後續 R81 階段。single controller 位於 `tmp/r80_symmetry_20261007_single/single`；NAS初始備份位於 `controller_initial/single`，已納入逐檔部署比對。
+預設 `--phase single`；目前不使用 `--phase combined`。它會混合 R80/R81 engineering jobs，不作後續 R81 的 worker 交付方式。single controller 位於 `tmp/r80_symmetry_20261007_single/single`；NAS初始備份位於 `controller_initial/single`，已納入逐檔部署比對。
 
 備料輸出不得覆蓋；若需重建，使用新的輸出名稱並保留舊證據。歷史 response 不匯入為新真值，橋寬維持 0.1 mm。
 
@@ -138,3 +138,13 @@ R81派工前先執行`python -m script.prepare_symmetry_filter check-wide-inputs
 完整回歸 **544 passed / 361.29 秒**（`OMP_NUM_THREADS=4`），golden 原始 bytes 不變；pyflakes 通過。worker 實作 `29a6834` 已包含於遠端 `GAN`。部署收據中的 `main` 為首次交付的歷史紀錄；現行更新與啟動一律使用 `GAN`。
 
 程式測試、`-CheckOnly` 與部署稽核只證明工程邊界；實測數量由後續NAS樣本、場型和hash重播稽核確認，見操作板及R80日誌。三機已持續產出，但目前不宣稱金屬對稱已改善場型，或新SM已優於歷史模型。
+
+## R81 獨立 worker 入口（2026-10-10已提交，尚未啟用）
+
+`script/start_r81_worker.ps1` 與 `script/r81_worker_entry.py` 已提交到 GAN。現有三台 R80 worker 繼續用原入口；不要現在切換。R81只使用鄒穎麒私人 `experiments/r81_wide_filter_20261007` 內的獨立 dataset，不將 dual jobs 混入 R80 queue。[版本、審查與限制](assets/r81_worker_entry_readiness_20261010.json)。
+
+啟用時由開發機交付實際 `Release` 檔、SHA256及 `Stage`，三台先pull GAN再執行新入口；目前尚無可執行 release 或 worker 指令。release會綁定Git版本、完整輸入、queue與R80最終證據：精確5,000唯一有效／零pending、已驗證的最終census及原始rows/proofs/producer。封存action/profile保留原producer_path，NAS位置另行綁hash；tracked census採repo-relative Git blob，各電腦clone路徑不同也可核對，不回寫原始證據。R80重測、真值稽核、統計及圖表亦须完成，不能單靠達額提前派R81。
+
+先釋出`EngineeringOnly`的6 Fast＋2 Discrete＋2 mesh；正式60筆保留未排隊。四組實測曲線與五個margin的最大差異均≤0.3 dB後，才交付`Formal`。正式批次限三批、每批60：b1為history／specialist／random各20，b2/b3為best_min_margin／uncertainty／random各20，後批須綁定前批回填與SM模型。不預排三批，也不要求尚不存在的正WM重測才允許首批。
+
+每個release immutable；前一版所有launcher回報all_success並退出後，才能更新queue prefix和交付下一版。單機fail仍可由固定216／218／37 roster接手；全roster耗盡才視為終態失敗。入口不pull、不排新job、不刪claims，只在每次native `--once`前重驗release。唯讀preflight與claim並非同一原子transaction，所以prefix交接必須由開發機串行完成。若找到正WM原件，再另排獨立重測；只有兩次實測WM均嚴格>0才算性能達標，三批完成或SM預測正值不算。

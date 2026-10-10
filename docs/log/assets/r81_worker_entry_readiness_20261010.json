@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "status": "reviewed_committed_entry_no_actual_r81_release",
+  "recorded_utc": "2026-10-10T05:41:14.616808+00:00",
+  "feature_commit": "267af9c5e654bdb6fc64071589f283803ac907c2",
+  "source_transport": {
+    "script/r81_worker_entry.py": {
+      "reviewed_physical_sha256": "eaa390aff2d860e7842223cde4a56240875b5bb8d7e849086b430bf85c31eb21",
+      "git_blob_sha256": "eaa390aff2d860e7842223cde4a56240875b5bb8d7e849086b430bf85c31eb21",
+      "root_physical_sha256": "cd578a22c4f0ca33374bee12cee0c2b7ada1a98abc54530a2f54a3fb79aa023c"
+    },
+    "script/start_r81_worker.ps1": {
+      "reviewed_physical_sha256": "606e7ffeea140ced9bc1fe43f2207fb7e20292224385a75f4c6b77e4f482cf4a",
+      "git_blob_sha256": "606e7ffeea140ced9bc1fe43f2207fb7e20292224385a75f4c6b77e4f482cf4a",
+      "root_physical_sha256": "967b54149e76cf1f47d4273297f013542cc3993985534f5ddf7fef3689a8b49f"
+    },
+    "tests/test_r81_worker_entry.py": {
+      "reviewed_physical_sha256": "7e220c4510d2c7177005b049e16b27040739a5fd0dbcbb6984aee8c5d045d5cd",
+      "git_blob_sha256": "7e220c4510d2c7177005b049e16b27040739a5fd0dbcbb6984aee8c5d045d5cd",
+      "root_physical_sha256": "57d78c54f8fcdd25a0c608e1893b0fc95b120c496473e7a1289399a412a75e2a"
+    }
+  },
+  "independent_reviews": [
+    {
+      "path": "tmp\\r81_worker_entry_review_20261010_v001\\independent_review.json",
+      "sha256": "24a86582018e5144dfa7ea91d6957eac7d2f6a46d00534e61dd76e1f2a1963a6",
+      "evidence": {
+        "schema_version": 1,
+        "kind": "r81_worker_entry_independent_source_review_v001",
+        "status": "passed_source_prototype_no_actual_release",
+        "reviewed_utc": "2026-10-10T05:28:37.6319147Z",
+        "worktree": {
+          "path": "C:/Users/ricky/Documents/GitHub/Antenna/tmp/r81_worker_entry_wt",
+          "branch": "agent/r81-worker-entry",
+          "base_commit": "bfaf08df36878eea2e1ab78016c903c595c8502b",
+          "candidate_files_are_untracked": true
+        },
+        "reviewed_files": {
+          "script/r81_worker_entry.py": "4025264b81d173062c35ff2600e131c32d324642244d38936506bab8f12e69d1",
+          "script/start_r81_worker.ps1": "606e7ffeea140ced9bc1fe43f2207fb7e20292224385a75f4c6b77e4f482cf4a",
+          "tests/test_r81_worker_entry.py": "d57c2efc1b26bf73acc762983042fa715c3ccaa060fd24520d31d7f6660ea0ef"
+        },
+        "focused_verification": {
+          "command": "$env:R81_ALLOW_SYNTHETIC_TRAINING='1'; C:/Users/ricky/miniforge3/envs/ant/python.exe -m pytest -q tests/test_r81_worker_entry.py",
+          "working_directory": "C:/Users/ricky/Documents/GitHub/Antenna/tmp/r81_worker_entry_wt",
+          "result": "17 passed in 14.63s",
+          "exit_code": 0,
+          "executed_once_by_independent_reviewer": true,
+          "scope": [
+            "real local dedust.jobs_add job shape and config snapshot field",
+            "saved synthetic engineering Fast/Discrete/mesh comparison with the existing measurement_check API",
+            "real local exploration.import_feedback, standard train_models, and select_batch for a contiguous batch-2 release",
+            "formal prefix and arm allocation rejection paths",
+            "native claim/fail/done retry-chain and physically validated completion status",
+            "immutable release, R80 evidence, input inventory, and runtime-source tamper rejection"
+          ]
+        },
+        "syntax_verification": {
+          "python_py_compile": "passed",
+          "powershell_parser": "passed",
+          "post_verification_source_hashes_unchanged": true
+        },
+        "review_findings": {
+          "r80_gate": "Requires the canonical Git-bound R80 profile, tracked validated census record and bound raw report/rows/pair proofs/query and validation producers, exact watcher receipt, idle 5000-valid/zero-pending action, and a separate R81 dataset root.",
+          "runtime_gate": "Requires a Git ancestor commit, exact Git blob hashes and a clean worktree match for all antenna Python sources plus the entry, worker, exploration, validation, simulator support, and profile config sources.",
+          "engineering_gate": "Requires exactly one 6-row Fast, one 2-row Discrete, and one 2-row mesh job and recomputes all four saved comparisons with both maximum curve and margin differences at most 0.3 dB before Formal.",
+          "formal_gate": "Accepts only a nonempty contiguous b1..bN prefix for N in 1..3; b1 is 20 history/20 specialist/20 random, while b2 and b3 are 20 best_min_margin/20 uncertainty/20 random and bind prior audited feedback, completed trained ensemble, and exact model hash.",
+          "repeat_gate": "Allows zero or more explicit repeats; each repeat binds a completed positive original under the same R81 measurement and score profile and does not gate ordinary formal jobs.",
+          "queue_gate": "Binds exact native jobs.json ordering, native <input>/config.yaml fields, all direct input bytes, fixed retry roster, and rejects machine-pinned jobs.",
+          "worker_state_gate": "A per-worker fail stays active; terminal failure requires every released job to be done or to have an exact roster-exhausted native claim/fail chain. A done marker requires its matching claim and a physically complete store identical to the released input metadata.",
+          "launcher": "Revalidates the immutable release and semantic queue state before each --once claim and invokes only dedust worker with the fixed scope, selfgen 0, poll 60, and stale 120 arguments. It contains no jobs-add or git-pull path."
+        },
+        "adoption_requirements": [
+          "Commit the three frozen files, then build any release against that actual commit so the Git-blob gate is exercised without the test-only post-commit monkeypatch.",
+          "Create and independently review an actual immutable release only after R80 records exact 5000 valid unique and zero pending; no such completion or R81 release exists in this review.",
+          "Serialize each queue-prefix transition: let launchers for the current immutable prefix reach all_success and exit before appending and launching the next reviewed prefix. The read-only preflight and dedust claim are consecutive but do not share an atomic queue lock.",
+          "Re-run the existing engineering and formal gates on actual R81 artifacts; the saved test evidence is synthetic and does not establish HFSS behavior, scientific performance, or a positive candidate."
+        ],
+        "limits": [
+          "No NAS, HFSS, live controller, CIM, worker, queue, STOP, dispatch, or Git mutation was performed.",
+          "The focused test intentionally performed only small synthetic CPU SM training and prediction to validate the real feedback-to-batch-2 API lifecycle.",
+          "No actual R80 completion, R81 dataset, immutable release, engineering measurement, formal batch, positive repeat, or multi-host worker execution was reviewed.",
+          "PowerShell launch behavior was parser-checked and statically reviewed; it was not executed against a live dataset."
+        ]
+      }
+    },
+    {
+      "path": "tmp\\r81_worker_entry_review_20261010_v002\\independent_review.json",
+      "sha256": "a89a4e5e9b9d02d55859f83579ec2d2f49d73a028ac85e4429e0461120643bbd",
+      "evidence": {
+        "schema_version": 1,
+        "kind": "r81_worker_entry_independent_portability_delta_review_v002",
+        "status": "passed_v2_portability_delta_no_execution",
+        "reviewed_utc": "2026-10-10T05:34:50.6841969Z",
+        "scope": "Static review of only the frozen v1-to-v2 R80 evidence portability binding delta; no test, training, launcher, worker, queue, NAS, or HFSS execution.",
+        "worktree": {
+          "path": "C:/Users/ricky/Documents/GitHub/Antenna/tmp/r81_worker_entry_wt",
+          "branch": "agent/r81-worker-entry",
+          "base_commit": "bfaf08df36878eea2e1ab78016c903c595c8502b",
+          "candidate_files_are_untracked": true
+        },
+        "reviewed_files": {
+          "script/r81_worker_entry.py": "eaa390aff2d860e7842223cde4a56240875b5bb8d7e849086b430bf85c31eb21",
+          "script/start_r81_worker.ps1": "606e7ffeea140ced9bc1fe43f2207fb7e20292224385a75f4c6b77e4f482cf4a",
+          "tests/test_r81_worker_entry.py": "7e220c4510d2c7177005b049e16b27040739a5fd0dbcbb6984aee8c5d045d5cd"
+        },
+        "reviewed_delta": {
+          "archived_action": "Requires archive path, archive SHA-256, and an absolute producer_path. The bound watcher last_receipt is compared with producer_path while last_receipt_sha256 is compared with the archived action bytes.",
+          "archived_profile": "Requires archive path, archive SHA-256, and an absolute producer_path. Watch and action embedded profile paths are compared with producer_path; their profile hashes are compared with the archived bytes. The archived profile is parsed and required to equal the current canonical profile whose source bytes are already covered by the Git-clean runtime binding.",
+          "tracked_census": "Requires exactly repo_path and SHA-256. repo_path must be a safe repository-relative docs/log/assets/r80_*.json path. The resolved file must match the selected release commit Git blob and remain clean in the current clone before its JSON is consumed.",
+          "unchanged_launcher": "The PowerShell launcher hash is unchanged from the independently reviewed v1 candidate."
+        },
+        "test_evidence_not_rerun": {
+          "implementer_reported_metadata_tests": "3 passed, 17 deselected in 1.44s",
+          "implementer_reported_tracked_census_test": "1 passed in 0.30s",
+          "independent_test_execution": false,
+          "reason": "The bounded v2 request explicitly prohibited rerunning the full suite and opt-in training; this review inspected only the exact frozen portability delta."
+        },
+        "conclusions": [
+          "Archive-location portability no longer breaks authentic original-path comparisons.",
+          "The copied action and profile cannot substitute their archive paths for the producer paths recorded by R80.",
+          "A machine-specific absolute census path is rejected; the tracked status record resolves correctly in each clone.",
+          "Allowing byte-different archived YAML is intentional and bounded to profiles that parse identically to the Git-clean canonical runtime profile; archive bytes remain independently SHA-bound to watch and action metadata.",
+          "No new blocker was found in the reviewed delta."
+        ],
+        "inherited_limits_and_adoption_requirements": [
+          "The v1 independent review remains preserved separately and supplied the focused 17-test lifecycle evidence; this v2 review does not repeat it.",
+          "Commit the frozen v2 files and the final tracked R80 census before producing an actual release so the real Git-blob and clean-path gates execute without fixture monkeypatching.",
+          "No actual R80 5000/0 completion, R81 release, engineering measurements, formal batch, positive repeat, PowerShell launch, multi-host worker, NAS access, or HFSS execution was reviewed.",
+          "Serialize queue-prefix transitions after prior launchers report all_success and exit, as recorded in the v1 review."
+        ],
+        "prior_review": {
+          "path": "tmp/r81_worker_entry_review_20261010_v001/independent_review.json",
+          "sha256": "24a86582018e5144dfa7ea91d6957eac7d2f6a46d00534e61dd76e1f2a1963a6",
+          "preserved": true
+        }
+      }
+    }
+  ],
+  "actual_committed_metadata_gate": {
+    "path": "tmp\\r81_worker_entry_postcommit_20261010_v001\\receipt.json",
+    "sha256": "436eade28b69187f1570236a2887b938fd89e38e4d43f56e38949baf7cbfa796",
+    "evidence": {
+      "schema_version": 1,
+      "status": "passed_actual_committed_metadata_gate",
+      "observed_utc": "2026-10-10T05:39:53.043270+00:00",
+      "producer_commit": "267af9c5e654bdb6fc64071589f283803ac907c2",
+      "runtime": {
+        "git_commit": "267af9c5e654bdb6fc64071589f283803ac907c2",
+        "files": {
+          "antenna/__init__.py": "8ddf8b01296b40075a804f02ff48bcb4d7e432275772e1e8b820874775ec5a1c",
+          "antenna/legacy/__init__.py": "8c007d6755368b26d5e7a4463c1b7522e1500c0cc9b0b9a15bc6321a43c33bbd",
+          "antenna/legacy/data.py": "986c72f98e67e376aa99074fb9153112af1b1dcdf56e1d0434c2fb07fb9102fc",
+          "antenna/losses.py": "9486e3f9190c0fff0e2c2bbf8292fd5f79440e486cf44c77ca5b081cb931fdf0",
+          "antenna/measurement.py": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9",
+          "antenna/models/__init__.py": "da35b0a88d134db8577f7ebc904c7da7dba827db52345455c298c487ba7de9a8",
+          "antenna/models/generators.py": "fb6c030037ccddb4210fcb63b811f011adf73297c4b01993c084e06182a8fe12",
+          "antenna/models/shell.py": "5a06af9899c7754bdc741a07db002e8480481d13f7456e011ace6bda6dd9c7f4",
+          "antenna/models/surrogates.py": "2c9b0c2b28cde01c0393477c264b039ef49b3534d9a18de2e407a9ad0bea77fa",
+          "antenna/optim/__init__.py": "31953797f8a6eb6f241492338ee8713edda9c62a37839fc27320d272118787d1",
+          "antenna/optim/ranger.py": "4b891070d6e2be80a84ebef4f66d1eb721965ca9359537b7b46b1bc9de4105fd",
+          "antenna/optim/scheduler.py": "3bf4eb7f4c651ed76a7908978ad7354121e304932775766d48e7b3bba96ba297",
+          "antenna/patch/__init__.py": "2b73b17c3b8e3669a89915948a1bda15ffd8eb3a7a1cab26a04c5b4653b547e2",
+          "antenna/patch/patch_simulator/__init__.py": "72a6cfab18d253c129be93eaf44632489f84c2cc7a563f31bafef9ccdba9b7d5",
+          "antenna/patch/patch_simulator/dual_port.py": "0edb2ae03ff36d4472ff14bf6d6844a188ed91fef88002f1d1e82304ce8ab680",
+          "antenna/patch/patch_simulator/single_port.py": "bbafe60ac3b75ba4d5df6dde9438983e4a768f7aff6a73f40aa9399b19c3e1dd",
+          "antenna/patch/patch_simulator/single_port_rad.py": "212b20437a90ddd6c085b91bd05ed26f0230327aeeedbb99092c60a1d62a1895",
+          "antenna/pattern.py": "ece5c34eec2f0bafb4302e4dbb7113398c4cf0f0b3a028ec2e1587c41c9a00a6",
+          "antenna/response.py": "c08745b3cd81d98c2be6bde7e72a08979e9d4042d3ca8184b5bf9eb32772b22e",
+          "antenna/training.py": "bf3c5de7bc44155c50409fd067fcb224185a64228ea34840289c44b1a67e9467",
+          "antenna/utils/__init__.py": "5c1f333c28e582580aaeefa6642b0e1dfb09a7dcac1d55b569758bee252b3b44",
+          "antenna/utils/figure.py": "3ac9ccc2c57e1d326910bfb5672e7381e7504e5bc2cb726f203255cc2b700ff0",
+          "antenna/utils/monitor.py": "8142dc60409e728ba46ff0a13fb9a4d22dd42d60bc8ec34701d85441091764f1",
+          "antenna/utils/record.py": "91581597046af3854bbb855fdc20dc61d42e34cf9bb0a71e68291329c75b47ab",
+          "antenna/utils/replay.py": "3caa7ddfcf37f6e3ae69fb5b5436b08afb8b9df65e2cec8c55488997a494ff74",
+          "antenna/utils/run_setup.py": "f79c933301c4b00953ee52705ad67fc4237002f14e00a46ec45a65b76b074766",
+          "antenna/utils/runstate.py": "da25f0a30183d157fdfb1ffdd7a60d69aa6c0ab51ed0794607ea078ba9708ebd",
+          "antenna/utils/store.py": "63dcc83cabca0fd54e6a63394d0f8e437f1274f99612fbaf8dd706127389b714",
+          "antenna/utils/torch_utils.py": "936f029d8ba81bcd8898443b812e4183f300189b24ea90a7d2f3bd4468119ca3",
+          "antenna/utils/types.py": "f0643f536a149755a14b51abbd663134041df21c5fdc58adb51b8b0371701c2b",
+          "antenna/utils/utils.py": "8e15f19d1b384daea8e558164dbe4e2e7d5f9484254fbd2d22eb41681d6d0cde",
+          "antenna/utils/web.py": "d32e7acc2efcd05aa4d76996da9bc47c57a444dac1fd467e212e951051e71b66",
+          "antenna/zoo.py": "a5e0517474a4b92630a3dac55f45d22599607c743279ce45de7820b7af686207",
+          "configs/dual_r81_wide_filter.yaml": "1ca15eba360b44dc1246b98640c199c3d44538fe29a91e11a661222ae6cc121a",
+          "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+          "script/batch_scope.py": "478c72aa7a370f5621dfc9a9463a628ab9b405bb4352cfccdd1b30d24ca158e8",
+          "script/dedust.py": "7e2924fa4d83cf27ea9c74916c43a4dc0107409d6bc985d78e7d4c401185075a",
+          "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+          "script/filter_training.py": "ac2b211db969fcbde357c23b2fd645db291baee6ecd1ead28f2929b3e75106a6",
+          "script/kill.py": "2246a74b874c5d3326cd69fc9188d487aa6b308c0e374797e58f1f75915bb285",
+          "script/prepare_symmetry_filter.py": "e79cda6790c6664977bd068764f234189927bb76caa0edecfe7afe910b5d8a1f",
+          "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+          "script/r81_worker_entry.py": "eaa390aff2d860e7842223cde4a56240875b5bb8d7e849086b430bf85c31eb21",
+          "script/start_r81_worker.ps1": "606e7ffeea140ced9bc1fe43f2207fb7e20292224385a75f4c6b77e4f482cf4a"
+        }
+      },
+      "review_sha256": "a89a4e5e9b9d02d55859f83579ec2d2f49d73a028ac85e4429e0461120643bbd",
+      "transport": {
+        "script/r81_worker_entry.py": {
+          "reviewed_physical_sha256": "eaa390aff2d860e7842223cde4a56240875b5bb8d7e849086b430bf85c31eb21",
+          "git_blob_sha256": "eaa390aff2d860e7842223cde4a56240875b5bb8d7e849086b430bf85c31eb21",
+          "root_physical_sha256": "cd578a22c4f0ca33374bee12cee0c2b7ada1a98abc54530a2f54a3fb79aa023c"
+        },
+        "script/start_r81_worker.ps1": {
+          "reviewed_physical_sha256": "606e7ffeea140ced9bc1fe43f2207fb7e20292224385a75f4c6b77e4f482cf4a",
+          "git_blob_sha256": "606e7ffeea140ced9bc1fe43f2207fb7e20292224385a75f4c6b77e4f482cf4a",
+          "root_physical_sha256": "967b54149e76cf1f47d4273297f013542cc3993985534f5ddf7fef3689a8b49f"
+        },
+        "tests/test_r81_worker_entry.py": {
+          "reviewed_physical_sha256": "7e220c4510d2c7177005b049e16b27040739a5fd0dbcbb6984aee8c5d045d5cd",
+          "git_blob_sha256": "7e220c4510d2c7177005b049e16b27040739a5fd0dbcbb6984aee8c5d045d5cd",
+          "root_physical_sha256": "57d78c54f8fcdd25a0c608e1893b0fc95b120c496473e7a1289399a412a75e2a"
+        }
+      },
+      "runtime_digest_tamper_rejected": true,
+      "tracked_census": {
+        "repo_path": "docs/log/assets/r80_best_status_20261010_1336.json",
+        "sha256": "f2690cb4469b5181d08957c8b91b40feb075d2b6c9f7036407c7f50f3609e875"
+      },
+      "observed_valid_unique": 3462,
+      "observed_watch_status": "waiting",
+      "r80_incomplete_gate_rejection": "R80 watcher has not recorded exact 5000 completion",
+      "observed_watch_sha256": "71d479339892e68191c14ccb364ab41d7047249df992e43ab8dd2793738c7f9d",
+      "action_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\9635789658e3824c9767b74aee9a3671f9cf7056f3e61803081c980ebc1243c5\\action_receipt.json",
+      "action_sha256": "5a1db706d9ccbde45d7e8ba0285faee65e4382dbe55b08be5fc7ca41bcbec5c9",
+      "new_release_created": false,
+      "training_or_inference_executed": false,
+      "NAS_queue_mutation": false,
+      "HFSS_or_worker_started": false,
+      "verification_script_sha256": "011e74840a38cccdf772471112529f88b1226c4833dfc8ead959d62dff173355"
+    }
+  },
+  "implementer_reported_v2_metadata_tests": {
+    "new_portability_cases": "3 passed, 17 deselected / 1.44s",
+    "strengthened_census_case": "1 passed / 0.30s",
+    "not_rerun_by_conductor": true
+  },
+  "initial_synthetic_test_approval": {
+    "action": "focused pytest including synthetic exploration training",
+    "status": "rejected_before_process_creation",
+    "source": "implementer message; no process/output artifact was created",
+    "reason": "The bounded implementation task prohibited model training/inference.",
+    "subsequent_conductor_v2_validation": "metadata-only and static review; no new training"
+  },
+  "release_requirements": [
+    "R80 exact 5000 unique/zero pending completion and reviewed final census",
+    "R80 repeats, raw truth audit, statistics and figures completed before R81 release",
+    "separate private R81 dataset; exact 6 Fast + 2 Discrete + 2 mesh engineering queue",
+    "four actual engineering comparisons: curve and five-margin differences at most 0.3 dB",
+    "formal contiguous 1..3 batches of 60; successor binds previous feedback and SM ensemble",
+    "prior launchers exit all_success before a queue-prefix transition",
+    "positive original plus independent positive repeat needed for performance confirmation"
+  ],
+  "remaining": [
+    "actual final R80 completion evidence",
+    "private R81 dataset and immutable release",
+    "actual three-host launcher/HFSS verification",
+    "freeze historical masked-prior production recipe",
+    "R81 engineering results, finite formal batches and positive-margin confirmation"
+  ],
+  "limits": [
+    "No actual R81 release or queue was created.",
+    "Synthetic fixture lifecycle is engineering evidence, not R81 research results.",
+    "The read-only preflight and native claim are consecutive, not one atomic queue transaction.",
+    "PowerShell was parsed/reviewed but not launched against an actual dataset.",
+    "Existing R80 runtime sources and running workers were not modified."
+  ],
+  "NAS_operation_or_queue_mutation": false,
+  "HFSS_or_worker_started": false,
+  "R80_complete": false,
+  "R81_complete": false,
+  "performance_target_confirmed": false
+}
