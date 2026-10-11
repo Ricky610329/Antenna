@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-10-11T14:46:07.7283171Z",
+  "recorded_taipei": "2026-10-11T22:46:07.7283171+08:00",
+  "status": "actual_r80_closeout_and_r81_engineering_assembly_started_unfinished",
+  "native_completion_prerequisite": {
+    "status": "passed_and_committed_before_both_launches",
+    "commit": "c736c2a7cdfad9bbfc050710f2565aaee4447ec8",
+    "portable_r80_completion_binding_sha256": "4a5d14d4fc3dc863b4fe38497351207a686157d579a0110f5bd6de009951b0a2",
+    "record": {
+      "path": "docs/log/assets/r80_native_completion_20261011.json",
+      "sha256": "4fb81e3e1823a88234211808643d2cfe5c6d9c0e00eb6530c0bc69b326240e92",
+      "bytes": 9530
+    },
+    "archive": {
+      "path": "docs/log/assets/round-81/r80-native-completion-20261011-v001.zip",
+      "sha256": "87424e60d9d93afc50b0399346c87ca9e983f32370f1ba2e5ac5c2cadb2e4715",
+      "bytes": 129919
+    }
+  },
+  "active_launches_at_record_cutoff": {
+    "r80_final_closeout": {
+      "unified_exec_session_id": 13178,
+      "status": "started_unfinished",
+      "start_time_source": "creation time of the exact redirected local log",
+      "started_utc": "2026-10-11T14:42:57.2493774Z",
+      "started_taipei": "2026-10-11T22:42:57.2493774+08:00",
+      "transport_script": {
+        "path": "tmp/r81_actual_transport_fix_20261011_v002/run_closeout_utf8_bom.ps1",
+        "sha256": "45fece869101daf8df48dc9fc05432f01b7bc96164ab8e027d45fb420df97f20",
+        "utf8_bom": true,
+        "decoded_script_exactly_matches_original": true
+      },
+      "outer_environment": {
+        "PYTHONPATH": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna",
+        "reason": "required for the driver to import the repository script package",
+        "encoded_in_transport_script": false
+      },
+      "log": "tmp/r81_actual_transport_fix_20261011_v002/closeout_envfixed_v003.log",
+      "log_snapshot_at_record_cutoff": {
+        "archive_entry": "transport-v002/closeout_envfixed_v003_at_record_cutoff.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "terminal_receipt_reviewed": false,
+      "final_5000_freeze_or_profile_claimed": false
+    },
+    "r81_engineering_assembly": {
+      "unified_exec_session_id": 61209,
+      "status": "started_unfinished",
+      "start_time_source": "creation time of the exact redirected local log",
+      "started_utc": "2026-10-11T14:42:13.0952100Z",
+      "started_taipei": "2026-10-11T22:42:13.0952100+08:00",
+      "transport_script": {
+        "path": "tmp/r81_actual_transport_fix_20261011_v002/run_assembly_utf8_bom.ps1",
+        "sha256": "bced5bd265801ae5b71624a7b5d73c88c4fabde426b9625ef7d23cd864870e53",
+        "utf8_bom": true,
+        "decoded_script_exactly_matches_original": true
+      },
+      "log": "tmp/r81_actual_transport_fix_20261011_v002/assembly.log",
+      "log_snapshot_at_record_cutoff": {
+        "archive_entry": "transport-v002/assembly_at_record_cutoff.log",
+        "sha256": "83fb9bac67bfa1043cfe57a4dfa85bd13171888203b9df8c12ea280ae30c614e",
+        "bytes": 1638,
+        "interpretation": "prefix stdout snapshot only; no unified-session terminal receipt was reviewed in this task"
+      },
+      "terminal_receipt_reviewed": false,
+      "completed_release_or_controller_claimed": false
+    }
+  },
+  "preserved_pre_output_failures": [
+    {
+      "attempt": "original PowerShell 5.1 scripts without a UTF-8 BOM",
+      "effect": "Chinese UNC path text was decoded incorrectly before the intended destination could be used",
+      "correct_destination_created": false,
+      "closeout_script_entry": "original-closeout/run_closeout.ps1",
+      "closeout_log_entry": "original-closeout/closeout.log",
+      "assembly_script_entry": "original-assembly/run_assembly.ps1",
+      "assembly_log_entry": "original-assembly/assembly.log"
+    },
+    {
+      "attempt": "BOM-corrected R80 closeout without repository PYTHONPATH",
+      "effect": "driver reached Python and stopped at ModuleNotFoundError for script before destination creation",
+      "output_created": false,
+      "log_entry": "transport-v002/closeout_missing_pythonpath.log",
+      "log_sha256": "84e59dddb1138ad45fa96efef8b2a8f4d218d3643f32d0f84eb12b22fe527df0"
+    }
+  ],
+  "transport_receipt": {
+    "path": "tmp/r81_actual_transport_fix_20261011_v002/preparation_receipt.json",
+    "sha256": "c2415d247c9317b191c6eef77534a1d0b706da8c859b8024c78e0c9a116576f3",
+    "bytes": 1209,
+    "runtime_or_profile_changed": false
+  },
+  "exact_byte_archive": {
+    "path": "docs/log/assets/round-81/r80-r81-actual-preparation-started-20261011-v001.zip",
+    "sha256": "15ecbc42ece88a389665a742dfc58d83ff1582b10abe8e3755250dbdfbc8b627",
+    "bytes": 9841,
+    "entry_count": 11,
+    "entries": [
+      {"path": "original-closeout/run_closeout.ps1", "sha256": "e545e61b2b073ad4d46b960d2ead5e0022aefbfd81d404cb75c4353bb0516370", "bytes": 2326},
+      {"path": "original-closeout/closeout.log", "sha256": "6ad842f52760c4b4c3c1a7dbc736eff92e746b9693296f2cbf1f26f22101daee", "bytes": 5526},
+      {"path": "original-assembly/run_assembly.ps1", "sha256": "02afd00b301dced513cdbe0cd207444b0acc7f5af5b59aa89ab8522d02b1573d", "bytes": 1913},
+      {"path": "original-assembly/assembly.log", "sha256": "ed45d8042229bf442f9e71b9a28a236d336b2523bd17149fd67cc2902ce6b979", "bytes": 1722},
+      {"path": "transport-v002/preparation_receipt.json", "sha256": "c2415d247c9317b191c6eef77534a1d0b706da8c859b8024c78e0c9a116576f3", "bytes": 1209},
+      {"path": "transport-v002/prepare_bom_commands.py", "sha256": "d6310a2562312de687e5014aad35151a2aa488ca785713532b5ddb1835fef910", "bytes": 1314},
+      {"path": "transport-v002/run_closeout_utf8_bom.ps1", "sha256": "45fece869101daf8df48dc9fc05432f01b7bc96164ab8e027d45fb420df97f20", "bytes": 2329},
+      {"path": "transport-v002/run_assembly_utf8_bom.ps1", "sha256": "bced5bd265801ae5b71624a7b5d73c88c4fabde426b9625ef7d23cd864870e53", "bytes": 1916},
+      {"path": "transport-v002/closeout_missing_pythonpath.log", "sha256": "84e59dddb1138ad45fa96efef8b2a8f4d218d3643f32d0f84eb12b22fe527df0", "bytes": 3150},
+      {"path": "transport-v002/closeout_envfixed_v003_at_record_cutoff.log", "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "bytes": 0},
+      {"path": "transport-v002/assembly_at_record_cutoff.log", "sha256": "83fb9bac67bfa1043cfe57a4dfa85bd13171888203b9df8c12ea280ae30c614e", "bytes": 1638}
+    ]
+  },
+  "scope": {
+    "hfss_started": false,
+    "r81_worker_started": false,
+    "model_training_or_forward_started": false,
+    "live_session_polled_by_this_record_task": false,
+    "nas_inventory_or_scan_by_this_record_task": false,
+    "runtime_queue_or_marker_mutation_by_this_record_task": false,
+    "git_write_by_this_record_task": false
+  },
+  "limits": [
+    "This is a started-state handoff record. It is not a terminal receipt for either unified execution session.",
+    "The R80 FINAL5000 frozen closeout, repeat residuals, figures, and final closeout receipt remain unclaimed until the running closeout returns and its outputs are reviewed.",
+    "The R81 engineering release, dataset/controller preparation, and candidate receipt remain unclaimed until the running assembler returns and its outputs are reviewed.",
+    "The assembly log snapshot may contain child stdout; child stdout alone is not treated as a unified-session terminal result.",
+    "Correct NAS destination absence was confirmed before the BOM-corrected calls; this record did not re-scan those destinations.",
+    "The archive contains exact local byte snapshots at the stated cutoff. Live redirected logs may grow afterward and are intentionally not represented as immutable terminal logs here."
+  ]
+}
