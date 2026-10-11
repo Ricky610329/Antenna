@@ -9,7 +9,7 @@
 
 ## 2026-10-07：R80 對稱探索 → 後續 spec／R81
 
-- **10/12 00:42當前等待條件**：同一EngineeringOnly release仍通過原生檢查，queue為active且沒有claim／done／fail，無可確認的R81 live worker／HFSS handle或工程真值。GAN `58a7e62`已完成正式三機入口，原工程44來源未改；目前無需再改控制程式。前一goal turn為no-progress，本turn再次只有未變狀態的健康觀察，列為第2次連續no-progress／同一三台切換待確認條件，不把notify-only timer當HFSS等待證據。啟動情形問題仍待回覆；不推測worker已停止、不重新派工或重啟。下一例行約01:12。[本次觀察](../docs/log/assets/r81_health_20261012_0042.json)／[前次觀察](../docs/log/assets/r81_health_20261012_0011.json)。
+- **10/12 01:12當前狀態：goal已blocked，待三台切換R81**。EngineeringOnly release仍通過原生檢查，queue為active且沒有claim／done／fail，無可確認的R81 live worker／HFSS handle或工程真值。00:11／00:42／01:12三個連續goal turns均為同一条件的no-progress；已完成blocked audit並實際更新goal為blocked。GAN `58a7e62`正式三機入口與工程備料已準備好，原44來源未改；沒有新真值可做工程比較、合併或SM更新。需要216／218／37依[R81指令](../docs/log/round-81-wide-filter.md)切換，或回覆啟動錯誤，才能繼續。Notify-only timer `1641`已terminal，不再建立空等timer；沒有停止、重啟任何worker，也不推測遠端進程已停止。R80收尾已完成，R81工程／有限探索與正WM確認仍未完成，objective不縮減。[本次觀察](../docs/log/assets/r81_health_20261012_0112.json)／[三輪blocked audit](../docs/log/assets/r81_worker_switch_blocked_20261012.json)。
 
 - **10/11 23:41 R81啟動狀態核對**：同一EngineeringOnly release的原生queue-status仍為active，沒有claim／done／fail；尚不能確認三台已切換或HFSS已開始。已向使用者詢問實際啟動情形；未重啟worker、寫queue或改release。正式3×20入口在隔離worktree完成實作及6項fixture驗證，獨立審查中，尚未部署或執行。下一例行約10/12 00:11。[唯讀觀察](../docs/log/assets/r81_health_20261011_2341.json)。
 

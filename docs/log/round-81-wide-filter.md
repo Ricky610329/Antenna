@@ -1,6 +1,8 @@
 # R81：新版濾波器 spec 與寬頻量測
 
-日期：2026-10-07。狀態：實作與本機備料；尚無寬頻 HFSS 真值。
+日期：2026-10-07。當前狀態：工程備料及正式三機入口完成；goal blocked，待三台切換R81，尚無寬頻HFSS真值。
+
+最新狀態（2026-10-12 01:12）：同一EngineeringOnly release原生檢查仍通過，queue-status為active且沒有claim／done／fail；尚未確認R81 live worker／HFSS handle或工程真值。00:11、00:42、01:12三個連續goal turns都沒有實質進度，啟動情形問題未回覆；已核對三份原始健康紀錄，完成blocked audit並實際將goal更新為blocked。必要的工程／正式入口與備料已完成，目前需要216／218／37依下列現有EngineeringOnly指令切換，或提供啟動錯誤，才能做實際工程比較與後续派工。Timer `1641`已terminal，未再建立例行timer，也沒有停止、重啟worker或改NAS queue。R80完成不等同濾波器達標；R81工程真值、有限批次／SM更新及原次＋獨立重測WM>0仍待完成。[本次觀察](assets/r81_health_20261012_0112.json)／[blocked audit](assets/r81_worker_switch_blocked_20261012.json)。
 
 最新健康觀察（2026-10-12 00:42）：EngineeringOnly release原生檢查仍通過，queue-status為active且沒有claim／done／fail；仍未確認R81 live worker／HFSS handle或工程真值。三台切換問題尚待回覆，這是同一條件的第2次連續no-progress goal turn；保存未變健康狀態不算實際實驗進度，也沒有改派、重啟、NAS寫入或模型更新。下一例行約01:12。[保存觀察](assets/r81_health_20261012_0042.json)。
 
