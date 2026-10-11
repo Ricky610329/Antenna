@@ -1,0 +1,214 @@
+{
+  "archive": {
+    "bytes": 129919,
+    "large_raw_census_payload_duplicated": false,
+    "members": {
+      "binder/README.md": {
+        "bytes": 3262,
+        "compressed_bytes": 1593,
+        "crc32": "e889c13f",
+        "sha256": "1cb86b6791b8ff62e2b127b337bbf299238775bf9a6f088694fec34830d3a9f9"
+      },
+      "binder/bind_r80_completion.py": {
+        "bytes": 16644,
+        "compressed_bytes": 4961,
+        "crc32": "2439cc82",
+        "sha256": "68e59aac026496e6a2e97f4704610922a96259cbcf7834fe9341bf30bd62d964"
+      },
+      "binder/preparation_receipt.json": {
+        "bytes": 3065,
+        "compressed_bytes": 1371,
+        "crc32": "8ba6529d",
+        "sha256": "a0c793302b5d178b1983f90411dc7edb7b7bca2595f07c0512c044cffbbd8811"
+      },
+      "closeout/final_closeout_invocation.ps1": {
+        "bytes": 2160,
+        "compressed_bytes": 1021,
+        "crc32": "47850b48",
+        "sha256": "052785ccd80d5cbd8c3db8f0b1f145f89832cd1b07b23ff9183594fae27b957a"
+      },
+      "closeout/input_pins.json": {
+        "bytes": 5644,
+        "compressed_bytes": 2404,
+        "crc32": "0e61592a",
+        "sha256": "6a492201ff9b0b9edca28c2a1a65b97701ddb735bd83299aa3dc0236b772f650"
+      },
+      "portable/archive_manifest.json": {
+        "bytes": 4164,
+        "compressed_bytes": 1235,
+        "crc32": "056ee826",
+        "sha256": "a23a30dfe16670d3ba4d0b0c4d72dea1dcdf92f2af656060c8f0ccd05f9b2ea4"
+      },
+      "portable/r80_completion_binding.json": {
+        "bytes": 3001,
+        "compressed_bytes": 991,
+        "crc32": "67be6174",
+        "sha256": "4a5d14d4fc3dc863b4fe38497351207a686157d579a0110f5bd6de009951b0a2"
+      },
+      "portable/source_manifest.json": {
+        "bytes": 7660,
+        "compressed_bytes": 3174,
+        "crc32": "07ae1999",
+        "sha256": "1c1160c86323a1d7d4625ef5630a47c5e98e982e38971b5c2a6d01463c37f38e"
+      },
+      "terminal/action_receipt.json": {
+        "bytes": 1090767,
+        "compressed_bytes": 108162,
+        "crc32": "414cf800",
+        "sha256": "6dfab17ee6db6eb66a1ddca3a9218bdb23cb2082f6d1932ebf1faa12c42b8916"
+      },
+      "terminal/capture_receipt.json": {
+        "bytes": 919,
+        "compressed_bytes": 468,
+        "crc32": "7114c9a2",
+        "sha256": "487ea72f791ef03b425284953c9d8b2daebbf626749eab46f6df92519b66708d"
+      },
+      "terminal/capture_terminal.py": {
+        "bytes": 2063,
+        "compressed_bytes": 861,
+        "crc32": "7831b8ce",
+        "sha256": "2193efc1a4a9fd8ca455e9347a739f50cb67e1858839c7fbba72093aa1e7e991"
+      },
+      "terminal/watch_status.json": {
+        "bytes": 5015,
+        "compressed_bytes": 2056,
+        "crc32": "e38ab43c",
+        "sha256": "9957288a7596313ed126b87b0ce78e7c790d0d5b0ead6d17c10e1e6031cf2244"
+      }
+    },
+    "path": "docs/log/assets/round-81/r80-native-completion-20261011-v001.zip",
+    "sha256": "87424e60d9d93afc50b0399346c87ca9e983f32370f1ba2e5ac5c2cadb2e4715"
+  },
+  "census_byte_identity": {
+    "explanation": "different stored bytes from line-ending normalization; parsed census identity is the same",
+    "git_normalized_blob_sha256_used_by_native_gate": "1ce52488dad964c8a845812c627c5681ff747967ab1048a1dfe418421bf3957a",
+    "repo_path": "docs/log/assets/r80_final_census_20261011_v001.json",
+    "windows_checkout_physical_sha256": "98f4b829881cb2c99d03d74e2ac500a257d65bd46d5605b6f30d59bd36d3c835"
+  },
+  "closeout_invocation": {
+    "archived_only": true,
+    "binding_sha_placeholder_remains_in_archived_preparation": true,
+    "executed": false
+  },
+  "native_terminal": {
+    "action_sha256": "6dfab17ee6db6eb66a1ddca3a9218bdb23cb2082f6d1932ebf1faa12c42b8916",
+    "action_status": "idle",
+    "audit_valid_unique_patterns": 5000,
+    "pending_unique": 0,
+    "source_cycle": "7f97d23ce09d637db81a9cd4d3b60ad2368ab6b8634c446a9fc1561ed69a5236",
+    "valid_unique": 5000,
+    "watch_sha256": "9957288a7596313ed126b87b0ce78e7c790d0d5b0ead6d17c10e1e6031cf2244"
+  },
+  "native_terminal_finished_at_taipei": "2026-10-11 22:13:50",
+  "observed_at_taipei": "2026-10-11 22:34",
+  "operations": {
+    "scope": "milestone recording only; the preceding binder performed the separately recorded NAS archive creation",
+    "controller_invoked": false,
+    "git_action": false,
+    "model_loaded": false,
+    "nas_files_read": 3,
+    "nas_written": false,
+    "worker_or_simulation_process_started": false,
+    "runtime_changed": false,
+    "tests_run": false
+  },
+  "portable_completion": {
+    "archive_manifest_sha256": "a23a30dfe16670d3ba4d0b0c4d72dea1dcdf92f2af656060c8f0ccd05f9b2ea4",
+    "binding_sha256": "4a5d14d4fc3dc863b4fe38497351207a686157d579a0110f5bd6de009951b0a2",
+    "destination": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\release_inputs\\r80_native5000_completion_v001",
+    "file_count": 11,
+    "native_validation_status": "portable_native_validation_passed_before_completion_binding",
+    "runtime_commit": "66dfc5c7f37e060b903feed72edbdc12c46ddb6e",
+    "runtime_file_count": 44,
+    "source_manifest_sha256": "1c1160c86323a1d7d4625ef5630a47c5e98e982e38971b5c2a6d01463c37f38e"
+  },
+  "process_end": {
+    "health_helper_expected_active_pid_and_failed": true,
+    "interpretation": "expected after normal terminal completion; not evidence of a new crash",
+    "native_main_pid_present_after_terminal": false
+  },
+  "r81_state": {
+    "engineering_assembler_executed": false,
+    "geometry_symmetry_restricted": false,
+    "hfss_started": false,
+    "queue_mutated": false,
+    "release_created": false
+  },
+  "recorded_at_taipei": "2026-10-11 22:34",
+  "schema_version": 1,
+  "source_inventory": {
+    "binder/README.md": {
+      "bytes": 3262,
+      "crc32": "e889c13f",
+      "sha256": "1cb86b6791b8ff62e2b127b337bbf299238775bf9a6f088694fec34830d3a9f9",
+      "source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r81_completion_binder_20261011_v002\\README.md"
+    },
+    "binder/bind_r80_completion.py": {
+      "bytes": 16644,
+      "crc32": "2439cc82",
+      "sha256": "68e59aac026496e6a2e97f4704610922a96259cbcf7834fe9341bf30bd62d964",
+      "source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r81_completion_binder_20261011_v002\\bind_r80_completion.py"
+    },
+    "binder/preparation_receipt.json": {
+      "bytes": 3065,
+      "crc32": "8ba6529d",
+      "sha256": "a0c793302b5d178b1983f90411dc7edb7b7bca2595f07c0512c044cffbbd8811",
+      "source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r81_completion_binder_20261011_v002\\preparation_receipt.json"
+    },
+    "closeout/final_closeout_invocation.ps1": {
+      "bytes": 2160,
+      "crc32": "47850b48",
+      "sha256": "052785ccd80d5cbd8c3db8f0b1f145f89832cd1b07b23ff9183594fae27b957a",
+      "source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_final_closeout_invocation_20261011_v001\\final_closeout_invocation.ps1"
+    },
+    "closeout/input_pins.json": {
+      "bytes": 5644,
+      "crc32": "0e61592a",
+      "sha256": "6a492201ff9b0b9edca28c2a1a65b97701ddb735bd83299aa3dc0236b772f650",
+      "source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_final_closeout_invocation_20261011_v001\\input_pins.json"
+    },
+    "portable/archive_manifest.json": {
+      "bytes": 4164,
+      "crc32": "056ee826",
+      "sha256": "a23a30dfe16670d3ba4d0b0c4d72dea1dcdf92f2af656060c8f0ccd05f9b2ea4",
+      "source": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\release_inputs\\r80_native5000_completion_v001\\archive_manifest.json"
+    },
+    "portable/r80_completion_binding.json": {
+      "bytes": 3001,
+      "crc32": "67be6174",
+      "sha256": "4a5d14d4fc3dc863b4fe38497351207a686157d579a0110f5bd6de009951b0a2",
+      "source": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\release_inputs\\r80_native5000_completion_v001\\r80_completion_binding.json"
+    },
+    "portable/source_manifest.json": {
+      "bytes": 7660,
+      "crc32": "07ae1999",
+      "sha256": "1c1160c86323a1d7d4625ef5630a47c5e98e982e38971b5c2a6d01463c37f38e",
+      "source": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\release_inputs\\r80_native5000_completion_v001\\source_manifest.json"
+    },
+    "terminal/action_receipt.json": {
+      "bytes": 1090767,
+      "crc32": "414cf800",
+      "sha256": "6dfab17ee6db6eb66a1ddca3a9218bdb23cb2082f6d1932ebf1faa12c42b8916",
+      "source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_terminal_gate_20261011_v001\\action_receipt.json"
+    },
+    "terminal/capture_receipt.json": {
+      "bytes": 919,
+      "crc32": "7114c9a2",
+      "sha256": "487ea72f791ef03b425284953c9d8b2daebbf626749eab46f6df92519b66708d",
+      "source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_terminal_gate_20261011_v001\\capture_receipt.json"
+    },
+    "terminal/capture_terminal.py": {
+      "bytes": 2063,
+      "crc32": "7831b8ce",
+      "sha256": "2193efc1a4a9fd8ca455e9347a739f50cb67e1858839c7fbba72093aa1e7e991",
+      "source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_terminal_gate_20261011_v001\\capture_terminal.py"
+    },
+    "terminal/watch_status.json": {
+      "bytes": 5015,
+      "crc32": "e38ab43c",
+      "sha256": "9957288a7596313ed126b87b0ce78e7c790d0d5b0ead6d17c10e1e6031cf2244",
+      "source": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_terminal_gate_20261011_v001\\watch_status.json"
+    }
+  },
+  "status": "r80_native_completion_and_portable_binding_passed"
+}

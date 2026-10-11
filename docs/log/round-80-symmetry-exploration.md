@@ -1,5 +1,9 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
+最新狀態（2026-10-11 22:13原生完成、22:34封裝）：**原生5000／零pending完成gate已通過**。watch為`symmetry_collection_complete`，action為idle且audit5,000；source cycle `7f97d23c…`，watch/action SHA分別為`9957288a…2244`／`6dfab17e…8916`。原main PID在正常terminal後消失；舊health helper因預期active PID而失敗，不是新crash證據。native44／commit `66dfc5c…`的portable binding已通過，私人NAS packet共11檔，binding SHA `4a5d14d4…b0a2`。Native census綁Git-normalized blob `1ce52488…957a`，Windows工作區實體SHA `98f4b829…c835`另存。R81尚未執行assembler、建立release或啟動HFSS；新濾波器仍不限制金屬／場型對稱。[完成紀錄](assets/r80_native_completion_20261011.json)／[小型證據封存](assets/round-81/r80-native-completion-20261011-v001.zip)。
+
+前一狀態（22:10全量完成、當時仍待原生terminal）：
+
 最新狀態（2026-10-11 22:10全量完成）：**5,000／5,000有效唯一金屬LR對稱實測，100%**；全5,005含重測raw重新計分，零cached metrics，315保存store與4排除COM失敗。獨立保存rows／proofs／最佳核對通過。最佳仍WM **+.0216822624dB**，沒有新最佳；最差帶內S11−10.0960884094dB、最低Gain4.0216822624dBi。R81新spec備料立即開始且不限制金屬／場型對稱；R80完整freeze、重測殘差、統計圖表並行收尾。原主控最後觀察仍在running_cycle／上輪4998，R81實際HFSS需等原生5000／零pending terminal watch與idle action及實際release，未宣稱已啟動。下一例行22:34。 [最終全量證據](assets/r80_final_census_20261011_v001.json)／[保存證據封存](assets/round-80/r80-final-census-20261011-2210-v001.zip)／[既有最佳極座標圖](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)。
 
 歷史開篇（22:10全量取代）：最新狀態（2026-10-11 22:04健康；全量仍07:44）：4,363／5,000有效唯一實測（87.26%），尚差637，WM最佳+.0216822624dB仍屬07:44全量切點。**10/11 22:04例行健康**：原main身分／唯一inventory／19來源吻合。當前0個active批次無error。當前無active claim，已派尾批完成且未done批次的三機roster全耗盡；main正在running_cycle，正式計數與補額尚待完成。新completed e7d2c127／v43／4998；只重播新82本機raw，0正WM、best-1.0122709274291992，未觸發新最佳的full；另因最後尾批done啟動一次final census。Physicalv037 fit4537／latest full07:44的4363分開，reported model更新不是accuracy或性能提升；舊LOW終態SHA不變。下一例行**22:34**、notify-only cell1515；無runtime／queue／markers或worker重啟變更。 [本次證據](assets/r80_health_20261011_2204.json)／[最新全量](assets/r80_best_status_20261011_0744.json)。資料成長但最佳性能停滯；validated5000即R81備料、R80統計圖表同步。新濾波器不限制對稱。以下切點、PID與timer是歷史，當前以本段及[live板](../../configs/ONGOING.md)為準。

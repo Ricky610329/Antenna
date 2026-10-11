@@ -2,6 +2,8 @@
 
 日期：2026-10-07。狀態：實作與本機備料；尚無寬頻 HFSS 真值。
 
+最新切換狀態（2026-10-11 22:34）：R80原生watch/action已正常完成5,000有效唯一／pending0／idle audit5,000，原main PID在terminal後消失；舊health helper因預期active PID而失敗，不視為新crash。以native44與commit `66dfc5c…`驗證的portable completion packet已在鄒穎麒私人NAS建立，共11檔，binding SHA `4a5d14d4…b0a2`。Native census使用Git-normalized blob SHA `1ce52488…957a`；Windows實體SHA `98f4b829…c835`只作來源bytes證明。這只解除R81組裝前的R80完成gate：**尚未執行R81 assembler、建立release、寫queue或啟動HFSS**。R81幾何仍不限制對稱，首步仍是獨立私人dataset的6 Fast＋2 Discrete＋2 mesh工程release。[完成紀錄](assets/r80_native_completion_20261011.json)／[小型證據封存](assets/round-81/r80-native-completion-20261011-v001.zip)。
+
 2026-10-11使用者提醒：「跑新的濾波器spec可以不用對稱」。R81不限制金屬排列或場型對稱，對稱與非對稱圖形皆可作候選；R80天線的精確左右金屬對稱僅屬該輪實驗，不延伸為濾波器spec。已核對實際dual路徑：歷史seed不做對稱篩選、隨機seed生成完整25×25圖形，`enforce_dual_geometry`只保留p01所需的兩個5×5 port pad；後续全圖形mutation亦不鏡射。現有`dual_margin5`設定符合此要求，因此不改live runtime或既有release來源綁定。共同scope名稱不代表幾何對稱約束。[指示與來源核對](assets/r81_unrestricted_geometry_20261011.json)。
 
 **目前性能目標（使用者2026-10-07補充）：新版spec的實測WM > 0 dB。** 完成程式改動、工程檢查或有限批次均不等同達標；WM仍為負或恰為0時，此正餘裕目標仍未完成。
