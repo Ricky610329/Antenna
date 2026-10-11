@@ -2,6 +2,16 @@
 
 日期：2026-10-07。狀態：實作與本機備料；尚無寬頻 HFSS 真值。
 
+三台切換指令（216／218／37；EngineeringOnly）：在原環境、repo根目錄先讓舊R80 worker保持閒置並以Ctrl+C結束該worker，再`git checkout GAN`、`git pull --ff-only origin GAN`。以下命令先加`-CheckOnly`各自核對；成功後不帶`-CheckOnly`執行同一命令。啟動腳本本身仍會再次執行release preflight，失敗會停止、不啟動HFSS。這次只會消耗已綁定的6 Fast＋2 Discrete＋2 mesh，正式60筆未入queue。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_r81_worker.ps1 -Release "\\140.123.106.219\temp\碩二_鄒穎麒's\antenna\experiments\r81_wide_filter_20261007\engineering_v001\release\r81_engineering_only_20261011_v001.json" -ReleaseSha256 c2bba9e840c87bb3f1ef682f94bd26a81af5a732dff02cc80848aee9c610bca2 -Stage EngineeringOnly
+```
+
+新幾何不要求對稱；這份60筆正式備料全部非LR對稱是實際切點，並不代表日後禁止對稱候選。歷史prior的兩個新阻帶仍mask，不能把舊S21資料當成新16–20／36–40GHz真值。工程HFSS真值、三機preflight回覆與實際worker PID仍待啟動後確認。
+
+最新release狀態（2026-10-11 22:46）：R81 assembler session `61209` exit0，私人NAS final EngineeringOnly release SHA為`c2bba9e8…bca2`，candidate bytes相同且保存native report passed；**release ready，但HFSS／worker仍未啟動**。實際queue僅3 jobs：6 Fast＋2 Discrete＋2 mesh；正式b1 60筆已staged未入queue，三arms各20。四組皆dual／`symmetry_filter_20261007`／49頻點；正式60筆實際幾何全為非LR對稱，符合本輪不限制對稱。Discrete與mesh逐bytes沿用前兩個history圖形，smoke每source group各2。Controller只讀stored prior preflight：21,251驗證、217排除、21,034保留，3舊band covered、2新stopband masked且沒有full-current WM；不當作SM fit或accuracy。R80 closeout session `13178`仍背景執行，不延後三機CheckOnly。下方22:42列保留為歷史啟動切點。[實際release審查](assets/r81_engineering_release_20261011.json)／[小型證據封存](assets/round-81/r81-engineering-release-20261011-v001.zip)。
+
 最新實際啟動（2026-10-11 22:42、尚未完成）：R81 assembler session `61209`依本機log建立時間於22:42:13開始；並行R80 closeout session `13178`於22:42:57開始。兩者均使用PowerShell 5.1可讀的UTF-8 BOM transport；先前無BOM中文路徑失真及缺少`PYTHONPATH`兩次pre-output失敗已保留。此切點沒有terminal receipt，不能宣稱R81 release或R80完整freeze完成；也沒有HFSS、worker或model執行。原生完成與portable binding仍以commit `c736c2a7…`及binding SHA `4a5d14d4…b0a2`為準。[啟動紀錄](assets/r80_r81_actual_preparation_started_20261011.json)／[精確bytes封存](assets/round-81/r80-r81-actual-preparation-started-20261011-v001.zip)。
 
 最新切換狀態（2026-10-11 22:34）：R80原生watch/action已正常完成5,000有效唯一／pending0／idle audit5,000，原main PID在terminal後消失；舊health helper因預期active PID而失敗，不視為新crash。以native44與commit `66dfc5c…`驗證的portable completion packet已在鄒穎麒私人NAS建立，共11檔，binding SHA `4a5d14d4…b0a2`。Native census使用Git-normalized blob SHA `1ce52488…957a`；Windows實體SHA `98f4b829…c835`只作來源bytes證明。這只解除R81組裝前的R80完成gate：**尚未執行R81 assembler、建立release、寫queue或啟動HFSS**。R81幾何仍不限制對稱，首步仍是獨立私人dataset的6 Fast＋2 Discrete＋2 mesh工程release。[完成紀錄](assets/r80_native_completion_20261011.json)／[小型證據封存](assets/round-81/r80-native-completion-20261011-v001.zip)。

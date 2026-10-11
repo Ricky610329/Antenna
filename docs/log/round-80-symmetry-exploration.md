@@ -1,5 +1,7 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
+最新並行狀態（2026-10-11 22:46）：R81 EngineeringOnly release已由session `61209` exit0建立並完成保存證據審查，release SHA `c2bba9e8…bca2`；HFSS／worker尚未啟動。R80 closeout session `13178`仍在背景執行，尚未宣稱完整freeze／repeat／figure收尾，且不延後R81三機CheckOnly與後續工程啟動。下方22:42啟動狀態保留為歷史切點。[R81實際release審查](assets/r81_engineering_release_20261011.json)／[小型證據封存](assets/round-81/r81-engineering-release-20261011-v001.zip)。
+
 最新收尾狀態（2026-10-11 22:42啟動、尚未完成）：原生完成gate與portable binding已封存於commit `c736c2a7…`；R80 closeout session `13178`依本機log建立時間於22:42:57開始，並行的R81 assembler session `61209`於22:42:13開始。兩者均使用PowerShell 5.1可讀的UTF-8 BOM transport；先前無BOM中文路徑失真及缺少`PYTHONPATH`兩次pre-output失敗已保留。此切點沒有terminal receipt，不能宣稱R80完整freeze、profile／repeat／figure收尾或R81 release完成；也沒有HFSS、worker或model執行。[啟動紀錄](assets/r80_r81_actual_preparation_started_20261011.json)／[精確bytes封存](assets/round-81/r80-r81-actual-preparation-started-20261011-v001.zip)。
 
 最新狀態（2026-10-11 22:13原生完成、22:34封裝）：**原生5000／零pending完成gate已通過**。watch為`symmetry_collection_complete`，action為idle且audit5,000；source cycle `7f97d23c…`，watch/action SHA分別為`9957288a…2244`／`6dfab17e…8916`。原main PID在正常terminal後消失；舊health helper因預期active PID而失敗，不是新crash證據。native44／commit `66dfc5c…`的portable binding已通過，私人NAS packet共11檔，binding SHA `4a5d14d4…b0a2`。Native census綁Git-normalized blob `1ce52488…957a`，Windows工作區實體SHA `98f4b829…c835`另存。R81尚未執行assembler、建立release或啟動HFSS；新濾波器仍不限制金屬／場型對稱。[完成紀錄](assets/r80_native_completion_20261011.json)／[小型證據封存](assets/round-81/r80-native-completion-20261011-v001.zip)。
