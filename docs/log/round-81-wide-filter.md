@@ -2,6 +2,8 @@
 
 日期：2026-10-07。狀態：實作與本機備料；尚無寬頻 HFSS 真值。
 
+最新健康觀察（2026-10-12 00:11）：同一EngineeringOnly release原生檢查仍通過，queue-status為active且沒有claim／done／fail；未確認R81 live worker／HFSS handle或工程真值，尚不能說已開始。正式三機入口已由GAN `58a7e62`整合並push，原工程44來源未改；目前待三台實際切換，啟動情形問題仍待回覆。這次狀態未變，沒有實質實驗進度，也沒有改派、重啟、NAS寫入或模型更新。下一例行約00:41。[保存觀察](assets/r81_health_20261012_0011.json)。
+
 最新健康觀察（2026-10-11 23:41）：EngineeringOnly release不變，原生queue-status仍為active，沒有claim／done／fail，未觀察遠端PID；不能當作worker已啟動。已詢問三台切換情形，沒有重啟worker、改NAS queue或開始HFSS。正式3×20入口在隔離worktree已完成實作與6項fixture驗證，獨立審查中；尚未部署或執行。下一例行約10/12 00:11。[保存觀察](assets/r81_health_20261011_2341.json)。
 
 目前狀態（2026-10-11 23:08）：R80完整5,000唯一資料凍結、統計與頻率／極座標圖已收尾，session `13178` exit0，[完成結果](assets/r80_final_closeout_20261011.json)。**R81金屬排列及場型對稱皆不設限制，對稱與非對稱圖形均可搜尋**，兩個port pad仍保留。已push的EngineeringOnly release不變；23:07原生queue-status為active，但保存時沒有claim／done／fail，尚無worker啟動或R81 HFSS真值證據。三個工程job待216／218／37按下列指令切換；先6 Fast＋2 Discrete＋2 mesh，正式60筆仍未入queue。緩衝帶軟性平緩下壓、不參與WM；新spec需原次及獨立重測WM>0才達標。例行檢查維持約30分鐘。

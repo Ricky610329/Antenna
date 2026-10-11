@@ -1,0 +1,8 @@
+{
+  "checked_at": "2026-10-12T00:11:37.635480+08:00",
+  "release_sha256": "c2bba9e840c87bb3f1ef682f94bd26a81af5a732dff02cc80848aee9c610bca2",
+  "native_queue_status": "active",
+  "markers": [],
+  "remote_pid_observed": false,
+  "hfss_started_by_check": false
+}
