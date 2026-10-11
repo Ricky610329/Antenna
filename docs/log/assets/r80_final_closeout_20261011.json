@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "status": "passed_saved_result_numerical_review_of_completed_final5000_closeout",
+  "recorded_utc": "2026-10-11T15:05:32.100157+00:00",
+  "recorded_taipei": "2026-10-11T23:05:32.100157+08:00",
+  "closeout": {
+    "saved_status": "completed_final5000_closeout_after_native_r80_release_gate",
+    "receipt": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\closeout_receipt.json",
+      "sha256": "8a52899dcd02e2299f0f0a1d27e771529b6ff940be93979b11eb5b8c72f521e7",
+      "bytes": 1848056
+    },
+    "source_bindings": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\source_bindings.json",
+      "sha256": "d67994f3094044153ec36a43b9aff647cfdd8c8571d2f7880ddb2ee97e90bf3c",
+      "bytes": 607596
+    },
+    "native_completion_commit": "c736c2a7cdfad9bbfc050710f2565aaee4447ec8",
+    "release_git_commit": "66dfc5c7f37e060b903feed72edbdc12c46ddb6e",
+    "portable_completion_binding_sha256": "4a5d14d4fc3dc863b4fe38497351207a686157d579a0110f5bd6de009951b0a2"
+  },
+  "producers": {
+    "closeout_driver": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_final_closeout_driver_20261011_v004\\final_closeout_driver.py",
+      "sha256": "79e2a01f77949bbe1bae9b645a25c82442cdfb3c9438071c887323d5ab7119a0",
+      "bytes": 18504
+    },
+    "symmetry_analysis": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\script\\symmetry_analysis.py",
+      "sha256": "945b20ce399dab5dbf18e659d34d1860c28d5c5c21c0627d44c5ab5195e58571",
+      "bytes": 53509
+    },
+    "saved_result_reviewer": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_actual_final_closeout_review_20261011_v001\\review_saved_closeout.py",
+      "sha256": "5d65af5b874c42c4c84159e7f5858d7875a1a87e2fa65704b6aff54e5dbeb93b",
+      "bytes": 29869
+    },
+    "actual_utf8_bom_command": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r81_actual_transport_fix_20261011_v002\\run_closeout_utf8_bom.ps1",
+      "sha256": "45fece869101daf8df48dc9fc05432f01b7bc96164ab8e027d45fb420df97f20",
+      "bytes": 2329
+    },
+    "outer_environment": {
+      "PYTHONPATH": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna",
+      "encoded_in_transport_script": false
+    }
+  },
+  "prior_transport_evidence": {
+    "record": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\docs\\log\\assets\\r80_r81_actual_preparation_started_20261011.json",
+      "sha256": "f10dfeba6deb2259443db296b9fcfb282ee5b23ec94e1925da5959545ab4c5df",
+      "bytes": 7736
+    },
+    "archive": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\docs\\log\\assets\\round-81\\r80-r81-actual-preparation-started-20261011-v001.zip",
+      "sha256": "15ecbc42ece88a389665a742dfc58d83ff1582b10abe8e3755250dbdfbc8b627",
+      "bytes": 9841
+    },
+    "actual_command_entry": "transport-v002/run_closeout_utf8_bom.ps1",
+    "missing_pythonpath_failure_entry": "transport-v002/closeout_missing_pythonpath.log",
+    "no_bom_failure_entries": [
+      "original-closeout/run_closeout.ps1",
+      "original-closeout/closeout.log"
+    ]
+  },
+  "saved_analysis": {
+    "closeout_receipt": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\closeout_receipt.json",
+      "sha256": "8a52899dcd02e2299f0f0a1d27e771529b6ff940be93979b11eb5b8c72f521e7",
+      "bytes": 1848056
+    },
+    "source_bindings": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\source_bindings.json",
+      "sha256": "d67994f3094044153ec36a43b9aff647cfdd8c8571d2f7880ddb2ee97e90bf3c",
+      "bytes": 607596
+    },
+    "combined_json": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\combined.json",
+      "sha256": "188f4fe03759358ded93224551c18cee96e02f1bd1723d6e8e1de3a7896f2642",
+      "bytes": 72820086
+    },
+    "combined_npz": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\combined.npz",
+      "sha256": "11033babc2fa5c3d2303b0fa87e9054b6c725c1fee91cec940121d6716ab63bd",
+      "bytes": 16444075
+    },
+    "repeat_profiles": {
+      "dedust_r80repeat1_efc86b3048": {
+        "json": {
+          "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\repeat_dedust_r80repeat1_efc86b3048.json",
+          "sha256": "5d7e8262f8462d0c929b4415165b4fc22f017b1088b86953ab19363ab6b7c8f4",
+          "bytes": 31707
+        },
+        "npz": {
+          "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\repeat_dedust_r80repeat1_efc86b3048.npz",
+          "sha256": "d7aeeb436c8cbcda77a78b1bbaf39262800b2810329b3a230cc1d7a25572a303",
+          "bytes": 18902
+        }
+      },
+      "dedust_r80repeat2_db47909258": {
+        "json": {
+          "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\repeat_dedust_r80repeat2_db47909258.json",
+          "sha256": "239fd4bbe737f0843ceb443cf5b2c2b8b7324c03a17f1d503107240eb381107d",
+          "bytes": 31707
+        },
+        "npz": {
+          "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\repeat_dedust_r80repeat2_db47909258.npz",
+          "sha256": "e72f8e841c463490bcc406e8099d93e8b0c7b001a80dd1be868782b336e31007",
+          "bytes": 18904
+        }
+      },
+      "dedust_r80bestrep01_bbe54206fb": {
+        "json": {
+          "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\repeat_dedust_r80bestrep01_bbe54206fb.json",
+          "sha256": "cc01b3a289737470790d1eb42e2e52158e14165ae89cdb9eadd5d311dc1609e8",
+          "bytes": 24795
+        },
+        "npz": {
+          "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\repeat_dedust_r80bestrep01_bbe54206fb.npz",
+          "sha256": "e3420190c223385f7610ebac3a16325866aa03cc1e11b3d7871a239fa0459c71",
+          "bytes": 15415
+        }
+      }
+    },
+    "repeat_residual_json": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\repeat_residuals.json",
+      "sha256": "576bf720195714efede1fec9453179b2b47f709d3917d75761d1f227c8ea85c7",
+      "bytes": 9133
+    },
+    "repeat_residual_npz": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\repeat_residuals.npz",
+      "sha256": "a5ddeaf129d495a8dfd70831c17f24ee3221223f88dce16d7d43f0a60f065b1c",
+      "bytes": 2672
+    },
+    "plot_receipt": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\population_figures\\plot_receipt.json",
+      "sha256": "ea537d33499afd900bdb32d4a05a27a8c7a3a45a98b94c5dd546965568f54351",
+      "bytes": 1504
+    }
+  },
+  "results": {
+    "counts": {
+      "unique_representatives": 5000,
+      "repeat_observations": 5,
+      "repeat_source_stores": 3,
+      "combined_duplicate_audit_rows": 5,
+      "unique_ids": 5000,
+      "unique_pattern_sha256": 5000,
+      "exact_lr_geometry": 5000,
+      "positive_wm_unique": 1,
+      "s11_band_margin_positive": 8,
+      "gain_band_margin_positive": 15
+    },
+    "best_unique": {
+      "array_index": 2205,
+      "id": "r80localv1_00026_f6ffb938",
+      "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+      "wm_db": 0.021682262420654297,
+      "s11_band_margin_db": 0.09608840942382812,
+      "gain_band_margin_db": 0.021682262420654297,
+      "s11_db_band_max": -10.096088409423828,
+      "gain_db_band_min": 4.021682262420654
+    },
+    "margin_quantiles": {
+      "s11_band_margin_db": {
+        "finite_count": 5000,
+        "q05": -8.873514592647552,
+        "q25": -8.642211973667145,
+        "q50": -8.319311559200287,
+        "q75": -7.5476226806640625,
+        "q95": -5.491182422637939
+      },
+      "gain_band_margin_db": {
+        "finite_count": 5000,
+        "q05": -27.91755428314209,
+        "q25": -19.82834792137146,
+        "q50": -13.928529262542725,
+        "q75": -9.340849757194519,
+        "q95": -3.672934439778328
+      }
+    },
+    "radiation_descriptor_medians": {
+      "phi0_mirror_power_45": 0.251761650316268,
+      "phi0_mirror_power_90": 0.2220699204008334,
+      "phi90_mirror_power_45": 0.020671284658721544,
+      "phi90_mirror_power_90": 0.018635633210765404,
+      "field_mirror_power_45": 0.14519250584714816,
+      "field_mirror_power_90": 0.12882969636892877,
+      "field_front_back_db": 6.239937783135645,
+      "field_abs_power_centroid_deg": 8.354349701636682
+    },
+    "npz_radiation_axes": {
+      "angle_axis": {
+        "field": "radiation_theta_deg",
+        "shape": [
+          181
+        ],
+        "units": "degrees"
+      },
+      "stacked_cuts": {
+        "field": "radiation",
+        "shape": [
+          5000,
+          2,
+          181
+        ],
+        "cut_order": [
+          "phi0",
+          "phi90"
+        ]
+      },
+      "named_phi0": {
+        "field": "phi0_db",
+        "shape": [
+          5000,
+          181
+        ],
+        "units": "dB"
+      },
+      "named_phi90": {
+        "field": "phi90_db",
+        "shape": [
+          5000,
+          181
+        ],
+        "units": "dB"
+      }
+    },
+    "repeat_replays": [
+      {
+        "repeat_profile": "dedust_r80repeat1_efc86b3048",
+        "pattern_sha256": "001c970d0c995518c5f9051f44c26ebabbe04b8ae145b14f16d9d1f9576595b6",
+        "original_id": "single_r80_symmetry_expl_b01_037_001c970d",
+        "repeat_id": "dedust_r80repeat1_00_001c970d",
+        "original_wm_db": -18.476696014404297,
+        "repeat_wm_db": -18.476696014404297,
+        "repeat_minus_original_wm_db": 0.0,
+        "s11_gain_curve_max_abs_repeat_delta_db": [
+          0.0002052783966064453,
+          1.1920928955078125e-07
+        ],
+        "phi0_phi90_curve_max_abs_repeat_delta_db": [
+          1.1920928955078125e-07,
+          0.0
+        ],
+        "pattern_exactly_equal": true,
+        "frequency_grid_exactly_equal": true,
+        "theta_grid_exactly_equal": true
+      },
+      {
+        "repeat_profile": "dedust_r80repeat1_efc86b3048",
+        "pattern_sha256": "7897dc207a5ebfd12709d043c9c6f72404763d7cc3ca8020635621385b57490a",
+        "original_id": "single_r80_symmetry_expl_b01_010_7897dc20",
+        "repeat_id": "dedust_r80repeat1_01_7897dc20",
+        "original_wm_db": -24.460744857788086,
+        "repeat_wm_db": -24.460744857788086,
+        "repeat_minus_original_wm_db": 0.0,
+        "s11_gain_curve_max_abs_repeat_delta_db": [
+          0.0,
+          0.0
+        ],
+        "phi0_phi90_curve_max_abs_repeat_delta_db": [
+          0.0,
+          0.0
+        ],
+        "pattern_exactly_equal": true,
+        "frequency_grid_exactly_equal": true,
+        "theta_grid_exactly_equal": true
+      },
+      {
+        "repeat_profile": "dedust_r80repeat2_db47909258",
+        "pattern_sha256": "001c970d0c995518c5f9051f44c26ebabbe04b8ae145b14f16d9d1f9576595b6",
+        "original_id": "single_r80_symmetry_expl_b01_037_001c970d",
+        "repeat_id": "dedust_r80repeat2_00_001c970d",
+        "original_wm_db": -18.476696014404297,
+        "repeat_wm_db": -18.476696014404297,
+        "repeat_minus_original_wm_db": 0.0,
+        "s11_gain_curve_max_abs_repeat_delta_db": [
+          0.0002052783966064453,
+          1.1920928955078125e-07
+        ],
+        "phi0_phi90_curve_max_abs_repeat_delta_db": [
+          1.1920928955078125e-07,
+          0.0
+        ],
+        "pattern_exactly_equal": true,
+        "frequency_grid_exactly_equal": true,
+        "theta_grid_exactly_equal": true
+      },
+      {
+        "repeat_profile": "dedust_r80repeat2_db47909258",
+        "pattern_sha256": "7897dc207a5ebfd12709d043c9c6f72404763d7cc3ca8020635621385b57490a",
+        "original_id": "single_r80_symmetry_expl_b01_010_7897dc20",
+        "repeat_id": "dedust_r80repeat2_01_7897dc20",
+        "original_wm_db": -24.460744857788086,
+        "repeat_wm_db": -24.460744857788086,
+        "repeat_minus_original_wm_db": 0.0,
+        "s11_gain_curve_max_abs_repeat_delta_db": [
+          0.0,
+          0.0
+        ],
+        "phi0_phi90_curve_max_abs_repeat_delta_db": [
+          0.0,
+          0.0
+        ],
+        "pattern_exactly_equal": true,
+        "frequency_grid_exactly_equal": true,
+        "theta_grid_exactly_equal": true
+      },
+      {
+        "repeat_profile": "dedust_r80bestrep01_bbe54206fb",
+        "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+        "original_id": "r80localv1_00026_f6ffb938",
+        "repeat_id": "r80bestrep01_f6ffb938",
+        "original_wm_db": 0.021682262420654297,
+        "repeat_wm_db": 0.03643369674682617,
+        "repeat_minus_original_wm_db": 0.014751434326171875,
+        "s11_gain_curve_max_abs_repeat_delta_db": [
+          0.005123615264892578,
+          0.14389419555664062
+        ],
+        "phi0_phi90_curve_max_abs_repeat_delta_db": [
+          0.0,
+          0.0
+        ],
+        "pattern_exactly_equal": true,
+        "frequency_grid_exactly_equal": true,
+        "theta_grid_exactly_equal": true
+      }
+    ],
+    "independent_checks": {
+      "combined_json_npz_row_alignment": true,
+      "all_5000_ids_and_pattern_hashes_unique": true,
+      "all_5000_patterns_exact_left_right_mirrors": true,
+      "all_saved_quantiles_replayed": true,
+      "quantile_metric_count": 40,
+      "max_quantile_abs_error": 0.0,
+      "all_saved_radiation_descriptors_replayed": true,
+      "radiation_descriptor_array_count": 27,
+      "max_radiation_descriptor_abs_error": 4.263256414560601e-14,
+      "five_repeat_response_radiation_wm_residuals_replayed": true
+    }
+  },
+  "figures": {
+    "geometry_terrain.png": "651aa8d31cd0d07725343e6eeed93ea9628974e85c6bbcf8146957b8a2087e3e",
+    "frequency_responses.png": "76dda879c1ca8a1f1d082272821e67d4ad30fa2d9756b34cc182191eb95687fc",
+    "visual_review_by_this_task": false
+  },
+  "archive": {
+    "path": "docs/log/assets/round-80/r80-final-closeout-20261011-v001.zip",
+    "sha256": "d2dc1684a83e85fc0cd1a13cf28afa731890e4f9f29f36e91dd50fe1468de2ea",
+    "bytes": 17104612,
+    "entry_count": 15,
+    "entries": [
+      {
+        "path": "producer/final_closeout_driver.py",
+        "sha256": "79e2a01f77949bbe1bae9b645a25c82442cdfb3c9438071c887323d5ab7119a0",
+        "bytes": 18504
+      },
+      {
+        "path": "review/population_summary.json",
+        "sha256": "9edf359b22fd6cf76a940cfe13a6ec164ac89604a760bfa8a6baaabde34376c3",
+        "bytes": 16418
+      },
+      {
+        "path": "review/review_saved_closeout.py",
+        "sha256": "5d65af5b874c42c4c84159e7f5858d7875a1a87e2fa65704b6aff54e5dbeb93b",
+        "bytes": 29869
+      },
+      {
+        "path": "saved/analysis/combined.npz",
+        "sha256": "11033babc2fa5c3d2303b0fa87e9054b6c725c1fee91cec940121d6716ab63bd",
+        "bytes": 16444075
+      },
+      {
+        "path": "saved/analysis/repeat_dedust_r80bestrep01_bbe54206fb.json",
+        "sha256": "cc01b3a289737470790d1eb42e2e52158e14165ae89cdb9eadd5d311dc1609e8",
+        "bytes": 24795
+      },
+      {
+        "path": "saved/analysis/repeat_dedust_r80bestrep01_bbe54206fb.npz",
+        "sha256": "e3420190c223385f7610ebac3a16325866aa03cc1e11b3d7871a239fa0459c71",
+        "bytes": 15415
+      },
+      {
+        "path": "saved/analysis/repeat_dedust_r80repeat1_efc86b3048.json",
+        "sha256": "5d7e8262f8462d0c929b4415165b4fc22f017b1088b86953ab19363ab6b7c8f4",
+        "bytes": 31707
+      },
+      {
+        "path": "saved/analysis/repeat_dedust_r80repeat1_efc86b3048.npz",
+        "sha256": "d7aeeb436c8cbcda77a78b1bbaf39262800b2810329b3a230cc1d7a25572a303",
+        "bytes": 18902
+      },
+      {
+        "path": "saved/analysis/repeat_dedust_r80repeat2_db47909258.json",
+        "sha256": "239fd4bbe737f0843ceb443cf5b2c2b8b7324c03a17f1d503107240eb381107d",
+        "bytes": 31707
+      },
+      {
+        "path": "saved/analysis/repeat_dedust_r80repeat2_db47909258.npz",
+        "sha256": "e72f8e841c463490bcc406e8099d93e8b0c7b001a80dd1be868782b336e31007",
+        "bytes": 18904
+      },
+      {
+        "path": "saved/analysis/repeat_residuals.json",
+        "sha256": "576bf720195714efede1fec9453179b2b47f709d3917d75761d1f227c8ea85c7",
+        "bytes": 9133
+      },
+      {
+        "path": "saved/analysis/repeat_residuals.npz",
+        "sha256": "a5ddeaf129d495a8dfd70831c17f24ee3221223f88dce16d7d43f0a60f065b1c",
+        "bytes": 2672
+      },
+      {
+        "path": "saved/closeout_receipt.json",
+        "sha256": "8a52899dcd02e2299f0f0a1d27e771529b6ff940be93979b11eb5b8c72f521e7",
+        "bytes": 1848056
+      },
+      {
+        "path": "saved/population_figures/plot_receipt.json",
+        "sha256": "ea537d33499afd900bdb32d4a05a27a8c7a3a45a98b94c5dd546965568f54351",
+        "bytes": 1504
+      },
+      {
+        "path": "saved/source_bindings.json",
+        "sha256": "d67994f3094044153ec36a43b9aff647cfdd8c8571d2f7880ddb2ee97e90bf3c",
+        "bytes": 607596
+      }
+    ],
+    "excludes_frozen_raw_5000_and_historical_315_stores": true,
+    "combined_json_omitted_due_to_size_but_directly_reviewed_and_sha_bound": {
+      "path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\combined.json",
+      "sha256": "188f4fe03759358ded93224551c18cee96e02f1bd1723d6e8e1de3a7896f2642",
+      "bytes": 72820086
+    }
+  },
+  "scope": {
+    "saved_result_numerical_review_only": true,
+    "nas_writes": false,
+    "raw_store_inventory": false,
+    "recensus": false,
+    "model_forward_or_training": false,
+    "hfss": false,
+    "tests": false,
+    "r81_release_or_worker_delayed": false
+  },
+  "limitations": [
+    "Saved-result review only: no raw-store inventory, per-job terminal replay, re-census, model forward/training, HFSS, or mesh certification.",
+    "Repeat residual evidence covers only five explicitly mapped repeat observations across three repeat stores and does not certify repeatability of all 5,000 unique geometries.",
+    "Radiation mirror, front/back, centroid, geometry-terrain, frequency-quantile, and margin summaries are descriptive; they do not establish accuracy, causality, or a mesh-convergence claim.",
+    "The two PNG hashes are bound through the saved plot receipt; visual QA and tracked PNG copying are handled separately by the root task.",
+    "This archive intentionally excludes the frozen 5,000 raw samples and the historical 315 source stores."
+  ]
+}

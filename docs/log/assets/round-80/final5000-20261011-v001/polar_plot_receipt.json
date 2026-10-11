@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "unique_patterns": 5000,
+  "source_json_sha256": "188f4fe03759358ded93224551c18cee96e02f1bd1723d6e8e1de3a7896f2642",
+  "source_npz_sha256": "11033babc2fa5c3d2303b0fa87e9054b6c725c1fee91cec940121d6716ab63bd",
+  "best_id": "r80localv1_00026_f6ffb938",
+  "projection": "polar",
+  "helper": "script.figs.report_r1r10_style.polar_rad_ax",
+  "helper_sha256": "c3399a2a3b600a5922d130a655acb1e79ca8fc5780e7cc079fbcd97b7ee867b4",
+  "loader_sha256": "428e65abb66ea6dcc2b883609569dca06d1f4892523f907953bf865a60507bfb",
+  "quantiles": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "theta_deg": [
+    -180,
+    180,
+    2
+  ],
+  "quantity": "28 GHz LastAdaptive GainTotal",
+  "radial_limits_db": [
+    -25,
+    10
+  ],
+  "interpolation": false,
+  "mirror_averaging": false,
+  "hfss_or_model_training": false,
+  "figure_sha256": "534a2849b196476303336fbce81d98ac090a75595f77b351c88626680fc3c14f",
+  "code_sha256": "99a3d2c1c84c632a4b29b7fe0c1ccc78ff2e351ac0636219cd8b5a961ac95b35"
+}

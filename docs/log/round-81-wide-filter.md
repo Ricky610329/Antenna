@@ -2,6 +2,8 @@
 
 日期：2026-10-07。狀態：實作與本機備料；尚無寬頻 HFSS 真值。
 
+目前狀態（2026-10-11 23:08）：R80完整5,000唯一資料凍結、統計與頻率／極座標圖已收尾，session `13178` exit0，[完成結果](assets/r80_final_closeout_20261011.json)。**R81金屬排列及場型對稱皆不設限制，對稱與非對稱圖形均可搜尋**，兩個port pad仍保留。已push的EngineeringOnly release不變；23:07原生queue-status為active，但保存時沒有claim／done／fail，尚無worker啟動或R81 HFSS真值證據。三個工程job待216／218／37按下列指令切換；先6 Fast＋2 Discrete＋2 mesh，正式60筆仍未入queue。緩衝帶軟性平緩下壓、不參與WM；新spec需原次及獨立重測WM>0才達標。例行檢查維持約30分鐘。
+
 三台切換指令（216／218／37；EngineeringOnly）：在原環境、repo根目錄先讓舊R80 worker保持閒置並以Ctrl+C結束該worker，再`git checkout GAN`、`git pull --ff-only origin GAN`。以下命令先加`-CheckOnly`各自核對；成功後不帶`-CheckOnly`執行同一命令。啟動腳本本身仍會再次執行release preflight，失敗會停止、不啟動HFSS。這次只會消耗已綁定的6 Fast＋2 Discrete＋2 mesh，正式60筆未入queue。
 
 ```powershell

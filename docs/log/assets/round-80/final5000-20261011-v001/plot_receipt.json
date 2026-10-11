@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "analysis_path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\combined.json",
+  "analysis_sha256": "188f4fe03759358ded93224551c18cee96e02f1bd1723d6e8e1de3a7896f2642",
+  "npz_path": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\analysis\\combined.npz",
+  "npz_sha256": "11033babc2fa5c3d2303b0fa87e9054b6c725c1fee91cec940121d6716ab63bd",
+  "unique_patterns": 5000,
+  "geometry_extent": [
+    0.0,
+    1.0,
+    -1.0,
+    1.0
+  ],
+  "hex_gridsize": [
+    24,
+    24
+  ],
+  "hex_reduction": "median, mincnt=1; no interpolation",
+  "coordinate_policy": "fixed geometric metal fraction and upper-minus-lower fraction; no response embedding",
+  "frequency_quantiles": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "scope": {
+    "descriptive_only": true,
+    "causal_claim": false,
+    "performance_filter_applied": false,
+    "hfss_or_training_run": false,
+    "input_discovery": false,
+    "dedup_key": [
+      "measurement_id",
+      "pattern_sha256"
+    ],
+    "duplicate_preference": "nonrepeat_then_explicit_store_and_manifest_order"
+  },
+  "figures": {
+    "geometry_terrain.png": "651aa8d31cd0d07725343e6eeed93ea9628974e85c6bbcf8146957b8a2087e3e",
+    "frequency_responses.png": "76dda879c1ca8a1f1d082272821e67d4ad30fa2d9756b34cc182191eb95687fc"
+  }
+}

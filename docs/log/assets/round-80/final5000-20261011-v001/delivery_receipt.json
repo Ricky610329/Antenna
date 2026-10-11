@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "status": "completed_final5000_figures_and_visual_review",
+  "numerical_review_sha256": "422733bb333200cc57a7be843fce158bee0c2c472ee34929d19054157c437405",
+  "evidence_archive_sha256": "d2dc1684a83e85fc0cd1a13cf28afa731890e4f9f29f36e91dd50fe1468de2ea",
+  "figures": {
+    "geometry_terrain.png": {
+      "sha256": "651aa8d31cd0d07725343e6eeed93ea9628974e85c6bbcf8146957b8a2087e3e",
+      "bytes": 487371,
+      "dimensions_px": [
+        2370,
+        1530
+      ],
+      "root_visual_review": "passed: readable Chinese, complete labels/legends, no clipping"
+    },
+    "frequency_responses.png": {
+      "sha256": "76dda879c1ca8a1f1d082272821e67d4ad30fa2d9756b34cc182191eb95687fc",
+      "bytes": 809746,
+      "dimensions_px": [
+        2025,
+        780
+      ],
+      "root_visual_review": "passed: readable Chinese, complete labels/legends, no clipping"
+    },
+    "radiation_population_polar.png": {
+      "sha256": "534a2849b196476303336fbce81d98ac090a75595f77b351c88626680fc3c14f",
+      "bytes": 446557,
+      "dimensions_px": [
+        1875,
+        1080
+      ],
+      "root_visual_review": "passed: readable Chinese, complete labels/legends, no clipping"
+    }
+  },
+  "copy_receipt": {
+    "status": "existing_final5000_figures_copied_exactly",
+    "source": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\analysis_versions\\final5000_20261011_v001\\population_figures",
+    "destination": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\docs\\log\\assets\\round-80\\final5000-20261011-v001",
+    "files": {
+      "geometry_terrain.png": {
+        "bytes": 487371,
+        "sha256": "651aa8d31cd0d07725343e6eeed93ea9628974e85c6bbcf8146957b8a2087e3e"
+      },
+      "frequency_responses.png": {
+        "bytes": 809746,
+        "sha256": "76dda879c1ca8a1f1d082272821e67d4ad30fa2d9756b34cc182191eb95687fc"
+      },
+      "plot_receipt.json": {
+        "bytes": 1504,
+        "sha256": "ea537d33499afd900bdb32d4a05a27a8c7a3a45a98b94c5dd546965568f54351"
+      }
+    },
+    "render_rerun": false,
+    "hfss_or_model_run": false
+  },
+  "polar_receipt_sha256": "2a73c133eee29757526199c38e8fb95595f6b6026c6e266df350396fc8963c48",
+  "polar_code_snapshot_original_execution_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_actual_figure_delivery_20261011_v001\\render_population_polar.py",
+  "r81_health": {
+    "checked_at": "2026-10-11T23:07:29.404776+08:00",
+    "release_sha256": "c2bba9e840c87bb3f1ef682f94bd26a81af5a732dff02cc80848aee9c610bca2",
+    "native_queue_status": "active",
+    "markers": [],
+    "remote_pid_observed": false,
+    "hfss_started_by_check": false
+  },
+  "r81_health_sha256": "4b61bcb65fbececdbfd94acbad982bc894e514e89bfd6cf4d7b5bbe0b4646b4a",
+  "health_helper_sha256": "a1a34acd5e4b4d8c1bf8520ff52afc5be76f274f64ad4dcecaec2415e298f404",
+  "hfss_or_model_training": false,
+  "raw_recensus": false,
+  "nas_writes": false,
+  "r81_symmetry_constraint": null
+}

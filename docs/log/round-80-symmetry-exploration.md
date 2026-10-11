@@ -1,5 +1,18 @@
 # R80：金屬對稱下的場型與頻率響應探索
 
+最新狀態（2026-10-11 23:08）：**5,000筆唯一精確左右金屬對稱實測與完整收尾皆已完成**。closeout session `13178`於22:58確認exit0，私人NAS版本為`analysis_versions/final5000_20261011_v001`；另保存5筆重測／3個repeat store，不计入5000。獨立保存結果審查重播40組分位數、27組場型描述及5筆重測殘差，均通過。最佳仍`r80localv1_00026_f6ffb938`，WM **+.0216822624dB**，帶內最差S11 **−10.0960884094dB**、最低RealizedGainTotal **4.0216822624dBi**；唯一正WM只有1筆，S11正餘裕8筆、Gain正餘裕15筆。最佳獨立重測WM **+.0364336967dB**，原次與重測曲線最大差S11 .0051236／Gain .1438942dB，兩個場型切面差0。其餘四筆保存重測的WM差0；這5筆不代表全體穩定性或mesh收斂。
+
+全體場型的±45°線性功率鏡射殘差中位數為.145193、±90°為.128830；0較對稱。這些是每筆兩切面描述值彙總，不是鏡射金屬必然導致場型對稱的因果結論，也不能當作SM準確度。最佳性能在後續收集期間沒有提升；資料量達標與性能突破分開記錄。
+
+- [完整收尾與獨立數值核對](assets/r80_final_closeout_20261011.json)／[保存分析證據](assets/round-80/r80-final-closeout-20261011-v001.zip)
+- [5,000筆幾何地形圖](assets/round-80/final5000-20261011-v001/geometry_terrain.png)：固定幾何座標、格內中位數、斜線表示無樣本。
+- [5,000筆頻率響應圖](assets/round-80/final5000-20261011-v001/frequency_responses.png)：逐頻率中位數及25–75%分位數，並非信賴區間。
+- [5,000筆場型極座標圖](assets/round-80/final5000-20261011-v001/radiation_population_polar.png)：沿用`report_r1r10_style.polar_rad_ax`，顯示28GHz GainTotal兩切面的全體分位數與最佳原次，未鏡射平均、未插值；這個GainTotal不等同WM的正向RealizedGainTotal。
+- [既有最佳圖形與極座標卡](assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png)：最佳未變，未重畫相同卡。
+- [圖檔來源、目視核對及23:07新queue健康紀錄](assets/round-80/final5000-20261011-v001/delivery_receipt.json)。
+
+R80原生主控已正常完成，無需重啟。R81新濾波器**不限制金屬或場型對稱**；工程release已push，23:07新queue尚無claim／done／fail，仍待216／218／37切換worker。[R81指令與規格](round-81-wide-filter.md)。以下「最新」時間列保留原始歷史，當前以本段為準。
+
 最新並行狀態（2026-10-11 22:46）：R81 EngineeringOnly release已由session `61209` exit0建立並完成保存證據審查，release SHA `c2bba9e8…bca2`；HFSS／worker尚未啟動。R80 closeout session `13178`仍在背景執行，尚未宣稱完整freeze／repeat／figure收尾，且不延後R81三機CheckOnly與後續工程啟動。下方22:42啟動狀態保留為歷史切點。[R81實際release審查](assets/r81_engineering_release_20261011.json)／[小型證據封存](assets/round-81/r81-engineering-release-20261011-v001.zip)。
 
 最新收尾狀態（2026-10-11 22:42啟動、尚未完成）：原生完成gate與portable binding已封存於commit `c736c2a7…`；R80 closeout session `13178`依本機log建立時間於22:42:57開始，並行的R81 assembler session `61209`於22:42:13開始。兩者均使用PowerShell 5.1可讀的UTF-8 BOM transport；先前無BOM中文路徑失真及缺少`PYTHONPATH`兩次pre-output失敗已保留。此切點沒有terminal receipt，不能宣稱R80完整freeze、profile／repeat／figure收尾或R81 release完成；也沒有HFSS、worker或model執行。[啟動紀錄](assets/r80_r81_actual_preparation_started_20261011.json)／[精確bytes封存](assets/round-81/r80-r81-actual-preparation-started-20261011-v001.zip)。
