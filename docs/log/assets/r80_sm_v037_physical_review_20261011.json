@@ -1,0 +1,919 @@
+{
+  "schema_version": 1,
+  "kind": "r80_sm_v037_saved_integrity_exact_norm_resolution_v002",
+  "status": "passed_saved_model_integrity_with_exact_norm_resolution",
+  "archive": {
+    "path": "docs/log/assets/round-80/r80-sm-v037-physical-review-20261011-v002.zip",
+    "sha256": "9198e02102ddec2e7338e562024fc50fbd9ccc2893f63e57348b5be81cb4a6a5",
+    "bytes": 30632
+  },
+  "payload_sha256": {
+    "review_v037.py": "6b6ebae81b9af43900fec24f0452d1e0ac29df586742495a5f674f295e97ea05",
+    "physical_checks.json": "06e6ea8e388e087e02bf6956271ab3df7a4c465df97fc72684c5c2d9115b3fb7",
+    "version_diff.json": "021d8543695225645ac874bb44289b83694327ad80a09bcc294449c4c25156dd",
+    "independent_source_review.json": "22f1efa8662fce69e923dc98f4c3881436a424c29dfed5574b5122f131dce6b0",
+    "exact_norm_v002/exact_norm_replay.py": "96177161b9b3d134915f2aea533ee24eff2ae5d96443a852e0fd31b7b9ed4287",
+    "exact_norm_v002/receipt.json": "2dc0f775fbf2f407dd2b76eda1390dd18b55fa627944efe830d18645eb845239",
+    "exact_norm_v002/independent_resolution_review.json": "90c10448ae9f912e304dc57f6cafa8e26470144fcf83b956fae1706f8b4eee9b",
+    "README.txt": "51c74a13ffc0b41987e520a03625cee383804fa83612122ed6f227cef1941a62"
+  },
+  "original_bounded_audit": {
+    "added_raw_bindings": {
+      "all_268_file_sha256_values_match_manifest": true,
+      "all_files_exist": true,
+      "all_names_match_declared_hashes": true,
+      "radiation_files": 134,
+      "sample_files": 134,
+      "source_observation_ids": 134
+    },
+    "checks": {
+      "added_raw_bindings_unique": true,
+      "added_raw_file_hashes_exact": true,
+      "added_raw_files_exist": true,
+      "added_raw_names_match_declared_hashes": true,
+      "all_bound_bytes_unchanged_during_review": true,
+      "all_manifest_ids_unique": true,
+      "all_v037_patterns_unique": true,
+      "checkpoint_bindings_and_metadata_exact": true,
+      "checkpoint_complete_terminal_phases": true,
+      "checkpoint_member_seeds_exact_distinct": true,
+      "checkpoint_optimizer_steps_exact": true,
+      "checkpoint_signatures_exact_unique": true,
+      "checkpoint_tensors_finite": true,
+      "checkpoint_train_only_norm_identical_across_members": true,
+      "cumulative_added_patterns_new_unique": true,
+      "cumulative_v035_to_v037_delta_exact": true,
+      "current_cycle_snapshot_metadata_exact": true,
+      "cycle_completed_model_binding_exact": true,
+      "delta_split_counts_exact": true,
+      "existing_increment_replay_bound_without_raw_repeat": true,
+      "health_completed_cycle_binding_exact": true,
+      "incremental_train_only_norm_reconstruction_float32_tolerance": false,
+      "legacy_current_holdout_exclusion_exact": true,
+      "legacy_train_holdout_family_separated": true,
+      "member_hashes_exact": true,
+      "prior_v035_norm_baseline_hash_exact": true,
+      "prior_v035_physical_review_passed": true,
+      "prior_v036_increment_replay_bound_without_repeat": true,
+      "profile_split_counts_exact": true,
+      "profile_train_holdout_alias_separated": true,
+      "profile_train_holdout_pattern_separated": true,
+      "protocol_fresh_training_contract_exact": true,
+      "protocol_id_exact": true,
+      "successive_delta_counts_exact": true,
+      "successive_old_rows_semantically_frozen": true,
+      "summary_binding_exact": true,
+      "summary_counts_exact": true,
+      "summary_member_seeds_exact": true,
+      "summary_profile_ids_exact": true,
+      "summary_protocol_manifest_exact": true,
+      "v035_manifest_id_exact": true,
+      "v035_receipt_counts_exact": true,
+      "v035_rows_semantically_frozen_through_v037": true,
+      "v036_manifest_id_exact": true,
+      "v036_receipt_counts_exact": true,
+      "v037_manifest_id_exact": true,
+      "v037_receipt_counts_exact": true
+    },
+    "completed_cycle": {
+      "action_cutoff_valid_unique": 4548,
+      "action_receipt_sha256": "4627e5899b7bd03e24779a00a083b3ceae5a2119bd6e6492db2131d036619264",
+      "cycle_id": "a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1",
+      "fitted_model_cumulative_valid_unique": 4537,
+      "health_recorded_utc": "2026-10-11T04:06:18.276955+00:00",
+      "latest_data_version": 37,
+      "latest_full_cutoff_taipei": "2026-10-11 07:44",
+      "latest_full_unique": 4363,
+      "status": "dispatched",
+      "trained_model_summary_sha256": "a9450557cc459392ae71993d9218a8bc4da7fa56b972730409f8776976fea766",
+      "trained_this_cycle": true
+    },
+    "current_cycle_snapshot": {
+      "count": 81,
+      "existing_increment_best_factory_margin_db": -5.356210231781006,
+      "existing_increment_positive_rows": 0,
+      "existing_increment_replay_sha256": "ffc48471587f1274203f163e749d15f6b8b8f978cb745002e7840bfb29562206",
+      "metadata_hashes": {
+        "manifest.json": "17e74bcb3944608589802b35acc6ce3d568c6f054065cdd298fa80742d013788",
+        "results.json": "da81d044080a864d380beddce323289035775e5c83e7ea07ee3475c1b507311d",
+        "source_bindings.json": "f5a9191aaf9af49e1a81e1b33b9d0fb46b825c7b36bef34cb5f6c08bc5636a33"
+      },
+      "patterns_equal_v036_to_v037_delta": true,
+      "raw_replayed_by_this_review": false
+    },
+    "elapsed_seconds": 0.8015332221984863,
+    "failures": [
+      "incremental_train_only_norm_reconstruction_float32_tolerance"
+    ],
+    "hashes_after": {
+      "docs/log/assets/r80_health_20261011_1204.json": "9a9bb07a221f5378a497325ec87b61c17f0946c3a1dc32e1ae90cac673e8879b",
+      "docs/log/assets/r80_sm_v035_physical_review_20261011.json": "d24d7dbcb1d2cd15fc5219efc1f1da661ed932e559b62459a8d115b99ee77c2c",
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/59b9d42e27e09f9ad54378f39db84502cdc403d1e0399d098cc66ace35d6ba69/action_receipt.json": "12f9b14086b3bb43f27e613471b1703466faf5945f3d2a0ef9146c9e9105aa72",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/59b9d42e27e09f9ad54378f39db84502cdc403d1e0399d098cc66ace35d6ba69/training_snapshot/manifest.json": "70e0d74ea0f6752ff0dbc97a9db01a529e98c96ead35c5ddeb5baf479f230501",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/59b9d42e27e09f9ad54378f39db84502cdc403d1e0399d098cc66ace35d6ba69/training_snapshot/results.json": "20d10a6dd977afbd6a3a3130aed583f8b41c74f3d5491a066dbe494631ed4c0b",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/59b9d42e27e09f9ad54378f39db84502cdc403d1e0399d098cc66ace35d6ba69/training_snapshot/source_bindings.json": "37c6bffe2b86f9c178651d1916b5101f8a87a523b7792c0772d5a1b4d45bd94f",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1/action_receipt.json": "4627e5899b7bd03e24779a00a083b3ceae5a2119bd6e6492db2131d036619264",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1/training_snapshot/manifest.json": "17e74bcb3944608589802b35acc6ce3d568c6f054065cdd298fa80742d013788",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1/training_snapshot/results.json": "da81d044080a864d380beddce323289035775e5c83e7ea07ee3475c1b507311d",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1/training_snapshot/source_bindings.json": "f5a9191aaf9af49e1a81e1b33b9d0fb46b825c7b36bef34cb5f6c08bc5636a33",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v035/manifest.json": "e2a2b2480071493b062e51e8158a7c75df531e3ae91f0b7aa7bdc04126eb1ad3",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v035/receipt.json": "41f2fa3e144503eb054fad3d2cc9247b2bb8a9f837118a66a132852092e7c58b",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v036/manifest.json": "8e2a56d68b1f0e570f2cd9622f0eeeaaf9581f73c376165f09eabfcdaeee364a",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v036/receipt.json": "91082eb5242f325d5f5c843aacc1571827d4873821e674398d211989b61dc0f9",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v037/manifest.json": "11ed6eb47547f01f2ccf07d417fae611d3e42f0ce6e3112d68ec333491262a82",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v037/receipt.json": "f7e321633055d0e1d83b88569f1b5352c578a1cebf7ae7d03aecac39923ae591",
+      "tmp/r80_factory_20261007/training_familydev_v1/legacy/manifest.json": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v035/member-0.pt": "4e37b47e114c629129d8852b862e93d508a8611404dc00628553c04bafec8ecf",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-0.pt": "0564bd029ddcf3c2920511e5ce8aa29dd48e19b66d0283e498a2763ac811eedc",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-1.pt": "8c4bd1b36996a5595527a87720570fe6def3797be47a0635f72cd243d0cb8c6b",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-2.pt": "a47919986d1870f789b2683b7b6473f5801f3118ca0d23a0224ff9d8b39bcd49",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/summary.json": "a9450557cc459392ae71993d9218a8bc4da7fa56b972730409f8776976fea766",
+      "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "tmp/r80_increment_best_monitor_20261010_v001/increment_59b9d42e_20261011.json": "2377031a854fdb0f3d6e827544cd7c686090cc4def69fb56ae7474804321f849",
+      "tmp/r80_increment_best_monitor_20261010_v001/increment_a56663f7_20261011.json": "ffc48471587f1274203f163e749d15f6b8b8f978cb745002e7840bfb29562206",
+      "tmp/r80_sm_v035_physical_review_20261011_v001/physical_checks.json": "bbea701366a02557a6077972db57d623ef6c609b7cbb8324552a0a02162c246b"
+    },
+    "hashes_before": {
+      "docs/log/assets/r80_health_20261011_1204.json": "9a9bb07a221f5378a497325ec87b61c17f0946c3a1dc32e1ae90cac673e8879b",
+      "docs/log/assets/r80_sm_v035_physical_review_20261011.json": "d24d7dbcb1d2cd15fc5219efc1f1da661ed932e559b62459a8d115b99ee77c2c",
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/59b9d42e27e09f9ad54378f39db84502cdc403d1e0399d098cc66ace35d6ba69/action_receipt.json": "12f9b14086b3bb43f27e613471b1703466faf5945f3d2a0ef9146c9e9105aa72",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/59b9d42e27e09f9ad54378f39db84502cdc403d1e0399d098cc66ace35d6ba69/training_snapshot/manifest.json": "70e0d74ea0f6752ff0dbc97a9db01a529e98c96ead35c5ddeb5baf479f230501",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/59b9d42e27e09f9ad54378f39db84502cdc403d1e0399d098cc66ace35d6ba69/training_snapshot/results.json": "20d10a6dd977afbd6a3a3130aed583f8b41c74f3d5491a066dbe494631ed4c0b",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/59b9d42e27e09f9ad54378f39db84502cdc403d1e0399d098cc66ace35d6ba69/training_snapshot/source_bindings.json": "37c6bffe2b86f9c178651d1916b5101f8a87a523b7792c0772d5a1b4d45bd94f",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1/action_receipt.json": "4627e5899b7bd03e24779a00a083b3ceae5a2119bd6e6492db2131d036619264",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1/training_snapshot/manifest.json": "17e74bcb3944608589802b35acc6ce3d568c6f054065cdd298fa80742d013788",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1/training_snapshot/results.json": "da81d044080a864d380beddce323289035775e5c83e7ea07ee3475c1b507311d",
+      "tmp/r80_factory_20261007/controller_diverse_sm_v1/cycles/a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1/training_snapshot/source_bindings.json": "f5a9191aaf9af49e1a81e1b33b9d0fb46b825c7b36bef34cb5f6c08bc5636a33",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v035/manifest.json": "e2a2b2480071493b062e51e8158a7c75df531e3ae91f0b7aa7bdc04126eb1ad3",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v035/receipt.json": "41f2fa3e144503eb054fad3d2cc9247b2bb8a9f837118a66a132852092e7c58b",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v036/manifest.json": "8e2a56d68b1f0e570f2cd9622f0eeeaaf9581f73c376165f09eabfcdaeee364a",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v036/receipt.json": "91082eb5242f325d5f5c843aacc1571827d4873821e674398d211989b61dc0f9",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v037/manifest.json": "11ed6eb47547f01f2ccf07d417fae611d3e42f0ce6e3112d68ec333491262a82",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v037/receipt.json": "f7e321633055d0e1d83b88569f1b5352c578a1cebf7ae7d03aecac39923ae591",
+      "tmp/r80_factory_20261007/training_familydev_v1/legacy/manifest.json": "08ba579d7592e72150e9e4f1a15d7c94022fe7134ee8af5eb93b6813b24bca8a",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v035/member-0.pt": "4e37b47e114c629129d8852b862e93d508a8611404dc00628553c04bafec8ecf",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-0.pt": "0564bd029ddcf3c2920511e5ce8aa29dd48e19b66d0283e498a2763ac811eedc",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-1.pt": "8c4bd1b36996a5595527a87720570fe6def3797be47a0635f72cd243d0cb8c6b",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-2.pt": "a47919986d1870f789b2683b7b6473f5801f3118ca0d23a0224ff9d8b39bcd49",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/summary.json": "a9450557cc459392ae71993d9218a8bc4da7fa56b972730409f8776976fea766",
+      "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "tmp/r80_increment_best_monitor_20261010_v001/increment_59b9d42e_20261011.json": "2377031a854fdb0f3d6e827544cd7c686090cc4def69fb56ae7474804321f849",
+      "tmp/r80_increment_best_monitor_20261010_v001/increment_a56663f7_20261011.json": "ffc48471587f1274203f163e749d15f6b8b8f978cb745002e7840bfb29562206",
+      "tmp/r80_sm_v035_physical_review_20261011_v001/physical_checks.json": "bbea701366a02557a6077972db57d623ef6c609b7cbb8324552a0a02162c246b"
+    },
+    "kind": "r80_sm_v037_saved_physical_checks_v001",
+    "limits": [
+      "No model was instantiated and no forward, inference, training, prediction, HFSS, NAS, process, dispatch, worker, queue, marker, source or runtime mutation was run.",
+      "The prior v035 49-check audit was not rerun. Its saved receipt/main record and exact baseline checkpoint hash are bound, prior manifest rows are compared semantically, and only the 134 new v035-to-v037 sample/radiation pairs were freshly hashed.",
+      "The v036 53-row and v037 81-row raw WM/radiation replays were not repeated. This review binds their immutable actions, snapshot metadata and existing replay receipts; both reported zero positive rows, with best factory margins -6.401912689208984 and -5.356210231781006 dB.",
+      "The train-only norms are byte-identical across all three v037 members. The incremental reconstruction from the saved v035 float32 aggregate plus only 117 new train rows is tolerance-based; unchanged raw rows were deliberately not reread.",
+      "Fresh initialization is supported by protocol/checkpoint metadata, unique signatures and distinct terminal tensor digests. Initial pre-training tensor bytes are not saved and were not independently replayed.",
+      "The 30+100 epoch history is supported by protocol, terminal phase metadata and exact Adam step tensors. No separate per-epoch log exists and no per-epoch history claim is made.",
+      "Saved metrics/accuracy were not recomputed because that would require model forward inference. No model-quality, SM-improvement, causal-improvement or best-trigger claim is made.",
+      "The descriptive development holdout is not an untouched independent validation set.",
+      "The fitted v037 model binds 4,537 unique rows. The completed action reports 4,548 valid unique and the latest full receipt remains 4,363 at 07:44; neither is substituted into the fitted-model binding.",
+      "Running v038 was not read, assessed or followed."
+    ],
+    "members": [
+      {
+        "binding_match": true,
+        "complete": true,
+        "development_metadata_match": true,
+        "expected_optimizer_steps": 5100,
+        "file_sha256": "0564bd029ddcf3c2920511e5ce8aa29dd48e19b66d0283e498a2763ac811eedc",
+        "fresh_initialization_metadata": true,
+        "legacy_manifest_match": true,
+        "member_seed": 0,
+        "model_tensor_count": 8,
+        "model_tensor_digest": "ab55402259ec713eccc5de7667ea6ddb02b5159f0da908aeabef28e398bc8e89",
+        "model_tensors_finite": true,
+        "optimizer_moments_finite": true,
+        "optimizer_state_entries": 8,
+        "optimizer_steps": [
+          5100
+        ],
+        "optimizer_steps_match": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "signature": "0164de26d353c13a9333f51379df20c04bacff60bcc074df3d0045270b7d4fb0",
+        "signature_match": true,
+        "summary_hash_match": true,
+        "terminal_epoch": 0,
+        "terminal_phase": 2
+      },
+      {
+        "binding_match": true,
+        "complete": true,
+        "development_metadata_match": true,
+        "expected_optimizer_steps": 5100,
+        "file_sha256": "8c4bd1b36996a5595527a87720570fe6def3797be47a0635f72cd243d0cb8c6b",
+        "fresh_initialization_metadata": true,
+        "legacy_manifest_match": true,
+        "member_seed": 1,
+        "model_tensor_count": 8,
+        "model_tensor_digest": "8b6a86143bfdc1aaa55c11ba15dc622e7f3085506cd1d1a94276d0cfeb0fe625",
+        "model_tensors_finite": true,
+        "optimizer_moments_finite": true,
+        "optimizer_state_entries": 8,
+        "optimizer_steps": [
+          5100
+        ],
+        "optimizer_steps_match": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "signature": "26256c7f2c999b55c4359ddb0a45f14fdfe62d7102a9f099e71c5839009291e4",
+        "signature_match": true,
+        "summary_hash_match": true,
+        "terminal_epoch": 0,
+        "terminal_phase": 2
+      },
+      {
+        "binding_match": true,
+        "complete": true,
+        "development_metadata_match": true,
+        "expected_optimizer_steps": 5100,
+        "file_sha256": "a47919986d1870f789b2683b7b6473f5801f3118ca0d23a0224ff9d8b39bcd49",
+        "fresh_initialization_metadata": true,
+        "legacy_manifest_match": true,
+        "member_seed": 2,
+        "model_tensor_count": 8,
+        "model_tensor_digest": "7a37439ff8acf4866f0783f47f2c49d058c3bd162a64fd9c67cd7c94ac3f97c7",
+        "model_tensors_finite": true,
+        "optimizer_moments_finite": true,
+        "optimizer_state_entries": 8,
+        "optimizer_steps": [
+          5100
+        ],
+        "optimizer_steps_match": true,
+        "phase_names": [
+          "legacy_pretrain",
+          "current_profile"
+        ],
+        "signature": "efbc327ed7d2f9440ddaa159aeae872a0fd79f129de16860c94e4371874cc110",
+        "signature_match": true,
+        "summary_hash_match": true,
+        "terminal_epoch": 0,
+        "terminal_phase": 2
+      }
+    ],
+    "schema_version": 1,
+    "scope": "one bounded completed data-v035 to data-v037/model-v037 physical review; existing v036/v037 increment replays are metadata-bound without repeating raw WM/radiation work; running v038 is excluded",
+    "split_findings": {
+      "alias_overlap": [],
+      "legacy_holdout": 1850,
+      "legacy_train": 10150,
+      "legacy_train_exclusions_for_current_holdout": 0,
+      "pattern_overlap_count": 0,
+      "profile_holdout": 1086,
+      "profile_holdout_aliases": 337,
+      "profile_train": 3451,
+      "profile_train_aliases": 1308
+    },
+    "status": "failed",
+    "training_contract": {
+      "batch_size": 128,
+      "current_epochs": 100,
+      "current_train_rows": 3451,
+      "expected_optimizer_steps": 5100,
+      "incremental_norm_float32_max_abs_diffs": {
+        "input_norm": {
+          "mean_max_abs_diff": 5.960464477539063e-08,
+          "std_max_abs_diff": 1.1920928955078125e-07
+        },
+        "target_norm": {
+          "mean_max_abs_diff": 1.9073486328125e-06,
+          "std_max_abs_diff": 1.430511474609375e-06
+        }
+      },
+      "legacy_epochs": 30,
+      "legacy_train_rows": 10150,
+      "normalization_source": "saved norms are byte-identical across all three members; incremental reconstruction used the frozen v035 train-only norm plus only 117 newly added train rows",
+      "separate_per_epoch_log_present": false
+    },
+    "version_growth": {
+      "cumulative_new_patterns": 134,
+      "cumulative_new_profile_holdout": 17,
+      "cumulative_new_profile_train": 117,
+      "cumulative_new_rows": 134,
+      "successive_new_rows": [
+        53,
+        81
+      ],
+      "v035_rows": 4403,
+      "v036_rows": 4456,
+      "v037_rows": 4537,
+      "versions_advanced": 2
+    }
+  },
+  "independent_source_review": {
+    "schema_version": 1,
+    "kind": "r80_sm_v037_independent_source_review_v001",
+    "status": "completed_with_saved_v037_normalization_reconstruction_tolerance_failure_no_forward",
+    "repo": {
+      "branch": "GAN",
+      "head": "61d7381e73234df05eae321b82e02ec71233081b",
+      "reviewed_source": [
+        {
+          "path": "script/symmetry_training.py",
+          "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+          "unchanged_from_archived_v035_review": true
+        },
+        {
+          "path": "script/exploration.py",
+          "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+          "unchanged_from_archived_v035_review": true
+        }
+      ]
+    },
+    "evidence": {
+      "archived_v035_helper": {
+        "path": "tmp/r80_sm_v035_physical_review_20261011_v001/review_v035.py",
+        "sha256": "85abb362e738339e59cae1d04b47dd5696477d5b18588c7813090c4f84a945b8",
+        "bytes": 29531
+      },
+      "archived_v035_physical_checks": {
+        "path": "tmp/r80_sm_v035_physical_review_20261011_v001/physical_checks.json",
+        "sha256": "bbea701366a02557a6077972db57d623ef6c609b7cbb8324552a0a02162c246b",
+        "bytes": 22831,
+        "status": "passed",
+        "check_count": 49,
+        "failures": []
+      },
+      "archived_v035_main_record": {
+        "path": "docs/log/assets/r80_sm_v035_physical_review_20261011.json",
+        "sha256": "d24d7dbcb1d2cd15fc5219efc1f1da661ed932e559b62459a8d115b99ee77c2c",
+        "bytes": 37666,
+        "status": "passed_bounded_saved_model_integrity_no_forward"
+      },
+      "helper": {
+        "path": "tmp/r80_sm_v037_physical_review_20261011_v001/review_v037.py",
+        "sha256": "6b6ebae81b9af43900fec24f0452d1e0ac29df586742495a5f674f295e97ea05",
+        "bytes": 29230
+      },
+      "version_diff": {
+        "path": "tmp/r80_sm_v037_physical_review_20261011_v001/version_diff.json",
+        "sha256": "021d8543695225645ac874bb44289b83694327ad80a09bcc294449c4c25156dd",
+        "bytes": 7244
+      },
+      "physical_checks": {
+        "path": "tmp/r80_sm_v037_physical_review_20261011_v001/physical_checks.json",
+        "sha256": "06e6ea8e388e087e02bf6956271ab3df7a4c465df97fc72684c5c2d9115b3fb7",
+        "bytes": 20052,
+        "status": "failed",
+        "check_count": 47,
+        "passed_check_count": 46,
+        "failures": [
+          "incremental_train_only_norm_reconstruction_float32_tolerance"
+        ],
+        "elapsed_seconds": 0.8015332221984863
+      }
+    },
+    "source_findings": {
+      "source_identity": "The two relevant production source files are byte-identical to those reviewed for the archived v035 milestone; no production source delta requires a new interpretation.",
+      "immutable_protocol": "The saved protocol content ID is recomputed exactly and the helper binds the same protocol file before and after review.",
+      "fresh_version_training": "The unchanged protocol fixes fresh_initialization_each_version=true and early_stopping=false. Saved checkpoints bind data-v037, its manifest, the legacy manifest, member seed and development metadata. The three terminal signatures and terminal model tensor digests are distinct. Initial pre-training tensor bytes are not saved and were not independently replayed.",
+      "split_and_payload_validation": "Source validation accepts only the requested split and verifies local sample/radiation SHA-256 values before tensor construction. The audit verified semantic preservation of all 4,403 v035 rows, uniqueness and disjoint train/holdout aliases and patterns, and exactly the 268 hashes belonging to 134 added sample/radiation pairs.",
+      "train_only_normalization": "Source calls _fit_norm only on current profile_train tensors and computes torch mean and population standard deviation with the saved floor rule. Holdout rows are excluded. All three saved v037 member norms are byte-identical.",
+      "normalization_tolerance_result": "The bounded aggregate reconstruction from the saved v035 float32 mean/std plus only 117 added train rows produced target-std max absolute drift 1.430511474609375e-6, above the inherited 1e-6 limit by 4.30511474609375e-7. No tolerance was changed and the audit was not rerun. This approximation cannot reproduce the full original reduction order without rereading 3,334 unchanged train tensors.",
+      "two_phase_training": "Source executes legacy_pretrain then current_profile. For 10,150 legacy-train rows and 3,451 current-train rows at batch 128, 30 and 100 epochs imply 5,100 Adam steps; every saved optimizer state reports step 5,100 and finite moments.",
+      "forward_boundary": "Saved metrics were produced by the training code's forward path. This review loaded saved CPU tensors only; it did not instantiate a model or invoke construction, train_version, prediction, metrics, inference or forward."
+    },
+    "completion_binding": {
+      "cycle_id": "a56663f76cabe1d83af7f3b4532a6f0f4423e2792f5af2d5313ee7c3729631f1",
+      "action_receipt_sha256": "4627e5899b7bd03e24779a00a083b3ceae5a2119bd6e6492db2131d036619264",
+      "trained_this_cycle": true,
+      "latest_data_version": 37,
+      "model_cumulative_valid_unique": 4537,
+      "action_cutoff_valid_unique": 4548,
+      "latest_full_unique": 4363,
+      "latest_full_cutoff_taipei": "2026-10-11 07:44",
+      "trained_model_summary_sha256": "a9450557cc459392ae71993d9218a8bc4da7fa56b972730409f8776976fea766",
+      "training_snapshot_count": 81,
+      "training_snapshot_manifest_sha256": "17e74bcb3944608589802b35acc6ce3d568c6f054065cdd298fa80742d013788",
+      "training_snapshot_results_sha256": "da81d044080a864d380beddce323289035775e5c83e7ea07ee3475c1b507311d",
+      "training_snapshot_source_bindings_sha256": "f5a9191aaf9af49e1a81e1b33b9d0fb46b825c7b36bef34cb5f6c08bc5636a33",
+      "existing_increment_replay_sha256": "ffc48471587f1274203f163e749d15f6b8b8f978cb745002e7840bfb29562206",
+      "existing_increment_positive_rows": 0,
+      "existing_increment_best_factory_margin_db": -5.356210231781006,
+      "interpretation": "The completed action, summary and predictor binding fix the fitted model at data-v037/4,537. Action cutoff 4,548 and latest full 4,363 are separate scopes and were not substituted into the fitted-model binding."
+    },
+    "prior_increment_binding": {
+      "data_version": 36,
+      "cycle_id": "59b9d42e27e09f9ad54378f39db84502cdc403d1e0399d098cc66ace35d6ba69",
+      "action_sha256": "12f9b14086b3bb43f27e613471b1703466faf5945f3d2a0ef9146c9e9105aa72",
+      "increment_receipt_sha256": "2377031a854fdb0f3d6e827544cd7c686090cc4def69fb56ae7474804321f849",
+      "snapshot_count": 53,
+      "raw_rows_replayed_by_existing_receipt": 53,
+      "raw_rows_replayed_by_this_audit": 0,
+      "positive_rows": 0,
+      "best_factory_margin_db": -6.401912689208984
+    },
+    "data_version_findings": {
+      "reviewed_base_v035_rows": 4403,
+      "completed_v036_rows": 4456,
+      "completed_v037_rows": 4537,
+      "versions_advanced": 2,
+      "successive_new_rows": [
+        53,
+        81
+      ],
+      "cumulative_new_rows": 134,
+      "cumulative_new_unique_patterns": 134,
+      "cumulative_new_profile_train_rows": 117,
+      "cumulative_new_profile_holdout_rows": 17,
+      "v035_rows_preserved_semantically_through_v037": true,
+      "prior_row_loss_or_change_count": 0,
+      "all_v037_pattern_hashes_unique": true,
+      "all_three_manifest_content_ids_match_receipts": true,
+      "bound_bytes_unchanged_during_review": true
+    },
+    "new_raw_binding_findings": {
+      "source_observation_ids": 134,
+      "sample_files": 134,
+      "radiation_files": 134,
+      "all_binding_ids_and_paths_unique": true,
+      "all_names_match_declared_sha256": true,
+      "all_files_exist": true,
+      "all_268_file_sha256_values_match_manifest": true,
+      "unchanged_v035_raw_payloads_reread": false
+    },
+    "split_findings": {
+      "effective_profile_train_rows": 3451,
+      "effective_profile_holdout_rows": 1086,
+      "profile_train_holdout_alias_overlap": 0,
+      "profile_train_holdout_pattern_overlap": 0,
+      "legacy_train_rows": 10150,
+      "legacy_holdout_rows": 1850,
+      "legacy_train_holdout_lineage_overlap": 0,
+      "legacy_train_exclusions_for_current_holdout": 0,
+      "summary_ids_and_counts_match_manifests": true,
+      "development_policy": "whole_canonical_group_train_override_v1",
+      "validation_policy": "remaining_reference_group_holdouts_descriptive_only_no_early_stopping"
+    },
+    "checkpoint_findings": {
+      "member_seeds": [
+        0,
+        1,
+        2
+      ],
+      "member_sha256": [
+        "0564bd029ddcf3c2920511e5ce8aa29dd48e19b66d0283e498a2763ac811eedc",
+        "8c4bd1b36996a5595527a87720570fe6def3797be47a0635f72cd243d0cb8c6b",
+        "a47919986d1870f789b2683b7b6473f5801f3118ca0d23a0224ff9d8b39bcd49"
+      ],
+      "all_member_hashes_match_summary": true,
+      "all_signatures_and_factory_bindings_match": true,
+      "all_three_training_signatures_unique": true,
+      "development_metadata_matches_summary": true,
+      "phase_names": [
+        "legacy_pretrain",
+        "current_profile"
+      ],
+      "legacy_epochs": 30,
+      "current_epochs": 100,
+      "batch_size": 128,
+      "expected_and_actual_optimizer_steps_per_member": 5100,
+      "optimizer_state_entries_per_member": 8,
+      "all_optimizer_moments_and_model_tensors_finite": true,
+      "terminal_phase": 2,
+      "terminal_epoch": 0,
+      "all_complete": true,
+      "fresh_initialization_metadata_all_true": true,
+      "terminal_model_tensor_digests_distinct": true,
+      "independent_initial_tensor_bytes_available": false,
+      "separate_per_epoch_log_present": false
+    },
+    "normalization_findings": {
+      "source_uses_profile_train_only": true,
+      "saved_norms_byte_identical_across_all_three_v037_members": true,
+      "incremental_reconstruction_base_v035_member0_sha256": "4e37b47e114c629129d8852b862e93d508a8611404dc00628553c04bafec8ecf",
+      "incremental_reconstruction_new_profile_train_rows_loaded": 117,
+      "unchanged_v035_raw_rows_loaded_for_normalization": 0,
+      "input_mean_max_abs_diff": 5.960464477539063e-08,
+      "input_std_max_abs_diff": 1.1920928955078125e-07,
+      "target_mean_max_abs_diff": 1.9073486328125e-06,
+      "target_std_max_abs_diff": 1.430511474609375e-06,
+      "fixed_target_std_limit": 1e-06,
+      "passed_fixed_tolerance": false,
+      "interpretation": "Train-only provenance and exact cross-member saved bytes are verified. The incremental reconstruction is an approximation and exceeded only the fixed target-std tolerance; no full reread was performed and no threshold was relaxed."
+    },
+    "production_source_correction_required": false,
+    "audit_defects": [
+      "The bounded incremental norm reconstruction exceeded its fixed target-std tolerance by 4.30511474609375e-7. This prevents an overall physical-audit pass; it does not identify a mismatch among saved member norms or a production source defect."
+    ],
+    "limits_and_unresolved": [
+      "No model was instantiated and no forward, inference, training, prediction, HFSS, NAS, process, controller, dispatch, worker, queue, marker, source or runtime mutation was run.",
+      "The archived v035 audit was not rerun, and unchanged v035 sample/radiation tensors were not reread. The archived result/main record, exact baseline checkpoint hash and semantic old-row equality were used as the baseline.",
+      "The v036/v037 raw WM/radiation replays were not repeated. Their immutable actions, snapshot metadata and existing replay receipts were bound instead.",
+      "The aggregate-only normalization reconstruction cannot reproduce the original full torch reduction order. Its target-std drift exceeded the inherited tolerance, so the overall check remains failed despite exact saved cross-member norm bytes.",
+      "Fresh initialization is supported by unchanged source protocol and checkpoint metadata, unique signatures and distinct terminal tensors. Initial pre-training tensor bytes are not saved.",
+      "The 30+100 epoch protocol and exact 5,100 optimizer steps are verified, but no separate per-epoch log exists.",
+      "Saved metrics and accuracy were not recomputed because that requires model forward inference. No accuracy, SM-performance, causal-improvement or best-trigger claim is made.",
+      "The development-family holdout is descriptive and is not an untouched independent validation set.",
+      "Running v038 was excluded and not followed."
+    ],
+    "prohibited_actions_observed": {
+      "training": false,
+      "inference_or_model_forward": false,
+      "hfss": false,
+      "nas_read_or_write": false,
+      "wm_or_radiation_curve_replay": false,
+      "process_controller_or_monitor_operation": false,
+      "dispatch_or_worker_action": false,
+      "queue_marker_source_or_runtime_mutation": false,
+      "production_code_or_config_edit": false,
+      "git_stage_commit_or_push": false
+    },
+    "readiness": "v037 saved lineage, payload, split, checkpoint and completion bindings pass, but the overall audit remains failed because the fixed aggregate-only target-std reconstruction tolerance was exceeded; no main source correction is indicated"
+  },
+  "exact_normalization_replay": {
+    "checks": {
+      "all_bound_v001_inputs_sources_and_checkpoints_unchanged": true,
+      "checkpoint_files_match_v037_summary": true,
+      "computed_four_norm_tensors_byte_exact_all_three_members": true,
+      "computed_norm_tensors_finite": true,
+      "manifest_ordered_train_ids_exact_before_load": true,
+      "original_v001_failure_preserved_exact": true,
+      "production_loader_retained_exact_ordered_train_ids": true,
+      "production_loader_train_only_shapes_exact": true,
+      "saved_norm_tensors_byte_identical_across_members": true,
+      "train_payload_paths_unique_and_present": true,
+      "v037_manifest_receipt_summary_binding_exact": true
+    },
+    "computed_norm_sha256": {
+      "input_mean": "31a15b3f6328efd6f8089c0e60a768236a060d05b8557a4fb10bba8a50937966",
+      "input_std": "cc71d89d5651b50a172b2c3183471b46804683c66d1857589fb40dc6a652ef63",
+      "target_mean": "4f266427ede8b208c97061ab3c084e341dff9c4c145e11a831b9f1c7db8b1bab",
+      "target_std": "9b2c6c4ed0946622caf878a6e68abb84faea88dda82f66a9a902c31be30428c4"
+    },
+    "elapsed_seconds": 9.086500406265259,
+    "failures": [],
+    "hashes_after": {
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v037/manifest.json": "11ed6eb47547f01f2ccf07d417fae611d3e42f0ce6e3112d68ec333491262a82",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v037/receipt.json": "f7e321633055d0e1d83b88569f1b5352c578a1cebf7ae7d03aecac39923ae591",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-0.pt": "0564bd029ddcf3c2920511e5ce8aa29dd48e19b66d0283e498a2763ac811eedc",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-1.pt": "8c4bd1b36996a5595527a87720570fe6def3797be47a0635f72cd243d0cb8c6b",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-2.pt": "a47919986d1870f789b2683b7b6473f5801f3118ca0d23a0224ff9d8b39bcd49",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/summary.json": "a9450557cc459392ae71993d9218a8bc4da7fa56b972730409f8776976fea766",
+      "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "tmp/r80_sm_v037_physical_review_20261011_v001/independent_source_review.json": "22f1efa8662fce69e923dc98f4c3881436a424c29dfed5574b5122f131dce6b0",
+      "tmp/r80_sm_v037_physical_review_20261011_v001/physical_checks.json": "06e6ea8e388e087e02bf6956271ab3df7a4c465df97fc72684c5c2d9115b3fb7",
+      "tmp/r80_sm_v037_physical_review_20261011_v001/review_v037.py": "6b6ebae81b9af43900fec24f0452d1e0ac29df586742495a5f674f295e97ea05",
+      "tmp/r80_sm_v037_physical_review_20261011_v001/version_diff.json": "021d8543695225645ac874bb44289b83694327ad80a09bcc294449c4c25156dd"
+    },
+    "hashes_before": {
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v037/manifest.json": "11ed6eb47547f01f2ccf07d417fae611d3e42f0ce6e3112d68ec333491262a82",
+      "tmp/r80_factory_20261007/training_familydev_v1/data/data-v037/receipt.json": "f7e321633055d0e1d83b88569f1b5352c578a1cebf7ae7d03aecac39923ae591",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-0.pt": "0564bd029ddcf3c2920511e5ce8aa29dd48e19b66d0283e498a2763ac811eedc",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-1.pt": "8c4bd1b36996a5595527a87720570fe6def3797be47a0635f72cd243d0cb8c6b",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/member-2.pt": "a47919986d1870f789b2683b7b6473f5801f3118ca0d23a0224ff9d8b39bcd49",
+      "tmp/r80_factory_20261007/training_familydev_v1/models/data-v037/summary.json": "a9450557cc459392ae71993d9218a8bc4da7fa56b972730409f8776976fea766",
+      "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "tmp/r80_sm_v037_physical_review_20261011_v001/independent_source_review.json": "22f1efa8662fce69e923dc98f4c3881436a424c29dfed5574b5122f131dce6b0",
+      "tmp/r80_sm_v037_physical_review_20261011_v001/physical_checks.json": "06e6ea8e388e087e02bf6956271ab3df7a4c465df97fc72684c5c2d9115b3fb7",
+      "tmp/r80_sm_v037_physical_review_20261011_v001/review_v037.py": "6b6ebae81b9af43900fec24f0452d1e0ac29df586742495a5f674f295e97ea05",
+      "tmp/r80_sm_v037_physical_review_20261011_v001/version_diff.json": "021d8543695225645ac874bb44289b83694327ad80a09bcc294449c4c25156dd"
+    },
+    "helper_sha256": "96177161b9b3d134915f2aea533ee24eff2ae5d96443a852e0fd31b7b9ed4287",
+    "kind": "r80_sm_v037_exact_full_train_norm_replay_v002",
+    "limits": [
+      "This v002 replay broadens raw reads only to all 3,451 v037 profile_train rows and only for normalization resolution; no holdout or legacy payload was loaded.",
+      "The original v001 46/47 failed result, helper and evidence files remain unchanged. Its fixed tolerance was not altered and its checks were not rerun.",
+      "No model was constructed and no forward, inference, training, prediction, saved metric, WM/radiation metric replay, HFSS, NAS, process, controller, queue, marker, runtime mutation or v038 read was performed.",
+      "Exact equality establishes that the saved v037 norms equal a fresh full profile_train replay under the current reviewed source and local torch environment. It is not an accuracy, performance, model-quality or causal-improvement claim."
+    ],
+    "max_abs_diffs_across_members": {
+      "input_mean": 0.0,
+      "input_std": 0.0,
+      "target_mean": 0.0,
+      "target_std": 0.0
+    },
+    "member_comparisons": [
+      {
+        "comparisons": {
+          "input_mean": {
+            "byte_exact": true,
+            "computed_sha256": "31a15b3f6328efd6f8089c0e60a768236a060d05b8557a4fb10bba8a50937966",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "31a15b3f6328efd6f8089c0e60a768236a060d05b8557a4fb10bba8a50937966",
+            "shape": [
+              625
+            ]
+          },
+          "input_std": {
+            "byte_exact": true,
+            "computed_sha256": "cc71d89d5651b50a172b2c3183471b46804683c66d1857589fb40dc6a652ef63",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "cc71d89d5651b50a172b2c3183471b46804683c66d1857589fb40dc6a652ef63",
+            "shape": [
+              625
+            ]
+          },
+          "target_mean": {
+            "byte_exact": true,
+            "computed_sha256": "4f266427ede8b208c97061ab3c084e341dff9c4c145e11a831b9f1c7db8b1bab",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "4f266427ede8b208c97061ab3c084e341dff9c4c145e11a831b9f1c7db8b1bab",
+            "shape": [
+              216
+            ]
+          },
+          "target_std": {
+            "byte_exact": true,
+            "computed_sha256": "9b2c6c4ed0946622caf878a6e68abb84faea88dda82f66a9a902c31be30428c4",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "9b2c6c4ed0946622caf878a6e68abb84faea88dda82f66a9a902c31be30428c4",
+            "shape": [
+              216
+            ]
+          }
+        },
+        "member_seed": 0
+      },
+      {
+        "comparisons": {
+          "input_mean": {
+            "byte_exact": true,
+            "computed_sha256": "31a15b3f6328efd6f8089c0e60a768236a060d05b8557a4fb10bba8a50937966",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "31a15b3f6328efd6f8089c0e60a768236a060d05b8557a4fb10bba8a50937966",
+            "shape": [
+              625
+            ]
+          },
+          "input_std": {
+            "byte_exact": true,
+            "computed_sha256": "cc71d89d5651b50a172b2c3183471b46804683c66d1857589fb40dc6a652ef63",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "cc71d89d5651b50a172b2c3183471b46804683c66d1857589fb40dc6a652ef63",
+            "shape": [
+              625
+            ]
+          },
+          "target_mean": {
+            "byte_exact": true,
+            "computed_sha256": "4f266427ede8b208c97061ab3c084e341dff9c4c145e11a831b9f1c7db8b1bab",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "4f266427ede8b208c97061ab3c084e341dff9c4c145e11a831b9f1c7db8b1bab",
+            "shape": [
+              216
+            ]
+          },
+          "target_std": {
+            "byte_exact": true,
+            "computed_sha256": "9b2c6c4ed0946622caf878a6e68abb84faea88dda82f66a9a902c31be30428c4",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "9b2c6c4ed0946622caf878a6e68abb84faea88dda82f66a9a902c31be30428c4",
+            "shape": [
+              216
+            ]
+          }
+        },
+        "member_seed": 1
+      },
+      {
+        "comparisons": {
+          "input_mean": {
+            "byte_exact": true,
+            "computed_sha256": "31a15b3f6328efd6f8089c0e60a768236a060d05b8557a4fb10bba8a50937966",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "31a15b3f6328efd6f8089c0e60a768236a060d05b8557a4fb10bba8a50937966",
+            "shape": [
+              625
+            ]
+          },
+          "input_std": {
+            "byte_exact": true,
+            "computed_sha256": "cc71d89d5651b50a172b2c3183471b46804683c66d1857589fb40dc6a652ef63",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "cc71d89d5651b50a172b2c3183471b46804683c66d1857589fb40dc6a652ef63",
+            "shape": [
+              625
+            ]
+          },
+          "target_mean": {
+            "byte_exact": true,
+            "computed_sha256": "4f266427ede8b208c97061ab3c084e341dff9c4c145e11a831b9f1c7db8b1bab",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "4f266427ede8b208c97061ab3c084e341dff9c4c145e11a831b9f1c7db8b1bab",
+            "shape": [
+              216
+            ]
+          },
+          "target_std": {
+            "byte_exact": true,
+            "computed_sha256": "9b2c6c4ed0946622caf878a6e68abb84faea88dda82f66a9a902c31be30428c4",
+            "dtype": "torch.float32",
+            "max_abs_diff": 0.0,
+            "saved_sha256": "9b2c6c4ed0946622caf878a6e68abb84faea88dda82f66a9a902c31be30428c4",
+            "shape": [
+              216
+            ]
+          }
+        },
+        "member_seed": 2
+      }
+    ],
+    "original_v001_result_retained": {
+      "aggregate_target_std_fixed_limit": 1e-06,
+      "aggregate_target_std_max_abs_diff": 1.430511474609375e-06,
+      "check_count": 47,
+      "failures": [
+        "incremental_train_only_norm_reconstruction_float32_tolerance"
+      ],
+      "passed_check_count": 46,
+      "status": "failed"
+    },
+    "payload_read_scope": {
+      "hash_contract": "production _load_dataset SHA-256 verified every selected sample/radiation file against source_sample_sha256/source_rad_sha256 before tensor construction",
+      "radiation_bytes": 13624433,
+      "radiation_files_verified_by_production_loader": 3451,
+      "sample_bytes": 14521693,
+      "sample_files_verified_by_production_loader": 3451,
+      "total_payload_bytes": 28146126
+    },
+    "rows": {
+      "legacy_raw_loaded": 0,
+      "manifest_total": 4537,
+      "profile_holdout_raw_loaded": 0,
+      "profile_train_loaded_once": 3451
+    },
+    "schema_version": 1,
+    "scope": "one authorized local full profile_train normalization replay for data-v037 solely to resolve the v001 aggregate-reconstruction tolerance failure",
+    "status": "passed_exact_full_train_norm_replay"
+  },
+  "independent_resolution_review": {
+    "schema_version": 1,
+    "kind": "r80_sm_v037_exact_norm_resolution_review_v002",
+    "status": "passed_exact_full_profile_train_norm_resolution_original_v001_failure_preserved",
+    "scope": "separate narrow resolution of the v001 aggregate-only normalization tolerance failure by one exact full data-v037 profile_train replay",
+    "repo": {
+      "branch": "GAN",
+      "head": "61d7381e73234df05eae321b82e02ec71233081b",
+      "production_sources": [
+        {
+          "path": "script/symmetry_training.py",
+          "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+          "unchanged_from_v001": true
+        },
+        {
+          "path": "script/exploration.py",
+          "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+          "unchanged_from_v001": true
+        }
+      ]
+    },
+    "original_v001_preserved": {
+      "directory": "tmp/r80_sm_v037_physical_review_20261011_v001",
+      "overall_status": "failed",
+      "check_count": 47,
+      "passed_check_count": 46,
+      "failures": [
+        "incremental_train_only_norm_reconstruction_float32_tolerance"
+      ],
+      "aggregate_target_std_max_abs_diff": 1.430511474609375e-06,
+      "aggregate_target_std_fixed_limit": 1e-06,
+      "files": [
+        {
+          "path": "tmp/r80_sm_v037_physical_review_20261011_v001/review_v037.py",
+          "sha256": "6b6ebae81b9af43900fec24f0452d1e0ac29df586742495a5f674f295e97ea05"
+        },
+        {
+          "path": "tmp/r80_sm_v037_physical_review_20261011_v001/physical_checks.json",
+          "sha256": "06e6ea8e388e087e02bf6956271ab3df7a4c465df97fc72684c5c2d9115b3fb7"
+        },
+        {
+          "path": "tmp/r80_sm_v037_physical_review_20261011_v001/version_diff.json",
+          "sha256": "021d8543695225645ac874bb44289b83694327ad80a09bcc294449c4c25156dd"
+        },
+        {
+          "path": "tmp/r80_sm_v037_physical_review_20261011_v001/independent_source_review.json",
+          "sha256": "22f1efa8662fce69e923dc98f4c3881436a424c29dfed5574b5122f131dce6b0"
+        }
+      ],
+      "interpretation": "The v001 failure remains valid for its deliberately aggregate-only method and fixed tolerance. This v002 evidence does not rewrite, delete or convert that result to a pass."
+    },
+    "v002_evidence": {
+      "helper": {
+        "path": "tmp/r80_sm_v037_physical_review_20261011_v001/exact_norm_v002/exact_norm_replay.py",
+        "sha256": "96177161b9b3d134915f2aea533ee24eff2ae5d96443a852e0fd31b7b9ed4287",
+        "bytes": 10931
+      },
+      "receipt": {
+        "path": "tmp/r80_sm_v037_physical_review_20261011_v001/exact_norm_v002/receipt.json",
+        "sha256": "2dc0f775fbf2f407dd2b76eda1390dd18b55fa627944efe830d18645eb845239",
+        "bytes": 11881,
+        "status": "passed_exact_full_train_norm_replay",
+        "check_count": 11,
+        "failures": [],
+        "elapsed_seconds": 9.086500406265259
+      }
+    },
+    "authorized_read_scope": {
+      "data_version": 37,
+      "manifest_rows_seen_for_split_selection": 4537,
+      "profile_train_rows_loaded_once": 3451,
+      "profile_holdout_payload_rows_loaded": 0,
+      "legacy_payload_rows_loaded": 0,
+      "sample_files_sha256_verified": 3451,
+      "radiation_files_sha256_verified": 3451,
+      "sample_bytes": 14521693,
+      "radiation_bytes": 13624433,
+      "total_payload_bytes": 28146126,
+      "loader": "production script.symmetry_training._load_dataset",
+      "normalization": "production script.exploration._fit_norm: torch mean, population std (unbiased=false), values below 1e-6 replaced by 1",
+      "purpose": "resolve only the v001 aggregate-reconstruction tolerance failure"
+    },
+    "ordered_dataset_binding": {
+      "loaded_count": 3451,
+      "loaded_ids_equal_manifest_ordered_profile_train_ids": true,
+      "loaded_ids_equal_summary_profile_train_ids": true,
+      "all_loaded_rows_have_profile_train_split": true,
+      "payload_hashes_checked_by_production_loader_before_tensor_construction": true
+    },
+    "exact_norm_results": {
+      "computed_tensor_sha256": {
+        "input_mean": "31a15b3f6328efd6f8089c0e60a768236a060d05b8557a4fb10bba8a50937966",
+        "input_std": "cc71d89d5651b50a172b2c3183471b46804683c66d1857589fb40dc6a652ef63",
+        "target_mean": "4f266427ede8b208c97061ab3c084e341dff9c4c145e11a831b9f1c7db8b1bab",
+        "target_std": "9b2c6c4ed0946622caf878a6e68abb84faea88dda82f66a9a902c31be30428c4"
+      },
+      "member_seeds_compared": [
+        0,
+        1,
+        2
+      ],
+      "comparison_count": 12,
+      "byte_exact_comparison_count": 12,
+      "all_computed_norm_tensors_finite": true,
+      "all_three_saved_member_norms_byte_identical": true,
+      "computed_norms_byte_exact_to_every_saved_member": true,
+      "max_abs_diff": {
+        "input_mean": 0.0,
+        "input_std": 0.0,
+        "target_mean": 0.0,
+        "target_std": 0.0
+      }
+    },
+    "bound_artifact_result": {
+      "original_v001_files_unchanged_before_to_after": true,
+      "manifest_receipt_protocol_summary_checkpoints_unchanged_before_to_after": true,
+      "production_sources_unchanged_before_to_after": true,
+      "checkpoint_files_match_v037_summary": true
+    },
+    "resolution": {
+      "exact_saved_norm_integrity_resolved": true,
+      "original_aggregate_check_reclassified": false,
+      "original_threshold_changed": false,
+      "original_audit_rerun": false,
+      "production_source_correction_required": false,
+      "controller_action_required": false,
+      "interpretation": "A fresh exact replay over all ordered v037 profile_train rows reproduces each of the four saved normalization tensors byte-for-byte in all three members. The v001 aggregate-only discrepancy comes from reconstructing full statistics from a rounded v035 aggregate plus 117 new rows, rather than an incorrect saved norm or production normalization defect."
+    },
+    "prohibited_actions_observed": {
+      "model_construction": false,
+      "model_forward_or_inference": false,
+      "training": false,
+      "saved_metric_or_wm_curve_replay": false,
+      "holdout_or_legacy_payload_read": false,
+      "hfss": false,
+      "nas_read_or_write": false,
+      "process_controller_queue_or_marker_operation": false,
+      "runtime_or_production_mutation": false,
+      "v038_read_or_follow": false,
+      "git_stage_commit_or_push": false
+    },
+    "limits": [
+      "The additional raw read scope is limited to all 3,451 v037 profile_train rows and the normalization tensors derived from them.",
+      "This verifies saved normalization integrity under the reviewed local source and torch environment. It does not independently replay training, initialization tensors, epoch history, model outputs, accuracy, WM metrics or performance.",
+      "The original v001 46/47 result remains failed because its approximate aggregate reconstruction exceeded its unchanged fixed tolerance.",
+      "No holdout, legacy, NAS, current/running cycle, model forward or runtime state was read as part of this resolution."
+    ]
+  },
+  "conductor_review": "Inspected v035-to-v037 helper diff, original fixed-tolerance failure, exact replay source and source bindings. Verified all 12 computed/saved tensor SHA pairs as well as equality flags and zero diffs. Archived original failed evidence unchanged; no tolerance change, old audit repeat, forward, training or runtime modification.",
+  "limits": "Initial aggregate audit remains failed46/47. Exact normalization resolution alone passes11/11; these are different checks and scopes. No accuracy/SM quality or causal improvement claim. Fit4537, action4548 and full4363 are separate cutoffs; running v038 excluded.",
+  "quota_policy": "Validated5000 triggers R81 preparation immediately, with R80 final analysis in parallel. R81 has no symmetry constraint; actual dispatch still needs zero pending and immutable private Release."
+}
