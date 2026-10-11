@@ -1,0 +1,611 @@
+{
+  "schema_version": 1,
+  "recorded_utc": "2026-10-11T01:36:20.968085+00:00",
+  "status": "routine_health_passed_with_native_retry_and_guided_priority_resumption",
+  "health": {
+    "schema_version": 1,
+    "status": "restored_main_health_observed",
+    "observed_utc": "2026-10-11T01:34:14.3140855Z",
+    "restoration_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_structured48_controller_transition_20261010_v004\\restoration_complete.json",
+      "sha256": "fb73424b28104a575f9f9b5f146aad4ff3918b76fdf6f6a596e61ae6103afb0b",
+      "bytes": 4275,
+      "schema_version": 1,
+      "status": "restored_new_owned_main_verified"
+    },
+    "health_source": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_restored_health_20261010_v005\\check_health_restored.ps1",
+      "sha256": "069c287b2733f9d7edde96c351a8375b2ef405d8dc18a8fea31ef251153af3f2",
+      "common_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_restored_health_20261010_v005\\check_health_restored_common.ps1",
+      "common_sha256": "2fad7b019348cd975323beb36acc5f13d38f08b1e8167648ab598734ce8ebd42"
+    },
+    "process": {
+      "pid": 53228,
+      "creation_unix_ms": 1791602636766,
+      "executable": "C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe",
+      "argv": "\"C:\\Users\\ricky\\miniforge3\\envs\\ant\\python.exe\" -u -m script.symmetry_factory_watch --settings \"C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json\""
+    },
+    "process_matches_restoration_receipt": true,
+    "watcher_inventory_count_excluding_query": 1,
+    "watcher_inventory_exact": true,
+    "new_launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+    "runtime_file_bindings_verified": 19,
+    "attempt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\5a181a47c95a4ab1a8377d803f9da3c1.json",
+      "sha256": "a4f7a8d542ac21d2d6ce986d1696711a6a984d8bd98b8c7d2e755fabc5f9d44b",
+      "bytes": 13686,
+      "initial_restoration_snapshot_sha256": "4577413adc57fc004489c92c545a705c956bf404bf2760dab0d366580e17789b",
+      "mutable_current_watch_status": true,
+      "fixed_launch_history_bindings_verified": true
+    },
+    "watch_status": {
+      "schema_version": 1,
+      "status": "running_cycle",
+      "started_utc": "2026-10-10T03:23:58.664117+00:00",
+      "launch_id": "5a181a47c95a4ab1a8377d803f9da3c1",
+      "attempt_record": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_attempts\\5a181a47c95a4ab1a8377d803f9da3c1.json",
+      "settings_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+      "settings_sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38",
+      "profile_binding": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\single_r80_symmetry_factory.yaml",
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "scope": "symmetry_filter_20261007"
+      },
+      "expected_retry_workers": [
+        "140.123.106.216",
+        "140.123.106.218",
+        "140.123.106.37"
+      ],
+      "interval_seconds": 1800,
+      "completed_cycles": 21,
+      "hfss_started_here": false,
+      "low_backlog": {
+        "poll_seconds": 90,
+        "low_watermark": 48,
+        "target_pending": 96,
+        "max_refill": 96,
+        "min_refill": 48,
+        "shard_size": 16,
+        "priority": 6,
+        "owner": "r80-low-backlog-v1",
+        "reservoir_seed": 80100791,
+        "reservoir_size": 2048
+      },
+      "search_policy": {
+        "schema_version": 1,
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\configs\\r80_diverse_sm_search_v1.json",
+        "sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+        "policy_id": "27937e8f03647431256a31ad47acf4124fc30f8b7195afb1f731d079d6e01d75",
+        "policy": {
+          "arm_order": [
+            "global_lcb",
+            "parent_lcb",
+            "high_disagreement"
+          ],
+          "arm_weights": [
+            1,
+            1,
+            1
+          ],
+          "candidate_pool_size": 20000,
+          "disagreement_mean_percentile": 60,
+          "dispatch": "existing factory transaction, same priority1 and 16-pattern shards, existing 96 outstanding and 5000 valid-plus-reserved limits",
+          "limits": [
+            "Predictions guide candidate selection; HFSS remains the truth.",
+            "This changes pool generation and arm allocation together; it is not a single-factor causal diversity comparison.",
+            "Top-quartile parent descriptors are development information, not independent model-validation evidence.",
+            "LOW blind backlog remains enabled and unchanged.",
+            "No bridge-width, frequency, score-spec, emforge or worker runtime change.",
+            "First new cohort must be evaluated by origin, saved prediction error, actual WM and geometry coverage before claiming improvement."
+          ],
+          "max_parents_per_canonical_group": 2,
+          "max_selected_per_canonical_group": 2,
+          "measurement_changes": false,
+          "measurement_profile": "configs/single_r80_symmetry_factory.yaml",
+          "min_parent_groups": 8,
+          "min_parent_physical_hamming": 64,
+          "min_selected_physical_hamming": 64,
+          "name": "r80_diverse_sm_v1",
+          "parent_count": 32,
+          "parent_ranking": "actual WM top quartile; highest-WM first, then existing maxmin_hamming_indices with canonical-group cap",
+          "parent_top_fraction": 0.25,
+          "ranking": "descending score, then pattern_sha256; greedily take the highest feasible candidate under whole-cohort constraints",
+          "schema_version": 1,
+          "seed": 80100956,
+          "source_pool_fractions": {
+            "fresh_random": 0.5,
+            "parent_variant": 0.5
+          },
+          "strict_no_relaxation": true,
+          "training_protocol_changes": false
+        }
+      },
+      "cycle_started_utc": "2026-10-11T01:24:02.158099+00:00",
+      "last_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\81fbb84ab00b60764b69a74155d8eac12aab273cf1d0f74ec59e75c099a66907\\action_receipt.json",
+      "last_receipt_sha256": "df46a2b4a9db8815059e7c40e752f5ac8083b818803c358508d8163a0ec09266",
+      "last_cycle_seconds": 3347.844000000041,
+      "valid_unique": 4420,
+      "latest_data_version": 35,
+      "last_completed_utc": "2026-10-11T01:19:49.984576+00:00",
+      "next_cycle_in_seconds": 252.15599999995902,
+      "deferred_retry_count": 2,
+      "last_deferred_retry": {
+        "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\deferred_retries\\5a181a47c95a4ab1a8377d803f9da3c1-0002.json",
+        "sha256": "c3f4c56e64e4dbf828336e54ff51bbcaa07ee25fdaddd25e0852d73e46512dae",
+        "schema_version": 1,
+        "event": "live_snapshot_changed",
+        "deferred_utc": "2026-10-10T23:44:46.083042+00:00",
+        "error": "worker state changed after physical proof: dedust_r80c51d8bc92g01; retry cycle",
+        "exception_type": "LiveSnapshotChanged",
+        "cycle_started_utc": "2026-10-10T22:54:02.135115+00:00",
+        "controller_receipt": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\a16c78a17771169da79cf167a4cfe7fc44097a1afd3c0dc4e86c980bbb15a1ac\\action_receipt.json"
+      }
+    },
+    "watch_status_snapshot": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\watch_status.json",
+      "sha256": "5c350533a5d1d7d7ad3ed1e70094112376011f5877f057ff0d75d867f5ce0611",
+      "bytes": 5061
+    },
+    "settings": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\watch_settings_diverse_sm_v1.json",
+      "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+    },
+    "scoped_status_exit": 1,
+    "scoped_status_output": "資料工廠狀態:\r\n  job dedust_r80ka00bff601d27501e: 15/16 完成,最新結果 640 分前（已認領）\r\n  job dedust_r80ke8bf731a8e6d6e67: 12/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80kf182240243329a1e: 0/16（排隊中）\r\n  job dedust_r80k048d177eca941f06: 0/16（排隊中）\r\n  job dedust_r80k562ff25117c86167: 0/16（排隊中）\r\n  job dedust_r80c81fbb84ag01: 3/16 完成,最新結果 1 分前（已認領）\r\n  job dedust_r80c81fbb84ag02: 2/16 完成,最新結果 2 分前（已認領）\r\n  job dedust_r80c81fbb84ag03: 0/16（排隊中）\r\n⚠ 工廠警報：批次部分失敗: dedust_r80ka00bff601d27501e.fail（保留結果待跨機補測；原worker決定續跑佇列，需另查近期進展）\r\n",
+    "correct_jobs_state_markers": {
+      "dedust_r80c7e26901fg01": {
+        "done": true,
+        "fail": false
+      },
+      "dedust_r80c7e26901fg02": {
+        "done": true,
+        "fail": false
+      },
+      "dedust_r80c7e26901fg03": {
+        "done": true,
+        "fail": false
+      }
+    },
+    "automatic_restart": false,
+    "process_signal_or_stop": false,
+    "source_or_queue_mutation": false
+  },
+  "health_sha256": "715102fb8b87a57ffc0310fbf8ddc55d51ada2f55ba865bcc82fb483c985d811",
+  "owner_readback": {
+    "observed_utc": "2026-10-11T01:34:34.619899+00:00",
+    "read_only": true,
+    "stores": [
+      {
+        "store": "dedust_r80ka00bff601d27501e",
+        "markers": {
+          "claim": {
+            "exists": true,
+            "sha256": "ab90589b4fcf03203ea25a828e116fc3f434d3e8681628fc22908b0adf6f1809",
+            "payload": {
+              "machine": "140.123.106.37",
+              "at": "2026-10-10 22:52:40",
+              "prior_fail": [
+                "140.123.106.216",
+                "140.123.106.218"
+              ]
+            },
+            "modified_utc": "2026-10-10T14:52:41.354071+00:00"
+          },
+          "done": {
+            "exists": false
+          },
+          "fail": {
+            "exists": true,
+            "sha256": "3ba6048e7c68478fa165142bc8bedab1f52b0402d74181aad77a7fde873d6de1",
+            "payload": {
+              "machines": [
+                "140.123.106.216",
+                "140.123.106.218",
+                "140.123.106.37"
+              ],
+              "last": "profile HFSS 部分失敗：verified=15 terminal_errors=1 (r80kl05_d436793fe129)",
+              "at": "2026-10-10 22:54:18",
+              "failure_kind": "incomplete_profile_hfss",
+              "worker_continues": true
+            },
+            "modified_utc": "2026-10-10T14:54:19.498787+00:00"
+          }
+        },
+        "results_exists": true,
+        "results_sha256": "587ca1ca5bd46674f3f0ef6f2423c9bf216a78c5df8e9f65778af07b62c86c72",
+        "results_modified_utc": "2026-10-10T14:53:57.086183+00:00",
+        "successful_entries": 15,
+        "error_entries": [
+          {
+            "id": "r80kl05_d436793fe129",
+            "entry": {
+              "error": "DISP_E_EXCEPTION(COM 例外) 0x80070203 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024381), None)",
+              "attempts": 5,
+              "error_kind": "hfss_simulation"
+            }
+          }
+        ]
+      },
+      {
+        "store": "dedust_r80ke8bf731a8e6d6e67",
+        "markers": {
+          "claim": {
+            "exists": true,
+            "sha256": "a5e75d181a3b81d7462fc0fb9a02fa539b9c9eecde8bcaae85fefabea83acd35",
+            "payload": {
+              "machine": "140.123.106.37",
+              "at": "2026-10-11 08:48:03"
+            },
+            "modified_utc": "2026-10-11T00:48:04.215708+00:00"
+          },
+          "done": {
+            "exists": false
+          },
+          "fail": {
+            "exists": false
+          }
+        },
+        "results_exists": true,
+        "results_sha256": "63c2c81c0ea8e06b3af95a1d976e05357cf93bfaa79fe5f85bdaf189fdbf960b",
+        "results_modified_utc": "2026-10-11T01:32:31.146893+00:00",
+        "successful_entries": 12,
+        "error_entries": [
+          {
+            "id": "r80kl00_dced1233d42d",
+            "entry": {
+              "error": "RPC_E_SERVERFAULT(HFSS 內部例外) | (-2147417851, '伺服器丟出一個例外。', None, None)",
+              "attempts": 1,
+              "error_kind": "hfss_simulation"
+            }
+          }
+        ]
+      },
+      {
+        "store": "dedust_r80kf182240243329a1e",
+        "markers": {
+          "claim": {
+            "exists": false
+          },
+          "done": {
+            "exists": false
+          },
+          "fail": {
+            "exists": false
+          }
+        },
+        "results_exists": false,
+        "results_sha256": null,
+        "results_modified_utc": null,
+        "successful_entries": 0,
+        "error_entries": []
+      },
+      {
+        "store": "dedust_r80k048d177eca941f06",
+        "markers": {
+          "claim": {
+            "exists": false
+          },
+          "done": {
+            "exists": false
+          },
+          "fail": {
+            "exists": false
+          }
+        },
+        "results_exists": false,
+        "results_sha256": null,
+        "results_modified_utc": null,
+        "successful_entries": 0,
+        "error_entries": []
+      },
+      {
+        "store": "dedust_r80k562ff25117c86167",
+        "markers": {
+          "claim": {
+            "exists": false
+          },
+          "done": {
+            "exists": false
+          },
+          "fail": {
+            "exists": false
+          }
+        },
+        "results_exists": false,
+        "results_sha256": null,
+        "results_modified_utc": null,
+        "successful_entries": 0,
+        "error_entries": []
+      },
+      {
+        "store": "dedust_r80c81fbb84ag01",
+        "markers": {
+          "claim": {
+            "exists": true,
+            "sha256": "c5d02998a261e630e2f408b105fcdfa491e864c06f8870bdaff9e7ec49b4c583",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-11 09:23:50"
+            },
+            "modified_utc": "2026-10-11T01:23:52.196225+00:00"
+          },
+          "done": {
+            "exists": false
+          },
+          "fail": {
+            "exists": false
+          }
+        },
+        "results_exists": true,
+        "results_sha256": "d8b23bcef8cb5e5f31781edfe28c48d6dadf5e3ef6f77e1b516183bcf52f1e72",
+        "results_modified_utc": "2026-10-11T01:32:47.217095+00:00",
+        "successful_entries": 3,
+        "error_entries": []
+      },
+      {
+        "store": "dedust_r80c81fbb84ag02",
+        "markers": {
+          "claim": {
+            "exists": true,
+            "sha256": "b695ac53bb195300388dcf5e92f8063be758fea82afc9bacc60aea8ed9eb6a13",
+            "payload": {
+              "machine": "140.123.106.218",
+              "at": "2026-10-11 09:27:16"
+            },
+            "modified_utc": "2026-10-11T01:27:17.250071+00:00"
+          },
+          "done": {
+            "exists": false
+          },
+          "fail": {
+            "exists": false
+          }
+        },
+        "results_exists": true,
+        "results_sha256": "f9edf13820c3bad5dd5aa001dcc91686161deafbf57941f99247dad940f3efe1",
+        "results_modified_utc": "2026-10-11T01:32:40.618940+00:00",
+        "successful_entries": 2,
+        "error_entries": []
+      },
+      {
+        "store": "dedust_r80c81fbb84ag03",
+        "markers": {
+          "claim": {
+            "exists": false
+          },
+          "done": {
+            "exists": false
+          },
+          "fail": {
+            "exists": false
+          }
+        },
+        "results_exists": false,
+        "results_sha256": null,
+        "results_modified_utc": null,
+        "successful_entries": 0,
+        "error_entries": []
+      },
+      {
+        "store": "dedust_r80k9913826d2a17d515",
+        "markers": {
+          "claim": {
+            "exists": true,
+            "sha256": "e3da3dec608bc5bcdad9d97cca8201f7cf03957fed5753b69d8d3af97270a05f",
+            "payload": {
+              "machine": "140.123.106.218",
+              "at": "2026-10-11 08:39:08"
+            },
+            "modified_utc": "2026-10-11T00:39:08.907594+00:00"
+          },
+          "done": {
+            "exists": true,
+            "sha256": "b7aef7daf0a68c6a81f4fc0d3b1a0382e4672d3cbdfb2f5e4833e89200e17430",
+            "payload": {
+              "machine": "140.123.106.218",
+              "at": "2026-10-11 09:27:15",
+              "errors": 0,
+              "error_ids": []
+            },
+            "modified_utc": "2026-10-11T01:27:15.852437+00:00"
+          },
+          "fail": {
+            "exists": false
+          }
+        },
+        "results_exists": true,
+        "results_sha256": "c38edb1058afa026223e0c1ac5ca773e496b4e9b18559ef8387e904948cede1a",
+        "results_modified_utc": "2026-10-11T01:27:09.601079+00:00",
+        "successful_entries": 16,
+        "error_entries": []
+      },
+      {
+        "store": "dedust_r80ca16c78a1g03",
+        "markers": {
+          "claim": {
+            "exists": true,
+            "sha256": "655740e79840ae7ec44561a954facb599d3a471c3d932b831bf33432fd4420a7",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-11 08:31:44"
+            },
+            "modified_utc": "2026-10-11T00:31:45.939040+00:00"
+          },
+          "done": {
+            "exists": true,
+            "sha256": "2ab293b6a3587fade74339cfb03fe568e42c54603b26b3e4d559007f67e99cc7",
+            "payload": {
+              "machine": "140.123.106.216",
+              "at": "2026-10-11 09:23:49",
+              "errors": 0,
+              "error_ids": []
+            },
+            "modified_utc": "2026-10-11T01:23:50.766196+00:00"
+          },
+          "fail": {
+            "exists": false
+          }
+        },
+        "results_exists": true,
+        "results_sha256": "a96ed7a45ab23bcc3373fc7d334025cf420c0929889fd67056715a81fb2c85e1",
+        "results_modified_utc": "2026-10-11T01:23:49.105905+00:00",
+        "successful_entries": 16,
+        "error_entries": []
+      }
+    ],
+    "limits": [
+      "Sequential marker/result cutoffs; later progress excluded.",
+      "Claim identity plus recent saved results is not remote worker process verification.",
+      "No raw metric replay or failure recovery assertion."
+    ]
+  },
+  "owner_readback_sha256": "619ca1feaf8855e0d716853d8154785a152f9aaaa3e2c5e5c4b309f1b4dee109",
+  "previous_health": "docs\\log\\assets\\r80_health_20261011_0904.json",
+  "previous_health_sha256": "e34bdbb603ed2f5e718f02b8bc9ceff1ccb13e9ba618db47f16e7e9a12f3e91c",
+  "recovered_low_entry": {
+    "store": "dedust_r80k9913826d2a17d515",
+    "id": "r80kl07_830fd904378b",
+    "result_entry": {
+      "status": "ok",
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+      "labels": [
+        "S11",
+        "Gain"
+      ],
+      "freqs": [
+        24.0,
+        24.5,
+        25.0,
+        25.5,
+        26.0,
+        26.5,
+        27.0,
+        27.5,
+        28.0,
+        28.5,
+        29.0,
+        29.5,
+        30.0,
+        30.5,
+        31.0,
+        31.5,
+        32.0
+      ],
+      "pattern_sha256": "830fd904378bcc830fef0c96cf9cb6a039d0aa94b31aef25a70dad5e11da5e72",
+      "lineage_id": "830fd904378bcc830fef0c96cf9cb6a039d0aa94b31aef25a70dad5e11da5e72",
+      "sample_file": "2e54bb17eacd8695.pt",
+      "time_s": 172.0,
+      "geom": "single_v1",
+      "dbw": 0.1,
+      "gain28": -3.9840123653411865,
+      "s11_28": -2.9437813758850098,
+      "rad_file": "rad/r80kl07_830fd904378b.pt",
+      "performance_gate": false,
+      "sample_sha256": "d426b5a933321707584a60a87e86413ed8bab8c41f6cca63edfd2f9beb27e304",
+      "rad_sha256": "5664d70618d932b9bb85b8d35c44dda050ad6c895166914a2f7ee4b75dc3912b"
+    },
+    "results_sha256": "c38edb1058afa026223e0c1ac5ca773e496b4e9b18559ef8387e904948cede1a",
+    "done_sha256": "b7aef7daf0a68c6a81f4fc0d3b1a0382e4672d3cbdfb2f5e4833e89200e17430",
+    "evidence_scope": "Saved success metadata/MID-SID/native done; not new whole batch raw replay"
+  },
+  "old_terminal_low_results_and_fail_hashes_unchanged": true,
+  "latest_action_sha256": "df46a2b4a9db8815059e7c40e752f5ac8083b818803c358508d8163a0ec09266",
+  "latest_action_summary": {
+    "cycle_id": "81fbb84ab00b60764b69a74155d8eac12aab273cf1d0f74ec59e75c099a66907",
+    "latest_data_version": 35,
+    "valid_unique": 4420,
+    "pending_unique": 91,
+    "trained_this_cycle": true,
+    "new_unique_available_before_training": 69,
+    "training_snapshot": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\81fbb84ab00b60764b69a74155d8eac12aab273cf1d0f74ec59e75c099a66907\\training_snapshot",
+      "count": 69,
+      "manifest_sha256": "d6277d1ca9312eb2370b9d6832283f1be80064e354a1cf03900e279c0046739b",
+      "results_sha256": "a83702e07efd8c83e91ea8d432fd73f36a821038c5cf82b1609841b2aea65431",
+      "source_bindings_sha256": "615c95ecab2c1172d12d7b9cd5d3cff857b91a3d7e37de5346b3e79c45e240e8"
+    },
+    "terminal_failed_jobs": [
+      "dedust_r80ka00bff601d27501e"
+    ],
+    "retryable_failed_jobs": []
+  },
+  "new_completed_increment": {
+    "schema_version": 1,
+    "status": "passed_local_existing_increment_raw_replay",
+    "observed_utc": "2026-10-11T01:34:53.714726+00:00",
+    "cycle_id": "81fbb84ab00b60764b69a74155d8eac12aab273cf1d0f74ec59e75c099a66907",
+    "completed_cycle_receipt": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\81fbb84ab00b60764b69a74155d8eac12aab273cf1d0f74ec59e75c099a66907\\action_receipt.json",
+      "sha256": "df46a2b4a9db8815059e7c40e752f5ac8083b818803c358508d8163a0ec09266"
+    },
+    "source_health": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_restored_health_20261010_v005\\health_restored_20261011_0934.json",
+      "sha256": "715102fb8b87a57ffc0310fbf8ddc55d51ada2f55ba865bcc82fb483c985d811",
+      "observed_utc": "2026-10-11T01:34:14.3140855Z"
+    },
+    "existing_training_snapshot": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\81fbb84ab00b60764b69a74155d8eac12aab273cf1d0f74ec59e75c099a66907\\training_snapshot",
+      "count": 69,
+      "hashes": {
+        "manifest.json": "d6277d1ca9312eb2370b9d6832283f1be80064e354a1cf03900e279c0046739b",
+        "results.json": "a83702e07efd8c83e91ea8d432fd73f36a821038c5cf82b1609841b2aea65431",
+        "source_bindings.json": "615c95ecab2c1172d12d7b9cd5d3cff857b91a3d7e37de5346b3e79c45e240e8"
+      }
+    },
+    "prospective_model_data_version": 35,
+    "reference": {
+      "path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\docs\\log\\assets\\r80_best_status_20261011_0744.json",
+      "sha256": "c90c5a5bbb4a10cde2e064166e51301d9826c93cbf93b57ad80f0c1a6fb96d5c",
+      "wm_db": 0.021682262420654297
+    },
+    "increment_best": {
+      "id": "r80ca16c78a1g_00004_955a4795",
+      "pattern_sha256": "955a47959428c924cd8c539346d9ef504104621cd5cfd972d87f6baba6fb7ff7",
+      "s11_margin_db": -4.656144618988037,
+      "gain_margin_db": -3.595740020275116,
+      "factory_margin_db": -4.656144618988037,
+      "radiation_margin_db": 0.8268973231315613,
+      "radiation_margin_clipped_db": 0.8268973231315613,
+      "sample_sha256": "042e4d6728308ef8e1b4ace6a532ce82e23045ca744239e064a10cd8f13772ad",
+      "rad_sha256": "5e305002a6734f361f18c91ff8e96c89ecd71f3f7ee323b55997f9c7b44d0b7c",
+      "sample_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\81fbb84ab00b60764b69a74155d8eac12aab273cf1d0f74ec59e75c099a66907\\training_snapshot\\2ad1baaef8022c9e.pt",
+      "rad_path": "C:\\Users\\ricky\\Documents\\GitHub\\Antenna\\tmp\\r80_factory_20261007\\controller_diverse_sm_v1\\cycles\\81fbb84ab00b60764b69a74155d8eac12aab273cf1d0f74ec59e75c099a66907\\training_snapshot\\rad\\r80ca16c78a1g_00004_955a4795.pt"
+    },
+    "raw_rows_replayed": 69,
+    "positive_rows": 0,
+    "requires_full_census": false,
+    "helper_sha256": "227479d7f7ac05b67fe8c32dc191eec140e3e9babaea268cbd53c114dfce6110",
+    "metric_reader_sha256": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+    "limits": [
+      "Only the existing immutable completed-cycle increment is checked, not current live results, full model data, repeat certification or global best.",
+      "A candidate exceeding the full-census reference triggers fresh full raw census before any new-best announcement.",
+      "Reuses established raw sample/radiation reader; no model load, forward, training, NAS read/mutation, queue/marker action or HFSS."
+    ]
+  },
+  "new_completed_increment_sha256": "850d16dc92c4a6bd62607ea3f2921d87d66e14a911ab24e2f84127ad566b8d51",
+  "reported_model_version": 35,
+  "reported_v035_is_not_new_physical_or_accuracy_audit": true,
+  "latest_physical_model_version": 32,
+  "latest_physical_model_fit_unique": 4232,
+  "latest_physical_model_receipt": "docs\\log\\assets\\r80_sm_v032_physical_review_20261011.json",
+  "latest_physical_model_receipt_sha256": "d29e3b8998fef30618249d2b5379b1985b2a27a3addc3aa76c901d52ca11e765",
+  "latest_full_receipt": "docs\\log\\assets\\r80_best_status_20261011_0744.json",
+  "latest_full_receipt_sha256": "c90c5a5bbb4a10cde2e064166e51301d9826c93cbf93b57ad80f0c1a6fb96d5c",
+  "latest_full_unique": 4363,
+  "latest_full_cutoff_taipei": "2026-10-11 07:44",
+  "full_census_performed": false,
+  "model_load_forward_or_training_performed": false,
+  "next_routine_taipei": "2026-10-11 10:04",
+  "notify_only_cell_id": "1260",
+  "runtime_queue_or_marker_mutation": false,
+  "worker_or_controller_restart": false,
+  "limits": [
+    "Health/owner cutoffs are sequential; claim and recent result metadata are not remote PID proof.",
+    "37 pending LOW RPC_E_SERVERFAULT attempt1 remains in native retry; no terminal failure claim.",
+    "216 and218 completed previous jobs before guided claims; no mid-job preemption.",
+    "New69 immutable increment only was raw replayed; negative best does not trigger full census.",
+    "Action4420, latest full4363 and physical fit4232 are distinct cutoffs and scopes.",
+    "Reported v035 update is not an independent model-accuracy or efficacy audit."
+  ]
+}
