@@ -9,7 +9,7 @@
 
 ## 2026-10-07：R80 對稱探索 → 後續 spec／R81
 
-- **10/12 00:11當前等待條件**：同一EngineeringOnly release仍通過原生檢查，queue為active且沒有claim／done／fail，無可確認的R81 live worker／HFSS handle或工程真值。GAN `58a7e62`已完成正式三機入口，原工程44來源未改；目前無需再改控制程式。前一goal turn的入口整合是實質進度，本turn只有未變狀態的健康觀察，列為第1次連續no-progress／同一三台切換待確認條件，不把notify-only timer當HFSS等待證據。啟動情形問題仍待回覆；不推測worker已停止、不重新派工或重啟。下一例行約00:41。[保存觀察](../docs/log/assets/r81_health_20261012_0011.json)。
+- **10/12 00:42當前等待條件**：同一EngineeringOnly release仍通過原生檢查，queue為active且沒有claim／done／fail，無可確認的R81 live worker／HFSS handle或工程真值。GAN `58a7e62`已完成正式三機入口，原工程44來源未改；目前無需再改控制程式。前一goal turn為no-progress，本turn再次只有未變狀態的健康觀察，列為第2次連續no-progress／同一三台切換待確認條件，不把notify-only timer當HFSS等待證據。啟動情形問題仍待回覆；不推測worker已停止、不重新派工或重啟。下一例行約01:12。[本次觀察](../docs/log/assets/r81_health_20261012_0042.json)／[前次觀察](../docs/log/assets/r81_health_20261012_0011.json)。
 
 - **10/11 23:41 R81啟動狀態核對**：同一EngineeringOnly release的原生queue-status仍為active，沒有claim／done／fail；尚不能確認三台已切換或HFSS已開始。已向使用者詢問實際啟動情形；未重啟worker、寫queue或改release。正式3×20入口在隔離worktree完成實作及6項fixture驗證，獨立審查中，尚未部署或執行。下一例行約10/12 00:11。[唯讀觀察](../docs/log/assets/r81_health_20261011_2341.json)。
 

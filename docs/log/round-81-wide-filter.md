@@ -2,6 +2,8 @@
 
 日期：2026-10-07。狀態：實作與本機備料；尚無寬頻 HFSS 真值。
 
+最新健康觀察（2026-10-12 00:42）：EngineeringOnly release原生檢查仍通過，queue-status為active且沒有claim／done／fail；仍未確認R81 live worker／HFSS handle或工程真值。三台切換問題尚待回覆，這是同一條件的第2次連續no-progress goal turn；保存未變健康狀態不算實際實驗進度，也沒有改派、重啟、NAS寫入或模型更新。下一例行約01:12。[保存觀察](assets/r81_health_20261012_0042.json)。
+
 最新健康觀察（2026-10-12 00:11）：同一EngineeringOnly release原生檢查仍通過，queue-status為active且沒有claim／done／fail；未確認R81 live worker／HFSS handle或工程真值，尚不能說已開始。正式三機入口已由GAN `58a7e62`整合並push，原工程44來源未改；目前待三台實際切換，啟動情形問題仍待回覆。這次狀態未變，沒有實質實驗進度，也沒有改派、重啟、NAS寫入或模型更新。下一例行約00:41。[保存觀察](assets/r81_health_20261012_0011.json)。
 
 最新健康觀察（2026-10-11 23:41）：EngineeringOnly release不變，原生queue-status仍為active，沒有claim／done／fail，未觀察遠端PID；不能當作worker已啟動。已詢問三台切換情形，沒有重啟worker、改NAS queue或開始HFSS。正式3×20入口在隔離worktree已完成實作與6項fixture驗證，獨立審查中；尚未部署或執行。下一例行約10/12 00:11。[保存觀察](assets/r81_health_20261011_2341.json)。
