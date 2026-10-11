@@ -63,7 +63,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_r81_worker.ps
 
 實際備妥的首批60筆已在本機用原splitter分成三片各20；每片保持原row與pattern bytes，逐項hash核對通過。輪流分配使history／specialist／random分別為7/7/6、7/6/7、6/7/7，合計仍20/20/20，spec、候選、預測、模型身分與三批60的總量不變。這是已驗證的輸入分工，不是HFSS真值。[準備收據](assets/r81_formal_sharding_preparation_20261011.json)及[小型封存](assets/round-81/r81-native-three-worker-inputs-20261011-v002.zip)保存73個native split檔及5份來源／審查資料，共78個payload，另有archive manifest。
 
-新Formal專用入口／launcher仍在隔離實作，尚未部署。EngineeringOnly的原44來源、release、NAS及jobs全部未改；先等6+2+2工程實測完成。正式階段每片沿用原生三機claim／retry，三片全部成功才用既有merger建立一份原順序60筆logical store並保存逐筆來源，再回填及更新一次SM。缺片、錯誤或來源不一致不得合併、不得提前訓練下一批；已有成功片保持原樣，不重跑整批。尚無實際合併、模型更新或時間加速量測。
+新增FormalSharded入口與launcher已整合到GAN，通過獨立靜態審查、現有舊base上7項fixture驗證（26.62秒）及PowerShell語法解析。[入口與驗證](assets/r81_formal_sharded_control_20261011.json)。這次只新增`script/r81_formal_sharded_entry.py`、`script/start_r81_formal_sharded_worker.ps1`與對應測試；EngineeringOnly原44來源逐一Git blob核對未變，release、NAS與jobs未改，隔離過渡帶commit未合併。FormalSharded release及私人NAS分片仍須先等6+2+2工程實測成功、四組差值≤0.3dB才建立；目前的EngineeringOnly啟動指令不變。
+
+正式階段每片沿用原生三機claim／retry，三片全部零error成功才以coordinator的`--aggregate-batch`操作呼叫既有merger，建立原順序60筆logical store、逐筆來源及claim／done bytes／owner綁定，再回填及更新一次SM。Worker只模擬，不合併或訓練。缺片、錯誤、來源不一致或合併後原完成marker缺失／改寫都會拒絕重派或回填；既有成功片保持原樣，不重跑整批。先前完整logical60與回填／模型證據都通過才允許下一批prefix。尚無實際正式release、合併真值、模型更新或時間加速量測。
 
 首批 60：20 個歷史折衷解、20 個專項解（舊 m3/m4 各10）、20 個新隨機圖形。
 後兩批各 60：SM 預測最差 margin、ensemble disagreement、隨機各20。

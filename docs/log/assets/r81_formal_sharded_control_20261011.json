@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-11T23:48:23.590578+08:00",
+  "status": "additive_control_verified_not_formally_released",
+  "integration_parent_commit": "c2bf00e0bf39f0ae807d268f0c49b99c4e49bde6",
+  "files_physical_sha256": {
+    "script/r81_formal_sharded_entry.py": "82994c1e4e0a7af34ff003534b7851507076f2821ee5f3b15db2ed3ed750a935",
+    "script/start_r81_formal_sharded_worker.ps1": "36cee5ed763d910f46006877c48b6902f81f0ebf2ea5b066ce7656a45ef75b95",
+    "tests/test_r81_formal_sharded_entry.py": "8fab86cf2c0376bfe360966488096b8bfcf90d04829d7a1c2d178b9827a95d43"
+  },
+  "independent_review_sha256": "acb4fe4c4d05e3f8d3a8375cd60d1aa9b19826c20c893c3712f77099422c92f1",
+  "independent_review": {
+    "schema_version": 1,
+    "status": "pass_after_release_blocking_fix",
+    "reviewer_scope": "Independent bounded read-only Sol review of the additive R81 FormalSharded coordinator, worker launcher, and focused tests. No HFSS, NAS, queue, source, model, experiment, or commit action was performed.",
+    "worktree_head": "7928468be57fa86dc81015320d948b98d4d105d9",
+    "frozen_engineering_reference": "e4e5859",
+    "files": {
+      "script/r81_formal_sharded_entry.py": "82994c1e4e0a7af34ff003534b7851507076f2821ee5f3b15db2ed3ed750a935",
+      "script/start_r81_formal_sharded_worker.ps1": "36cee5ed763d910f46006877c48b6902f81f0ebf2ea5b066ce7656a45ef75b95",
+      "tests/test_r81_formal_sharded_entry.py": "8fab86cf2c0376bfe360966488096b8bfcf90d04829d7a1c2d178b9827a95d43"
+    },
+    "reviewed_invariants": [
+      "exact schema and Git-runtime closure",
+      "safe relative shard paths and one-component stores",
+      "three native round-robin shards of 20 rows for each canonical 60-row batch",
+      "exact 20/20/20 formal selection-arm allocation",
+      "fixed three-worker claim/failure roster and zero-error done semantics",
+      "EngineeringOnly all-success and four-comparison measurement check at <=0.3 dB",
+      "coordinator-only fresh aggregation through profiled_shards.merge_stores",
+      "no-overwrite recovery semantics",
+      "physical-store, native-terminal, logical-store, feedback, and later-model provenance",
+      "frozen pre-transition e4e5859 first-batch call-signature compatibility",
+      "transition evidence fail-closed when the transition-aware base is unavailable",
+      "worker launcher does not aggregate, add queue entries, pull Git, or self-generate"
+    ],
+    "findings": [
+      {
+        "severity": "release_blocking",
+        "status": "resolved_in_reviewed_bytes",
+        "summary": "The initial queue-status path returned active before validating a materialized logical store. A missing native done marker could therefore cause the worker launcher to rerun an already aggregated shard, and the merge receipt did not bind native claim/done provenance.",
+        "resolution": "The revised coordinator validates every materialized logical store before active-state dispatch, requires all source shards to remain zero-error done terminals before reading any terminal binding, and binds each claim and done SHA-256 plus owner into physical_sources. The focused adversarial test removes one done marker and separately rewrites an authorized owner and timestamps; every case fails closed."
+      }
+    ],
+    "remaining_release_blockers": [],
+    "validation": {
+      "static_review": "passed",
+      "frozen_base_signature_comparison": "passed",
+      "reviewer_test_execution": "not_run_by_design; implementer reported the final adversarial node passed in 4.97 seconds and root will run the focused suite once after integration",
+      "actual_r81_truth": false
+    },
+    "limits": [
+      "No actual R81 formal simulation, aggregation, feedback import, or transition branch was executed.",
+      "Absolute dataset and source paths intentionally require a common physical path spelling across workers; differing mapped-drive or mount aliases will fail closed.",
+      "Runtime file digests must be generated from committed Git blob bytes, so CRLF/LF checkout differences do not become release digests."
+    ]
+  },
+  "main_focused_verification": {
+    "command": "python -m pytest tests/test_r81_formal_sharded_entry.py -q --basetemp=tmp/r81_formal_sharded_main_verification_20261011_v001",
+    "exec_session": 73006,
+    "exit_code": 0,
+    "passed": 7,
+    "duration_seconds": 26.62,
+    "fixtures_only": true,
+    "mocked_git_binding_and_census": true,
+    "actual_main_base_compatibility": true
+  },
+  "engineering_runtime_unchanged": {
+    "reference_commit": "66dfc5c7f37e060b903feed72edbdc12c46ddb6e",
+    "file_count": 44,
+    "git_blob_object_ids": {
+      "antenna/__init__.py": "7abed1379eeb8ec4bdf8dcf4915707c50837ab4c",
+      "antenna/legacy/__init__.py": "4d447c0193b1300bfd52afc27a0396715920c850",
+      "antenna/legacy/data.py": "01d59340130ed005ee0dd0561bfdc46d4c733871",
+      "antenna/losses.py": "b64db0b35ad7e521b80eaa842c334c826355bb42",
+      "antenna/measurement.py": "4a21268498f93f9aa0442c727c7838e2c8f37db0",
+      "antenna/models/__init__.py": "9d4b1d126370574c437736d8dc1244f5a274c6bf",
+      "antenna/models/generators.py": "325c4ee8fd7ec73d6f7a80b52b535140ce6bfcc2",
+      "antenna/models/shell.py": "93783eaf96bbb8853c43de175a43d2dea23e17d2",
+      "antenna/models/surrogates.py": "71f119dae591ea0fad351666342f659888adc035",
+      "antenna/optim/__init__.py": "94bd997081d93c294e7ed1553b65635c389b2f64",
+      "antenna/optim/ranger.py": "408b8c9505a1044925412f6b884538fac4005901",
+      "antenna/optim/scheduler.py": "e53ae8994aa68d53ce13a5338355a1872f4df75e",
+      "antenna/patch/__init__.py": "d7c5ac1dae3f90a2038b6ca15cd7028ee143b969",
+      "antenna/patch/patch_simulator/__init__.py": "ca11c4438b0bce32d9b0478aff7f90a3e98c4ec7",
+      "antenna/patch/patch_simulator/dual_port.py": "28374b735eaca4b80132a891ebac91008cd8bfcc",
+      "antenna/patch/patch_simulator/single_port.py": "f4da5672e793a40c7347618ad8775aec6cbc875b",
+      "antenna/patch/patch_simulator/single_port_rad.py": "7f5667d2a71b05e0fc7d49b681671844845e95a5",
+      "antenna/pattern.py": "146fbff159c6d8230bf867408218208f649efbf8",
+      "antenna/response.py": "f011c56b1593adf8950d990860b63f0352f5a801",
+      "antenna/training.py": "a17b414d9c306a65e2e6d3839ee6d8f750e92df2",
+      "antenna/utils/__init__.py": "bbb5b0c2ecc8a8632dd3fa3b8a9907e9894e28f6",
+      "antenna/utils/figure.py": "491d76b6610765cdf12b6cb1a0201954a52acd97",
+      "antenna/utils/monitor.py": "38a67cb783a45ad67bfcc8ee70c913890f948a34",
+      "antenna/utils/record.py": "7349163fef9564be41ff831cd923eea452470eb2",
+      "antenna/utils/replay.py": "d6a46668a415e94e536a3d32ba5297e261d8427d",
+      "antenna/utils/run_setup.py": "4dbb4a5c4ebdfc75773fc19a21a6d630a4c2f5cb",
+      "antenna/utils/runstate.py": "1275e4e65013ef1f1c05d5490e1465b8a220bbc4",
+      "antenna/utils/store.py": "a4dfd205476a6825d0d6683c904b557a8ab3ae69",
+      "antenna/utils/torch_utils.py": "61e757ad8d47307cbd38b5ded9e07a9f89e5b3f9",
+      "antenna/utils/types.py": "88fc32439befb371bcb55ac5829d51a95426c5b6",
+      "antenna/utils/utils.py": "fa49f19dcffe7a6c058b0244ac6a1923a205eaf9",
+      "antenna/utils/web.py": "45c6e9f22ad3e6d57231a319e419c79d0cb936f5",
+      "antenna/zoo.py": "53553a12c648729ba398c83975f44b416fd95f6a",
+      "configs/dual_r81_wide_filter.yaml": "cf744402b88754590ef3bf053dfc30fe16ae1c4b",
+      "configs/single_r80_symmetry_factory.yaml": "c2ea34cf1dd3f58a0913fdb13050a03579992049",
+      "script/batch_scope.py": "ea8df97be637efb3ba80da3ffa624b89d236130a",
+      "script/dedust.py": "abc3592fd8f512d4559018c7c833a3466b27e523",
+      "script/exploration.py": "4017259e0610ba0a6e25dde11ca6441a63af2145",
+      "script/filter_training.py": "a8e8be1d4088027faec236a251f74387c26adf2d",
+      "script/kill.py": "a99953dbf9f54c6c31b313b9afc42f53725177d1",
+      "script/prepare_symmetry_filter.py": "ce0acbce5fcd1450f111bc8f1b958db023ba4e4c",
+      "script/profiled_batch.py": "2472f2575ec7d16e348cd6a110d734746a4dd61f",
+      "script/r81_worker_entry.py": "5bcbc4e9431fb04e3f3e61d695217bd5559aefb2",
+      "script/start_r81_worker.ps1": "6bb20ff1479c5e3e940470eedadb6669ed96f78e"
+    },
+    "release_sha256": "c2bba9e840c87bb3f1ef682f94bd26a81af5a732dff02cc80848aee9c610bca2"
+  },
+  "scope": {
+    "logical_batch_size": 60,
+    "native_shard_count": 3,
+    "native_shard_size": 20,
+    "existing_splitter_and_merger_reused": true,
+    "existing_logical_requires_zero_error_native_terminals": true,
+    "claim_done_bytes_and_owner_bound": true,
+    "coordinator_only_aggregation": true,
+    "prior_feedback_and_model_required_before_next_batch": true
+  },
+  "actual_r81_formal_release_created": false,
+  "nas_or_queue_mutated": false,
+  "hfss_started": false,
+  "actual_formal_truth_or_model_update": false,
+  "limits": [
+    "Generated lifecycle evidence does not establish actual R81 engineering success, simulation truth, merged truth or performance speedup.",
+    "Only three additive files integrated; isolated transition commit 7928468 is not merged.",
+    "FormalSharded release and NAS shard publication remain gated on actual engineering all-success and four differences <=0.3 dB.",
+    "Git-normalized blob bytes must supply release runtime hashes; physical SHA values above document this reviewed checkout."
+  ]
+}
