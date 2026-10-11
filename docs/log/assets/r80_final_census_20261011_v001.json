@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-11T14:06:44.320324+00:00",
+  "completed_utc": "2026-10-11T14:10:07.098775+00:00",
+  "status": "read_only_query_complete",
+  "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+  "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b",
+  "unique_successful_patterns": 5000,
+  "successful_including_repeats": 5005,
+  "raw_replayed_this_query": 5005,
+  "exact_prior_metrics_reused": 0,
+  "reported_best_independently_raw_replayed": true,
+  "best": {
+    "id": "r80localv1_00026_f6ffb938",
+    "pattern_sha256": "f6ffb93885baa25fdcf82e06abf9a564bc27285f5b6202e3828871b605e4f784",
+    "s11_margin_db": 0.09608840942382812,
+    "gain_margin_db": 0.021682262420654297,
+    "factory_margin_db": 0.021682262420654297,
+    "radiation_margin_db": 0.3709280490875244,
+    "radiation_margin_clipped_db": 0.3709280490875244,
+    "store": "dedust_r80c83e6601eg01",
+    "sample_sha256": "f79add39e27605d2f54ab48a36a7e206d6bef672ca407efdfe8d0a237d1bca0c",
+    "rad_sha256": "e11aee92cc03340a6bebfd97ef713059904598fbc6f8fb39b0822184e5249b40",
+    "repeat": false,
+    "pair_index": 137,
+    "row_index": 13,
+    "worst_inband_s11_db": -10.096088409423828,
+    "minimum_inband_gain_dbi": 4.021682262420654
+  },
+  "result_errors": [
+    {
+      "store": "dedust_r80ka00bff601d27501e",
+      "id": "r80kl05_d436793fe129",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070203 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024381), None)",
+        "attempts": 5,
+        "error_kind": "hfss_simulation"
+      }
+    },
+    {
+      "store": "dedust_r80k602e7baa8e550c66",
+      "id": "r80kl03_e19d31436041",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070203 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024381), None)",
+        "attempts": 5,
+        "error_kind": "hfss_simulation"
+      }
+    },
+    {
+      "store": "dedust_r80kfb8a72d1023de13e",
+      "id": "r80kl12_8fb57ef26e84",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070203 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024381), None)",
+        "attempts": 5,
+        "error_kind": "hfss_simulation"
+      }
+    },
+    {
+      "store": "dedust_r80kfb8a72d1023de13e",
+      "id": "r80kl14_3c26875d6ada",
+      "entry": {
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070203 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024381), None)",
+        "attempts": 5,
+        "error_kind": "hfss_simulation"
+      }
+    }
+  ],
+  "jobs_sha256_at_scan_start": "f9c76f9b8c948026eb5fb859d55437258e8f28bbfb802e792461f15bdac42f09",
+  "rows_sha256": "b45b646f68f5e601ec4224641eb778a17c748e81a37a61d2bf0c3c77387ad329",
+  "pair_proofs_sha256": "51a69201ea764bf3f41f2349205d195150bf6d22b5a9bf46b82372f30d015d92",
+  "query_script_sha256": "da6a0034241d4d6f22ecfd1ce0272b4dbd06ec252737278b0539b4bec2b631ac",
+  "controller_locks_acquired": false,
+  "queue_or_source_mutation": false,
+  "limits": [
+    "Each store has its own saved cutoff; later worker results or queue additions are excluded.",
+    "Unique representatives prefer nonrepeat observations, then queue/manifest order.",
+    "Single HFSS solve performance, not repeat certification or field-symmetry proof."
+  ],
+  "validation_status": "passed_saved_raw_summary_validation",
+  "validation_source_version": "r80_final_saved_census_v1",
+  "validation_completed_utc": "2026-10-11T14:11:24.259776+00:00",
+  "target_unique": 5000,
+  "query_report_sha256": "941ee94df71814d2c724eabaf92949e33fc53fd10a8025bfe84057326afaec8b",
+  "validation_script_sha256": "9554bdbdbf264b1b98261e4f34082421e7e77a11ef396a47eb6ddd3d2c0bdb87",
+  "query_evidence": {
+    "raw_report": {
+      "repo_path": "tmp/r80_best_render_20261011_v036/report.json",
+      "sha256": "941ee94df71814d2c724eabaf92949e33fc53fd10a8025bfe84057326afaec8b",
+      "bytes": 3460
+    },
+    "rows": {
+      "repo_path": "tmp/r80_best_render_20261011_v036/rows.json",
+      "sha256": "b45b646f68f5e601ec4224641eb778a17c748e81a37a61d2bf0c3c77387ad329",
+      "bytes": 3294615
+    },
+    "pair_proofs": {
+      "repo_path": "tmp/r80_best_render_20261011_v036/pair_proofs.json",
+      "sha256": "51a69201ea764bf3f41f2349205d195150bf6d22b5a9bf46b82372f30d015d92",
+      "bytes": 49866878
+    },
+    "query_producer": {
+      "repo_path": "tmp/r80_best_render_20261011_v036/query_and_freeze.py",
+      "sha256": "da6a0034241d4d6f22ecfd1ce0272b4dbd06ec252737278b0539b4bec2b631ac",
+      "bytes": 7075
+    }
+  },
+  "validation_results": {
+    "proof_store_count": 315,
+    "manifest_row_count": 5009,
+    "result_entry_count": 5009,
+    "successful_result_count": 5005,
+    "raw_row_count": 5005,
+    "unique_pattern_count": 5000,
+    "repeat_observation_count": 5,
+    "duplicate_raw_observation_count": 5,
+    "result_error_count": 4,
+    "all_manifest_rows_match_measurement_and_score_spec": true,
+    "all_successful_results_match_measurement_and_score_spec": true,
+    "all_saved_rows_link_to_saved_success_results": true,
+    "best_recomputed_from_unique_saved_rows": true,
+    "best_independently_raw_replayed_in_query": true,
+    "cached_or_prior_metric_rows_used": 0
+  },
+  "prior_historical_census": {
+    "repo_path": "docs/log/assets/r80_best_status_20261011_0744.json",
+    "sha256": "c90c5a5bbb4a10cde2e064166e51301d9826c93cbf93b57ad80f0c1a6fb96d5c",
+    "bytes": 25342
+  },
+  "prior_historical_unique": 4363,
+  "new_unique_since_prior_historical_census": 637,
+  "new_best_since_prior_historical_census": false,
+  "best_summary_reference": {
+    "repo_path": "docs/log/assets/round-80/best-symmetric-polar-20261009-v006/best_query_receipt.json",
+    "sha256": "c7e290ffcf4d06ccfeae63b03844aa886b296037609d9270310cc3eac81ac2b2",
+    "bytes": 3113
+  },
+  "best_polar_reference": {
+    "plot_receipt": {
+      "repo_path": "docs/log/assets/round-80/best-symmetric-polar-20261009-v006/sample_plot_receipt.json",
+      "sha256": "e24fe044efc1739c062d6c6243237c9cb7b2a35dd12826b51c9135484a59e3e9",
+      "bytes": 1706
+    },
+    "figure": {
+      "repo_path": "docs/log/assets/round-80/best-symmetric-polar-20261009-v006/sample_card.png",
+      "sha256": "39fda87412acaa7b0c5d82f78865c1e38326f6852bd8342c9a177ef1cfeaf969",
+      "bytes": 447272
+    },
+    "unchanged_best_figure_reused": true
+  },
+  "profile_reference": {
+    "repo_path": "configs/single_r80_symmetry_factory.yaml",
+    "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+    "bytes": 1072
+  },
+  "r81_closeout_entry_reference": {
+    "repo_path": "script/r81_worker_entry.py",
+    "sha256": "cd578a22c4f0ca33374bee12cee0c2b7ada1a98abc54530a2f54a3fb79aa023c",
+    "bytes": 37316
+  },
+  "full_dataset_archive_created": false,
+  "native_final_gate_complete": false,
+  "native_terminal_watch_or_action_validated_here": false,
+  "runtime_or_queue_or_markers_mutated": false,
+  "model_forward_or_training_run": false,
+  "nas_source_data_replayed_by_validator": false,
+  "limits_additional": [
+    "This validates the saved v036 raw summary, rows and pair proofs only; it does not create or validate a full dataset archive.",
+    "It does not assert that the native watcher/action final gate has completed; the last completed native watch before this query was 4998/v43 while its current cycle was still running.",
+    "Saved pair-proof structure, identities and hashes were checked without reopening source/store paths or replaying model/HFSS computations.",
+    "The unchanged best polar figure represents one frozen HFSS solve plus the separately recorded independent positive repeat, not mesh or frequency-continuum certification."
+  ]
+}
