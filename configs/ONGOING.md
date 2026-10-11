@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 對稱探索 → 後續 spec／R81
 
+- **10/11 23:41 R81啟動狀態核對**：同一EngineeringOnly release的原生queue-status仍為active，沒有claim／done／fail；尚不能確認三台已切換或HFSS已開始。已向使用者詢問實際啟動情形；未重啟worker、寫queue或改release。正式3×20入口在隔離worktree完成實作及6項fixture驗證，獨立審查中，尚未部署或執行。下一例行約10/12 00:11。[唯讀觀察](../docs/log/assets/r81_health_20261011_2341.json)。
+
 - **10/11 23:08當前階段：R80完整收尾完成、R81等待三台切換**。R80 closeout session `13178`於22:58確認exit0；私人NAS凍結5,000唯一精確LR圖形，另有5筆重測／3個repeat store。保存結果獨立核對通過：40組分位數、27組場型描述與5筆重測殘差；唯一正WM圖形只有1筆，最佳仍+.0216822624dB，獨立重測+.0364336967dB。全體頻率圖、幾何地形圖及沿用舊helper的極座標圖均已存log並目視核對。這些是描述性統計，不證明5000筆可重複性或mesh收斂。[完整收尾證據](../docs/log/assets/r80_final_closeout_20261011.json)／[R80圖與結論](../docs/log/round-80-symmetry-exploration.md)。R81沿用已push的EngineeringOnly release，**金屬與場型都不限制對稱**；23:07原生queue為active但沒有claim／done／fail，僅代表三個工程job仍待執行，未觀察到HFSS或遠端PID。三台指令見[R81日誌](../docs/log/round-81-wide-filter.md)；下一例行約23:37，只查新queue，不重啟已正常完成的R80主控。
 
 以下時間列均為歷史切點；R80不再收集或重啟，R81是否開始以新queue的實際結果為準。
