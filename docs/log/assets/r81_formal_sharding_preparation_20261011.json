@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "status": "actual_native_input_partition_verified_formal_control_plane_pending",
+  "recorded_utc": "2026-10-11T15:25:49.688273+00:00",
+  "actual_input": {
+    "canonical_input": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\engineering_v001\\dataset\\dedust_r81b1_input",
+    "file_count": 64,
+    "manifest_sha256": "f4b53204624b3f6ce2f3c6ef7715c159c8425c691d18011b60a49cb09154a984",
+    "measurement_id": "285ef64d46a6a39a73bfb444de299464d8ba3a637710f14818886c71379ef919",
+    "score_spec_id": "3da2ba77ef7c10623cd8ecc4ca8b991ee5f8edd8bde8f4a8321def9c1441c4e4",
+    "row_count": 60,
+    "arm_counts": {
+      "history": 20,
+      "specialist": 20,
+      "random": 20
+    }
+  },
+  "actual_split": {
+    "path": "tmp/r81_formal_sharding_design_20261011_v001/staged_formal_b1_shards",
+    "split_receipt_sha256": "cb13620d8edb53a46ecd185a28327fa708f6bfced9bacfe7bb56a99f08dc1d63",
+    "method": "script.profiled_shards.split_bundle",
+    "round_robin": true,
+    "shard_size": 20,
+    "shards": [
+      {
+        "name": "shard-001_input",
+        "manifest_sha256": "09633a5317068890bc630c524c4b8c5390b262ac418eaf5dc9ace535ce681f09",
+        "row_count": 20,
+        "arm_counts": {
+          "history": 7,
+          "specialist": 7,
+          "random": 6
+        }
+      },
+      {
+        "name": "shard-002_input",
+        "manifest_sha256": "651741809052fa9e91a0ba9ee2fc109504f138b8156dafe279524b577beb1e7b",
+        "row_count": 20,
+        "arm_counts": {
+          "history": 7,
+          "specialist": 6,
+          "random": 7
+        }
+      },
+      {
+        "name": "shard-003_input",
+        "manifest_sha256": "f4843f01182d4542d7f5b9b3544312de07f4ff812f1f7b033019ae56882148e8",
+        "row_count": 20,
+        "arm_counts": {
+          "history": 6,
+          "specialist": 7,
+          "random": 7
+        }
+      }
+    ],
+    "exact_union_arm_counts": {
+      "history": 20,
+      "specialist": 20,
+      "random": 20
+    },
+    "nas_writes": 0,
+    "jobs_dispatched": 0,
+    "hfss_runs": 0
+  },
+  "source_evidence_sha256": "48b67fe53b28b0393658cfad7995f827da6fc6fc4d880d44e2365a9049294a58",
+  "design_sha256": "3b3e93514b980fdc92d659d8bc47f07a3a702873107f1307c4721103c155d4d7",
+  "root_checks": {
+    "exact_round_robin_rows": true,
+    "unique_exact_union": true,
+    "all_60_copied_pattern_file_hashes": true,
+    "unchanged_profile_bytes": true,
+    "source_files_unchanged": true,
+    "archive_members_verified": 78
+  },
+  "archive": {
+    "path": "docs/log/assets/round-81/r81-native-three-worker-inputs-20261011-v002.zip",
+    "sha256": "624f0f95120521268ebce60cdf50c7b1fd307d9bb31b04a505f189dbbb5063df",
+    "bytes": 105002
+  },
+  "scope": {
+    "nas_writes": false,
+    "queue_mutation": false,
+    "hfss": false,
+    "model_or_training": false,
+    "main_runtime_changed": false,
+    "symmetry_requirement": null
+  },
+  "limitations": [
+    "Formal sharded entry/launcher is not implemented or deployed at this cutoff.",
+    "First recorder preserved a complete v001 archive but failed before JSON publication due to an st_size call typo; corrected fresh v002 never overwrites that prefix.",
+    "No completed child result, aggregation, feedback, model update or performance exists.",
+    "Three-by-20 changes scheduling only, preserving the logical60 and 20/20/20 arm totals.",
+    "EngineeringOnly release and queue remain unchanged; formal dispatch requires its actual complete results."
+  ]
+}

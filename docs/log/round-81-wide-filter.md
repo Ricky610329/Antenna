@@ -55,6 +55,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_r81_worker.ps
 
 ## 有限探索
 
+### 正式批次的三機分工備料（2026-10-11）
+
+已核對原`dedust.worker`以store為單位原子claim，不允許三台同時跑同一store；原Formal入口只接受每個logical batch一個60筆store，會讓另外兩台沒有工作。Repo已有`profiled_shards.split_bundle`與`merge_stores`，因此沿用它們補控制入口，不另寫分片／合併方法。
+
+實際備妥的首批60筆已在本機用原splitter分成三片各20；每片保持原row與pattern bytes，逐項hash核對通過。輪流分配使history／specialist／random分別為7/7/6、7/6/7、6/7/7，合計仍20/20/20，spec、候選、預測、模型身分與三批60的總量不變。這是已驗證的輸入分工，不是HFSS真值。[準備收據](assets/r81_formal_sharding_preparation_20261011.json)及[小型封存](assets/round-81/r81-native-three-worker-inputs-20261011-v002.zip)保存73個native split檔及5份來源／審查資料，共78個payload，另有archive manifest。
+
+新Formal專用入口／launcher仍在隔離實作，尚未部署。EngineeringOnly的原44來源、release、NAS及jobs全部未改；先等6+2+2工程實測完成。正式階段每片沿用原生三機claim／retry，三片全部成功才用既有merger建立一份原順序60筆logical store並保存逐筆來源，再回填及更新一次SM。缺片、錯誤或來源不一致不得合併、不得提前訓練下一批；已有成功片保持原樣，不重跑整批。尚無實際合併、模型更新或時間加速量測。
+
 首批 60：20 個歷史折衷解、20 個專項解（舊 m3/m4 各10）、20 個新隨機圖形。
 後兩批各 60：SM 預測最差 margin、ensemble disagreement、隨機各20。
 最多三批共180，工程檢查10次另外記帳。初始6筆與正式重測分開，不能把檢查值混入訓練。
