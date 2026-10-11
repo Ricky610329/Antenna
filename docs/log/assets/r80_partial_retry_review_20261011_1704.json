@@ -1,0 +1,580 @@
+{
+  "schema_version": 1,
+  "status": "reviewed_saved_partial_integrity_and_nonterminal_retry_eligibility",
+  "recorded_utc": "2026-10-11T09:15:12.210834+00:00",
+  "health_receipt": "docs/log/assets/r80_health_20261011_1704.json",
+  "health_receipt_sha256": "b98c761d2561bda0c492347c52fab7a8d5b197c0f8fcea1217ab64c233113ce7",
+  "review_receipt_sha256": "89654b8294217a0681f6d4b0209970dbdf5e9125e81106211753ed52f308e54b",
+  "partial_review": {
+    "checks": {
+      "all_immutable_inputs_and_sources_unchanged": true,
+      "claim_fail_done_marker_state_exact": true,
+      "exact_failed_entry_attempts_and_kind": true,
+      "native_partial_verifier_15_success_1_error_once": true,
+      "new_exact_job_current_commit_binding": true,
+      "new_input_metadata_hashes_exact": true,
+      "results_fail_claim_done_unchanged_during_native_verification": true,
+      "retry_roster_exact_nonterminal_eligible_only": true,
+      "reviewed_partial_sources_exact": true,
+      "saved_health_actual_19_runtime_bindings_exact": true,
+      "saved_owner_target_partial_state_exact": true
+    },
+    "exact_job_resolution": {
+      "commit_receipt": "tmp/r80_factory_20261007/controller_diverse_sm_v1/low_backlog/commit_receipts/602e7baa8e550c66dd774d506177073e18581b73926c8ba5189eb05c2a6d7a70.json",
+      "commit_receipt_sha256": "2e6a80f750ac9f795e0a8bdee1152c293dd36b9ee2170def6a45bfd3626598ea",
+      "dataset_root": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset",
+      "input": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80k602e7baa8e550c66_input",
+      "input_metadata_sha256": {
+        "backlog_job.json": "ab041e688af6ad0fed9aaa7754a55f20b809b73dccaa9242e889af4bcbfe5e36",
+        "config.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+        "manifest.json": "2d26911a0ac83585d56cad3d8da621e0c310f170ba083932dbbb3cdede45c83c",
+        "measurement.json": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0",
+        "score_spec.json": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca"
+      },
+      "source": "immutable current low-backlog commit receipt; historical pair proof used only for established dataset root",
+      "store": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r80_symmetry_20261007\\dataset\\dedust_r80k602e7baa8e550c66"
+    },
+    "failures": [],
+    "helper_sha256": "82e41773bbd46a3e28075616f478d06d0ce7ec28802d2833cd36fbb91a3a16bc",
+    "immutable_hashes_after": {
+      "commit": {
+        "bytes": 2338,
+        "exists": true,
+        "sha256": "2e6a80f750ac9f795e0a8bdee1152c293dd36b9ee2170def6a45bfd3626598ea"
+      },
+      "health": {
+        "bytes": 15254,
+        "exists": true,
+        "sha256": "bdd3c7a01932676ca336542647c8d4ac0d54345b183a74ba6e1354bf0b692ed9"
+      },
+      "input/backlog_job.json": {
+        "bytes": 14221,
+        "exists": true,
+        "sha256": "ab041e688af6ad0fed9aaa7754a55f20b809b73dccaa9242e889af4bcbfe5e36"
+      },
+      "input/config.yaml": {
+        "bytes": 1072,
+        "exists": true,
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095"
+      },
+      "input/manifest.json": {
+        "bytes": 14611,
+        "exists": true,
+        "sha256": "2d26911a0ac83585d56cad3d8da621e0c310f170ba083932dbbb3cdede45c83c"
+      },
+      "input/measurement.json": {
+        "bytes": 503,
+        "exists": true,
+        "sha256": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0"
+      },
+      "input/score_spec.json": {
+        "bytes": 62,
+        "exists": true,
+        "sha256": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca"
+      },
+      "owner": {
+        "bytes": 9049,
+        "exists": true,
+        "sha256": "7a0f33c47eae6decad124aec6966143fb0111ecf6599f44ecb9760cbb57a055f"
+      },
+      "pair_proofs": {
+        "bytes": 37152201,
+        "exists": true,
+        "sha256": "1c00cb38855bc31a9cba54e6e86f59f682777a3e4d6207bfb00c3359d1c39e47"
+      },
+      "restoration": {
+        "bytes": 4275,
+        "exists": true,
+        "sha256": "fb73424b28104a575f9f9b5f146aad4ff3918b76fdf6f6a596e61ae6103afb0b"
+      },
+      "runtime/antenna/measurement.py": {
+        "bytes": 13369,
+        "exists": true,
+        "sha256": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9"
+      },
+      "runtime/antenna/models/__init__.py": {
+        "bytes": 532,
+        "exists": true,
+        "sha256": "fd31814fd76678b7ed410ced2489758ede058223731a76e44123e1d10b59a578"
+      },
+      "runtime/antenna/models/surrogates.py": {
+        "bytes": 44931,
+        "exists": true,
+        "sha256": "f6168c7e4d1bc170bcc3b93f806df0db544abd1e6d91fdd7dfa7988a29518235"
+      },
+      "runtime/antenna/training.py": {
+        "bytes": 87881,
+        "exists": true,
+        "sha256": "288fee2c5963c0a9e08ad0e05091d164a4767495dda6a3942ac917ad5c2d23a7"
+      },
+      "runtime/configs/r80_diverse_sm_search_v1.json": {
+        "bytes": 1718,
+        "exists": true,
+        "sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7"
+      },
+      "runtime/configs/single_r80_symmetry_factory.yaml": {
+        "bytes": 1072,
+        "exists": true,
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095"
+      },
+      "runtime/script/exploration.py": {
+        "bytes": 72264,
+        "exists": true,
+        "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7"
+      },
+      "runtime/script/profiled_batch.py": {
+        "bytes": 19758,
+        "exists": true,
+        "sha256": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3"
+      },
+      "runtime/script/profiled_shards.py": {
+        "bytes": 21021,
+        "exists": true,
+        "sha256": "c1571849d769c6731ab3df005f920e75cf212e1c439da4f50a20ca1a6a3628c9"
+      },
+      "runtime/script/symmetry_diverse_sm.py": {
+        "bytes": 28600,
+        "exists": true,
+        "sha256": "2cf599ab1bbba24e04b853df9d1485d8b30f7a99b98e7b7691e03a8c9e0db274"
+      },
+      "runtime/script/symmetry_factory.py": {
+        "bytes": 8358,
+        "exists": true,
+        "sha256": "c9e5db41485e4d2907bf42cd231a5a77b583e5861a55b77378ee173d31931f93"
+      },
+      "runtime/script/symmetry_factory_backlog.py": {
+        "bytes": 45207,
+        "exists": true,
+        "sha256": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84"
+      },
+      "runtime/script/symmetry_factory_cycle.py": {
+        "bytes": 138346,
+        "exists": true,
+        "sha256": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e"
+      },
+      "runtime/script/symmetry_factory_watch.py": {
+        "bytes": 19717,
+        "exists": true,
+        "sha256": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538"
+      },
+      "runtime/script/symmetry_incumbent_shell_pilot.py": {
+        "bytes": 67215,
+        "exists": true,
+        "sha256": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738"
+      },
+      "runtime/script/symmetry_sm_pool.py": {
+        "bytes": 39633,
+        "exists": true,
+        "sha256": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8"
+      },
+      "runtime/script/symmetry_training.py": {
+        "bytes": 60711,
+        "exists": true,
+        "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+      },
+      "runtime/tmp/r80_factory_20261007/training_familydev_v1/protocol.json": {
+        "bytes": 3279,
+        "exists": true,
+        "sha256": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e"
+      },
+      "runtime/tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json": {
+        "bytes": 1734,
+        "exists": true,
+        "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+      },
+      "store/manifest.json": {
+        "bytes": 14611,
+        "exists": true,
+        "sha256": "2d26911a0ac83585d56cad3d8da621e0c310f170ba083932dbbb3cdede45c83c"
+      },
+      "store/measurement.json": {
+        "bytes": 503,
+        "exists": true,
+        "sha256": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0"
+      },
+      "store/score_spec.json": {
+        "bytes": 62,
+        "exists": true,
+        "sha256": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca"
+      }
+    },
+    "immutable_hashes_before": {
+      "commit": {
+        "bytes": 2338,
+        "exists": true,
+        "sha256": "2e6a80f750ac9f795e0a8bdee1152c293dd36b9ee2170def6a45bfd3626598ea"
+      },
+      "health": {
+        "bytes": 15254,
+        "exists": true,
+        "sha256": "bdd3c7a01932676ca336542647c8d4ac0d54345b183a74ba6e1354bf0b692ed9"
+      },
+      "input/backlog_job.json": {
+        "bytes": 14221,
+        "exists": true,
+        "sha256": "ab041e688af6ad0fed9aaa7754a55f20b809b73dccaa9242e889af4bcbfe5e36"
+      },
+      "input/config.yaml": {
+        "bytes": 1072,
+        "exists": true,
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095"
+      },
+      "input/manifest.json": {
+        "bytes": 14611,
+        "exists": true,
+        "sha256": "2d26911a0ac83585d56cad3d8da621e0c310f170ba083932dbbb3cdede45c83c"
+      },
+      "input/measurement.json": {
+        "bytes": 503,
+        "exists": true,
+        "sha256": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0"
+      },
+      "input/score_spec.json": {
+        "bytes": 62,
+        "exists": true,
+        "sha256": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca"
+      },
+      "owner": {
+        "bytes": 9049,
+        "exists": true,
+        "sha256": "7a0f33c47eae6decad124aec6966143fb0111ecf6599f44ecb9760cbb57a055f"
+      },
+      "pair_proofs": {
+        "bytes": 37152201,
+        "exists": true,
+        "sha256": "1c00cb38855bc31a9cba54e6e86f59f682777a3e4d6207bfb00c3359d1c39e47"
+      },
+      "restoration": {
+        "bytes": 4275,
+        "exists": true,
+        "sha256": "fb73424b28104a575f9f9b5f146aad4ff3918b76fdf6f6a596e61ae6103afb0b"
+      },
+      "runtime/antenna/measurement.py": {
+        "bytes": 13369,
+        "exists": true,
+        "sha256": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9"
+      },
+      "runtime/antenna/models/__init__.py": {
+        "bytes": 532,
+        "exists": true,
+        "sha256": "fd31814fd76678b7ed410ced2489758ede058223731a76e44123e1d10b59a578"
+      },
+      "runtime/antenna/models/surrogates.py": {
+        "bytes": 44931,
+        "exists": true,
+        "sha256": "f6168c7e4d1bc170bcc3b93f806df0db544abd1e6d91fdd7dfa7988a29518235"
+      },
+      "runtime/antenna/training.py": {
+        "bytes": 87881,
+        "exists": true,
+        "sha256": "288fee2c5963c0a9e08ad0e05091d164a4767495dda6a3942ac917ad5c2d23a7"
+      },
+      "runtime/configs/r80_diverse_sm_search_v1.json": {
+        "bytes": 1718,
+        "exists": true,
+        "sha256": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7"
+      },
+      "runtime/configs/single_r80_symmetry_factory.yaml": {
+        "bytes": 1072,
+        "exists": true,
+        "sha256": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095"
+      },
+      "runtime/script/exploration.py": {
+        "bytes": 72264,
+        "exists": true,
+        "sha256": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7"
+      },
+      "runtime/script/profiled_batch.py": {
+        "bytes": 19758,
+        "exists": true,
+        "sha256": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3"
+      },
+      "runtime/script/profiled_shards.py": {
+        "bytes": 21021,
+        "exists": true,
+        "sha256": "c1571849d769c6731ab3df005f920e75cf212e1c439da4f50a20ca1a6a3628c9"
+      },
+      "runtime/script/symmetry_diverse_sm.py": {
+        "bytes": 28600,
+        "exists": true,
+        "sha256": "2cf599ab1bbba24e04b853df9d1485d8b30f7a99b98e7b7691e03a8c9e0db274"
+      },
+      "runtime/script/symmetry_factory.py": {
+        "bytes": 8358,
+        "exists": true,
+        "sha256": "c9e5db41485e4d2907bf42cd231a5a77b583e5861a55b77378ee173d31931f93"
+      },
+      "runtime/script/symmetry_factory_backlog.py": {
+        "bytes": 45207,
+        "exists": true,
+        "sha256": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84"
+      },
+      "runtime/script/symmetry_factory_cycle.py": {
+        "bytes": 138346,
+        "exists": true,
+        "sha256": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e"
+      },
+      "runtime/script/symmetry_factory_watch.py": {
+        "bytes": 19717,
+        "exists": true,
+        "sha256": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538"
+      },
+      "runtime/script/symmetry_incumbent_shell_pilot.py": {
+        "bytes": 67215,
+        "exists": true,
+        "sha256": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738"
+      },
+      "runtime/script/symmetry_sm_pool.py": {
+        "bytes": 39633,
+        "exists": true,
+        "sha256": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8"
+      },
+      "runtime/script/symmetry_training.py": {
+        "bytes": 60711,
+        "exists": true,
+        "sha256": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162"
+      },
+      "runtime/tmp/r80_factory_20261007/training_familydev_v1/protocol.json": {
+        "bytes": 3279,
+        "exists": true,
+        "sha256": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e"
+      },
+      "runtime/tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json": {
+        "bytes": 1734,
+        "exists": true,
+        "sha256": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+      },
+      "store/manifest.json": {
+        "bytes": 14611,
+        "exists": true,
+        "sha256": "2d26911a0ac83585d56cad3d8da621e0c310f170ba083932dbbb3cdede45c83c"
+      },
+      "store/measurement.json": {
+        "bytes": 503,
+        "exists": true,
+        "sha256": "9d0b98d6f90ad4068bc69164c1696466d564f66ad721a2fe6d57b8ec65d276f0"
+      },
+      "store/score_spec.json": {
+        "bytes": 62,
+        "exists": true,
+        "sha256": "10fe4cd2a85ff3bc4f8e22c75ceb9ad56f8583c347f4b82f52533bb6ae5a0dca"
+      }
+    },
+    "kind": "r80_1704_new_partial_failure_review_v001",
+    "limits": [
+      "Only the named new partial store and its exact input, saved 17:04 health/owner evidence, current commit proof and reviewed source bindings were read; no other store or model was reviewed.",
+      "The native partial verifier was called once. It replays successful observation profile/file integrity; no separate raw WM arithmetic replay was performed.",
+      "Workers 140.123.106.218 and 140.123.106.37 are eligible only under the unchanged roster rule. This is not evidence of an actual claim, takeover, dispatch or remote worker process.",
+      "The failed sample remains failed, the done marker remains absent and terminal_roster_failure is false.",
+      "No NAS write, marker deletion, job dispatch, process signal, HFSS, training, model review, source edit, queue/runtime mutation, git stage or commit was performed."
+    ],
+    "mutable_after": {
+      "claim": {
+        "bytes": 59,
+        "exists": true,
+        "sha256": "5eb46e24bfacc038c91ed89ab06ee7e95e91ad785c4883406239904d0f16bb6d",
+        "valid_json": true
+      },
+      "done": {
+        "exists": false
+      },
+      "fail": {
+        "bytes": 223,
+        "exists": true,
+        "sha256": "1f04ecda2670e93f74bf40128cac515aac8dee3051c0943e21d3108a9fbdeb26",
+        "valid_json": true
+      },
+      "results": {
+        "bytes": 15978,
+        "exists": true,
+        "sha256": "d45a50650ec6d191c8c0ca39e207eae9c91167db667f9ae9b113c5dc5ef46668"
+      }
+    },
+    "mutable_before": {
+      "claim": {
+        "bytes": 59,
+        "exists": true,
+        "sha256": "5eb46e24bfacc038c91ed89ab06ee7e95e91ad785c4883406239904d0f16bb6d",
+        "valid_json": true
+      },
+      "done": {
+        "exists": false
+      },
+      "fail": {
+        "bytes": 223,
+        "exists": true,
+        "sha256": "1f04ecda2670e93f74bf40128cac515aac8dee3051c0943e21d3108a9fbdeb26",
+        "valid_json": true
+      },
+      "results": {
+        "bytes": 15978,
+        "exists": true,
+        "sha256": "d45a50650ec6d191c8c0ca39e207eae9c91167db667f9ae9b113c5dc5ef46668"
+      }
+    },
+    "native_partial_verification": {
+      "called_once": true,
+      "error": null,
+      "failed_entry": {
+        "attempts": 3,
+        "error": "DISP_E_EXCEPTION(COM 例外) 0x80070203 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024381), None)",
+        "error_kind": "hfss_simulation"
+      },
+      "result": {
+        "error_ids": [
+          "r80kl03_e19d31436041"
+        ],
+        "success_ids": [
+          "r80kl00_83707a409a40",
+          "r80kl01_013e0359c9d0",
+          "r80kl02_33efc9a3599d",
+          "r80kl04_4418722ce76d",
+          "r80kl05_b7b4cfee7ff5",
+          "r80kl06_3a2e94cfed0a",
+          "r80kl07_9c620b343ba8",
+          "r80kl08_7b0b7621efd4",
+          "r80kl09_d3c51238e453",
+          "r80kl10_5148bf238a41",
+          "r80kl11_804705eeb7e5",
+          "r80kl12_abf7feb9c08e",
+          "r80kl13_c4193b86102a",
+          "r80kl14_2f7cbf5290f2",
+          "r80kl15_e947a4ba2a90"
+        ]
+      },
+      "successful": 15,
+      "terminal_errors": 1
+    },
+    "observed_utc": "2026-10-11T09:12:55.167844+00:00",
+    "retry_interpretation": {
+      "eligibility_is_actual_takeover": false,
+      "expected_retry_workers": [
+        "140.123.106.216",
+        "140.123.106.218",
+        "140.123.106.37"
+      ],
+      "failed_workers": [
+        "140.123.106.216"
+      ],
+      "still_eligible_workers_by_rule": [
+        "140.123.106.218",
+        "140.123.106.37"
+      ],
+      "terminal_roster_failure": false,
+      "worker_continues": true
+    },
+    "runtime_binding_hashes": {
+      "antenna/measurement.py": "97d9605455df4500bb7c5e72629c4143580d8fb0b9ca4af1d953c5486edfdee9",
+      "antenna/models/__init__.py": "fd31814fd76678b7ed410ced2489758ede058223731a76e44123e1d10b59a578",
+      "antenna/models/surrogates.py": "f6168c7e4d1bc170bcc3b93f806df0db544abd1e6d91fdd7dfa7988a29518235",
+      "antenna/training.py": "288fee2c5963c0a9e08ad0e05091d164a4767495dda6a3942ac917ad5c2d23a7",
+      "configs/r80_diverse_sm_search_v1.json": "8efb063a9ab9be411f89b7b4b482465ac496b778f4c05943a4168182a8575ca7",
+      "configs/single_r80_symmetry_factory.yaml": "89132be0455eb0a0affe036bc95122862de5dc34582f0fd83a022f37c6717095",
+      "script/exploration.py": "adb46ee7e1953ae9bebfbaff605c25fae4d678cda44b84429833572f72c85cf7",
+      "script/profiled_batch.py": "5e1e99ce79b88624914cc61d57525b4b41cdb2fa4f8bf35a8d376285ced081a3",
+      "script/profiled_shards.py": "c1571849d769c6731ab3df005f920e75cf212e1c439da4f50a20ca1a6a3628c9",
+      "script/symmetry_diverse_sm.py": "2cf599ab1bbba24e04b853df9d1485d8b30f7a99b98e7b7691e03a8c9e0db274",
+      "script/symmetry_factory.py": "c9e5db41485e4d2907bf42cd231a5a77b583e5861a55b77378ee173d31931f93",
+      "script/symmetry_factory_backlog.py": "7473636ba73dffef2e4ae7e4ffd6d014bfe9eaba8de28544403860b37fb12c84",
+      "script/symmetry_factory_cycle.py": "3eaea5351b3bc9dddf8fade3f86b5e7927856f68d7094a68d465d1318395a48e",
+      "script/symmetry_factory_watch.py": "b4579a392d402792bbdf227547a1aec6e0c94fdac11745da1ea1d8aee7733538",
+      "script/symmetry_incumbent_shell_pilot.py": "0c486fdf87dd391c61240fb3581c7739aadfa13fc6cbfd884cdbb4709581d738",
+      "script/symmetry_sm_pool.py": "dcf70ff9c6c1ded2ddf11889b6a5befc1105100ad2c4c9de2934174e817202f8",
+      "script/symmetry_training.py": "4c82c15615b23cccd5105e457c429619da706525bd3c1ba59096ac7078bfb162",
+      "tmp/r80_factory_20261007/training_familydev_v1/protocol.json": "7b28d4797f9fac37a91d64cc558b9d632b32050c67411fc0b7fcdf0eeaee3a5e",
+      "tmp/r80_factory_20261007/watch_settings_diverse_sm_v1.json": "4d323a7bbad61218e473dc9d1586cd77dd970199bd3c9864c34a2f4ad93b0a38"
+    },
+    "saved_health": {
+      "observed_utc": "2026-10-11T09:04:19.9150239Z",
+      "path": "tmp/r80_restored_health_20261010_v005/health_restored_20261011_1704.json",
+      "runtime_file_bindings_verified": 19,
+      "sha256": "bdd3c7a01932676ca336542647c8d4ac0d54345b183a74ba6e1354bf0b692ed9"
+    },
+    "saved_owner_readback": {
+      "observed_utc": "2026-10-11T09:05:21.092257+00:00",
+      "path": "tmp/r80_1704_health_record_20261011_v001/active_owner_readback.json",
+      "sha256": "7a0f33c47eae6decad124aec6966143fb0111ecf6599f44ecb9760cbb57a055f",
+      "target": {
+        "error_entries": [
+          {
+            "entry": {
+              "attempts": 3,
+              "error": "DISP_E_EXCEPTION(COM 例外) 0x80070203 | (-2147352567, '發生例外狀況。', (0, None, None, None, 0, -2147024381), None)",
+              "error_kind": "hfss_simulation"
+            },
+            "id": "r80kl03_e19d31436041"
+          }
+        ],
+        "markers": {
+          "claim": {
+            "exists": true,
+            "modified_utc": "2026-10-11T08:03:22.860251+00:00",
+            "payload": {
+              "at": "2026-10-11 16:03:21",
+              "machine": "140.123.106.216"
+            },
+            "sha256": "5eb46e24bfacc038c91ed89ab06ee7e95e91ad785c4883406239904d0f16bb6d"
+          },
+          "done": {
+            "exists": false
+          },
+          "fail": {
+            "exists": true,
+            "modified_utc": "2026-10-11T08:57:59.426962+00:00",
+            "payload": {
+              "at": "2026-10-11 16:57:58",
+              "failure_kind": "incomplete_profile_hfss",
+              "last": "profile HFSS 部分失敗：verified=15 terminal_errors=1 (r80kl03_e19d31436041)",
+              "machines": [
+                "140.123.106.216"
+              ],
+              "worker_continues": true
+            },
+            "sha256": "1f04ecda2670e93f74bf40128cac515aac8dee3051c0943e21d3108a9fbdeb26"
+          }
+        },
+        "results_exists": true,
+        "results_modified_utc": "2026-10-11T08:57:33.768885+00:00",
+        "results_sha256": "d45a50650ec6d191c8c0ca39e207eae9c91167db667f9ae9b113c5dc5ef46668",
+        "store": "dedust_r80k602e7baa8e550c66",
+        "successful_entries": 15
+      }
+    },
+    "schema_version": 1,
+    "scope": "dedust_r80k602e7baa8e550c66",
+    "status": "passed_existing_partial_profile_verifier_nonterminal_exact_roster"
+  },
+  "conductor_review": "Reviewed complete helper, native single-call receipt, exact state/source bindings and all 11 checks; no duplicate verifier or WM replay.",
+  "archive": {
+    "path": "docs/log/assets/round-80/r80-partial-retry-review-20261011-1704-v001.zip",
+    "sha256": "50c5a77719ef88f85023a33bbee79d075d203d65a82a98b27130c44fee16c0de",
+    "bytes": 12250,
+    "payload_manifest": {
+      "tmp/r80_1704_partial_review_20261011_v001/verify_partial.py": {
+        "sha256": "82e41773bbd46a3e28075616f478d06d0ce7ec28802d2833cd36fbb91a3a16bc",
+        "bytes": 13177
+      },
+      "tmp/r80_1704_partial_review_20261011_v001/partial_verification.json": {
+        "sha256": "89654b8294217a0681f6d4b0209970dbdf5e9125e81106211753ed52f308e54b",
+        "bytes": 21579
+      },
+      "tmp/r80_1704_partial_milestone_20261011_v001/record.py": {
+        "sha256": "fbca2039f5609d367c65bd99af0ed2a93e8fe1bff9a4201c5397d02174045d50",
+        "bytes": 5527
+      },
+      "README.txt": {
+        "sha256": "2431212c42403a156680c853702a886340ac9201b0e67fe9581697d201a3929a",
+        "bytes": 358
+      }
+    },
+    "crc_and_exact_member_bytes_verified": true
+  },
+  "recorder_sha256": "fbca2039f5609d367c65bd99af0ed2a93e8fe1bff9a4201c5397d02174045d50",
+  "limits": [
+    "Only the named new partial store and its exact input, saved 17:04 health/owner evidence, current commit proof and reviewed source bindings were read; no other store or model was reviewed.",
+    "The native partial verifier was called once. It replays successful observation profile/file integrity; no separate raw WM arithmetic replay was performed.",
+    "Workers 140.123.106.218 and 140.123.106.37 are eligible only under the unchanged roster rule. This is not evidence of an actual claim, takeover, dispatch or remote worker process.",
+    "The failed sample remains failed, the done marker remains absent and terminal_roster_failure is false.",
+    "No NAS write, marker deletion, job dispatch, process signal, HFSS, training, model review, source edit, queue/runtime mutation, git stage or commit was performed."
+  ]
+}
