@@ -278,3 +278,15 @@ git pull --ff-only origin GAN
 ```
 
 部署證明自動派工程式與共享交接已就緒；實際下一批尚未產生，三台切到新 launcher 也須由使用者執行。新的三段正 WM 與獨立重測、原工程量測一致性均仍未證明，不能宣稱濾波器 spec 完成。
+
+### 新版三段 S21 的原件／重測確認
+
+原 `filter_confirmation.py` 固定舊五段 profile，保持原來源不改。新增唯讀 `script/filter_s21_confirmation.py`，沿用原生 complete-store Torch 重播與來源讀取，只接受當前 p01／0.075 mm、Discrete 16–40 GHz／49 點及精確三段 S21 profile。原件與 repeat 的幾何、parent、kind／reason 與 native source 皆須相符；兩筆實測三段最小餘裕都嚴格 >0 才輸出 `s21_positive_margin_repeat_confirmed`，WM=0 不符合本目標，S11／S22 與軟緩衝偏好不進 WM。
+
+輸入需為帶 `source_bindings.json` 的完整凍結觀察，呼叫者另提供原件／重測各自來源綁定 SHA。工具會重播其直接綁定的完整 native 原件，不接受未綁定副本、nested snapshot、改 pin、改 sample／profile／role 或相同來源身分。這依賴可信 worker／caller-pinned snapshot metadata，不是獨立 HFSS 執行的密碼學證明，也不提供統計信賴區間。它不放行工程／Formal gate、不標記 campaign 完成、不推論未量測頻率。
+
+`--out` 收據先完整序列化，再原子、不可覆寫地發布，禁止寫入兩個 snapshot 或 native source 資料夾。主測九項通過（3.23 秒），獨立 Sol 九項通過（3.78 秒），涵蓋原生生成 Torch、正／負／零 WM、S11／S22 非 gate、來源綁定及輸出／失敗保護；僅為工程驗證，沒有實測正 WM 候選或新 HFSS 求解。舊 helper、profile 及 live 56 檔仍未改變。
+
+```powershell
+python -m script.filter_s21_confirmation --profile-config configs/dual_r81_s21_discrete.yaml --candidate-store <原件凍結store> --candidate-id <原件ID> --candidate-source-bindings-sha256 <原件來源SHA> --repeat-store <重測凍結store> --repeat-id <重測ID> --repeat-source-bindings-sha256 <重測來源SHA> --out <來源資料夾之外的新收據.json>
+```
