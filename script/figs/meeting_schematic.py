@@ -7,8 +7,8 @@
   schem_filter.png   雙埠濾波器示意：P1 進、P2 出
   schem_wm1.png      v6：WM 定義只畫 S11 一格（併進輸出頁）
   schem_flow_senior.png／schem_flow_mine.png  v6：學長的線上迴圈與批次線上學習的時間軸示意
-  schem_diamond.png  v6：對角接觸三種幾何（0.01 mm 重疊／切斷／0.10 mm 菱形橋，照實際比例）
-  schem_point.png    v6：零寬度點接觸與補一顆像素後的實際連接
+  schem_diamond.png  v6：對角接觸三種幾何（0.01 mm 重疊／挖掉 0.10 mm 菱形／加 0.10 mm 菱形，照實際比例）
+  schem_point.png    v6：濾波器舊幾何（逐欄合併、欄間零厚度貼合）對照 8/13 起的單一導體加菱形橋
 曲線是平滑的假資料，只用來說明；規格門檻與頻帶照 docs/paper/extended_abstract_figures.py。
 配色與 meeting_clean.py 相同。零 HFSS、零 NAS。執行：python -m script.figs.meeting_schematic
 """
@@ -261,46 +261,57 @@ def _contact_panel(ax, title):
 RED = "#d23c3c"
 
 
+def _diamond(ax, cx, cy, side, color):
+    h = side / np.sqrt(2)                              # 邊長 side 的正方形轉 45°
+    ax.add_patch(Polygon([(cx, cy + h), (cx + h, cy), (cx, cy - h), (cx - h, cy)], color=color, lw=0, zorder=3))
+
+
 def diamond():
-    """單埠：原始每格畫 0.21 mm（多 0.01 mm），對角只靠角上的小重疊相連；尺寸照實際比例。"""
+    """單埠（R54）：原始每格畫 0.21 mm，對角只靠角上 0.01 mm 重疊相連；
+    切斷＝在角點 Subtract 一顆 0.10 mm 的 45° 菱形（diag_bridge_w=−0.10），加橋＝同形狀 Unite。尺寸照實際比例。"""
     fig, axs = plt.subplots(1, 3, figsize=(7.3, 3.0))
     fig.subplots_adjust(left=.01, right=.99, top=.88, bottom=.02, wspace=.12)
     a, b, c = axs
-    _contact_panel(a, "原始幾何")
-    for x, y in ((.1, .3), (.3, .1)):
-        _sq(a, x, y, .21)
+    for ax, title in ((a, "原始幾何"), (b, "直接切斷"), (c, "加菱形橋")):
+        _contact_panel(ax, title)
+        for x, y in ((.1, .3), (.3, .1)):
+            _sq(ax, x, y, .21)
     a.add_patch(Circle((.2, .2), .045, fill=False, ec=RED, lw=2))
     a.text(.2, -.05, "只靠 0.01 mm 重疊相連", ha="center", va="center", fontsize=12, color=RED)
-    _contact_panel(b, "直接切斷")
-    for x, y in ((.1, .3), (.3, .1)):
-        _sq(b, x, y, .18)
-    b.text(.2, -.05, "對角斷開", ha="center", va="center", fontsize=12, color=INK)
-    _contact_panel(c, "加菱形橋")
-    for x, y in ((.1, .3), (.3, .1)):
-        _sq(c, x, y, .21)
-    h = .1 / np.sqrt(2)                                # 邊長 0.10 mm 的正方形轉 45°
-    c.add_patch(Polygon([(.2, .2 + h), (.2 + h, .2), (.2, .2 - h), (.2 - h, .2)], color=AMBER, lw=0))
-    c.text(.2, -.05, "0.10 mm 菱形橋", ha="center", va="center", fontsize=12, color=AMBER)
+    _diamond(b, .2, .2, .1, "white")
+    b.text(.2, -.05, "挖掉 0.10 mm 菱形", ha="center", va="center", fontsize=12, color=INK)
+    _diamond(c, .2, .2, .1, AMBER)
+    c.text(.2, -.05, "加上 0.10 mm 菱形", ha="center", va="center", fontsize=12, color=AMBER)
     save(fig, "schem_diamond.png")
 
 
 def point():
-    """濾波器舊幾何：每格剛好 0.2 mm，對角只在一點相接；R69 的修法是補一顆正交像素。"""
-    fig, axs = plt.subplots(1, 2, figsize=(6.0, 3.2))
+    """濾波器舊幾何（p00，學長原版 dual_port）：每格剛好 0.2 mm、逐欄 Unite，欄與欄是不同物件，
+    只是零厚度貼合，對角只在一條邊上相接；8/13 起（p01）＋0.01 mm 重疊、全部聯集成一個導體、對角加 0.075 mm 菱形橋。"""
+    bits = [(0, 0), (1, 0), (1, 1), (0, 2), (2, 2)]        # (列, 欄)，第 0 列在上
+    cols = {0: BLUE, 1: TEAL, 2: "#6f8ea6"}                # 舊幾何：一欄一個物件，各上一色
+    fig, axs = plt.subplots(1, 2, figsize=(6.0, 3.4))
     fig.subplots_adjust(left=.02, right=.98, top=.88, bottom=.02, wspace=.2)
     a, b = axs
-    _contact_panel(a, "舊幾何")
-    for x, y in ((.1, .3), (.3, .1)):
-        _sq(a, x, y, .2)
-    a.add_patch(Circle((.2, .2), .04, fill=False, ec=RED, lw=2))
-    a.text(.2, -.05, "只在一點相接，寬度為零", ha="center", va="center", fontsize=12, color=RED)
-    _contact_panel(b, "補成實際連接")
-    for x, y in ((.1, .3), (.3, .1)):
-        _sq(b, x, y, .2)
-    _sq(b, .1, .1, .2, color=AMBER)
-    b.text(.2, -.05, "補一個像素，寬 0.2 mm", ha="center", va="center", fontsize=12, color=AMBER)
+    for ax, title in ((a, "舊幾何"), (b, "8/13 起")):
+        ax.set_xlim(-.06, .66)
+        ax.set_ylim(-.14, .66)
+        ax.set_aspect("equal")
+        ax.axis("off")
+        ax.set_title(title, fontsize=14, color=INK, pad=6)
+        for k in (0, .2, .4, .6):
+            ax.plot([k, k], [0, .6], color=GRID, lw=.8, zorder=0)
+            ax.plot([0, .6], [k, k], color=GRID, lw=.8, zorder=0)
+    for r, c in bits:
+        x, y = .1 + .2 * c, .5 - .2 * r
+        _sq(a, x, y, .2, color=cols[c])
+        _sq(b, x, y, .21)
+    for x, y in ((.4, .4), (.4, .2)):                      # 第 1 欄與第 2 欄的兩個對角接點
+        a.add_patch(Circle((x, y), .035, fill=False, ec=RED, lw=2, zorder=4))
+        _diamond(b, x, y, .075, AMBER)
+    a.text(.3, -.07, "每欄各成一塊，欄與欄只是貼著", ha="center", va="center", fontsize=12, color=RED)
+    b.text(.3, -.07, "合成一塊，對角加 0.075 mm 橋", ha="center", va="center", fontsize=12, color=AMBER)
     save(fig, "schem_point.png")
-
 
 if __name__ == "__main__":
     dust()
