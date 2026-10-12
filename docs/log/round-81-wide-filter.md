@@ -245,3 +245,9 @@ git pull --ff-only origin GAN
 ```
 
 短指令的兩欄 descriptor 僅含 release 檔名與 SHA；原預設 EngineeringOnly 指標保留作來源驗證。私人原始結果與路徑不隨這次里程碑上傳公開 Git。歷史資料按新版逐段重算，缺少兩側帶外量測的記錄列為待補測，不沿用舊合格標籤或補出不存在的 WM。SM 的三段 masked-prior 接點另外驗證，尚不能把這次輸入發布描述成 SM 自動回填已啟用。
+
+歷史重算工具 `script/filter_history_rescore.py` 已提交；逐筆核對原始 sample／geometry／response hash，保留所有量測實例與重複幾何，不把重複資料視為獨立重測。缺少任一新版頻段時，完整 WM 留空；通帶達標但缺少帶外的全部候選另存排序清單與幾何輸入。完整 census、另外核對的寬頻觀察、可讀摘要及幾何已實際封存私人資料夾；公開 Git 僅放工具與八項 focused tests，不放新的原始研究結果。
+
+`script/filter_s21_training.py` 已提交並通過主／獨立四項 focused tests、實際 profiled-store CLI 與真實歷史來源檢查。沿用原有 MLP、masked loss、family split 與 partial-success snapshot，兩個模型已在 CPU 各完成 30 epoch 歷史預訓練；完成收據、模型與 optimizer 有限性、來源及輸出 mask 核對通過，檔案亦封存私人資料夾。歷史只有通帶標籤，兩個帶外輸出保持未訓練且 `rank_ready=false`；模型完成不能當成新版性能達標。
+
+累積至少 20 個有效、不同幾何的新寬頻觀察後，三段接點可凍結當前成功資料，以同一固定 family split 更新模型並按三段預測 WM 排名。缺少 held-out family、來源改變或模型／候選 receipt 不符時拒絕；holdout 不用於選 checkpoint。這個接點與首批工作池已可用，後續自動監看、子代輸入與 worker 交接仍需單獨驗證，未宣稱持續補派已部署。
