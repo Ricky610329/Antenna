@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-12T11:30:38.012467+08:00",
+  "release": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\engineering_v001\\release\\r81_engineering_only_20261012_poison_skip_v002.json",
+  "release_sha256": "7d9b1a3b13643c5736cc68bc40abca90b53b661d2b385a0acbf5d3fe2d9d0292",
+  "source_release": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\engineering_v001\\release\\r81_engineering_only_20261011_v001.json",
+  "source_release_sha256": "c2bba9e840c87bb3f1ef682f94bd26a81af5a732dff02cc80848aee9c610bca2",
+  "runtime_commit": "c6e19c18ca4636e909253d1f2a7277089cdffdaa",
+  "native_preflight": {
+    "schema_version": 1,
+    "status": "r81_worker_entry_passed",
+    "release_sha256": "7d9b1a3b13643c5736cc68bc40abca90b53b661d2b385a0acbf5d3fe2d9d0292",
+    "release_id": "r81_engineering_only_20261012_poison_skip_v002",
+    "stage": "EngineeringOnly",
+    "dataset_root": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\engineering_v001\\dataset",
+    "scope": "symmetry_filter_20261007",
+    "job_count": 3,
+    "r80": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+    },
+    "engineering_check": null,
+    "hfss_started": false,
+    "queue_or_source_mutation": false
+  },
+  "native_queue_status": "active",
+  "jobs_sha256_before_after": "1030c0488ebafdf486f6360f0058905429aa39d462a1380b1799214f4f5a2837",
+  "old_release_preserved": true,
+  "only_new_release_metadata_written": true,
+  "claim_done_fail_or_input_mutation": false,
+  "worker_started": false,
+  "hfss_started": false
+}

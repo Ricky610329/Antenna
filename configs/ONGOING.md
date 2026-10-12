@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 對稱探索 → 後續 spec／R81
 
+- **10/12毒樣本補丁與新工程release已備妥**：使用者要求三次失敗的HFSS樣本忽略即可。GAN `c6e19c1`已修正scoped profile：保留error／attempts、標skipped，重啟與跨機接手不再重試，`.done`完整列跳過ID並繼續下一job；不计有效成功或SM真值，資料／hash錯誤與機台保險絲仍停止。針對性baseline33、分類修正後23、最終worker啟動gate2及helper8均通過（階段／重疊分列，不相加）；獨立靜態審查與lint通過。私人NAS新release `r81_engineering_only_20261012_poison_skip_v002.json`綁定已commit來源，SHA `7d9b1a3b…0292`；原生候選／發布後preflight通過，jobs SHA前後相同，只新增release metadata，舊release原樣保留，沒有啟動HFSS或改claims。三台pull新程式後需重啟並用[R81新指令](../docs/log/round-81-wide-filter.md)，舊release綁定不適用新runtime。整體goal仍blocked待實際worker切換；11:08改動前唯讀觀察無markers，發布時queue active不等於PID存活或實測已開始。[補丁證據](../docs/log/assets/r81_poison_skip_patch_20261012.json)／[實際交付](../docs/log/assets/r81_poison_skip_release_20261012.json)。
+
 - **10/12 01:12當前狀態：goal已blocked，待三台切換R81**。EngineeringOnly release仍通過原生檢查，queue為active且沒有claim／done／fail，無可確認的R81 live worker／HFSS handle或工程真值。00:11／00:42／01:12三個連續goal turns均為同一条件的no-progress；已完成blocked audit並實際更新goal為blocked。GAN `58a7e62`正式三機入口與工程備料已準備好，原44來源未改；沒有新真值可做工程比較、合併或SM更新。需要216／218／37依[R81指令](../docs/log/round-81-wide-filter.md)切換，或回覆啟動錯誤，才能繼續。Notify-only timer `1641`已terminal，不再建立空等timer；沒有停止、重啟任何worker，也不推測遠端進程已停止。R80收尾已完成，R81工程／有限探索與正WM確認仍未完成，objective不縮減。[本次觀察](../docs/log/assets/r81_health_20261012_0112.json)／[三輪blocked audit](../docs/log/assets/r81_worker_switch_blocked_20261012.json)。
 
 - **10/11 23:41 R81啟動狀態核對**：同一EngineeringOnly release的原生queue-status仍為active，沒有claim／done／fail；尚不能確認三台已切換或HFSS已開始。已向使用者詢問實際啟動情形；未重啟worker、寫queue或改release。正式3×20入口在隔離worktree完成實作及6項fixture驗證，獨立審查中，尚未部署或執行。下一例行約10/12 00:11。[唯讀觀察](../docs/log/assets/r81_health_20261011_2341.json)。
