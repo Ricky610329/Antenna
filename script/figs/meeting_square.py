@@ -4,7 +4,7 @@
 資料與畫法沿用 docs/paper/extended_abstract_figures.py 的凍結 JSON 與 helper，
 只改成投影片尺寸、方格子圖與較大字級。零 HFSS。
 執行：python -m script.figs.meeting_square
-輸出：docs/進度報告/組會_2026-10/figs/sq_{spec,antenna,filter,leftband}.png
+輸出：docs/進度報告/組會_2026-10/figs/sq_{spec,antenna,filter,leftband,spec_ant,spec_flt,leftband_pat}.png
 """
 import importlib.util
 import os
@@ -168,8 +168,103 @@ def leftband():
         save(fig, "sq_leftband.png")
 
 
+EXTRA = "#efe4f0"         # 左側帶外：規格之外的額外要求
+
+
+def _note(ax, x, y, s, color=None, fontsize=12):
+    ax.text(x, y, s, ha="center", va="center", fontsize=fontsize, color=color or ea.INK)
+
+
+def spec_ant():
+    """v7 輸出頁（天線）：規格直接畫在圖上；曲線為代表設計，淡紅＝規格不允許，淡紫＝左側帶外額外要求。"""
+    _, f, s11, gain, rad = antenna_data()
+    with plt.rc_context({"font.size": 12, "axes.titlesize": 14}):
+        fig = plt.figure(figsize=(11.6, 4.3))
+        gs = fig.add_gridspec(1, 3, left=.05, right=.95, top=.9, bottom=.13, wspace=.32)
+        ax = fig.add_subplot(gs[0, 0])
+        ant_s11(ax, f, s11)
+        _note(ax, 28, -5, "≤ −10 dB", ea.INK)
+        ax = fig.add_subplot(gs[0, 1])
+        ant_gain(ax, f, gain)
+        ax.set_ylim(-12, 8)
+        ax.set_yticks([-10, -5, 0, 5])
+        ax.fill_between([26.5, 29.5], -12, 4, color=BAD, lw=0, zorder=0)
+        ax.axvspan(24, 25.5, color=EXTRA, lw=0, zorder=0)
+        _note(ax, 28, -2, "≥ 4 dBi")
+        _note(ax, 24.75, -9, "額外\n要求")
+        ax = fig.add_subplot(gs[0, 2], projection="polar")
+        theta = np.asarray(rad["theta_deg"])
+        ax.set_theta_zero_location("N")
+        ax.set_theta_direction(-1)
+        w = np.radians(np.linspace(-45, 45, 91))
+        ax.fill_between(w, -30, -3, color=BAD, lw=0)
+        ax.plot(w, np.full_like(w, -3), color=ea.INK, lw=.9, ls=(0, (3, 2)))
+        for label, cut, color in (("φ = 0°", rad["phi0_db"], ea.BLUE), ("φ = 90°", rad["phi90_db"], ea.AMBER)):
+            norm = np.asarray(cut) - np.asarray(cut)[theta == 0][0]
+            ax.plot(np.radians(theta), np.clip(norm, -30, 3), color=color, lw=1.6, label=label)
+        ax.set_ylim(-30, 3)
+        ax.set_yticks([-20, -10, -3])
+        ax.set_yticklabels([])
+        ax.set_xticks(np.radians([0, 45, 90, 135, 180, 225, 270, 315]))
+        ax.set_xticklabels(["0°", "45°", "90°", "", "180°", "", "-90°", "-45°"], fontsize=11)
+        ax.grid(color=ea.GRID, lw=.6)
+        ax.spines["polar"].set(linewidth=.6, color=ea.MUTED)
+        ax.text(0, -16, "±45° 內\n下降 ≤ 3 dB", ha="center", va="center", fontsize=11, color=ea.INK)
+        ax.set_title("28 GHz 方向圖", pad=10)
+        ax.legend(loc="upper center", bbox_to_anchor=(.5, -.04), ncol=2, fontsize=11)
+        save(fig, "sq_spec_ant.png")
+
+
+def spec_flt():
+    """v7 輸出頁（濾波器）：規格直接畫在圖上；曲線為代表設計。"""
+    _, f, s11, s21, s22 = filter_data()
+    with plt.rc_context({"font.size": 12, "axes.titlesize": 14, "legend.fontsize": 11}):
+        fig, axs = plt.subplots(1, 2, figsize=(7.8, 4.3))
+        fig.subplots_adjust(left=.08, right=.98, top=.9, bottom=.13, wspace=.3)
+        flt_s11(axs[0], f, s11, s22)
+        _note(axs[0], 28, -5, "≤ −10 dB")
+        flt_s21(axs[1], f, s21)
+        _note(axs[1], 28, -6.5, "通帶 ≥ −3 dB")
+        _note(axs[1], 28, -30, "兩側阻帶 ≤ −15 dB")
+        save(fig, "sq_spec_flt.png")
+
+
+def leftband_pat():
+    """v7 左側帶外頁：兩個設計的 pattern 上下疊在左，增益對照在右。"""
+    bits, f, _, gain, _ = antenna_data()
+    rec = ea.load(ea.FROZEN)["snapshot"]["oob_record"]
+    rbits = np.asarray(rec["bits"], dtype=int)
+    rgain = np.asarray(rec["RealizedGainTotal_dbi"])
+    assert rbits.shape == (25, 25) and abs(rgain[f <= 25.5].max() - (-3.46)) < .01
+    with plt.rc_context({"font.size": 13, "axes.titlesize": 14, "legend.fontsize": 12}):
+        fig = plt.figure(figsize=(7.9, 5.0))
+        gs = fig.add_gridspec(2, 2, width_ratios=[1, 2.25], left=.02, right=.98, top=.92, bottom=.11,
+                              wspace=.18, hspace=.3)
+        pattern(fig.add_subplot(gs[0, 0]), bits, "代表設計")
+        a = fig.add_subplot(gs[1, 0])
+        ea.pattern_axis(a, rbits, ea.BLUE, "左側帶外紀錄")
+        for c in a.collections:
+            c.set_sizes([40])
+        square(a)
+        ax = fig.add_subplot(gs[:, 1])
+        freq(ax, "增益 (dBi)")
+        ax.axvspan(24, 25.5, color=EXTRA, lw=0)
+        ax.fill_between([26.5, 29.5], -12, 4, color=BAD, lw=0)
+        ea.limit(ax, 26.5, 29.5, 4)
+        ax.plot(f, gain, color=ea.MUTED, lw=1.8, marker="o", ms=3.5, label="代表設計")
+        ax.plot(f, rgain, color=ea.BLUE, lw=2, marker="o", ms=3.5, label="左側帶外紀錄")
+        ax.text(24.75, 6.6, "左側帶外", ha="center", fontsize=12, color=ea.INK)
+        ax.set_ylim(-12, 8)
+        ax.set_yticks([-10, -5, 0, 5])
+        ax.legend(loc="lower right")
+        save(fig, "sq_leftband_pat.png")
+
+
 if __name__ == "__main__":
     spec()
     antenna()
     filter_()
     leftband()
+    spec_ant()
+    spec_flt()
+    leftband_pat()

@@ -9,6 +9,7 @@
   schem_flow_senior.png／schem_flow_mine.png  v6：學長的線上迴圈與批次線上學習的時間軸示意
   schem_diamond.png  v6：對角接觸三種幾何（0.01 mm 重疊／挖掉 0.10 mm 菱形／加 0.10 mm 菱形，照實際比例）
   schem_point.png    v6：濾波器舊幾何（逐欄合併、欄間零厚度貼合）對照 8/13 起的單一導體加菱形橋
+  schem_point_v7.png v7：同上，標題改舊／新模擬 profile
 曲線是平滑的假資料，只用來說明；規格門檻與頻帶照 docs/paper/extended_abstract_figures.py。
 配色與 meeting_clean.py 相同。零 HFSS、零 NAS。執行：python -m script.figs.meeting_schematic
 """
@@ -285,7 +286,7 @@ def diamond():
     save(fig, "schem_diamond.png")
 
 
-def point():
+def point(titles=("舊幾何", "8/13 起"), name="schem_point.png"):
     """濾波器舊幾何（p00，學長原版 dual_port）：每格剛好 0.2 mm、逐欄 Unite，欄與欄是不同物件，
     只是零厚度貼合，對角只在一條邊上相接；8/13 起（p01）＋0.01 mm 重疊、全部聯集成一個導體、對角加 0.075 mm 菱形橋。"""
     bits = [(0, 0), (1, 0), (1, 1), (0, 2), (2, 2)]        # (列, 欄)，第 0 列在上
@@ -293,7 +294,7 @@ def point():
     fig, axs = plt.subplots(1, 2, figsize=(6.0, 3.4))
     fig.subplots_adjust(left=.02, right=.98, top=.88, bottom=.02, wspace=.2)
     a, b = axs
-    for ax, title in ((a, "舊幾何"), (b, "8/13 起")):
+    for ax, title in zip((a, b), titles):
         ax.set_xlim(-.06, .66)
         ax.set_ylim(-.14, .66)
         ax.set_aspect("equal")
@@ -311,7 +312,7 @@ def point():
         _diamond(b, x, y, .075, AMBER)
     a.text(.3, -.07, "每欄各成一塊，欄與欄只是貼著", ha="center", va="center", fontsize=12, color=RED)
     b.text(.3, -.07, "合成一塊，對角加 0.075 mm 橋", ha="center", va="center", fontsize=12, color=AMBER)
-    save(fig, "schem_point.png")
+    save(fig, name)
 
 if __name__ == "__main__":
     dust()
@@ -323,3 +324,4 @@ if __name__ == "__main__":
     flow_mine()
     diamond()
     point()
+    point(("舊 profile", "新 profile，8/13 起"), "schem_point_v7.png")
