@@ -294,10 +294,14 @@ def holdout_eval(hist, wide_rows, cfg, grid, *, frac=0.2, seed=81, **train_kw):
     train = [r for r, _ in scored if r["lineage"] not in hold_f]
     hold = [(r, s) for r, s in scored if r["lineage"] in hold_f]
     hold_sha = {r["sha"] for r, _ in hold}
-    keep = np.array([s not in hold_sha for s in hist["sha"]])   # 同圖的歷史窄頻也拿掉
+    # 同圖、同家族的歷史窄頻都拿掉：歷史裡同家族近親上百筆，留著會讓 holdout 通帶看起來偏準
+    keep = np.array([s not in hold_sha and f not in hold_f
+                     for s, f in zip(hist["sha"], hist["lineage"])])
     h = {k: (np.asarray(v)[keep] if k in ("P", "Y", "M") else [x for x, k2 in zip(v, keep) if k2])
          for k, v in hist.items()}
-    ens = train_ensemble(h, train + [r for r in wide_rows if true_wm(r, cfg, grid) is None], **train_kw)
+    uncovered = [r for r in wide_rows if true_wm(r, cfg, grid) is None and r["lineage"] not in hold_f]
+    ens = train_ensemble(h, train + uncovered, **train_kw)
+    rep_excluded = int((~keep).sum())
     pred = ens.predict(np.asarray([r["pattern"].reshape(-1) for r, _ in hold], dtype=np.float32))
     slices = band_slices(cfg.score_spec, grid)
     pwm = margins_vec(pred.reshape(-1, *pred.shape[2:]), slices).min(1).reshape(pred.shape[:2]).mean(0)
@@ -311,6 +315,7 @@ def holdout_eval(hist, wide_rows, cfg, grid, *, frac=0.2, seed=81, **train_kw):
     const = float(train_wm.mean())
     med = float(np.median(train_wm))
     rep = {"holdout_families": sorted(hold_f), "n_holdout": len(hold), "n_train_wide": len(train),
+           "n_history_excluded": rep_excluded,
            "s21_band_mae_db": band_mae,
            "wm_mae": float(np.abs(pwm - twm).mean()),
            "wm_mae_const": float(np.abs(const - twm).mean()), "const_wm": const,

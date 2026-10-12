@@ -156,3 +156,38 @@ def test_dual_geometry_and_mutation_keep_both_port_pads():
         p = sm.mutate_pattern(enforce_dual_geometry(rng.random((25, 25)) < 0.5), rng)
         assert p.shape == (25, 25) and p.dtype == bool
         assert p[:5, 10:15].all() and p[20:25, 10:15].all()
+
+
+def test_holdout_drops_same_family_history(monkeypatch, cfg, grid):
+    """回歸（2026-10-13）：holdout 家族在歷史窄頻裡的近親也要排除，不能只排同圖。"""
+    rng = np.random.default_rng(0)
+    n = len(grid)
+
+    def row(i, fam):
+        p = enforce_dual_geometry(rng.random((25, 25)) < 0.5)
+        y = np.full((3, n), -10.0, dtype=np.float32)
+        y[1] = -5.0 - i
+        return {"id": f"w{i}", "store": "s", "pattern": p, "y": y, "mask": np.ones((3, n), bool),
+                "sha": pattern_sha256(p), "lineage": fam}
+
+    wide = [row(i, f"F{i % 5}") for i in range(10)]
+    hist = {"P": rng.random((15, 625)).astype(np.float32) > 0.5,
+            "Y": np.zeros((15, 3, n), np.float32), "M": np.ones((15, 3, n), bool),
+            "sha": [f"h{i}" for i in range(15)], "lineage": [f"F{i % 5}" for i in range(15)]}
+    seen = {}
+
+    class Fake:
+        def predict(self, P):
+            return np.full((2, len(P), 3, n), -8.0, np.float32)
+
+    def fake_train(h, rows, **kw):
+        seen["hist_lineages"] = set(h["lineage"])
+        seen["wide_lineages"] = {r["lineage"] for r in rows}
+        return Fake()
+
+    monkeypatch.setattr(sm, "train_ensemble", fake_train)
+    rep = sm.holdout_eval(hist, wide, cfg, grid, frac=0.2)
+    held = set(rep["holdout_families"])
+    assert held and not (held & seen["hist_lineages"])
+    assert not (held & seen["wide_lineages"])
+    assert rep["n_history_excluded"] == 3 * len(held)
