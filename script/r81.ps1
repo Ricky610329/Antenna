@@ -17,4 +17,11 @@ $taskArguments = @{
     CheckOnly = $CheckOnly
     Report = $Report
 }
-& (Join-Path $PSScriptRoot 'start_r81_worker.ps1') @taskArguments
+if ($taskArguments.Stage -eq 'FormalSharded') {
+    $taskArguments.Remove('Stage')
+    & (Join-Path $PSScriptRoot 'start_r81_formal_sharded_worker.ps1') @taskArguments
+} elseif ($taskArguments.Stage -in @('EngineeringOnly', 'Formal')) {
+    & (Join-Path $PSScriptRoot 'start_r81_worker.ps1') @taskArguments
+} else {
+    throw 'R81 worker preset stage is invalid.'
+}
