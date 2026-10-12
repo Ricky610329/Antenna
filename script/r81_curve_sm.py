@@ -27,6 +27,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -573,6 +576,37 @@ def build(args):
         print(f"{a:8s} n={v['n']:2d} pred WM {v['pred_wm_min']:+.2f}..{v['pred_wm_max']:+.2f}  parents={len(v['parents'])}")
     print(f"→ {args.out}（validate_input 通過；發車前照常 check-dup）")
 
+V2_DATASET = WIDE_ROOT / "v2_v001" / "dataset"
+
+
+def enqueue(args):
+    """選好的 input 夾 → 切 k 片 → 上 NAS → check-dup → jobs-add（同一 prio、不綁機器）。"""
+    src, root = Path(args.input), Path(args.dataset_root)
+    cfg = load_profile_config(args.config)
+    shutil.copy2(args.config, src / "config.yaml")          # jobs-add 要求與 config bytes 一致
+    validate_input(src, cfg)
+    rows = json.loads((src / "manifest.json").read_text(encoding="utf-8"))
+    base = f"dedust_{args.name}"
+    if (root / f"{base}_input").exists():
+        raise SystemExit(f"{base}_input 已存在，換名字")
+    shutil.copytree(src, root / f"{base}_input")
+    dedust = [sys.executable, "-m", "script.dedust", "--dataset-root", str(root)]
+    if subprocess.call(dedust + ["check-dup", "--input", f"{base}_input"]) != 0:
+        raise SystemExit("check-dup 有重複，不發車")
+    for k in range(args.shards):
+        d = root / f"{base}s{k + 1}_input"
+        d.mkdir()
+        for f in ("config.yaml", "measurement.json", "score_spec.json"):
+            shutil.copy2(src / f, d / f)
+        sub = rows[k::args.shards]
+        for r in sub:
+            shutil.copy2(src / r["pattern_file"], d / r["pattern_file"])
+        (d / "manifest.json").write_text(json.dumps(sub, ensure_ascii=False, indent=1), encoding="utf-8")
+        validate_input(d, cfg)
+        subprocess.check_call(dedust + ["jobs-add", "--scope", cfg.scope, "--config", str(args.config),
+                                        "--input", d.name, "--store", f"{base}s{k + 1}",
+                                        "--prio", str(args.prio)])
+
 
 def score(args):
     cfg = load_cfg(args.config)
@@ -612,11 +646,18 @@ def main(argv=None):
     # b01 用 2–40 格變異，實測多數把通帶打壞；b02 起預設改小步 1–8 格（2026-10-13）
     b.add_argument("--min-flips", type=int, default=1)
     b.add_argument("--max-flips", type=int, default=8)
+    q = sub.add_parser("enqueue", help="切片上 NAS、查重、入佇列（主批 prio 5／填空池 prio 9）")
+    q.add_argument("--input", required=True)
+    q.add_argument("--name", required=True, help="如 r81v2b03 → store dedust_r81v2b03s1..")
+    q.add_argument("--prio", type=int, default=5)
+    q.add_argument("--shards", type=int, default=6)
+    q.add_argument("--dataset-root", type=Path, default=V2_DATASET)
+    q.add_argument("--config", type=Path, default=CONFIG)
     s = sub.add_parser("score")
     s.add_argument("--stores", nargs="+", required=True)
     s.add_argument("--config", type=Path, default=CONFIG)
     args = ap.parse_args(argv)
-    (build if args.cmd == "build" else score)(args)
+    {"build": build, "score": score, "enqueue": enqueue}[args.cmd](args)
 
 
 if __name__ == "__main__":
