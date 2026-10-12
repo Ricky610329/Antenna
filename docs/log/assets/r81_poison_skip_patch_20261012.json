@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-12T11:30:03.287378+08:00",
+  "status": "verified_poison_skip_patch_pending_versioned_release",
+  "integration_parent_commit": "b8ce2be2565defc6e948980a22d544538ebffb09",
+  "user_instruction": "毒樣本中斷改成忽略該樣本即可",
+  "independent_review_sha256": "8626977708b84c079f3e28d63e390cc2caae962923f561d76274bbe17775d95b",
+  "independent_review": {
+    "schema_version": 1,
+    "kind": "independent_poison_skip_review",
+    "review_date": "2026-10-12",
+    "timezone": "Asia/Taipei",
+    "repository": "C:/Users/ricky/Documents/GitHub/Antenna",
+    "branch": "GAN",
+    "base_head": "b8ce2be",
+    "review_scope": {
+      "mode": "read_only_static_review",
+      "implementation_owner": "root",
+      "reviewed_behavior": [
+        "scoped profiled-batch exhausted-HFSS normalization and skip semantics",
+        "scoped worker completion evidence and continued queue processing",
+        "R81 engineering and formal-sharded queue terminal-skip handling",
+        "strict truth/training exclusion and release-binding consequences"
+      ],
+      "excluded_actions": [
+        "NAS access",
+        "HFSS execution",
+        "model execution",
+        "training execution",
+        "worker restart",
+        "broad test execution"
+      ]
+    },
+    "reviewed_files_sha256": {
+      "script/profiled_batch.py": "fee9c85818bbbf2fdd5cc88f339aac545b17e450aee7ec903cf715ae98b2e8bf",
+      "script/dedust.py": "48ed26bab6eeaa7b832e3d747cb5794a7edf28c4ce47eef08a58d78dd6b38373",
+      "script/r81_worker_entry.py": "7f2203ae4b0c311b0057335934677e023e25f486ca93b6b791e0e6b23f00d10f",
+      "script/r81_formal_sharded_entry.py": "8bdb1b4cbd7f9887468cf49ce7949cf2c32a67dd9c81e1ce44ed7a0d72766001",
+      "tests/test_profiled_poison_skip.py": "a2df496980f30f48c03697821916cc86bcfcc0c279fa098a80bf2e2781ee23e1",
+      "tests/test_worker_poison_skip.py": "f049fad88f289a717ecf5846cc58adde0497331d687438c502d34e0390400c99",
+      "tests/test_scoped_worker_recovery.py": "8657bf047745948fdf1492eaae392e24e5e816d97fbd362b7fb7aa34f9e2bcac"
+    },
+    "reviewed_policy_document_sha256": {
+      "script/CLAUDE.md": "c5a23ab53f7bc082e3a25e996cc2fc58a93767911a550be9b19911eee7db135e"
+    },
+    "decision": "pass_with_required_versioned_release_rebinding",
+    "blocking_findings": [],
+    "resolved_blockers": [
+      {
+        "issue": "The initial terminal-HFSS classifier admitted blank or non-string error values and contradictory raw error records carrying success or skip fields.",
+        "resolution": "The frozen implementation requires a nonblank string error, exact allowed error/skip fields, an integer non-boolean attempts value of at least three, and rejects raw or explicit-skipped hybrids before any normalization write.",
+        "status": "resolved"
+      },
+      {
+        "issue": "The initial startup normalizer treated malformed and non-HFSS raw errors as pending, allowing them to reach todo construction and potentially open HFSS before strict end validation.",
+        "resolution": "Every raw error must now pass the same strict HFSS classifier at terminal_attempts=1 before retry. Known HFSS attempts 1 or 2 remain pending; malformed attempts, non-HFSS kinds, contradictory fields, and invalid schemas fail before a normalization write or simulator construction.",
+        "status": "resolved"
+      },
+      {
+        "issue": "The final dedust diagnostic could describe a hard non-HFSS error with attempts >= 3 as ignored immediately before strict verification rejected it.",
+        "resolution": "In scoped skip mode, the diagnostic poison list now includes only entries whose persisted status is skipped. Persisted state and control flow are unchanged.",
+        "status": "resolved"
+      }
+    ],
+    "validated_semantics": [
+      "Only known terminal HFSS simulation failures with attempts >= 3 become status=skipped and skip_reason=hfss_attempts_exhausted; profile, manifest, hash, schema, and data-integrity failures remain hard failures.",
+      "Normalization preserves the original error, error_kind, and attempts evidence and occurs before scoped todo construction and before opening the simulator, so legacy terminal poison is not retried on another host.",
+      "Execution completion is an exact manifest partition of ok plus skipped observations. Strict verify_completed(require_complete=true) remains success-only for truth, engineering/formal merge, and training paths.",
+      "Skipped rows are excluded from successful observation counts and training inputs. A scoped worker writes a normal done receipt with nonzero errors and the complete canonical skipped-id list, continues to later jobs, and returns success for once-mode after terminal skip completion.",
+      "R81 queue validation checks skipped ids against the done receipt, remains active while any other job is active, and emits terminal_skips only when the queue has settled without a hard failure. Formal aggregation still rejects skipped shards, preventing false promotion or training.",
+      "A one-row all-poison scoped job terminates as skipped without reopening HFSS. Simulator-open failures and existing machine-wide failure/blowout fuses remain hard safeguards.",
+      "Malformed or non-HFSS raw errors fail during startup normalization before todo construction can open HFSS; valid known HFSS failures with attempts 1 or 2 remain retryable pending rows.",
+      "The scoped poison diagnostic reports ignored only for persisted skipped entries."
+    ],
+    "nonblocking_observations": [
+      "An all-skipped small job is intentionally terminal even though repeated per-row HFSS failure cannot by itself distinguish toxic geometry from a persistent sample-specific simulator fault. The preserved evidence and unchanged simulator-open and aggregate-failure fuses provide the retained diagnostic boundary."
+    ],
+    "release_binding_requirement": {
+      "required": true,
+      "reason": "The runtime-bound Python sources changed, so historical R81 EngineeringOnly and FormalSharded releases must fail closed on dirty-tree or runtime-hash checks.",
+      "required_action": "After committing the implementation, create new versioned release metadata from the committed tree and regenerate the complete runtime hash map and release commit binding. Preserve historical release JSON unchanged.",
+      "changed_runtime_sources": [
+        "script/profiled_batch.py",
+        "script/dedust.py",
+        "script/r81_worker_entry.py",
+        "script/r81_formal_sharded_entry.py"
+      ]
+    },
+    "verification_evidence": {
+      "independent_reexecution": false,
+      "static_checks": [
+        "Exact frozen-file hashes recorded above.",
+        "The current script policy explicitly states that the 2026-10-12 scoped poison-skip rule supersedes the historical R80 scoped exception while retaining hard failure for HFSS-open, aggregate-failure fuse, profile, hash, and schema faults.",
+        "git diff --check passed; only line-ending warnings were reported."
+      ],
+      "reported_by_root": [
+        "33 targeted integration tests passed in 58.89 seconds before the final classifier and diagnostic refinements; the later dedust change was limited to operator-message filtering and the R81 runtime files did not change.",
+        "After the classifier and diagnostic refinement, 23 focused helper and worker tests passed in 5.48 seconds and pyflakes passed for the four runtime source files.",
+        "After the final pending-raw startup refinement, both actual worker startup-gate cases passed in 0.13 seconds."
+      ],
+      "reported_by_profiled_batch_owner": [
+        "The prior 12 baseline helper tests passed.",
+        "An initial six-case targeted run exposed the raw-hybrid defect; after correction, both focused regression nodes passed.",
+        "Targeted invalid-error and hybrid cases and pyflakes passed against the frozen profiled_batch implementation.",
+        "After the pending-raw startup fix, eight targeted tests passed in 0.21 seconds and pyflakes passed."
+      ]
+    },
+    "conclusion": "No remaining code blocker or unresolved review finding was found in the frozen diff. The skip path is terminal for execution scheduling while remaining visibly unsuccessful for truth, merge, and training; malformed or non-HFSS raw errors fail before simulator startup. Promotion requires a new committed, versioned R81 release with refreshed native runtime bindings."
+  },
+  "verification": {
+    "baseline_targeted_regression": {
+      "passed": 33,
+      "duration_seconds": 58.89,
+      "scope": "scoped worker, profile batch, formal sharding and semantic queue regressions before classifier refinements"
+    },
+    "final_classifier_and_queue_focused": {
+      "passed": 23,
+      "duration_seconds": 5.48,
+      "files": [
+        "tests/test_profiled_poison_skip.py",
+        "tests/test_worker_poison_skip.py"
+      ],
+      "scope": "after error-value/hybrid refinement, before final pending-error startup gate"
+    },
+    "final_startup_worker_gate": {
+      "passed": 2,
+      "duration_seconds": 0.13,
+      "node": "tests/test_worker_poison_skip.py::test_corrupt_or_non_hfss_error_stops_before_simulator"
+    },
+    "final_helper_startup_gate": {
+      "passed": 8,
+      "duration_seconds": 0.21,
+      "reported_by": "Sol implementation agent"
+    },
+    "pyflakes_four_runtime_files": "passed",
+    "tests_use_generated_fixtures": true,
+    "actual_hfss_or_sm_training": false,
+    "counts_not_summed_due_to_overlapping_cases_and_refinement_versions": true
+  },
+  "behavior": {
+    "scope": "current scoped profiled workers; legacy unscoped behavior preserved",
+    "threshold": 3,
+    "allowed_failure": "authenticated HFSS simulation error only",
+    "skip_status": "skipped",
+    "skip_reason": "hfss_attempts_exhausted",
+    "resume_retries_terminal_poison": false,
+    "original_error_and_attempts_preserved": true,
+    "done_marker_errors_are_full_canonical_skipped_ids": true,
+    "skip_counts_as_success_or_training_truth": false,
+    "other_jobs_continue": true,
+    "once_mode_returns_normally": true,
+    "queue_terminal_status": "terminal_skips",
+    "strict_scientific_complete_unchanged": true,
+    "data_integrity_and_machine_fuses_remain_fatal": true
+  },
+  "release_binding": "new EngineeringOnly release will bind the committed patch; historical release remains unchanged",
+  "nas_queue_or_marker_mutation": false,
+  "hfss_started_or_worker_restarted": false,
+  "limits": [
+    "A three-failure label is a scheduling decision, not proof of geometric toxicity.",
+    "All-skipped small batches may include systemic faults; simulator opening and bulk-failure fuses still stop.",
+    "R81 skipped rows require replacement data before strict engineering/formal promotion and SM feedback.",
+    "Current tests establish generated-fixture behavior, not real HFSS repair or new measured WM."
+  ]
+}

@@ -624,17 +624,20 @@ def queue_status(path: str | Path, required_sha256: str, stage: str) -> str:
             for name in ("measurement.json", "score_spec.json", "manifest.json"):
                 if pb.read_json(input_dir / name) != pb.read_json(store_dir / name):
                     raise ValueError(f"{store} completed store differs from released {name}")
-            results = pb.validate_store(store_dir, require_complete=True)
-            if done["errors"] != 0 or done["error_ids"] or len(results) != len(pb.read_json(input_dir / "manifest.json")):
-                raise ValueError(f"{store}.done does not describe the complete validated store")
-            states.append("done")
+            finished = pb.validate_finished_store(store_dir)
+            skipped = finished["skipped_ids"]
+            if done["errors"] != len(skipped) or done["error_ids"] != skipped:
+                raise ValueError(f"{store}.done does not describe the verified execution terminal")
+            states.append("skipped" if skipped else "done")
         elif fail is not None and set(fail["machines"]) == set(roster):
             states.append("failed")
         else:
             states.append("active")
     if states and all(value == "done" for value in states):
         return "all_success"
-    if states and all(value in {"done", "failed"} for value in states):
+    if states and all(value in {"done", "skipped", "failed"} for value in states):
+        if "failed" not in states:
+            return "terminal_skips"
         return "terminal_failure"
     return "active"
 
@@ -658,7 +661,10 @@ def main() -> None:
     args = parser.parse_args()
     if args.queue_status:
         status = queue_status(args.release, args.release_sha256, args.stage)
-        raise SystemExit({"all_success": 0, "active": 3, "terminal_failure": 4}[status])
+        if status == "terminal_skips":
+            print("R81 queue 已處理；毒樣本已忽略，未計成功，完整真值驗證仍需補齊。")
+        raise SystemExit({"all_success": 0, "terminal_skips": 0,
+                          "active": 3, "terminal_failure": 4}[status])
     report = validate_release(args.release, args.release_sha256, args.stage)
     if args.report:
         _write_report(args.report, report)

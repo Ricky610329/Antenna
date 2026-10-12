@@ -131,7 +131,7 @@ class _WorkdirOneGoodOneBadSimulator(_OneGoodOneBadSimulator):
         (StdPath(record_path) / "solver.tmp").write_text("current job", encoding="utf-8")
 
 
-def test_run_emits_typed_incomplete_only_after_verified_partial(tmp_path, monkeypatch):
+def test_run_skips_exhausted_hfss_row_and_keeps_strict_truth_incomplete(tmp_path, monkeypatch):
     dataset = tmp_path / "dataset"
     dataset.mkdir()
     monkeypatch.setattr(dedust, "DATASET_PATH", Path(str(dataset)))
@@ -144,13 +144,19 @@ def test_run_emits_typed_incomplete_only_after_verified_partial(tmp_path, monkey
         job_prio=1, tier2_prio=8, scope=SCOPE, claim_path=None, claim_me=None,
     )
 
-    with pytest.raises(profiled_batch.IncompleteProfileBatch, match="verified=1 terminal_errors=1"):
-        dedust.run(args)
+    assert dedust.run(args) is None
 
     results = json.loads((dataset / "partial" / "results.json").read_text(encoding="utf-8"))
     assert results["bad"] == {
         "error": "COM fixture failure", "error_kind": "hfss_simulation", "attempts": 3,
+        "status": "skipped", "skip_reason": "hfss_attempts_exhausted",
     }
+    assert profiled_batch.verify_finished(dataset / "partial",
+                                          profiled_batch.load_profile_config(PROFILE)) == {
+        "success_ids": ["ok"], "skipped_ids": ["bad"],
+    }
+    with pytest.raises(ValueError, match="未完整成功"):
+        profiled_batch.validate_store(dataset / "partial")
     assert profiled_batch.verify_incomplete_hfss_batch(dataset / "partial",
                                                         profiled_batch.load_profile_config(PROFILE)) == {
         "success_ids": ["ok"], "error_ids": ["bad"],
@@ -174,8 +180,7 @@ def test_partial_run_cleans_only_current_default_workdir_after_raw_verification(
         job_prio=1, tier2_prio=8, scope=SCOPE, claim_path=None, claim_me=None,
     )
 
-    with pytest.raises(profiled_batch.IncompleteProfileBatch):
-        dedust.run(args)
+    assert dedust.run(args) is None
 
     assert not (tmp_path / "_dedust_partial").exists()
     assert (unrelated / "keep.txt").read_text(encoding="utf-8") == "unrelated"
@@ -186,8 +191,7 @@ def test_partial_run_cleans_only_current_default_workdir_after_raw_verification(
     assert custom_input.exists()
     custom_out = tmp_path / "user-output"
     args.input, args.store, args.out = "custom_input", "custom", str(custom_out)
-    with pytest.raises(profiled_batch.IncompleteProfileBatch):
-        dedust.run(args)
+    assert dedust.run(args) is None
     assert (custom_out / "solver.tmp").read_text(encoding="utf-8") == "current job"
 
 
@@ -236,13 +240,14 @@ def test_scoped_worker_preserves_partial_failure_and_continues_next_job(tmp_path
     assert json.loads((first_store / "results.json").read_text(encoding="utf-8"))["bad"]["attempts"] == 3
 
 
-def test_fail_takeover_retries_attempt_three_once_without_reset(tmp_path, monkeypatch):
+def test_fail_takeover_skips_attempt_three_without_opening_hfss(tmp_path, monkeypatch):
     dataset = tmp_path / "dataset"
     dataset.mkdir()
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(dedust, "DATASET_PATH", Path(str(dataset)))
     monkeypatch.setattr("antenna.utils.web.get_local_ip", lambda: "140.123.106.216")
-    monkeypatch.setattr("antenna.patch.SinglePortRadSimulator", _SuccessfulSimulator)
+    monkeypatch.setattr("antenna.patch.SinglePortRadSimulator",
+                        lambda **_kw: pytest.fail("exhausted row must not open HFSS"))
     input_root, rows, cfg = _write_input(dataset, "retry_input", ["retry"])
     store = _write_store(dataset, input_root, "retry_store", rows, cfg, errors={
         "retry": {"error": "DISP_E_EXCEPTION 0x80070223", "attempts": 3},
@@ -262,10 +267,11 @@ def test_fail_takeover_retries_attempt_three_once_without_reset(tmp_path, monkey
 
     results = json.loads((store / "results.json").read_text(encoding="utf-8"))
     claim = json.loads((state / "retry_store.claim").read_text(encoding="utf-8"))
-    assert results["retry"]["status"] == "ok" and "attempts" not in results["retry"]
+    assert results["retry"]["status"] == "skipped" and results["retry"]["attempts"] == 3
     assert claim["machine"] == "140.123.106.216" and claim["prior_fail"] == ["140.123.106.37"]
     assert not (state / "retry_store.fail").exists()
-    assert json.loads((state / "retry_store.done").read_text(encoding="utf-8"))["errors"] == 0
+    done = json.loads((state / "retry_store.done").read_text(encoding="utf-8"))
+    assert done["errors"] == 1 and done["error_ids"] == ["retry"]
 
 
 def test_scoped_worker_stops_after_three_consecutive_partial_batches(tmp_path, monkeypatch):

@@ -250,6 +250,112 @@ def verify_completed(store_dir, cfg, *, require_complete=False):
     return results
 
 
+_HFSS_ERROR_PREFIXES = ("watchdog_timeout:", "RPC_E_", "RPC_S_", "DISP_E_", "0x")
+_HFSS_SKIP_REASON = "hfss_attempts_exhausted"
+_HFSS_ERROR_FIELDS = {"error", "error_kind", "attempts", "status", "skip_reason"}
+
+
+def is_terminal_hfss_error(entry, terminal_attempts=3):
+    """Return whether *entry* is a known exhausted HFSS simulation error."""
+    if not isinstance(entry, dict) or set(entry) - _HFSS_ERROR_FIELDS:
+        return False
+    error = entry.get("error")
+    if not isinstance(error, str) or not error.strip():
+        return False
+    attempts = entry.get("attempts")
+    if isinstance(attempts, bool) or not isinstance(attempts, int) or attempts < terminal_attempts:
+        return False
+    kind = entry.get("error_kind")
+    if kind == "hfss_simulation":
+        return True
+    return kind is None and error.startswith(_HFSS_ERROR_PREFIXES)
+
+
+def _manifest_ids(store_dir):
+    rows = read_json(Path(store_dir) / "manifest.json")
+    if not isinstance(rows, list) or not rows:
+        raise ValueError("store manifest must be a non-empty list")
+    ids = []
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("id"), str):
+            raise ValueError("store manifest rows must have string ids")
+        ids.append(row["id"])
+    if len(ids) != len(set(ids)):
+        raise ValueError("store manifest ids must be unique")
+    return ids
+
+
+def _finished_partition(results, manifest_ids, *, require_all, mark_terminal=False):
+    success_ids, skipped_ids, changed_ids = [], [], []
+    manifest_set = set(manifest_ids)
+    unknown = sorted(set(results) - manifest_set)
+    if unknown:
+        raise ValueError(f"finished profile has unknown ids: {unknown[:20]}")
+    if require_all and set(results) != manifest_set:
+        missing = sorted(manifest_set - set(results))
+        raise ValueError(f"finished profile is missing ids: {missing[:20]}")
+
+    for name in manifest_ids:
+        if name not in results:
+            continue
+        entry = results[name]
+        if "error" not in entry:
+            if entry.get("status") != "ok" or "skip_reason" in entry:
+                raise ValueError(f"{name}: invalid success/skip marker")
+            success_ids.append(name)
+            continue
+
+        if set(entry) - _HFSS_ERROR_FIELDS:
+            raise ValueError(f"{name}: error entry contains observation fields")
+        if entry.get("status") == "skipped":
+            if (entry.get("skip_reason") != _HFSS_SKIP_REASON
+                    or not is_terminal_hfss_error(entry)):
+                raise ValueError(f"{name}: invalid exhausted-HFSS skip marker")
+            skipped_ids.append(name)
+            continue
+
+        if "status" in entry or "skip_reason" in entry:
+            raise ValueError(f"{name}: contradictory error status")
+        if not is_terminal_hfss_error(entry, terminal_attempts=1):
+            raise ValueError(f"{name}: invalid or non-HFSS raw error")
+        if mark_terminal and is_terminal_hfss_error(entry):
+            marked = dict(entry)
+            marked["status"] = "skipped"
+            marked["skip_reason"] = _HFSS_SKIP_REASON
+            results[name] = marked
+            skipped_ids.append(name)
+            changed_ids.append(name)
+            continue
+        if require_all:
+            raise ValueError(f"{name}: entry is neither verified success nor terminal HFSS skip")
+
+    return success_ids, skipped_ids, changed_ids
+
+
+def skip_exhausted_hfss_errors(store_dir, cfg):
+    """Mark known exhausted HFSS errors while leaving pending rows untouched."""
+    root = Path(store_dir)
+    results = verify_completed(root, cfg, require_complete=False)
+    manifest_ids = _manifest_ids(root)
+    success_ids, skipped_ids, changed_ids = _finished_partition(
+        results, manifest_ids, require_all=False, mark_terminal=True
+    )
+    if changed_ids:
+        atomic_json(root / "results.json", results)
+    return {"success_ids": success_ids, "skipped_ids": skipped_ids}
+
+
+def verify_finished(store_dir, cfg):
+    """Verify that every manifest row is a valid success or explicit HFSS skip."""
+    root = Path(store_dir)
+    results = verify_completed(root, cfg, require_complete=False)
+    manifest_ids = _manifest_ids(root)
+    success_ids, skipped_ids, _changed_ids = _finished_partition(
+        results, manifest_ids, require_all=True
+    )
+    return {"success_ids": success_ids, "skipped_ids": skipped_ids}
+
+
 def verify_incomplete_hfss_batch(store_dir, cfg, *, terminal_attempts=3):
     """Verify a resumable partial batch without accepting data/config corruption.
 
@@ -342,6 +448,15 @@ def validate_store(store_dir, *, require_complete=True):
     score = validate_score_spec(read_json(root / "score_spec.json"), measurement=measurement)
     cfg = SimpleNamespace(port=measurement["port"], measurement=measurement, score_spec=score)
     return verify_completed(root, cfg, require_complete=require_complete)
+
+
+def validate_finished_store(store_dir):
+    """Load store snapshots and validate success-or-exhausted-HFSS completion."""
+    root = Path(store_dir)
+    measurement = validate_measurement(read_json(root / "measurement.json"))
+    score = validate_score_spec(read_json(root / "score_spec.json"), measurement=measurement)
+    cfg = SimpleNamespace(port=measurement["port"], measurement=measurement, score_spec=score)
+    return verify_finished(root, cfg)
 
 
 def rescore_store(store_dir, score_spec_path, out_path):

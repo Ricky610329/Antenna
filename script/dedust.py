@@ -5629,10 +5629,12 @@ def run(args):
     from script.profiled_batch import (IncompleteProfileBatch, load_profile_config,
                                        observation as profile_observation, prepare_store,
                                        simulator_kwargs, verify_completed,
-                                       verify_incomplete_hfss_batch)
+                                       verify_incomplete_hfss_batch, verify_finished,
+                                       skip_exhausted_hfss_errors)
     config_path = _resolve_batch_config(args.config, getattr(args, "input", None))
     profile_cfg = load_profile_config(config_path)
     cfg = profile_cfg or load_config(config_path)
+    skip_poison = bool(profile_cfg and getattr(args, "scope", None))
     labels = cfg.measurement["labels"] if profile_cfg else PORT_SPECS[cfg.port]["labels"]
     #? port 分派（2026-08-10 dual 開線,D2 #4）:模擬器選型 + entry 泛化;rad/oob/sel 是 single 專屬
     #  （dual 無遠場輸出——作者明述,senior-thesis §3.4）,dual 走 dual_metrics 六項+能量自證。
@@ -5722,16 +5724,35 @@ def run(args):
             print("⚠ keep_project：工作目錄跑完保留（.aedt 在 <out>/project/），⚠ 需人工清理")
 
     store = SampleStore(store_dir)
-    #? 續跑規則：成功的跳過、error 的重試（COM 偶發例外佔比 ~15%,R8 實測）
-    todo = [(n, m) for n, m in enumerate(manifest)
-            if m["id"] not in results or "error" in results[m["id"]]]
-    print(f"待模擬 {len(todo)}/{len(manifest)} 筆（成功跳過、error 重試；中斷再跑即續）")
-    if profile_cfg and not todo:
+    # Scoped profile: persist terminal HFSS skips before constructing a simulator.
+    # Scientific completeness remains strict in profiled_batch.verify_completed.
+    if skip_poison:
         try:
-            verify_completed(store_dir, cfg, require_complete=True)
+            skip_exhausted_hfss_errors(store_dir, cfg)
         except Exception as profile_error:
             raise SystemExit(f"profile 完整性驗證失敗：{profile_error}") from profile_error
-        print(f"profile 已完整驗證：{len(manifest)} 筆；未啟動 HFSS")
+        if results_path.exists():
+            with open(results_path, encoding="utf-8") as f:
+                results = json.load(f)
+    #? 續跑規則：成功及已驗證的毒樣本跳過；其餘 error 依原重試預算補測。
+    todo = [(n, m) for n, m in enumerate(manifest)
+            if m["id"] not in results or
+            ("error" in results[m["id"]] and not
+             (skip_poison and results[m["id"]].get("status") == "skipped"))]
+    print(f"待模擬 {len(todo)}/{len(manifest)} 筆（成功／已忽略的毒樣本跳過、其餘 error 重試）")
+    if profile_cfg and not todo:
+        try:
+            if skip_poison:
+                finished = verify_finished(store_dir, cfg)
+            else:
+                verify_completed(store_dir, cfg, require_complete=True)
+        except Exception as profile_error:
+            raise SystemExit(f"profile 完整性驗證失敗：{profile_error}") from profile_error
+        if skip_poison:
+            print(f"profile 已處理：成功 {len(finished['success_ids'])} 筆、"
+                  f"毒樣本忽略 {len(finished['skipped_ids'])} 筆；未啟動 HFSS")
+        else:
+            print(f"profile 已完整驗證：{len(manifest)} 筆；未啟動 HFSS")
         return
 
     out = Path(args.out if args.out else
@@ -5847,6 +5868,8 @@ def run(args):
                     error_entry = {"error": es, "attempts": att}
                     if profile_cfg:
                         error_entry["error_kind"] = "hfss_simulation"
+                    if skip_poison and att >= 3:
+                        error_entry.update(status="skipped", skip_reason="hfss_attempts_exhausted")
                     results[m["id"]] = error_entry
                     _flush()
                     print(f"  ✗ (第 {att} 次) {es}")
@@ -5872,6 +5895,8 @@ def run(args):
                         aborted = True
                         break
                     _kill_hfss()                         # 先殺透再重開（quit 對殭屍 COM 會卡,跳過）
+                    if skip_poison and error_entry.get("status") == "skipped" and k + 1 == len(todo):
+                        continue                        # 最後一筆毒樣本不再多開一次 HFSS
                     sim = _open_sim()
                     continue
                 done_evt.set()
@@ -5987,10 +6012,18 @@ def run(args):
             _guard(sim.quit, 120, "HFSS 收尾關閉")
         except Exception:
             pass
-    poison = [i for i, v in results.items() if "error" in v and v.get("attempts", 1) >= 3]
+    poison = [i for i, v in results.items() if "error" in v and v.get("attempts", 1) >= 3
+              and (not skip_poison or v.get("status") == "skipped")]
     if poison:
-        print(f"⚠ 毒樣本嫌疑（3 連敗）{len(poison)} 筆: {','.join(poison[:10])}——人工判;重派=刪 .done+.claim")
-    if profile_cfg:
+        action = "已忽略，保留錯誤紀錄，不計成功" if skip_poison else "保留錯誤紀錄，待檢查"
+        print(f"⚠ 毒樣本嫌疑（3 連敗）{len(poison)} 筆: {','.join(poison[:10])}——{action}")
+    if skip_poison:
+        try:
+            skip_exhausted_hfss_errors(store_dir, cfg)
+            verify_finished(store_dir, cfg)
+        except Exception as profile_error:
+            raise SystemExit(f"profile 完整性驗證失敗：{profile_error}") from profile_error
+    elif profile_cfg:
         try:
             verify_completed(store_dir, cfg, require_complete=True)
         except Exception as profile_error:
@@ -6024,7 +6057,17 @@ def run(args):
         #  C 槽 0GB=78 個 job 的 HFSS 專案暫存,磁碟見底→COM 例外 0x80070223 爆發（重開機=假好轉）。
         #  只刪預設命名目錄;--out 自訂路徑視為使用者要保留。續跑不受影響（HFSS 專案會重建）。
         import shutil
-        shutil.rmtree(str(out), ignore_errors=True)
+        if skip_poison:
+            cwd = Path(os.getcwd()).resolve()
+            if out.parent != cwd or out.name != f"_dedust_{args.store}":
+                raise SystemExit(f"profile 暫存路徑拒絕清理：{out}")
+            if out.exists():
+                try:
+                    shutil.rmtree(str(out))
+                except Exception as cleanup_error:
+                    raise SystemExit(f"profile 暫存清理失敗：{out}: {cleanup_error}") from cleanup_error
+        else:
+            shutil.rmtree(str(out), ignore_errors=True)
         print(f"（工作目錄已清: {out}）")
     print(f"\n完成。結果：{results_path}；報表：python -m script.dedust report")
 
@@ -6877,14 +6920,18 @@ def worker(args):
                                 tier2_prio=args.tier2_prio,
                                 scope=scope,
                                 claim_path=str(sd.joinpath(st + ".claim")), claim_me=me)
+        finished = None
         try:
             if run(ns) == "yield":                       # tier-2 讓位/被接管:不標 done,回佇列重掃
                 continue
-            from script.profiled_batch import verify_completed
+            from script.profiled_batch import verify_completed, verify_finished
             _profile = load_profile_config(job_cfg)
             if _profile:
                 try:
-                    verify_completed(DATASET_PATH.joinpath(st), _profile, require_complete=True)
+                    if scope:
+                        finished = verify_finished(DATASET_PATH.joinpath(st), _profile)
+                    else:
+                        verify_completed(DATASET_PATH.joinpath(st), _profile, require_complete=True)
                 except Exception as verify_error:
                     raise SystemExit(f"profile 完整性驗證失敗，禁止 .done：{verify_error}") from verify_error
         except SystemExit as e:                          #? 判死:.fail 記機器名單（JSON,別台自動接管）、停機等人工
@@ -6919,16 +6966,19 @@ def worker(args):
                 continue
             print(f"✗ {st} 中止:{e}\nworker 停機（別台 worker 會自動接管此 store;本機修復後重啟 worker 即可）")
             raise
-        #! done 語義（2026-07-10 修）:「跑完」≠「全成功」——殘留 error 記進 .done 並顯性警告,
-        #  哨兵 --factory 會列出;重派=刪 .done+.claim（三連敗同一筆=毒樣本嫌疑,人工判）。
+        #! done records execution completion, not scientific all-success. Scoped
+        #  profile poison skips retain their errors and every canonical skipped id;
+        #  strict truth/engineering/SM validators still reject incomplete stores.
         rp = DATASET_PATH.joinpath(st, "results.json")
         errs = []
         if rp.exists():
             _res = json.load(open(str(rp), encoding="utf-8"))
             errs = [i for i, v in _res.items() if "error" in v]
+        if finished is not None:
+            errs = finished["skipped_ids"]
         with open(str(sd.joinpath(st + ".done")), "w", encoding="utf-8") as f:
             json.dump(dict(machine=me, at=time.strftime("%Y-%m-%d %H:%M:%S"),
-                           errors=len(errs), error_ids=errs[:20]), f)
+                           errors=len(errs), error_ids=errs if finished is not None else errs[:20]), f)
         consecutive_partial_failures = 0
         print(f"✔ {st} 完成（殘留 error {len(errs)} 筆{': ' + ','.join(errs[:5]) if errs else ''}）")
         if args.once:

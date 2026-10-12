@@ -184,11 +184,11 @@ def _job_state(dataset: Path, entry: dict[str, Any], roster: tuple[str, ...]) ->
         for name in ("measurement.json", "score_spec.json", "manifest.json"):
             if pb.read_json(input_dir / name) != pb.read_json(store_dir / name):
                 raise ValueError(f"{store} completed store differs from released {name}")
-        results = pb.validate_store(store_dir, require_complete=True)
-        if (done["errors"] != 0 or done["error_ids"] or
-                len(results) != len(pb.read_json(input_dir / "manifest.json"))):
-            raise ValueError(f"{store}.done does not describe the complete validated store")
-        return "done"
+        finished = pb.validate_finished_store(store_dir)
+        skipped = finished["skipped_ids"]
+        if done["errors"] != len(skipped) or done["error_ids"] != skipped:
+            raise ValueError(f"{store}.done does not describe the verified execution terminal")
+        return "skipped" if skipped else "done"
     if fail is not None and set(fail["machines"]) == set(roster):
         return "failed"
     return "active"
@@ -679,8 +679,10 @@ def queue_status(path: str | Path, required_sha256: str) -> str:
               for entry in context["entries"]]
     if "failed" in states:
         return "terminal_failure"
-    if any(state != "done" for state in states):
+    if "active" in states:
         return "active"
+    if "skipped" in states:
+        return "terminal_skips"
     missing_logical = False
     missing_feedback = False
     for batch, plan in context["plans"].items():
@@ -726,6 +728,7 @@ def main() -> int:
         status = queue_status(args.release, args.release_sha256)
         print(status)
         return {"all_success": 0,
+                "terminal_skips": 0,
                 "physical_complete_feedback_pending": 0,
                 "logical_ready_feedback_pending": 0,
                 "terminal_failure": 4,
