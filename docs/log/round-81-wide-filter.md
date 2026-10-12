@@ -251,3 +251,7 @@ git pull --ff-only origin GAN
 `script/filter_s21_training.py` 已提交並通過主／獨立四項 focused tests、實際 profiled-store CLI 與真實歷史來源檢查。沿用原有 MLP、masked loss、family split 與 partial-success snapshot，兩個模型已在 CPU 各完成 30 epoch 歷史預訓練；完成收據、模型與 optimizer 有限性、來源及輸出 mask 核對通過，檔案亦封存私人資料夾。歷史只有通帶標籤，兩個帶外輸出保持未訓練且 `rank_ready=false`；模型完成不能當成新版性能達標。
 
 累積至少 20 個有效、不同幾何的新寬頻觀察後，三段接點可凍結當前成功資料，以同一固定 family split 更新模型並按三段預測 WM 排名。缺少 held-out family、來源改變或模型／候選 receipt 不符時拒絕；holdout 不用於選 checkpoint。這個接點與首批工作池已可用，後續自動監看、子代輸入與 worker 交接仍需單獨驗證，未宣稱持續補派已部署。
+
+新增 `script/r81_s21_survey_cycle.py`，沿用原生候選產生、成功資料快照、三段 SM 與 splitter。當至少 20 個尚未消費的新成功幾何出現，凍結模型實際使用的 pattern／sample hash，訓練並準備 20 個預測 WM、20 個 ensemble uncertainty、20 個隨機子代。訓練期間允許其他新結果追加，原已成功觀察改變或消失仍拒絕；只有已凍結的觀察進消費帳本。既有窄頻幾何仍可補測新版寬頻，並可將整理出的歷史 seed bundle 納入候選；不將缺少帶外的歷史資料當成已測新版幾何排除。
+
+主測新 controller 五項通過，獨立組合十八項通過；實際 release 的 prepare／dry-run 通過並回報等待新真值。候選、模型、分割、來源與消費帳本綁定，失敗前綴保留，完成後的 ledger／pending 清理可恢復。已啟動本機 metadata watcher：達門檻後更新 SM 並準備下一批輸入，重用完成的 historical prior。此 watcher 不啟動 HFSS、不寫 NAS queue；下一批仍是 local-only，須完成獨立的 release／worker 交接，不能描述為自動持續派工已完成。
