@@ -326,3 +326,9 @@ Controller 現在等待 B2 至少 20 個新成功幾何後再更新／發布第�
 獨立 Sol 實際唯讀保存證據核對通過：完整 [1,2] registry chain／release SHA、原 51 與擴充 56 runtime、兩模型 100／100 epochs 與 rank-ready、七檔 cache／prior parent SHA、snapshot 33（29 train／4 holdout、零交集）、pool／rank 1,024、selected 60 與三策略／三片各 20。Selected 及 pool 與 B1 60 圖形皆零交集，measurement／score-spec／profile bytes 相同；`formal_pass=false`、`survey_complete=false`。Review 期間 B1 成功從 34 增至 35，兩筆晚到真值保持在 immutable snapshot 之外，並非資料破壞。這是 native validator／hash／checkpoint metadata 核對，未另做 forward、訓練或 HFSS，不宣稱準確率／性能改善。五項部署／健康／review payload 已封存私人 controller review。
 
 原 `-Survey` launcher 等待整個舊 queue；一台較早完成可能仍在等待另外兩台。每台自己的 B1 shard 確認 `.done` 後，可由使用者 Ctrl+C 結束該等待視窗，再 pull GAN 並執行上述 `-Loop`，即可直接接本機 B2。獨立核對當下三台皆仍 `ready` sequence1，尚未觀察 B2 claim，不把 worker 可接續當成已啟動。
+
+### 23:09 健康檢查與 CPU watcher 恢復
+
+按 30 分鐘間隔保存私人健康切點：B1 成功 20／12／8，共 40；另有 4／9 error 列由原 worker retry 邏輯處理，沒有重置。216 的 native `.done` 保存 22:44:42／errors0，B2 仍無 claim／results。216 已具備交接條件，無須再等待另兩台；operator 可在舊 Survey 等待時 Ctrl+C，pull GAN 後執行 `-Loop`。其他兩台仍保留原求解。
+
+原 CPU session 確認 exit1、PID 消失且無同 driver 進程；最後 stdout 成功數 40，沒有 traceback／terminal receipt，原因未知，不歸因為 NAS／性能失敗。保留退出與健康證據後，沿用原 v003 bootstrap／已發布 [1,2] prefix，僅以 hidden detached Start-Process 恢復本機 CPU watcher，stdout／stderr 保存私人 controller 目錄。新 child 的 creation time／完整 command／Python 路徑與 launch receipt 一致，原生 watch 驗證 [1,2]、成功 40／B2 新成功 0，stderr 空。沒有多做 SM fit、重新發布 B2、HFSS signal 或 claims 重置；尚不宣稱此單一切點證明長時間無中斷。五項 handoff payload 及另份 actual watch identity 收據保存私人工作區，下一例行約 23:39。
