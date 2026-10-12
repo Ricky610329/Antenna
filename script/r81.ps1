@@ -1,17 +1,44 @@
 param(
     [switch]$Probe,
     [switch]$Survey,
+    [switch]$Loop,
     [switch]$CheckOnly,
     [string]$Report = ''
 )
 $ErrorActionPreference = 'Stop'
-if ($Probe -and $Survey) { throw 'Choose either Probe or Survey.' }
+if (@(@($Probe, $Survey, $Loop) | Where-Object { $_ }).Count -gt 1) {
+    throw 'Choose one of Probe, Survey or Loop.'
+}
 $taskDefaultsPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'configs\r81_worker_current.json'
 $taskDefaults = Get-Content -LiteralPath $taskDefaultsPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $taskExpectedFields = @('release', 'release_sha256', 'stage')
 $taskFields = @($taskDefaults.PSObject.Properties.Name)
 if ($taskFields.Count -ne 3 -or @(Compare-Object $taskExpectedFields $taskFields).Count -ne 0) {
     throw 'R81 worker preset fields are invalid.'
+}
+if ($Loop) {
+    $taskLoopPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'configs\r81_s21_live_current.json'
+    $taskLoop = Get-Content -LiteralPath $taskLoopPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $taskLoopFields = @($taskLoop.PSObject.Properties.Name)
+    if ($taskLoopFields.Count -ne 2 -or
+        @(Compare-Object @('bootstrap_name', 'bootstrap_sha256') $taskLoopFields).Count -ne 0 -or
+        [string]$taskLoop.bootstrap_name -notmatch '^r81_[A-Za-z0-9_.-]+\.json$' -or
+        [string]$taskLoop.bootstrap_sha256 -notmatch '^[0-9a-f]{64}$') {
+        throw 'R81 S21 live-loop preset fields are invalid.'
+    }
+    $taskSourceRoot = Split-Path -Parent (Split-Path -Parent ([string]$taskDefaults.release))
+    $taskLoopRoot = Join-Path (Split-Path -Parent $taskSourceRoot) 'survey_loop_v001\release'
+    $taskMachine = python -c "from antenna.utils.web import get_local_ip; print(get_local_ip())"
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot identify this worker.' }
+    $taskLoopArguments = @{
+        Bootstrap = Join-Path $taskLoopRoot ([string]$taskLoop.bootstrap_name)
+        BootstrapSha256 = [string]$taskLoop.bootstrap_sha256
+        ExpectedMachine = $taskMachine.Trim()
+        CheckOnly = $CheckOnly
+        Report = $Report
+    }
+    & (Join-Path $PSScriptRoot 'start_r81_s21_live_worker.ps1') @taskLoopArguments
+    return
 }
 if ($Survey) {
     $taskSurveyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'configs\r81_s21_survey_current.json'

@@ -257,3 +257,13 @@ git pull --ff-only origin GAN
 主測新 controller 五項通過，獨立組合十八項通過；實際 release 的 prepare／dry-run 通過並回報等待新真值。候選、模型、分割、來源與消費帳本綁定，失敗前綴保留，完成後的 ledger／pending 清理可恢復。已啟動本機 metadata watcher：達門檻後更新 SM 並準備下一批輸入，重用完成的 historical prior。此 watcher 不啟動 HFSS、不寫 NAS queue；下一批仍是 local-only，須完成獨立的 release／worker 交接，不能描述為自動持續派工已完成。
 
 2026-10-12 20:42–20:43 健康檢查：原工程批次已成為 `terminal_skips`；兩筆 mesh 均達三次 HFSS 失敗後略過，Fast 六筆與 Discrete 兩筆成功結果保持不變。略過不等於成功，也不進 SM 真值或工程門檻。新的 S21 三台工作池均已有 claim，但尚無成功寬頻觀察；claim 只證明取得工作，沒有觀察遠端 PID。完整健康查詢與原始錯誤已驗證並封存原私人健康目錄，公開記錄不含新的原始結果或 NAS 路徑。下一個實作里程碑為可供 worker 自行接續的版本化 registry 與共享 successor release；現有 local-only watcher 的限制仍有效。
+
+### 2026-10-12：SM 子代與 worker 的完整接續實作
+
+新增 `r81_s21_live_controller.py`、`r81_s21_live_entry.py` 與 live worker launcher，原 51 檔保持不變，擴充 runtime 精確固定 56 檔。首批沿用原 60 筆的 jobs、結果與 markers；每台完成自己的 shard 後可讀取後續 immutable release，不必等待其他台整批完成。三台仍各 20 筆、低優先序 6，原生 worker 使用 `--selfgen 0 --once`，並拒絕同機重複啟動。
+
+Controller 在至少 20 個尚未消費的有效寬頻幾何出現後，凍結累積真值、更新兩個三段模型並發布下一批 60 筆，分成 20 個預測 WM、20 個 uncertainty、20 個隨機子代。第三批另須至少 20 個新第二批真值，避免僅消費首批較晚到的資料。歷史 prior、固定 family split、當前模型及快照放在共享 cache；只有來源與 recipe signature 相同才重用 prior。沒有 train／holdout family 時等待追加真值，不更換驗證家族。這個階段含首批最多 180 筆；用完發布額度不等於 worker 已跑完或 spec 達標。
+
+每批物理快照、模型、候選池、rank、選樣、canonical／split／machine partition 均綁定。Registry 最後才以原子、不可覆寫方式追加，發布前綴與未完成 transaction 可恢復；訓練中允許新結果追加，但已使用的樣本改變會拒絕。Pinned job 的失敗保留作人工／controller 修復依據，不透過跨主機 takeover 或刪 marker 重派；略過毒樣本可繼續取件，仍不算真值。Actor 或任一已發布批次的 STOP 均阻止後續取件與補派，包括等待下一批期間。
+
+Conductor 20 項 focused tests 通過（37.67 秒），獨立 Sol 同組 20 項通過（36.69 秒）且完成原始碼審查；包含真正 Torch 訓練／排名／快照驗證與資料替換、恢復、STOP 測試，Git identity 使用 fixture mocks。PowerShell 解析及 diff check 通過。私人 NAS 小型原子發布實測通過，既有目標拒絕覆寫；完整 bootstrap／cache／三台狀態實測與背景 controller 部署留下一個交付里程碑，尚不把實作測試描述成新的 HFSS 性能結果。
