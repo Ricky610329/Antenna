@@ -107,6 +107,158 @@ def _rewrite(path: Path, release: dict) -> str:
     return pb.file_sha256(path)
 
 
+def _reuse_release(tmp_path: Path):
+    source_root = tmp_path / "source"
+    sibling_root = tmp_path / "sibling"
+    source_root.mkdir(parents=True)
+    sibling_root.mkdir(parents=True)
+    source_path, source_release = fixtures._release(source_root, "EngineeringOnly")
+    source_dataset = Path(source_release["dataset_root"])
+    for entry in source_release["queue"]["jobs"]:
+        _mark_done(source_dataset, entry)
+    source_digest = pb.file_sha256(source_path)
+    source_jobs_bytes = (source_dataset / "jobs.json").read_bytes()
+
+    path, release, shards = _release(sibling_root)
+    dataset = Path(release["dataset_root"])
+    engineering = [entry for entry in release["queue"]["jobs"]
+                   if entry["role"] in base.ENGINEERING]
+    for entry in engineering:
+        store = entry["job"]["store"]
+        shutil.rmtree(dataset / entry["job"]["input"])
+        shutil.rmtree(dataset / store)
+        (dataset / "jobs_state" / f"{store}.claim").unlink()
+        (dataset / "jobs_state" / f"{store}.done").unlink()
+    release["queue"]["jobs"] = shards
+    pb.atomic_json(dataset / "jobs.json", [entry["job"] for entry in shards])
+    release["queue"]["jobs_sha256"] = pb.file_sha256(dataset / "jobs.json")
+
+    receipt = formal.engineering_source_binding(source_path, source_digest)
+    work = Path(release["queue"]["exploration"]["work_dir"])
+    receipt_path = work / "engineering_source_reuse.json"
+    pb.atomic_json(receipt_path, receipt)
+    release["queue"]["exploration"]["files"] = {
+        item.relative_to(work).as_posix(): pb.file_sha256(item)
+        for item in work.rglob("*") if item.is_file()}
+    release["queue"]["engineering_reuse"] = {
+        "source_release": copy.deepcopy(receipt["source_release"]),
+        "receipt": {"name": receipt_path.name,
+                    "sha256": pb.file_sha256(receipt_path)},
+    }
+    digest = _rewrite(path, release)
+    return (path, release, shards, digest, source_path, source_release,
+            source_jobs_bytes, receipt_path)
+
+
+def test_reused_engineering_source_validates_sibling_without_dispatch_rows_or_markers(tmp_path):
+    (path, release, shards, digest, source_path, source_release,
+     source_jobs_bytes, receipt_path) = _reuse_release(tmp_path)
+    dataset = Path(release["dataset_root"])
+    report = formal.validate_release(path, digest)
+    assert report["job_count"] == 3
+    assert len(report["engineering_check"]["comparisons"]) == 4
+    assert formal.queue_status(path, digest) == "active"
+    assert [entry["role"] for entry in release["queue"]["jobs"]] == ["formal_shard"] * 3
+    assert pb.read_json(dataset / "jobs.json") == [entry["job"] for entry in shards]
+    assert not any((dataset / "jobs_state").glob("dedust_r81smoke.*"))
+    assert not any((dataset / "jobs_state").glob("dedust_r81discrete.*"))
+    assert not any((dataset / "jobs_state").glob("dedust_r81mesh.*"))
+    receipt = pb.read_json(receipt_path)
+    assert receipt["kind"] == "engineering_original_source_reuse"
+    assert receipt["source_release"]["path"] == str(source_path.resolve())
+    assert set(receipt["source_files"]) >= {
+        "jobs.json", "jobs_state/dedust_r81smoke.claim",
+        "jobs_state/dedust_r81smoke.done", "dedust_r81smoke/results.json"}
+    assert (Path(source_release["dataset_root"]) / "jobs.json").read_bytes() == source_jobs_bytes
+
+
+def test_reused_engineering_source_mutation_or_missing_receipt_fails_closed(tmp_path):
+    first = tmp_path / "mutation"
+    first.mkdir()
+    (path, release, _shards, digest, _source_path, source_release,
+     _source_jobs_bytes, _receipt_path) = _reuse_release(first)
+    source_dataset = Path(source_release["dataset_root"])
+    claim_path = source_dataset / "jobs_state/dedust_r81smoke.claim"
+    claim = pb.read_json(claim_path)
+    claim["at"] = "mutated-after-receipt"
+    pb.atomic_json(claim_path, claim)
+    with pytest.raises(ValueError, match="receipt differs from authenticated source closure"):
+        formal.validate_release(path, digest)
+
+    second = tmp_path / "missing"
+    second.mkdir()
+    (path2, _release2, _shards2, digest2, _source_path2, _source_release2,
+     _source_jobs_bytes2, receipt_path2) = _reuse_release(second)
+    receipt_path2.unlink()
+    with pytest.raises(ValueError, match="receipt.*missing"):
+        formal.validate_release(path2, digest2)
+
+    third = tmp_path / "terminal"
+    third.mkdir()
+    (path3, _release3, _shards3, digest3, _source_path3, source_release3,
+     _source_jobs_bytes3, _receipt_path3) = _reuse_release(third)
+    source_dataset3 = Path(source_release3["dataset_root"])
+    (source_dataset3 / "jobs_state/dedust_r81smoke.done").unlink()
+    with pytest.raises(ValueError, match="all-success terminal|missing from the source dataset"):
+        formal.validate_release(path3, digest3)
+
+
+def test_reuse_queue_rejects_engineering_dispatch_rows(tmp_path):
+    (path, release, _shards, _digest, _source_path, source_release,
+     source_jobs_bytes, _receipt_path) = _reuse_release(tmp_path)
+    dataset = Path(release["dataset_root"])
+    release["queue"]["jobs"].append(copy.deepcopy(source_release["queue"]["jobs"][0]))
+    pb.atomic_json(dataset / "jobs.json", [entry["job"] for entry in release["queue"]["jobs"]])
+    release["queue"]["jobs_sha256"] = pb.file_sha256(dataset / "jobs.json")
+    with pytest.raises(ValueError, match="must not dispatch engineering jobs"):
+        formal.validate_release(path, _rewrite(path, release))
+    source_dataset = Path(source_release["dataset_root"])
+    assert (source_dataset / "jobs.json").read_bytes() == source_jobs_bytes
+
+
+def test_reuse_rejects_overlapping_dataset_roots_and_unknown_source_markers(tmp_path):
+    nested_root = tmp_path / "nested"
+    nested_root.mkdir()
+    (path, release, _shards, _digest, _source_path, source_release,
+     _source_jobs_bytes, _receipt_path) = _reuse_release(nested_root)
+    source_dataset = Path(source_release["dataset_root"])
+    nested_dataset = source_dataset / "formal_nested"
+    nested_dataset.mkdir()
+    with pytest.raises(ValueError, match="must not overlap"):
+        formal._validate_engineering_reuse(
+            release["queue"]["engineering_reuse"],
+            release["queue"]["exploration"], nested_dataset)
+
+    marker_root = tmp_path / "marker"
+    marker_root.mkdir()
+    (path2, release2, _shards2, _digest2, _source_path2, source_release2,
+     _source_jobs_bytes2, _receipt_path2) = _reuse_release(marker_root)
+    source_dataset2 = Path(source_release2["dataset_root"])
+    pb.atomic_json(source_dataset2 / "jobs_state/unknown_native.fail", {"status": "failed"})
+    with pytest.raises(ValueError, match="unknown marker"):
+        formal.validate_release(path2, _rewrite(path2, release2))
+
+
+def test_reused_engineering_source_preserves_formal_batch_lifecycle(tmp_path):
+    (path, release, shards, digest, _source_path, source_release,
+     source_jobs_bytes, _receipt_path) = _reuse_release(tmp_path)
+    dataset = Path(release["dataset_root"])
+    assert formal.queue_status(path, digest) == "active"
+    for entry in shards:
+        _complete_shard(dataset, entry)
+    assert formal.queue_status(path, digest) == "physical_complete_feedback_pending"
+    receipt = formal.aggregate_batch(path, digest, 1)
+    assert receipt == dataset / "dedust_r81b1" / formal.COMPLETE_NAME
+    assert formal.queue_status(path, digest) == "logical_ready_feedback_pending"
+    work = Path(release["queue"]["exploration"]["work_dir"])
+    ex.import_feedback(work, 1, dataset / "dedust_r81b1/results.json", dataset)
+    release["queue"]["exploration"]["files"] = {
+        item.relative_to(work).as_posix(): pb.file_sha256(item)
+        for item in work.rglob("*") if item.is_file()}
+    assert formal.queue_status(path, _rewrite(path, release)) == "all_success"
+    assert (Path(source_release["dataset_root"]) / "jobs.json").read_bytes() == source_jobs_bytes
+
+
 def test_native_first_batch_lifecycle_stops_workers_then_imports_one_logical_feedback(tmp_path):
     path, release, shards = _release(tmp_path)
     dataset = Path(release["dataset_root"])

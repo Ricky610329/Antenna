@@ -32,6 +32,7 @@ FORMAL_ONLY_FILES = {
 INPUT_METADATA = ("measurement.json", "score_spec.json", "config.yaml", "manifest.json")
 STORE_METADATA = ("measurement.json", "score_spec.json", "manifest.json", "results.json")
 COMPLETE_NAME = "formal_merge_complete.json"
+ENGINEERING_REUSE_KIND = "engineering_original_source_reuse"
 
 
 def _transition_used(binding: Any) -> bool:
@@ -108,6 +109,55 @@ def _safe_relative(value: Any, label: str, *, parts: int | None = None) -> str:
 
 def _metadata_hashes(root: Path, names: tuple[str, ...]) -> dict[str, str]:
     return {name: pb.file_sha256(root / name) for name in names}
+
+
+def _source_file(dataset: Path, relative: str, label: str) -> Path:
+    """Resolve one receipt member without permitting an escape from its dataset."""
+    safe = _safe_relative(relative, label)
+    try:
+        root = dataset.resolve(strict=True)
+        path = (dataset / Path(safe)).resolve(strict=True)
+        path.relative_to(root)
+    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+        raise ValueError(f"{label} escapes or is missing from the source dataset") from exc
+    if not path.is_file():
+        raise ValueError(f"{label} is not a source file")
+    return path
+
+
+def _source_file_closure(dataset: Path, entries: list[dict[str, Any]]) -> dict[str, str]:
+    """Hash exactly the original engineering files consumed by the formal gate."""
+    relative_files = {"jobs.json"}
+    for entry in entries:
+        job = entry["job"]
+        input_name, store = job["input"], job["store"]
+        for name in entry["input_files"]:
+            relative_files.add((Path(input_name) / name).as_posix())
+        for name in STORE_METADATA:
+            relative_files.add((Path(store) / name).as_posix())
+        results = pb.read_json(dataset / store / "results.json")
+        if not isinstance(results, dict):
+            raise ValueError(f"engineering source results are malformed: {store}")
+        for row_id, result in results.items():
+            if not isinstance(result, dict):
+                raise ValueError(f"engineering source result is malformed: {store}/{row_id}")
+            for file_key, sha_key in (("sample_file", "sample_sha256"),
+                                      ("rad_file", "rad_sha256")):
+                name = result.get(file_key)
+                if name is None:
+                    continue
+                relative = (Path(store) / _safe_relative(
+                    name, f"engineering source {store}/{row_id}.{file_key}")).as_posix()
+                path = _source_file(dataset, relative,
+                                    f"engineering source {store}/{row_id}.{file_key}")
+                if pb.file_sha256(path) != result.get(sha_key):
+                    raise ValueError(f"engineering source result hash differs: {store}/{row_id}")
+                relative_files.add(relative)
+        relative_files.add((Path("jobs_state") / f"{store}.claim").as_posix())
+        relative_files.add((Path("jobs_state") / f"{store}.done").as_posix())
+    return {relative: pb.file_sha256(_source_file(
+                dataset, relative, f"engineering source files[{relative}]"))
+            for relative in sorted(relative_files)}
 
 
 def _validate_shard_input(dataset: Path, entry: dict[str, Any], label: str):
@@ -222,6 +272,101 @@ def _engineering_terminal(dataset: Path, entries: list[dict[str, Any]],
     return profile
 
 
+def _engineering_source_context(path: str | Path, required_sha256: str):
+    """Authenticate an original EngineeringOnly release and its completed truth."""
+    if not isinstance(path, (str, os.PathLike)):
+        raise ValueError("engineering source release path must be a path")
+    release_path = Path(path)
+    if not release_path.is_absolute():
+        raise ValueError("engineering source release path must be absolute")
+    expected_sha = base._sha(required_sha256, "engineering source release sha256")
+    if pb.file_sha256(release_path) != expected_sha:
+        raise ValueError("engineering source release hash differs")
+    base.validate_release(release_path, expected_sha, "EngineeringOnly")
+    release = pb.read_json(release_path)
+    canonical_release = release_path.resolve(strict=True)
+    canonical_dataset = Path(release["dataset_root"]).resolve(strict=True)
+    entries = release["queue"]["jobs"]
+    roster = base._retry_workers(release["queue"]["expected_retry_workers"])
+    if (len(entries) != len(base.ENGINEERING) or
+            Counter(entry.get("role") for entry in entries) !=
+            Counter(base.ENGINEERING.keys())):
+        raise ValueError("engineering source release must contain only the exact three engineering jobs")
+    known_stores = {entry["job"]["store"] for entry in entries}
+    state_root = canonical_dataset / "jobs_state"
+    if state_root.exists():
+        for marker in state_root.iterdir():
+            if (marker.is_file() and marker.suffix in {".claim", ".done", ".fail"} and
+                    marker.stem not in known_stores):
+                raise ValueError(
+                    f"engineering source jobs_state contains an unknown marker: {marker.name}")
+    source_files = _source_file_closure(canonical_dataset, entries)
+    profile = _engineering_terminal(canonical_dataset, entries, roster)
+    check = wide.measurement_check(canonical_dataset)
+    if (check.get("engineering_check_passed") is not True or
+            check.get("full_batch_release_allowed") is not True or
+            len(check.get("comparisons", [])) != 4 or
+            any(max(row.get("max_curve_difference_db", float("inf")),
+                    row.get("max_margin_difference_db", float("inf"))) > .3
+                for row in check["comparisons"])):
+        raise ValueError("source R81 engineering measurement check did not pass all four comparisons")
+    if (_source_file_closure(canonical_dataset, entries) != source_files or
+            pb.file_sha256(canonical_release) != expected_sha):
+        raise ValueError("engineering source changed while its truth was authenticated")
+    receipt = {
+        "schema_version": 1,
+        "kind": ENGINEERING_REUSE_KIND,
+        "source_release": {"path": str(canonical_release), "sha256": expected_sha},
+        "dataset_root": str(canonical_dataset),
+        "jobs_sha256": pb.file_sha256(canonical_dataset / "jobs.json"),
+        "source_files": source_files,
+    }
+    return receipt, profile, check, canonical_dataset
+
+
+def engineering_source_binding(path: str | Path, required_sha256: str) -> dict[str, Any]:
+    """Return the canonical read-only receipt for reusable engineering evidence."""
+    receipt, _profile, _check, _dataset = _engineering_source_context(
+        path, required_sha256)
+    return receipt
+
+
+def _validate_engineering_reuse(binding: Any, exploration: Any, dataset: Path):
+    value = base._exact_keys(binding, {"source_release", "receipt"},
+                             "queue.engineering_reuse")
+    source_release = base._exact_keys(
+        value["source_release"], {"path", "sha256"},
+        "queue.engineering_reuse.source_release")
+    receipt_binding = base._exact_keys(
+        value["receipt"], {"name", "sha256"},
+        "queue.engineering_reuse.receipt")
+    if receipt_binding["name"] != "engineering_source_reuse.json":
+        raise ValueError("engineering reuse receipt must use its fixed name")
+    receipt_sha = base._sha(receipt_binding["sha256"],
+                            "queue.engineering_reuse.receipt.sha256")
+    if not isinstance(exploration, dict):
+        raise ValueError("engineering reuse requires an exploration controller")
+    work_value, files = exploration.get("work_dir"), exploration.get("files")
+    if not isinstance(work_value, str) or not Path(work_value).is_absolute():
+        raise ValueError("engineering reuse work_dir must be absolute")
+    if (not isinstance(files, dict) or
+            files.get(receipt_binding["name"]) != receipt_sha):
+        raise ValueError("engineering reuse receipt is not bound by exploration.files")
+    receipt_path = _source_file(Path(work_value), receipt_binding["name"],
+                                "engineering reuse receipt")
+    if pb.file_sha256(receipt_path) != receipt_sha:
+        raise ValueError("engineering reuse receipt hash differs")
+    expected, profile, check, source_dataset = _engineering_source_context(
+        source_release.get("path"), source_release.get("sha256"))
+    if source_release != expected["source_release"]:
+        raise ValueError("engineering reuse source release binding is not canonical")
+    if base._nested(source_dataset, dataset.resolve(strict=True)):
+        raise ValueError("engineering reuse source and formal datasets must not overlap")
+    if pb.read_json(receipt_path) != expected:
+        raise ValueError("engineering reuse receipt differs from authenticated source closure")
+    return profile, check, expected
+
+
 def _canonical_input(dataset: Path, binding: Any, label: str):
     value = base._exact_keys(binding, {"name", "files"}, label)
     name = base._name(value["name"], f"{label}.name")
@@ -320,9 +465,13 @@ def _validate_split(dataset: Path, batch: int, plan: dict[str, Any],
 
 
 def _validate_queue(queue: Any, dataset: Path) -> dict[str, Any]:
+    reuse = isinstance(queue, dict) and "engineering_reuse" in queue
+    expected_keys = {"jobs_sha256", "jobs", "formal_input", "formal_shards",
+                     "exploration", "expected_retry_workers"}
+    if reuse:
+        expected_keys.add("engineering_reuse")
     value = base._exact_keys(
-        queue, {"jobs_sha256", "jobs", "formal_input", "formal_shards",
-                "exploration", "expected_retry_workers"}, "queue")
+        queue, expected_keys, "queue")
     roster = base._retry_workers(value["expected_retry_workers"])
     jobs_path = dataset / "jobs.json"
     if pb.file_sha256(jobs_path) != base._sha(value["jobs_sha256"], "queue.jobs_sha256"):
@@ -332,7 +481,16 @@ def _validate_queue(queue: Any, dataset: Path) -> dict[str, Any]:
         raise ValueError("queue.jobs must be a nonempty list")
     if pb.read_json(jobs_path) != [entry.get("job") for entry in entries if isinstance(entry, dict)]:
         raise ValueError("queue contains unknown, reordered, or changed jobs")
-    expected_profile = _engineering_terminal(dataset, entries, roster)
+    if reuse:
+        if any(isinstance(entry, dict) and entry.get("role") in base.ENGINEERING
+               for entry in entries):
+            raise ValueError("engineering reuse queue must not dispatch engineering jobs")
+        expected_profile, check, reuse_receipt = _validate_engineering_reuse(
+            value["engineering_reuse"], value["exploration"], dataset)
+    else:
+        expected_profile = _engineering_terminal(dataset, entries, roster)
+        check = wide.measurement_check(dataset)
+        reuse_receipt = None
     formal_map = value["formal_shards"]
     if not isinstance(formal_map, dict):
         raise ValueError("queue.formal_shards must be a batch mapping")
@@ -350,6 +508,8 @@ def _validate_queue(queue: Any, dataset: Path) -> dict[str, Any]:
             raise ValueError(f"{label} is malformed")
         role = entry["role"]
         if role in base.ENGINEERING:
+            if reuse:
+                raise ValueError("engineering reuse queue must not dispatch engineering jobs")
             continue
         if role == "formal_shard":
             base._exact_keys(entry, {"role", "batch", "shard", "job", "input_files"}, label)
@@ -380,7 +540,6 @@ def _validate_queue(queue: Any, dataset: Path) -> dict[str, Any]:
         raise ValueError("transition evidence cannot be checked by this base entry")
     base._validate_exploration(value["exploration"], dataset, len(batches),
                                synthetic, expected_profile)
-    check = wide.measurement_check(dataset)
     if (check.get("engineering_check_passed") is not True or
             check.get("full_batch_release_allowed") is not True or
             len(check.get("comparisons", [])) != 4 or
@@ -405,7 +564,8 @@ def _validate_queue(queue: Any, dataset: Path) -> dict[str, Any]:
     for batch in batches[:-1]:
         _validate_logical_store(dataset, plans[batch], roster, require_receipt=True)
     return {"roster": roster, "entries": entries, "plans": plans,
-            "engineering_check": check, "repeat_entries": repeat_entries}
+            "engineering_check": check, "engineering_reuse": reuse_receipt,
+            "repeat_entries": repeat_entries}
 
 
 def _context(path: str | Path, required_sha256: str) -> dict[str, Any]:
