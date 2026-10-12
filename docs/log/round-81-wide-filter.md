@@ -1,6 +1,8 @@
 # R81：新版濾波器 spec 與寬頻量測
 
-日期：2026-10-07。當前狀態：使用者已恢復執行，三台已認領工程批次；尚無完成的寬頻HFSS真值。
+日期：2026-10-07。當前狀態：工程任務已恢復，正式入口已交付；即時健康觀察保存在私人工作區。
+
+10/12程式交付：`95fe37c`讓短入口支援FormalSharded，preset仍為EngineeringOnly；`f99a083`新增原工程來源再用驗證，允許獨立正式dataset只派三個formal shard。每次preflight重驗原EngineeringOnly release、全部成功真值、四組≤0.3dB比較、原始檔案及claim／done雜湊；不複製工程markers為新派工，不允許資料根目錄重疊。同一資料夾的舊模式保持相容；實作與獨立審查各通過12項針對性流程測試。原44來源未改，正式來源集合47檔；這是入口交付，不代表實際工程通過或正式HFSS開始。Git遠端確認公開，新原始健康快照只保存私人工作區；下方13:08及更早觀察是歷史切點，不能當成即時狀態。[正式入口](../../script/r81_formal_sharded_entry.py)。
 
 最新實際狀態（2026-10-12 13:08）：使用者明示「恢復了，開始吧」，v002 EngineeringOnly release仍通過原生驗證，queue active。37於13:04:04認領Fast6、216於13:04:40認領Discrete2、218於13:06:33認領mesh2；保存時均尚無results.json、done或fail，未觀察遠端PID。這證明新的派工認領進度，不能代替成功結果或工程比較。舊待切換條件已改變，已接續實際工作；Goal工具欄位仍回報blocked，工具無resume操作，不宣稱系統已改為active。下一例行約13:38；工程全數成功且四組最大曲線／margin差≤.3才放行正式分片。未改44 live來源、NAS queue、inputs或markers。[保存觀察](assets/r81_resumed_health_20261012_1308.json)。
 

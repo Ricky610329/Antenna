@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 對稱探索 → 後續 spec／R81
 
+- **10/12正式入口程式已交付**：GAN `95fe37c`／`f99a083`支援短指令正式路由與原工程來源再用驗證；12項流程測試及獨立審查通過，原44來源保持不變。尚須實際工程全成功／四組≤0.3dB才發布正式queue。公開Git僅新增程式與技術說明，最新原始健康觀察保存在私人工作區；下方健康列為歷史。[交付說明](../docs/log/round-81-wide-filter.md)。
+
 - **10/12 13:08使用者恢復，R81三台已認領**：使用者明示「恢復了，開始吧」；已按v002 EngineeringOnly原生入口核對，37於13:04:04 claim Fast6、216於13:04:40 claim Discrete2、218於13:06:33 claim mesh2。保存時三個results.json皆尚不存在，沒有done／fail，也未觀察遠端PID，不宣稱HFSS成功或工程通過。這是相較原無claim的新實際進度，舊待切換blocker已改變；執行授權已恢復，Goal工具欄位當時仍blocked且沒有resume操作，兩者分開記錄。保持44 live來源／inputs／queue／markers不改；準備工程全成功且四組差值≤.3後的原生FormalSharded 3×20接續。下一例行約13:38，notify-only timer `1675`，不是HFSS live-handle證據。[實際觀察](../docs/log/assets/r81_resumed_health_20261012_1308.json)。
 
 - **10/12短啟動入口已驗證**：三台pull GAN後，在原環境／repo根執行`.\script\r81.cmd`即可；preset固定目前v002 EngineeringOnly，原release SHA／runtime／queue gate保持完整。實際CMD→PowerShell→原launcher的`-CheckOnly`通過，未啟動HFSS；原44來源與NAS release未改。[預設值](r81_worker_current.json)／[啟動說明](../docs/log/round-81-wide-filter.md)。
