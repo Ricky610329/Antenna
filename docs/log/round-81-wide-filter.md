@@ -310,3 +310,7 @@ Conductor 22 項 focused tests 與獨立 Sol 22 項通過（36.92 秒），包�
 新的本機 CPU controller 於 22:20 啟動，metadata 回報 31 個成功幾何，開始首次實際截止點處理；這是已啟動更新，不是完成 fit／下一批派工。舊 v001 controller 已 terminal 且 PID 消失，未啟動 HFSS 或遠端 worker。三台保留原 `-Survey` 求解，視窗回到提示字元後 pull GAN，執行 `.\script\r81.cmd -Loop` 接共享子代。
 
 其後 member-0 的第 34 epoch checkpoint 已保存，第 35 epoch 暫存檔也可讀，但原子 os.replace 回報 WinError5；session exit1 且本機 PID 消失。沒有完成 fit／B2，失敗模型與暫存檔均保留。私人小型探針對 bytes／Torch 的初次 rename 與覆寫四例皆通過；100 次同大小 Torch checkpoint 快速替換重現四次 WinError5，三次等 0.1 秒成功、一次累積 0.3 秒成功。此證據支持窄範圍有限重試，不支持移除原子替換、修改既有 ACL 或刪除 destination；下一修補與新版本部署仍須實際驗證。
+
+v003 修補限定 `exploration.os` 的 module reference，不改全域 os 或原 protected helper。只有 Windows、actor 內正規化 UNC、同 parent 的 `.pt.tmp → .pt` 替換才可重試；僅對 PermissionError 的 WinError5／32／33，最多五次額外嘗試、累積等待 3.1 秒，仍失敗即拋出原錯誤。其他路徑／錯誤／JSON 替換保持原行為，不刪除或重寫 destination、不修改 ACL；兩個 scoped proxy 都只在 creator lease 內並保證還原。v003 為全新私人 actor，v001／v002 失敗前綴及七項新故障／探針 payload 原樣保存。
+
+主測 controller 15 項（4.03 秒）、獨立 controller／entry 28 項（35.51 秒）通過，包含 UNC eligibility、有限重試／耗盡與 delegation／還原。Conductor 再以實際 Windows UNC 探針核對 scope eligibility、兩次原子 checkpoint 替換與 Torch readback／module 還原，通過；這是部署前邊界驗證，不代表實際兩個模型與 B2 已完成。

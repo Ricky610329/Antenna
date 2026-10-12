@@ -31,6 +31,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from script import exploration
 from script import filter_s21_training as s21
 from script import profiled_batch as pb
 from script import profiled_shards
@@ -42,8 +43,8 @@ from script import r81_worker_entry as base
 SCHEMA_VERSION = 1
 STAGE = "S21SurveyLoop"
 SUCCESSOR_STAGE = "S21SurveySuccessor"
-ACTOR_ROOT_NAME = "survey_loop_v002"
-BOOTSTRAP_NAME = "release/r81_s21_live_loop_v002.json"
+ACTOR_ROOT_NAME = "survey_loop_v003"
+BOOTSTRAP_NAME = "release/r81_s21_live_loop_v003.json"
 REGISTRY_DIR = "registry"
 CONTROLLER_DIR = "controller"
 BATCHES_DIR = "batches"
@@ -56,6 +57,8 @@ BATCH_SIZE = cycle.BATCH_SIZE
 MAX_BATCHES = cycle.MAX_BATCHES
 SUCCESS_TRIGGER = cycle.TRIGGER_NEW_SUCCESSES
 ARM_COUNTS = copy.deepcopy(cycle.ARM_COUNTS)
+CHECKPOINT_REPLACE_DELAYS = (.1, .2, .4, .8, 1.6)
+CHECKPOINT_TRANSIENT_WINERRORS = frozenset({5, 32, 33})
 
 
 class _ScopedProfiledTempfile:
@@ -125,6 +128,92 @@ def _scoped_profiled_tempfile(actor_root: Path):
         yield proxy
     finally:
         profiled_shards.tempfile = original
+
+
+class _ScopedExplorationOS:
+    """Delegate os except transient checkpoint replacement in actor_root."""
+
+    def __init__(self, delegate: Any, actor_root: Path, *, sleep=time.sleep):
+        self._delegate = delegate
+        self._actor_root = Path(actor_root).resolve(strict=True)
+        self._sleep = sleep
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._delegate, name)
+
+    def replace(self, source: str | os.PathLike[str],
+                destination: str | os.PathLike[str], *,
+                src_dir_fd: int | None = None,
+                dst_dir_fd: int | None = None) -> None:
+        arguments = {}
+        if src_dir_fd is not None:
+            arguments["src_dir_fd"] = src_dir_fd
+        if dst_dir_fd is not None:
+            arguments["dst_dir_fd"] = dst_dir_fd
+        if not self._eligible(source, destination, src_dir_fd, dst_dir_fd):
+            return self._delegate.replace(source, destination, **arguments)
+
+        first_error = None
+        for attempt in range(len(CHECKPOINT_REPLACE_DELAYS) + 1):
+            try:
+                return self._delegate.replace(source, destination)
+            except PermissionError as error:
+                if getattr(error, "winerror", None) not in CHECKPOINT_TRANSIENT_WINERRORS:
+                    raise
+                if first_error is None:
+                    first_error = error
+                if attempt == len(CHECKPOINT_REPLACE_DELAYS):
+                    raise first_error
+                self._sleep(CHECKPOINT_REPLACE_DELAYS[attempt])
+        raise AssertionError("unreachable checkpoint replacement retry state")
+
+    def _eligible(self, source: Any, destination: Any,
+                  src_dir_fd: Any, dst_dir_fd: Any) -> bool:
+        if os.name != "nt" or src_dir_fd is not None or dst_dir_fd is not None:
+            return False
+        try:
+            source_path, destination_path = Path(source), Path(destination)
+        except TypeError:
+            return False
+        if (not source_path.is_absolute() or not destination_path.is_absolute()
+                or not os.fspath(source_path).startswith("\\\\")
+                or not os.fspath(destination_path).startswith("\\\\")
+                or source_path.parent != destination_path.parent
+                or source_path.name != destination_path.name + ".tmp"
+                or destination_path.suffix != ".pt"):
+            return False
+        try:
+            resolved_parent = source_path.parent.resolve(strict=True)
+        except (FileNotFoundError, OSError, RuntimeError):
+            return False
+        literal_parent = os.path.normcase(os.fspath(source_path.parent))
+        raw_parent = os.path.normcase(os.path.normpath(os.fspath(source_path.parent)))
+        normalized_parent = os.path.normcase(os.path.normpath(os.fspath(resolved_parent)))
+        if literal_parent != raw_parent or raw_parent != normalized_parent:
+            return False
+        try:
+            resolved_parent.relative_to(self._actor_root)
+        except ValueError:
+            return False
+        if (not source_path.is_file() or source_path.is_symlink()
+                or destination_path.is_symlink()
+                or (destination_path.exists() and not destination_path.is_file())):
+            return False
+        return True
+
+
+@contextlib.contextmanager
+def _scoped_exploration_os(actor_root: Path, *, sleep=time.sleep):
+    """Temporarily replace only exploration's os module reference."""
+    original = exploration.os
+    if isinstance(original, _ScopedExplorationOS):
+        raise RuntimeError("exploration os proxy is already active")
+    proxy = _ScopedExplorationOS(original, actor_root, sleep=sleep)
+    exploration.os = proxy
+    try:
+        yield proxy
+    finally:
+        exploration.os = original
 
 def _live():
     # Delayed import keeps this module importable while the additive worker
@@ -826,6 +915,7 @@ def once(*, bootstrap: Path, bootstrap_sha256: str,
     with contextlib.ExitStack() as stack:
         stack.callback(_release_lease, lease_stream, token)
         stack.enter_context(_scoped_profiled_tempfile(root))
+        stack.enter_context(_scoped_exploration_os(root))
         recovered = _finish_pending(root, context)
         if recovered is not None:
             return recovered

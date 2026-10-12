@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import copy
+import ntpath
 import os
 import tempfile
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
 from script import profiled_batch as pb
+from script import exploration
 from script import r81_s21_live_controller as controller
 from script import r81_s21_live_entry as live
 from script import r81_s21_survey_cycle as cycle
@@ -352,5 +354,207 @@ def test_scoped_tempfile_delegates_outside_scope_and_restores_on_exception(
             assert tempfile is original
             raise RuntimeError("fixture exception")
     assert controller.profiled_shards.tempfile is original
-    assert controller.ACTOR_ROOT_NAME == "survey_loop_v002"
-    assert controller.BOOTSTRAP_NAME == "release/r81_s21_live_loop_v002.json"
+    assert controller.ACTOR_ROOT_NAME == "survey_loop_v003"
+    assert controller.BOOTSTRAP_NAME == "release/r81_s21_live_loop_v003.json"
+
+
+@pytest.mark.parametrize("destination_exists", [False, True])
+def test_scoped_checkpoint_replace_retries_transient_nas_error_without_rewriting(
+        monkeypatch, tmp_path, destination_exists):
+    root = tmp_path / controller.ACTOR_ROOT_NAME
+    model_dir = root / controller.CONTROLLER_DIR / "models" / "models" / "fixture"
+    model_dir.mkdir(parents=True)
+    source = model_dir / "member-0.pt.tmp"
+    destination = model_dir / "member-0.pt"
+    source.write_bytes(b"new checkpoint")
+    if destination_exists:
+        destination.write_bytes(b"old checkpoint")
+    native_replace = os.replace
+
+    class FailOnce:
+        marker = "delegated-attribute"
+
+        def __init__(self):
+            self.calls = 0
+
+        def replace(self, src, dst, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                error = PermissionError(13, "mock transient NAS close window")
+                error.winerror = 5
+                raise error
+            return native_replace(src, dst, **kwargs)
+
+    delegate = FailOnce()
+    sleeps = []
+    proxy = controller._ScopedExplorationOS(delegate, root, sleep=sleeps.append)
+    monkeypatch.setattr(controller._ScopedExplorationOS, "_eligible",
+                        lambda *_args: True)
+    proxy.replace(source, destination)
+    assert delegate.calls == 2 and sleeps == [.1]
+    assert not source.exists() and destination.read_bytes() == b"new checkpoint"
+    assert proxy.marker == "delegated-attribute"
+
+
+def test_scoped_checkpoint_replace_exhaustion_preserves_files_and_raises_first(
+        monkeypatch, tmp_path):
+    root = tmp_path / controller.ACTOR_ROOT_NAME
+    root.mkdir()
+    source = root / "member-0.pt.tmp"
+    destination = root / "member-0.pt"
+    source.write_bytes(b"new checkpoint")
+    destination.write_bytes(b"old checkpoint")
+
+    class AlwaysLocked:
+        def __init__(self):
+            self.errors = []
+
+        def replace(self, *_args, **_kwargs):
+            error = PermissionError(13, "mock persistent NAS lock")
+            error.winerror = 32
+            self.errors.append(error)
+            raise error
+
+    delegate = AlwaysLocked()
+    sleeps = []
+    proxy = controller._ScopedExplorationOS(delegate, root, sleep=sleeps.append)
+    monkeypatch.setattr(controller._ScopedExplorationOS, "_eligible",
+                        lambda *_args: True)
+    with pytest.raises(PermissionError) as caught:
+        proxy.replace(source, destination)
+    assert caught.value is delegate.errors[0]
+    assert len(delegate.errors) == 6
+    assert sleeps == list(controller.CHECKPOINT_REPLACE_DELAYS)
+    assert source.read_bytes() == b"new checkpoint"
+    assert destination.read_bytes() == b"old checkpoint"
+
+
+def test_scoped_checkpoint_replace_delegates_outside_scope_and_nontransient(
+        monkeypatch, tmp_path):
+    root = tmp_path / controller.ACTOR_ROOT_NAME
+    root.mkdir()
+    source = tmp_path / "outside.pt.tmp"
+    destination = tmp_path / "outside.pt"
+    source.write_bytes(b"source")
+
+    class Delegate:
+        def __init__(self):
+            self.calls = []
+
+        def replace(self, src, dst, **kwargs):
+            self.calls.append((src, dst, kwargs))
+            return "delegated"
+
+    delegate = Delegate()
+    sleeps = []
+    proxy = controller._ScopedExplorationOS(delegate, root, sleep=sleeps.append)
+    assert proxy.replace(source, destination) == "delegated"
+    assert delegate.calls == [(source, destination, {})] and sleeps == []
+    assert source.read_bytes() == b"source" and not destination.exists()
+
+    monkeypatch.setattr(controller.os, "name", "posix")
+    assert proxy.replace(source, destination) == "delegated"
+    assert delegate.calls[-1] == (source, destination, {}) and sleeps == []
+    monkeypatch.setattr(controller.os, "name", "nt")
+
+    error = PermissionError(13, "not an approved transient error")
+    error.winerror = 17
+    monkeypatch.setattr(controller._ScopedExplorationOS, "_eligible",
+                        lambda *_args: True)
+    monkeypatch.setattr(delegate, "replace", lambda *_args, **_kwargs: (_ for _ in ()).throw(error))
+    with pytest.raises(PermissionError) as caught:
+        proxy.replace(source, destination)
+    assert caught.value is error and sleeps == []
+
+
+def test_scoped_exploration_os_restores_exact_module_after_exception(tmp_path):
+    root = tmp_path / controller.ACTOR_ROOT_NAME
+    root.mkdir()
+    original = exploration.os
+    assert original is os and controller.os is original
+    with pytest.raises(RuntimeError, match="fixture exception"):
+        with controller._scoped_exploration_os(root, sleep=lambda _delay: None) as active:
+            assert exploration.os is active
+            assert controller.os is original
+            raise RuntimeError("fixture exception")
+    assert exploration.os is original and controller.os is original
+
+
+def test_checkpoint_replace_eligibility_accepts_only_normalized_actor_unc_pt_paths(
+        monkeypatch):
+    class FixtureUNCPath:
+        files = set()
+        symlinks = set()
+
+        def __init__(self, value):
+            self.value = value.value if isinstance(value, FixtureUNCPath) \
+                else PureWindowsPath(value)
+
+        @classmethod
+        def key(cls, value):
+            return ntpath.normcase(ntpath.normpath(os.fspath(value)))
+
+        def __fspath__(self):
+            return str(self.value)
+
+        def __eq__(self, other):
+            return isinstance(other, FixtureUNCPath) and self.value == other.value
+
+        @property
+        def parent(self):
+            return FixtureUNCPath(self.value.parent)
+
+        @property
+        def name(self):
+            return self.value.name
+
+        @property
+        def suffix(self):
+            return self.value.suffix
+
+        def is_absolute(self):
+            return self.value.is_absolute()
+
+        def resolve(self, strict=False):
+            return FixtureUNCPath(ntpath.normpath(os.fspath(self)))
+
+        def relative_to(self, other):
+            return FixtureUNCPath(self.value.relative_to(other.value))
+
+        def exists(self):
+            return self.key(self) in self.files or self.key(self) in self.symlinks
+
+        def is_file(self):
+            return self.key(self) in self.files
+
+        def is_symlink(self):
+            return self.key(self) in self.symlinks
+
+    actor = r"\\nas\private\survey_loop_v003"
+    directory = actor + r"\controller\models\models\rows-00031-fixture"
+    source = directory + r"\member-0.pt.tmp"
+    destination = directory + r"\member-0.pt"
+    FixtureUNCPath.files = {FixtureUNCPath.key(source)}
+    FixtureUNCPath.symlinks = set()
+    monkeypatch.setattr(controller, "Path", FixtureUNCPath)
+    proxy = controller._ScopedExplorationOS(object(), actor, sleep=lambda _delay: None)
+
+    assert proxy._eligible(source, destination, None, None) is True
+    FixtureUNCPath.files.add(FixtureUNCPath.key(destination))
+    assert proxy._eligible(source, destination, None, None) is True
+    assert proxy._eligible(source, directory + r"\member-0.json", None, None) is False
+    assert proxy._eligible(source, actor + r"\controller\member-0.pt", None, None) is False
+
+    outside = r"\\nas\private\other\member-0.pt"
+    assert proxy._eligible(source, outside, None, None) is False
+    nonnormalized_source = directory + r"\nested\..\member-0.pt.tmp"
+    nonnormalized_destination = directory + r"\nested\..\member-0.pt"
+    FixtureUNCPath.files.add(FixtureUNCPath.key(nonnormalized_source))
+    assert proxy._eligible(
+        nonnormalized_source, nonnormalized_destination, None, None) is False
+
+    FixtureUNCPath.symlinks.add(FixtureUNCPath.key(source))
+    assert proxy._eligible(source, destination, None, None) is False
+    FixtureUNCPath.symlinks.clear()
+    FixtureUNCPath.symlinks.add(FixtureUNCPath.key(destination))
+    assert proxy._eligible(source, destination, None, None) is False
