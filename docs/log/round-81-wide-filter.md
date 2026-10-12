@@ -340,3 +340,11 @@ Controller 現在等待 B2 至少 20 個新成功幾何後再更新／發布第�
 23:23 私人 queue 唯讀證據：六個 jobs，三個 native claim／results 檔案，218／37／216 分別於 23:00:42／43／47 認領，零 done；這不是遠端 PID 或成功實測證據。前一次 PowerShell collection 包裝將六個 store 名當成單一 array，不能支持 unclaimed 結論；已改用標準 JSON list 六列逐一讀取並保存新證據，不改原觀察。因此撤回先前讓 216 接舊 `-Loop` 的建議，保留已認領 v2 輪次。
 
 只將自己的舊 −20 dB CPU publisher held，完整 PID／creation time／command／Python 身分符合保存 launch receipt，無 numerical child。首次 stop guard 發現 console 子程序而拒絕；核對其為該 child 的 Windows system conhost 後，僅停止 Python parent、確認其消失，沒有對 console child／HFSS／使用者 worker 發 signal。保存 hold receipt 與原兩批模型、inputs、registry、claims，不写 NAS STOP／不重派資料。Goal 保持 active；新的規格與後續發布尚待確認，不能宣稱新版研究完成或沿用舊三段模型完成新版 SM 更新。
+
+### v2 SM 邊界唯讀審查（尚未修改模型／派工）
+
+獨立 Sol 核對新全曲線 SM 與短入口，九項現有 focused fixtures 通過（0.52 秒），原生 score_response 與向量化 margins 對帳、輸出具名 profile validation 均有覆蓋。但通過這些測試不等於資料來源／保留集已完整驗證：loader 未重播 native manifest／payload／measurement 身分；廣域掃描先遇到的同圖形觀察直接覆蓋去重決策，未依 coverage 選擇或檢查重測差異；所需頻率沒有真值 support 時仍可使用預測 exploit／explore。未掃描實際 v2 資料，故不宣稱已有污染、頻率缺漏或性能損害。
+
+Conductor 的生成陣列邊界探針實際呼叫 holdout_eval、以 fake trainer 只捕捉輸入，證明條件性家族隔離缺口：已宣告 held 的家族，其不同幾何 historical 列與未完整覆蓋頻率的 wide 列仍可進訓練；原函式只剔除 exact SHA，又加入所有未可評分的 wide 列。這沒有載入真實樣本、沒有 fit／forward／HFSS，不證明目前 v2 已發生 leakage，但修復前不能把該 quality gate 當成家族獨立驗證。
+
+短 v2 worker 入口直接啟動 native worker，既有 dedust 的 claim 保護按 dataset／store，不防止同機另一 dataset 的 worker；新入口尚缺 local-IP／process-conflict guard。現有 worker 不停止，正在準備仅影響未來啟動的窄修補，不改 measurement、score 或已排隊 inputs。三份 source review／fixture payload 與來源 SHA 已保存私人 controller review；規格選擇仍待使用者回覆。

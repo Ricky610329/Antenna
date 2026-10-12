@@ -13,18 +13,19 @@
 
 - **實際新切點與待釐清規格**：repo 另線已有 `dual_r81_s21_v2.yaml`（`b3b7001`）：通帶 26–30 ≥−3，低阻帶 22–24.5／高阻帶 36–40 ≤−15，與本對話原 −20 規格不同。v2 的六個 jobs 在私人資料根；23:23 唯讀觀察有三個 claim／results 檔案，owner 218／37／216 於 23:00 認領，零 done，未觀察遠端 PID、未稽核 v2 runtime／真值。因此撤回先前切到舊 `-Loop` 的建議，保留已認領 v2 的工作。已向使用者確認最新規格，不自行改整體 objective 或宣稱新版完成。
 - **舊 CPU publisher 已 held**：僅停止身分／creation time／完整 command 驗證一致的本機 detached watcher，沒有數值訓練子程序；其唯一子程序為自己的 Windows console host，未對子程序或 HFSS 發 signal。保留原 B1/B2 模型、jobs、registry／claims；未在 NAS 設全域 STOP，也沒有停止使用者 worker。等待規格確認後才決定後續發布，整體 goal 仍 active。
+- **v2 審查為後續 SM 更新找出邊界修正項**：九項現有 fixtures 通過但未覆蓋 source replay／完整家族 isolation／頻率 support；生成探針證明條件性 held-family 資料仍可進訓練，未檢查真實資料是否觸發，不能宣稱實測已污染或 accuracy 改善。新 worker 入口缺跨 dataset 的本機 conflict guard，窄修補準備中；不停止現有工作、不改已排隊輸入。[唯讀審查與限制](../docs/log/round-81-wide-filter.md)。
 
-- **最新健康與 CPU 恢復**：B1 成功 20／12／8，共 40；216 的 native `.done` 為 22:44:42、零 errors，B2 三片尚無 claim／結果。本機舊 CPU session 已 terminal exit1、PID 消失，沒有 traceback／terminal receipt，退出原因未知；已保留證據，只將 CPU watcher 改以 hidden detached 啟動並保存私人 stdout／stderr。23:12 新 child 的 start identity／command／native [1,2] watch prefix 通過，stderr 空，沿用原兩模型／registry，不重訓、不重啟 HFSS或改 claims。等待三台 operator 接 `-Loop`，下一例行約 23:39。
+- **歷史 23:09 健康與 23:12 CPU 恢復切點**：B1 成功 20／12／8，共 40；216 的 native `.done` 為 22:44:42、零 errors，B2 三片當時無 claim／結果。舊 CPU session terminal exit1／PID 消失且原因未知；先保留證據並改 hidden detached 啟動，native watch prefix 通過。其後因上方新 v2 切點已 held，這不是現在 CPU 活機或切 `-Loop` 的指示。
 
 - **先前兩個 NAS 故障已保留並修復**：v001 的快照 ACL 問題經 `b205b4f` 修復；主／獨立各 22 項 focused tests 及實際 28 筆快照通過。v002 22:20 的 31 筆更新在 member-0 checkpoint 34→35 epoch os.replace 遇 WinError5、exit1，沒有完成模型或 B2。私人 100 次替換重現四次同錯誤，0.1–0.3 秒有限重試均成功，後續 `6769039` 僅限 actor UNC checkpoint 修復；recipe／原 51 檔／ACL 不改。兩個失敗前綴保留，三台 HFSS 不重啟。
-- **有限重試修補已交付並完成首次實際發布**：GAN `6769039`／`10514e0`，主測 controller 15 項／獨立 controller＋entry 28 項及實際 UNC scope／Torch checkpoint readback 通過。以 33 個成功幾何（29 train／4 holdout、零交集）完成兩模型各 100 epochs，rank-ready，七檔 prior cache／parent 模型 SHA 吻合；實際 1,024 候選及 60 個選取／三策略各 20／三機各 20 經原生 gate 與獨立保存證據核對通過，和 B1 的 60 圖形零交集。Registry 現有 B1＋B2，接續等待至少 20 個新 B2 成功；發布候選與四個保留樣本不證明 SM accuracy 改善或 spec 達標。
+- **舊規格有限重試修補與首次實際發布已驗證**：GAN `6769039`／`10514e0`，主測 controller 15 項／獨立 controller＋entry 28 項及實際 UNC scope／Torch checkpoint readback 通過。以 33 個成功幾何（29 train／4 holdout、零交集）完成兩模型各 100 epochs，rank-ready，七檔 prior cache／parent 模型 SHA 吻合；實際 1,024 候選及 60 個選取／三策略各 20／三機各 20 經原生 gate 與獨立保存證據核對通過，和 B1 的 60 圖形零交集。Registry 保留 B1＋B2，publisher 現已 held；候選與四個保留樣本不證明 SM accuracy 改善或任何新版 spec 達標。
 - **R80 收尾完成，不再派工**：5,000 有效唯一精確左右對稱圖形及五筆重測已凍結、稽核，統計與極座標圖已歸檔。[結果與限制](../docs/log/round-80-symmetry-exploration.md)。
 - **R81 新版 S21 探索正在產生真值**：最新 40 筆 metadata／216 `.done` 已保存；marker 並非遠端 PID 證據，B2 尚未啟動。工程 Fast 六筆、Discrete 兩筆保留；mesh 兩筆各三次失敗後 skipped，工程／Formal gate 未通過。新探索不限制金屬對稱，以 S21 三段計算 WM，S11／S22 保留為參考，緩衝區下壓／平緩不進 WM。
-- **SM 自動更新與共享子代交接已部署**：累積 20 個新成功幾何後，沿用完成 historical prior、重訓當前兩模型並發布 60 筆；首次實际 33 筆截止點已完成，第三批須再有 20 個新第二批真值。本階段含首批最多 180 筆，不代表完整 spec 完成。共享證據只在私人工作區；公開 Git 僅放程式與 path-free descriptor。
+- **舊 SM 循環程式交付保留**：原先 20 新成功觸發兩模型更新／60 候選，首個 33 筆截止點已完成；publisher held 期間不新增發布。原最多 180 筆是階段上限，不代表完整 spec 完成。共享證據只在私人工作區；公開 Git 僅放程式與 path-free descriptor。
 - **三台目前入口**：新 v2 claim 已存在，保留該輪，不再從此操作板指示切回舊 `-Loop`。原 v003 leaf／SHA descriptor 與 60 筆 B2 僅保留為已驗證舊規格交付，沒有移除或重派；後續是否以 v2 為準待本對話規格確認。[切點與限制](../docs/log/round-81-wide-filter.md)。
 - **監看與完成條件**：舊 v003 CPU publisher 已 held，使用者三台 v2 claim 保留；conductor 約每 30 分鐘確認實際結果／狀態，規格確認前不派新候選。原件及獨立重測正 WM、工程量測一致性均未證明；沒有宣稱新版 spec 達標。R80 舊自產線與 emforge 不動。
 
-以下為歷史交付與健康切點；其中 `-Probe`、原 EngineeringOnly／Formal 啟動狀態及 blocked 記錄不代表上方現況，也不要取代現在的 `-Loop` 指令。
+以下為歷史交付與健康切點；其中 `-Probe`、`-Loop`、原 EngineeringOnly／Formal 啟動狀態及 blocked 記錄不代表上方 v2 claim／待規格確認的現況，不據此切換 worker。
 
 - **10/12同機Discrete診斷已交付**：新增獨立`SweepProbe`與短入口`-Probe`，只派原Fast來源owner兩筆Discrete重測。11項針對性測試／獨立審查及真實`-Probe -CheckOnly`通過，私人release已發布但未啟動HFSS；原工程44來源、queue和mesh任務不改。原始結果與審查僅保存私人工作區；此診斷不放行正式批次。[指令與範圍](../docs/log/round-81-wide-filter.md)。
 
