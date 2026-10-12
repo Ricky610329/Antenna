@@ -99,6 +99,29 @@ def test_legacy_24_32_can_pass_passband_but_never_wide_standard(tmp_path):
     assert pending["passband_margin_db"] == pytest.approx(1.0)
 
 
+def test_missing_buffers_do_not_add_a_hard_requirement(tmp_path):
+    freqs = np.concatenate((np.arange(16, 20.1, .5),
+                            np.arange(26, 30.1, .5),
+                            np.arange(36, 40.1, .5)))
+    manifest, samples, _ = _fixture(tmp_path, [(freqs, _response(freqs))])
+    record = rescore_history(manifest, samples)["records"][0]
+    assert record["frequency_axis"]["observed_scope_16_40_complete"] is False
+    assert record["s21"]["qualification_covered"] is True
+    assert record["s21"]["qualified"] is True
+    assert record["s21"]["worst_margin_db"] == pytest.approx(1.0)
+    assert record["s21"]["missing_coverage"] == []
+
+
+@pytest.mark.parametrize("freqs", [np.arange(16, 40.1, .25),
+                                  np.arange(10, 50.1, .5)])
+def test_denser_or_broader_observations_still_qualify(tmp_path, freqs):
+    manifest, samples, _ = _fixture(tmp_path, [(freqs, _response(freqs))])
+    record = rescore_history(manifest, samples)["records"][0]
+    assert record["frequency_axis"]["observed_scope_16_40_complete"] is True
+    assert record["s21"]["qualified"] is True
+    assert record["s21"]["worst_margin_db"] == pytest.approx(1.0)
+
+
 def test_covered_stop_failure_is_not_confused_with_missing_coverage(tmp_path):
     freqs = OBSERVED_SCOPE_GHZ.copy()
     manifest, samples, _rows = _fixture(

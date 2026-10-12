@@ -137,8 +137,10 @@ def _score_bands(response: np.ndarray, freqs: np.ndarray,
             "threshold_db": band["threshold"],
         }
         if covered:
+            in_band = ((freqs >= band["start_ghz"] - 1e-9) &
+                       (freqs <= band["stop_ghz"] + 1e-9))
             scored = score_response(
-                response, list(LABELS), freqs,
+                response[:, in_band], list(LABELS), freqs[in_band],
                 {"name": "historical-wide-rescore", "bands": [band]},
             )
             name = band["name"]
@@ -219,8 +221,11 @@ def rescore_history(manifest: str | Path, sample_root: str | Path) -> dict[str, 
 
         s21, s21_bands_covered = _score_bands(response, freqs, S21_BANDS)
         match, match_covered = _score_bands(response, freqs, MATCH_BANDS)
-        observed_scope_complete = np.array_equal(freqs, OBSERVED_SCOPE_GHZ)
-        s21_qualification_covered = bool(observed_scope_complete and s21_bands_covered)
+        observed_scope_complete = _covers(freqs, 16.0, 40.0)
+        # Only the three hard bands determine WM availability.  Extra/denser
+        # observations are valid, and missing buffer points are not a fourth
+        # hard constraint.
+        s21_qualification_covered = bool(s21_bands_covered)
         s21_worst_margin = (min(item["margin_db"] for item in s21.values())
                             if s21_qualification_covered else None)
         s21_threshold_met = bool(
@@ -233,7 +238,7 @@ def rescore_history(manifest: str | Path, sample_root: str | Path) -> dict[str, 
             match_covered and all(item["passed"] is True for item in match.values())
         )
         missing = [name for name, item in s21.items() if not item["covered"]]
-        if not observed_scope_complete:
+        if not observed_scope_complete and not s21_bands_covered:
             missing.append("observed_scope_16_40")
         records.append({
             "id": row["id"],
