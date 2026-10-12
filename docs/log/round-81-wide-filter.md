@@ -255,3 +255,5 @@ git pull --ff-only origin GAN
 新增 `script/r81_s21_survey_cycle.py`，沿用原生候選產生、成功資料快照、三段 SM 與 splitter。當至少 20 個尚未消費的新成功幾何出現，凍結模型實際使用的 pattern／sample hash，訓練並準備 20 個預測 WM、20 個 ensemble uncertainty、20 個隨機子代。訓練期間允許其他新結果追加，原已成功觀察改變或消失仍拒絕；只有已凍結的觀察進消費帳本。既有窄頻幾何仍可補測新版寬頻，並可將整理出的歷史 seed bundle 納入候選；不將缺少帶外的歷史資料當成已測新版幾何排除。
 
 主測新 controller 五項通過，獨立組合十八項通過；實際 release 的 prepare／dry-run 通過並回報等待新真值。候選、模型、分割、來源與消費帳本綁定，失敗前綴保留，完成後的 ledger／pending 清理可恢復。已啟動本機 metadata watcher：達門檻後更新 SM 並準備下一批輸入，重用完成的 historical prior。此 watcher 不啟動 HFSS、不寫 NAS queue；下一批仍是 local-only，須完成獨立的 release／worker 交接，不能描述為自動持續派工已完成。
+
+2026-10-12 20:42–20:43 健康檢查：原工程批次已成為 `terminal_skips`；兩筆 mesh 均達三次 HFSS 失敗後略過，Fast 六筆與 Discrete 兩筆成功結果保持不變。略過不等於成功，也不進 SM 真值或工程門檻。新的 S21 三台工作池均已有 claim，但尚無成功寬頻觀察；claim 只證明取得工作，沒有觀察遠端 PID。完整健康查詢與原始錯誤已驗證並封存原私人健康目錄，公開記錄不含新的原始結果或 NAS 路徑。下一個實作里程碑為可供 worker 自行接續的版本化 registry 與共享 successor release；現有 local-only watcher 的限制仍有效。
