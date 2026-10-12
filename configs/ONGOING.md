@@ -9,8 +9,9 @@
 
 ## 2026-10-07：R80 對稱探索 → 後續 spec／R81
 
-### 現況：2026-10-12 21:12
+### 現況：2026-10-12 21:44 檢查後，首個 20 筆截止點恢復中
 
+- **最新 controller 故障，不是性能停滯**：21:44 保存三台成功數 10／5／4，另有五個第一次 HFSS COM 失敗待重試；之後 controller 達 20 筆時，NAS 暫存快照建立／存取拒絕並 exit1，已核對原本機 PID 消失。未完成三段模型 fit、沒有發布第二批，原 registry 仍只有 batch-001。私人探針實測一般繼承 ACL 的 mkdir 可用，mode700／stdlib tempfile.mkdtemp 失敗；正在做僅限 actor 內 UNC 暫存的相容修復，保留失敗前綴與原三台求解，不改現有 ACL／claims。下方 21:12 部署列為先前成功切點，不能當成現在 controller 活機證據。
 - **R80 收尾完成，不再派工**：5,000 有效唯一精確左右對稱圖形及五筆重測已凍結、稽核，統計與極座標圖已歸檔。[結果與限制](../docs/log/round-80-symmetry-exploration.md)。
 - **R81 新版 S21 探索正在產生真值**：三台原 `-Survey` 工作池均已 claim；最新背景 controller 回報七個不同幾何成功，這不是遠端 PID 證據。工程 Fast 六筆、Discrete 兩筆保留；mesh 兩筆各三次失敗後 skipped，工程／Formal gate 未通過。新探索不限制金屬對稱，以 S21 三段計算 WM，S11／S22 保留為參考，緩衝區下壓／平緩不進 WM。
 - **SM 自動更新與共享子代交接已部署**：GAN `6657046`／`04c3a76`，主／獨立各 20 項 focused tests 及私人 NAS bootstrap／cache／三機身分狀態核對通過。累積 20 個新成功幾何後更新兩個模型並發布 60 筆；第三批須再有 20 個新第二批真值。本階段含首批最多 180 筆，不代表完整 spec 完成。共享證據只在私人工作區；公開 Git 僅放程式與 path-free descriptor。

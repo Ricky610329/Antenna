@@ -290,3 +290,11 @@ git pull --ff-only origin GAN
 ```powershell
 python -m script.filter_s21_confirmation --profile-config configs/dual_r81_s21_discrete.yaml --candidate-store <原件凍結store> --candidate-id <原件ID> --candidate-source-bindings-sha256 <原件來源SHA> --repeat-store <重測凍結store> --repeat-id <重測ID> --repeat-source-bindings-sha256 <重測來源SHA> --out <來源資料夾之外的新收據.json>
 ```
+
+### 首個 20 筆截止點：NAS 暫存故障與保存證據
+
+21:44 唯讀健康切點：三台各 10／5／4 個成功、五個第一次 HFSS COM 失敗待重試，三個 claim 保持，原本機 CPU controller 經 PID 身分核對仍活著。其後首次達 20 個成功時，family preflight 的原生快照暫存目錄在 NAS 存取被拒，controller session exit1，原 PID 已確認消失；尚未完成新的 SM fit／第二批發布，registry 只有 batch-001。沒有重啟或停止 HFSS，沒有刪除任何 source／marker。這是工作流程故障，不是性能停滯或樣本品質門檻變更。
+
+私人 NAS 小型實測分離了名稱與 ACL 問題：一般 mkdir 的普通／單點／雙點目錄均可讀寫；mode700 與 stdlib tempfile.mkdtemp 在同一私人位置失敗。修复方向為在新版本 actor 中、只限其 UNC 暫存使用繼承既有 parent ACL 的 exclusive 建目錄；不改既有 ACL、不改原 51 檔、不影響非 UNC 暫存。失敗 v001 前綴、健康切點、adapter 與探針共九個 payload 已逐檔驗證封存原私人 controller handoff，原結果與 registry 保持不變。
+
+同次沿用原八筆與新 Survey 的物理來源比較，已有一個同機 Discrete 重測與一個同機 Fast／Discrete 控制，另一个同機控制仍待原已排隊樣本完成；未多派 HFSS 診斷。Discrete 的該單例一致，Fast／Discrete 的 S21 曲線與三段餘裕仍超描述性精度閾值，不能放行工程 gate 或歸因單一原因。完整數值、樣本／profile／owner 證據僅存私人 handoff，不將新研究結果上傳公開 Git。
