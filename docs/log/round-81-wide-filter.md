@@ -332,3 +332,11 @@ Controller 現在等待 B2 至少 20 個新成功幾何後再更新／發布第�
 按 30 分鐘間隔保存私人健康切點：B1 成功 20／12／8，共 40；另有 4／9 error 列由原 worker retry 邏輯處理，沒有重置。216 的 native `.done` 保存 22:44:42／errors0，B2 仍無 claim／results。216 已具備交接條件，無須再等待另兩台；operator 可在舊 Survey 等待時 Ctrl+C，pull GAN 後執行 `-Loop`。其他兩台仍保留原求解。
 
 原 CPU session 確認 exit1、PID 消失且無同 driver 進程；最後 stdout 成功數 40，沒有 traceback／terminal receipt，原因未知，不歸因為 NAS／性能失敗。保留退出與健康證據後，沿用原 v003 bootstrap／已發布 [1,2] prefix，僅以 hidden detached Start-Process 恢復本機 CPU watcher，stdout／stderr 保存私人 controller 目錄。新 child 的 creation time／完整 command／Python 路徑與 launch receipt 一致，原生 watch 驗證 [1,2]、成功 40／B2 新成功 0，stderr 空。沒有多做 SM fit、重新發布 B2、HFSS signal 或 claims 重置；尚不宣稱此單一切點證明長時間無中斷。五項 handoff payload 及另份 actual watch identity 收據保存私人工作區，下一例行約 23:39。
+
+### 23:23：另線 v2 規格／三機 claim 與舊 publisher hold
+
+同 workspace 並行改動新增全曲線 SM／短 worker 入口（`76199a5`／`53c93a7`），其 config 已於 `b3b7001` 標示學長修訂：26–30 GHz ≥−3 dB，22–24.5／36–40 GHz ≤−15 dB、Discrete 22–40，open-region16。這與此對話原本 16–20／36–40 ≤−20 dB 版本不同；程式／queue 的存在不自行代替本對話規格授權，已向使用者釐清。未修改或重新稽核另線 runtime，也未將其測試／metadata 當成新版性能證據。
+
+23:23 私人 queue 唯讀證據：六個 jobs，三個 native claim／results 檔案，218／37／216 分別於 23:00:42／43／47 認領，零 done；這不是遠端 PID 或成功實測證據。前一次 PowerShell collection 包裝將六個 store 名當成單一 array，不能支持 unclaimed 結論；已改用標準 JSON list 六列逐一讀取並保存新證據，不改原觀察。因此撤回先前讓 216 接舊 `-Loop` 的建議，保留已認領 v2 輪次。
+
+只將自己的舊 −20 dB CPU publisher held，完整 PID／creation time／command／Python 身分符合保存 launch receipt，無 numerical child。首次 stop guard 發現 console 子程序而拒絕；核對其為該 child 的 Windows system conhost 後，僅停止 Python parent、確認其消失，沒有對 console child／HFSS／使用者 worker 發 signal。保存 hold receipt 與原兩批模型、inputs、registry、claims，不写 NAS STOP／不重派資料。Goal 保持 active；新的規格與後續發布尚待確認，不能宣稱新版研究完成或沿用舊三段模型完成新版 SM 更新。

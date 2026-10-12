@@ -9,7 +9,10 @@
 
 ## 2026-10-07：R80 對稱探索 → 後續 spec／R81
 
-### 現況：2026-10-12 23:09 健康檢查，40 筆成功／216 首批完成
+### 現況：2026-10-12 23:23，三台已認領另線 spec v2，舊補池 held
+
+- **實際新切點與待釐清規格**：repo 另線已有 `dual_r81_s21_v2.yaml`（`b3b7001`）：通帶 26–30 ≥−3，低阻帶 22–24.5／高阻帶 36–40 ≤−15，與本對話原 −20 規格不同。v2 的六個 jobs 在私人資料根；23:23 唯讀觀察有三個 claim／results 檔案，owner 218／37／216 於 23:00 認領，零 done，未觀察遠端 PID、未稽核 v2 runtime／真值。因此撤回先前切到舊 `-Loop` 的建議，保留已認領 v2 的工作。已向使用者確認最新規格，不自行改整體 objective 或宣稱新版完成。
+- **舊 CPU publisher 已 held**：僅停止身分／creation time／完整 command 驗證一致的本機 detached watcher，沒有數值訓練子程序；其唯一子程序為自己的 Windows console host，未對子程序或 HFSS 發 signal。保留原 B1/B2 模型、jobs、registry／claims；未在 NAS 設全域 STOP，也沒有停止使用者 worker。等待規格確認後才決定後續發布，整體 goal 仍 active。
 
 - **最新健康與 CPU 恢復**：B1 成功 20／12／8，共 40；216 的 native `.done` 為 22:44:42、零 errors，B2 三片尚無 claim／結果。本機舊 CPU session 已 terminal exit1、PID 消失，沒有 traceback／terminal receipt，退出原因未知；已保留證據，只將 CPU watcher 改以 hidden detached 啟動並保存私人 stdout／stderr。23:12 新 child 的 start identity／command／native [1,2] watch prefix 通過，stderr 空，沿用原兩模型／registry，不重訓、不重啟 HFSS或改 claims。等待三台 operator 接 `-Loop`，下一例行約 23:39。
 
@@ -18,8 +21,8 @@
 - **R80 收尾完成，不再派工**：5,000 有效唯一精確左右對稱圖形及五筆重測已凍結、稽核，統計與極座標圖已歸檔。[結果與限制](../docs/log/round-80-symmetry-exploration.md)。
 - **R81 新版 S21 探索正在產生真值**：最新 40 筆 metadata／216 `.done` 已保存；marker 並非遠端 PID 證據，B2 尚未啟動。工程 Fast 六筆、Discrete 兩筆保留；mesh 兩筆各三次失敗後 skipped，工程／Formal gate 未通過。新探索不限制金屬對稱，以 S21 三段計算 WM，S11／S22 保留為參考，緩衝區下壓／平緩不進 WM。
 - **SM 自動更新與共享子代交接已部署**：累積 20 個新成功幾何後，沿用完成 historical prior、重訓當前兩模型並發布 60 筆；首次實际 33 筆截止點已完成，第三批須再有 20 個新第二批真值。本階段含首批最多 180 筆，不代表完整 spec 完成。共享證據只在私人工作區；公開 Git 僅放程式與 path-free descriptor。
-- **三台後續入口**：216 現已確認 B1 `.done`，可交接 B2；218／37 保留目前求解。每台自己的 B1 shard 已寫出 `.done` 後，若舊 `-Survey` 仍等待其他機台，以 Ctrl+C 結束該等待視窗，再 `git pull --ff-only origin GAN` 與 `.\script\r81.cmd -Loop`。新入口按本機終態接 B2，不需等其他两台；舊 launcher／worker 仍在會拒絕重複啟動。[新指令與部署限制](../docs/log/round-81-wide-filter.md)／[短入口 descriptor](r81_s21_live_current.json)。
-- **監看與完成條件**：v003 CPU controller 已啟動，120 秒 metadata poll；三台原 Survey 保留。conductor routine 約每 30 分鐘，啟動／錯誤／發布里程碑另驗證。原件及獨立重測的三段實測 WM 均 >0、工程量測一致性仍未證明；沒有宣稱新 spec 達標。R80 舊自產線與 emforge 不動。
+- **三台目前入口**：新 v2 claim 已存在，保留該輪，不再從此操作板指示切回舊 `-Loop`。原 v003 leaf／SHA descriptor 與 60 筆 B2 僅保留為已驗證舊規格交付，沒有移除或重派；後續是否以 v2 為準待本對話規格確認。[切點與限制](../docs/log/round-81-wide-filter.md)。
+- **監看與完成條件**：舊 v003 CPU publisher 已 held，使用者三台 v2 claim 保留；conductor 約每 30 分鐘確認實際結果／狀態，規格確認前不派新候選。原件及獨立重測正 WM、工程量測一致性均未證明；沒有宣稱新版 spec 達標。R80 舊自產線與 emforge 不動。
 
 以下為歷史交付與健康切點；其中 `-Probe`、原 EngineeringOnly／Formal 啟動狀態及 blocked 記錄不代表上方現況，也不要取代現在的 `-Loop` 指令。
 
