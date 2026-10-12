@@ -5626,10 +5626,9 @@ def run(args):
     from antenna.utils.store import SampleStore
     from antenna.utils.utils import Path
 
-    from script.profiled_batch import (IncompleteProfileBatch, load_profile_config,
+    from script.profiled_batch import (load_profile_config,
                                        observation as profile_observation, prepare_store,
-                                       simulator_kwargs, verify_completed,
-                                       verify_incomplete_hfss_batch, verify_finished,
+                                       simulator_kwargs, verify_completed, verify_finished,
                                        skip_exhausted_hfss_errors)
     config_path = _resolve_batch_config(args.config, getattr(args, "input", None))
     profile_cfg = load_profile_config(config_path)
@@ -6027,31 +6026,8 @@ def run(args):
         try:
             verify_completed(store_dir, cfg, require_complete=True)
         except Exception as profile_error:
-            if not getattr(args, "scope", None):
-                raise SystemExit(f"profile 完整性驗證失敗：{profile_error}") from profile_error
-            try:
-                partial = verify_incomplete_hfss_batch(store_dir, cfg)
-            except Exception:
-                raise SystemExit(f"profile 完整性驗證失敗：{profile_error}") from profile_error
-            if args.out is None and not keep_project:
-                expected_name = f"_dedust_{args.store}"
-                cwd = Path(os.getcwd()).resolve()
-                if out.parent != cwd or out.name != expected_name:
-                    raise SystemExit(
-                        f"partial profile 暫存路徑拒絕清理：{out}（預期 {cwd.joinpath(expected_name)}）"
-                    )
-                if out.exists():
-                    import shutil
-                    try:
-                        shutil.rmtree(str(out))
-                    except Exception as cleanup_error:
-                        raise SystemExit(f"partial profile 暫存清理失敗：{out}: {cleanup_error}") from cleanup_error
-                    print(f"（部分失敗工作目錄已清: {out}）")
-            raise IncompleteProfileBatch(
-                f"profile HFSS 部分失敗：verified={len(partial['success_ids'])} "
-                f"terminal_errors={len(partial['error_ids'])} "
-                f"({','.join(partial['error_ids'][:20])})"
-            ) from profile_error
+            # 有 scope 的 worker 走上面 skip_poison 分支；這裡只剩無 scope 的嚴格路徑。
+            raise SystemExit(f"profile 完整性驗證失敗：{profile_error}") from profile_error
     if args.out is None and not keep_project:
         #! 工作目錄=純暫存（結果全在 NAS）,跑完即刪——不清會吃滿系統碟:216 事件 2026-07-15,
         #  C 槽 0GB=78 個 job 的 HFSS 專案暫存,磁碟見底→COM 例外 0x80070223 爆發（重開機=假好轉）。
@@ -6769,7 +6745,7 @@ def worker(args):
     →自動接管重跑（毒批收斂:全機敗過=永久 fail 等人工;舊純文字 .fail 不自動接管）。"""
     import time
     from script.batch_scope import job_in_scope, validate_worker_scope
-    from script.profiled_batch import IncompleteProfileBatch, load_profile_config
+    from script.profiled_batch import load_profile_config
     scope = validate_worker_scope(args)
     from antenna.utils.web import get_local_ip
     me = get_local_ip()
@@ -6789,8 +6765,6 @@ def worker(args):
         print(f"🧹 啟動清掃: {len(junk)} 個中斷殘留目錄（~{tot / 1e9:.1f} GB）已清"
               f"——正常兜底（跑完即刪管正常結束,這裡收 Ctrl-C/當機/讓位留下的）: {','.join(junk[:4])}")
     print(f"worker 上線 @ {me}（poll {args.poll}s / 單筆 timeout {args.timeout}s / stale {args.stale}m）")
-    consecutive_partial_failures = 0
-    scoped_partial_failed_stores = set()
     while True:
         if sd.joinpath("STOP").exists() or (scope and sd.joinpath(f"STOP_{scope}").exists()):
             print("STOP 檔存在,worker 收工")
@@ -6820,8 +6794,6 @@ def worker(args):
                         f" {_required_stale / 60:.0f} 分鐘，避免長測中被其他 worker 接管"
                     )
             st = j["store"]
-            if scope and st in scoped_partial_failed_stores:
-                continue                                  # 本程序已判 partial fail；避開 takeover 換 claim 的短暫空窗
             _pin = str(j.get("machine") or "")
             #! 釘選比對:me=完整 IP(2026-08-03 實戰 bug:jobs-add 寫末段「216」等值比較永不匹配
             #  =全機跳過;修=末段/完整 IP 都吃。當日以改 jobs.json 為完整 IP 熱修,此處為治本)
@@ -6943,27 +6915,8 @@ def worker(args):
                 pass
             failure = dict(machines=prior + [me], last=str(e),
                            at=time.strftime("%Y-%m-%d %H:%M:%S"))
-            if isinstance(e, IncompleteProfileBatch):
-                failure["failure_kind"] = "incomplete_profile_hfss"
-                failure["worker_continues"] = bool(
-                    scope and not args.once and consecutive_partial_failures + 1 < 3
-                )
             with open(str(sd.joinpath(st + ".fail")), "w", encoding="utf-8") as f:
                 json.dump(failure, f, ensure_ascii=False)
-            if scope and isinstance(e, IncompleteProfileBatch):
-                scoped_partial_failed_stores.add(st)
-                consecutive_partial_failures += 1
-                if args.once:
-                    print(f"✗ {st} 部分 HFSS 失敗:{e}\n"
-                          "保留 fail/claim/raw；--once 不把部分失敗回報成成功")
-                    raise
-                if consecutive_partial_failures >= 3:
-                    print(f"✗ {st} 部分 HFSS 失敗:{e}\n"
-                          "保留 fail/claim/raw；連續 3 批部分失敗，停止本機避免硬體故障持續消耗佇列")
-                    raise
-                print(f"⚠ {st} 部分 HFSS 失敗:{e}\n"
-                      "保留 fail/claim/raw；本機跳過此 store 繼續 scoped queue，別台可接管重試")
-                continue
             print(f"✗ {st} 中止:{e}\nworker 停機（別台 worker 會自動接管此 store;本機修復後重啟 worker 即可）")
             raise
         #! done records execution completion, not scientific all-success. Scoped
@@ -6979,7 +6932,6 @@ def worker(args):
         with open(str(sd.joinpath(st + ".done")), "w", encoding="utf-8") as f:
             json.dump(dict(machine=me, at=time.strftime("%Y-%m-%d %H:%M:%S"),
                            errors=len(errs), error_ids=errs if finished is not None else errs[:20]), f)
-        consecutive_partial_failures = 0
         print(f"✔ {st} 完成（殘留 error {len(errs)} 筆{': ' + ','.join(errs[:5]) if errs else ''}）")
         if args.once:
             break

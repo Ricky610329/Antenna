@@ -25,17 +25,10 @@
 | `sm_reanchor.py` | SM 乾淨區重錨（train/eval;產 NAS `sm_reanchor.pth`） |
 | `status.py` | NAS run 狀態掃描（`--md` 貼 ONGOING;`--alert --notify-topic` 當 watchdog） |
 | `status.py --factory --dataset-root ... --scope ...` | 私人具名profile佇列監看；成功observation不需wm欄位，且不混入全域舊run |
-| `symmetry_factory.py` | R80滾動資料工廠policy驗證與實體樣本/場型稽核快照；重測不增加唯一圖形計數 |
-| `symmetry_factory_cycle.py` | 單次可恢復controller：同輪實體cutoff＋全量raw SHA重核，避免反覆反序列化歷史資料；新增結果保留名額至下輪。固定cutoff選擇訓練快照→前瞻稽核→累積SM更新→16筆分片／逐片查重，保留明示retry名單與5,000／guided96限制。重試保留已完成候選的原筆數與模型／檔案綁定；新快照名額或排除集合不容許沿用時，另存新準備目錄，不覆寫原候選。可選一次性15+1鄰域request共用原閘門，永久無法成批時回到一般派工 |
-| `symmetry_factory_watch.py` | 開發機唯一常駐controller，每1800秒執行主線；可選同程序LOW補池thread，在SM訓練時繼續供工、讓主線優先派送。綁定settings／profile／retry名單／pilot，保留重啟及STOP紀錄；不啟動HFSS |
-| `symmetry_factory_backlog.py` | LOW背景補池：每90秒讀佇列、輸入manifest及worker markers，不重播raw／SM。未終態預留低於48筆時，以16筆prio6小片補向96筆；每片釋放寫入優先權。排除已預留、失敗及主線準備中的圖形；保守名額不足時交回主線處理尾批 |
-| `symmetry_incumbent_shell_pilot.py` | R80一次性鄰域核心：固定錨點15格d1對稱變體＋1個blind對照，先選擇再保存當前SM預測；凍結準備時真值參考、核對原觀測並依固定判準讀出，不直接操作佇列 |
-| `symmetry_sm_pool.py` | 10,000對稱候選池，SM冷啟動或新資料更新模型選樣；40/30/30配額與完整前瞻預測保存 |
-| `symmetry_training.py` | 對稱工廠新真值按批累積、歷史非對稱曲線僅作預訓練；固定家族保留集、唯一圖形更新計數、epoch恢復及模型/資料版本綁定 |
-| `profiled_shards.py` | canonical輸入分為16筆獨立jobs；完成子批嚴格同一集合、hash驗證後合併；亦可將長批已成功量測凍結為明示partial的獨立子集合供SM更新 |
-| `filter_confirmation.py` | R81原件／重測的唯讀性能確認：完整3×49真值重播、同profile與圖形、兩筆WM皆嚴格>0；不代替工程檢查 |
-| `filter_prior.py` | R81歷史先驗讀取API：明示manifest及hash，保留3×17原曲線、三段可用margin／兩阻帶mask，排除保留集家族與圖形的完整相連別名 |
-| `filter_training.py` | exploration的可選dual訓練模組：masked歷史先驗、累積五margin真值、固定家族保留集、共用train正規化、epoch恢復與模型／資料hash綁定；R81尚未啟用 |
+| `profiled_batch.py` / `batch_scope.py` | 具名量測 profile（`configs/dual_r81_s21_v2.yaml` 這類有 `measurement`/`score_spec` 段的 yaml）的驗證、入庫與 hash 核對，以及 `--scope` 限定實驗佇列；由 `dedust run/worker` 呼叫 |
+| `r81_curve_sm.py` | **R81 v2 批次選樣**：dual 全曲線 SM（5 顆 ensemble，masked MSE）＋下一批 exploit/explore/random 30/18/12，產 dedust worker 可吃的 input 夾；`build --batch N --out <dir>`、`score --stores ...`。不跑 HFSS、只讀 NAS |
+| `r81v2_worker.py`（`r81v2.cmd`） | R81 v2 正式機 worker 短入口：在 v2 資料根跑原生 `dedust worker --scope symmetry_filter_20261007`，三台同一行 `.\script\r81v2.cmd` |
+| ~~R80 對稱工廠 `symmetry_*.py`、R81 release／binding 入口 `r81_*_entry.py` 等、`filter_*.py`、`profiled_shards.py`、`prepare_symmetry_filter.py`、`exploration.py`、`start_r81_*.ps1`、`start_scoped_worker.ps1`、`r81.cmd`/`r81.ps1`~~ | 已移除（2026-10-12，見 git tag `pre-cleanup-20261012`）。R80 已凍結、R81 改用 `r81_curve_sm` 與原生 worker |
 | `expected_best.py` | R6 期望基準尺（每 round 收檔可重跑疊圖） |
 | `pattern_anatomy.py` | 池結構特徵快取（`collect-pool` → `tmp/pattern_anatomy/pool.npz`,多個 select 依賴） |
 | `round_report.py` / `analyze.py` / `benchmark_vs_random.py` | 線上 run 的歸檔圖表 / 重現診斷 / worst-margin 對標 |
@@ -47,21 +40,6 @@
 
 接手導覽：先讀 `docs/log/README.md`（時間軸）→ `configs/ONGOING.md`（live）→ 該 round 檔。
 
-### R80 背景補池
-
-LOW 補池由唯一的 `symmetry_factory_watch` 程序啟動，不另開第二個 controller。
-在新的、具名 watch settings 中加入 `"low_backlog": {"enabled": true}` 即啟用固定的
-90 秒檢查、48 筆觸發、96 筆上限、16 筆分片及 prio6。主線仍每1800秒執行，
-並在每48筆新唯一實測後更新SM；實際訓練時釋放寫入優先權，LOW每片後讓出排程。
-
-待跑量按補池自身未終態 jobs 的預留筆數計算，包含正在跑及可重試失敗的工作。
-所有同量測實體輸入、失敗圖形及準備中的主線／pilot 候選均排重；保守名額不足48筆時，
-LOW停止補池，由主線處理有效唯一目標與替補／尾批。這個停止不代表5,000筆實測已完成。
-例行檢查不讀raw、results stores或SM權重；重啟會重新核對輸入索引與未入佇列的部分copy。
-keeper事件與恢復資料放在ignored local workdir，HFSS輸入及佇列只放指定私人dataset。
-更新 settings 必須另存版本並自然交接同一local；保留原training、pilot、pointer及receipt。
-唯讀健康／性能稽核不得取得dataset controller鎖。
-
 ### 限定實驗的 worker（2026-10-07）
 
 新工作可在 `jobs-add`、`jobs-ls`、`worker` 使用相同 `--scope`。
@@ -71,8 +49,5 @@ keeper事件與恢復資料放在ignored local workdir，HFSS輸入及佇列只�
 `jobs_state/STOP_<scope>` 可只停該實驗。正式啟動前先核對本輪佇列，不能直接恢復舊慢磨。
 CLI 的全域 `--dataset-root <path>` 必須放在子命令之前，供明確指定 NAS 或本機測試資料根。
 
-R80/R81 的 `profiled_batch.py` 驗證量測/評分身分、標準 tensor 與 rad sidecar 的 hash；
-`exploration.py` 執行 prepare → feedback → train → select-batch，先核對送測前預測才訓練。
-`prepare_symmetry_filter.py` 只讀具名歷史 seeds、備妥首批與量測檢查；`check-wide` 不通過就不放行正式 dual 批次。
-`symmetry_analysis.py` 與 `figs/symmetry_census.py` 重現歷史對稱統計與圖。
-完整參數、資料限制及 worker 指令見 [runbook](../docs/log/symmetry-filter-20261007-runbook.md)。
+具名 profile 的批次由 `profiled_batch.py` 驗證量測／評分身分、標準 tensor 與 rad sidecar 的 hash。
+同筆 HFSS 錯滿 3 次標 `status=skipped`、worker 繼續下一批（規則見 `script/CLAUDE.md` 第 5 條）。

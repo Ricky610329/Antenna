@@ -37,18 +37,16 @@
    0x80070223 連環保險絲的真兇=78 個 job 暫存吃光 C 槽;`--out` 自訂路徑不刪）。
    **機況探針**：`dedust probe --machine <IP末段> [--action status|cleanup]`——經 NAS 白名單指令,
    worker 空閒 poll 輪回應（磁碟/殘留/git 版/HFSS 行程;跑 job 中佔線最長 ~70 分才答）。
-   **R80 scoped舊例外（2026-10-07；以下新毒樣本規則覆蓋）**：僅完整入帳且有已重播成功的部分HFSS終態失敗，保留
-   fail／claim／raw後續跑其他jobs；連續三批部分失敗仍停本機。profile/schema/hash錯誤、全失敗、
-   缺紀錄、嚴重連敗與`--once`不放行；舊無scope worker維持停機。scoped worker不執行上述歷史probe／cleanup。
-   續跑前只清當前job已驗證的預設暫存（resolved parent=目前cwd、名稱完全相符）；路徑或清理錯誤停機，
-   自訂out／其他歷史目錄不碰，避免部分失敗殘留持續吃滿磁碟。
+   scoped worker 不執行上述歷史 probe／啟動清掃。（R80 時期的「部分失敗寫 .fail 但續跑」分支
+   已被下面的毒樣本規則取代，2026-10-12 清掉死碼。）
    **scoped profile毒樣本規則（2026-10-12，使用者指定）**：同筆已知HFSS simulation error滿3次，
    保留error／attempts並標`status=skipped`；續跑或跨機接手也不再開HFSS重試該筆。
    `.done.errors/error_ids`如實列全部跳過ID，worker繼續下一job，`--once`正常返回；
    R81所有job處理完但有跳過時為`terminal_skips`，與`all_success`分開。跳過不計有效樣本，
    嚴格真值／SM回填／工程比較／正式合併仍需完整成功資料；需另補資料，不能假造通過。
    HFSS開不起來、大量連敗保險絲、profile/hash/schema毀損仍停止；全毒小批可跳過，
-   不因此推論幾何致因或機台健康。改runtime後須建立新的R81 release綁定，再逐台pull與重啟。
+   不因此推論幾何致因或機台健康。改 worker 端 code 後照第 8 條逐台 pull 與重啟
+   （R81 的 release／binding 機制已於 2026-10-12 棄用）。
 6. 錨點注意：x00 是破對稱錨點（含 (4,18) 翻轉），x00 條目收尾用除塵不對稱化（`_finish` 語義），
    不要 `symmetrize`（round-16 §3 caveat）。
 7. **幾何/儀器變體批**（R52 網格起,R54-55 定型）：輸入夾放 `hfss_setup.json`（只收白名單鍵:

@@ -1,0 +1,15 @@
+# Test fixture: single-port named-measurement profile (from retired R80 single_r80_symmetry_factory.yaml, exploration section dropped).
+name: test_profile_single
+port: single
+scope: symmetry_filter_20261007
+measurement:
+  name: single25_db100_rad28_v1
+  port: single
+  labels: [S11, Gain]
+  geometry: {geom: single_v1, pixel_count: 25, diag_bridge_w: 0.1}
+  sweep: {start_ghz: 24, stop_ghz: 32, step_ghz: 0.5, type: Interpolating}
+  solver: {setup_freq_ghz: 28, open_region_freq_ghz: 28, max_delta_s: 0.02, max_passes: 6, min_passes: 5, min_converged: 5}
+score_spec:
+  name: symmetry_observation_only_v1
+  bands: []
+runtime: {timeout: 1200}

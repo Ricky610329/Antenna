@@ -215,3 +215,6 @@ docs/report/*.html
 # Windows 檔案總管雜物
 Thumbs.db
 desktop.ini
+
+# pytest 自訂暫存（-p no:cacheprovider 搭 --basetemp 產生）
+.pytest-tmp-*/

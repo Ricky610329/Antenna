@@ -36,8 +36,7 @@ from torch import nn
 
 from antenna.measurement import (frequency_grid, measurement_id, score_response,
                                  score_spec_id)
-from script.exploration import enforce_dual_geometry, mutate_pattern, pattern_sha256
-from script.profiled_batch import load_profile_config, validate_input
+from script.profiled_batch import load_profile_config, pattern_sha256, validate_input
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "configs" / "dual_r81_s21_v2.yaml"
@@ -356,6 +355,26 @@ def pick_parents(wide_rows, hist, cfg, grid, n_wide=12, n_hist=12):
     return parents
 
 
+def enforce_dual_geometry(pattern):
+    """強制 p01 dual 模擬器需要的上下兩個 5×5 埠墊為金屬。"""
+    p = np.asarray(pattern, dtype=np.float32)
+    if p.size != 625:
+        raise ValueError(f"dual pattern must contain 625 pixels, got {p.size}")
+    p = p.reshape(25, 25) > 0.5
+    p[:5, 10:15] = True
+    p[20:25, 10:15] = True
+    return p
+
+
+def mutate_pattern(parent, rng, *, min_flips=2, max_flips=40):
+    """隨機翻 min_flips..max_flips 個不重複像素，再補回埠墊。"""
+    p = (np.asarray(parent).reshape(25, 25) > 0.5).copy()
+    n = int(rng.integers(min_flips, max_flips + 1))
+    idx = rng.choice(625, size=min(n, 625), replace=False)
+    p.reshape(-1)[idx] = ~p.reshape(-1)[idx]
+    return enforce_dual_geometry(p)
+
+
 def crossover(a, b, rng):
     """同家族交換：一段連續行或一個矩形區塊取自 b。"""
     c = a.copy()
@@ -399,7 +418,7 @@ def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1
             j = int(rng.choice(mates))
             add(crossover(parents[i]["pattern"], parents[j]["pattern"], rng), i, "cross")
         else:
-            add(mutate_pattern(parents[i]["pattern"], rng, single=False, min_flips=min_flips,
+            add(mutate_pattern(parents[i]["pattern"], rng, min_flips=min_flips,
                                max_flips=max_flips), i, "mutate")
     return np.asarray(pats, dtype=bool).reshape(-1, 625), meta
 

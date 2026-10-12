@@ -51,14 +51,8 @@ def test_all_configs_load_and_valid():
         from script.profiled_batch import load_profile_config, simulator_kwargs
         cfg = load_profile_config(p)
         if cfg is not None:
-            from script.exploration import validate_exploration_config
-            if not cfg.exploration:
-                pass                                            # 純量測 profile（dedust 派工用，無自動探索段）
-            elif cfg.exploration.get('mode') == 'symmetry_factory_v1':
-                from script.symmetry_factory import validate_factory_config
-                validate_factory_config(vars(cfg))
-            else:
-                validate_exploration_config(vars(cfg))
+            # 純量測 profile（dedust 派工用）；自動探索段的執行者已於 2026-10-12 移除
+            assert not cfg.exploration, f"{base}: exploration 段已無執行者"
             simulator_kwargs(cfg)
         else:
             cfg = load_config(p)                                # 白名單/拼錯/缺 target → 這裡 raise
