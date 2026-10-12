@@ -267,3 +267,14 @@ Controller 在至少 20 個尚未消費的有效寬頻幾何出現後，凍結�
 每批物理快照、模型、候選池、rank、選樣、canonical／split／machine partition 均綁定。Registry 最後才以原子、不可覆寫方式追加，發布前綴與未完成 transaction 可恢復；訓練中允許新結果追加，但已使用的樣本改變會拒絕。Pinned job 的失敗保留作人工／controller 修復依據，不透過跨主機 takeover 或刪 marker 重派；略過毒樣本可繼續取件，仍不算真值。Actor 或任一已發布批次的 STOP 均阻止後續取件與補派，包括等待下一批期間。
 
 Conductor 20 項 focused tests 通過（37.67 秒），獨立 Sol 同組 20 項通過（36.69 秒）且完成原始碼審查；包含真正 Torch 訓練／排名／快照驗證與資料替換、恢復、STOP 測試，Git identity 使用 fixture mocks。PowerShell 解析及 diff check 通過。私人 NAS 小型原子發布實測通過，既有目標拒絕覆寫；完整 bootstrap／cache／三台狀態實測與背景 controller 部署留下一個交付里程碑，尚不把實作測試描述成新的 HFSS 性能結果。
+
+完整私人 bootstrap 與 batch-001 registry 已實際建立，固定 `6657046` 的 56 檔來源。原工作池沿用，沒有重派首批；七個 prior cache 檔案逐一核對，模型與完成收據 SHA 一致，三個機器身分各自的 worker 狀態驗證通過。公開 descriptor 僅存 bootstrap 檔名與 SHA，私人路徑、模型及新原始結果不加入公開 Git。核對身分後只停止仍在 metadata 等待的舊本機 CPU watcher；新 live controller 已於 21:12 啟動並確認本機 PID 存活，首次回報七個新成功幾何，尚未達 20 筆更新門檻。沒有停止 HFSS／遠端 worker 或改動既有 claims，也沒有宣稱看見遠端 PID。
+
+三台仍在原 `-Survey` 求解時，保留目前工作；讓舊視窗自然跑完、回到提示字元後，改用以下指令接續。新 launcher 會沿用已完成的第一批，並等候 controller 發布後續批次；不要同時保留舊 launcher 或原生 worker，重複啟動會被拒絕。Controller 的 120 秒 metadata poll 不等於 agent 主動喚醒；routine 健康檢查仍約每 30 分鐘一次。
+
+```powershell
+git pull --ff-only origin GAN
+.\script\r81.cmd -Loop
+```
+
+部署證明自動派工程式與共享交接已就緒；實際下一批尚未產生，三台切到新 launcher 也須由使用者執行。新的三段正 WM 與獨立重測、原工程量測一致性均仍未證明，不能宣稱濾波器 spec 完成。
