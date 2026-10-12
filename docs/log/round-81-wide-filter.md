@@ -2,6 +2,8 @@
 
 日期：2026-10-07。當前狀態：工程備料及正式三機入口完成；goal blocked，待三台切換R81，尚無寬頻HFSS真值。
 
+10/12短指令入口：使用者希望啟動命令縮短，新增`script/r81.cmd`與ASCII PowerShell wrapper `r81.ps1`，預設值放在[configs/r81_worker_current.json](../../configs/r81_worker_current.json)。CMD及PowerShell皆可使用下方短指令；仍呼叫原`start_r81_worker.ps1`並驗證release SHA、Git runtime、inputs與queue，不自動pull、不派工、不關閉其他process。已實際沿CMD→PowerShell→原launcher路徑執行`-CheckOnly`通過，沒有HFSS。原受release綁定的44來源未改，私人NAS的v002 release與SHA不變。
+
 最新交付（2026-10-12）：已依使用者要求將scoped profile毒樣本改為忽略而非中斷。`c6e19c1`保留已知HFSS失敗error／attempts，滿3次標`skipped`，續跑／跨機接手都不再開HFSS重試；worker正常寫`.done`的全部跳過ID並繼續其他job，`--once`正常返回。R81全隊已處理但有跳過時為`terminal_skips`，不冒充`all_success`；有效成功／SM只接受真值，缺資料仍須補齊，不能以skip通過工程檢查或合併。HFSS開不起來、嚴重連敗、profile/schema/hash資料錯誤仍停止。小批全skip是派工終態，不證明幾何毒性或機台健康。[補丁與驗證](assets/r81_poison_skip_patch_20261012.json)。
 
 私人NAS已建立且原生preflight通過的新EngineeringOnly release：`r81_engineering_only_20261012_poison_skip_v002.json`，SHA `7d9b1a3b13643c5736cc68bc40abca90b53b661d2b385a0acbf5d3fe2d9d0292`，綁定完整commit `c6e19c18ca4636e909253d1f2a7277089cdffdaa`。只新增release metadata，原6+2+2 inputs、jobs、claim／done／fail與舊release未改；jobs SHA前後相同，candidate與published native report一致。發布時queue active，檢查未啟動HFSS，也未觀察遠端PID；11:08改動前的舊release唯讀觀察仍無markers。整體goal維持blocked，待三台實際切換或提供啟動錯誤。[實際release交付收據](assets/r81_poison_skip_release_20261012.json)。
@@ -16,10 +18,10 @@
 
 目前狀態（2026-10-11 23:08）：R80完整5,000唯一資料凍結、統計與頻率／極座標圖已收尾，session `13178` exit0，[完成結果](assets/r80_final_closeout_20261011.json)。**R81金屬排列及場型對稱皆不設限制，對稱與非對稱圖形均可搜尋**，兩個port pad仍保留。已push的EngineeringOnly release不變；23:07原生queue-status為active，但保存時沒有claim／done／fail，尚無worker啟動或R81 HFSS真值證據。三個工程job待216／218／37按下列指令切換；先6 Fast＋2 Discrete＋2 mesh，正式60筆仍未入queue。緩衝帶軟性平緩下壓、不參與WM；新spec需原次及獨立重測WM>0才達標。例行檢查維持約30分鐘。
 
-三台切換指令（216／218／37；EngineeringOnly，10/12毒樣本補丁版）：在原環境、repo根目錄讓舊worker閒置後Ctrl+C結束，再`git checkout GAN`、`git pull --ff-only origin GAN`並用以下新release重啟。Pull不會更新已啟動的Python process。可加`-CheckOnly`只核對；實際啟動腳本本身必做release preflight，失敗會停止、不啟動HFSS。這次只會消耗已綁定的6 Fast＋2 Discrete＋2 mesh，正式60筆未入queue；沒有手動刪除markers或重新跑成功樣本。
+三台切換指令（216／218／37；EngineeringOnly，10/12毒樣本補丁版）：在原環境、repo根目錄讓舊worker閒置後Ctrl+C結束，再`git checkout GAN`、`git pull --ff-only origin GAN`並執行下方短入口。Pull不會更新已啟動的Python process。可加`-CheckOnly`只核對；實際啟動腳本本身必做release preflight，失敗會停止、不啟動HFSS。這次只會消耗已綁定的6 Fast＋2 Discrete＋2 mesh，正式60筆未入queue；沒有手動刪除markers或重新跑成功樣本。
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\script\start_r81_worker.ps1 -Release "\\140.123.106.219\temp\碩二_鄒穎麒's\antenna\experiments\r81_wide_filter_20261007\engineering_v001\release\r81_engineering_only_20261012_poison_skip_v002.json" -ReleaseSha256 7d9b1a3b13643c5736cc68bc40abca90b53b661d2b385a0acbf5d3fe2d9d0292 -Stage EngineeringOnly
+.\script\r81.cmd
 ```
 
 新幾何不要求對稱；這份60筆正式備料全部非LR對稱是實際切點，並不代表日後禁止對稱候選。歷史prior的兩個新阻帶仍mask，不能把舊S21資料當成新16–20／36–40GHz真值。工程HFSS真值、三機preflight回覆與實際worker PID仍待啟動後確認。
