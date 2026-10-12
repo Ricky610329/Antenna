@@ -1,0 +1,21 @@
+# R81 filter spec v2 (2026-10-12, senior's revision): S21 only.
+# Pass 26-30 GHz >= -3 dB; stop 22-24.5 GHz and 36-40 GHz <= -15 dB; sweep 22-40 GHz.
+# open_region_freq stays 16 GHz so the solver setup matches the 16-40 GHz survey data
+# (only the sweep window changes), keeping old and new truth on one instrument.
+name: dual_r81_s21_v2
+port: dual
+scope: symmetry_filter_20261007
+measurement:
+  name: dual25_p01_db075_22_40_s21_discrete_v2
+  port: dual
+  labels: [S11, S21, S22]
+  geometry: {geom: p01, pixel_count: 25, diag_bridge_w: 0.075}
+  sweep: {start_ghz: 22, stop_ghz: 40, step_ghz: 0.5, type: Discrete}
+  solver: {setup_freq_ghz: 28, open_region_freq_ghz: 16, max_delta_s: 0.02, max_passes: 6, min_passes: 5, min_converged: 5}
+score_spec:
+  name: filter_s21_pass26_30_stop24p5_36_v2
+  bands:
+    - {name: s21_pass, label: S21, start_ghz: 26, stop_ghz: 30, relation: ge, threshold: -3}
+    - {name: s21_low_stop, label: S21, start_ghz: 22, stop_ghz: 24.5, relation: le, threshold: -15}
+    - {name: s21_high_stop, label: S21, start_ghz: 36, stop_ghz: 40, relation: le, threshold: -15}
+runtime: {timeout: 1800}
