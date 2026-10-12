@@ -1,5 +1,7 @@
 # R80 操作：金屬對稱資料工廠與獨立 worker
 
+> **目前入口（2026-10-12）**：R80 的 5,000 筆與重測／統計／圖表已收尾，以下 R80 啟動命令保留為歷史，不重新啟動。R81 已轉新版三段 S21 的 Discrete 探索與共享 SM 接續；原工程／Formal 門檻尚未通過。三台保留目前 `-Survey` 求解，舊視窗跑完後 pull GAN 並執行 `.\script\r81.cmd -Loop`，沿用首批結果。最新部署與完整限制見 [R81 日誌](round-81-wide-filter.md) 及 [操作板](../../configs/ONGOING.md)。下文舊五段確認、Formal 或「尚未啟用」的說明是當時流程，不能替代上方現況；歷史原始碼與 release 保持不變。
+
 目前先執行 R80 金屬左右對稱量測；使用者已啟動worker，並於2026-10-07授權每30分鐘監看，完成對稱任務後接續spec調整與R81驗證。R81工程檢查及正式批次待R80完成才派送。最新量測狀態以[操作板](../../configs/ONGOING.md)為準。
 
 scope 固定為 `symmetry_filter_20261007`，worker 固定使用 `--selfgen 0 --poll 60 --stale 120`。目前使用的 `start_scoped_worker.ps1` 只接受 R80，會拒絕 scope 內任何 dual/filter job；後續 R81 必須用獨立 dataset 與下述新入口。
