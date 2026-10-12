@@ -11,14 +11,12 @@
 - **spec v2**（學長 10/12 修訂，`configs/dual_r81_s21_v2.yaml`）：S21 在 26–30 GHz ≥ −3 dB；22–24.5 GHz 與 36–40 GHz ≤ −15 dB；掃 22–40 GHz、Discrete。
 - **現況**：b01 收齊（59/60），最好 WM −5.60（單次），未破首批 −4.28；SM 前瞻 ρ −0.21、exploit 不勝 random → b02 改小步變異 1–8 格。
   b02（prio 5）三台跑中；填空池 g01（prio 9）墊底。殺手仍是 36–40 GHz 高阻帶。
-- **資料根**：`\140.123.106.219\temp\碩二_鄒穎麒's\antenna\experiments\r81_wide_filter_20261007\v2_v001\dataset`
-81_wide_filter_202610072_v001\dataset`
+- **資料根**：`\\140.123.106.219\temp\碩二_鄒穎麒's\antenna\experiments\r81_wide_filter_20261007\v2_v001\dataset`
 - **正式機重啟**（三台同一行，repo 根、原環境）：
 
   ```powershell
   git pull --ff-only origin GAN
-  .\script
-81v2.cmd
+  .\script\r81v2.cmd
   ```
 
 - **HFSS 不空轉規則**：主批 prio 5；永遠墊一池 prio 9 填空池（未認領 < 3 個 job 就補）；主批全部被認領時就選下一批。
