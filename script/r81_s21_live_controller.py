@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import contextlib
 import json
 import os
 import shutil
@@ -32,6 +33,7 @@ from typing import Any, Mapping, Sequence
 
 from script import filter_s21_training as s21
 from script import profiled_batch as pb
+from script import profiled_shards
 from script import r81_provisional_filter_dispatch as dispatch
 from script import r81_s21_survey_cycle as cycle
 from script import r81_worker_entry as base
@@ -40,8 +42,8 @@ from script import r81_worker_entry as base
 SCHEMA_VERSION = 1
 STAGE = "S21SurveyLoop"
 SUCCESSOR_STAGE = "S21SurveySuccessor"
-ACTOR_ROOT_NAME = "survey_loop_v001"
-BOOTSTRAP_NAME = "release/r81_s21_live_loop_v001.json"
+ACTOR_ROOT_NAME = "survey_loop_v002"
+BOOTSTRAP_NAME = "release/r81_s21_live_loop_v002.json"
 REGISTRY_DIR = "registry"
 CONTROLLER_DIR = "controller"
 BATCHES_DIR = "batches"
@@ -54,6 +56,75 @@ BATCH_SIZE = cycle.BATCH_SIZE
 MAX_BATCHES = cycle.MAX_BATCHES
 SUCCESS_TRIGGER = cycle.TRIGGER_NEW_SUCCESSES
 ARM_COUNTS = copy.deepcopy(cycle.ARM_COUNTS)
+
+
+class _ScopedProfiledTempfile:
+    """Delegate tempfile except for safe Windows-UNC directories in actor_root."""
+
+    def __init__(self, delegate: Any, actor_root: Path):
+        self._delegate = delegate
+        self._actor_root = Path(actor_root).resolve(strict=True)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._delegate, name)
+
+    def mkdtemp(self, suffix: str | None = None, prefix: str | None = None,
+                dir: str | os.PathLike[str] | None = None) -> str:
+        if not self._eligible(dir, prefix, suffix):
+            return self._delegate.mkdtemp(suffix=suffix, prefix=prefix, dir=dir)
+        parent = Path(dir).resolve(strict=True)
+        stem, ending = "tmp" if prefix is None else prefix, "" if suffix is None else suffix
+        for _attempt in range(100):
+            candidate = parent / f"{stem}{uuid.uuid4().hex}{ending}"
+            try:
+                # Deliberately omit mode.  On the affected Windows UNC share,
+                # mkdir(mode=0o700) is rejected while the default directory
+                # creation correctly inherits the parent NAS ACL.
+                candidate.mkdir()
+            except FileExistsError:
+                continue
+            return os.fspath(candidate)
+        raise FileExistsError("could not create an exclusive profiled temporary directory")
+
+    def _eligible(self, directory: Any, prefix: Any, suffix: Any) -> bool:
+        if os.name != "nt" or directory is None:
+            return False
+        if any(value is not None and not isinstance(value, str)
+               for value in (prefix, suffix)):
+            return False
+        if any(separator and separator in value
+               for value in (prefix, suffix) if value is not None
+               for separator in (os.sep, os.altsep)):
+            return False
+        raw = Path(directory)
+        if not raw.is_absolute() or not os.fspath(raw).startswith("\\\\"):
+            return False
+        try:
+            resolved = raw.resolve(strict=True)
+        except (FileNotFoundError, OSError, RuntimeError):
+            return False
+        if os.path.normcase(os.path.normpath(os.fspath(raw))) != \
+                os.path.normcase(os.path.normpath(os.fspath(resolved))):
+            return False
+        try:
+            resolved.relative_to(self._actor_root)
+        except ValueError:
+            return False
+        return True
+
+
+@contextlib.contextmanager
+def _scoped_profiled_tempfile(actor_root: Path):
+    """Temporarily replace only profiled_shards' tempfile module reference."""
+    original = profiled_shards.tempfile
+    if isinstance(original, _ScopedProfiledTempfile):
+        raise RuntimeError("profiled tempfile proxy is already active")
+    proxy = _ScopedProfiledTempfile(original, actor_root)
+    profiled_shards.tempfile = proxy
+    try:
+        yield proxy
+    finally:
+        profiled_shards.tempfile = original
 
 def _live():
     # Delayed import keeps this module importable while the additive worker
@@ -752,7 +823,9 @@ def once(*, bootstrap: Path, bootstrap_sha256: str,
     """Inspect a physical cutoff once and publish at most one successor."""
     context, document, root = _bootstrap_context(bootstrap, bootstrap_sha256)
     lease_stream, token = _acquire_lease(root)
-    try:
+    with contextlib.ExitStack() as stack:
+        stack.callback(_release_lease, lease_stream, token)
+        stack.enter_context(_scoped_profiled_tempfile(root))
         recovered = _finish_pending(root, context)
         if recovered is not None:
             return recovered
@@ -811,8 +884,6 @@ def once(*, bootstrap: Path, bootstrap_sha256: str,
             raise RuntimeError("pending publication unexpectedly disappeared")
         result["recovered"] = False
         return result
-    finally:
-        _release_lease(lease_stream, token)
 
 
 def _refresh_watch_prefix(cache: dict[str, Any]) -> list[dict[str, Any]]:

@@ -298,3 +298,7 @@ python -m script.filter_s21_confirmation --profile-config configs/dual_r81_s21_d
 私人 NAS 小型實測分離了名稱與 ACL 問題：一般 mkdir 的普通／單點／雙點目錄均可讀寫；mode700 與 stdlib tempfile.mkdtemp 在同一私人位置失敗。修复方向為在新版本 actor 中、只限其 UNC 暫存使用繼承既有 parent ACL 的 exclusive 建目錄；不改既有 ACL、不改原 51 檔、不影響非 UNC 暫存。失敗 v001 前綴、健康切點、adapter 與探針共九個 payload 已逐檔驗證封存原私人 controller handoff，原結果與 registry 保持不變。
 
 同次沿用原八筆與新 Survey 的物理來源比較，已有一個同機 Discrete 重測與一個同機 Fast／Discrete 控制，另一个同機控制仍待原已排隊樣本完成；未多派 HFSS 診斷。Discrete 的該單例一致，Fast／Discrete 的 S21 曲線與三段餘裕仍超描述性精度閾值，不能放行工程 gate 或歸因單一原因。完整數值、樣本／profile／owner 證據僅存私人 handoff，不將新研究結果上傳公開 Git。
+
+NAS 暫存修復採僅替換 `profiled_shards` 的 tempfile module reference：只在 Windows、正規化且 resolved 仍屬 explicit actor 的 UNC 暫存目錄，用 exclusive 隨機名與一般 mkdir 繼承 parent ACL；其他路徑、平台與 tempfile 方法原樣 delegation。不修改 stdlib、既有 ACL、原 51 檔或 `filter_s21_training.py`。Proxy 只在 creator lease 內啟用，無論返回或例外都先還原，再释放 lease。新的 immutable 部署使用 `survey_loop_v002`，舊 v001 不覆寫；短入口由嚴格 bootstrap 版本名解析 sibling actor，公開 descriptor 仍只有 leaf／SHA。
+
+Conductor 22 項 focused tests 與獨立 Sol 22 項通過（36.92 秒），包含 eligibility／fallback、還原、鎖与原接續流程；私人 NAS 原生快照實測通過，凍結並重播 28 個成功幾何，proxy 已還原且未改既有 ACL／queue／HFSS。首個健康探針因比正式 cache 更深、Windows 檔案路徑過長而失敗，其前綴保留；改到同 actor 的短驗證位置後通過。這證明原快照故障已修復，不代表當前三段 SM 已訓練或第二批已發布；完整 v002 fit／發布仍須下一個實測里程碑。

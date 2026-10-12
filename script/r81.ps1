@@ -22,12 +22,17 @@ if ($Loop) {
     $taskLoopFields = @($taskLoop.PSObject.Properties.Name)
     if ($taskLoopFields.Count -ne 2 -or
         @(Compare-Object @('bootstrap_name', 'bootstrap_sha256') $taskLoopFields).Count -ne 0 -or
-        [string]$taskLoop.bootstrap_name -notmatch '^r81_[A-Za-z0-9_.-]+\.json$' -or
+        [string]$taskLoop.bootstrap_name -notmatch '^r81_s21_live_loop_v[0-9]{3}\.json$' -or
         [string]$taskLoop.bootstrap_sha256 -notmatch '^[0-9a-f]{64}$') {
         throw 'R81 S21 live-loop preset fields are invalid.'
     }
+    $taskLoopVersionMatch = [regex]::Match([string]$taskLoop.bootstrap_name, '^r81_s21_live_loop_(v[0-9]{3})\.json$')
+    $taskLoopVersion = $taskLoopVersionMatch.Groups[1].Value
+    if (-not $taskLoopVersionMatch.Success -or $taskLoopVersion -eq 'v000') {
+        throw 'R81 S21 live-loop version is invalid.'
+    }
     $taskSourceRoot = Split-Path -Parent (Split-Path -Parent ([string]$taskDefaults.release))
-    $taskLoopRoot = Join-Path (Split-Path -Parent $taskSourceRoot) 'survey_loop_v001\release'
+    $taskLoopRoot = Join-Path (Split-Path -Parent $taskSourceRoot) ("survey_loop_{0}\release" -f $taskLoopVersion)
     $taskMachine = python -c "from antenna.utils.web import get_local_ip; print(get_local_ip())"
     if ($LASTEXITCODE -ne 0) { throw 'Cannot identify this worker.' }
     $taskLoopArguments = @{

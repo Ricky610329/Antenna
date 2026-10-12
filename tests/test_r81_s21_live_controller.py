@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import os
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -287,3 +288,69 @@ def test_once_waits_on_family_split_without_creating_a_successor(monkeypatch, tm
     assert result["status"] == "waiting_for_family_validation"
     assert result["source_inventory_id"] == "stable-cutoff"
     assert not (root / controller.BATCHES_DIR).exists()
+
+
+def test_scoped_tempfile_uses_inherited_acl_for_eligible_nas_directory(
+        monkeypatch, tmp_path):
+    root = tmp_path / controller.ACTOR_ROOT_NAME
+    parent = root / controller.CONTROLLER_DIR / "models" / "snapshots"
+    parent.mkdir(parents=True)
+
+    class Mode700Fails:
+        marker = "delegated-attribute"
+
+        def __init__(self):
+            self.calls = []
+
+        def mkdtemp(self, suffix=None, prefix=None, dir=None):
+            self.calls.append((suffix, prefix, dir))
+            raise PermissionError(5, "mock NAS rejects mkdir mode 0o700")
+
+    delegate = Mode700Fails()
+    proxy = controller._ScopedProfiledTempfile(delegate, root)
+    monkeypatch.setattr(controller._ScopedProfiledTempfile, "_eligible",
+                        lambda *_args: True)
+    native_mkdir = Path.mkdir
+    calls = []
+
+    def record_mkdir(path, *args, **kwargs):
+        if path.parent == parent:
+            calls.append((args, kwargs))
+        return native_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", record_mkdir)
+    created = Path(proxy.mkdtemp(prefix=".snapshot.tmp-", suffix=".part", dir=parent))
+    assert created.is_dir() and created.parent == parent
+    assert created.name.startswith(".snapshot.tmp-") and created.name.endswith(".part")
+    assert calls == [((), {})]
+    assert delegate.calls == [] and proxy.marker == "delegated-attribute"
+
+
+def test_scoped_tempfile_delegates_outside_scope_and_restores_on_exception(
+        monkeypatch, tmp_path):
+    root = tmp_path / controller.ACTOR_ROOT_NAME
+    root.mkdir()
+
+    class Delegate:
+        def __init__(self):
+            self.calls = []
+
+        def mkdtemp(self, suffix=None, prefix=None, dir=None):
+            self.calls.append((suffix, prefix, dir))
+            return "delegated"
+
+    delegate = Delegate()
+    proxy = controller._ScopedProfiledTempfile(delegate, root)
+    assert proxy.mkdtemp(suffix=".x", prefix="outside-", dir=tmp_path) == "delegated"
+    assert delegate.calls == [(".x", "outside-", tmp_path)]
+
+    original = controller.profiled_shards.tempfile
+    assert original is tempfile
+    with pytest.raises(RuntimeError, match="fixture exception"):
+        with controller._scoped_profiled_tempfile(root) as active:
+            assert controller.profiled_shards.tempfile is active
+            assert tempfile is original
+            raise RuntimeError("fixture exception")
+    assert controller.profiled_shards.tempfile is original
+    assert controller.ACTOR_ROOT_NAME == "survey_loop_v002"
+    assert controller.BOOTSTRAP_NAME == "release/r81_s21_live_loop_v002.json"
