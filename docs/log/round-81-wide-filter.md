@@ -1,5 +1,13 @@
 # R81：新版濾波器 spec 與寬頻量測
 
+> **現況摘要（2026-10-12 晚）**
+> - spec 已改學長修訂的 v2：S21 在 26–30 GHz ≥ −3 dB，22–24.5 與 36–40 GHz ≤ −15 dB，掃 22–40 GHz Discrete。
+> - 已量的寬頻真值按 v2 重算，最好 WM 約 −4.3 dB（單次、未公證）。殺手是 36–40 GHz 高阻帶。
+> - v2 第一批 60 筆 `dedust_r81v2b01s1`～`s6` 三台跑中；選批改用 `script/r81_curve_sm.py`，正式機入口 `.\script\r81v2.cmd`。
+> - 下方 10/07–10/12 的 EngineeringOnly、SweepProbe、FormalSharded、Survey、`-Loop` 等 release／binding 機制已全部棄用，
+>   相關腳本 10/12 移除（tag `pre-cleanup-20261012`）。文中舊指令只當歷史看，不要照著跑。
+> - 詳情見檔尾〈2026-10-12 晚：spec v2 與批次 SM〉；即時狀態看 [ONGOING](../../configs/ONGOING.md)。
+
 日期：2026-10-07。當前狀態：工程任務已恢復，正式入口已交付；即時健康觀察保存在私人工作區。
 
 10/12同機掃頻診斷交付：原工程真值另已在私人工作區重播與獨立審查，掃頻方法與機台因素仍須分開查驗。沿用歷史網格實驗的同機原則，新增`SweepProbe`：只在原Fast來源owner做兩個既有history圖形的Discrete重測；保持原Discrete量測／runtime／score spec逐bytes一致，原mesh工作不改。`0ee4948`新增入口、launcher與短指令`-Probe`；11項生成資料測試及独立審查通過，包括目錄junction、來源親代、native成功及skip終態。私人release已exclusive發布，真實CMD→PowerShell→native的`-Probe -CheckOnly`通過；尚未啟動HFSS。來源集合48檔，原44檔保持不變；probe不具有正式放行權限。公開[探針descriptor](../../configs/r81_sweep_probe_current.json)只含release檔名與SHA，未含私人NAS路徑或原始結果。完整交付與健康收據保存在私人工作區。
@@ -326,3 +334,26 @@ Controller 現在等待 B2 至少 20 個新成功幾何後再更新／發布第�
 獨立 Sol 實際唯讀保存證據核對通過：完整 [1,2] registry chain／release SHA、原 51 與擴充 56 runtime、兩模型 100／100 epochs 與 rank-ready、七檔 cache／prior parent SHA、snapshot 33（29 train／4 holdout、零交集）、pool／rank 1,024、selected 60 與三策略／三片各 20。Selected 及 pool 與 B1 60 圖形皆零交集，measurement／score-spec／profile bytes 相同；`formal_pass=false`、`survey_complete=false`。Review 期間 B1 成功從 34 增至 35，兩筆晚到真值保持在 immutable snapshot 之外，並非資料破壞。這是 native validator／hash／checkpoint metadata 核對，未另做 forward、訓練或 HFSS，不宣稱準確率／性能改善。五項部署／健康／review payload 已封存私人 controller review。
 
 原 `-Survey` launcher 等待整個舊 queue；一台較早完成可能仍在等待另外兩台。每台自己的 B1 shard 確認 `.done` 後，可由使用者 Ctrl+C 結束該等待視窗，再 pull GAN 並執行上述 `-Loop`，即可直接接本機 B2。獨立核對當下三台皆仍 `ready` sequence1，尚未觀察 B2 claim，不把 worker 可接續當成已啟動。
+
+## 2026-10-12 晚：spec v2 與批次 SM
+
+**結論先講**：spec 換成學長修訂的 v2 之後，低阻帶和通帶大致搆得到，剩下的難題是 36–40 GHz 高阻帶。
+做法改回單純的批次式 SM：每批收檔就重訓、選下一批，不再走一層包一層的 release 綁定。
+
+**為什麼改 spec**。原 spec 要 16–20 與 36–40 GHz 都壓到 −20 dB 以下。拿歷史上 24–32 GHz 表現好的設計去量寬頻，
+低頻那側 S21 回升到約 −4 dB，離 −20 很遠。學長看過說明圖（[r81_old_design_wideband.png](assets/round-81/r81_old_design_wideband.png)，
+`script/figs/r81_spec_gap.py` 產）後改成 v2：低阻帶縮到 22–24.5 GHz，兩個阻帶門檻放寬到 −15 dB，掃頻改 22–40 GHz。
+求解設定沿用 survey（open region 仍 16 GHz），所以舊的 16–40 GHz 真值可以直接切片當 v2 資料用。profile 是 `configs/dual_r81_s21_v2.yaml`。
+
+**v2 下的現況**。已量的寬頻真值按 v2 重算，最好的 WM 約 −4.3 dB，單次量測、沒有公證。多數設計低阻帶已過、
+通帶差不到 1 dB，卡在 36–40 GHz 高阻帶，還差 4 到 7 dB。
+
+**選批方法**。`script/r81_curve_sm.py` 用 5 顆 MLP 預測 S11/S21/S22 全曲線（22–40 GHz 37 點），
+先用歷史 24–32 GHz 資料做 masked 預訓，再混寬頻真值微調；spec 只在計分時套用，所以改 spec 不必重做模型。
+每批 60 筆，exploit 30、explore 18、random 12；家族 holdout 品質不過門檻時 exploit 自動降配，名額讓給另外兩臂。
+random 臂是 SM 的對照組。第一批 `r81v2b01` 已排進 v2 資料根，三台用 `.\script\r81v2.cmd` 跑原生 dedust worker。
+
+**棄用的東西**。10/07 起 Codex 加的 EngineeringOnly、SweepProbe、FormalSharded、provisional Survey、
+S21 live loop、transition_soft、prior_recipe 與五段 filter_training，把整個 `antenna/` 綁進 release SHA，
+核心改一行 release 就失效，只好一層再包一層。這些已全部棄用，程式在 10/12 清掉，要查舊版看 tag `pre-cleanup-20261012`。
+worker 的毒樣本規則（同筆 HFSS 錯滿 3 次就跳過、繼續下一批）保留。
