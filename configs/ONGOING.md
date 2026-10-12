@@ -9,6 +9,8 @@
 
 ## 2026-10-07：R80 對稱探索 → 後續 spec／R81
 
+- **10/12 13:08使用者恢復，R81三台已認領**：使用者明示「恢復了，開始吧」；已按v002 EngineeringOnly原生入口核對，37於13:04:04 claim Fast6、216於13:04:40 claim Discrete2、218於13:06:33 claim mesh2。保存時三個results.json皆尚不存在，沒有done／fail，也未觀察遠端PID，不宣稱HFSS成功或工程通過。這是相較原無claim的新實際進度，舊待切換blocker已改變；執行授權已恢復，Goal工具欄位當時仍blocked且沒有resume操作，兩者分開記錄。保持44 live來源／inputs／queue／markers不改；準備工程全成功且四組差值≤.3後的原生FormalSharded 3×20接續。下一例行約13:38，notify-only timer `1675`，不是HFSS live-handle證據。[實際觀察](../docs/log/assets/r81_resumed_health_20261012_1308.json)。
+
 - **10/12短啟動入口已驗證**：三台pull GAN後，在原環境／repo根執行`.\script\r81.cmd`即可；preset固定目前v002 EngineeringOnly，原release SHA／runtime／queue gate保持完整。實際CMD→PowerShell→原launcher的`-CheckOnly`通過，未啟動HFSS；原44來源與NAS release未改。[預設值](r81_worker_current.json)／[啟動說明](../docs/log/round-81-wide-filter.md)。
 
 - **10/12毒樣本補丁與新工程release已備妥**：使用者要求三次失敗的HFSS樣本忽略即可。GAN `c6e19c1`已修正scoped profile：保留error／attempts、標skipped，重啟與跨機接手不再重試，`.done`完整列跳過ID並繼續下一job；不计有效成功或SM真值，資料／hash錯誤與機台保險絲仍停止。針對性baseline33、分類修正後23、最終worker啟動gate2及helper8均通過（階段／重疊分列，不相加）；獨立靜態審查與lint通過。私人NAS新release `r81_engineering_only_20261012_poison_skip_v002.json`綁定已commit來源，SHA `7d9b1a3b…0292`；原生候選／發布後preflight通過，jobs SHA前後相同，只新增release metadata，舊release原樣保留，沒有啟動HFSS或改claims。三台pull新程式後需重啟並用[R81新指令](../docs/log/round-81-wide-filter.md)，舊release綁定不適用新runtime。整體goal仍blocked待實際worker切換；11:08改動前唯讀觀察無markers，發布時queue active不等於PID存活或實測已開始。[補丁證據](../docs/log/assets/r81_poison_skip_patch_20261012.json)／[實際交付](../docs/log/assets/r81_poison_skip_release_20261012.json)。

@@ -1,0 +1,69 @@
+{
+  "checked_at": "2026-10-12T13:08:24.968904+08:00",
+  "release": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\engineering_v001\\release\\r81_engineering_only_20261012_poison_skip_v002.json",
+  "release_sha256": "7d9b1a3b13643c5736cc68bc40abca90b53b661d2b385a0acbf5d3fe2d9d0292",
+  "stage": "EngineeringOnly",
+  "native_preflight": {
+    "schema_version": 1,
+    "status": "r81_worker_entry_passed",
+    "release_sha256": "7d9b1a3b13643c5736cc68bc40abca90b53b661d2b385a0acbf5d3fe2d9d0292",
+    "release_id": "r81_engineering_only_20261012_poison_skip_v002",
+    "stage": "EngineeringOnly",
+    "dataset_root": "\\\\140.123.106.219\\temp\\碩二_鄒穎麒's\\antenna\\experiments\\r81_wide_filter_20261007\\engineering_v001\\dataset",
+    "scope": "symmetry_filter_20261007",
+    "job_count": 3,
+    "r80": {
+      "measurement_id": "998f50082a25b1ab6ff141d0283c00a1f2a6f597cf132d4791faf50401a25526",
+      "score_spec_id": "7104940d59a7a1fc22c0c5ff7a3a049009a64cfd5c7acd44e14ecd6914f1149b"
+    },
+    "engineering_check": null,
+    "hfss_started": false,
+    "queue_or_source_mutation": false
+  },
+  "native_queue_status": "active",
+  "markers": [
+    {
+      "name": "dedust_r81smoke.claim",
+      "sha256": "66b27214d185848b9ec6da4da2ba8dbb306938b0db5897ace111007efa0f3f8a",
+      "value": {
+        "machine": "140.123.106.37",
+        "at": "2026-10-12 13:04:04"
+      }
+    },
+    {
+      "name": "dedust_r81discrete.claim",
+      "sha256": "c3c46ee3160c4f448586d02eb7c53b5b54f42c676490259015b4bba69850f491",
+      "value": {
+        "machine": "140.123.106.216",
+        "at": "2026-10-12 13:04:40"
+      }
+    },
+    {
+      "name": "dedust_r81mesh.claim",
+      "sha256": "c8f695327317239ba1e020881fea88aadb4c61965032669a07af5615e7d2da81",
+      "value": {
+        "machine": "140.123.106.218",
+        "at": "2026-10-12 13:06:33"
+      }
+    }
+  ],
+  "stores": [
+    {
+      "store": "dedust_r81smoke",
+      "role": "engineering_smoke",
+      "results_present": false
+    },
+    {
+      "store": "dedust_r81discrete",
+      "role": "engineering_discrete",
+      "results_present": false
+    },
+    {
+      "store": "dedust_r81mesh",
+      "role": "engineering_mesh",
+      "results_present": false
+    }
+  ],
+  "remote_pid_observed": false,
+  "hfss_started_by_check": false
+}

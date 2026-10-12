@@ -1,6 +1,8 @@
 # R81：新版濾波器 spec 與寬頻量測
 
-日期：2026-10-07。當前狀態：工程備料及正式三機入口完成；goal blocked，待三台切換R81，尚無寬頻HFSS真值。
+日期：2026-10-07。當前狀態：使用者已恢復執行，三台已認領工程批次；尚無完成的寬頻HFSS真值。
+
+最新實際狀態（2026-10-12 13:08）：使用者明示「恢復了，開始吧」，v002 EngineeringOnly release仍通過原生驗證，queue active。37於13:04:04認領Fast6、216於13:04:40認領Discrete2、218於13:06:33認領mesh2；保存時均尚無results.json、done或fail，未觀察遠端PID。這證明新的派工認領進度，不能代替成功結果或工程比較。舊待切換條件已改變，已接續實際工作；Goal工具欄位仍回報blocked，工具無resume操作，不宣稱系統已改為active。下一例行約13:38；工程全數成功且四組最大曲線／margin差≤.3才放行正式分片。未改44 live來源、NAS queue、inputs或markers。[保存觀察](assets/r81_resumed_health_20261012_1308.json)。
 
 10/12短指令入口：使用者希望啟動命令縮短，新增`script/r81.cmd`與ASCII PowerShell wrapper `r81.ps1`，預設值放在[configs/r81_worker_current.json](../../configs/r81_worker_current.json)。CMD及PowerShell皆可使用下方短指令；仍呼叫原`start_r81_worker.ps1`並驗證release SHA、Git runtime、inputs與queue，不自動pull、不派工、不關閉其他process。已實際沿CMD→PowerShell→原launcher路徑執行`-CheckOnly`通過，沒有HFSS。原受release綁定的44來源未改，私人NAS的v002 release與SHA不變。
 
