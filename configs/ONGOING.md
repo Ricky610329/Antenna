@@ -9,13 +9,13 @@
 
 ## 2026-10-07：R80 對稱探索 → 後續 spec／R81
 
-### 現況：2026-10-12 22:35，v003 controller 已啟動，實際 SM 更新中
+### 現況：2026-10-12 22:39，v003 實際 SM 更新／B2 已完成發布
 
 - **NAS 快照修復通過，checkpoint 遇到另一個實際故障**：GAN `b205b4f`；主／獨立各 22 項 focused tests 通過，私人 NAS 原生快照實際驗證 28 個成功幾何。新的 create-only v002 bootstrap／七檔 cached prior／三台 B1 身分驗證通過；22:20 新 CPU controller 用 31 個成功幾何開始訓練，但 member-0 checkpoint 34→35 epoch 的 os.replace 遇 WinError5，session exit1 且 PID 消失，沒有完成模型或 B2。實際私人 100 次 checkpoint 替換重現四次同錯誤，均以 0.1–0.3 秒有限重試成功；正在加僅限 actor UNC checkpoint 的 bounded retry，不改 recipe／原 51 檔／ACL。v001、v002 失敗前綴保留，三台 HFSS 不重啟。
-- **有限重試修補已交付並部署 v003**：GAN `6769039`，主測 controller 15 項／獨立 controller＋entry 28 項及實際 UNC scope／Torch checkpoint readback 通過。新的私人 bootstrap、七檔 prior cache 與三台 B1 身分驗證通過，公開短入口已切 v003 leaf／SHA。22:35 本機新 CPU controller 回報 33 個成功幾何並啟動更新，PID／Python／command line 已核對；模型完成與 B2 發布仍待實際收據。
+- **有限重試修補已交付並完成首次實際發布**：GAN `6769039`／`10514e0`，主測 controller 15 項／獨立 controller＋entry 28 項及實際 UNC scope／Torch checkpoint readback 通過。新的私人 bootstrap、七檔 prior cache 與三台 B1 身分驗證通過，公開短入口已切 v003 leaf／SHA。以 33 個成功幾何完成當前兩模型更新，原生 successor gate 通過並發布 batch-002：三策略各 20，共 60／三機各 20。Registry 現有 B1＋B2，接續等待至少 20 個新 B2 成功，不靠 B1 晚到資料提前發布第三批；保存證據獨立核對中。
 - **R80 收尾完成，不再派工**：5,000 有效唯一精確左右對稱圖形及五筆重測已凍結、稽核，統計與極座標圖已歸檔。[結果與限制](../docs/log/round-80-symmetry-exploration.md)。
-- **R81 新版 S21 探索正在產生真值**：三台原 `-Survey` 工作池均已 claim；22:35 背景 metadata 回報 33 個不同幾何成功，這不是遠端 PID 或完成 fit 證據。工程 Fast 六筆、Discrete 兩筆保留；mesh 兩筆各三次失敗後 skipped，工程／Formal gate 未通過。新探索不限制金屬對稱，以 S21 三段計算 WM，S11／S22 保留為參考，緩衝區下壓／平緩不進 WM。
-- **SM 自動更新與共享子代交接已部署**：GAN `6657046`／`04c3a76`，主／獨立各 20 項 focused tests 及私人 NAS bootstrap／cache／三機身分狀態核對通過。累積 20 個新成功幾何後更新兩個模型並發布 60 筆；第三批須再有 20 個新第二批真值。本階段含首批最多 180 筆，不代表完整 spec 完成。共享證據只在私人工作區；公開 Git 僅放程式與 path-free descriptor。
+- **R81 新版 S21 探索正在產生真值**：22:39 metadata 保存 B1 成功 19／9／6，共 34，B2 尚無 claim／結果；marker 並非遠端 PID 證據。工程 Fast 六筆、Discrete 兩筆保留；mesh 兩筆各三次失敗後 skipped，工程／Formal gate 未通過。新探索不限制金屬對稱，以 S21 三段計算 WM，S11／S22 保留為參考，緩衝區下壓／平緩不進 WM。
+- **SM 自動更新與共享子代交接已部署**：累積 20 個新成功幾何後，沿用完成 historical prior、重訓當前兩模型並發布 60 筆；首次實际 33 筆截止點已完成，第三批須再有 20 個新第二批真值。本階段含首批最多 180 筆，不代表完整 spec 完成。共享證據只在私人工作區；公開 Git 僅放程式與 path-free descriptor。
 - **三台後續入口**：保留目前求解，原 `-Survey` 視窗跑完回到提示字元後，`git pull --ff-only origin GAN` 再執行 `.\script\r81.cmd -Loop`。沿用首批结果，不重跑已完成樣本；同機舊 launcher／worker 仍在時會拒絕重複啟動。[新指令與部署限制](../docs/log/round-81-wide-filter.md)／[短入口 descriptor](r81_s21_live_current.json)。
 - **監看與完成條件**：v003 CPU controller 已啟動，120 秒 metadata poll；三台原 Survey 保留。conductor routine 約每 30 分鐘，啟動／錯誤／發布里程碑另驗證。原件及獨立重測的三段實測 WM 均 >0、工程量測一致性仍未證明；沒有宣稱新 spec 達標。R80 舊自產線與 emforge 不動。
 

@@ -316,3 +316,9 @@ v003 修補限定 `exploration.os` 的 module reference，不改全域 os 或原
 主測 controller 15 項（4.03 秒）、獨立 controller／entry 28 項（35.51 秒）通過，包含 UNC eligibility、有限重試／耗盡與 delegation／還原。Conductor 再以實際 Windows UNC 探針核對 scope eligibility、兩次原子 checkpoint 替換與 Torch readback／module 還原，通過；這是部署前邊界驗證，不代表實際兩個模型與 B2 已完成。
 
 22:35 以已 commit／push 的 `6769039` 建立並核對全新 v003 bootstrap，七檔 cached prior 逐檔吻合，三台原生 B1 身分／dataset 核對通過。新 CPU controller 的 PID／Python／command line 與 launch receipt 一致，metadata 成功數 33，開始實際更新；原 v002 session 與 failed checkpoint 都不恢復或覆寫。公开 leaf／SHA descriptor 已切 v003，worker 指令仍為 pull GAN 後 `.\script\r81.cmd -Loop`。此切點尚未有完成的 current-model receipt 或 B2，不能以啟動證據代替發布／性能結果。
+
+### v003 首次實際模型更新與 B2
+
+原生 current-model／successor gate 已通過，controller 完成 33 個成功幾何截止點的兩模型更新、候選排名與下一批發布。Batch-002 共 60 筆、best-min-margin／uncertainty／random 各 20，三台各 20；registry create-only 追加成功，原 B1 仍引用同一 release／dataset，不重派原已完成資料。22:39 私人健康證據保存兩個 registry record、B1 成功 19／9／6、B2 尚無 claim／結果；獨立保存證據核對另行記錄，不能把發布候選當成新 HFSS 真值或 SM accuracy 提升。
+
+Controller 現在等待 B2 至少 20 個新成功幾何後再更新／發布第三批；晚到 B1 資料仍會納入下一累積 snapshot，但不滿足 B2 的 20 筆門檻。含首批最多 180 筆的 publication budget 並非研究或 spec 完成，工程精度與正 WM 原件／獨立重測仍未證明。三台進入 `-Loop` 後，依各自 shard 的終態接續，不必等其他機台同批完成。
