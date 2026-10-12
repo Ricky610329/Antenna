@@ -539,7 +539,8 @@ def build(args):
     rng = np.random.default_rng(args.seed + args.batch)
     parents = pick_parents(wide, hist, cfg, grid)
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
-    P, meta = generate(parents, exclude, args.n_candidates, rng)
+    P, meta = generate(parents, exclude, args.n_candidates, rng,
+                       min_flips=args.min_flips, max_flips=args.max_flips)
     pred = ens.predict(P.astype(np.float32))                       # (K,N,3,G)
     slices = band_slices(cfg.score_spec, grid)
     marg = np.stack([margins_vec(p, slices) for p in pred])        # (K,N,B)
@@ -608,6 +609,9 @@ def main(argv=None):
     b.add_argument("--pre-epochs", type=int, default=30)
     b.add_argument("--ft-epochs", type=int, default=20)
     b.add_argument("--seed", type=int, default=81)
+    # b01 用 2–40 格變異，實測多數把通帶打壞；b02 起預設改小步 1–8 格（2026-10-13）
+    b.add_argument("--min-flips", type=int, default=1)
+    b.add_argument("--max-flips", type=int, default=8)
     s = sub.add_parser("score")
     s.add_argument("--stores", nargs="+", required=True)
     s.add_argument("--config", type=Path, default=CONFIG)
