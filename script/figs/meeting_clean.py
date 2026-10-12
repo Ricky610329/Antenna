@@ -5,6 +5,7 @@
 配色與 meeting_square.py 相同。數字與原 meeting_* 腳本同源：
   clean_f04       ← meeting_f04.py（tmp/expected_best/ 本機快取，2026-07-03 產）
   clean_dust      ← meeting_dust_two_way.py（round-07 §4、status-2026-07-08 §3.2；S0、單次）
+  clean_dust_remove ← 同上，只留「移除碎片」一組（v5 第 5 頁：微調 pattern 的代價）
   clean_diag      ← meeting_diag_grammar.py（round-44 §4 六批總表；S0、單次）
   clean_mesh      ← meeting_mesh_convergence.py（round-52 §4）
   clean_phantom   ← meeting_phantom_evidence.py (a)（round-69 §4；舊幾何、單次）
@@ -112,6 +113,18 @@ def dust():
     save(fig, "clean_dust.png")
 
 
+def dust_remove():
+    removed = [-6.70, -16.93, -5.02, -0.02, -8.84]
+    fig, ax = plt.subplots(figsize=(7.4, 4.3))
+    fig.subplots_adjust(left=.12, right=.97, top=.95, bottom=.12)
+    bars(ax, range(5), removed, [MUTED if v > -1 else AMBER for v in removed], pad=.5)
+    ax.set_xticks(range(5), [f"設計 {i}" for i in range(1, 6)])
+    ax.set_ylim(-20, 2)
+    ax.set_yticks([-20, -15, -10, -5, 0])
+    ax.set_ylabel("移除碎片後 WM 變化 (dB)")
+    save(fig, "clean_dust_remove.png")
+
+
 def diag():
     rows = [("有對角接觸", -3.34, BLUE), ("無對角接觸", 2.27, AMBER)]
     fig, ax = plt.subplots(figsize=(6.0, 4.3))
@@ -156,6 +169,7 @@ def phantom():
 if __name__ == "__main__":
     f04()
     dust()
+    dust_remove()
     diag()
     mesh()
     phantom()
