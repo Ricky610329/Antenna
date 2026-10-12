@@ -322,3 +322,7 @@ v003 修補限定 `exploration.os` 的 module reference，不改全域 os 或原
 原生 current-model／successor gate 已通過，controller 完成 33 個成功幾何截止點的兩模型更新、候選排名與下一批發布。Batch-002 共 60 筆、best-min-margin／uncertainty／random 各 20，三台各 20；registry create-only 追加成功，原 B1 仍引用同一 release／dataset，不重派原已完成資料。22:39 私人健康證據保存兩個 registry record、B1 成功 19／9／6、B2 尚無 claim／結果；獨立保存證據核對另行記錄，不能把發布候選當成新 HFSS 真值或 SM accuracy 提升。
 
 Controller 現在等待 B2 至少 20 個新成功幾何後再更新／發布第三批；晚到 B1 資料仍會納入下一累積 snapshot，但不滿足 B2 的 20 筆門檻。含首批最多 180 筆的 publication budget 並非研究或 spec 完成，工程精度與正 WM 原件／獨立重測仍未證明。三台進入 `-Loop` 後，依各自 shard 的終態接續，不必等其他機台同批完成。
+
+獨立 Sol 實際唯讀保存證據核對通過：完整 [1,2] registry chain／release SHA、原 51 與擴充 56 runtime、兩模型 100／100 epochs 與 rank-ready、七檔 cache／prior parent SHA、snapshot 33（29 train／4 holdout、零交集）、pool／rank 1,024、selected 60 與三策略／三片各 20。Selected 及 pool 與 B1 60 圖形皆零交集，measurement／score-spec／profile bytes 相同；`formal_pass=false`、`survey_complete=false`。Review 期間 B1 成功從 34 增至 35，兩筆晚到真值保持在 immutable snapshot 之外，並非資料破壞。這是 native validator／hash／checkpoint metadata 核對，未另做 forward、訓練或 HFSS，不宣稱準確率／性能改善。五項部署／健康／review payload 已封存私人 controller review。
+
+原 `-Survey` launcher 等待整個舊 queue；一台較早完成可能仍在等待另外兩台。每台自己的 B1 shard 確認 `.done` 後，可由使用者 Ctrl+C 結束該等待視窗，再 pull GAN 並執行上述 `-Loop`，即可直接接本機 B2。獨立核對當下三台皆仍 `ready` sequence1，尚未觀察 B2 claim，不把 worker 可接續當成已啟動。
