@@ -4,7 +4,7 @@
 資料與畫法沿用 docs/paper/extended_abstract_figures.py 的凍結 JSON 與 helper，
 只改成投影片尺寸、方格子圖與較大字級。零 HFSS。
 執行：python -m script.figs.meeting_square
-輸出：docs/進度報告/組會_2026-10/figs/sq_{spec,antenna,filter}.png
+輸出：docs/進度報告/組會_2026-10/figs/sq_{spec,antenna,filter,leftband}.png
 """
 import importlib.util
 import os
@@ -146,7 +146,30 @@ def filter_():
     save(fig, "sq_filter.png")
 
 
+def leftband():
+    """左側帶外：代表設計（0.10 mm 橋）對照左側帶外紀錄設計（無橋，−3.46 dBi 三次重測一致）。"""
+    f = np.asarray(ea.load(ea.FREE)["frequency_ghz"])
+    gain = np.asarray(ea.load(ea.FREE)["response_db"]["RealizedGainTotal"])
+    rec = np.asarray(ea.load(ea.FROZEN)["snapshot"]["oob_record"]["RealizedGainTotal_dbi"])
+    assert abs(rec[f <= 25.5].max() - (-3.46)) < .01
+    with plt.rc_context({"font.size": 13, "axes.titlesize": 14, "legend.fontsize": 12}):
+        fig, ax = plt.subplots(figsize=(5.2, 4.6))
+        fig.subplots_adjust(left=.14, right=.97, top=.9, bottom=.14)
+        freq(ax, "增益 (dBi)")
+        ax.axvspan(24, 25.5, color="#efe4f0", lw=0)
+        ax.fill_between([26.5, 29.5], -12, 4, color=BAD, lw=0)
+        ea.limit(ax, 26.5, 29.5, 4)
+        ax.plot(f, gain, color=ea.MUTED, lw=1.8, marker="o", ms=3.5, label="代表設計")
+        ax.plot(f, rec, color=ea.BLUE, lw=2, marker="o", ms=3.5, label="左側帶外紀錄")
+        ax.text(24.75, 6.6, "左側帶外", ha="center", fontsize=12, color=ea.INK)
+        ax.set_ylim(-12, 8)
+        ax.set_yticks([-10, -5, 0, 5])
+        ax.legend(loc="lower right")
+        save(fig, "sq_leftband.png")
+
+
 if __name__ == "__main__":
     spec()
     antenna()
     filter_()
+    leftband()

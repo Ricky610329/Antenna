@@ -67,10 +67,10 @@ def f04():
     ours = mean_curve(os.path.join(EB, "ours_curves.npz"), ks)
     senior = mean_curve(os.path.join(EB, "senior_curves.npz"), ks)
     fig, ax = plt.subplots(figsize=(7.4, 4.3))
-    fig.subplots_adjust(left=.12, right=.97, top=.95, bottom=.15)
-    ax.plot(ks, pool, color=AMBER, lw=2.6, label="從前代資料集抽樣")
-    ax.plot(ks, senior, color=TEAL, lw=2.2, label="前代線上方法")
-    ax.plot(ks, ours, color=BLUE, lw=2.2, label="我們的線上方法")
+    fig.subplots_adjust(left=.12, right=.75, top=.95, bottom=.15)
+    for y, c, lab in ((pool, AMBER, "從前代資料集挑選"), (senior, TEAL, "前代線上方法"), (ours, BLUE, "我們的線上方法")):
+        ax.plot(ks, y, color=c, lw=2.6 if c == AMBER else 2.2)
+        ax.text(1150, y[-1], lab, color=c, fontsize=13, va="center", fontweight="bold")   # 線尾直接標名，不用圖例
     ax.axhline(0, color=INK, lw=.9, ls=(0, (4, 3)))
     ax.set_xscale("log")
     ax.set_xlim(1, 1000)
@@ -79,7 +79,6 @@ def f04():
     ax.set_xlabel("HFSS 模擬次數")
     ax.set_ylabel("期望最佳 WM (dB)")
     ax.grid(color=GRID, lw=.6)
-    ax.legend(loc="lower right")
     save(fig, "clean_f04.png")
 
 
