@@ -324,4 +324,4 @@ if __name__ == "__main__":
     flow_mine()
     diamond()
     point()
-    point(("舊 profile", "新 profile，8/13 起"), "schem_point_v7.png")
+    point(("舊 profile", "與天線相同，8/13 起"), "schem_point_v7.png")
