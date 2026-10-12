@@ -431,6 +431,43 @@ def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1
     return np.asarray(pats, dtype=bool).reshape(-1, 625), meta
 
 
+def climb_candidates(tops, exclude, rng, *, n_double=400):
+    """爬山鄰居：每個 top 設計的全部單格翻轉，加 n_double 個 2–3 格隨機翻轉；去重。"""
+    pads = enforce_dual_geometry(np.zeros((25, 25), bool)).reshape(-1)
+    seen, P, meta = set(exclude), [], []
+    for t in tops:
+        base = np.asarray(t["pattern"]).reshape(-1) > 0.5
+        moves = [[i] for i in range(625) if not pads[i]]
+        free = np.flatnonzero(~pads)
+        moves += [list(rng.choice(free, size=int(rng.integers(2, 4)), replace=False)) for _ in range(n_double)]
+        for mv in moves:
+            c = base.copy()
+            c[mv] = ~c[mv]
+            c = enforce_dual_geometry(c)
+            key = pattern_sha256(c)
+            if key in seen:
+                continue
+            seen.add(key)
+            P.append(c.reshape(-1))
+            meta.append({"parent": t["id"], "family": t["family"], "op": f"climb{len(mv)}", "sha": key})
+    return np.asarray(P, dtype=np.float32).reshape(-1, 625), meta
+
+
+def pick_climb(mean, meta, tops, n):
+    """最好的 top 拿一半名額，其餘平分；各自按 SM 預測均值取前段。"""
+    if not tops or n <= 0:
+        return []
+    share = [n - (n // 2) if k == 0 else 0 for k in range(len(tops))]
+    rest = n - share[0]
+    for k in range(1, len(tops)):
+        share[k] = rest // (len(tops) - 1) + (1 if k - 1 < rest % (len(tops) - 1) else 0)
+    picks = []
+    for t, m in zip(tops, share):
+        idx = [i for i in np.argsort(-mean, kind="stable") if meta[i]["parent"] == t["id"]]
+        picks += [(int(i), "climb") for i in idx[:m]]
+    return picks
+
+
 def quotas(n, quality_ok):
     if quality_ok:
         e = round(n * 0.5)
@@ -544,6 +581,10 @@ def build(args):
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
     P, meta = generate(parents, exclude, args.n_candidates, rng,
                        min_flips=args.min_flips, max_flips=args.max_flips)
+    tops = [p for p in parents if p["source"] == "wide"][:args.climb_top]
+    Pc, metac = climb_candidates(tops, exclude | {m["sha"] for m in meta}, rng)
+    n_gen = len(P)
+    P, meta = np.concatenate([P, Pc]), meta + metac
     pred = ens.predict(P.astype(np.float32))                       # (K,N,3,G)
     slices = band_slices(cfg.score_spec, grid)
     marg = np.stack([margins_vec(p, slices) for p in pred])        # (K,N,B)
@@ -553,8 +594,14 @@ def build(args):
     pm = marg.mean(0)
     predd = {"wm_mean": [float(x) for x in mean], "wm_std": [float(x) for x in std],
              "margins": [{n: float(v) for n, v in zip(names, row)} for row in pm]}
-    q = quotas(args.n, rep["quality_ok"])
-    picks = select(P, mean, std, meta, q, rng)
+    climb_n = min(args.climb_n, args.n) if tops else 0
+    cmean = np.full(len(P), -np.inf)
+    cmean[n_gen:] = mean[n_gen:]
+    picks = pick_climb(cmean, meta, tops, climb_n)
+    q = quotas(args.n - len(picks), rep["quality_ok"])
+    gen_idx = np.arange(n_gen)
+    picks += [(int(gen_idx[i]), a) for i, a in select(P[:n_gen], mean[:n_gen], std[:n_gen], meta[:n_gen], q, rng)]
+    q = {"climb": len([1 for _, a in picks if a == "climb"]), **q}
     rows, sel = write_input(args.out, cfg, Path(args.config).read_text(encoding="utf-8"),
                             P, picks, meta, predd, args.batch)
     arms = {}
@@ -644,6 +691,9 @@ def main(argv=None):
     b.add_argument("--ft-epochs", type=int, default=20)
     b.add_argument("--seed", type=int, default=81)
     # b01 用 2–40 格變異，實測多數把通帶打壞；b02 起預設改小步 1–8 格（2026-10-13）
+    # 爬山臂：實測前 climb_top 名的 1–3 格鄰居，SM 排序取 climb_n 筆（2026-10-13 b02 出 −1.33 後加）
+    b.add_argument("--climb-top", type=int, default=3)
+    b.add_argument("--climb-n", type=int, default=24)
     b.add_argument("--min-flips", type=int, default=1)
     b.add_argument("--max-flips", type=int, default=8)
     q = sub.add_parser("enqueue", help="切片上 NAS、查重、入佇列（主批 prio 5／填空池 prio 9）")

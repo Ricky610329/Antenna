@@ -191,3 +191,17 @@ def test_holdout_drops_same_family_history(monkeypatch, cfg, grid):
     assert held and not (held & seen["hist_lineages"])
     assert not (held & seen["wide_lineages"])
     assert rep["n_history_excluded"] == 3 * len(held)
+
+
+def test_climb_neighbors_are_small_moves_and_best_top_gets_half():
+    rng = np.random.default_rng(1)
+    tops = [{"id": f"t{k}", "family": "F", "pattern": enforce_dual_geometry(rng.random((25, 25)) < 0.5)}
+            for k in range(3)]
+    P, meta = sm.climb_candidates(tops, set(), rng, n_double=20)
+    for p, m in zip(P[:50], meta[:50]):
+        base = tops[int(m["parent"][1])]["pattern"].reshape(-1)
+        assert 1 <= int((p.astype(bool) != base).sum()) <= 3
+    mean = rng.random(len(P))
+    picks = sm.pick_climb(mean, meta, tops, 24)
+    n0 = sum(meta[i]["parent"] == "t0" for i, _ in picks)
+    assert len(picks) == 24 and n0 == 12 and all(a == "climb" for _, a in picks)
