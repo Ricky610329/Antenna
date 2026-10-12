@@ -6,8 +6,8 @@ import torch
 
 from antenna.measurement import frequency_grid, score_response
 from script import r81_curve_sm as sm
-from script.exploration import enforce_dual_geometry, pattern_sha256
-from script.profiled_batch import validate_input
+from script.profiled_batch import pattern_sha256, validate_input
+from script.r81_curve_sm import enforce_dual_geometry
 
 
 @pytest.fixture(scope="module")
@@ -148,3 +148,11 @@ def test_load_store_and_true_wm_from_fake_store(tmp_path, cfg, grid):
     assert len(rows) == 1 and rows[0]["mask"].all()
     s = sm.true_wm(rows[0], cfg, grid)
     assert s["worst_margin"] == pytest.approx(2.0)
+
+
+def test_dual_geometry_and_mutation_keep_both_port_pads():
+    rng = np.random.default_rng(0)
+    for _ in range(20):
+        p = sm.mutate_pattern(enforce_dual_geometry(rng.random((25, 25)) < 0.5), rng)
+        assert p.shape == (25, 25) and p.dtype == bool
+        assert p[:5, 10:15].all() and p[20:25, 10:15].all()

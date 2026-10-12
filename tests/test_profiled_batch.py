@@ -16,8 +16,8 @@ from script import dedust, profiled_batch
 
 REPO = StdPath(__file__).resolve().parents[1]
 CONFIGS = {
-    "single": REPO / "configs" / "single_r80_symmetry_explore.yaml",
-    "dual": REPO / "configs" / "dual_r81_wide_filter.yaml",
+    "single": REPO / "tests" / "fixtures" / "profile_single.yaml",
+    "dual": REPO / "tests" / "fixtures" / "profile_dual.yaml",
 }
 
 

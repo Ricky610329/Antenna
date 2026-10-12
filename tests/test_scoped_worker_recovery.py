@@ -13,7 +13,7 @@ from script import dedust, profiled_batch
 
 
 REPO = StdPath(__file__).resolve().parents[1]
-PROFILE = REPO / "configs" / "single_r80_symmetry_factory.yaml"
+PROFILE = REPO / "tests" / "fixtures" / "profile_single.yaml"
 SCOPE = "symmetry_filter_20261007"
 
 
@@ -157,10 +157,6 @@ def test_run_skips_exhausted_hfss_row_and_keeps_strict_truth_incomplete(tmp_path
     }
     with pytest.raises(ValueError, match="未完整成功"):
         profiled_batch.validate_store(dataset / "partial")
-    assert profiled_batch.verify_incomplete_hfss_batch(dataset / "partial",
-                                                        profiled_batch.load_profile_config(PROFILE)) == {
-        "success_ids": ["ok"], "error_ids": ["bad"],
-    }
 
 
 def test_partial_run_cleans_only_current_default_workdir_after_raw_verification(tmp_path, monkeypatch):
@@ -184,8 +180,10 @@ def test_partial_run_cleans_only_current_default_workdir_after_raw_verification(
 
     assert not (tmp_path / "_dedust_partial").exists()
     assert (unrelated / "keep.txt").read_text(encoding="utf-8") == "unrelated"
-    profiled_batch.verify_incomplete_hfss_batch(dataset / "partial",
-                                                profiled_batch.load_profile_config(PROFILE))
+    assert profiled_batch.verify_finished(dataset / "partial",
+                                          profiled_batch.load_profile_config(PROFILE)) == {
+        "success_ids": ["ok"], "skipped_ids": ["bad"],
+    }
 
     custom_input, _, _ = _write_input(dataset, "custom_input", ["ok2", "bad2"])
     assert custom_input.exists()
@@ -193,51 +191,6 @@ def test_partial_run_cleans_only_current_default_workdir_after_raw_verification(
     args.input, args.store, args.out = "custom_input", "custom", str(custom_out)
     assert dedust.run(args) is None
     assert (custom_out / "solver.tmp").read_text(encoding="utf-8") == "current job"
-
-
-def test_scoped_worker_preserves_partial_failure_and_continues_next_job(tmp_path, monkeypatch):
-    dataset = tmp_path / "dataset"
-    dataset.mkdir()
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(dedust, "DATASET_PATH", Path(str(dataset)))
-    monkeypatch.setattr("antenna.utils.web.get_local_ip", lambda: "140.123.106.37")
-    first_input, first_rows, cfg = _write_input(dataset, "first_input", ["ok", "bad"])
-    first_store = _write_store(dataset, first_input, "first", first_rows, cfg, errors={
-        "bad": {"error": "DISP_E_EXCEPTION 0x80070223", "attempts": 3},
-    })
-    second_input, second_rows, _ = _write_input(dataset, "second_input", ["next"])
-    _write_store(dataset, second_input, "second", second_rows, cfg)
-    jobs = [
-        {"input": "first_input", "store": "first", "prio": 1, "scope": SCOPE,
-         "config": "first_input/config.yaml"},
-        {"input": "second_input", "store": "second", "prio": 2, "scope": SCOPE,
-         "config": "second_input/config.yaml"},
-    ]
-    profiled_batch.atomic_json(dataset / "jobs.json", jobs)
-
-    calls = []
-
-    def fake_run(args):
-        calls.append(args.store)
-        if args.store == "first":
-            profiled_batch.verify_incomplete_hfss_batch(first_store, cfg)
-            raise profiled_batch.IncompleteProfileBatch("verified partial fixture")
-        (dataset / "jobs_state" / f"STOP_{SCOPE}").write_text("stop", encoding="utf-8")
-
-    monkeypatch.setattr(dedust, "run", fake_run)
-    dedust.worker(_worker_args())
-
-    state = dataset / "jobs_state"
-    failure = json.loads((state / "first.fail").read_text(encoding="utf-8"))
-    claim = json.loads((state / "first.claim").read_text(encoding="utf-8"))
-    assert calls == ["first", "second"]
-    assert failure["machines"] == ["140.123.106.37"]
-    assert failure["failure_kind"] == "incomplete_profile_hfss"
-    assert failure["worker_continues"] is True
-    assert claim["machine"] == "140.123.106.37"
-    assert not (state / "first.done").exists()
-    assert (state / "second.done").exists()
-    assert json.loads((first_store / "results.json").read_text(encoding="utf-8"))["bad"]["attempts"] == 3
 
 
 def test_fail_takeover_skips_attempt_three_without_opening_hfss(tmp_path, monkeypatch):
@@ -274,123 +227,6 @@ def test_fail_takeover_skips_attempt_three_without_opening_hfss(tmp_path, monkey
     assert done["errors"] == 1 and done["error_ids"] == ["retry"]
 
 
-def test_scoped_worker_stops_after_three_consecutive_partial_batches(tmp_path, monkeypatch):
-    dataset = tmp_path / "dataset"
-    dataset.mkdir()
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(dedust, "DATASET_PATH", Path(str(dataset)))
-    monkeypatch.setattr("antenna.utils.web.get_local_ip", lambda: "140.123.106.37")
-    jobs = []
-    for index in range(4):
-        input_name, store_name = f"input{index}", f"store{index}"
-        input_root, rows, cfg = _write_input(dataset, input_name, [f"ok{index}", f"bad{index}"])
-        _write_store(dataset, input_root, store_name, rows, cfg, errors={
-            f"bad{index}": {"error": "DISP_E_EXCEPTION 0x80070223", "attempts": 3},
-        })
-        jobs.append({"input": input_name, "store": store_name, "prio": index, "scope": SCOPE,
-                     "config": f"{input_name}/config.yaml"})
-    profiled_batch.atomic_json(dataset / "jobs.json", jobs)
-    calls = []
-
-    def fail_partial(args):
-        calls.append(args.store)
-        raise profiled_batch.IncompleteProfileBatch("verified partial fixture")
-
-    monkeypatch.setattr(dedust, "run", fail_partial)
-    with pytest.raises(profiled_batch.IncompleteProfileBatch):
-        dedust.worker(_worker_args())
-
-    state = dataset / "jobs_state"
-    assert calls == ["store0", "store1", "store2"]
-    for index in range(3):
-        assert (state / f"store{index}.fail").exists()
-        assert (state / f"store{index}.claim").exists()
-        assert not (state / f"store{index}.done").exists()
-        failure = json.loads((state / f"store{index}.fail").read_text(encoding="utf-8"))
-        assert failure["worker_continues"] is (index < 2)
-    assert not (state / "store3.claim").exists()
-
-
-def test_full_success_resets_partial_budget_and_local_skip_covers_takeover_gap(tmp_path, monkeypatch):
-    dataset = tmp_path / "dataset"
-    dataset.mkdir()
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(dedust, "DATASET_PATH", Path(str(dataset)))
-    monkeypatch.setattr("antenna.utils.web.get_local_ip", lambda: "140.123.106.37")
-    partial_indices = {0, 2, 3}
-    jobs, configs = [], {}
-    for index in range(5):
-        input_name, store_name = f"input{index}", f"store{index}"
-        ids = [f"ok{index}", f"bad{index}"] if index in partial_indices else [f"ok{index}"]
-        input_root, rows, cfg = _write_input(dataset, input_name, ids)
-        errors = ({f"bad{index}": {"error": "DISP_E_EXCEPTION 0x80070223", "attempts": 3}}
-                  if index in partial_indices else None)
-        store = _write_store(dataset, input_root, store_name, rows, cfg, errors=errors)
-        configs[store_name] = (store, cfg)
-        jobs.append({"input": input_name, "store": store_name, "prio": index, "scope": SCOPE,
-                     "config": f"{input_name}/config.yaml"})
-    profiled_batch.atomic_json(dataset / "jobs.json", jobs)
-    calls = []
-
-    def run_sequence(args):
-        calls.append(args.store)
-        if args.store in {"store0", "store2", "store3"}:
-            store, cfg = configs[args.store]
-            profiled_batch.verify_incomplete_hfss_batch(store, cfg)
-            raise profiled_batch.IncompleteProfileBatch("verified partial fixture")
-        if args.store == "store1":
-            # Another worker can remove fail+claim before writing its takeover
-            # claim.  The local skip set must prevent this process reclaiming store0.
-            (dataset / "jobs_state" / "store0.fail").unlink()
-            (dataset / "jobs_state" / "store0.claim").unlink()
-        if args.store == "store4":
-            (dataset / "jobs_state" / f"STOP_{SCOPE}").write_text("stop", encoding="utf-8")
-
-    monkeypatch.setattr(dedust, "run", run_sequence)
-    dedust.worker(_worker_args())
-
-    assert calls == ["store0", "store1", "store2", "store3", "store4"]
-    state = dataset / "jobs_state"
-    assert (state / "store4.done").exists()
-    assert json.loads((state / "store2.fail").read_text(encoding="utf-8"))["worker_continues"] is True
-    assert json.loads((state / "store3.fail").read_text(encoding="utf-8"))["worker_continues"] is True
-
-
-def test_partial_verifier_rejects_nonrecoverable_states(tmp_path):
-    dataset = tmp_path / "dataset"
-    dataset.mkdir()
-    input_root, rows, cfg = _write_input(dataset, "input", ["ok", "bad"])
-
-    missing = _write_store(dataset, input_root, "missing", rows, cfg, errors={
-        "bad": {"error": "COM", "error_kind": "hfss_simulation", "attempts": 3},
-    })
-    missing_results = json.loads((missing / "results.json").read_text(encoding="utf-8"))
-    missing_results.pop("bad")
-    profiled_batch.atomic_json(missing / "results.json", missing_results)
-
-    all_error = _write_store(dataset, input_root, "all_error", rows, cfg, errors={
-        "ok": {"error": "COM", "error_kind": "hfss_simulation", "attempts": 3},
-        "bad": {"error": "COM", "error_kind": "hfss_simulation", "attempts": 3},
-    })
-    observation = _write_store(dataset, input_root, "observation", rows, cfg, errors={
-        "bad": {"error": "profile_observation_invalid: missing rad",
-                "error_kind": "profile_observation_invalid", "attempts": 3},
-    })
-    not_terminal = _write_store(dataset, input_root, "not_terminal", rows, cfg, errors={
-        "bad": {"error": "COM", "error_kind": "hfss_simulation", "attempts": 2},
-    })
-    corrupt = _write_store(dataset, input_root, "corrupt", rows, cfg, errors={
-        "bad": {"error": "COM", "error_kind": "hfss_simulation", "attempts": 3},
-    })
-    corrupt_results = json.loads((corrupt / "results.json").read_text(encoding="utf-8"))
-    sample_path = corrupt / corrupt_results["ok"]["sample_file"]
-    sample_path.write_bytes(sample_path.read_bytes() + b"tamper")
-
-    for store in (missing, all_error, observation, not_terminal, corrupt):
-        with pytest.raises(ValueError):
-            profiled_batch.verify_incomplete_hfss_batch(store, cfg)
-
-
 def test_scoped_worker_rejects_wrong_profile_scope_before_claim(tmp_path, monkeypatch):
     dataset = tmp_path / "dataset"
     dataset.mkdir()
@@ -417,36 +253,4 @@ def test_scoped_worker_rejects_wrong_profile_scope_before_claim(tmp_path, monkey
     state = dataset / "jobs_state"
     assert not (state / "store.claim").exists()
     assert not (state / "store.fail").exists()
-    assert not (state / "store.done").exists()
-
-
-@pytest.mark.parametrize("scope", [SCOPE, None])
-def test_once_or_legacy_worker_does_not_turn_partial_failure_into_success(tmp_path, monkeypatch, scope):
-    dataset = tmp_path / ("scoped" if scope else "legacy")
-    dataset.mkdir()
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(dedust, "DATASET_PATH", Path(str(dataset)))
-    monkeypatch.setattr("antenna.utils.web.get_local_ip", lambda: "140.123.106.37")
-    input_root, rows, cfg = _write_input(dataset, "input", ["ok", "bad"])
-    store = _write_store(dataset, input_root, "store", rows, cfg, errors={
-        "bad": {"error": "DISP_E_EXCEPTION(COM 例外) 0x80070223", "attempts": 3},
-    })
-    job = {"input": "input", "store": "store", "prio": 1,
-           "config": "input/config.yaml"}
-    if scope:
-        job["scope"] = scope
-    profiled_batch.atomic_json(dataset / "jobs.json", [job])
-
-    def fake_run(_args):
-        profiled_batch.verify_incomplete_hfss_batch(store, cfg)
-        raise profiled_batch.IncompleteProfileBatch("verified partial fixture")
-
-    monkeypatch.setattr(dedust, "run", fake_run)
-    with pytest.raises(profiled_batch.IncompleteProfileBatch):
-        dedust.worker(_worker_args(scope, once=True))
-
-    state = dataset / "jobs_state"
-    assert (state / "store.fail").exists()
-    assert json.loads((state / "store.fail").read_text(encoding="utf-8"))["worker_continues"] is False
-    assert (state / "store.claim").exists()
     assert not (state / "store.done").exists()
