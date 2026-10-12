@@ -314,3 +314,5 @@ Conductor 22 項 focused tests 與獨立 Sol 22 項通過（36.92 秒），包�
 v003 修補限定 `exploration.os` 的 module reference，不改全域 os 或原 protected helper。只有 Windows、actor 內正規化 UNC、同 parent 的 `.pt.tmp → .pt` 替換才可重試；僅對 PermissionError 的 WinError5／32／33，最多五次額外嘗試、累積等待 3.1 秒，仍失敗即拋出原錯誤。其他路徑／錯誤／JSON 替換保持原行為，不刪除或重寫 destination、不修改 ACL；兩個 scoped proxy 都只在 creator lease 內並保證還原。v003 為全新私人 actor，v001／v002 失敗前綴及七項新故障／探針 payload 原樣保存。
 
 主測 controller 15 項（4.03 秒）、獨立 controller／entry 28 項（35.51 秒）通過，包含 UNC eligibility、有限重試／耗盡與 delegation／還原。Conductor 再以實際 Windows UNC 探針核對 scope eligibility、兩次原子 checkpoint 替換與 Torch readback／module 還原，通過；這是部署前邊界驗證，不代表實際兩個模型與 B2 已完成。
+
+22:35 以已 commit／push 的 `6769039` 建立並核對全新 v003 bootstrap，七檔 cached prior 逐檔吻合，三台原生 B1 身分／dataset 核對通過。新 CPU controller 的 PID／Python／command line 與 launch receipt 一致，metadata 成功數 33，開始實際更新；原 v002 session 與 failed checkpoint 都不恢復或覆寫。公开 leaf／SHA descriptor 已切 v003，worker 指令仍為 pull GAN 後 `.\script\r81.cmd -Loop`。此切點尚未有完成的 current-model receipt 或 B2，不能以啟動證據代替發布／性能結果。
