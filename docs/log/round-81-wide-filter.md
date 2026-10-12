@@ -302,3 +302,11 @@ python -m script.filter_s21_confirmation --profile-config configs/dual_r81_s21_d
 NAS 暫存修復採僅替換 `profiled_shards` 的 tempfile module reference：只在 Windows、正規化且 resolved 仍屬 explicit actor 的 UNC 暫存目錄，用 exclusive 隨機名與一般 mkdir 繼承 parent ACL；其他路徑、平台與 tempfile 方法原樣 delegation。不修改 stdlib、既有 ACL、原 51 檔或 `filter_s21_training.py`。Proxy 只在 creator lease 內啟用，無論返回或例外都先還原，再释放 lease。新的 immutable 部署使用 `survey_loop_v002`，舊 v001 不覆寫；短入口由嚴格 bootstrap 版本名解析 sibling actor，公開 descriptor 仍只有 leaf／SHA。
 
 Conductor 22 項 focused tests 與獨立 Sol 22 項通過（36.92 秒），包含 eligibility／fallback、還原、鎖与原接續流程；私人 NAS 原生快照實測通過，凍結並重播 28 個成功幾何，proxy 已還原且未改既有 ACL／queue／HFSS。首個健康探針因比正式 cache 更深、Windows 檔案路徑過長而失敗，其前綴保留；改到同 actor 的短驗證位置後通過。這證明原快照故障已修復，不代表當前三段 SM 已訓練或第二批已發布；完整 v002 fit／發布仍須下一個實測里程碑。
+
+### 22:20：v002 私人部署與首次實際更新
+
+以已提交的 `b205b4f` 56 檔 runtime 建立全新 v002 bootstrap，沿用首批原 release／dataset，不改舊 registry 或任何 worker marker。七個 cached prior 檔案與原完成模型逐檔 bytes／SHA 相同，completion／signature／member 核對與三台原生 worker_status 通過。因下列實際故障，公開短入口尚未發布此失敗 v002，私人路徑與模型只保留私人工作區。
+
+新的本機 CPU controller 於 22:20 啟動，metadata 回報 31 個成功幾何，開始首次實際截止點處理；這是已啟動更新，不是完成 fit／下一批派工。舊 v001 controller 已 terminal 且 PID 消失，未啟動 HFSS 或遠端 worker。三台保留原 `-Survey` 求解，視窗回到提示字元後 pull GAN，執行 `.\script\r81.cmd -Loop` 接共享子代。
+
+其後 member-0 的第 34 epoch checkpoint 已保存，第 35 epoch 暫存檔也可讀，但原子 os.replace 回報 WinError5；session exit1 且本機 PID 消失。沒有完成 fit／B2，失敗模型與暫存檔均保留。私人小型探針對 bytes／Torch 的初次 rename 與覆寫四例皆通過；100 次同大小 Torch checkpoint 快速替換重現四次 WinError5，三次等 0.1 秒成功、一次累積 0.3 秒成功。此證據支持窄範圍有限重試，不支持移除原子替換、修改既有 ACL 或刪除 destination；下一修補與新版本部署仍須實際驗證。
