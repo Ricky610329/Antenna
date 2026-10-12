@@ -1,15 +1,40 @@
 param(
     [switch]$Probe,
+    [switch]$Survey,
     [switch]$CheckOnly,
     [string]$Report = ''
 )
 $ErrorActionPreference = 'Stop'
+if ($Probe -and $Survey) { throw 'Choose either Probe or Survey.' }
 $taskDefaultsPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'configs\r81_worker_current.json'
 $taskDefaults = Get-Content -LiteralPath $taskDefaultsPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $taskExpectedFields = @('release', 'release_sha256', 'stage')
 $taskFields = @($taskDefaults.PSObject.Properties.Name)
 if ($taskFields.Count -ne 3 -or @(Compare-Object $taskExpectedFields $taskFields).Count -ne 0) {
     throw 'R81 worker preset fields are invalid.'
+}
+if ($Survey) {
+    $taskSurveyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'configs\r81_s21_survey_current.json'
+    $taskSurvey = Get-Content -LiteralPath $taskSurveyPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $taskSurveyFields = @($taskSurvey.PSObject.Properties.Name)
+    if ($taskSurveyFields.Count -ne 2 -or
+        @(Compare-Object @('release_name', 'release_sha256') $taskSurveyFields).Count -ne 0 -or
+        [string]$taskSurvey.release_name -notmatch '^r81_[A-Za-z0-9_.-]+\.json$') {
+        throw 'R81 S21 survey preset fields are invalid.'
+    }
+    $taskSourceRoot = Split-Path -Parent (Split-Path -Parent ([string]$taskDefaults.release))
+    $taskSurveyRoot = Join-Path (Split-Path -Parent $taskSourceRoot) 'survey_v001\release'
+    $taskMachine = python -c "from antenna.utils.web import get_local_ip; print(get_local_ip())"
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot identify this worker.' }
+    $taskSurveyArguments = @{
+        Release = Join-Path $taskSurveyRoot ([string]$taskSurvey.release_name)
+        ReleaseSha256 = [string]$taskSurvey.release_sha256
+        ExpectedMachine = $taskMachine.Trim()
+        CheckOnly = $CheckOnly
+        Report = $Report
+    }
+    & (Join-Path $PSScriptRoot 'start_r81_provisional_filter_worker.ps1') @taskSurveyArguments
+    return
 }
 if ($Probe) {
     $taskProbePath = Join-Path (Split-Path -Parent $PSScriptRoot) 'configs\r81_sweep_probe_current.json'

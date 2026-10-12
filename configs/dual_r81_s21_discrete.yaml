@@ -1,0 +1,19 @@
+# Provisional R81 filter exploration.  This is not the five-band formal gate.
+# S11/S22 remain measured raw channels, but only the three S21 bands are scored.
+name: dual_r81_s21_provisional_discrete
+port: dual
+scope: symmetry_filter_20261007
+measurement:
+  name: dual25_p01_db075_wide16_40_provisional_s21_discrete_v1
+  port: dual
+  labels: [S11, S21, S22]
+  geometry: {geom: p01, pixel_count: 25, diag_bridge_w: 0.075}
+  sweep: {start_ghz: 16, stop_ghz: 40, step_ghz: 0.5, type: Discrete}
+  solver: {setup_freq_ghz: 28, open_region_freq_ghz: 16, max_delta_s: 0.02, max_passes: 6, min_passes: 5, min_converged: 5}
+score_spec:
+  name: filter_s21_26_30_stop20_36_provisional_v1
+  bands:
+    - {name: s21_pass, label: S21, start_ghz: 26, stop_ghz: 30, relation: ge, threshold: -3}
+    - {name: s21_low_stop, label: S21, start_ghz: 16, stop_ghz: 20, relation: le, threshold: -20}
+    - {name: s21_high_stop, label: S21, start_ghz: 36, stop_ghz: 40, relation: le, threshold: -20}
+runtime: {timeout: 1800}
