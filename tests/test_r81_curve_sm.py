@@ -134,7 +134,7 @@ def test_load_store_and_true_wm_from_fake_store(tmp_path, cfg, grid):
     store.mkdir()
     f49 = np.linspace(16, 40, 49)
     p = torch.tensor(enforce_dual_geometry(np.zeros((25, 25))), dtype=torch.float32)
-    y = torch.full((3, 49), -20.0)
+    y = torch.full((3, 49), -25.0)          # 阻帶比 v2/v3 門檻都深，WM 由通帶 +2 決定
     y[1, (f49 >= 26) & (f49 <= 30)] = -1.0
     name = fingerprint(p, y) + ".pt"
     torch.save((p, y), store / name)
