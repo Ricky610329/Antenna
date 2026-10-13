@@ -336,9 +336,18 @@ def holdout_eval(hist, wide_rows, cfg, grid, *, frac=0.2, seed=81, **train_kw):
 
 # ---------------------------------------------------------------- 候選與選樣
 
-def pick_parents(wide_rows, hist, cfg, grid, n_wide=12, n_hist=12):
+def parent_key(score, mode):
+    """wm＝最差一項；violation＝各項不足量總和（停滯時改用，挑「每項都只差一點」的起點）。"""
+    if not score:
+        return -1e9
+    if mode == "violation":
+        return sum(min(0.0, v) for v in score["margins"].values())
+    return score["worst_margin"]
+
+
+def pick_parents(wide_rows, hist, cfg, grid, n_wide=12, n_hist=12, mode="wm"):
     parents = []
-    scored = sorted(((true_wm(r, cfg, grid), r) for r in wide_rows), key=lambda t: -(t[0] or {}).get("worst_margin", -1e9))
+    scored = sorted(((true_wm(r, cfg, grid), r) for r in wide_rows), key=lambda t: -parent_key(t[0], mode))
     for s, r in scored:
         if s is not None and len(parents) < n_wide:
             parents.append({"id": f"{r['store']}:{r['id']}", "pattern": r["pattern"], "family": r["lineage"],
@@ -592,7 +601,7 @@ def build(args):
 
     rng = np.random.default_rng(args.seed + args.batch)
     allowed = focus_mask(args.focus_rows)
-    parents = pick_parents(wide, hist, cfg, grid)
+    parents = pick_parents(wide, hist, cfg, grid, mode=args.parent_score)
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
     P, meta = generate(parents, exclude, args.n_candidates, rng,
                        min_flips=args.min_flips, max_flips=args.max_flips, allowed=allowed,
@@ -714,6 +723,7 @@ def main(argv=None):
     b.add_argument("--focus-rows", default="")
     # 同家族交配比例：前幾名各自過不同條件時，交配可能把優點組起來（停滯對策，2026-10-13）
     b.add_argument("--p-cross", type=float, default=0.1)
+    b.add_argument("--parent-score", choices=("wm", "violation"), default="wm")
     b.add_argument("--exploit-lcb", type=float, default=1.0)
     b.add_argument("--climb-n", type=int, default=24)
     b.add_argument("--min-flips", type=int, default=1)

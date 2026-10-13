@@ -218,3 +218,11 @@ def test_focus_rows_limit_flips_to_selected_rows():
     P, _ = sm.climb_candidates([{"id": "t", "family": "F", "pattern": parent}], set(), rng,
                                n_double=10, allowed=allowed)
     assert not ((P.astype(bool) != parent.reshape(-1))[:, ~allowed]).any()
+
+
+def test_parent_key_violation_prefers_small_total_shortfall():
+    one_bad = {"worst_margin": -0.5, "margins": {"a": -0.5, "b": -0.1, "c": +2.0}}    # 總不足 0.6
+    all_bad = {"worst_margin": -0.4, "margins": {"a": -0.4, "b": -0.4, "c": -0.4}}    # 總不足 1.2
+    assert sm.parent_key(all_bad, "wm") > sm.parent_key(one_bad, "wm")
+    assert sm.parent_key(one_bad, "violation") > sm.parent_key(all_bad, "violation")
+    assert sm.parent_key(None, "violation") == -1e9
