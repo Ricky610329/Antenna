@@ -478,7 +478,7 @@ def quotas(n, quality_ok):
     return {"exploit": e, "explore": x, "random": n - e - x}
 
 
-def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3):
+def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3, exploit_lcb=0.0):
     """回傳 [(index, arm)]。exploit：前段池內 maxmin Hamming；explore：UCB；random：均勻。
     每臂每 parent ≤ per_parent；前兩臂湊不滿的缺額由 random 補。"""
     picked, count = [], {}          # count 以 (arm, parent) 計：每臂每 parent ≤ per_parent
@@ -492,7 +492,9 @@ def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3):
         count[(arm, meta[i]["parent"])] = count.get((arm, meta[i]["parent"]), 0) + 1
 
     taken = set()
-    order = np.argsort(-mean, kind="stable")
+    # exploit 用保守分數（均值 − k·std）：b07 實測 SM 對預測最高者高估 1–8 dB（贏家詛咒）
+    lcb = mean - exploit_lcb * std
+    order = np.argsort(-lcb, kind="stable")
     pool, in_pool = [], {}       # 前段池：每 parent 至多 2·per_parent 筆，避免池被少數 parent 佔滿
     for i in order:
         if len(pool) >= pool_mult * q["exploit"]:
@@ -509,7 +511,7 @@ def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3):
             cand = [k for k, i in enumerate(pool) if ok(i, "exploit")]
             if not cand:
                 break
-            k = max(cand, key=lambda k: (dmin[k], mean[pool[k]]))
+            k = max(cand, key=lambda k: (dmin[k], lcb[pool[k]]))
             take(pool[k], "exploit")
             dmin = np.minimum(dmin, (Pb[pool] != Pb[pool[k]]).sum(1))
     floor = float(np.median(mean))
@@ -596,11 +598,12 @@ def build(args):
              "margins": [{n: float(v) for n, v in zip(names, row)} for row in pm]}
     climb_n = min(args.climb_n, args.n) if tops else 0
     cmean = np.full(len(P), -np.inf)
-    cmean[n_gen:] = mean[n_gen:]
+    cmean[n_gen:] = mean[n_gen:] - args.exploit_lcb * std[n_gen:]   # 爬山同樣用保守分數
     picks = pick_climb(cmean, meta, tops, climb_n)
     q = quotas(args.n - len(picks), rep["quality_ok"])
     gen_idx = np.arange(n_gen)
-    picks += [(int(gen_idx[i]), a) for i, a in select(P[:n_gen], mean[:n_gen], std[:n_gen], meta[:n_gen], q, rng)]
+    picks += [(int(gen_idx[i]), a) for i, a in select(P[:n_gen], mean[:n_gen], std[:n_gen], meta[:n_gen], q, rng,
+                                                         exploit_lcb=args.exploit_lcb)]
     q = {"climb": len([1 for _, a in picks if a == "climb"]), **q}
     rows, sel = write_input(args.out, cfg, Path(args.config).read_text(encoding="utf-8"),
                             P, picks, meta, predd, args.batch)
@@ -693,6 +696,7 @@ def main(argv=None):
     # b01 用 2–40 格變異，實測多數把通帶打壞；b02 起預設改小步 1–8 格（2026-10-13）
     # 爬山臂：實測前 climb_top 名的 1–3 格鄰居，SM 排序取 climb_n 筆（2026-10-13 b02 出 −1.33 後加）
     b.add_argument("--climb-top", type=int, default=3)
+    b.add_argument("--exploit-lcb", type=float, default=1.0)
     b.add_argument("--climb-n", type=int, default=24)
     b.add_argument("--min-flips", type=int, default=1)
     b.add_argument("--max-flips", type=int, default=8)
