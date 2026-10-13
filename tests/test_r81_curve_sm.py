@@ -205,3 +205,16 @@ def test_climb_neighbors_are_small_moves_and_best_top_gets_half():
     picks = sm.pick_climb(mean, meta, tops, 24)
     n0 = sum(meta[i]["parent"] == "t0" for i, _ in picks)
     assert len(picks) == 24 and n0 == 12 and all(a == "climb" for _, a in picks)
+
+
+def test_focus_rows_limit_flips_to_selected_rows():
+    rng = np.random.default_rng(2)
+    allowed = sm.focus_mask("5-9,15-19")
+    parent = enforce_dual_geometry(rng.random((25, 25)) < 0.5)
+    for _ in range(20):
+        child = sm.mutate_pattern(parent, rng, min_flips=1, max_flips=6, allowed=allowed)
+        diff = (child != parent).reshape(-1)
+        assert not diff[~allowed].any()
+    P, _ = sm.climb_candidates([{"id": "t", "family": "F", "pattern": parent}], set(), rng,
+                               n_double=10, allowed=allowed)
+    assert not ((P.astype(bool) != parent.reshape(-1))[:, ~allowed]).any()

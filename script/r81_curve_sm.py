@@ -374,13 +374,25 @@ def enforce_dual_geometry(pattern):
     return p
 
 
-def mutate_pattern(parent, rng, *, min_flips=2, max_flips=40):
+def mutate_pattern(parent, rng, *, min_flips=2, max_flips=40, allowed=None):
     """隨機翻 min_flips..max_flips 個不重複像素，再補回埠墊。"""
     p = (np.asarray(parent).reshape(25, 25) > 0.5).copy()
     n = int(rng.integers(min_flips, max_flips + 1))
-    idx = rng.choice(625, size=min(n, 625), replace=False)
+    pool = np.arange(625) if allowed is None else np.flatnonzero(allowed)
+    idx = rng.choice(pool, size=min(n, len(pool)), replace=False)
     p.reshape(-1)[idx] = ~p.reshape(-1)[idx]
     return enforce_dual_geometry(p)
+
+
+def focus_mask(spec):
+    """"5-9,15-19" → 625 長度 bool，只允許這些列；空字串＝全板。"""
+    if not spec:
+        return None
+    m = np.zeros((25, 25), bool)
+    for part in spec.split(","):
+        a, _, b = part.partition("-")
+        m[int(a):int(b or a) + 1] = True
+    return m.reshape(-1)
 
 
 def crossover(a, b, rng):
@@ -397,7 +409,7 @@ def crossover(a, b, rng):
     return enforce_dual_geometry(c)
 
 
-def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1):
+def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1, allowed=None):
     """變異＋同家族交叉產 n 個去重候選；歷史 parent 本身（新窗沒量過）也列為候選。"""
     fam = {}
     for i, p in enumerate(parents):
@@ -427,18 +439,18 @@ def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1
             add(crossover(parents[i]["pattern"], parents[j]["pattern"], rng), i, "cross")
         else:
             add(mutate_pattern(parents[i]["pattern"], rng, min_flips=min_flips,
-                               max_flips=max_flips), i, "mutate")
+                               max_flips=max_flips, allowed=allowed), i, "mutate")
     return np.asarray(pats, dtype=bool).reshape(-1, 625), meta
 
 
-def climb_candidates(tops, exclude, rng, *, n_double=400):
+def climb_candidates(tops, exclude, rng, *, n_double=400, allowed=None):
     """爬山鄰居：每個 top 設計的全部單格翻轉，加 n_double 個 2–3 格隨機翻轉；去重。"""
     pads = enforce_dual_geometry(np.zeros((25, 25), bool)).reshape(-1)
     seen, P, meta = set(exclude), [], []
     for t in tops:
         base = np.asarray(t["pattern"]).reshape(-1) > 0.5
-        moves = [[i] for i in range(625) if not pads[i]]
-        free = np.flatnonzero(~pads)
+        moves = [[int(i)] for i in np.flatnonzero(~pads if allowed is None else (~pads & allowed))]
+        free = np.flatnonzero(~pads if allowed is None else (~pads & allowed))
         moves += [list(rng.choice(free, size=int(rng.integers(2, 4)), replace=False)) for _ in range(n_double)]
         for mv in moves:
             c = base.copy()
@@ -579,12 +591,13 @@ def build(args):
     rep["final_train_s"] = time.time() - t2
 
     rng = np.random.default_rng(args.seed + args.batch)
+    allowed = focus_mask(args.focus_rows)
     parents = pick_parents(wide, hist, cfg, grid)
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
     P, meta = generate(parents, exclude, args.n_candidates, rng,
-                       min_flips=args.min_flips, max_flips=args.max_flips)
+                       min_flips=args.min_flips, max_flips=args.max_flips, allowed=allowed)
     tops = [p for p in parents if p["source"] == "wide"][:args.climb_top]
-    Pc, metac = climb_candidates(tops, exclude | {m["sha"] for m in meta}, rng)
+    Pc, metac = climb_candidates(tops, exclude | {m["sha"] for m in meta}, rng, allowed=allowed)
     n_gen = len(P)
     P, meta = np.concatenate([P, Pc]), meta + metac
     pred = ens.predict(P.astype(np.float32))                       # (K,N,3,G)
@@ -696,6 +709,8 @@ def main(argv=None):
     # b01 用 2–40 格變異，實測多數把通帶打壞；b02 起預設改小步 1–8 格（2026-10-13）
     # 爬山臂：實測前 climb_top 名的 1–3 格鄰居，SM 排序取 climb_n 筆（2026-10-13 b02 出 −1.33 後加）
     b.add_argument("--climb-top", type=int, default=3)
+    # 只在這些列翻格，如 "5-9,15-19"＝兩個饋墊附近（匹配 S11/S22 主要由饋入點阻抗決定）
+    b.add_argument("--focus-rows", default="")
     b.add_argument("--exploit-lcb", type=float, default=1.0)
     b.add_argument("--climb-n", type=int, default=24)
     b.add_argument("--min-flips", type=int, default=1)
