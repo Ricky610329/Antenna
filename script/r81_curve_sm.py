@@ -478,7 +478,10 @@ def pick_climb(mean, meta, tops, n):
     """最好的 top 拿一半名額，其餘平分；各自按 SM 預測均值取前段。"""
     if not tops or n <= 0:
         return []
-    share = [n - (n // 2) if k == 0 else 0 for k in range(len(tops))]
+    if len(tops) == 1:                      # 只有一個起點時全部名額給它（b25 實犯：只用了一半）
+        share = [n]
+    else:
+        share = [n - (n // 2) if k == 0 else 0 for k in range(len(tops))]
     rest = n - share[0]
     for k in range(1, len(tops)):
         share[k] = rest // (len(tops) - 1) + (1 if k - 1 < rest % (len(tops) - 1) else 0)

@@ -226,3 +226,10 @@ def test_parent_key_violation_prefers_small_total_shortfall():
     assert sm.parent_key(all_bad, "wm") > sm.parent_key(one_bad, "wm")
     assert sm.parent_key(one_bad, "violation") > sm.parent_key(all_bad, "violation")
     assert sm.parent_key(None, "violation") == -1e9
+
+
+def test_single_climb_top_gets_all_slots():
+    rng = np.random.default_rng(3)
+    tops = [{"id": "t0", "family": "F", "pattern": enforce_dual_geometry(rng.random((25, 25)) < 0.5)}]
+    P, meta = sm.climb_candidates(tops, set(), rng, n_double=5)
+    assert len(sm.pick_climb(rng.random(len(P)), meta, tops, 24)) == 24
