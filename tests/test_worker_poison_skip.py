@@ -72,3 +72,33 @@ def test_corrupt_or_non_hfss_error_stops_before_simulator(tmp_path, monkeypatch,
     assert (store / 'results.json').read_bytes() == before
     assert not (dataset / 'jobs_state/invalid.done').exists()
     assert (dataset / 'jobs_state/invalid.fail').exists()
+
+
+def test_retry_aborted_job_goes_to_other_machine_and_worker_continues(tmp_path, monkeypatch):
+    """回歸（2026-10-13 37 號機）：補測輪連錯放棄 → 寫 .fail 交別台，本機繼續下一份，不停機。"""
+    dataset = tmp_path / 'dataset'
+    dataset.mkdir()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(dedust, 'DATASET_PATH', Path(str(dataset)))
+    monkeypatch.setattr('antenna.utils.web.get_local_ip', lambda: WORKER_IP)
+    jobs = []
+    for index, name in enumerate(('sick', 'next')):
+        input_root, rows, cfg = recovery._write_input(dataset, name + '_input', [f'{name}0'])
+        recovery._write_store(dataset, input_root, name, rows, cfg, errors={})
+        jobs.append({'input': name + '_input', 'store': name, 'prio': index,
+                     'scope': recovery.SCOPE, 'config': name + '_input/config.yaml'})
+    pb.atomic_json(dataset / 'jobs.json', jobs)
+    calls = []
+
+    def fake_run(args):
+        calls.append(args.store)
+        if args.store == 'sick':
+            raise SystemExit(f'{dedust.RETRY_ABORTED}：test')
+        (dataset / 'jobs_state' / f'STOP_{recovery.SCOPE}').write_text('stop', encoding='utf-8')
+
+    monkeypatch.setattr(dedust, 'run', fake_run)
+    dedust.worker(recovery._worker_args())
+    state = dataset / 'jobs_state'
+    assert calls == ['sick', 'next']
+    assert pb.read_json(state / 'sick.fail')['machines'] == [WORKER_IP]
+    assert (state / 'next.done').exists()

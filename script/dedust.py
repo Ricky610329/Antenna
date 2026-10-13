@@ -670,6 +670,7 @@ DUAL_FEEDS = ((0, 5, 10, 15), (20, 25, 10, 15))        # 上/下 5×5 饋墊 (r0
 #  一萬筆真值全是 Fast 跑出來的；換掃頻法＝換分佈（重建演算法不同）→ 首批「存檔 y vs 我們重測」
 #  的對帳與 SM 暖啟價值會一起失效。`tests/test_dedust.py` 有跨實作對帳測試盯住這張表。
 PORT_SWEEP = {"single": "Interpolating", "dual": "Fast"}
+RETRY_ABORTED = "本機補測放棄"     # scoped worker：這份交別台接手、本機繼續（見 worker 的 SystemExit 處理）
 
 
 def dual_metrics(resp, labels, targets) -> dict:
@@ -6016,6 +6017,8 @@ def run(args):
     if poison:
         action = "已忽略，保留錯誤紀錄，不計成功" if skip_poison else "保留錯誤紀錄，待檢查"
         print(f"⚠ 毒樣本嫌疑（3 連敗）{len(poison)} 筆: {','.join(poison[:10])}——{action}")
+    if skip_poison and aborted:
+        raise SystemExit(f"{RETRY_ABORTED}：補測連 3 敗，殘留 error 未滿 3 次，交別台接手")
     if skip_poison:
         try:
             skip_exhausted_hfss_errors(store_dir, cfg)
@@ -6917,6 +6920,11 @@ def worker(args):
                            at=time.strftime("%Y-%m-%d %H:%M:%S"))
             with open(str(sd.joinpath(st + ".fail")), "w", encoding="utf-8") as f:
                 json.dump(failure, f, ensure_ascii=False)
+            if scope and str(e).startswith(RETRY_ABORTED):
+                #! 2026-10-13：37 補測輪 COM 0x80070223 連錯放棄 → 原本整台停機閒置。這是本機對這份
+                #  工作的問題，不是 HFSS 壞死（那由連敗保險絲另外停機）。寫 .fail 交別台接手，本機繼續。
+                print(f"✗ {st} 交別台接手:{e}\n本機繼續下一份")
+                continue
             print(f"✗ {st} 中止:{e}\nworker 停機（別台 worker 會自動接管此 store;本機修復後重啟 worker 即可）")
             raise
         #! done records execution completion, not scientific all-success. Scoped
