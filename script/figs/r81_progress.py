@@ -1,7 +1,8 @@
-"""R81 進度圖（給學長）：最佳設計 S11/S21/S22 對 spec、各批累計最佳 WM、最佳 pattern。
+"""R81 給學長的兩張圖：最佳設計（S21／S11／S22 各一格＋pattern）、各批累計最佳 WM。
 
-用法：python -m script.figs.r81_progress <out.png> [--primary configs/dual_r81_v4a.yaml] [--final configs/dual_r81_v4.yaml]
-primary＝現階段搜尋目標（選最佳設計用）；final＝最終 spec（同圖並列評估）。
+用法：python -m script.figs.r81_progress <輸出資料夾> [--primary configs/dual_r81_v4a.yaml] [--final configs/dual_r81_v4.yaml]
+輸出：<資料夾>/r81_best_design.png、<資料夾>/r81_progress_wm.png
+primary＝現階段搜尋目標（選最佳設計用）；final＝最終 spec（並列評估）。
 資料：NAS v2_v001 資料根全部 r81 store（單次 HFSS，未公證）。
 """
 import argparse
@@ -15,8 +16,9 @@ import numpy as np
 
 from script import r81_curve_sm as sm
 
-INK, MUTED, GRID, BAD = "#0b0b0b", "#52514e", "#e4e3df", "#e34948"
-LINE = {"S11": "#eb6834", "S21": "#2a78d6", "S22": "#1baf7a"}
+INK, MUTED, GRID, BAD, SURF = "#0b0b0b", "#52514e", "#e4e3df", "#e34948", "#fcfcfb"
+CURVE = "#2a78d6"
+STAGE, FINAL = "#2a78d6", "#6250d6"
 
 
 def load_rows(primary, final, grid):
@@ -34,9 +36,89 @@ def load_rows(primary, final, grid):
     return rows
 
 
+def style(ax):
+    ax.set_facecolor(SURF)
+    ax.grid(color=GRID, lw=0.8)
+    ax.set_axisbelow(True)
+    for sp in ("top", "right"):
+        ax.spines[sp].set_visible(False)
+    for sp in ("left", "bottom"):
+        ax.spines[sp].set_color("#bdbcb6")
+    ax.tick_params(colors=MUTED, labelsize=9)
+
+
+def curve_panel(ax, grid, y, label, primary, final, margins):
+    """一條曲線一格：階段 spec 虛線、最終 spec 點線、禁區淡紅。"""
+    for spec, ls in ((final, ":"), (primary, "--")):
+        for b in spec.score_spec["bands"]:
+            if b["label"] != label:
+                continue
+            lo, hi, thr = b["start_ghz"], b["stop_ghz"], b["threshold"]
+            ax.plot([lo, hi], [thr, thr], color=INK, lw=1.4, ls=ls)
+            if spec is primary:
+                y0, y1 = (thr, 2) if b["relation"] == "le" else (-45, thr)
+                ax.fill_between([lo, hi], y0, y1, color=BAD, alpha=0.08, lw=0)
+    ax.plot(grid, y, color=CURVE, lw=2.0)
+    ax.set_xlim(22, 40)
+    ax.set_ylim(-45, 2)
+    ax.set_xticks([22, 26, 30, 34, 38, 40])
+    ax.set_xlabel("頻率 (GHz)", color=MUTED, fontsize=9.5)
+    ax.set_ylabel(f"{label} (dB)", color=MUTED, fontsize=9.5)
+    keys = [k for k in margins if k.startswith(label.lower())]
+    text = "、".join(f"{k.split('_', 1)[1]} {margins[k]:+.2f}" for k in keys)
+    ax.set_title(f"{label}：{text} dB", loc="left", fontsize=10.5, color=INK)
+    style(ax)
+    ax.set_box_aspect(1)
+
+
+def best_figure(out, best, grid, primary, final, n_rows):
+    fig, axes = plt.subplots(2, 2, figsize=(10, 10.4), dpi=160)
+    fig.patch.set_facecolor(SURF)
+    for ax, (k, lab) in zip((axes[0, 0], axes[0, 1], axes[1, 0]), ((1, "S21"), (0, "S11"), (2, "S22"))):
+        curve_panel(ax, grid, best["y"][k], lab, primary, final, best["margins"])
+    px = axes[1, 1]
+    px.imshow(best["pattern"].reshape(25, 25), cmap="Greys", origin="upper", interpolation="nearest")
+    px.set_xticks([]); px.set_yticks([])
+    px.set_title("pattern（25×25，下緣為饋線側）", loc="left", fontsize=10.5, color=INK)
+    px.set_xlabel(f"{best['id']}／{best['lineage']} 家族", fontsize=8.5, color=MUTED)
+    fig.suptitle(f"目前最佳設計：階段 spec WM {best['wm']:+.2f} dB、最終 spec WM {best['wm_final']:+.2f} dB",
+                 x=0.03, ha="left", fontsize=13, color=INK)
+    fig.text(0.03, 0.01, "虛線＝階段 spec（S21 阻帶 ≤ −15 dB）、點線＝最終 spec（≤ −20 dB）、淡紅＝階段禁區。"
+             f"S11/S22 26.5–29.5 GHz ≤ −10 dB。單次 HFSS 模擬，共 {n_rows} 筆中的最佳，未重測。",
+             fontsize=8.5, color=MUTED)
+    fig.tight_layout(rect=(0, 0.03, 1, 0.96))
+    fig.savefig(out, facecolor=SURF)
+
+
+def progress_figure(out, rows):
+    batches = sorted({r["batch"] for r in rows})
+    run_p = np.maximum.accumulate([max(r["wm"] for r in rows if r["batch"] == b) for b in batches])
+    run_f = np.maximum.accumulate([max(r["wm_final"] for r in rows if r["batch"] == b) for b in batches])
+    fig, ax = plt.subplots(figsize=(6.4, 6.6), dpi=160)
+    fig.patch.set_facecolor(SURF)
+    xs = np.arange(len(batches))
+    for run, color, name in ((run_p, STAGE, "階段 spec（阻帶 −15＋匹配）"), (run_f, FINAL, "最終 spec（阻帶 −20＋匹配）")):
+        ax.step(xs, run, where="post", color=color, lw=2.0)
+        ax.plot(xs, run, "o", color=color, ms=4, label=name)
+        ax.annotate(f"{run[-1]:+.2f}", xy=(xs[-1], run[-1]), xytext=(6, 0), textcoords="offset points",
+                    va="center", fontsize=9.5, color=color)
+    ax.axhline(0, color=INK, lw=1.2, ls="--")
+    ax.text(0, 0.15, "達標 WM = 0", fontsize=9, color=INK)
+    step = max(1, len(batches) // 8)
+    ax.set_xticks(xs[::step], [f"b{b}" for b in batches][::step])
+    ax.set_ylim(min(run_f.min(), run_p.min()) - 0.5, 0.8)
+    ax.set_xlabel("批次", color=MUTED); ax.set_ylabel("累計最佳 WM (dB)", color=MUTED)
+    ax.legend(loc="lower right", frameon=False, fontsize=9)
+    ax.set_title("各批累計最佳 WM（同一批資料、兩把尺）", loc="left", fontsize=12, color=INK)
+    style(ax)
+    ax.set_box_aspect(1)
+    fig.tight_layout()
+    fig.savefig(out, facecolor=SURF)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("out")
+    ap.add_argument("outdir", type=Path)
     ap.add_argument("--primary", type=Path, default=sm.REPO / "configs" / "dual_r81_v4a.yaml")
     ap.add_argument("--final", type=Path, default=sm.REPO / "configs" / "dual_r81_v4.yaml")
     args = ap.parse_args(argv)
@@ -45,64 +127,10 @@ def main(argv=None):
     grid = sm.frequency_grid(primary.measurement)
     rows = load_rows(primary, final, grid)
     best = max(rows, key=lambda r: r["wm"])
-    batches = sorted({r["batch"] for r in rows})
-    run_p = np.maximum.accumulate([max(r["wm"] for r in rows if r["batch"] == b) for b in batches])
-    run_f = np.maximum.accumulate([max(r["wm_final"] for r in rows if r["batch"] == b) for b in batches])
-
-    fig = plt.figure(figsize=(14, 5.6), dpi=160)
-    fig.patch.set_facecolor("#fcfcfb")
-    gs = fig.add_gridspec(1, 3, width_ratios=[2.3, 1.4, 1.0], wspace=0.3)
-
-    ax = fig.add_subplot(gs[0])
-    for spec, ls, alpha in ((final, ":", 0.0), (primary, "--", 0.10)):
-        for b in spec.score_spec["bands"]:
-            lo, hi, thr = b["start_ghz"], b["stop_ghz"], b["threshold"]
-            ax.plot([lo, hi], [thr, thr], color=INK if b["label"] == "S21" else MUTED, lw=1.4, ls=ls)
-            if alpha and b["label"] == "S21" and b["relation"] == "le":
-                ax.fill_between([lo, hi], thr, 2, color=BAD, alpha=alpha, lw=0)
-    for k, lab in enumerate(sm.LABELS):
-        ax.plot(grid, best["y"][k], color=LINE[lab], lw=2.2 if lab == "S21" else 1.8, label=lab)
-    ax.legend(loc="lower right", frameon=False, fontsize=9.5)
-    ax.set_xlim(22, 40); ax.set_ylim(-45, 2)
-    ax.set_xticks([22, 24.5, 26, 28, 30, 32, 34, 36, 38, 40])
-    ax.set_xlabel("頻率 (GHz)", color=MUTED); ax.set_ylabel("dB", color=MUTED)
-    worst = min(best["margins"], key=best["margins"].get)
-    ax.set_title(f"最佳設計三條曲線：階段 WM {best['wm']:+.2f}／最終 WM {best['wm_final']:+.2f}（最差：{worst}）",
-                 loc="left", fontsize=11, color=INK)
-
-    bx = fig.add_subplot(gs[1])
-    xs = np.arange(len(batches))
-    for run, color, name in ((run_p, "#2a78d6", "階段 spec（阻帶 −15＋匹配）"), (run_f, "#6250d6", "最終 spec（阻帶 −20＋匹配）")):
-        bx.step(xs, run, where="post", color=color, lw=2.0)
-        bx.plot(xs, run, "o", color=color, ms=4.5, label=name)
-    bx.axhline(0, color=INK, lw=1.2, ls="--")
-    bx.text(xs[-1], 0.15, "達標 WM = 0", ha="right", fontsize=9, color=INK)
-    step = max(1, len(batches) // 8)                    # 批數多時每隔幾批標一次，避免擠在一起
-    bx.set_xticks(xs[::step], [f"b{b}" for b in batches][::step], fontsize=8.5)
-    bx.legend(loc="lower right", frameon=False, fontsize=8.5)
-    bx.set_ylabel("累計最佳 WM (dB)", color=MUTED)
-    bx.set_title("各批累計最佳（同一批資料兩把尺）", loc="left", fontsize=11, color=INK)
-
-    cx = fig.add_subplot(gs[2])
-    cx.imshow(best["pattern"].reshape(25, 25), cmap="Greys", origin="upper", interpolation="nearest")
-    cx.set_xticks([]); cx.set_yticks([])
-    cx.set_title("最佳設計 pattern", loc="left", fontsize=11, color=INK)
-    cx.set_xlabel(f"{best['id']}\n{best['lineage']} 家族", fontsize=8.5, color=MUTED)
-
-    for a in (ax, bx):
-        a.set_facecolor("#fcfcfb")
-        a.grid(axis="y", color=GRID, lw=0.8); a.set_axisbelow(True)
-        for sp in ("top", "right"):
-            a.spines[sp].set_visible(False)
-        for sp in ("left", "bottom"):
-            a.spines[sp].set_color("#bdbcb6")
-        a.tick_params(colors=MUTED)
-    fig.suptitle(f"R81 濾波器進度：階段 spec 最佳 WM {best['wm']:+.2f} dB，五項皆差 1 dB 內", x=0.01, ha="left", fontsize=13.5, color=INK)
-    fig.text(0.01, -0.03, "規格（虛線＝階段、點線＝最終、紅區＝阻帶禁區）：S21 26–30 GHz ≥ −3 dB；22–24.5、36–40 GHz ≤ −15 dB（階段）／−20 dB（最終）；"
-             f"S11、S22 26.5–29.5 GHz ≤ −10 dB。HFSS Discrete 22–40 GHz 共 {len(rows)} 筆，皆單次模擬未重測。",
-             fontsize=8.5, color=MUTED)
-    fig.savefig(args.out, facecolor=fig.get_facecolor(), bbox_inches="tight")
-    print("saved", args.out, best["id"], round(best["wm"], 3), round(best["wm_final"], 3), len(rows))
+    args.outdir.mkdir(parents=True, exist_ok=True)
+    best_figure(args.outdir / "r81_best_design.png", best, grid, primary, final, len(rows))
+    progress_figure(args.outdir / "r81_progress_wm.png", rows)
+    print("saved", args.outdir, best["id"], round(best["wm"], 3), round(best["wm_final"], 3), len(rows))
 
 
 if __name__ == "__main__":
