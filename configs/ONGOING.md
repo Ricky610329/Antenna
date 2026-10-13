@@ -4,13 +4,13 @@
 > 2026-10-12 前的完整流水帳（R80 收尾、Codex 的 R81 release 機制、diffsim、資料工廠、🔜 候選、✅ 指標）原樣封存在
 > [docs/log/archive/ongoing-2026-10-12.md](../docs/log/archive/ongoing-2026-10-12.md)。
 
-最後更新：2026-10-13 11:00
+最後更新：2026-10-13 11:30
 
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
-- **spec v3**（學長 10/13 修訂，`configs/dual_r81_s21_v3.yaml`，現行）：S21 在 26–30 GHz ≥ −3 dB；22–24.5 GHz 與 36–40 GHz ≤ −20 dB；掃 22–40 GHz、Discrete。量測與 v2 相同，v2 的真值直接沿用。
-- **現況（10/13 11:00）**：v2 下最好 WM −0.24（`r81v2_b08_006`，單次）；改 v3 重算 303 筆後最好 **−1.06**（`r81v2_b08_008`）：通帶 −0.74、兩阻帶各差約 1 dB。
-  佇列：b10（v3 第一批，prio 3 插隊）＞ b09（v2 爬山，prio 4）＞ b03 剩餘（prio 5）＞ 填空池 g01（prio 9）。出現 WM>0 先重測公證。
+- **spec（10/13 再改，兩階段）**：S11/S22 也要過（26.5–29.5 GHz ≤ −10 dB）。先用 **v4a**（S21 阻帶 −15 dB，`configs/dual_r81_v4a.yaml`，現行搜尋目標）；過了再收緊到 **v4**（阻帶 −20 dB，`configs/dual_r81_v4.yaml`）。v2/v3 只剩歷史。量測一直沒變，全部真值沿用。
+- **現況（10/13 11:30）**：v4a 最好 **WM −1.97**（`r81v2_b08_010`，單次）：S21 三段過或差 0.26 dB，瓶頸是 S11 −1.97／S22 −1.16；同一筆在 v4 下 −3.22。
+  佇列：b12（v4a，prio 1）＞ b11（v4，prio 2）＞ b10（v3，prio 3）＞ b09（v2，prio 4）＞ b03 剩餘＞填空池。進度圖 `python -m script.figs.r81_progress <out>`。出現 WM>0 先重測公證。
 - **資料根**：`\\140.123.106.219\temp\碩二_鄒穎麒's\antenna\experiments\r81_wide_filter_20261007\v2_v001\dataset`
 - **正式機重啟**（三台同一行，repo 根、原環境）：
 

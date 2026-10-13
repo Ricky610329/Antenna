@@ -42,11 +42,11 @@ from antenna.measurement import (frequency_grid, measurement_id, score_response,
 from script.profiled_batch import load_profile_config, pattern_sha256, validate_input
 
 REPO = Path(__file__).resolve().parents[1]
-CONFIG = REPO / "configs" / "dual_r81_s21_v3.yaml"     # 10/13 學長改 v3（阻帶 -20 dB）；量測同 v2，舊真值直接沿用
+CONFIG = REPO / "configs" / "dual_r81_v4a.yaml"    # 10/13 先過 v4a（阻帶 −15 + S11/S22 匹配）再收緊到 v4（−20）；量測同 v2/v3
 HIST_DIR = REPO / "tmp" / "r81_filter_prior_full_v2_20261007"
 WIDE_ROOT = Path(r"T:\碩二_鄒穎麒's\antenna\experiments\r81_wide_filter_20261007")
 LABELS = ["S11", "S21", "S22"]
-LABEL_WEIGHT = np.array([0.2, 1.0, 0.2], dtype=np.float32)
+LABEL_WEIGHT = np.array([1.0, 1.0, 1.0], dtype=np.float32)   # v4 起 S11/S22 也計分，三條曲線同權
 SKIP_DIRS = {"rad", "jobs_state", "snapshots", "raw_snapshot"}
 
 

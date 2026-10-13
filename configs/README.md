@@ -14,6 +14,8 @@
 | --- | --- | --- | --- |
 | `dual_r81_s21_v2.yaml` | 學長 10/12 修訂：S21 26–30 ≥−3、22–24.5/36–40 ≤−15 dB；掃 22–40 GHz Discrete | **目前唯一執行項目**；求解設定與 survey 相同（open region 仍 16 GHz），只縮掃頻窗，舊 16–40 真值可直接切片沿用；選批用 `script/r81_curve_sm.py`，正式機入口 `script\r81v2.cmd` | R81 v2 |
 | `dual_r81_s21_v3.yaml` | 學長 10/13 再修訂：26–30 ≥−3、22–24.5/36–40 ≤−20 dB；掃 22–40 GHz | 量測區塊與 v2 完全相同（同 measurement_id），v2 真值直接沿用、只換計分；`r81_curve_sm` 預設改此檔 | R81 v3 |
+| `dual_r81_v4a.yaml` | 10/13 Ricky：S11/S22 也要過；先用舊阻帶 −15 dB：S21 三段＋S11/S22 26.5–29.5 ≤ −10 dB | 現行搜尋目標（`r81_curve_sm` 預設）；量測同 v2/v3，真值沿用 | R81 v4a |
+| `dual_r81_v4.yaml` | 最終 spec：S21 阻帶 −20 dB＋S11/S22 26.5–29.5 ≤ −10 dB | v4a 過了再收緊到這把；進度圖並列評估 | R81 v4 |
 | `dual_r81_s21_discrete.yaml` | S21 三段：26–30 ≥−3、16–20/36–40 ≤−20 dB；16–40 GHz Discrete | 10/12 首批 60 筆 survey 用過、已不再排入；留著當那批資料的量測身分紀錄 | R81 survey |
 | ~~`dual_r81_wide_filter.yaml`~~ | 五段工程版 S11/S22/S21 | 已移除（2026-10-12，見 git tag `pre-cleanup-20261012`）；測試改用 `tests/fixtures/profile_dual.yaml` | R81 |
 | ~~`single_r80_symmetry_explore.yaml`／`single_r80_symmetry_factory.yaml`~~ | R80 精確左右鏡射的場型與 S11/Gain，5,000 筆資料工廠 | 已移除（2026-10-12，見 git tag `pre-cleanup-20261012`）；R80 10/11 收尾凍結，測試改用 `tests/fixtures/profile_single.yaml` | R80 |

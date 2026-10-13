@@ -1,0 +1,24 @@
+# R81 filter spec v4a (2026-10-13, Ricky: old -15 dB stops first, then tighten to v4): S21 three bands + S11/S22 match.
+# S21 pass 26-30 GHz >= -3 dB; stop 22-24.5 and 36-40 GHz <= -15 dB; S11/S22 26.5-29.5 GHz <= -10 dB (R81 original match spec).
+# Measurement block is identical to v2/v3 (same measurement_id), so all earlier truth is reused as-is.
+# open_region_freq stays 16 GHz so the solver setup matches the 16-40 GHz survey data
+# (only the sweep window changes), keeping old and new truth on one instrument.
+name: dual_r81_v4a
+port: dual
+scope: symmetry_filter_20261007
+measurement:
+  name: dual25_p01_db075_22_40_s21_discrete_v2
+  port: dual
+  labels: [S11, S21, S22]
+  geometry: {geom: p01, pixel_count: 25, diag_bridge_w: 0.075}
+  sweep: {start_ghz: 22, stop_ghz: 40, step_ghz: 0.5, type: Discrete}
+  solver: {setup_freq_ghz: 28, open_region_freq_ghz: 16, max_delta_s: 0.02, max_passes: 6, min_passes: 5, min_converged: 5}
+score_spec:
+  name: filter_s21_stop15db_s11s22_match10_v4a
+  bands:
+    - {name: s21_pass, label: S21, start_ghz: 26, stop_ghz: 30, relation: ge, threshold: -3}
+    - {name: s21_low_stop, label: S21, start_ghz: 22, stop_ghz: 24.5, relation: le, threshold: -15}
+    - {name: s21_high_stop, label: S21, start_ghz: 36, stop_ghz: 40, relation: le, threshold: -15}
+    - {name: s11_match, label: S11, start_ghz: 26.5, stop_ghz: 29.5, relation: le, threshold: -10}
+    - {name: s22_match, label: S22, start_ghz: 26.5, stop_ghz: 29.5, relation: le, threshold: -10}
+runtime: {timeout: 1800}
