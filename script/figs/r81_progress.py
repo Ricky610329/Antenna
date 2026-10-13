@@ -77,7 +77,8 @@ def main(argv=None):
         bx.plot(xs, run, "o", color=color, ms=4.5, label=name)
     bx.axhline(0, color=INK, lw=1.2, ls="--")
     bx.text(xs[-1], 0.15, "達標 WM = 0", ha="right", fontsize=9, color=INK)
-    bx.set_xticks(xs, [f"b{b}" for b in batches], fontsize=8)
+    step = max(1, len(batches) // 8)                    # 批數多時每隔幾批標一次，避免擠在一起
+    bx.set_xticks(xs[::step], [f"b{b}" for b in batches][::step], fontsize=8.5)
     bx.legend(loc="lower right", frameon=False, fontsize=8.5)
     bx.set_ylabel("累計最佳 WM (dB)", color=MUTED)
     bx.set_title("各批累計最佳（同一批資料兩把尺）", loc="left", fontsize=11, color=INK)
@@ -96,7 +97,7 @@ def main(argv=None):
         for sp in ("left", "bottom"):
             a.spines[sp].set_color("#bdbcb6")
         a.tick_params(colors=MUTED)
-    fig.suptitle("R81 濾波器進度：S21 三段接近達標，瓶頸是 S11/S22 匹配", x=0.01, ha="left", fontsize=13.5, color=INK)
+    fig.suptitle(f"R81 濾波器進度：階段 spec 最佳 WM {best['wm']:+.2f} dB，五項皆差 1 dB 內", x=0.01, ha="left", fontsize=13.5, color=INK)
     fig.text(0.01, -0.03, "規格（虛線＝階段、點線＝最終、紅區＝阻帶禁區）：S21 26–30 GHz ≥ −3 dB；22–24.5、36–40 GHz ≤ −15 dB（階段）／−20 dB（最終）；"
              f"S11、S22 26.5–29.5 GHz ≤ −10 dB。HFSS Discrete 22–40 GHz 共 {len(rows)} 筆，皆單次模擬未重測。",
              fontsize=8.5, color=MUTED)
