@@ -595,7 +595,8 @@ def build(args):
     parents = pick_parents(wide, hist, cfg, grid)
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
     P, meta = generate(parents, exclude, args.n_candidates, rng,
-                       min_flips=args.min_flips, max_flips=args.max_flips, allowed=allowed)
+                       min_flips=args.min_flips, max_flips=args.max_flips, allowed=allowed,
+                       p_cross=args.p_cross)
     tops = [p for p in parents if p["source"] == "wide"][:args.climb_top]
     Pc, metac = climb_candidates(tops, exclude | {m["sha"] for m in meta}, rng, allowed=allowed)
     n_gen = len(P)
@@ -711,6 +712,8 @@ def main(argv=None):
     b.add_argument("--climb-top", type=int, default=3)
     # 只在這些列翻格，如 "5-9,15-19"＝兩個饋墊附近（匹配 S11/S22 主要由饋入點阻抗決定）
     b.add_argument("--focus-rows", default="")
+    # 同家族交配比例：前幾名各自過不同條件時，交配可能把優點組起來（停滯對策，2026-10-13）
+    b.add_argument("--p-cross", type=float, default=0.1)
     b.add_argument("--exploit-lcb", type=float, default=1.0)
     b.add_argument("--climb-n", type=int, default=24)
     b.add_argument("--min-flips", type=int, default=1)
