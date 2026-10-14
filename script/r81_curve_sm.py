@@ -32,6 +32,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import torch
@@ -55,6 +56,25 @@ def load_cfg(path=CONFIG):
     if cfg is None or cfg.port != "dual":
         raise ValueError(f"{path} 不是 dual 具名量測 config")
     return cfg
+
+
+def relaxed_cfg(cfg, spec):
+    """選樣用的放寬尺：spec 如 "s11_match=-8,s22_match=-8"，只改門檻、不動量測；空字串回原 cfg。
+    達標判定與 input 夾仍用原 cfg（2026-10-14：v4 停滯時拿匹配餘裕換阻帶深度）。"""
+    if not spec:
+        return cfg
+    new = dict(item.split("=") for item in spec.split(","))
+    bands = []
+    for b in cfg.score_spec["bands"]:
+        b = dict(b)
+        if b["name"] in new:
+            b["threshold"] = float(new.pop(b["name"]))
+        bands.append(b)
+    if new:
+        raise SystemExit(f"--relax 找不到頻段：{sorted(new)}")
+    out = SimpleNamespace(**vars(cfg))
+    out.score_spec = dict(cfg.score_spec, bands=bands)
+    return out
 
 
 # ---------------------------------------------------------------- 資料
@@ -604,7 +624,8 @@ def build(args):
 
     rng = np.random.default_rng(args.seed + args.batch)
     allowed = focus_mask(args.focus_rows)
-    parents = pick_parents(wide, hist, cfg, grid, mode=args.parent_score)
+    scfg = relaxed_cfg(cfg, args.relax)                           # 選樣尺（可放寬），達標仍看 cfg
+    parents = pick_parents(wide, hist, scfg, grid, mode=args.parent_score)
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
     P, meta = generate(parents, exclude, args.n_candidates, rng,
                        min_flips=args.min_flips, max_flips=args.max_flips, allowed=allowed,
@@ -614,7 +635,7 @@ def build(args):
     n_gen = len(P)
     P, meta = np.concatenate([P, Pc]), meta + metac
     pred = ens.predict(P.astype(np.float32))                       # (K,N,3,G)
-    slices = band_slices(cfg.score_spec, grid)
+    slices = band_slices(scfg.score_spec, grid)
     marg = np.stack([margins_vec(p, slices) for p in pred])        # (K,N,B)
     wm = marg.min(2)
     mean, std = wm.mean(0), wm.std(0)
@@ -727,6 +748,7 @@ def main(argv=None):
     # 同家族交配比例：前幾名各自過不同條件時，交配可能把優點組起來（停滯對策，2026-10-13）
     b.add_argument("--p-cross", type=float, default=0.1)
     b.add_argument("--parent-score", choices=("wm", "violation"), default="wm")
+    b.add_argument("--relax", default="", help='選樣時放寬的門檻，如 "s11_match=-8,s22_match=-8"')
     b.add_argument("--exploit-lcb", type=float, default=1.0)
     b.add_argument("--climb-n", type=int, default=24)
     b.add_argument("--min-flips", type=int, default=1)

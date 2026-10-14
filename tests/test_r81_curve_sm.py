@@ -233,3 +233,15 @@ def test_single_climb_top_gets_all_slots():
     tops = [{"id": "t0", "family": "F", "pattern": enforce_dual_geometry(rng.random((25, 25)) < 0.5)}]
     P, meta = sm.climb_candidates(tops, set(), rng, n_double=5)
     assert len(sm.pick_climb(rng.random(len(P)), meta, tops, 24)) == 24
+
+
+def test_relaxed_cfg_changes_only_named_thresholds(cfg):
+    r = sm.relaxed_cfg(cfg, "s11_match=-8")
+    by = {b["name"]: b["threshold"] for b in r.score_spec["bands"]}
+    orig = {b["name"]: b["threshold"] for b in cfg.score_spec["bands"]}
+    assert by["s11_match"] == -8 and orig["s11_match"] == -10
+    assert all(by[k] == orig[k] for k in orig if k != "s11_match")
+    assert r.measurement == cfg.measurement
+    assert sm.relaxed_cfg(cfg, "") is cfg
+    with pytest.raises(SystemExit):
+        sm.relaxed_cfg(cfg, "nope=-1")
