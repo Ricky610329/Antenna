@@ -41,8 +41,9 @@ def main(argv=None):
         out = args.outdir / f"card_{i}.png"
         note = f"（跨機重測 {rep['wm']:+.2f} dB，公證通過）" if rep and rep["wm"] > 0 else "（單次，未公證）"
         fig = rp.best_figure(out, r, grid, primary, final, len(rows),
-                             scope_note="原件單次 HFSS；重測為另一台機器同一圖形重跑。")
-        fig.suptitle(f"{i}：階段 spec WM {r['wm']:+.2f} dB {note}／最終 spec WM {r['wm_final']:+.2f} dB",
+                             scope_note="原件單次 HFSS；重測為另一台機器同一圖形重跑。",
+                             line_note=f"各格標題與虛線、淡紅禁區＝{args.primary.stem}；點線＝{args.final.stem}。")
+        fig.suptitle(f"{i}：{args.primary.stem} WM {r['wm']:+.2f} dB {note}／{args.final.stem} WM {r['wm_final']:+.2f} dB",
                      x=0.03, ha="left", fontsize=12, color=rp.INK)
         fig.savefig(out, facecolor=rp.SURF)
         plt.close(fig)
