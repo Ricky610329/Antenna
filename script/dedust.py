@@ -671,6 +671,16 @@ DUAL_FEEDS = ((0, 5, 10, 15), (20, 25, 10, 15))        # 上/下 5×5 饋墊 (r0
 #  的對帳與 SM 暖啟價值會一起失效。`tests/test_dedust.py` 有跨實作對帳測試盯住這張表。
 PORT_SWEEP = {"single": "Interpolating", "dual": "Fast"}
 RETRY_ABORTED = "本機補測放棄"     # scoped worker：這份交別台接手、本機繼續（見 worker 的 SystemExit 處理）
+HANG_EXIT = 75                     # 殺完 HFSS 呼叫仍不返回 → 行程退出碼；script/r81v2_worker.py 見此碼自動重啟
+HANG_GRACE = 180                   # 殺 HFSS 後再等幾秒才判定主執行緒凍結
+
+
+def _exit_if_still_hung(done_evt, desc, grace=HANG_GRACE, exit_fn=os._exit):
+    """看門狗殺完 HFSS 後的最後一層。COM 呼叫殺完仍不返回＝主執行緒永久凍結，只能整個行程退出，
+    交外層重啟並續跑自己的 claim（2026-10-15 218、216 同夜各卡一次，RPC 斷線後停住 1.5 小時以上）。"""
+    if not done_evt.wait(grace):
+        print(f"  ☠ {desc}：殺 HFSS 後 {grace}s 仍未返回，行程退出（code {HANG_EXIT}）交外層重啟", flush=True)
+        exit_fn(HANG_EXIT)
 
 
 def dual_metrics(resp, labels, targets) -> dict:
@@ -5777,6 +5787,7 @@ def run(args):
             if not done_evt.wait(timeout):
                 print(f"  ⏱ {desc} 超過 {timeout}s——殺 HFSS 解鎖")
                 _kill_hfss()
+                _exit_if_still_hung(done_evt, desc)
         threading.Thread(target=_wd, daemon=True).start()
         try:
             return fn()
@@ -5806,7 +5817,7 @@ def run(args):
     def _watchdog(done_evt, fired):
         #! 卡住偵測（資料工廠 2026-07-10）：COM 呼叫可以「無例外地永遠不回來」——單筆超時就殺
         #  HFSS 行程樹（script.kill,線上線容錯同款）,讓卡住的 COM 呼叫拋例外走 error 路徑。
-        #  若殺完 COM 仍不返回（罕見）,第二層=外部 status 掃 results.json staleness 告警。
+        #  若殺完 COM 仍不返回,_exit_if_still_hung 讓行程退出交外層重啟。
         if not done_evt.wait(getattr(args, "timeout", 900)):
             fired.set()
             print(f"  ⏱ 單筆超過 {getattr(args, 'timeout', 900)}s＝疑似卡住,強制終結 HFSS（watchdog）")
@@ -5815,6 +5826,7 @@ def run(args):
                 _kill()
             except Exception as ke:
                 print(f"  watchdog kill 失敗: {ke}")
+            _exit_if_still_hung(done_evt, "單筆模擬")
 
     def _errstr(e):
         """COM 錯誤可讀化:HRESULT → 名稱標籤（原訊息常是 cp950 亂碼,碼比字可靠;2026-07-11 37 教訓）。"""
