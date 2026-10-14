@@ -71,7 +71,7 @@ def curve_panel(ax, grid, y, label, primary, final, margins):
     ax.set_box_aspect(1)
 
 
-def best_figure(out, best, grid, primary, final, n_rows):
+def best_figure(out, best, grid, primary, final, n_rows, scope_note=None):
     fig, axes = plt.subplots(2, 2, figsize=(10, 10.4), dpi=160)
     fig.patch.set_facecolor(SURF)
     for ax, (k, lab) in zip((axes[0, 0], axes[0, 1], axes[1, 0]), ((1, "S21"), (0, "S11"), (2, "S22"))):
@@ -79,15 +79,16 @@ def best_figure(out, best, grid, primary, final, n_rows):
     px = axes[1, 1]
     px.imshow(best["pattern"].reshape(25, 25), cmap="Greys", origin="upper", interpolation="nearest")
     px.set_xticks([]); px.set_yticks([])
-    px.set_title("pattern（25×25，下緣為饋線側）", loc="left", fontsize=10.5, color=INK)
+    px.set_title("pattern（25×25，上下緣中央為兩埠饋墊）", loc="left", fontsize=10.5, color=INK)
     px.set_xlabel(f"{best['id']}／{best['lineage']} 家族", fontsize=8.5, color=MUTED)
     fig.suptitle(f"目前最佳設計：階段 spec WM {best['wm']:+.2f} dB、最終 spec WM {best['wm_final']:+.2f} dB",
                  x=0.03, ha="left", fontsize=13, color=INK)
     fig.text(0.03, 0.01, "虛線＝階段 spec（S21 阻帶 ≤ −15 dB）、點線＝最終 spec（≤ −20 dB）、淡紅＝階段禁區。"
-             f"S11/S22 26.5–29.5 GHz ≤ −10 dB。單次 HFSS 模擬，共 {n_rows} 筆中的最佳，未重測。",
+             "S11/S22 26.5–29.5 GHz ≤ −10 dB。" + (scope_note or f"單次 HFSS 模擬，共 {n_rows} 筆中的最佳，未重測。"),
              fontsize=8.5, color=MUTED)
     fig.tight_layout(rect=(0, 0.03, 1, 0.96))
     fig.savefig(out, facecolor=SURF)
+    return fig
 
 
 def progress_figure(out, rows):
