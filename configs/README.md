@@ -21,6 +21,7 @@
 | `dual_r81_v4x.yaml` | v4 的計分（22–24.5／36–40 ≤−20）放在 v5 的 18–40 GHz 量測上 | 「先收尾 v4」那條選樣線用；量測與 v5 相同，資料兩邊共用 | R81 v4x |
 | `dual_r81_v6a.yaml` | 學長 10/15 17:45：量測 11–40 GHz，S21 通帶 26–30 ≥ −3、阻帶 11–19 與 36–40 ≤ −15，S11/S22 26.5–29.5 ≤ −10 | 19–26 GHz 不限（過渡帶）；open_region 仍 16 GHz，11–16 GHz 準度打折 | R81 v6a |
 | `dual_r81_v6.yaml` | 同 v6a，兩阻帶 ≤ −20 dB（壓 Ku band 與 n260） | 學長的目標版 | R81 v6 |
+| `dual_r81_v6o.yaml` | 對照：v6a 的 open_region 由 16 改 11 GHz | 驗證 13.5–14 GHz 全體寄生通帶是否為輻射邊界假象 | R81 v6o |
 | `single_r80_sym_climb.yaml` | R80 對稱天線續探：左右鏡射 pattern，26.5–29.5 GHz S11≤−10、Gain≥4（離線計分，`script/r80_sym_climb.py`） | 量測與 R80 完全相同（measurement_id 998f5008），資料併用；profile 不設門檻 | R80 續 |
 | `dual_r81_s21_discrete.yaml` | S21 三段：26–30 ≥−3、16–20/36–40 ≤−20 dB；16–40 GHz Discrete | 10/12 首批 60 筆 survey 用過、已不再排入；留著當那批資料的量測身分紀錄 | R81 survey |
 | ~~`dual_r81_wide_filter.yaml`~~ | 五段工程版 S11/S22/S21 | 已移除（2026-10-12，見 git tag `pre-cleanup-20261012`）；測試改用 `tests/fixtures/profile_dual.yaml` | R81 |
