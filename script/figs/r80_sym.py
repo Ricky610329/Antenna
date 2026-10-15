@@ -130,7 +130,7 @@ def card_figure(out, rid, cfg):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("outdir", type=Path)
-    ap.add_argument("--id", default="r80sc_b02_021_b1988fa4")
+    ap.add_argument("--id", default="r80sc_b05_018_e6229e70")
     args = ap.parse_args(argv)
     plt.rcParams["font.family"] = ["Microsoft JhengHei", "sans-serif"]
     cfg = load_profile_config(sc.CONFIG)
