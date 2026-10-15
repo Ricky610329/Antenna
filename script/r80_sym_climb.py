@@ -178,7 +178,7 @@ def main(argv=None):
     q.add_argument("--input", required=True)
     q.add_argument("--name", required=True)
     q.add_argument("--machine", required=True, help="IP 末段，只給這台認領")
-    q.add_argument("--prio", type=int, default=0)
+    q.add_argument("--prio", type=int, default=-1, help="比濾波器 prio 0 優先，釘選機台先做對稱批")
     q.add_argument("--shards", type=int, default=3)
     for x in (b, s, q):
         x.add_argument("--config", type=Path, default=CONFIG)
