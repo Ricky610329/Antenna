@@ -87,6 +87,13 @@ def load_rows(cfg, refresh=False):
     return P, Y, [ids[i] for i in keep], [sts[i] for i in keep], seen
 
 
+def parent_order(mg, mode, top):
+    """起點排序：wm 或 violation（各項不足量總和）；合格者違規同為 0，再依 WM 排（2026-10-15 b07 誤選 +0.04 當首位）。"""
+    wm = mg.min(1)
+    key = wm if mode == "wm" else np.minimum(mg, 0).sum(1)
+    return np.lexsort((-wm, -key))[:top]
+
+
 def mirror_flip(p, rng, k):
     """翻 k 組左右成對像素（中線欄只翻一格），保留饋點 (24,12)。"""
     q = p.reshape(25, 25).copy()
@@ -104,8 +111,7 @@ def build(args):
     P, Y, ids, sts, known = load_rows(cfg, args.refresh)
     mg = margins(Y)
     wm = mg.min(1)
-    key = wm if args.parent_score == "wm" else np.minimum(mg, 0).sum(1)
-    order = np.argsort(-key, kind="stable")[:args.top]
+    order = parent_order(mg, args.parent_score, args.top)
     print(f"已知 {len(P)} 筆唯一；起點前 {args.top}：" +
           "、".join(f"{ids[i][-14:]} {wm[i]:+.2f}" for i in order))
     rng = np.random.default_rng(80_000 + args.batch)
