@@ -1835,3 +1835,7 @@ root審查發現v001自訂terminal證據不足，保留但禁止其valid執行�
 
 ### 2026-10-11 07:34：資料持續推進、218首次watchdog待原補測
 原main actual CIM／creation／argv、唯一inventory與19來源吻合；218／37／216 health13／14／13成功、最新9／2／1分鐘，稍後owners13／15／13，兩切點分開。218原0dccg03 row38新watchdog_timeout／RPC_S_CALL_FAILED，37原51d8g01 row0 COM 0x80070223各attempt1，無done/fail，保留現行補測；不把單筆失敗判成worker停止／root cause。舊LOW三機終態hash未變。Last completed沿用51d8/v033／4298，running a16／queuedinput不是completedaction；不重播已核對51raw，不作新全量／最佳／accuracy判斷。R81工程組裝工具已獨立review並於0d1b438封存，仍未實際release/NAS/HFSS。下一例行08:04，validated5000即R81備料、統計圖表同步。[健康與分cutoff](assets/r80_health_20261011_0734.json)。無HFSS、模型forward／training、NAS寫入、restart／redispatch或queue／marker／runtime改動。
+
+## 2026-10-15：續探（學長要求）
+
+學長想再探索對稱天線：原約束（26.5–29.5 GHz S11 ≤ −10 dB、正向 RealizedGain ≥ 4 dBi）、pattern 左右精確鏡射。Codex 那套 R80 工具已於 10/12 清掉，改用精簡的 `script/r80_sym_climb.py`：從 R80 5,000 筆前段（violation 排序前 6）做 1–3 組左右成對翻格，量測與 R80 完全相同（`configs/single_r80_sym_climb.yaml`，measurement_id 998f5008），jobs 釘選 218，store 放在 R81 的 v2 資料根、名稱 `dedust_r80scbNN`。第一批 `r80scb01` 24 筆。

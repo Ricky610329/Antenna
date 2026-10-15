@@ -245,3 +245,29 @@ def test_relaxed_cfg_changes_only_named_thresholds(cfg):
     assert sm.relaxed_cfg(cfg, "") is cfg
     with pytest.raises(SystemExit):
         sm.relaxed_cfg(cfg, "nope=-1")
+
+
+def test_pads_connected_detects_dc_path_and_cut():
+    p = enforce_dual_geometry(np.zeros((25, 25), bool))
+    assert not sm.pads_connected(p)
+    p[:, 12] = True                                  # 中間一條直通金屬
+    assert sm.pads_connected(p)
+    p[12, :] = False                                 # 切斷一整列
+    assert not sm.pads_connected(p)
+    p[12, 13] = True                                 # 與上下兩段只有角接觸，也算相連（保守）
+    assert sm.pads_connected(p)
+
+
+def test_r80_mirror_flip_keeps_symmetry_and_feed():
+    from script import r80_sym_climb as sc
+    rng = np.random.default_rng(0)
+    p = np.zeros((25, 25), bool)
+    p[24, 12] = True
+    for k in (1, 3, 5):
+        q = sc.mirror_flip(p, rng, k)
+        assert np.array_equal(q, q[:, ::-1]) and q[24, 12]
+    y = np.zeros((1, 2, 17))
+    y[0, 0] = -12.0
+    y[0, 1] = 5.0
+    y[0, 0, 8] = -9.5                                # 28 GHz 的 S11 差 0.5
+    assert np.allclose(sc.margins(y), [[-0.5, 1.0]])

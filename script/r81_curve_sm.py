@@ -403,6 +403,13 @@ def enforce_dual_geometry(pattern):
     return p
 
 
+def pads_connected(pattern):
+    """上下埠墊是否有金屬相連（8 連通，角接觸也算連，保守）。斷開＝直流隔離，低頻才擋得住。"""
+    from scipy.ndimage import label
+    lab, _ = label(np.asarray(pattern).reshape(25, 25) > 0.5, structure=np.ones((3, 3)))
+    return bool((set(lab[:5, 10:15].ravel()) - {0}) & set(lab[20:, 10:15].ravel()))
+
+
 def mutate_pattern(parent, rng, *, min_flips=2, max_flips=40, allowed=None):
     """隨機翻 min_flips..max_flips 個不重複像素，再補回埠墊。"""
     p = (np.asarray(parent).reshape(25, 25) > 0.5).copy()
@@ -625,15 +632,27 @@ def build(args):
     rng = np.random.default_rng(args.seed + args.batch)
     allowed = focus_mask(args.focus_rows)
     scfg = relaxed_cfg(cfg, args.relax)                           # 選樣尺（可放寬），達標仍看 cfg
-    parents = pick_parents(wide, hist, scfg, grid, mode=args.parent_score)
+    if args.disconnect:                                           # 斷開搜尋：起點與候選都只留兩埠斷開的設計
+        parents = pick_parents([r for r in wide if not pads_connected(r["pattern"])], hist, scfg, grid,
+                               n_hist=0, mode=args.parent_score)
+        if not parents:
+            raise SystemExit("--disconnect：寬頻真值裡沒有兩埠斷開的設計可當起點")
+    else:
+        parents = pick_parents(wide, hist, scfg, grid, mode=args.parent_score)
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
     P, meta = generate(parents, exclude, args.n_candidates, rng,
                        min_flips=args.min_flips, max_flips=args.max_flips, allowed=allowed,
                        p_cross=args.p_cross)
     tops = [p for p in parents if p["source"] == "wide"][:args.climb_top]
     Pc, metac = climb_candidates(tops, exclude | {m["sha"] for m in meta}, rng, allowed=allowed)
+    if args.disconnect:
+        keep = [i for i in range(len(P)) if not pads_connected(P[i])]
+        P, meta = P[keep], [meta[i] for i in keep]
+        keepc = [i for i in range(len(Pc)) if not pads_connected(Pc[i])]
+        Pc, metac = Pc[keepc], [metac[i] for i in keepc]
+        print(f"--disconnect：候選留 {len(P)}、爬山鄰居留 {len(Pc)}")
     n_gen = len(P)
-    P, meta = np.concatenate([P, Pc]), meta + metac
+    P, meta = np.concatenate([P.astype(np.float32), Pc]), meta + metac
     pred = ens.predict(P.astype(np.float32))                       # (K,N,3,G)
     slices = band_slices(scfg.score_spec, grid)
     marg = np.stack([margins_vec(p, slices) for p in pred])        # (K,N,B)
@@ -677,7 +696,7 @@ V2_DATASET = WIDE_ROOT / "v2_v001" / "dataset"
 
 
 def enqueue(args):
-    """選好的 input 夾 → 切 k 片 → 上 NAS → check-dup → jobs-add（同一 prio、不綁機器）。"""
+    """選好的 input 夾 → 切 k 片 → 上 NAS → check-dup → jobs-add（同一 prio；machine 有值才綁機器）。"""
     src, root = Path(args.input), Path(args.dataset_root)
     cfg = load_profile_config(args.config)
     shutil.copy2(args.config, src / "config.yaml")          # jobs-add 要求與 config bytes 一致
@@ -702,7 +721,8 @@ def enqueue(args):
         validate_input(d, cfg)
         subprocess.check_call(dedust + ["jobs-add", "--scope", cfg.scope, "--config", str(args.config),
                                         "--input", d.name, "--store", f"{base}s{k + 1}",
-                                        "--prio", str(args.prio)])
+                                        "--prio", str(args.prio)]
+                              + (["--machine", args.machine] if getattr(args, "machine", None) else []))
 
 
 def score(args):
@@ -753,6 +773,7 @@ def main(argv=None):
     b.add_argument("--climb-n", type=int, default=24)
     b.add_argument("--min-flips", type=int, default=1)
     b.add_argument("--max-flips", type=int, default=8)
+    b.add_argument("--disconnect", action="store_true", help="只產生上下兩埠金屬不相連的設計（v5 低頻阻帶）")
     q = sub.add_parser("enqueue", help="切片上 NAS、查重、入佇列（主批 prio 5／填空池 prio 9）")
     q.add_argument("--input", required=True)
     q.add_argument("--name", required=True, help="如 r81v2b03 → store dedust_r81v2b03s1..")
