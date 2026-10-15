@@ -146,12 +146,17 @@ def load_store(store, grid):
 
 
 def load_wide(root, cfg, grid):
-    rows, seen = [], set()
+    rows, seen = [], {}
     for store in wide_store_dirs(root, cfg):
         for r in load_store(store, grid):
-            if r["sha"] not in seen:          # 同圖重量測只留第一筆
-                seen.add(r["sha"])
+            old = seen.get(r["sha"])
+            if old is None:
+                seen[r["sha"]] = r
                 rows.append(r)
+            else:                             # 同圖重量測：保留第一筆，只補它沒量到的頻點（v6 以 11–40 重量 18–40 設計）
+                add = r["mask"] & ~old["mask"]
+                old["y"][add] = r["y"][add]
+                old["mask"] |= add
     return rows
 
 

@@ -271,3 +271,24 @@ def test_r80_mirror_flip_keeps_symmetry_and_feed():
     y[0, 1] = 5.0
     y[0, 0, 8] = -9.5                                # 28 GHz 的 S11 差 0.5
     assert np.allclose(sc.margins(y), [[-0.5, 1.0]])
+
+
+def test_load_wide_remeasure_fills_missing_band(tmp_path, cfg):
+    """v6 以 11–40 GHz 重量 18–40 設計：同圖去重時要補上第一筆沒量到的頻點（2026-10-15 holdout 空集合）。"""
+    from antenna.utils.store import fingerprint
+    grid = np.arange(11, 40.01, .5)
+    p = torch.tensor(enforce_dual_geometry(np.zeros((25, 25))), dtype=torch.float32)
+    for name, lo, val in (("a_first", 18.0, -10.0), ("b_wide", 11.0, -30.0)):
+        store = tmp_path / name
+        store.mkdir()
+        f = np.arange(lo, 40.01, .5)
+        y = torch.full((3, f.size), val)
+        fn = fingerprint(p, y) + ".pt"
+        torch.save((p, y), store / fn)
+        meas = dict(cfg.measurement, sweep={"start_ghz": lo, "stop_ghz": 40.0, "step_ghz": 0.5, "type": "Discrete"})
+        (store / "measurement.json").write_text(json.dumps(meas), encoding="utf-8")
+        (store / "results.json").write_text(json.dumps({
+            "x": {"status": "ok", "sample_file": fn, "freqs": f.tolist(), "lineage_id": "L"}}), encoding="utf-8")
+    rows = sm.load_wide(tmp_path, cfg, grid)
+    assert len(rows) == 1 and rows[0]["mask"].all()
+    assert (rows[0]["y"][:, grid >= 18] == -10).all() and (rows[0]["y"][:, grid < 18] == -30).all()
