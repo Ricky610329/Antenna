@@ -311,8 +311,10 @@ def holdout_eval(hist, wide_rows, cfg, grid, *, frac=0.2, seed=81, **train_kw):
     """寬頻真值按 lineage 家族切 holdout（家族不跨），回報 S21 各段 MAE、WM ρ 與常數基準。"""
     scored = [(r, true_wm(r, cfg, grid)) for r in wide_rows]
     scored = [(r, s) for r, s in scored if s is not None]
-    fams = sorted({r["lineage"] for r, _ in scored})
     rng = np.random.default_rng(seed)
+    if len({r["lineage"] for r, _ in scored}) < 5:          # v6 全是 a0 一家：按家族切會整批進 holdout、train 空
+        scored = [(dict(r, lineage=f"row:{r['sha']}"), s) for r, s in scored]   # 改逐筆切（2026-10-16）
+    fams = sorted({r["lineage"] for r, _ in scored})
     hold_f, n_hold = set(), 0
     for f in rng.permutation(fams):
         if n_hold >= frac * len(scored):
@@ -324,7 +326,7 @@ def holdout_eval(hist, wide_rows, cfg, grid, *, frac=0.2, seed=81, **train_kw):
     hold_sha = {r["sha"] for r, _ in hold}
     # 同圖、同家族的歷史窄頻都拿掉：歷史裡同家族近親上百筆，留著會讓 holdout 通帶看起來偏準
     keep = np.array([s not in hold_sha and f not in hold_f
-                     for s, f in zip(hist["sha"], hist["lineage"])])
+                     for s, f in zip(hist["sha"], hist["lineage"])], dtype=bool)
     h = {k: (np.asarray(v)[keep] if k in ("P", "Y", "M") else [x for x, k2 in zip(v, keep) if k2])
          for k, v in hist.items()}
     uncovered = [r for r in wide_rows if true_wm(r, cfg, grid) is None and r["lineage"] not in hold_f]

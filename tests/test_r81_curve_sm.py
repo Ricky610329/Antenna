@@ -292,3 +292,31 @@ def test_load_wide_remeasure_fills_missing_band(tmp_path, cfg):
     rows = sm.load_wide(tmp_path, cfg, grid)
     assert len(rows) == 1 and rows[0]["mask"].all()
     assert (rows[0]["y"][:, grid >= 18] == -10).all() and (rows[0]["y"][:, grid < 18] == -30).all()
+
+
+def test_holdout_single_family_splits_by_row(monkeypatch, cfg, grid):
+    """回歸（2026-10-16）：v6 真值全是 a0 一家，按家族切會整批進 holdout、train 空、quality_ok 恆 False。"""
+    rng = np.random.default_rng(1)
+    n = len(grid)
+    wide = []
+    for i in range(20):
+        p = enforce_dual_geometry(rng.random((25, 25)) < 0.5)
+        y = np.full((3, n), -10.0, dtype=np.float32)
+        y[1] = -5.0 - i
+        wide.append({"id": f"w{i}", "store": "s", "pattern": p, "y": y, "mask": np.ones((3, n), bool),
+                     "sha": pattern_sha256(p), "lineage": "a0"})
+    hist = {"P": np.zeros((0, 625), bool), "Y": np.zeros((0, 3, n), np.float32),
+            "M": np.zeros((0, 3, n), bool), "sha": [], "lineage": []}
+    seen = {}
+
+    class Fake:
+        def predict(self, P):
+            return np.broadcast_to(-P.sum(1)[None, :, None, None] / 100, (2, len(P), 3, n)).astype(np.float32)
+
+    def fake_train(h, rows, **kw):
+        seen["n_train"] = len(rows)
+        return Fake()
+
+    monkeypatch.setattr(sm, "train_ensemble", fake_train)
+    rep = sm.holdout_eval(hist, wide, cfg, grid, frac=0.2)
+    assert rep["n_holdout"] == 4 and seen["n_train"] == 16 and np.isfinite(rep["wm_mae_const"])

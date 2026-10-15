@@ -8,12 +8,10 @@
 
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
-- **spec（10/13 再改，兩階段）**：S11/S22 也要過（26.5–29.5 GHz ≤ −10 dB）。先用 **v4a**（S21 阻帶 −15 dB，`configs/dual_r81_v4a.yaml`，現行搜尋目標）；過了再收緊到 **v4**（阻帶 −20 dB，`configs/dual_r81_v4.yaml`）。v2/v3 只剩歷史。量測一直沒變，全部真值沿用。
-- **現況（10/15 12:40）**：v4a 已公證（b25_008 +0.21／+0.20 等四筆）；v4 最佳 −0.87（`b45_007`，單次），之後六批無突破，卡在低阻帶 22–24.5 GHz；b55 起細步爬山（`--climb-top 6 --max-flips 3`）。
-  v5（18–40 GHz）：28 筆好設計補量後最佳 v5a −6.2／v5 −11.2，18–19 GHz 只有約 −9 dB（兩埠金屬相連，低頻直通）。整列切斷手術（s52）壓低 18 GHz 但通帶垮，WM 無改善。
-  **斷開搜尋**（`build --disconnect`，只產生兩埠不相連的設計，v5a 計分）：b56 起，停損＝3 批 v5a 不超過 −6.2 就停。
-- **v6（學長 10/15 17:45，另一規格並行追蹤）**：量測 11–40 GHz，阻帶 11–19 與 36–40 GHz（`dual_r81_v6a.yaml` −15／`dual_r81_v6.yaml` −20）。`r81v6m02`（24 筆好設計 11–40 補量，prio −1）跑中。
-- **R80 對稱天線續探（學長要求，10/15 起）**：最佳 `r80sc_b05_018` WM +0.465（已公證）；：`python -m script.r80_sym_climb build/enqueue/score`，量測同 R80，jobs 釘選 218（`--machine 218`），其餘兩台跑濾波器。
+- **主目標（學長 10/15 23:00 定優先）＝v6**：量測 11–40 GHz，S21 通帶 26–30 ≥ −3、阻帶 11–19 與 36–40 ≤ −20（`configs/dual_r81_v6.yaml`；−15 版 `dual_r81_v6a.yaml` 參考），S11/S22 26.5–29.5 ≤ −10 照 Ricky 要求保留。11 GHz 直流直通，實際需兩埠斷開：`r81_curve_sm build --disconnect --max-flips 30 --climb-n 8 --config configs/dual_r81_v6.yaml`，prio −2。
+- **現況（10/16 02:20）**：13.5–14 GHz 全體寄生通帶（對照 `dual_r81_v6o.yaml` 證實非邊界假象）已由 b62 大步變異壓掉；v6 最佳 `b63_022` −7.16（單次）。批次 b62→b63→b64 跑中。
+- **已達標**：v4a（b25_008 +0.21，公證）；v4x（18–40，`b61_008` +0.03，216 公證一致）——v4x 線停止。v5a 斷開線（Ricky 好奇，非規格）最佳 −2.69，降 prio 1 不再加批。
+- **R80 對稱天線續探（學長要求，慢慢探索）**：最佳 `r80sc_b05_014` WM +0.599（公證）；`python -m script.r80_sym_climb build/enqueue/score`，量測同 R80，釘選 218、prio 1（排在 v6 之後）。
 - **資料根**：`\\140.123.106.219\temp\碩二_鄒穎麒's\antenna\experiments\r81_wide_filter_20261007\v2_v001\dataset`
 - **正式機重啟**（三台同一行，repo 根、原環境）：
 
