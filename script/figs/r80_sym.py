@@ -1,12 +1,13 @@
 """R80 對稱天線兩張圖：性能爬升（R80 5,000 筆＋10/15 續探）與目前最佳設計卡片。
 
 用法：python -m script.figs.r80_sym <輸出資料夾> [--id r80sc_b02_021_b1988fa4]
-輸出：r80sym_climb.png、r80sym_best_card.png（各格正方形）。
+輸出：r80sym_climb.png、r80sym_climb_zoom.png（只看續探）、r80sym_best_card.png（各格正方形）。
 WM＝26.5–29.5 GHz S11 ≤ −10 dB 與 Gain ≥ 4 dBi 兩項最差點取小（script/r80_sym_climb.py 同一把尺）。
 """
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 
 import matplotlib
@@ -20,7 +21,7 @@ from script.figs import r81_progress as rp
 from script.figs.report_r1r10_style import polar_rad_ax
 from script.profiled_batch import load_profile_config
 
-DOT, LINE, MARK, NEW = "#9ec5f4", "#2a78d6", "#eb6834", "#e34948"
+DOT, LINE, MARK, NEW, GRIDC = "#9ec5f4", "#2a78d6", "#eb6834", "#e34948", "#d6d5d0"
 FREQS = np.arange(24, 32.01, .5)
 
 
@@ -55,7 +56,7 @@ def climb_figure(out, Y, sts):
     ax.annotate(f"{best[-1]:+.3f}（已跨機公證）", xy=(x[-1], best[-1]), xytext=(-8, 12), textcoords="offset points",
                 ha="right", fontsize=10, color=LINE)
     ax.set_xlim(0, x[-1] + 30)
-    ax.set_ylim(lo, 0.5)
+    ax.set_ylim(lo, max(0.5, best[-1] + 0.25))
     ax.set_xlabel("累計 HFSS 模擬筆數", color=rp.MUTED)
     ax.set_ylabel("WM (dB)", color=rp.MUTED)
     ax.set_title("對稱天線性能爬升（S11 ≤ −10 dB、Gain ≥ 4 dBi，26.5–29.5 GHz）", loc="left", fontsize=11.5,
@@ -66,6 +67,42 @@ def climb_figure(out, Y, sts):
     n_pass = int((wm > 0).sum())
     fig.text(0.02, 0.01, f"共 {len(wm)} 筆唯一單次 HFSS，依完成時間排序；WM > 0 共 {n_pass} 筆；"
              f"低於 {lo} dB 的點壓在底線。", fontsize=8, color=rp.MUTED)
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    fig.savefig(out, facecolor=rp.SURF)
+    plt.close(fig)
+
+
+def zoom_figure(out, Y, sts):
+    """只看續探：x＝續探第幾筆，累計最佳從 R80 原 5,000 筆的最佳起算。"""
+    wm = sc.margins(Y).min(1)
+    new = np.array([s.startswith("dedust_r80sc") for s in sts])
+    start = wm[~new].max()
+    w = wm[new]
+    best = np.maximum.accumulate(np.maximum(w, start))
+    x = np.arange(1, len(w) + 1)
+    lo = -2
+    fig, ax = plt.subplots(figsize=(7, 7), dpi=160)
+    fig.patch.set_facecolor(rp.SURF)
+    ax.scatter(x, np.clip(w, lo, None), s=14, color=NEW, lw=0, label="續探每筆模擬")
+    ax.step(np.r_[0, x], np.r_[start, best], where="post", color=LINE, lw=2.2, label="累計最佳")
+    ax.axhline(0, color=rp.INK, lw=1.2, ls="--")
+    ax.axhline(start, color=rp.MUTED, lw=0.8, ls=":")
+    ax.text(x[-1], start - 0.06, f"R80 5,000 筆最佳 {start:+.3f}", ha="right", va="top", fontsize=8.5, color=rp.MUTED)
+    batch = [int(m.group(1)) if (m := re.search(r"scb(\d\d)", sid)) else 0 for sid in np.array(sts)[new]]
+    for b in sorted(set(batch))[1:]:
+        ax.axvline(x[batch.index(b)] - 0.5, color=GRIDC, lw=0.6)
+    ax.annotate(f"{best[-1]:+.3f}（已跨機公證）", xy=(x[-1], best[-1]), xytext=(-8, 10), textcoords="offset points",
+                ha="right", fontsize=10, color=LINE)
+    ax.set_xlim(0, x[-1] + 2)
+    ax.set_ylim(lo, best[-1] + 0.3)
+    ax.set_xlabel("續探累計模擬筆數（細線＝批次分界）", color=rp.MUTED)
+    ax.set_ylabel("WM (dB)", color=rp.MUTED)
+    ax.set_title("對稱天線續探放大（左右成對翻格爬山）", loc="left", fontsize=11.5, color=rp.INK)
+    ax.legend(loc="lower right", frameon=False, fontsize=9)
+    rp.style(ax)
+    ax.set_box_aspect(1)
+    fig.text(0.02, 0.01, f"續探 {len(w)} 筆，WM > 0 共 {int((w > 0).sum())} 筆；低於 {lo} dB 的點壓在底線。",
+             fontsize=8, color=rp.MUTED)
     fig.tight_layout(rect=(0, 0.03, 1, 1))
     fig.savefig(out, facecolor=rp.SURF)
     plt.close(fig)
@@ -137,6 +174,7 @@ def main(argv=None):
     args.outdir.mkdir(parents=True, exist_ok=True)
     P, Y, ids, sts = ordered(cfg)
     climb_figure(args.outdir / "r80sym_climb.png", Y, sts)
+    zoom_figure(args.outdir / "r80sym_climb_zoom.png", Y, sts)
     card_figure(args.outdir / "r80sym_best_card.png", args.id, cfg)
     print("saved", args.outdir, len(ids))
 
