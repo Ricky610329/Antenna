@@ -458,6 +458,33 @@ def push_move(pattern, rng, n_push=1, tries=60):
     return p if done else None
 
 
+def zigzag_slit(rng, center, amp=3, lo=5, hi=19, max_step=2):
+    """左緣到右緣的鋸齒切縫（bool 25×25）：逐欄隨機上下走，垂直段整段挖空，路徑 4 連通。
+    4 連通的空隙路徑貫穿左右緣 ⇒ 上下金屬在 8 連通（含角接觸）下一定斷開。"""
+    s = np.zeros((25, 25), bool)
+    a, b = max(lo, center - amp), min(hi, center + amp)
+    r = int(rng.integers(a, b + 1))
+    for c in range(25):
+        nr = int(np.clip(r + rng.integers(-max_step, max_step + 1), a, b))
+        s[min(r, nr):max(r, nr) + 1, c] = True
+        r = nr
+    return s
+
+
+def reseam(pattern, rng, amp=3, reach=1):
+    """任意切縫重切（2026-10-16 Ricky：只要兩埠不通，愛怎麼切都行）：兩主體之間距兩邊都 ≤ reach 格的空白先補滿，
+    再沿交界附近一條鋸齒切縫挖空。切縫在交界上下 ±amp 列內遊走，兩體沿長切縫咬合＝縫隙耦合變長。"""
+    from scipy.ndimage import binary_dilation
+    p = np.asarray(pattern).reshape(25, 25) > 0.5
+    top, bot = bodies(p)
+    k = np.ones((2 * reach + 1,) * 2)
+    gap = ~p & binary_dilation(top, k) & binary_dilation(bot, k)
+    rows = np.nonzero(gap)[0]
+    center = int(np.median(rows)) if len(rows) else 12
+    q = (p | gap) & ~zigzag_slit(rng, center, amp)
+    return enforce_dual_geometry(q)
+
+
 def mincut_disconnect(pattern):
     """相連設計 → 刪最少像素讓兩埠斷開（8 連通最小點割，埠墊不刪），斷點落在結構最細處而非整列。"""
     import networkx as nx
@@ -516,7 +543,7 @@ def crossover(a, b, rng):
 
 
 def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1, allowed=None, p_push=0.0,
-             max_push=6):
+             max_push=6, p_reseam=0.0):
     """變異＋同家族交叉產 n 個去重候選；歷史 parent 本身（新窗沒量過）也列為候選。"""
     fam = {}
     for i, p in enumerate(parents):
@@ -544,6 +571,8 @@ def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1
         if mates and rng.random() < p_cross:
             j = int(rng.choice(mates))
             add(crossover(parents[i]["pattern"], parents[j]["pattern"], rng), i, "cross")
+        elif p_reseam and rng.random() < p_reseam:
+            add(reseam(parents[i]["pattern"], rng, int(rng.integers(1, 5)), int(rng.integers(1, 4))), i, "reseam")
         elif p_push and rng.random() < p_push:
             q = push_move(parents[i]["pattern"], rng, int(rng.integers(1, max_push + 1)))
             if q is not None:
@@ -749,7 +778,7 @@ def build(args):
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
     P, meta = generate(parents, exclude, args.n_candidates, rng,
                        min_flips=args.min_flips, max_flips=args.max_flips, allowed=allowed,
-                       p_cross=args.p_cross, p_push=args.push)
+                       p_cross=args.p_cross, p_push=args.push, p_reseam=args.reseam)
     if args.mincut:                                               # 相連設計以最小點割斷開，進候選池給 SM 挑
         seen_m = exclude | {m["sha"] for m in meta}
         extra, mx = [], []
@@ -904,6 +933,7 @@ def main(argv=None):
     b.add_argument("--disconnect", action="store_true", help="只產生上下兩埠金屬不相連的設計（v5 低頻阻帶）")
     # 斷開設計的交界推移（2026-10-16）：生成時以此機率改用 push_move，爬山鄰居另加 400 個推移鄰居
     b.add_argument("--push", type=float, default=0.0)
+    b.add_argument("--reseam", type=float, default=0.0, help="生成時以此機率改用鋸齒切縫重切（任意切縫）")
     b.add_argument("--mincut", action="store_true", help="相連真值以最小點割斷開後加入候選池（給 SM 挑）")
     b.add_argument("--op-quota", default="", help='新變異保留名額，如 "push=8,mincut=6"（op 內按 SM 均值＋std 排）')
     q = sub.add_parser("enqueue", help="切片上 NAS、查重、入佇列（主批 prio 5／填空池 prio 9）")

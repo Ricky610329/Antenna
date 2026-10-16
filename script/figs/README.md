@@ -47,3 +47,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 - `r80_sym.py` — R80 對稱天線：性能爬升（R80 5,000 筆＋10/15 續探，依完成時間）、續探放大圖與最佳設計卡片（S11／Gain／pattern 含對角橋／28 GHz 兩切面方向圖）→ `docs/log/assets/round-80/`
 - `r81_v6.py` — R81 學長 v6 規格（11–40 GHz、阻帶 ≤ −20）：性能爬升（補量＋b62 起各批）與目前最佳設計卡片（S21／S11／S22 各一格＋pattern）→ `docs/log/assets/round-81/r81v6_climb.png`、`r81v6_best_card.png`
 - `r81_v6_question.py` — R81 問學長用：v4x 最佳設計 b57_004 以 11–40 GHz 重量後，分別套 v4x 與學長 v6 spec 的 S21（標出 13.5–14 GHz 漏點）→ `docs/log/assets/round-81/r81_v6_question.png`
+- `r81_reseam.py` — R81 任意切縫示意：v6 最佳斷開設計（直線交界）與三個鋸齒切縫重切變體（上下主體與浮島分色）→ `docs/log/assets/round-81/r81_reseam_demo.png`

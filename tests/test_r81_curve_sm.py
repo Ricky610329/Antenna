@@ -352,6 +352,29 @@ def test_mincut_disconnect_removes_only_the_neck():
     assert (p & ~q).sum() == 1 and not q[11, 12]
 
 
+def test_zigzag_slit_always_disconnects_even_diagonally():
+    """實心板沿鋸齒切縫挖空後，上下兩埠在 8 連通（角接觸算連）下必斷。"""
+    rng = np.random.default_rng(1)
+    full = np.ones((25, 25), bool)
+    bent = 0
+    for _ in range(50):
+        s = sm.zigzag_slit(rng, 12, amp=4)
+        assert not sm.pads_connected(enforce_dual_geometry(full & ~s))
+        bent += int(len(set(np.nonzero(s)[0])) > 1)
+    assert bent > 40                                     # 幾乎都不是直線
+
+
+def test_reseam_moves_straight_seam_and_stays_disconnected():
+    rng = np.random.default_rng(2)
+    p = _two_bodies()
+    moved = 0
+    for _ in range(30):
+        q = sm.reseam(p, rng, amp=3)
+        assert not sm.pads_connected(q) and q[sm.PADS].all()
+        moved += int(q[11, 3:22].any())                  # 原本整列空的第 11 列長出金屬
+    assert moved > 20
+
+
 def test_pick_ops_reserves_quota_per_op_with_parent_cap():
     meta = [{"op": op, "parent": par} for op, par in
             [("mutate", "a"), ("push", "a"), ("push", "a"), ("push", "a"), ("push", "b"), ("mincut", "c"), ("mincut", "d")]]
