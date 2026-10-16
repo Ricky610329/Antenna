@@ -417,6 +417,69 @@ def pads_connected(pattern):
     return bool((set(lab[:5, 10:15].ravel()) - {0}) & set(lab[20:, 10:15].ravel()))
 
 
+PADS = enforce_dual_geometry(np.zeros((25, 25), bool))
+
+
+def bodies(pattern):
+    """上、下埠墊各自所屬的 8 連通金屬主體（bool 25×25 兩張）。"""
+    from scipy.ndimage import label
+    lab, _ = label(np.asarray(pattern).reshape(25, 25) > 0.5, structure=np.ones((3, 3)))
+    top, bot = set(lab[:5, 10:15].ravel()) - {0}, set(lab[20:, 10:15].ravel()) - {0}
+    return np.isin(lab, list(top)), np.isin(lab, list(bot))
+
+
+def push_move(pattern, rng, n_push=1, tries=60):
+    """斷開設計的交界推移：一邊主體往對方多長一格、對方在該格周圍 3×3 內退掉，兩埠維持斷開。
+    拒收式變異碰不到交界（2026-10-16：v6 前 8 名交界全停在第 10/11 列），這個讓交界能移動、長出交錯手指。
+    推不動回傳 None。"""
+    from scipy.ndimage import binary_dilation
+    p = (np.asarray(pattern).reshape(25, 25) > 0.5).copy()
+    done = 0
+    for _ in range(tries):
+        if done >= n_push:
+            break
+        top, bot = bodies(p)
+        S, O = (top, bot) if rng.random() < 0.5 else (bot, top)
+        front = binary_dilation(S, np.ones((3, 3))) & binary_dilation(O, np.ones((5, 5))) & ~p
+        cand = np.flatnonzero(front.ravel())
+        if not len(cand):
+            continue
+        r, k = divmod(int(rng.choice(cand)), 25)
+        zone = np.zeros((25, 25), bool)
+        zone[max(r - 1, 0):r + 2, max(k - 1, 0):k + 2] = True
+        if (zone & O & PADS).any():
+            continue
+        q = p.copy()
+        q[r, k] = True
+        q[zone & O] = False
+        if pads_connected(q):                 # 經由浮島又接上了
+            continue
+        p, done = q, done + 1
+    return p if done else None
+
+
+def mincut_disconnect(pattern):
+    """相連設計 → 刪最少像素讓兩埠斷開（8 連通最小點割，埠墊不刪），斷點落在結構最細處而非整列。"""
+    import networkx as nx
+    p = np.asarray(pattern).reshape(25, 25) > 0.5
+    if not pads_connected(p):
+        return p.copy()
+    G = nx.Graph()
+    node = lambda r, k: ("s" if r < 12 else "t") if PADS[r, k] else (r, k)
+    for r, k in zip(*np.nonzero(p)):
+        for dr in (-1, 0, 1):
+            for dk in (-1, 0, 1):
+                rr, kk = r + dr, k + dk
+                if (dr or dk) and 0 <= rr < 25 and 0 <= kk < 25 and p[rr, kk]:
+                    a, b = node(r, k), node(rr, kk)
+                    if a != b:
+                        G.add_edge(a, b)
+    q = p.copy()
+    for r, k in nx.minimum_node_cut(G, "s", "t"):
+        q[r, k] = False
+    return q
+
+
 def mutate_pattern(parent, rng, *, min_flips=2, max_flips=40, allowed=None):
     """隨機翻 min_flips..max_flips 個不重複像素，再補回埠墊。"""
     p = (np.asarray(parent).reshape(25, 25) > 0.5).copy()
@@ -452,7 +515,8 @@ def crossover(a, b, rng):
     return enforce_dual_geometry(c)
 
 
-def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1, allowed=None):
+def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1, allowed=None, p_push=0.0,
+             max_push=6):
     """變異＋同家族交叉產 n 個去重候選；歷史 parent 本身（新窗沒量過）也列為候選。"""
     fam = {}
     for i, p in enumerate(parents):
@@ -480,13 +544,17 @@ def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1
         if mates and rng.random() < p_cross:
             j = int(rng.choice(mates))
             add(crossover(parents[i]["pattern"], parents[j]["pattern"], rng), i, "cross")
+        elif p_push and rng.random() < p_push:
+            q = push_move(parents[i]["pattern"], rng, int(rng.integers(1, max_push + 1)))
+            if q is not None:
+                add(q, i, "push")
         else:
             add(mutate_pattern(parents[i]["pattern"], rng, min_flips=min_flips,
                                max_flips=max_flips, allowed=allowed), i, "mutate")
     return np.asarray(pats, dtype=bool).reshape(-1, 625), meta
 
 
-def climb_candidates(tops, exclude, rng, *, n_double=400, allowed=None):
+def climb_candidates(tops, exclude, rng, *, n_double=400, allowed=None, n_push=0):
     """爬山鄰居：每個 top 設計的全部單格翻轉，加 n_double 個 2–3 格隨機翻轉；去重。"""
     pads = enforce_dual_geometry(np.zeros((25, 25), bool)).reshape(-1)
     seen, P, meta = set(exclude), [], []
@@ -505,7 +573,39 @@ def climb_candidates(tops, exclude, rng, *, n_double=400, allowed=None):
             seen.add(key)
             P.append(c.reshape(-1))
             meta.append({"parent": t["id"], "family": t["family"], "op": f"climb{len(mv)}", "sha": key})
+        for _ in range(n_push):                   # 交界推移 1–2 步的鄰居
+            c = push_move(base, rng, int(rng.integers(1, 3)))
+            if c is None:
+                continue
+            key = pattern_sha256(c)
+            if key in seen:
+                continue
+            seen.add(key)
+            P.append(c.reshape(-1))
+            meta.append({"parent": t["id"], "family": t["family"], "op": "push", "sha": key})
     return np.asarray(P, dtype=np.float32).reshape(-1, 625), meta
+
+
+def parse_quota(spec):
+    """"push=8,mincut=6" → {"push": 8, "mincut": 6}；空字串＝不保留。"""
+    return {k: int(v) for k, v in (x.split("=") for x in spec.split(",") if x)}
+
+
+def pick_ops(score, meta, quota, per_parent=2):
+    """每種變異 op 保留固定名額，op 內按 score（SM 樂觀分數）取前段，每 parent ≤ per_parent。
+    SM 只看過直線交界的斷開設計，全域排序挑不到新形狀（2026-10-16 b74 試建：mincut 0 筆、push 只 2 筆）。"""
+    picks, count = [], {}
+    for op, k in quota.items():
+        got = 0
+        for i in np.argsort(-score, kind="stable"):
+            if got >= k:
+                break
+            if meta[i]["op"] != op or count.get(meta[i]["parent"], 0) >= per_parent:
+                continue
+            count[meta[i]["parent"]] = count.get(meta[i]["parent"], 0) + 1
+            picks.append((int(i), op))
+            got += 1
+    return picks
 
 
 def pick_climb(mean, meta, tops, n):
@@ -649,9 +749,26 @@ def build(args):
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
     P, meta = generate(parents, exclude, args.n_candidates, rng,
                        min_flips=args.min_flips, max_flips=args.max_flips, allowed=allowed,
-                       p_cross=args.p_cross)
+                       p_cross=args.p_cross, p_push=args.push)
+    if args.mincut:                                               # 相連設計以最小點割斷開，進候選池給 SM 挑
+        seen_m = exclude | {m["sha"] for m in meta}
+        extra, mx = [], []
+        for r in wide:
+            if not pads_connected(r["pattern"]):
+                continue
+            q = enforce_dual_geometry(mincut_disconnect(r["pattern"]))
+            key = pattern_sha256(q)
+            if key in seen_m or pads_connected(q):
+                continue
+            seen_m.add(key)
+            extra.append(q.reshape(-1))
+            mx.append({"parent": f"{r['store']}:{r['id']}", "family": r["lineage"], "op": "mincut", "sha": key})
+        if extra:
+            P, meta = np.concatenate([P, np.asarray(extra, bool)]), meta + mx
+        print(f"--mincut：相連設計斷開後新增 {len(extra)} 個候選")
     tops = [p for p in parents if p["source"] == "wide"][:args.climb_top]
-    Pc, metac = climb_candidates(tops, exclude | {m["sha"] for m in meta}, rng, allowed=allowed)
+    Pc, metac = climb_candidates(tops, exclude | {m["sha"] for m in meta}, rng, allowed=allowed,
+                                 n_push=400 if args.push else 0)
     if args.disconnect:
         keep = [i for i in range(len(P)) if not pads_connected(P[i])]
         P, meta = P[keep], [meta[i] for i in keep]
@@ -669,13 +786,17 @@ def build(args):
     pm = marg.mean(0)
     predd = {"wm_mean": [float(x) for x in mean], "wm_std": [float(x) for x in std],
              "margins": [{n: float(v) for n, v in zip(names, row)} for row in pm]}
-    climb_n = min(args.climb_n, args.n) if tops else 0
+    picks = pick_ops(mean + std, meta, parse_quota(args.op_quota))      # 新變異保留名額（SM 沒看過，先給資料）
+    taken = {i for i, _ in picks}
+    climb_n = min(args.climb_n, args.n - len(picks)) if tops else 0
     cmean = np.full(len(P), -np.inf)
     cmean[n_gen:] = mean[n_gen:] - args.exploit_lcb * std[n_gen:]   # 爬山同樣用保守分數
-    picks = pick_climb(cmean, meta, tops, climb_n)
+    cmean[list(taken)] = -np.inf
+    picks += pick_climb(cmean, meta, tops, climb_n)
     q = quotas(args.n - len(picks), rep["quality_ok"])
-    gen_idx = np.arange(n_gen)
-    picks += [(int(gen_idx[i]), a) for i, a in select(P[:n_gen], mean[:n_gen], std[:n_gen], meta[:n_gen], q, rng,
+    gen_idx = np.array([i for i in range(n_gen) if i not in taken], dtype=int)
+    picks += [(int(gen_idx[i]), a) for i, a in select(P[gen_idx], mean[gen_idx], std[gen_idx],
+                                                         [meta[i] for i in gen_idx], q, rng,
                                                          exploit_lcb=args.exploit_lcb)]
     q = {"climb": len([1 for _, a in picks if a == "climb"]), **q}
     rows, sel = write_input(args.out, cfg, Path(args.config).read_text(encoding="utf-8"),
@@ -781,6 +902,10 @@ def main(argv=None):
     b.add_argument("--min-flips", type=int, default=1)
     b.add_argument("--max-flips", type=int, default=8)
     b.add_argument("--disconnect", action="store_true", help="只產生上下兩埠金屬不相連的設計（v5 低頻阻帶）")
+    # 斷開設計的交界推移（2026-10-16）：生成時以此機率改用 push_move，爬山鄰居另加 400 個推移鄰居
+    b.add_argument("--push", type=float, default=0.0)
+    b.add_argument("--mincut", action="store_true", help="相連真值以最小點割斷開後加入候選池（給 SM 挑）")
+    b.add_argument("--op-quota", default="", help='新變異保留名額，如 "push=8,mincut=6"（op 內按 SM 均值＋std 排）')
     q = sub.add_parser("enqueue", help="切片上 NAS、查重、入佇列（主批 prio 5／填空池 prio 9）")
     q.add_argument("--input", required=True)
     q.add_argument("--name", required=True, help="如 r81v2b03 → store dedust_r81v2b03s1..")

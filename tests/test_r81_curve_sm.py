@@ -320,3 +320,41 @@ def test_holdout_single_family_splits_by_row(monkeypatch, cfg, grid):
     monkeypatch.setattr(sm, "train_ensemble", fake_train)
     rep = sm.holdout_eval(hist, wide, cfg, grid, frac=0.2)
     assert rep["n_holdout"] == 4 and seen["n_train"] == 16 and np.isfinite(rep["wm_mae_const"])
+
+
+def _two_bodies():
+    """上半 0–10 列、下半 12–24 列各一塊實心主體，中間第 11 列整列空。"""
+    p = np.zeros((25, 25), bool)
+    p[:11, 3:22] = True
+    p[12:, 3:22] = True
+    return enforce_dual_geometry(p)
+
+
+def test_push_move_keeps_ports_disconnected_and_moves_boundary():
+    rng = np.random.default_rng(0)
+    p = _two_bodies()
+    moved = 0
+    for _ in range(30):
+        q = sm.push_move(p, rng, 2)
+        assert q is not None and not sm.pads_connected(q)
+        assert q[sm.PADS].all()
+        top, bot = sm.bodies(q)
+        moved += int(top[11:].any() or bot[:11].any())    # 交界離開原本第 11 列
+    assert moved > 0
+
+
+def test_mincut_disconnect_removes_only_the_neck():
+    p = _two_bodies()
+    p[11, 12] = True                                     # 一格細頸把兩體接起來
+    assert sm.pads_connected(p)
+    q = sm.mincut_disconnect(p)
+    assert not sm.pads_connected(q) and q[sm.PADS].all()
+    assert (p & ~q).sum() == 1 and not q[11, 12]
+
+
+def test_pick_ops_reserves_quota_per_op_with_parent_cap():
+    meta = [{"op": op, "parent": par} for op, par in
+            [("mutate", "a"), ("push", "a"), ("push", "a"), ("push", "a"), ("push", "b"), ("mincut", "c"), ("mincut", "d")]]
+    score = np.array([9, 5, 4, 3, 1, 2, 0], float)
+    picks = sm.pick_ops(score, meta, sm.parse_quota("push=3,mincut=1"))
+    assert picks == [(1, "push"), (2, "push"), (4, "push"), (5, "mincut")]
