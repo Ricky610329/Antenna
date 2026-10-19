@@ -70,6 +70,22 @@ def test_deltanet_shapes_and_train_smoke():
     assert dm.predict(ms, P[:3], P[3:6], Y[:3], M[:3]).shape == (1, 3, 3, g)
 
 
+def test_score_candidates_uses_nearest_full_context_and_flags_far():
+    g = 4
+    P = _patterns(30)
+    rng = np.random.default_rng(5)
+    Y = rng.normal(size=(30, 3, g)).astype(np.float32)
+    M = np.ones((30, 3, g), bool)
+    M[:5, 1, :] = False                                    # 前 5 筆缺 S21：不能當上下文
+    data = {"P": P, "Y": Y, "M": M, "wide": np.ones(30, bool)}
+    slices = [("s21_pass", 1, 0, 3, "ge", -3.0)]
+    far = ~P[:1]                                           # 與所有設計都很遠
+    out = dm.score_candidates(np.concatenate([P[5:8], far]), slices, data, seeds=(0,), epochs=1,
+                              log=lambda *_: None)
+    assert out["ctx_d"][:3].tolist() == [0, 0, 0]
+    assert np.isfinite(out["wm_mean"][:3]).all() and np.isnan(out["wm_mean"][3])
+
+
 def test_inband_score_nan_when_band_not_fully_measured():
     slices = [("s21_pass", 1, 0, 2, "ge", -3.0), ("s11_match", 0, 1, 2, "le", -10.0)]
     Y = np.zeros((2, 3, 3), np.float32)

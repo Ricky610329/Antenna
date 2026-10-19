@@ -36,10 +36,10 @@ def batch_of(store):
     return int(m.group(1)) if m else -1
 
 
-def load_all(cfg, grid):
+def load_all(cfg, grid, hist=None, wide=None):
     """歷史＋寬頻 → dict(P bool N×625, Y N×3×G, M bool, wide bool, batch int, key, src)。同圖只留一筆。"""
-    hist = sm.load_history(sm.HIST_DIR, grid)
-    wide = sm.load_wide(sm.WIDE_ROOT, cfg, grid)
+    hist = sm.load_history(sm.HIST_DIR, grid) if hist is None else hist
+    wide = sm.load_wide(sm.WIDE_ROOT, cfg, grid) if wide is None else wide
     P, Y, M, W, B, K, src, seen = [], [], [], [], [], [], [], set()
     for wi, r in enumerate(wide):
         seen.add(r["sha"])
@@ -217,6 +217,30 @@ def predict(models, Pc, Pq, Yc, Mc, dev="cpu", chunk=4096):
                             torch.tensor(Yc[sl], device=dev), torch.tensor(Mc[sl], device=dev))
         outs.append(np.stack([Yc[sl] + m(img, cur).cpu().numpy() * 10 for m in models]))
     return np.concatenate(outs, 1)
+
+
+def score_candidates(Pq, slices, data, *, seeds=(0, 1), epochs=30, draws=16, focus_draws=64, focus_weight=10.0,
+                     seed=82, log=print):
+    """選樣用：以全部資料訓練變化量模型，對每個候選取「最近的實測設計」（須量齊 slices 用到的頻點）當上下文，
+    回傳 dict(wm_mean, wm_std, ctx_d)；上下文超過 DMAX 格（訓練範圍外）時 wm_mean＝nan。"""
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    P, Y, M = data["P"], data["Y"], data["M"]
+    need = np.zeros(M.shape[1:], bool)
+    for _, li, lo, hi, *_ in slices:
+        need[li, lo:hi + 1] = True
+    full = np.flatnonzero((M | ~need).all((1, 2)))
+    rng = np.random.default_rng(seed)
+    Pk = np.packbits(P, 1)
+    bank = neighbor_bank(Pk, rng)
+    models = train(P, Y, M, data["wide"], bank, np.where(data["wide"], focus_draws, draws), seeds=seeds,
+                   epochs=epochs, focus_weight=focus_weight, rng=rng, dev=dev, log=log)
+    Pq = np.asarray(Pq).reshape(len(Pq), -1) > 0.5
+    D = hamming(np.packbits(Pq, 1), Pk[full])
+    j, d = full[D.argmin(1)], D.min(1).astype(int)
+    pred = predict(models, P[j], Pq, Y[j], M[j], dev)            # (K,n,3,G)
+    wm = np.stack([sm.margins_vec(k, slices).min(1) for k in pred])
+    mean = np.where(d <= DMAX, wm.mean(0), np.nan)
+    return {"wm_mean": mean, "wm_std": wm.std(0), "ctx_d": d}
 
 
 # ---------------------------------------------------------------- 絕對曲線 SM（對照組）

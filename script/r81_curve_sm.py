@@ -734,6 +734,8 @@ def write_input(out, cfg, config_text, P, picks, meta, pred, batch):
                      "lineage_id": meta[i]["family"], "parent_id": meta[i]["parent"],
                      "selection_arm": arm, "op": meta[i]["op"],
                      "pred_wm_mean": pred["wm_mean"][i], "pred_wm_std": pred["wm_std"][i]})
+        if "delta_wm_mean" in pred:                         # R82 變化量模型的預測（對照用）
+            rows[-1]["delta_wm_mean"] = pred["delta_wm_mean"][i]
         sel.append({"id": rid, "arm": arm, "parent": meta[i]["parent"], "family": meta[i]["family"],
                     "op": meta[i]["op"], "pred_wm_mean": pred["wm_mean"][i], "pred_wm_std": pred["wm_std"][i],
                     "pred_margins": pred["margins"][i]})
@@ -820,6 +822,18 @@ def build(args):
     picks = pick_ops(mean + std, meta, parse_quota(args.op_quota))      # 新變異保留名額（SM 沒看過，先給資料）
     taken = {i for i, _ in picks}
     climb_n = min(args.climb_n, args.n - len(picks)) if tops else 0
+    if args.delta_climb and tops:                                  # R82 S2：爬山名額一部分改由變化量模型挑
+        from script import r82_delta_sm as dm
+        dsc = dm.score_candidates(P[n_gen:], slices, dm.load_all(cfg, grid, hist, wide))
+        dmean = np.full(len(P), -np.inf)
+        dmean[n_gen:] = np.nan_to_num(dsc["wm_mean"] - args.exploit_lcb * dsc["wm_std"], nan=-np.inf)
+        dmean[list(taken)] = -np.inf
+        dpicks = [(i, "dclimb") for i, _ in pick_climb(dmean, meta, tops, min(args.delta_climb, climb_n))]
+        predd["delta_wm_mean"] = [None] * n_gen + [float(x) for x in dsc["wm_mean"]]
+        picks += dpicks
+        taken |= {i for i, _ in dpicks}
+        climb_n -= len(dpicks)
+        print(f"--delta-climb：變化量模型挑 {len(dpicks)} 筆（上下文距離中位 {int(np.median(dsc['ctx_d']))}）")
     cmean = np.full(len(P), -np.inf)
     cmean[n_gen:] = mean[n_gen:] - args.exploit_lcb * std[n_gen:]   # 爬山同樣用保守分數
     cmean[list(taken)] = -np.inf
@@ -829,7 +843,8 @@ def build(args):
     picks += [(int(gen_idx[i]), a) for i, a in select(P[gen_idx], mean[gen_idx], std[gen_idx],
                                                          [meta[i] for i in gen_idx], q, rng,
                                                          exploit_lcb=args.exploit_lcb)]
-    q = {"climb": len([1 for _, a in picks if a == "climb"]), **q}
+    q = {"climb": len([1 for _, a in picks if a == "climb"]),
+         "dclimb": len([1 for _, a in picks if a == "dclimb"]), **q}
     rows, sel = write_input(args.out, cfg, Path(args.config).read_text(encoding="utf-8"),
                             P, picks, meta, predd, args.batch)
     arms = {}
@@ -940,6 +955,8 @@ def main(argv=None):
     b.add_argument("--reseam-amp", type=int, default=4, help="重切切縫擺幅上限（列）")
     b.add_argument("--reseam-reach", type=int, default=3, help="重切前補空白的距離上限（格）")
     b.add_argument("--mincut", action="store_true", help="相連真值以最小點割斷開後加入候選池（給 SM 挑）")
+    b.add_argument("--delta-climb", type=int, default=0,
+                   help="爬山名額中幾筆改由 R82 變化量模型挑（臂名 dclimb；其餘照舊當同批對照）")
     b.add_argument("--op-quota", default="", help='新變異保留名額，如 "push=8,mincut=6"（op 內按 SM 均值＋std 排）')
     q = sub.add_parser("enqueue", help="切片上 NAS、查重、入佇列（主批 prio 5／填空池 prio 9）")
     q.add_argument("--input", required=True)
