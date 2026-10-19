@@ -18,7 +18,8 @@ from script.figs import r81_progress as rp
 
 DOT, LINE, MARK = "#9ec5f4", "#2a78d6", "#eb6834"
 V6, V6A = sm.REPO / "configs" / "dual_r81_v6.yaml", sm.REPO / "configs" / "dual_r81_v6a.yaml"
-EVENTS = [(62, "斷開＋大步變異 30 格：壓掉 13.5 GHz 峰"), (67, "饋墊附近細步"), (71, "12 格＋前 10 名起點")]
+EVENTS = [(62, "斷開＋大步變異 30 格：壓掉 13.5 GHz 峰"), (67, "饋墊附近細步"), (71, "12 格＋前 10 名起點"),
+          (74, "交界推移"), (76, "任意切縫重切"), (78, "取消選樣放寬")]
 
 
 def rows_v6(cfg, grid):
@@ -64,7 +65,7 @@ def climb_figure(out, rows):
     ax.set_xlabel("累計 HFSS 模擬筆數（11–40 GHz）", color=rp.MUTED)
     ax.set_ylabel("WM (dB)", color=rp.MUTED)
     ax.set_title("濾波器 v6 性能爬升（阻帶 11–19、36–40 ≤ −20 dB）", loc="left", fontsize=11.5, color=rp.INK)
-    ax.legend(loc="lower right", frameon=False, fontsize=9)
+    ax.legend(loc="upper right", frameon=False, fontsize=9)
     rp.style(ax)
     ax.set_box_aspect(1)
     fig.text(0.02, 0.01, f"共 {len(wm)} 筆單次 HFSS；前 24 筆為 18–40 好設計以 11–40 重量；低於 {lo} dB 的點壓在底線。",
