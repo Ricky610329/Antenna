@@ -16,14 +16,31 @@ def _patterns(n=60, seed=0):
     return np.asarray(out)
 
 
-def test_make_pairs_distance_within_dmax_and_matches_hamming():
+def test_neighbor_bank_pairs_within_dmax_and_allow():
     P = _patterns()
     Pk = np.packbits(P, 1)
-    q, c = dm.make_pairs(Pk, np.random.default_rng(1), draws=6, dmax=10)
+    rng = np.random.default_rng(1)
+    allow = np.ones(len(P), bool)
+    allow[:10] = False
+    bank = dm.neighbor_bank(Pk, rng, allow=allow, dmax=10, per=4)
+    q, c = dm.sample_pairs(bank, rng, 6)
     assert len(q) > 0
     d = (P[q] != P[c]).sum(1)
     assert d.min() >= 1 and d.max() <= 10
+    assert allow[q].all() and allow[c].all()
     assert (dm.hamming(Pk[:5], Pk)[np.arange(5), np.arange(5)] == 0).all()
+
+
+def test_drop_future_removes_disallowed_neighbors():
+    P = _patterns()
+    Pk = np.packbits(P, 1)
+    rng = np.random.default_rng(2)
+    bank = dm.neighbor_bank(Pk, rng, dmax=10, per=4)
+    ok = np.arange(len(P)) < 40
+    bank["nb"][~ok] = -1
+    dm._drop_future(bank, ok)
+    q, c = dm.sample_pairs(bank, rng, 4)
+    assert len(q) > 0 and ok[q].all() and ok[c].all()
 
 
 def test_features_encode_flip_mask_and_distance():
@@ -37,18 +54,20 @@ def test_features_encode_flip_mask_and_distance():
     assert img.shape == (2, 1250) and cur.shape == (2, 3 * g * 2 + 1)
     assert img[0, 625:].sum() == 0 and img[1, 625:].sum() == 5
     assert torch.isclose(cur[1, -1], torch.tensor(5 / dm.DMAX))
-    _, cur_h = dm.features(Pc, Pq, Y, M, dS=torch.zeros(2, 3, g))
-    assert cur_h.shape == (2, 3 * g * 3 + 1)
 
 
-def test_deltanet_cnn_and_mlp_shapes():
+def test_deltanet_shapes_and_train_smoke():
     g = 4
-    img = torch.zeros(3, 1250)
     for arch in ("mlp", "cnn"):
-        for hyb in (False, True):
-            net = dm.DeltaNet(g, arch, hyb)
-            cur = torch.zeros(3, 3 * g * (3 if hyb else 2) + 1)
-            assert net(img, cur).shape == (3, 3, g)
+        assert dm.DeltaNet(g, arch)(torch.zeros(3, 1250), torch.zeros(3, 3 * g * 2 + 1)).shape == (3, 3, g)
+    P = _patterns(30)
+    Y = np.random.default_rng(3).normal(size=(30, 3, g)).astype(np.float32)
+    M = np.ones((30, 3, g), bool)
+    rng = np.random.default_rng(4)
+    bank = dm.neighbor_bank(np.packbits(P, 1), rng, dmax=20, per=4)
+    ms = dm.train(P, Y, M, np.zeros(30, bool), bank, 2, arch="cnn", seeds=(0,), epochs=2, ft_bank=bank,
+                  ft_draws=1, ft_epochs=1, rng=rng, log=lambda *_: None)
+    assert dm.predict(ms, P[:3], P[3:6], Y[:3], M[:3]).shape == (1, 3, 3, g)
 
 
 def test_inband_score_nan_when_band_not_fully_measured():
