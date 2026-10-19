@@ -12,6 +12,7 @@
   python -m script.r82_delta_sm backtest --ref <anchor_backtest.json>   # v6 時間切分回測
 """
 import argparse
+import copy
 import json
 import re
 import sys
@@ -155,9 +156,9 @@ def features(Pc, Pq, Yc, Mc):
 
 
 def train(P, Y, M, focus, bank, draws, *, arch="cnn", seeds=(0, 1), epochs=30, focus_weight=5.0,
-          ft_bank=None, ft_draws=0, ft_epochs=0, rng=None, dev="cpu", log=print):
+          ft_bank=None, ft_draws=0, ft_epochs=0, init=None, rng=None, dev="cpu", log=print):
     """masked MSE；兩端都在 focus（重點子集）的配對加權。每個 epoch 從 bank 重抽配對。
-    ft_bank：第二段只用重點子集配對、學習率 3e-4 微調 ft_epochs。"""
+    ft_bank：第二段只用重點子集配對、學習率 3e-4 微調 ft_epochs。init：沿用已訓練模型（複製後只做微調）。"""
     rng = rng or np.random.default_rng(0)
     Pt = torch.tensor(P, dtype=torch.uint8, device=dev)
     Yt = torch.tensor(Y, device=dev)
@@ -189,12 +190,15 @@ def train(P, Y, M, focus, bank, draws, *, arch="cnn", seeds=(0, 1), epochs=30, f
 
     n_per_ep = int(np.broadcast_to(np.asarray(draws), (len(P),)).sum())
     models = []
-    for s in seeds:
+    for k, s in enumerate(seeds):
         torch.manual_seed(s)
-        net = DeltaNet(Y.shape[2], arch).to(dev)
-        opt = torch.optim.AdamW(net.parameters(), lr=1e-3, weight_decay=1e-4)
-        sched = torch.optim.lr_scheduler.OneCycleLR(opt, 2e-3, total_steps=epochs * (n_per_ep // 1024 + 2))
-        run(net, opt, sched, bank, draws, epochs, f"{arch} seed {s}")
+        if init is not None:
+            net = copy.deepcopy(init[k]).train()
+        else:
+            net = DeltaNet(Y.shape[2], arch).to(dev)
+            opt = torch.optim.AdamW(net.parameters(), lr=1e-3, weight_decay=1e-4)
+            sched = torch.optim.lr_scheduler.OneCycleLR(opt, 2e-3, total_steps=epochs * (n_per_ep // 1024 + 2))
+            run(net, opt, sched, bank, draws, epochs, f"{arch} seed {s}")
         if ft_bank is not None and ft_epochs:
             opt = torch.optim.AdamW(net.parameters(), lr=3e-4, weight_decay=1e-4)
             run(net, opt, None, ft_bank, ft_draws, ft_epochs, f"{arch} seed {s} 微調")
@@ -276,8 +280,9 @@ def _setup(args):
 
 def scarcesim(args):
     """用歷史資料模擬 v6 的處境：S21 某段（預設 24–25.5 GHz）只有一群相近設計（n_scarce 筆）量過，其餘全遮掉。
-    留出群內部分設計當查詢（上下文＝最近的已量設計），比較：照抄、絕對 SM、變化量（一段式）、變化量（＋微調）。
-    看該段的曲線誤差、該段分數（S21 最大值，越低越好）的整體與組內排序。重複 n_clusters 群取平均。"""
+    群取自密集區（像 v6 冠軍家族）；留出群內部分設計當查詢（上下文＝最近的已量設計），比較：照抄、絕對 SM、
+    變化量（一段式）、變化量（＋微調）。看該段曲線誤差、該段分數（S21 最大值）的整體排序，以及「同一已量設計周圍
+    ≤12 格查詢」的組內排序。重複 n_clusters 群取平均。"""
     t0 = time.time()
     dev = _device(args)
     cfg, grid, slices, data = _setup(args)
@@ -290,45 +295,51 @@ def scarcesim(args):
     Pk = np.packbits(P, 1)
     rng = np.random.default_rng(args.seed)
     cand = np.flatnonzero(has & ~data["wide"])
-    print(f"資料 {N}，該段量齊的歷史設計 {len(cand)}；模擬頻段 S21 {lo}–{hi} GHz，{time.time() - t0:.0f}s；裝置 {dev}", flush=True)
+    need = int(args.n_scarce * 1.4)
+    probe = rng.choice(cand, size=min(3000, len(cand)), replace=False)
+    dense = probe[(hamming(Pk[probe], Pk[cand]) <= args.region_d).sum(1) >= need]   # 像 v6：一群彼此相近的設計
+    print(f"資料 {N}，該段量齊的歷史設計 {len(cand)}，可當密集群中心 {len(dense)}／{len(probe)}；"
+          f"模擬頻段 S21 {lo}–{hi} GHz，{time.time() - t0:.0f}s；裝置 {dev}", flush=True)
     res = {}
+    used = np.zeros(N, bool)
     for ci in range(args.n_clusters):
-        seed = int(rng.choice(cand))
+        seed = int(rng.choice([d for d in dense if not used[d]]))
         d0 = hamming(Pk[seed:seed + 1], Pk[cand])[0]
-        region = cand[np.argsort(d0, kind="stable")[:int(args.n_scarce * 1.4)]]
+        region = cand[np.argsort(d0, kind="stable")[:need]]
+        used[region] = True
         test = np.zeros(N, bool)
-        test[rng.choice(region, size=len(region) - args.n_scarce, replace=False)] = True
+        test[rng.choice(region, size=need - args.n_scarce, replace=False)] = True
         scarce = np.zeros(N, bool)
         scarce[region] = True
         scarce &= ~test
         M = M0.copy()
         M[~scarce] &= ~band                                       # 群外、留出都看不到該段
-        tq = np.flatnonzero(test)
-        sc = np.flatnonzero(scarce)
+        tq, sc = np.flatnonzero(test), np.flatnonzero(scarce)
         D = hamming(Pk[tq], Pk[sc]).astype(np.int32)
-        ctx = sc[D.argmin(1)]                                     # 上下文＝最近的已量設計（以查詢為中心）
-        dctx = D.min(1)
+        ctx, dctx = sc[D.argmin(1)], D.min(1)                     # 上下文＝最近的已量設計（以查詢為中心）
+        gi, gj = np.nonzero((D >= 1) & (D <= 12))                 # 爬山情境：每個已量設計周圍 ≤12 格的查詢成一組
+        gq, gc = tq[gi], sc[gj]
         bank = neighbor_bank(Pk, rng, allow=~test, dmax=args.dmax)
         ft_bank = neighbor_bank(Pk, rng, allow=scarce, dmax=args.dmax)
-        print(f"群 {ci}：已量 {scarce.sum()}、查詢 {len(tq)}（上下文距離中位 {int(np.median(dctx))}），"
-              f"{time.time() - t0:.0f}s", flush=True)
-        truth = Y[tq][:, 1][:, band[1]].max(1)
+        print(f"群 {ci}：已量 {scarce.sum()}、查詢 {len(tq)}（上下文距離中位 {int(np.median(dctx))}，"
+              f"最大 {int(dctx.max())}；組內配對 {len(gq)}），{time.time() - t0:.0f}s", flush=True)
         draws = np.where(scarce, args.focus_draws, args.draws)
-        out = {"照抄": Y[ctx]}
         ens = fit_sm(data, np.flatnonzero(~test), M=M, seeds=(0, 1))
-        out["絕對SM"] = sm_predict(ens, P[tq])
-        ms = train(P, Y, M, scarce, bank, draws, arch=args.arch, seeds=tuple(range(args.ensemble)),
-                   epochs=args.epochs, focus_weight=args.focus_weight, rng=rng, dev=dev)
-        out["變化量"] = predict(ms, P[ctx], P[tq], Y[ctx], M[ctx], dev).mean(0)
-        ms = train(P, Y, M, scarce, bank, draws, arch=args.arch, seeds=tuple(range(args.ensemble)),
-                   epochs=args.epochs, focus_weight=args.focus_weight, ft_bank=ft_bank, ft_draws=args.focus_draws,
-                   ft_epochs=args.ft_epochs, rng=rng, dev=dev)
-        out["變化量+微調"] = predict(ms, P[ctx], P[tq], Y[ctx], M[ctx], dev).mean(0)
-        for n, v in out.items():
+        ms1 = train(P, Y, M, scarce, bank, draws, arch=args.arch, seeds=tuple(range(args.ensemble)),
+                    epochs=args.epochs, focus_weight=args.focus_weight, rng=rng, dev=dev)
+        ms2 = train(P, Y, M, scarce, bank, draws, arch=args.arch, seeds=tuple(range(args.ensemble)),
+                    ft_bank=ft_bank, ft_draws=args.focus_draws, ft_epochs=args.ft_epochs, init=ms1, rng=rng, dev=dev)
+        sm_q, sm_g = sm_predict(ens, P[tq]), sm_predict(ens, P[gq])
+        preds = {"照抄": (Y[ctx], Y[gc]), "絕對SM": (sm_q, sm_g)}
+        for n, ms in (("變化量", ms1), ("變化量+微調", ms2)):
+            preds[n] = (predict(ms, P[ctx], P[tq], Y[ctx], M[ctx], dev).mean(0),
+                        predict(ms, P[gc], P[gq], Y[gc], M[gc], dev).mean(0))
+        truth, gtruth = Y[tq][:, 1][:, band[1]].max(1), Y[gq][:, 1][:, band[1]].max(1)
+        for n, (v, vg) in preds.items():
             pv = v[:, 1][:, band[1]]
             mae = float(np.abs(pv - Y[tq][:, 1][:, band[1]]).mean())
             rho = float(spearmanr(pv.max(1), truth)[0])
-            g, ng = group_rho(pv.max(1), truth, ctx)
+            g, ng = group_rho(vg[:, 1][:, band[1]].max(1), gtruth, gc)
             res.setdefault(n, []).append((mae, rho, g))
             print(f"  {n:8s} 該段 MAE {mae:.2f} dB｜整體 ρ {rho:+.2f}｜組內 ρ {g:+.2f}（{ng} 組）", flush=True)
     print(f"\n平均（{args.n_clusters} 群）：")
@@ -481,7 +492,8 @@ def main(argv=None):
     s = sub.add_parser("scarcesim")
     s.add_argument("--band", default="24-25.5", help="模擬稀缺的 S21 頻段（GHz）")
     s.add_argument("--n-scarce", type=int, default=436, help="該段有量的設計數（v6 11–40 完整資料量）")
-    s.add_argument("--n-clusters", type=int, default=3)
+    s.add_argument("--n-clusters", type=int, default=4)
+    s.add_argument("--region-d", type=int, default=30, help="群中心 30 格內至少要有 1.4×n_scarce 個設計（密集群）")
     h = sub.add_parser("histval")
     b = sub.add_parser("backtest")
     b.add_argument("--ref", required=True, help="anchor_backtest.json（原始 SM 與錨定預測、實測 WM）")
