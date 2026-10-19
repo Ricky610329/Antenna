@@ -19,7 +19,7 @@ from script.figs import r81_progress as rp
 DOT, LINE, MARK = "#9ec5f4", "#2a78d6", "#eb6834"
 V6, V6A = sm.REPO / "configs" / "dual_r81_v6.yaml", sm.REPO / "configs" / "dual_r81_v6a.yaml"
 EVENTS = [(62, "斷開＋大步變異 30 格：壓掉 13.5 GHz 峰"), (67, "饋墊附近細步"), (71, "12 格＋前 10 名起點"),
-          (74, "交界推移"), (76, "任意切縫重切"), (78, "取消選樣放寬")]
+          (74, "交界推移"), (76, "任意切縫重切"), (78, "取消選樣放寬"), (85, "變化量模型試用")]
 
 
 def rows_v6(cfg, grid):
