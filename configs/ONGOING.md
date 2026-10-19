@@ -4,7 +4,7 @@
 > 2026-10-12 前的完整流水帳（R80 收尾、Codex 的 R81 release 機制、diffsim、資料工廠、🔜 候選、✅ 指標）原樣封存在
 > [docs/log/archive/ongoing-2026-10-12.md](../docs/log/archive/ongoing-2026-10-12.md)。
 
-最後更新：2026-10-19 18:45
+最後更新：2026-10-20 06:40
 
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
@@ -29,8 +29,8 @@
   python -m script.r81_curve_sm enqueue --input <dir> --name r81v2b0N           # 切 6 片、check-dup、入佇列（填空池加 --prio 9、名稱 r81v2gNN）
   ```
 
-## 🔵 R82 變化量代理模型（running）→ [round-82](../docs/log/round-82-delta-surrogate.md)
+## 🔵 R83 生成池 exploit 改由變化量模型排序（running）→ [round-83](../docs/log/round-83-delta-exploit.md)
 
-- 離線以實測配對（距離 1–50 均勻）學「翻幾格→曲線變化」；判準＝b72–b78 回測預測前半 ρ ≥ 0.30 且前 5 實測平均優於原始 SM，過了才掛 v6 climb 臂一半名額試用。
+- b89–b91 加 `--delta-exploit`（dclimb 5／climb 5、rot 4 維持）；判準＝三批 dexploit「> −5」≥ 40% 且中位 ≥ −6.5。R82 已結（✅，[round-82](../docs/log/round-82-delta-surrogate.md)）。
 
 ## R80 對稱探索：✅ 10/11 收尾凍結，不再派工 → [round-80](../docs/log/round-80-symmetry-exploration.md)

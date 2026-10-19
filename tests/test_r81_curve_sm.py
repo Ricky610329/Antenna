@@ -389,6 +389,19 @@ def test_rot_symmetrize_and_flip_keep_180_symmetry_and_disconnect():
     assert not sm.rot_symmetric(asym)
 
 
+def test_select_exploit_uses_alternate_model_scores_and_skips_nan():
+    rng = np.random.default_rng(0)
+    P = rng.random((10, 625)) < 0.5
+    meta = [{"parent": f"p{i}"} for i in range(10)]
+    mean = np.arange(10, 0, -1, dtype=float)                 # 原 SM：0 號最好
+    ex = np.full(10, np.nan)                               # 訓練範圍外：不進 exploit 池
+    ex[[6, 8]] = [-1.0, -2.0]
+    picks = sm.select(P, mean, np.zeros(10), meta, {"exploit": 4, "explore": 0, "random": 0}, rng,
+                      ex_mean=ex, ex_std=np.zeros(10))
+    assert sorted(i for i, a in picks if a == "exploit") == [6, 8]
+    assert len(picks) == 4                                 # 湊不滿的缺額由 random 補
+
+
 def test_pick_ops_reserves_quota_per_op_with_parent_cap():
     meta = [{"op": op, "parent": par} for op, par in
             [("mutate", "a"), ("push", "a"), ("push", "a"), ("push", "a"), ("push", "b"), ("mincut", "c"), ("mincut", "d")]]

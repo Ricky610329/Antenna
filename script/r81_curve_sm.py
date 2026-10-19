@@ -696,9 +696,10 @@ def quotas(n, quality_ok):
     return {"exploit": e, "explore": x, "random": n - e - x}
 
 
-def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3, exploit_lcb=0.0):
+def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3, exploit_lcb=0.0, ex_mean=None, ex_std=None):
     """回傳 [(index, arm)]。exploit：前段池內 maxmin Hamming；explore：UCB；random：均勻。
-    每臂每 parent ≤ per_parent；前兩臂湊不滿的缺額由 random 補。"""
+    每臂每 parent ≤ per_parent；前兩臂湊不滿的缺額由 random 補。
+    ex_mean／ex_std：exploit 改用另一個模型的分數（R83：變化量模型；nan＝訓練範圍外，不選）。"""
     picked, count = [], {}          # count 以 (arm, parent) 計：每臂每 parent ≤ per_parent
 
     def ok(i, arm):
@@ -711,13 +712,18 @@ def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3, exploit_lcb
 
     taken = set()
     # exploit 用保守分數（均值 − k·std）：b07 實測 SM 對預測最高者高估 1–8 dB（贏家詛咒）
-    lcb = mean - exploit_lcb * std
+    if ex_mean is None:
+        lcb = mean - exploit_lcb * std
+    else:
+        lcb = np.nan_to_num(ex_mean - exploit_lcb * ex_std, nan=-np.inf)
     order = np.argsort(-lcb, kind="stable")
     pool, in_pool = [], {}       # 前段池：每 parent 至多 2·per_parent 筆，避免池被少數 parent 佔滿
     for i in order:
         if len(pool) >= pool_mult * q["exploit"]:
             break
         par = meta[i]["parent"]
+        if not np.isfinite(lcb[i]):                     # 訓練範圍外（變化量模型 nan）不進池
+            break
         if in_pool.get(par, 0) < 2 * per_parent:
             in_pool[par] = in_pool.get(par, 0) + 1
             pool.append(int(i))
@@ -885,27 +891,33 @@ def build(args):
     picks = pick_ops(mean + std, meta, quota)                      # 新變異保留名額（SM 沒看過，先給資料）
     taken = {i for i, _ in picks}
     climb_n = min(args.climb_n, args.n - len(picks)) if tops else 0
-    if args.delta_climb and tops:                                  # R82 S2：爬山名額一部分改由變化量模型挑
+    dsc = None
+    if args.delta_climb or args.delta_exploit:                     # R82／R83：變化量模型替全部候選打分
         from script import r82_delta_sm as dm
-        dsc = dm.score_candidates(P[n_gen:], slices, dm.load_all(cfg, grid, hist, wide))
+        dsc = dm.score_candidates(P, slices, dm.load_all(cfg, grid, hist, wide))
+        predd["delta_wm_mean"] = [float(x) if np.isfinite(x) else None for x in dsc["wm_mean"]]
+    if args.delta_climb and tops:                                  # R82 S2：爬山名額一部分改由變化量模型挑
         dmean = np.full(len(P), -np.inf)
-        dmean[n_gen:] = np.nan_to_num(dsc["wm_mean"] - args.exploit_lcb * dsc["wm_std"], nan=-np.inf)
+        dmean[n_gen:] = np.nan_to_num(dsc["wm_mean"][n_gen:] - args.exploit_lcb * dsc["wm_std"][n_gen:],
+                                      nan=-np.inf)
         dmean[list(taken)] = -np.inf
         dpicks = [(i, "dclimb") for i, _ in pick_climb(dmean, meta, tops, min(args.delta_climb, climb_n))]
-        predd["delta_wm_mean"] = [None] * n_gen + [float(x) for x in dsc["wm_mean"]]
         picks += dpicks
         taken |= {i for i, _ in dpicks}
         climb_n -= len(dpicks)
-        print(f"--delta-climb：變化量模型挑 {len(dpicks)} 筆（上下文距離中位 {int(np.median(dsc['ctx_d']))}）")
+        print(f"--delta-climb：變化量模型挑 {len(dpicks)} 筆（上下文距離中位 {int(np.median(dsc['ctx_d'][n_gen:]))}）")
     cmean = np.full(len(P), -np.inf)
     cmean[n_gen:] = mean[n_gen:] - args.exploit_lcb * std[n_gen:]   # 爬山同樣用保守分數
     cmean[list(taken)] = -np.inf
     picks += pick_climb(cmean, meta, tops, climb_n)
     q = quotas(args.n - len(picks), rep["quality_ok"])
     gen_idx = np.array([i for i in range(n_gen) if i not in taken], dtype=int)
-    picks += [(int(gen_idx[i]), a) for i, a in select(P[gen_idx], mean[gen_idx], std[gen_idx],
-                                                         [meta[i] for i in gen_idx], q, rng,
-                                                         exploit_lcb=args.exploit_lcb)]
+    ex = {}
+    if args.delta_exploit:                                         # R83：exploit 臂改由變化量模型排序（臂名 dexploit）
+        ex = {"ex_mean": dsc["wm_mean"][gen_idx], "ex_std": dsc["wm_std"][gen_idx]}
+    picks += [(int(gen_idx[i]), "dexploit" if a == "exploit" and ex else a)
+              for i, a in select(P[gen_idx], mean[gen_idx], std[gen_idx], [meta[i] for i in gen_idx], q, rng,
+                                 exploit_lcb=args.exploit_lcb, **ex)]
     q = {"climb": len([1 for _, a in picks if a == "climb"]),
          "dclimb": len([1 for _, a in picks if a == "dclimb"]), **q}
     rows, sel = write_input(args.out, cfg, Path(args.config).read_text(encoding="utf-8"),
@@ -1020,6 +1032,8 @@ def main(argv=None):
     b.add_argument("--mincut", action="store_true", help="相連真值以最小點割斷開後加入候選池（給 SM 挑）")
     b.add_argument("--rot-quota", type=int, default=0,
                    help="180° 旋轉對稱臂（S11＝S22）保留名額；起點為已量對稱設計＋前段起點對稱化")
+    b.add_argument("--delta-exploit", action="store_true",
+                   help="R83：exploit 臂改由 R82 變化量模型排序（臂名 dexploit；explore／random 照舊）")
     b.add_argument("--delta-climb", type=int, default=0,
                    help="爬山名額中幾筆改由 R82 變化量模型挑（臂名 dclimb；其餘照舊當同批對照）")
     b.add_argument("--op-quota", default="", help='新變異保留名額，如 "push=8,mincut=6"（op 內按 SM 均值＋std 排）')
