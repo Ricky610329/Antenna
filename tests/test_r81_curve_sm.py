@@ -375,6 +375,20 @@ def test_reseam_moves_straight_seam_and_stays_disconnected():
     assert moved > 20
 
 
+def test_rot_symmetrize_and_flip_keep_180_symmetry_and_disconnect():
+    rng = np.random.default_rng(3)
+    p = _two_bodies()
+    p[11, 12] = True                                     # 細頸接通
+    q = sm.rot_symmetrize(p)
+    assert sm.rot_symmetric(q) and not sm.pads_connected(q) and q[sm.PADS].all()
+    for _ in range(20):
+        r = sm.rot_flip(q, rng, 3)
+        assert sm.rot_symmetric(r) and r[sm.PADS].all()
+    asym = q.copy()
+    asym[0, 0] = ~asym[0, 0]
+    assert not sm.rot_symmetric(asym)
+
+
 def test_pick_ops_reserves_quota_per_op_with_parent_cap():
     meta = [{"op": op, "parent": par} for op, par in
             [("mutate", "a"), ("push", "a"), ("push", "a"), ("push", "a"), ("push", "b"), ("mincut", "c"), ("mincut", "d")]]

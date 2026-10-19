@@ -428,6 +428,36 @@ def bodies(pattern):
     return np.isin(lab, list(top)), np.isin(lab, list(bot))
 
 
+ROT_HALF = np.zeros((25, 25), bool)            # 180° 旋轉對稱的自由格：上 12 列＋中線左半（含中心）
+ROT_HALF[:12] = True
+ROT_HALF[12, :13] = True
+
+
+def rot_symmetric(pattern):
+    q = np.asarray(pattern).reshape(25, 25) > 0.5
+    return bool((q == q[::-1, ::-1]).all())
+
+
+def rot_symmetrize(pattern):
+    """上半部（含中線左半）旋轉 180° 複製到下半部：兩埠互換後結構相同，S11 與 S22 對等（2026-10-20）。
+    與上下鏡射不同，旋轉對稱仍允許兩主體交錯咬合。接通時清空中線（仍對稱、仍斷開）。"""
+    p = np.asarray(pattern).reshape(25, 25) > 0.5
+    q = enforce_dual_geometry(np.where(ROT_HALF, p, p[::-1, ::-1]))
+    if pads_connected(q):
+        q[12] = False
+    return q
+
+
+def rot_flip(pattern, rng, k):
+    """翻 k 組 180° 旋轉成對的像素（中心格只翻自己），保持對稱。"""
+    q = (np.asarray(pattern).reshape(25, 25) > 0.5).copy()
+    for c in rng.choice(np.flatnonzero(ROT_HALF & ~PADS), size=k, replace=False):
+        r, col = divmod(int(c), 25)
+        q[r, col] = ~q[r, col]
+        q[24 - r, 24 - col] = q[r, col]
+    return q
+
+
 def push_move(pattern, rng, n_push=1, tries=60):
     """斷開設計的交界推移：一邊主體往對方多長一格、對方在該格周圍 3×3 內退掉，兩埠維持斷開。
     拒收式變異碰不到交界（2026-10-16：v6 前 8 名交界全停在第 10/11 列），這個讓交界能移動、長出交錯手指。
@@ -748,6 +778,34 @@ def write_input(out, cfg, config_text, P, picks, meta, pred, batch):
     return rows, sel
 
 
+def rot_candidates(P, meta, wide, parents, exclude, rng, scfg, grid, args, n_flip=300):
+    """旋轉對稱臂候選：已量的對稱斷開設計（依違規量排序前 climb_top）＋把前段起點對稱化的種子（上半／下半各一），
+    每個起點本身（若沒量過）加 n_flip 個 1–4 組成對翻轉；只留斷開、未量過的。op＝rot。"""
+    sym = [r for r in wide if rot_symmetric(r["pattern"]) and not pads_connected(r["pattern"])]
+    sym.sort(key=lambda r: -parent_key(true_wm(r, scfg, grid), args.parent_score))
+    bases = [(r["pattern"], f"{r['store']}:{r['id']}", r["lineage"]) for r in sym[:args.climb_top]]
+    for par in [p for p in parents if p["source"] == "wide"][:args.climb_top]:
+        q = np.asarray(par["pattern"]).reshape(25, 25) > 0.5
+        bases += [(rot_symmetrize(q), par["id"], f"{par['family']}/rot"),
+                  (rot_symmetrize(q[::-1, ::-1]), par["id"], f"{par['family']}/rot")]
+    seen = set(exclude) | {m["sha"] for m in meta}
+    extra, mx = [], []
+    for base, pid, fam in bases:
+        cands = [base] + [rot_flip(base, rng, int(rng.integers(1, 5))) for _ in range(n_flip)]
+        for q in cands:
+            q = enforce_dual_geometry(q)
+            key = pattern_sha256(q)
+            if key in seen or pads_connected(q):
+                continue
+            seen.add(key)
+            extra.append(q.reshape(-1))
+            mx.append({"parent": pid, "family": fam, "op": "rot", "sha": key})
+    print(f"--rot-quota：已量對稱設計 {len(sym)}，起點 {len(bases)}，對稱候選 {len(extra)}")
+    if not extra:
+        return P, meta
+    return np.concatenate([P, np.asarray(extra, bool)]), meta + mx
+
+
 def build(args):
     t0 = time.time()
     torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "4")))
@@ -799,6 +857,8 @@ def build(args):
         if extra:
             P, meta = np.concatenate([P, np.asarray(extra, bool)]), meta + mx
         print(f"--mincut：相連設計斷開後新增 {len(extra)} 個候選")
+    if args.rot_quota:                                            # 180° 旋轉對稱臂（S11＝S22），保留名額
+        P, meta = rot_candidates(P, meta, wide, parents, exclude, rng, scfg, grid, args)
     tops = [p for p in parents if p["source"] == "wide"][:args.climb_top]
     Pc, metac = climb_candidates(tops, exclude | {m["sha"] for m in meta}, rng, allowed=allowed,
                                  n_push=400 if args.push else 0)
@@ -819,7 +879,10 @@ def build(args):
     pm = marg.mean(0)
     predd = {"wm_mean": [float(x) for x in mean], "wm_std": [float(x) for x in std],
              "margins": [{n: float(v) for n, v in zip(names, row)} for row in pm]}
-    picks = pick_ops(mean + std, meta, parse_quota(args.op_quota))      # 新變異保留名額（SM 沒看過，先給資料）
+    quota = parse_quota(args.op_quota)
+    if args.rot_quota:
+        quota["rot"] = args.rot_quota
+    picks = pick_ops(mean + std, meta, quota)                      # 新變異保留名額（SM 沒看過，先給資料）
     taken = {i for i, _ in picks}
     climb_n = min(args.climb_n, args.n - len(picks)) if tops else 0
     if args.delta_climb and tops:                                  # R82 S2：爬山名額一部分改由變化量模型挑
@@ -955,6 +1018,8 @@ def main(argv=None):
     b.add_argument("--reseam-amp", type=int, default=4, help="重切切縫擺幅上限（列）")
     b.add_argument("--reseam-reach", type=int, default=3, help="重切前補空白的距離上限（格）")
     b.add_argument("--mincut", action="store_true", help="相連真值以最小點割斷開後加入候選池（給 SM 挑）")
+    b.add_argument("--rot-quota", type=int, default=0,
+                   help="180° 旋轉對稱臂（S11＝S22）保留名額；起點為已量對稱設計＋前段起點對稱化")
     b.add_argument("--delta-climb", type=int, default=0,
                    help="爬山名額中幾筆改由 R82 變化量模型挑（臂名 dclimb；其餘照舊當同批對照）")
     b.add_argument("--op-quota", default="", help='新變異保留名額，如 "push=8,mincut=6"（op 內按 SM 均值＋std 排）')
