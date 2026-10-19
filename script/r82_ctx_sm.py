@@ -64,12 +64,15 @@ class CtxNet(nn.Module):
         self.delta = nn.Sequential(nn.Linear(d, 512), nn.ReLU(), nn.Linear(512, 3 * g))
         self.logit = nn.Linear(d, 3 * g)
 
-    def forward(self, img, cur, Yc, Mc):
-        """img (B,K,1250)、cur (B,K,n)、Yc (B,K,3,G) dB/10、Mc (B,K,3,G) bool → (B,3,G) dB/10。"""
+    def forward(self, img, cur, Yc, Mc, pad=None):
+        """img (B,K,1250)、cur (B,K,n)、Yc (B,K,3,G) dB/10、Mc (B,K,3,G) bool → (B,3,G) dB/10。
+        pad (B,K) bool：True＝該位置沒有上下文（可變 K），注意力與加權都略過。"""
         B, K = img.shape[:2]
         z = self.enc(img.reshape(B * K, 2, 25, 25))
         h = self.tok(torch.cat([z, self.cur(cur.reshape(B * K, -1))], 1)).view(B, K, -1)
-        h = self.tf(h)
+        h = self.tf(h, src_key_padding_mask=pad)
+        if pad is not None:
+            Mc = Mc & ~pad[:, :, None, None]
         dl = self.delta(h).view(B, K, 3, self.g)
         lg = self.logit(h).view(B, K, 3, self.g).masked_fill(~Mc, -1e4)
         w = torch.softmax(lg, 1)
@@ -85,8 +88,10 @@ def _batch(Pt, Yt, Mt, q, C):
             Mt[cf].view(B, K, *Mt.shape[1:]))
 
 
-def train_ctx(P, Y, M, focus, bank, draws, K, *, seeds=(0, 1), epochs=30, focus_weight=10.0, rng=None,
+def train_ctx(P, Y, M, focus, bank, draws, K, *, kmin=None, seeds=(0, 1), epochs=30, focus_weight=10.0, rng=None,
               dev="cpu", bs=512, log=print):
+    """kmin<K：每個情境隨機用 kmin..K 個上下文（其餘位置遮掉），訓練出可接受不同鄰居數的模型。"""
+    kmin = K if kmin is None else kmin
     rng = rng or np.random.default_rng(0)
     near = near_list(bank, K)
     Pt = torch.tensor(P, dtype=torch.uint8, device=dev)
@@ -109,20 +114,25 @@ def train_ctx(P, Y, M, focus, bank, draws, K, *, seeds=(0, 1), epochs=30, focus_
                 b = perm[i:i + bs]
                 qb, Cb = q[b], C[b]
                 img, cur, Yc, Mc = _batch(Pt, Yt, Mt, qb, Cb)
+                pad = None
+                if kmin < K:
+                    ke = torch.randint(kmin, K + 1, (len(qb), 1), device=dev)
+                    pad = torch.arange(K, device=dev)[None, :] >= ke
+                    Mc = Mc & ~pad[:, :, None, None]
                 mb = (Mt[qb] & Mc.any(1)).float()
                 wb = torch.where(Ft[qb] & Ft[Cb].all(1), focus_weight, 1.0)
-                err = ((net(img, cur, Yc, Mc) - Yt[qb] / 10) ** 2 * mb).flatten(1).sum(1) / mb.flatten(1).sum(1).clamp(min=1)
+                err = ((net(img, cur, Yc, Mc, pad) - Yt[qb] / 10) ** 2 * mb).flatten(1).sum(1) / mb.flatten(1).sum(1).clamp(min=1)
                 loss = (err * wb).sum() / wb.sum()
                 opt.zero_grad(); loss.backward(); opt.step(); sched.step()
                 tot += float(loss) * len(b)
-        log(f"    ctx K={K} seed {s}: 末 epoch {len(q)} 情境，loss {tot / max(len(q), 1):.4f}")
+        log(f"    ctx K={kmin}..{K} seed {s}: 末 epoch {len(q)} 情境，loss {tot / max(len(q), 1):.4f}")
         models.append(net.eval())
     return models
 
 
 @torch.no_grad()
-def predict_ctx(models, P, Y, M, C, Pq, dev="cpu", chunk=1024):
-    """C (n,K) 上下文索引、Pq (n,625) 查詢 pattern → (n,3,G) dB（各 seed 平均）。"""
+def predict_ctx(models, P, Y, M, C, Pq, dev="cpu", chunk=1024, use_k=None):
+    """C (n,K) 上下文索引、Pq (n,625) 查詢 pattern → (n,3,G) dB（各 seed 平均）。use_k：只用前 use_k 個（其餘遮掉）。"""
     Pt = torch.tensor(np.concatenate([P, Pq]), dtype=torch.uint8, device=dev)
     Yt = torch.tensor(np.concatenate([Y, np.zeros((len(Pq),) + Y.shape[1:], np.float32)]), device=dev)
     Mt = torch.tensor(np.concatenate([M, np.zeros((len(Pq),) + M.shape[1:], bool)]), device=dev)
@@ -131,7 +141,10 @@ def predict_ctx(models, P, Y, M, C, Pq, dev="cpu", chunk=1024):
     out = []
     for s in range(0, len(Pq), chunk):
         img, cur, Yc, Mc = _batch(Pt, Yt, Mt, qi[s:s + chunk], Ct[s:s + chunk])
-        out.append(torch.stack([m(img, cur, Yc, Mc) for m in models]).mean(0).cpu().numpy() * 10)
+        pad = None
+        if use_k is not None and use_k < Ct.shape[1]:
+            pad = torch.arange(Ct.shape[1], device=dev)[None, :].expand(len(img), -1) >= use_k
+        out.append(torch.stack([m(img, cur, Yc, Mc, pad) for m in models]).mean(0).cpu().numpy() * 10)
     return np.concatenate(out)
 
 
@@ -164,9 +177,10 @@ def histval(args):
     ens = dm.fit_sm(data, trn)
     m1 = dm.train(P, Y, M, data["wide"], bank, draws, seeds=tuple(range(args.ensemble)), epochs=args.epochs,
                   focus_weight=args.focus_weight, rng=rng, dev=dev)
-    mk = train_ctx(P, Y, M, data["wide"], bank, np.maximum(draws // 2, 1), args.k, seeds=tuple(range(args.ensemble)),
-                   epochs=args.epochs, focus_weight=args.focus_weight, rng=rng, dev=dev)
+    mk = train_ctx(P, Y, M, data["wide"], bank, np.maximum(draws // 2, 1), args.k, kmin=args.kmin,
+                   seeds=tuple(range(args.ensemble)), epochs=args.epochs, focus_weight=args.focus_weight, rng=rng, dev=dev)
     print(f"模型完成，{time.time() - t0:.0f}s", flush=True)
+    ks = range(args.kmin or args.k, args.k + 1)
     tq = np.flatnonzero(test)
     for gmax in (3, 12, 30):
         gq, gid = [], []
@@ -183,8 +197,9 @@ def histval(args):
         C, _ = nearest_k(Pk, Pk[gq], trn, args.k)
         c1 = C[:, 0]
         pr = {"絕對SM": dm.sm_predict(ens, P[gq]),
-              "變化量K=1": dm.predict(m1, P[c1], P[gq], Y[c1], M[c1], dev).mean(0),
-              f"上下文K={args.k}": predict_ctx(mk, P, Y, M, C, P[gq], dev)}
+              "變化量K=1": dm.predict(m1, P[c1], P[gq], Y[c1], M[c1], dev).mean(0)}
+        for k in ks:
+            pr[f"上下文用{k}"] = predict_ctx(mk, P, Y, M, C, P[gq], dev, use_k=k)
         gm = M[gq]
         tg = dm.inband_score(Y[gq], gm, slices)
         ok = np.isfinite(tg)
@@ -317,6 +332,7 @@ def main(argv=None):
     b.add_argument("--out", default="")
     for x in (h, s, b):
         x.add_argument("--k", type=int, default=4, help="上下文鄰居數（Ricky：3–4 筆）")
+        x.add_argument("--kmin", type=int, default=None, help="可變 K：訓練時每情境隨機 kmin..k 個（Ricky 10/20）")
         x.add_argument("--draws", type=int, default=16)
         x.add_argument("--focus-draws", type=int, default=64)
         x.add_argument("--focus-weight", type=float, default=10.0)

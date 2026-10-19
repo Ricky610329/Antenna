@@ -44,6 +44,23 @@ def test_ctx_model_trains_and_masks_missing_context_bands():
     assert out.shape == (2, 3, g) and np.isfinite(out).all()
 
 
+def test_variable_k_model_predicts_with_fewer_contexts():
+    g = 4
+    P = _patterns(30)
+    rng = np.random.default_rng(3)
+    Y = rng.normal(size=(30, 3, g)).astype(np.float32)
+    M = np.ones((30, 3, g), bool)
+    bank = dm.neighbor_bank(np.packbits(P, 1), rng, dmax=20, per=4)
+    ms = cx.train_ctx(P, Y, M, np.zeros(30, bool), bank, 2, 3, kmin=1, seeds=(0,), epochs=2, rng=rng,
+                      log=lambda *_: None)
+    C = np.array([[0, 1, 2], [3, 4, 5]])
+    full = cx.predict_ctx(ms, P, Y, M, C, P[10:12])
+    one = cx.predict_ctx(ms, P, Y, M, C, P[10:12], use_k=1)
+    one_only = cx.predict_ctx(ms, P, Y, M, C[:, :1], P[10:12])
+    assert np.isfinite(one).all() and not np.allclose(full, one)
+    assert np.allclose(one, one_only, atol=1e-4)            # 遮掉的位置不影響結果
+
+
 def test_nearest_k_excludes_self():
     P = _patterns(20)
     Pk = np.packbits(P, 1)
