@@ -15,6 +15,10 @@ description: NAS → 本機備份量測資料（HFSS 模擬很慢、重跑不回
 | `dataset/` | 全部 store + SM 權重 | 量測資料本體 |
 | `result/` | 38 個線上訓練 run | `online/` 是該 run 收集的量測、`patterns/` 是最佳 pattern |
 | `rad圖/` | 方向圖圖檔 | 小、順手 |
+| `experiments/` | 2026-10 起 R81 等實驗的 dataset（`experiments/<round>/…/dataset`） | 新實驗的量測本體，**不在 `dataset/` 底下** |
+| `sm_dual/` | dual 線 SM 權重 | 小、順手 |
+
+⚠ 每次備份前先 `Get-ChildItem` 看一眼 NAS 根目錄：新出現的頂層夾一律加進來（2026-10-19 才發現 `experiments/` 漏了十天）。
 
 **每個 store 的完整結構**（漏抄任何一項都是資料損失）：
 
@@ -38,6 +42,8 @@ $log = "$dst\_backup_log.txt"
 robocopy "$src\dataset" "$dst\dataset" /E /XO /MT:16 /R:2 /W:5 /NFL /NDL /NP /LOG+:$log
 robocopy "$src\result"  "$dst\result"  /E /XO /MT:16 /R:2 /W:5 /NFL /NDL /NP /LOG+:$log
 robocopy "$src\rad圖"   "$dst\rad圖"   /E /XO       /R:2 /W:5 /NFL /NDL /NP /LOG+:$log
+robocopy "$src\experiments" "$dst\experiments" /E /XO /MT:16 /R:2 /W:5 /NFL /NDL /NP /LOG+:$log
+robocopy "$src\sm_dual" "$dst\sm_dual" /E /XO /R:2 /W:5 /NFL /NDL /NP /LOG+:$log
 ```
 
 旗標的意思（**別亂改**）：
@@ -49,6 +55,8 @@ robocopy "$src\rad圖"   "$dst\rad圖"   /E /XO       /R:2 /W:5 /NFL /NDL /NP /L
 
 跑的時候批次線 daemon 可能正在寫 store —— **不用停**。SampleStore 一筆一檔,
 半寫的檔頂多下次增量補上,不會污染既有資料。
+
+⚠ 把這段存成 `.ps1` 用 Windows PowerShell 5.1 跑時，檔案要存 **UTF-8 BOM**，否則中文路徑解析失敗、整支不執行（2026-10-19 實犯）。
 
 ## 三、對帳（每次備份後必跑）
 

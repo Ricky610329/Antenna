@@ -34,7 +34,13 @@ def tally(root):
     """把一棵備份樹數成各類筆數。NAS 與本機用同一把尺。"""
     t = {"我們產的批次線": 0, "學長收割 harvest_*": 0, "原始方向圖 rad/": 0,
          "輸入 pattern (_input)": 0, "results.json": 0,
-         "result/ 的 online 量測": 0, "result/ 的 patterns": 0, "SM 權重 .pth": 0}
+         "result/ 的 online 量測": 0, "result/ 的 patterns": 0, "SM 權重 .pth": 0,
+         "experiments/ 全部檔": 0, "sm_dual/ 全部檔": 0}
+
+    # 2026-10 起 R81 等實驗的 dataset 落在 experiments/<round>/…，結構各異 → 整棵數檔
+    for name in ("experiments", "sm_dual"):
+        for _, _, files in os.walk(os.path.join(root, name)):
+            t[f"{name}/ 全部檔"] += len(files)
 
     dataset = os.path.join(root, "dataset")
     try:
