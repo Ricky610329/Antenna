@@ -87,7 +87,7 @@ def test_score_candidates_uses_nearest_full_context_and_flags_far():
 
 
 def test_inband_score_nan_when_band_not_fully_measured():
-    slices = [("s21_pass", 1, 0, 2, "ge", -3.0), ("s11_match", 0, 1, 2, "le", -10.0)]
+    slices = [("s21_pass", 1, 0, 2, "ge", -3.0), ("s11_match", 0, 1, 3, "le", -10.0)]   # 與 band_slices 同：hi 不含
     Y = np.zeros((2, 3, 3), np.float32)
     Y[:, 1] = -2.0
     Y[:, 0] = -12.0
@@ -95,3 +95,12 @@ def test_inband_score_nan_when_band_not_fully_measured():
     M[1, 0, 2] = False
     s = dm.inband_score(Y, M, slices)
     assert np.isclose(s[0], 1.0) and np.isnan(s[1])
+
+
+def test_inband_score_ignores_point_just_past_band_end():
+    """band_slices 的 hi 已是「不含」端點；2026-10-20 前誤用 lo:hi+1，多算了頻段外的一點。"""
+    slices = [("s21_pass", 1, 0, 2, "ge", -3.0)]
+    Y = np.full((1, 3, 3), -1.0, np.float32)
+    Y[0, 1, 2] = -30.0                                      # 頻段外（index 2）很差，不該影響分數
+    s = dm.inband_score(Y, np.ones((1, 3, 3), bool), slices)
+    assert np.isclose(s[0], 2.0)

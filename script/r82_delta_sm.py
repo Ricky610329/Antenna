@@ -227,7 +227,7 @@ def score_candidates(Pq, slices, data, *, seeds=(0, 1), epochs=30, draws=16, foc
     P, Y, M = data["P"], data["Y"], data["M"]
     need = np.zeros(M.shape[1:], bool)
     for _, li, lo, hi, *_ in slices:
-        need[li, lo:hi + 1] = True
+        need[li, lo:hi] = True
     full = np.flatnonzero((M | ~need).all((1, 2)))
     rng = np.random.default_rng(seed)
     Pk = np.packbits(P, 1)
@@ -268,9 +268,9 @@ def inband_score(Y, M, slices, names=("s21_pass", "s11_match", "s22_match")):
     for name, li, lo, hi, rel, thr in slices:
         if name not in names:
             continue
-        v = Y[:, li, lo:hi + 1]
+        v = Y[:, li, lo:hi]
         mg = (thr - v.max(1)) if rel == "le" else (v.min(1) - thr)
-        out = np.minimum(out, np.where(M[:, li, lo:hi + 1].all(1), mg, np.nan))
+        out = np.minimum(out, np.where(M[:, li, lo:hi].all(1), mg, np.nan))
     return out
 
 
@@ -428,7 +428,7 @@ def backtest(args):
     cfg, grid, slices, data = _setup(args)
     need = np.zeros((3, len(grid)), bool)
     for _, li, lo, hi, *_ in slices:
-        need[li, lo:hi + 1] = True
+        need[li, lo:hi] = True
     P, Y, M = data["P"], data["Y"], data["M"]
     full = (M | ~need).all((1, 2))                               # 可當上下文（能算完整 v6）的設計
     Pk = np.packbits(P, 1)

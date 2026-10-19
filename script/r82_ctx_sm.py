@@ -282,7 +282,7 @@ def backtest(args):
     cfg, grid, slices, data = dm._setup(args)
     need = np.zeros((3, len(grid)), bool)
     for _, li, lo, hi, *_ in slices:
-        need[li, lo:hi + 1] = True
+        need[li, lo:hi] = True
     P, Y, M = data["P"], data["Y"], data["M"]
     full = (M | ~need).all((1, 2))
     Pk = np.packbits(P, 1)
