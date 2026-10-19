@@ -1,7 +1,7 @@
 """R82 變化量代理模型：上下文（量過的鄰居 pattern＋實測曲線）＋查詢 pattern → 查詢曲線。
 
 S1＝上下文 1 筆 c，學 Δ = y(查詢) − y(c)，預測＝y(c) + Δ̂。
-- 鄰居以查詢為中心找（Ricky 2026-10-19）；v6 回測可選「最近實測」或「血緣父代」。
+- 鄰居以查詢為中心找（Ricky 2026-10-19）；v6 回測同時算「最近實測」與「血緣父代」兩種上下文。
 - 訓練配對：每筆設計抽 d ~ 均勻(1..50)，挑距離最接近 d 的設計（Ricky：50 格內均勻）。
 - 架構：mlp（攤平輸入）或 cnn（上下文圖＋翻轉遮罩當兩張 25×25 圖）。
 - 混合式（hyb-*）：以錨定預測 y(c) + SM(q) − SM(c) 為底，只學殘差；SM 為現行絕對曲線 ensemble，
@@ -9,7 +9,7 @@ S1＝上下文 1 筆 c，學 Δ = y(查詢) − y(c)，預測＝y(c) + Δ̂。
 資料：24–32 GHz 歷史＋寬頻真值，全部對位到 v6 的 11–40 GHz 格點，沒量到的頻點以遮罩略過。
 
   python -m script.r82_delta_sm histval [--variants mlp,cnn,hyb-mlp,hyb-cnn]     # 本機歷史驗證
-  python -m script.r82_delta_sm backtest --ref <anchor_backtest.json> [--anchor parent]  # v6 時間切分回測
+  python -m script.r82_delta_sm backtest --ref <anchor_backtest.json> [--variant cnn]  # v6 時間切分回測
 """
 import argparse
 import json
@@ -65,8 +65,9 @@ def hamming(Pk_q, Pk_all, chunk=256):
 
 def make_pairs(Pk, rng, draws=8, dmax=DMAX, chunk=32, allow=None):
     """每筆查詢抽 draws 次 d~U(1..dmax)，挑距離最接近 d 的設計（同距離隨機）；只在 allow 內配對。
-    距離逐塊算，不存整張矩陣。回傳 (q, c)。"""
+    draws 可為每筆設計各自的次數（寬頻真值加抽）。距離逐塊算，不存整張矩陣。回傳 (q, c)。"""
     idx = np.flatnonzero(np.ones(len(Pk), bool) if allow is None else allow)
+    nd = np.broadcast_to(np.asarray(draws), (len(Pk),))
     Pa = Pk[idx]
     qs, cs = [], []
     for s in range(0, len(idx), chunk):
@@ -76,7 +77,7 @@ def make_pairs(Pk, rng, draws=8, dmax=DMAX, chunk=32, allow=None):
             if not ok.any():
                 continue
             cand, dist = np.flatnonzero(ok), row[ok]
-            for d in rng.integers(1, dmax + 1, size=draws):
+            for d in rng.integers(1, dmax + 1, size=int(nd[idx[s + k]])):
                 gap = np.abs(dist - d)
                 hit = cand[gap == gap.min()]
                 qs.append(idx[s + k]); cs.append(idx[int(rng.choice(hit))])
@@ -243,7 +244,7 @@ def histval(args):
     test[rng.choice(N, size=N // 10, replace=False)] = True
     trn = np.flatnonzero(~test)
     Pk = np.packbits(P, 1)
-    q, c = make_pairs(Pk, rng, draws=args.draws, dmax=args.dmax, allow=~test)
+    q, c = make_pairs(Pk, rng, draws=np.where(data["wide"], args.wide_draws, args.draws), dmax=args.dmax, allow=~test)
     print(f"資料 {N}（留出 {test.sum()}），訓練配對 {len(q)}，{time.time() - t0:.0f}s；裝置 {dev}", flush=True)
     variants = args.variants.split(",")
     ens = fit_sm(data, trn)
@@ -356,7 +357,7 @@ def backtest(args):
     rows = []
     for b in parse_range(args.batches):
         ok = data["batch"] < b                                    # 時間切分（歷史 batch=−1 一律可用）
-        q, c = make_pairs(Pk, rng, draws=args.draws, dmax=args.dmax, allow=ok)
+        q, c = make_pairs(Pk, rng, draws=np.where(data["wide"], args.wide_draws, args.draws), dmax=args.dmax, allow=ok)
         S_in = S_q = None
         if hyb:
             idx = np.flatnonzero(ok)
@@ -373,17 +374,17 @@ def backtest(args):
         if hyb and targets:
             S_in[targets] = sm_predict(ens, P[targets])
         for t, drow in zip(targets, Dt):
-            j = pool[np.argmin(drow)]                             # 離查詢最近的實測（以查詢為中心）
-            if args.anchor == "parent":                           # 改用血緣父代（有實測且可算 v6 才用）
-                pj = full_key.get(parent_of.get(data["key"][t].split(":", 1)[1], ""))
-                if pj is not None and ok[pj]:
-                    j = pj
-            dS = (S_in[t:t + 1] - S_in[j:j + 1]) if hyb else None
-            pred = predict(models, P[j:j + 1], P[t:t + 1], Y[j:j + 1], M[j:j + 1], dS, dev).mean(0)
-            o = ref[data["key"][t].split(":", 1)[1]]
-            rows.append(dict(o, delta=float(sm.margins_vec(pred, slices).min(1)[0]),
-                             ctx_d=int(_POP[Pk[t] ^ Pk[j]].sum()),
-                             ctx_true=float(sm.margins_vec(Y[j:j + 1], slices).min(1)[0])))
+            o = dict(ref[data["key"][t].split(":", 1)[1]])
+            jn = pool[np.argmin(drow)]                            # 離查詢最近的實測（以查詢為中心）
+            jp = full_key.get(parent_of.get(data["key"][t].split(":", 1)[1], ""))
+            jp = jp if jp is not None and ok[jp] else jn          # 血緣父代（有實測且可算 v6 才用）
+            for tag, j in (("", jn), ("_p", jp)):
+                dS = (S_in[t:t + 1] - S_in[j:j + 1]) if hyb else None
+                pred = predict(models, P[j:j + 1], P[t:t + 1], Y[j:j + 1], M[j:j + 1], dS, dev).mean(0)
+                o["delta" + tag] = float(sm.margins_vec(pred, slices).min(1)[0])
+                o["ctx_d" + tag] = int(_POP[Pk[t] ^ Pk[j]].sum())
+                o["ctx_true" + tag] = float(sm.margins_vec(Y[j:j + 1], slices).min(1)[0])
+            rows.append(o)
         print(f"b{b}: 訓練配對 {len(q)}，查詢 {len(targets)}，{time.time() - t0:.0f}s", flush=True)
     report(rows)
     if args.out:
@@ -392,8 +393,9 @@ def backtest(args):
 
 def report(rows):
     t = np.array([r["true"] for r in rows])
-    cols = {"原始SM": np.array([r["raw"] for r in rows]), "錨定": np.array([r["anc"] for r in rows]),
-            "變化量": np.array([r["delta"] for r in rows]), "上下文照抄": np.array([r["ctx_true"] for r in rows])}
+    cols = {"原始SM": np.array([r["raw"] for r in rows]), "錨定(父)": np.array([r["anc"] for r in rows]),
+            "變化量(最近)": np.array([r["delta"] for r in rows]), "變化量(父)": np.array([r["delta_p"] for r in rows]),
+            "照抄最近": np.array([r["ctx_true"] for r in rows])}
     d = np.array([r["ctx_d"] for r in rows])
     bt = np.array([r["batch"] for r in rows])
     raw = cols["原始SM"]
@@ -419,13 +421,12 @@ def main(argv=None):
     b = sub.add_parser("backtest")
     b.add_argument("--ref", required=True, help="anchor_backtest.json（原始 SM 與錨定預測、實測 WM）")
     b.add_argument("--batches", default="72-78")
-    b.add_argument("--variant", default="hyb-cnn")
-    b.add_argument("--anchor", choices=("nearest", "parent"), default="nearest",
-                   help="上下文＝離查詢最近的實測，或血緣父代（Ricky 10/19：兩種都試）")
+    b.add_argument("--variant", default="cnn")
     b.add_argument("--out", default="")
     for x in (h, b):
         x.add_argument("--dmax", type=int, default=DMAX, help="訓練配對距離上限（均勻取樣）")
         x.add_argument("--draws", type=int, default=16)
+        x.add_argument("--wide-draws", type=int, default=16, help="寬頻真值當查詢時的抽樣次數（加抽＝加重 v6 頻段）")
         x.add_argument("--epochs", type=int, default=30)
         x.add_argument("--ensemble", type=int, default=2)
         x.add_argument("--wide-weight", type=float, default=5.0)
