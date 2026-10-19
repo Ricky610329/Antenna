@@ -543,7 +543,7 @@ def crossover(a, b, rng):
 
 
 def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1, allowed=None, p_push=0.0,
-             max_push=6, p_reseam=0.0):
+             max_push=6, p_reseam=0.0, reseam_amp=4, reseam_reach=3):
     """變異＋同家族交叉產 n 個去重候選；歷史 parent 本身（新窗沒量過）也列為候選。"""
     fam = {}
     for i, p in enumerate(parents):
@@ -572,7 +572,8 @@ def generate(parents, exclude, n, rng, *, min_flips=2, max_flips=40, p_cross=0.1
             j = int(rng.choice(mates))
             add(crossover(parents[i]["pattern"], parents[j]["pattern"], rng), i, "cross")
         elif p_reseam and rng.random() < p_reseam:
-            add(reseam(parents[i]["pattern"], rng, int(rng.integers(1, 5)), int(rng.integers(1, 4))), i, "reseam")
+            add(reseam(parents[i]["pattern"], rng, int(rng.integers(1, reseam_amp + 1)),
+                       int(rng.integers(1, reseam_reach + 1))), i, "reseam")
         elif p_push and rng.random() < p_push:
             q = push_move(parents[i]["pattern"], rng, int(rng.integers(1, max_push + 1)))
             if q is not None:
@@ -778,7 +779,8 @@ def build(args):
     exclude = {r["sha"] for r in wide} | input_hashes(args.wide_root)
     P, meta = generate(parents, exclude, args.n_candidates, rng,
                        min_flips=args.min_flips, max_flips=args.max_flips, allowed=allowed,
-                       p_cross=args.p_cross, p_push=args.push, p_reseam=args.reseam)
+                       p_cross=args.p_cross, p_push=args.push, p_reseam=args.reseam,
+                       reseam_amp=args.reseam_amp, reseam_reach=args.reseam_reach)
     if args.mincut:                                               # 相連設計以最小點割斷開，進候選池給 SM 挑
         seen_m = exclude | {m["sha"] for m in meta}
         extra, mx = [], []
@@ -934,6 +936,9 @@ def main(argv=None):
     # 斷開設計的交界推移（2026-10-16）：生成時以此機率改用 push_move，爬山鄰居另加 400 個推移鄰居
     b.add_argument("--push", type=float, default=0.0)
     b.add_argument("--reseam", type=float, default=0.0, help="生成時以此機率改用鋸齒切縫重切（任意切縫）")
+    # b76 大步重切（擺幅 ≤4、補 ≤3 格）8 筆全 < −8，通帶塌；之後用小步（2026-10-19）
+    b.add_argument("--reseam-amp", type=int, default=4, help="重切切縫擺幅上限（列）")
+    b.add_argument("--reseam-reach", type=int, default=3, help="重切前補空白的距離上限（格）")
     b.add_argument("--mincut", action="store_true", help="相連真值以最小點割斷開後加入候選池（給 SM 挑）")
     b.add_argument("--op-quota", default="", help='新變異保留名額，如 "push=8,mincut=6"（op 內按 SM 均值＋std 排）')
     q = sub.add_parser("enqueue", help="切片上 NAS、查重、入佇列（主批 prio 5／填空池 prio 9）")

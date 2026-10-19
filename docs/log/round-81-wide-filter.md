@@ -524,3 +524,10 @@ Ricky 要求 S11、S22 一起達標（沿用 R81 原匹配條件 26.5–29.5 GHz
 - 示意圖：![reseam](assets/round-81/r81_reseam_demo.png)
 - b76（prio −3，排在 b75 前）：`--push 0.5 --reseam 0.3 --op-quota reseam=8`，reseam 9 筆（SM 預測 −9.0～−5.0）、climb 8、mutate 5、push 2。
 - 判準（發車前寫死）：大步變異首批預期比爬山差，看它能否當新起點——reseam 有 ≥ −6 的設計 → b77 起保留 reseam 名額並讓它進爬山起點；reseam 最佳 ≥ 同批 climb 最佳 → 加大比重；全部 < −8 → 降到 SM 自選。
+
+## 2026-10-19 15:10：b76 判讀——大步重切不保留名額；b77 改小步重切
+
+- 10/16 傍晚到 10/19 中午三台誤關機停擺；重開後 218 在 repo 資料夾建不了檔案（git 暫存檔與 `_dedust_*` 工作夾都失敗，疑 Defender 受控資料夾存取），b75s1、b75s2 被它標 fail，資料保留、由別台接手。218 暫停。
+- b76 已回 21 筆：climb 最佳 `b76_009` −4.57（單次，略勝 −4.60，在誤差內）；mutate −4.76；push −6.04；**reseam 8 筆 −11.5～−21.9**，通帶 S21 塌到 −7～−22 dB。補滿空白再切一次改 30–70 格，諧振跑掉。
+- 依判準：reseam 全 < −8 → 不保留名額，回 SM 自選。新增 `--reseam-amp`／`--reseam-reach` 控制步幅。
+- b77（prio −2）：`--push 0.5 --reseam 0.2 --reseam-amp 2 --reseam-reach 1`，無保留名額；SM 自選 reseam 2、push 3、mutate 10、climb 9。holdout ρ 0.70、MAE 2.86。
