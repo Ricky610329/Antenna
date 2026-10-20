@@ -621,3 +621,9 @@ Ricky 要求 S11、S22 一起達標（沿用 R81 原匹配條件 26.5–29.5 GHz
 
 - `r81v2_b90_012_63aeafb3`（R83 dexploit，push）WM **−3.77**：通帶 −0.83、低阻 **−3.77**、高阻 −1.84、S11 −2.47、S22 −2.11。前五名（−3.77～−3.93）幾乎都只卡低阻帶，匹配與通帶多在 0.5–3 dB 內（b89_005 S11 −0.55）。
 - b92 起 climb 全由變化量模型挑（R82 接手規則觸發，見 round-83）。
+
+## 2026-10-20 09:05：學長同意 Interpolating 加速——先驗證再換主線
+
+- 學長 10/20：要加速可以用 Interpolating。新 config `configs/dual_r81_v6i.yaml`（只把 v6 的掃頻改 Interpolating，spec／solver／幾何全同；量測身分不同）。程式本來支援（`antenna/measurement.py` 的 sweep 型別、`DualPortSimulator(sweep_type=...)`）。
+- 驗證批 `r81v6im01`（prio −3 插到最前，3 片共 24 筆）：v6 前 12 名＋WM 全範圍等距 12 筆，皆已有 Discrete 實測，以 Interpolating 重量。
+- 判準（發車前寫死）：①前 12 名 |ΔWM| 中位 ≤ 0.3 dB 且最大 ≤ 1.0 dB ②24 筆 WM 排序 ρ ≥ 0.9 ③每筆耗時中位 ≤ Discrete（464 s）的 2/3。三項皆過 → 主線改 v6i，並讓 SM／變化量模型把 v6i 資料當同儀器（`_same_instrument` 放行 Interpolating）；紀錄級設計仍以 Discrete 公證。任一不過 → 維持 Discrete，回報差在哪。
