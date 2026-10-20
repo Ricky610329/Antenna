@@ -772,6 +772,8 @@ def write_input(out, cfg, config_text, P, picks, meta, pred, batch):
                      "pred_wm_mean": pred["wm_mean"][i], "pred_wm_std": pred["wm_std"][i]})
         if "delta_wm_mean" in pred:                         # R82 變化量模型的預測（對照用）
             rows[-1]["delta_wm_mean"] = pred["delta_wm_mean"][i]
+        if "ctx_wm_mean" in pred:                           # 上下文接龍模型（影子模式，不參與挑選）
+            rows[-1]["ctx_wm_mean"] = pred["ctx_wm_mean"][i]
         sel.append({"id": rid, "arm": arm, "parent": meta[i]["parent"], "family": meta[i]["family"],
                     "op": meta[i]["op"], "pred_wm_mean": pred["wm_mean"][i], "pred_wm_std": pred["wm_std"][i],
                     "pred_margins": pred["margins"][i]})
@@ -894,7 +896,8 @@ def build(args):
     dsc = None
     if args.delta_climb or args.delta_exploit:                     # R82／R83：變化量模型替全部候選打分
         from script import r82_delta_sm as dm
-        dsc = dm.score_candidates(P, slices, dm.load_all(cfg, grid, hist, wide))
+        ddata = dm.load_all(cfg, grid, hist, wide)
+        dsc = dm.score_candidates(P, slices, ddata)
         predd["delta_wm_mean"] = [float(x) if np.isfinite(x) else None for x in dsc["wm_mean"]]
     if args.delta_climb and tops:                                  # R82 S2：爬山名額一部分改由變化量模型挑
         dmean = np.full(len(P), -np.inf)
@@ -922,6 +925,15 @@ def build(args):
                                  exploit_lcb=args.exploit_lcb, **ex)]
     q = {"climb": len([1 for _, a in picks if a == "climb"]),
          "dclimb": len([1 for _, a in picks if a == "dclimb"]), **q}
+    if args.ctx_shadow:                                            # R83 起影子模式：上下文接龍模型只預測、不參與挑選
+        from script import r82_ctx_sm as cx
+        from script import r82_delta_sm as dm
+        ddata = ddata if dsc is not None else dm.load_all(cfg, grid, hist, wide)
+        idx = [i for i, _ in picks]
+        csc = cx.score_candidates(P[idx], slices, ddata)
+        predd["ctx_wm_mean"] = [None] * len(P)
+        for i, w in zip(idx, csc["wm_mean"]):
+            predd["ctx_wm_mean"][i] = float(w) if np.isfinite(w) else None
     rows, sel = write_input(args.out, cfg, Path(args.config).read_text(encoding="utf-8"),
                             P, picks, meta, predd, args.batch)
     arms = {}
@@ -1034,6 +1046,8 @@ def main(argv=None):
     b.add_argument("--mincut", action="store_true", help="相連真值以最小點割斷開後加入候選池（給 SM 挑）")
     b.add_argument("--rot-quota", type=int, default=0,
                    help="180° 旋轉對稱臂（S11＝S22）保留名額；起點為已量對稱設計＋前段起點對稱化")
+    b.add_argument("--ctx-shadow", action="store_true",
+                   help="影子模式：R82 上下文接龍（可變 K）模型預測入選的每一筆，寫進 manifest 的 ctx_wm_mean，不參與挑選")
     b.add_argument("--delta-exploit", action="store_true",
                    help="R83：exploit 臂改由 R82 變化量模型排序（臂名 dexploit；explore／random 照舊）")
     b.add_argument("--delta-climb", type=int, default=0,

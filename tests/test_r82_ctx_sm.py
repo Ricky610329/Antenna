@@ -61,6 +61,21 @@ def test_variable_k_model_predicts_with_fewer_contexts():
     assert np.allclose(one, one_only, atol=1e-4)            # 遮掉的位置不影響結果
 
 
+def test_ctx_score_candidates_flags_far_queries():
+    g = 4
+    P = _patterns(30)
+    rng = np.random.default_rng(4)
+    Y = rng.normal(size=(30, 3, g)).astype(np.float32)
+    M = np.ones((30, 3, g), bool)
+    data = {"P": P, "Y": Y, "M": M, "wide": np.ones(30, bool)}
+    slices = [("s21_pass", 1, 0, 3, "ge", -3.0)]
+    q = P[5:8].copy()
+    q[:, :3] = ~q[:, :3]                                    # 近：翻 3 格
+    out = cx.score_candidates(np.concatenate([q, ~P[:1]]), slices, data, k=2, seeds=(0,), epochs=1,
+                              log=lambda *_: None)
+    assert np.isfinite(out["wm_mean"][:3]).all() and np.isnan(out["wm_mean"][3])
+
+
 def test_nearest_k_excludes_self():
     P = _patterns(20)
     Pk = np.packbits(P, 1)

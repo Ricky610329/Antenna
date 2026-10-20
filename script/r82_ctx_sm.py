@@ -157,6 +157,29 @@ def nearest_k(Pk, q_idx_or_P, pool, K):
     return pool[o], np.take_along_axis(D, o, 1)
 
 
+def score_candidates(Pq, slices, data, *, k=4, kmin=1, seeds=(0, 1), epochs=30, draws=16, focus_draws=64,
+                     focus_weight=10.0, seed=83, log=print):
+    """選樣用（R83 起影子模式）：可變 K 上下文模型，對每個候選取最近 k 個量齊 slices 頻點的實測當上下文。
+    回傳 dict(wm_mean, ctx_d)；最近上下文超過 DMAX 格時 wm_mean＝nan。"""
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    P, Y, M = data["P"], data["Y"], data["M"]
+    need = np.zeros(M.shape[1:], bool)
+    for _, li, lo, hi, *_ in slices:
+        need[li, lo:hi] = True
+    full = np.flatnonzero((M | ~need).all((1, 2)))
+    rng = np.random.default_rng(seed)
+    Pk = np.packbits(P, 1)
+    bank = dm.neighbor_bank(Pk, rng)
+    draws_v = np.maximum(np.where(data["wide"], focus_draws, draws) // 2, 1)
+    models = train_ctx(P, Y, M, data["wide"], bank, draws_v, k, kmin=kmin, seeds=seeds, epochs=epochs,
+                       focus_weight=focus_weight, rng=rng, dev=dev, log=log)
+    Pq = np.asarray(Pq).reshape(len(Pq), -1) > 0.5
+    C, D = nearest_k(Pk, np.packbits(Pq, 1), full, k)
+    pred = predict_ctx(models, P, Y, M, C, Pq, dev)
+    wm = sm.margins_vec(pred, slices).min(1)
+    return {"wm_mean": np.where(D[:, 0] <= dm.DMAX, wm, np.nan), "ctx_d": D[:, 0]}
+
+
 # ---------------------------------------------------------------- 評估
 
 def histval(args):
