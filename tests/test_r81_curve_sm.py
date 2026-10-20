@@ -422,6 +422,15 @@ def test_merge_alternating_shares_duplicates_fairly():
     assert sorted(out) == [(1, "e"), (2, "e"), (5, "d"), (6, "d")]   # 重複的 1、2 給先取到的一方，另一方往下補
 
 
+def test_step_from_parent_counts_flipped_cells():
+    base = np.zeros(625, bool)
+    child = base.copy(); child[[3, 50, 600]] = True
+    P = np.stack([child, base]).astype(np.float32)
+    meta = [{"parent": "A"}, {"parent": "missing"}]
+    d = sm.step_from_parent(P, meta, [{"id": "A", "pattern": base.reshape(25, 25)}], np.array([0, 1]))
+    assert d.tolist() == [3, 999]
+
+
 def test_pick_climb_pair_keeps_parent_spread_per_arm():
     tops = [{"id": "A"}, {"id": "B"}, {"id": "C"}]
     meta = [{"parent": p} for p in "AAAAAABBBBCCCC"]

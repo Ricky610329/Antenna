@@ -671,6 +671,13 @@ def pick_ops(score, meta, quota, per_parent=2):
 CLIMB_ARM = {"cnn": "dclimb", "ens": "eclimb", "ctx": "tclimb"}   # 爬山打分 → 臂名（R86 起）
 
 
+def step_from_parent(P, meta, parents, idx):
+    """候選與其親代的 Hamming 距離（格數）；親代不在 parents 裡給 999。"""
+    pmap = {p["id"]: np.asarray(p["pattern"]).reshape(-1) > 0.5 for p in parents}
+    return np.array([int(((P[i] > 0.5) != pmap[meta[i]["parent"]]).sum()) if meta[i]["parent"] in pmap else 999
+                     for i in idx], dtype=int)
+
+
 def merge_alternating(order_a, order_b, k_a, k_b, arm_a, arm_b):
     """兩份排序交替取，重複者只算先取到的一方；各取 k_a／k_b 筆。回傳 [(index, arm)]。"""
     out, got, ia, ib, na, nb = [], set(), 0, 0, 0, 0
@@ -939,7 +946,8 @@ def build(args):
         predd["delta_wm_mean"] = [float(x) if np.isfinite(x) else None for x in dsc["wm_mean"]]
     if args.ens_climb:                                             # R86 寫法＝主 CNN、對照 K 筆平均
         args.climb_alt, args.climb_alt_n = "ens", args.ens_climb
-    used = {args.climb_main, args.model_arms} | ({args.climb_alt} if args.climb_alt_n else set())
+    args.explore_model = args.explore_model or args.model_arms
+    used = {args.climb_main, args.model_arms, args.explore_model} | ({args.climb_alt} if args.climb_alt_n else set())
     ctx_all = None
     if args.ctx_shadow or used & {"ens", "ctx"}:                   # 上下文接龍模型替全部候選打分（影子／R86 起打分）
         from script import r82_ctx_sm as cx
@@ -980,17 +988,30 @@ def build(args):
     # 不因原 SM 自檢不過而縮編（2026-10-20 b91 實犯：exploit 7→2、explore／random 被灌到 6）
     q = quotas(args.n - len(picks), rep["quality_ok"] or args.delta_exploit)
     gen_idx = np.array([i for i in range(n_gen) if i not in taken], dtype=int)
-    ex = {}
-    mm = model.get(args.model_arms)                                # R87 起 --model-arms ens：兩臂改用平均分（臂名 e*）
-    tag = "d" if args.model_arms == "cnn" else "e"
-    if args.delta_exploit:                                         # R83：exploit 臂改由變化量模型排序（臂名 dexploit）
-        ex = {"ex_mean": mm[gen_idx], "ex_std": dsc["wm_std"][gen_idx]}
-    if args.delta_explore:                                         # R84：explore 臂改用變化量模型 UCB（臂名 dexplore）
-        ex.update(xp_mean=mm[gen_idx], xp_std=dsc["wm_std"][gen_idx])
-    picks += [(int(gen_idx[i]), tag + "exploit" if a == "exploit" and "ex_mean" in ex
-               else tag + "explore" if a == "explore" and "xp_mean" in ex else a)
-              for i, a in select(P[gen_idx], mean[gen_idx], std[gen_idx], [meta[i] for i in gen_idx], q, rng,
-                                 exploit_lcb=args.exploit_lcb, **ex)]
+    tag = {m: "d" if m == "cnn" else "e" for m in ("cnn", "ens")}    # R87 起 --model-arms ens：臂名 e*
+
+    def run_select(idx, qq):
+        ex = {}
+        if args.delta_exploit:                                     # R83：exploit 臂改由變化量模型排序（臂名 dexploit）
+            ex = {"ex_mean": model[args.model_arms][idx], "ex_std": dsc["wm_std"][idx]}
+        if args.delta_explore:                                     # R84：explore 臂改用變化量模型 UCB（臂名 dexplore）
+            ex.update(xp_mean=model[args.explore_model][idx], xp_std=dsc["wm_std"][idx])
+        return [(int(idx[i]), tag[args.model_arms] + "exploit" if a == "exploit" and "ex_mean" in ex
+                 else tag[args.explore_model] + "explore" if a == "explore" and "xp_mean" in ex else a)
+                for i, a in select(P[idx], mean[idx], std[idx], [meta[i] for i in idx], qq, rng,
+                                   exploit_lcb=args.exploit_lcb, **ex)]
+
+    if args.small_exploit or args.small_explore:                   # R88：部分名額只從離親代 ≤ small_d 格的候選挑（臂名 *_s）
+        d = step_from_parent(P, meta, parents, gen_idx)
+        qs = {"exploit": min(args.small_exploit, q["exploit"]), "explore": min(args.small_explore, q["explore"]),
+              "random": 0}
+        sp = run_select(gen_idx[d <= args.small_d], qs)
+        picks += [(i, a + "_s") for i, a in sp]
+        got = {i for i, _ in sp}
+        gen_idx = np.array([i for i in gen_idx if i not in got], dtype=int)
+        q = {k: q[k] - qs[k] for k in q}
+        print(f"--small-*：小步池（≤ {args.small_d} 格）{int((d <= args.small_d).sum())}／{len(d)}，挑 {len(sp)} 筆")
+    picks += run_select(gen_idx, q)
     q = {a: len([1 for _, b in picks if b == a]) for a in ("climb", *CLIMB_ARM.values())} | q
     rows, sel = write_input(args.out, cfg, Path(args.config).read_text(encoding="utf-8"),
                             P, picks, meta, predd, args.batch)
@@ -1113,6 +1134,13 @@ def main(argv=None):
     b.add_argument("--climb-alt-n", type=int, default=0, help="爬山對照打分的名額")
     b.add_argument("--model-arms", choices=("cnn", "ens"), default="cnn",
                    help="exploit／explore 臂的打分：cnn＝變化量模型（d*）、ens＝與上下文模型平均（e*，R87 起）")
+    b.add_argument("--small-exploit", type=int, default=0,
+                   help="R88：exploit 名額中幾筆只從離親代 ≤ --small-d 格的候選挑（臂名 *exploit_s）")
+    b.add_argument("--small-explore", type=int, default=0,
+                   help="R88：explore 名額中幾筆只從離親代 ≤ --small-d 格的候選挑（臂名 *explore_s）")
+    b.add_argument("--small-d", type=int, default=4, help="小步池的最大翻格數")
+    b.add_argument("--explore-model", choices=("cnn", "ens"), default=None,
+                   help="explore 臂單獨指定打分（預設同 --model-arms；R87 後改回 cnn：平均分 UCB 常大失手）")
     b.add_argument("--ctx-shadow", action="store_true",
                    help="影子模式：R82 上下文接龍（可變 K）模型預測入選的每一筆，寫進 manifest 的 ctx_wm_mean，不參與挑選")
     b.add_argument("--delta-explore", action="store_true",

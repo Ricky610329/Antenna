@@ -4,7 +4,7 @@
 > 2026-10-12 前的完整流水帳（R80 收尾、Codex 的 R81 release 機制、diffsim、資料工廠、🔜 候選、✅ 指標）原樣封存在
 > [docs/log/archive/ongoing-2026-10-12.md](../docs/log/archive/ongoing-2026-10-12.md)。
 
-最後更新：2026-10-21 01:24
+最後更新：2026-10-21 07:26
 
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
@@ -29,9 +29,9 @@
   python -m script.r81_curve_sm enqueue --input <dir> --name r81v2b0N           # 切 6 片、check-dup、入佇列（填空池加 --prio 9、名稱 r81v2gNN）
   ```
 
-## 🔵 R87 爬山打分：平均 vs 上下文模型單獨（running）→ [round-87](../docs/log/round-87-ctx-climb.md)
+## 🔵 R88 利用／探索臂只准小步（running）→ [round-88](../docs/log/round-88-small-step.md)
 
-- b107–b109 `--climb-main ens --climb-alt ctx --climb-alt-n 5 --model-arms ens`；目標 v6a（−15）。R86 已結（✅ 成立）；b104–b106 為 R86 設定延續批。
+- b112–b114 `--climb-main ctx --model-arms ens --explore-model cnn --small-exploit 4 --small-explore 2`；目標 v6a（−15）。R87 已結（✅ 成立，差距小）；b110 為 R87 延續批、b111 為新設定首批。
 
 ## 🔵 R85 拉扯區外擾動＋修復（running）→ [round-85](../docs/log/round-85-perturb-repair.md)
 
