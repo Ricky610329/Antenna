@@ -910,7 +910,9 @@ def build(args):
     cmean[n_gen:] = mean[n_gen:] - args.exploit_lcb * std[n_gen:]   # 爬山同樣用保守分數
     cmean[list(taken)] = -np.inf
     picks += pick_climb(cmean, meta, tops, climb_n)
-    q = quotas(args.n - len(picks), rep["quality_ok"])
+    # 原 SM 的 holdout 自檢只該管它自己負責的 exploit；--delta-exploit 時 exploit 由變化量模型排序，
+    # 不因原 SM 自檢不過而縮編（2026-10-20 b91 實犯：exploit 7→2、explore／random 被灌到 6）
+    q = quotas(args.n - len(picks), rep["quality_ok"] or args.delta_exploit)
     gen_idx = np.array([i for i in range(n_gen) if i not in taken], dtype=int)
     ex = {}
     if args.delta_exploit:                                         # R83：exploit 臂改由變化量模型排序（臂名 dexploit）
