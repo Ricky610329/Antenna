@@ -32,7 +32,7 @@ _POP = np.array([bin(i).count("1") for i in range(256)], np.uint8)
 
 
 def batch_of(store):
-    m = re.search(r"r81v6b(\d\d)s\d$", store or "")
+    m = re.search(r"r81v6b(\d+)s\d$", store or "")
     return int(m.group(1)) if m else -1
 
 

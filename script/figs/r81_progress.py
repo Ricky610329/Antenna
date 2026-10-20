@@ -27,7 +27,7 @@ def load_rows(primary, final, grid):
     for store in sorted(root.glob("dedust_r81v*b??s?")):
         if not ((store / "results.json").exists() and (store / "measurement.json").exists()):
             continue
-        batch = int(re.search(r"b(\d\d)s\d$", store.name).group(1))
+        batch = int(re.search(r"b(\d+)s\d$", store.name).group(1))
         for r in sm.load_store(store, grid):
             a, b = sm.true_wm(r, primary, grid), sm.true_wm(r, final, grid)
             if a and b:

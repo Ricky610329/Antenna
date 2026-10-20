@@ -104,3 +104,9 @@ def test_inband_score_ignores_point_just_past_band_end():
     Y[0, 1, 2] = -30.0                                      # 頻段外（index 2）很差，不該影響分數
     s = dm.inband_score(Y, np.ones((1, 3, 3), bool), slices)
     assert np.isclose(s[0], 2.0)
+
+
+def test_batch_of_accepts_three_digit_batches():
+    assert dm.batch_of("dedust_r81v6b99s3") == 99
+    assert dm.batch_of("dedust_r81v6b100s2") == 100            # b100 起三位數，原 \d\d 漏抓（2026-10-20）
+    assert dm.batch_of("dedust_r81v6m03s1") == -1

@@ -25,8 +25,8 @@ EVENTS = [(62, "斷開＋大步變異 30 格：壓掉 13.5 GHz 峰"), (67, "饋�
 def rows_v6(cfg, grid):
     """11–40 GHz store 的全部 ok 實測，依（批號, store, id）排序；同圖只留第一筆。"""
     stores = [s for s in sm.V2_DATASET.glob("dedust_r81v6*s?")
-              if re.search(r"(m02|b\d\d)s\d$", s.name) and (s / "results.json").exists()]
-    key = lambda s: 0 if "m02" in s.name else int(re.search(r"b(\d\d)s\d$", s.name).group(1))
+              if re.search(r"(m02|b\d+)s\d$", s.name) and (s / "results.json").exists()]
+    key = lambda s: 0 if "m02" in s.name else int(re.search(r"b(\d+)s\d$", s.name).group(1))
     rows, seen = [], set()
     for s in sorted(stores, key=lambda s: (key(s), s.name)):
         for r in sm.load_store(s, grid):

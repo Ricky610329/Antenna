@@ -24,7 +24,7 @@ EVENTS = [(2, "小步變異 1–8 格"), (3, "加爬山臂"), (20, "改用總不
 
 
 def batch_of(store):
-    m = re.search(r"b(\d\d)s\d$", store)
+    m = re.search(r"b(\d+)s\d$", store)
     return int(m.group(1)) if m else 0          # 首批 survey／工程掃描＝0
 
 
