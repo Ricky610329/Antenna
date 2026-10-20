@@ -25,6 +25,8 @@
 
 - `python -m script.r81_curve_sm build --batch N --n 24 --climb-n 10 --delta-climb 10 --ens-climb 5 --delta-exploit --delta-explore --ctx-shadow --climb-top 10 --max-flips 12 --exploit-lcb 0.5 --parent-score violation --p-cross 0.3 --disconnect --push 0.5 --reseam 0 --config configs/dual_r81_v6a.yaml --out <dir>`
 
+- 2026-10-20 21:02：首建 b101 時兩臂各 5 筆**全落在同一個親代**（整份排序交替取，而 pick_climb 把最好親代的一半名額排在最前）。發車前撤下（未被認領，NAS input 夾與 jobs 條目已刪），改 `pick_climb_pair`：兩臂各自照 climb_shares 分親代名額、同親代內交替取；補回歸測試後重建 b101。
+
 ## 4. 分析 (Analyze)
 
 ## 5. 結論 (Conclude)

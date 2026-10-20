@@ -683,21 +683,37 @@ def merge_alternating(order_a, order_b, k_a, k_b, arm_a, arm_b):
     return out
 
 
-def pick_climb(mean, meta, tops, n):
-    """最好的 top 拿一半名額，其餘平分；各自按 SM 預測均值取前段。"""
+def climb_shares(tops, n):
+    """最好的 top 拿一半名額，其餘平分。"""
     if not tops or n <= 0:
-        return []
+        return [0] * len(tops)
     if len(tops) == 1:                      # 只有一個起點時全部名額給它（b25 實犯：只用了一半）
-        share = [n]
-    else:
-        share = [n - (n // 2) if k == 0 else 0 for k in range(len(tops))]
+        return [n]
+    share = [n - (n // 2) if k == 0 else 0 for k in range(len(tops))]
     rest = n - share[0]
     for k in range(1, len(tops)):
         share[k] = rest // (len(tops) - 1) + (1 if k - 1 < rest % (len(tops) - 1) else 0)
+    return share
+
+
+def _parent_order(mean, meta, t):
+    return [int(i) for i in np.argsort(-mean, kind="stable") if meta[i]["parent"] == t["id"]]
+
+
+def pick_climb(mean, meta, tops, n):
+    """各 top 按 climb_shares 分名額，各自按 SM 預測均值取前段。"""
     picks = []
-    for t, m in zip(tops, share):
-        idx = [i for i in np.argsort(-mean, kind="stable") if meta[i]["parent"] == t["id"]]
-        picks += [(int(i), "climb") for i in idx[:m]]
+    for t, m in zip(tops, climb_shares(tops, n)):
+        picks += [(i, "climb") for i in _parent_order(mean, meta, t)[:m]]
+    return picks
+
+
+def pick_climb_pair(mean_a, mean_b, meta, tops, k_a, k_b, arm_a, arm_b):
+    """兩種打分同批對照：各自照 climb_shares 分親代名額，同一親代內兩份排序交替取（R86 b101 實犯：
+    整份排序交替取時兩臂全落在最好的那一個親代）。"""
+    picks = []
+    for t, a, b in zip(tops, climb_shares(tops, k_a), climb_shares(tops, k_b)):
+        picks += merge_alternating(_parent_order(mean_a, meta, t), _parent_order(mean_b, meta, t), a, b, arm_a, arm_b)
     return picks
 
 
@@ -936,13 +952,12 @@ def build(args):
             return out
 
         n_d = min(args.delta_climb, climb_n)
-        order_c = [i for i, _ in pick_climb(climb_score(dsc["wm_mean"]), meta, tops, n_d)]
         k_e = min(args.ens_climb, n_d)
         if k_e:                                                    # R86：CNN 與上下文模型平均打分，與 CNN 單獨交替挑
-            order_e = [i for i, _ in pick_climb(climb_score((dsc["wm_mean"] + ctx_all) / 2), meta, tops, n_d)]
-            dpicks = merge_alternating(order_e, order_c, k_e, n_d - k_e, "eclimb", "dclimb")
+            dpicks = pick_climb_pair(climb_score((dsc["wm_mean"] + ctx_all) / 2), climb_score(dsc["wm_mean"]),
+                                     meta, tops, k_e, n_d - k_e, "eclimb", "dclimb")
         else:
-            dpicks = [(i, "dclimb") for i in order_c]
+            dpicks = [(i, "dclimb") for i, _ in pick_climb(climb_score(dsc["wm_mean"]), meta, tops, n_d)]
         picks += dpicks
         taken |= {i for i, _ in dpicks}
         climb_n -= len(dpicks)

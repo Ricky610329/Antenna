@@ -422,6 +422,17 @@ def test_merge_alternating_shares_duplicates_fairly():
     assert sorted(out) == [(1, "e"), (2, "e"), (5, "d"), (6, "d")]   # 重複的 1、2 給先取到的一方，另一方往下補
 
 
+def test_pick_climb_pair_keeps_parent_spread_per_arm():
+    tops = [{"id": "A"}, {"id": "B"}, {"id": "C"}]
+    meta = [{"parent": p} for p in "AAAAAABBBBCCCC"]
+    mean = np.linspace(1, 0, len(meta))                               # 最好的親代 A 整份排在最前
+    out = sm.pick_climb_pair(mean, mean, meta, tops, 5, 5, "e", "d")
+    for arm in "ed":
+        got = [meta[i]["parent"] for i, a in out if a == arm]
+        assert len(got) == 5 and sorted(set(got)) == ["A", "B", "C"]  # b101 實犯：兩臂全落在 A
+    assert len({i for i, _ in out}) == 10
+
+
 def test_pick_ops_reserves_quota_per_op_with_parent_cap():
     meta = [{"op": op, "parent": par} for op, par in
             [("mutate", "a"), ("push", "a"), ("push", "a"), ("push", "a"), ("push", "b"), ("mincut", "c"), ("mincut", "d")]]
