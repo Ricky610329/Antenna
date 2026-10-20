@@ -68,8 +68,9 @@
 | 81 | 寬頻濾波器新 spec（dual,S21 三段,不限對稱） | 🔵 running（2026-10-12 起 v2 批次） | spec 改學長修訂的 **v2**（22–24.5/36–40 ≤−15 dB）;**殺手是 36–40 GHz 高阻帶**,選批改用 `r81_curve_sm` 批次全曲線 SM | [round-81](round-81-wide-filter.md) |
 | 82 | 變化量代理模型：實測配對學「翻幾格→曲線變化」（離線＋掛 R81 v6 批次試用） | ✅ concluded（2026-10-20） | 預測排序**全面勝過**原 SM（上線 ρ +0.24～+0.50 vs −0.27～−0.39），爬山名額產出兩者相近；最大浪費在生成池 → R83 | [round-82](round-82-delta-surrogate.md) |
 | 83 | 生成池 exploit 臂改由變化量模型排序 | ✅ concluded（2026-10-20） | **成立**：dexploit > −5 57%、中位 −4.64（原 SM 19%／−9.28），出全體最佳 −3.11 | [round-83](round-83-delta-exploit.md) |
-| 84 | explore 臂改由變化量模型 UCB 排序 | 🔵 running（2026-10-20 起） | 待分析 | [round-84](round-84-delta-explore.md) |
+| 84 | explore 臂改由變化量模型 UCB 排序 | ✅ concluded（2026-10-20） | **成立**：dexplore 中位 −0.88、> −1 67%（v6a 尺），原 SM explore −4.87／7% | [round-84](round-84-delta-explore.md) |
 | 85 | 拉扯區外擾動＋修復（破局；Ricky × emforge session 評估） | 🔵 running（2026-10-20 起，A 區塊掃描） | 待分析 | [round-85](round-85-perturb-repair.md) |
+| 86 | CNN 變化量＋上下文接龍模型平均打分 | 🔵 running（2026-10-20 起） | 待分析 | [round-86](round-86-model-ensemble.md) |
 | 65 | dual 六軸全尺換代輪(3 批 270+公證 1) | ✅ concluded(2026-08-12) | **主尺換代落地:wm_full 首帳 −6.21(公證)/SM v4 六軸頭(三代最佳 ρ+0.53)/權重分夾/鍋域安全修根(v1-v3 缺 R61-63 舊帳)**;六軸帶三批平頂 −6.1~−6.2 → **R66=結構工程輪(學長「全硬」解鎖細線化/折疊)** | [round-65](round-65-dual-fullruler.md) |
 | 64 | dual v3 實戰細排驗證(1 批答定) | ✅ concluded(2026-08-12) | **實戰細排不過(g 臂 ρ+0.118)——離線補考=跨家族寬帶假訊號,「離線考≠實戰考」三度應驗 analysis-10 定案;線上學習觸發撤回,SM 定位=粗篩+分歧**;v3 押錯家族(對照臂王家族 −4.69=全批頂);m4 七連破 +7.39(公證中) | [round-64](round-64-dual-v3-live.md) |
 | 63 | dual 續採輪:均衡王朝平頂三方法蓋章(3 批 230+公證 1) | ✅ concluded(2026-08-12) | **平頂證據鏈完整:小步/大步 d2-6/分歧大池三策略全收斂 −4.4~−4.7 帶——王 −4.67 站穩**;m4 五連破 +7.27(公證中);王朝總帳 60hr +2.53(−7.20→−4.67);**下一級=SM v3 細排補考/結構躍遷(學長答覆)** | [round-63](round-63-dual-sel-2.md) |

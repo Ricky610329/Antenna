@@ -417,6 +417,11 @@ def test_select_explore_uses_alternate_ucb_and_skips_nan():
     assert sorted(i for i, a in picks if a == "explore") == [3, 5]
 
 
+def test_merge_alternating_shares_duplicates_fairly():
+    out = sm.merge_alternating([1, 2, 3, 4], [1, 5, 2, 6], 2, 2, "e", "d")
+    assert sorted(out) == [(1, "e"), (2, "e"), (5, "d"), (6, "d")]   # 重複的 1、2 給先取到的一方，另一方往下補
+
+
 def test_pick_ops_reserves_quota_per_op_with_parent_cap():
     meta = [{"op": op, "parent": par} for op, par in
             [("mutate", "a"), ("push", "a"), ("push", "a"), ("push", "a"), ("push", "b"), ("mincut", "c"), ("mincut", "d")]]

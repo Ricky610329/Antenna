@@ -668,6 +668,21 @@ def pick_ops(score, meta, quota, per_parent=2):
     return picks
 
 
+def merge_alternating(order_a, order_b, k_a, k_b, arm_a, arm_b):
+    """兩份排序交替取，重複者只算先取到的一方；各取 k_a／k_b 筆。回傳 [(index, arm)]。"""
+    out, got, ia, ib, na, nb = [], set(), 0, 0, 0, 0
+    while (na < k_a and ia < len(order_a)) or (nb < k_b and ib < len(order_b)):
+        if na < k_a and ia < len(order_a):
+            i = order_a[ia]; ia += 1
+            if i not in got:
+                out.append((i, arm_a)); got.add(i); na += 1
+        if nb < k_b and ib < len(order_b):
+            i = order_b[ib]; ib += 1
+            if i not in got:
+                out.append((i, arm_b)); got.add(i); nb += 1
+    return out
+
+
 def pick_climb(mean, meta, tops, n):
     """最好的 top 拿一半名額，其餘平分；各自按 SM 預測均值取前段。"""
     if not tops or n <= 0:
@@ -903,12 +918,31 @@ def build(args):
         ddata = dm.load_all(cfg, grid, hist, wide)
         dsc = dm.score_candidates(P, slices, ddata)
         predd["delta_wm_mean"] = [float(x) if np.isfinite(x) else None for x in dsc["wm_mean"]]
+    ctx_all = None
+    if args.ctx_shadow or args.ens_climb:                          # 上下文接龍模型替全部候選打分（影子／R86 平均）
+        from script import r82_ctx_sm as cx
+        if dsc is None:
+            from script import r82_delta_sm as dm
+            ddata = dm.load_all(cfg, grid, hist, wide)
+        ctx_all = cx.score_candidates(P, slices, ddata)["wm_mean"]
+        predd["ctx_wm_mean"] = [float(x) if np.isfinite(x) else None for x in ctx_all]
     if args.delta_climb and tops:                                  # R82 S2：爬山名額一部分改由變化量模型挑
-        dmean = np.full(len(P), -np.inf)
-        dmean[n_gen:] = np.nan_to_num(dsc["wm_mean"][n_gen:] - args.exploit_lcb * dsc["wm_std"][n_gen:],
-                                      nan=-np.inf)
-        dmean[list(taken)] = -np.inf
-        dpicks = [(i, "dclimb") for i, _ in pick_climb(dmean, meta, tops, min(args.delta_climb, climb_n))]
+        lcb = args.exploit_lcb * dsc["wm_std"]
+
+        def climb_score(v):
+            out = np.full(len(P), -np.inf)
+            out[n_gen:] = np.nan_to_num(v[n_gen:] - lcb[n_gen:], nan=-np.inf)
+            out[list(taken)] = -np.inf
+            return out
+
+        n_d = min(args.delta_climb, climb_n)
+        order_c = [i for i, _ in pick_climb(climb_score(dsc["wm_mean"]), meta, tops, n_d)]
+        k_e = min(args.ens_climb, n_d)
+        if k_e:                                                    # R86：CNN 與上下文模型平均打分，與 CNN 單獨交替挑
+            order_e = [i for i, _ in pick_climb(climb_score((dsc["wm_mean"] + ctx_all) / 2), meta, tops, n_d)]
+            dpicks = merge_alternating(order_e, order_c, k_e, n_d - k_e, "eclimb", "dclimb")
+        else:
+            dpicks = [(i, "dclimb") for i in order_c]
         picks += dpicks
         taken |= {i for i, _ in dpicks}
         climb_n -= len(dpicks)
@@ -931,16 +965,8 @@ def build(args):
               for i, a in select(P[gen_idx], mean[gen_idx], std[gen_idx], [meta[i] for i in gen_idx], q, rng,
                                  exploit_lcb=args.exploit_lcb, **ex)]
     q = {"climb": len([1 for _, a in picks if a == "climb"]),
-         "dclimb": len([1 for _, a in picks if a == "dclimb"]), **q}
-    if args.ctx_shadow:                                            # R83 起影子模式：上下文接龍模型只預測、不參與挑選
-        from script import r82_ctx_sm as cx
-        from script import r82_delta_sm as dm
-        ddata = ddata if dsc is not None else dm.load_all(cfg, grid, hist, wide)
-        idx = [i for i, _ in picks]
-        csc = cx.score_candidates(P[idx], slices, ddata)
-        predd["ctx_wm_mean"] = [None] * len(P)
-        for i, w in zip(idx, csc["wm_mean"]):
-            predd["ctx_wm_mean"][i] = float(w) if np.isfinite(w) else None
+         "dclimb": len([1 for _, a in picks if a == "dclimb"]),
+         "eclimb": len([1 for _, a in picks if a == "eclimb"]), **q}
     rows, sel = write_input(args.out, cfg, Path(args.config).read_text(encoding="utf-8"),
                             P, picks, meta, predd, args.batch)
     arms = {}
@@ -1053,6 +1079,8 @@ def main(argv=None):
     b.add_argument("--mincut", action="store_true", help="相連真值以最小點割斷開後加入候選池（給 SM 挑）")
     b.add_argument("--rot-quota", type=int, default=0,
                    help="180° 旋轉對稱臂（S11＝S22）保留名額；起點為已量對稱設計＋前段起點對稱化")
+    b.add_argument("--ens-climb", type=int, default=0,
+                   help="R86：爬山名額中幾筆改用 CNN 變化量＋上下文接龍模型的平均分挑（臂名 eclimb，其餘 dclimb 對照）")
     b.add_argument("--ctx-shadow", action="store_true",
                    help="影子模式：R82 上下文接龍（可變 K）模型預測入選的每一筆，寫進 manifest 的 ctx_wm_mean，不參與挑選")
     b.add_argument("--delta-explore", action="store_true",
