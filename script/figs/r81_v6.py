@@ -1,7 +1,7 @@
 """R81 學長 v6 規格（11–40 GHz，阻帶 ≤ −20 dB）兩張圖：性能爬升、目前最佳設計卡片。
 
 用法：python -m script.figs.r81_v6 <輸出資料夾> [--id r81v2_b71_003_f8fd2069]
-輸出：r81v6_climb.png、r81v6_best_card.png、r81v6a_best_card.png（−15 版最佳，各格 margin 用 −15 版；各格正方形）。
+輸出：r81v6_climb.png、r81v6a_climb.png（−15 版尺回算全部）、r81v6_best_card.png、r81v6a_best_card.png（−15 版最佳，各格 margin 用 −15 版；各格正方形）。
 資料：v2_v001 資料根中 11–40 GHz 量測的 store（補量 r81v6m02 與 b62 起各批），依批號排序；重測（~rep）不計入。
 """
 import argparse
@@ -19,7 +19,8 @@ from script.figs import r81_progress as rp
 DOT, LINE, MARK = "#9ec5f4", "#2a78d6", "#eb6834"
 V6, V6A = sm.REPO / "configs" / "dual_r81_v6.yaml", sm.REPO / "configs" / "dual_r81_v6a.yaml"
 EVENTS = [(62, "斷開＋大步變異 30 格：壓掉 13.5 GHz 峰"), (67, "饋墊附近細步"), (71, "12 格＋前 10 名起點"),
-          (74, "交界推移"), (76, "任意切縫重切"), (78, "取消選樣放寬"), (85, "變化量模型試用"), (89, "利用臂改用變化量模型")]
+          (74, "交界推移"), (76, "任意切縫重切"), (78, "取消選樣放寬"), (85, "變化量模型試用"), (89, "利用臂改用變化量模型"),
+          (92, "爬山全交變化量模型"), (96, "目標改 −15 版＋探索臂改用變化量模型"), (101, "兩模型平均打分")]
 
 
 def rows_v6(cfg, grid):
@@ -40,15 +41,14 @@ def rows_v6(cfg, grid):
     return rows
 
 
-def climb_figure(out, rows):
-    wm = np.array([r["wm"] for r in rows])
+def climb_figure(out, rows, key="wm", lo=-20, title="濾波器 v6 性能爬升（阻帶 11–19、36–40 ≤ −20 dB）", note=""):
+    wm = np.array([r[key] for r in rows])
     best = np.maximum.accumulate(wm)
     x = np.arange(1, len(wm) + 1)
-    lo = -20
     fig, ax = plt.subplots(figsize=(7, 7), dpi=160)
     fig.patch.set_facecolor(rp.SURF)
     ax.scatter(x, np.clip(wm, lo, None), s=8, color=DOT, lw=0, label="每筆模擬")
-    ax.step(x, best, where="post", color=LINE, lw=2.2, label="累計最佳")
+    ax.step(x, best, where="post", color=LINE, lw=2.2, label=f"累計最佳（目前 {best[-1]:+.2f}，單次）")
     ax.axhline(0, color=rp.INK, lw=1.2, ls="--")
     ax.text(4, 0.3, "達標 WM = 0", fontsize=9, color=rp.INK)
     batches = [r["batch"] for r in rows]
@@ -58,17 +58,15 @@ def climb_figure(out, rows):
             ax.axvline(x[i], color=MARK, lw=0.8, ls=":")
             ax.text(x[i] - 3, lo + 0.4, text, rotation=90, ha="right", va="bottom", fontsize=8.5, color=MARK,
                     bbox=dict(facecolor=rp.SURF, edgecolor="none", pad=1.5))
-    ax.annotate(f"{best[-1]:+.2f}（單次）", xy=(x[-1], best[-1]), xytext=(-6, 10), textcoords="offset points",
-                ha="right", fontsize=10, color=LINE)
     ax.set_xlim(0, x[-1] + 4)
     ax.set_ylim(lo, 2)
     ax.set_xlabel("累計 HFSS 模擬筆數（11–40 GHz）", color=rp.MUTED)
     ax.set_ylabel("WM (dB)", color=rp.MUTED)
-    ax.set_title("濾波器 v6 性能爬升（阻帶 11–19、36–40 ≤ −20 dB）", loc="left", fontsize=11.5, color=rp.INK)
+    ax.set_title(title, loc="left", fontsize=11.5, color=rp.INK)
     ax.legend(loc="upper right", frameon=False, fontsize=9)
     rp.style(ax)
     ax.set_box_aspect(1)
-    fig.text(0.02, 0.01, f"共 {len(wm)} 筆單次 HFSS；前 24 筆為 18–40 好設計以 11–40 重量；低於 {lo} dB 的點壓在底線。",
+    fig.text(0.02, 0.01, f"共 {len(wm)} 筆單次 HFSS；前 24 筆為 18–40 好設計以 11–40 重量；低於 {lo} dB 的點壓在底線。{note}",
              fontsize=8, color=rp.MUTED)
     fig.tight_layout(rect=(0, 0.03, 1, 1))
     fig.savefig(out, facecolor=rp.SURF)
@@ -137,9 +135,14 @@ def main(argv=None):
     rows = rows_v6(v6, grid)
     args.outdir.mkdir(parents=True, exist_ok=True)
     climb_figure(args.outdir / "r81v6_climb.png", rows)
+    for r in rows:
+        r["wm_a"] = sm.true_wm(r, v6a, grid)["worst_margin"]
+    climb_figure(args.outdir / "r81v6a_climb.png", rows, key="wm_a", lo=-15,
+                 title="濾波器 −15 版（v6a）性能爬升（阻帶 11–19、36–40 ≤ −15 dB）",
+                 note="\nb95 以前選樣以 −20 版為目標、b96 起改以 −15 版為目標；此圖全部以 −15 版尺回算。")
     best = next(r for r in rows if r["id"] == args.id) if args.id else max(rows, key=lambda r: r["wm"])
     card_figure(args.outdir / "r81v6_best_card.png", best, grid, v6, v6a, len(rows))
-    best_a = max(rows, key=lambda r: sm.true_wm(r, v6a, grid)["worst_margin"])
+    best_a = max(rows, key=lambda r: r["wm_a"])
     card_figure(args.outdir / "r81v6a_best_card.png", best_a, grid, v6, v6a, len(rows), spec="v6a")
 
 
