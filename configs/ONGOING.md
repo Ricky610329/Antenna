@@ -4,7 +4,7 @@
 > 2026-10-12 前的完整流水帳（R80 收尾、Codex 的 R81 release 機制、diffsim、資料工廠、🔜 候選、✅ 指標）原樣封存在
 > [docs/log/archive/ongoing-2026-10-12.md](../docs/log/archive/ongoing-2026-10-12.md)。
 
-最後更新：2026-10-20 13:42
+最後更新：2026-10-20 14:20
 
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
@@ -32,5 +32,9 @@
 ## 🔵 R84 explore 改由變化量模型 UCB 排序（running）→ [round-84](../docs/log/round-84-delta-explore.md)
 
 - b95–b97 加 `--delta-explore`、`--reseam 0`；判準＝dexplore「> −5」≥ 40%。R83 已結（✅ 成立，[round-83](../docs/log/round-83-delta-exploit.md)）；climb 全交變化量模型、exploit 定案；`--ctx-shadow` 影子模式累積中。
+
+## 🔵 R85 拉扯區外擾動＋修復（running）→ [round-85](../docs/log/round-85-perturb-repair.md)
+
+- A 區塊掃描 `r81v6sc01`（24 筆，prio −3）已發車；B 擾動＋修復待 R84 收輪（b98 起）。
 
 ## R80 對稱探索：✅ 10/11 收尾凍結，不再派工 → [round-80](../docs/log/round-80-symmetry-exploration.md)
