@@ -49,3 +49,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 - `r81_v6_question.py` — R81 問學長用：v4x 最佳設計 b57_004 以 11–40 GHz 重量後，分別套 v4x 與學長 v6 spec 的 S21（標出 13.5–14 GHz 漏點）→ `docs/log/assets/round-81/r81_v6_question.png`
 - `r81_reseam.py` — R81 任意切縫示意：v6 最佳斷開設計（直線交界）與三個鋸齒切縫重切變體（上下主體與浮島分色）→ `docs/log/assets/round-81/r81_reseam_demo.png`
 - `r82_s2_trial.py` — R82 上線試用：同批爬山名額「原 SM 挑」vs「變化量模型挑」的預測 vs 實測（兩格各一模型）→ `docs/log/assets/round-82/r82_s2_trial.png`
+- `r85_block_scan.py` — R85 區塊掃描：b92_016 每個 4×4 小塊反轉後的 Δ低阻／Δ高阻 熱圖（兩格）→ `docs/log/assets/round-85/r85_block_scan.png`
