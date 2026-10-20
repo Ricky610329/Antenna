@@ -402,6 +402,21 @@ def test_select_exploit_uses_alternate_model_scores_and_skips_nan():
     assert len(picks) == 4                                 # 湊不滿的缺額由 random 補
 
 
+def test_select_explore_uses_alternate_ucb_and_skips_nan():
+    rng = np.random.default_rng(1)
+    P = rng.random((10, 625)) < 0.5
+    meta = [{"parent": f"p{i}"} for i in range(10)]
+    mean = np.arange(10, 0, -1, dtype=float)                 # 原 SM UCB：0 號最高
+    xm = np.full(10, np.nan)
+    xm[[3, 5, 7]] = [-5.0, -4.0, -6.0]
+    xs = np.zeros(10)
+    xs[7] = 3.0                                            # 7 號 UCB＝−3 最高
+    picks = sm.select(P, mean, np.zeros(10), meta, {"exploit": 0, "explore": 2, "random": 0}, rng,
+                      xp_mean=xm, xp_std=xs)
+    # 地板＝有效均值的中位 −5：7 號 UCB 最高但均值 −6 低於地板不選；3、5 過地板；nan 不選
+    assert sorted(i for i, a in picks if a == "explore") == [3, 5]
+
+
 def test_pick_ops_reserves_quota_per_op_with_parent_cap():
     meta = [{"op": op, "parent": par} for op, par in
             [("mutate", "a"), ("push", "a"), ("push", "a"), ("push", "a"), ("push", "b"), ("mincut", "c"), ("mincut", "d")]]

@@ -696,10 +696,12 @@ def quotas(n, quality_ok):
     return {"exploit": e, "explore": x, "random": n - e - x}
 
 
-def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3, exploit_lcb=0.0, ex_mean=None, ex_std=None):
+def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3, exploit_lcb=0.0, ex_mean=None, ex_std=None,
+           xp_mean=None, xp_std=None):
     """回傳 [(index, arm)]。exploit：前段池內 maxmin Hamming；explore：UCB；random：均勻。
     每臂每 parent ≤ per_parent；前兩臂湊不滿的缺額由 random 補。
-    ex_mean／ex_std：exploit 改用另一個模型的分數（R83：變化量模型；nan＝訓練範圍外，不選）。"""
+    ex_mean／ex_std：exploit 改用另一個模型的分數（R83：變化量模型；nan＝訓練範圍外，不選）。
+    xp_mean／xp_std：explore 改用另一個模型的 UCB（R84；nan 不選）。"""
     picked, count = [], {}          # count 以 (arm, parent) 計：每臂每 parent ≤ per_parent
 
     def ok(i, arm):
@@ -738,11 +740,13 @@ def select(P, mean, std, meta, q, rng, *, per_parent=4, pool_mult=3, exploit_lcb
             k = max(cand, key=lambda k: (dmin[k], lcb[pool[k]]))
             take(pool[k], "exploit")
             dmin = np.minimum(dmin, (Pb[pool] != Pb[pool[k]]).sum(1))
-    floor = float(np.median(mean))
-    for i in np.argsort(-(mean + std), kind="stable"):
+    xm = mean if xp_mean is None else np.nan_to_num(xp_mean, nan=-np.inf)
+    xs = std if xp_std is None else np.nan_to_num(xp_std, nan=0.0)
+    floor = float(np.median(xm[np.isfinite(xm)])) if np.isfinite(xm).any() else -np.inf
+    for i in np.argsort(-(xm + xs), kind="stable"):
         if sum(a == "explore" for _, a in picked) >= q["explore"]:
             break
-        if mean[i] >= floor and ok(int(i), "explore"):
+        if np.isfinite(xm[i]) and xm[i] >= floor and ok(int(i), "explore"):
             take(int(i), "explore")
     rest = np.array([i for i in range(len(P)) if i not in taken])
     n_rand = sum(q.values()) - len(picked)     # 前兩臂若因上限湊不滿，缺額併入 random
@@ -894,7 +898,7 @@ def build(args):
     taken = {i for i, _ in picks}
     climb_n = min(args.climb_n, args.n - len(picks)) if tops else 0
     dsc = None
-    if args.delta_climb or args.delta_exploit:                     # R82／R83：變化量模型替全部候選打分
+    if args.delta_climb or args.delta_exploit or args.delta_explore:   # R82–R84：變化量模型替全部候選打分
         from script import r82_delta_sm as dm
         ddata = dm.load_all(cfg, grid, hist, wide)
         dsc = dm.score_candidates(P, slices, ddata)
@@ -920,7 +924,10 @@ def build(args):
     ex = {}
     if args.delta_exploit:                                         # R83：exploit 臂改由變化量模型排序（臂名 dexploit）
         ex = {"ex_mean": dsc["wm_mean"][gen_idx], "ex_std": dsc["wm_std"][gen_idx]}
-    picks += [(int(gen_idx[i]), "dexploit" if a == "exploit" and ex else a)
+    if args.delta_explore:                                         # R84：explore 臂改用變化量模型 UCB（臂名 dexplore）
+        ex.update(xp_mean=dsc["wm_mean"][gen_idx], xp_std=dsc["wm_std"][gen_idx])
+    picks += [(int(gen_idx[i]), "dexploit" if a == "exploit" and "ex_mean" in ex
+               else "dexplore" if a == "explore" and "xp_mean" in ex else a)
               for i, a in select(P[gen_idx], mean[gen_idx], std[gen_idx], [meta[i] for i in gen_idx], q, rng,
                                  exploit_lcb=args.exploit_lcb, **ex)]
     q = {"climb": len([1 for _, a in picks if a == "climb"]),
@@ -1048,6 +1055,8 @@ def main(argv=None):
                    help="180° 旋轉對稱臂（S11＝S22）保留名額；起點為已量對稱設計＋前段起點對稱化")
     b.add_argument("--ctx-shadow", action="store_true",
                    help="影子模式：R82 上下文接龍（可變 K）模型預測入選的每一筆，寫進 manifest 的 ctx_wm_mean，不參與挑選")
+    b.add_argument("--delta-explore", action="store_true",
+                   help="R84：explore 臂改用 R82 變化量模型的 UCB（均值＋std）排序（臂名 dexplore）")
     b.add_argument("--delta-exploit", action="store_true",
                    help="R83：exploit 臂改由 R82 變化量模型排序（臂名 dexploit；explore／random 照舊）")
     b.add_argument("--delta-climb", type=int, default=0,
