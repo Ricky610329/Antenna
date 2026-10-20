@@ -627,3 +627,8 @@ Ricky 要求 S11、S22 一起達標（沿用 R81 原匹配條件 26.5–29.5 GHz
 - 學長 10/20：要加速可以用 Interpolating。新 config `configs/dual_r81_v6i.yaml`（只把 v6 的掃頻改 Interpolating，spec／solver／幾何全同；量測身分不同）。程式本來支援（`antenna/measurement.py` 的 sweep 型別、`DualPortSimulator(sweep_type=...)`）。
 - 驗證批 `r81v6im01`（prio −3 插到最前，3 片共 24 筆）：v6 前 12 名＋WM 全範圍等距 12 筆，皆已有 Discrete 實測，以 Interpolating 重量。
 - 判準（發車前寫死）：①前 12 名 |ΔWM| 中位 ≤ 0.3 dB 且最大 ≤ 1.0 dB ②24 筆 WM 排序 ρ ≥ 0.9 ③每筆耗時中位 ≤ Discrete（464 s）的 2/3。三項皆過 → 主線改 v6i，並讓 SM／變化量模型把 v6i 資料當同儀器（`_same_instrument` 放行 Interpolating）；紀錄級設計仍以 Discrete 公證。任一不過 → 維持 Discrete，回報差在哪。
+
+## 2026-10-20 09:37：−15 版（v6a）最佳 −0.88（單次）——給學長看
+
+- `r81v2_b90_019_1e94f198`（v6a 計分）WM **−0.88**：通帶 −0.88（26 GHz 下緣 −3.9 dB）、低阻 **+0.59**（已過 −15）、高阻 −0.44（37.5 GHz 約 −14.6 dB）、S11 −0.04、S22 +2.73。同一設計在 −20 版為 −5.44（低阻帶）。
+- 圖：![v6a](assets/round-81/r81v6a_best_card.png)（`script/figs/r81_v6.py` 新增 −15 版卡片，各格 margin 用 −15 版）。

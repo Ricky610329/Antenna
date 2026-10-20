@@ -1,7 +1,7 @@
 """R81 學長 v6 規格（11–40 GHz，阻帶 ≤ −20 dB）兩張圖：性能爬升、目前最佳設計卡片。
 
 用法：python -m script.figs.r81_v6 <輸出資料夾> [--id r81v2_b71_003_f8fd2069]
-輸出：r81v6_climb.png、r81v6_best_card.png（各格正方形）。
+輸出：r81v6_climb.png、r81v6_best_card.png、r81v6a_best_card.png（−15 版最佳，各格 margin 用 −15 版；各格正方形）。
 資料：v2_v001 資料根中 11–40 GHz 量測的 store（補量 r81v6m02 與 b62 起各批），依批號排序；重測（~rep）不計入。
 """
 import argparse
@@ -99,19 +99,25 @@ def curve(ax, grid, y, label, v6, v6a, margins):
     ax.set_box_aspect(1)
 
 
-def card_figure(out, r, grid, v6, v6a, n):
-    wma = sm.true_wm(r, v6a, grid)["worst_margin"]
+def card_figure(out, r, grid, v6, v6a, n, spec="v6"):
+    """spec＝v6：標題與各格 margin 用 −20 版；spec＝v6a：改用 −15 版（給學長看 −15 達標進度）。"""
+    sa = sm.true_wm(r, v6a, grid)
+    wma = sa["worst_margin"]
     fig, axes = plt.subplots(2, 2, figsize=(10, 10.6), dpi=160)
     fig.patch.set_facecolor(rp.SURF)
+    mg = sa["margins"] if spec == "v6a" else r["margins"]
     for ax, (k, lab) in zip((axes[0, 0], axes[0, 1], axes[1, 0]), ((1, "S21"), (0, "S11"), (2, "S22"))):
-        curve(ax, grid, r["y"][k], lab, v6, v6a, r["margins"])
+        curve(ax, grid, r["y"][k], lab, v6, v6a, mg)
     px = axes[1, 1]
     px.imshow(r["pattern"].reshape(25, 25), cmap="Greys", origin="upper", interpolation="nearest")
     px.set_xticks([]); px.set_yticks([])
     px.set_title("pattern（25×25，上下緣中央為兩埠饋墊，兩埠金屬不相連）", loc="left", fontsize=10, color=rp.INK)
     px.set_xlabel(r["id"], fontsize=8.5, color=rp.MUTED)
-    fig.suptitle(f"濾波器 v6 目前最佳：WM {r['wm']:+.2f} dB（−20 版）、{wma:+.2f} dB（−15 版），單次未公證",
-                 x=0.03, ha="left", fontsize=12.5, color=rp.INK)
+    if spec == "v6a":
+        title = f"濾波器 −15 版（v6a）目前最佳：WM {wma:+.2f} dB；同一設計在 −20 版為 {r['wm']:+.2f} dB，單次未公證"
+    else:
+        title = f"濾波器 v6 目前最佳：WM {r['wm']:+.2f} dB（−20 版）、{wma:+.2f} dB（−15 版），單次未公證"
+    fig.suptitle(title, x=0.03, ha="left", fontsize=12.5, color=rp.INK)
     fig.text(0.03, 0.01, "虛線＝v6（阻帶 ≤ −20）、點線＝v6a（≤ −15）、淡紅＝v6 禁區；通帶 26–30 GHz ≥ −3，"
              f"S11/S22 26.5–29.5 GHz ≤ −10。{n} 筆 11–40 GHz 模擬中的最佳。", fontsize=8.5, color=rp.MUTED)
     fig.tight_layout(rect=(0, 0.03, 1, 0.96), h_pad=3)
@@ -133,6 +139,8 @@ def main(argv=None):
     climb_figure(args.outdir / "r81v6_climb.png", rows)
     best = next(r for r in rows if r["id"] == args.id) if args.id else max(rows, key=lambda r: r["wm"])
     card_figure(args.outdir / "r81v6_best_card.png", best, grid, v6, v6a, len(rows))
+    best_a = max(rows, key=lambda r: sm.true_wm(r, v6a, grid)["worst_margin"])
+    card_figure(args.outdir / "r81v6a_best_card.png", best_a, grid, v6, v6a, len(rows), spec="v6a")
 
 
 if __name__ == "__main__":
