@@ -668,6 +668,9 @@ def pick_ops(score, meta, quota, per_parent=2):
     return picks
 
 
+CLIMB_ARM = {"cnn": "dclimb", "ens": "eclimb", "ctx": "tclimb"}   # 爬山打分 → 臂名（R86 起）
+
+
 def merge_alternating(order_a, order_b, k_a, k_b, arm_a, arm_b):
     """兩份排序交替取，重複者只算先取到的一方；各取 k_a／k_b 筆。回傳 [(index, arm)]。"""
     out, got, ia, ib, na, nb = [], set(), 0, 0, 0, 0
@@ -934,14 +937,20 @@ def build(args):
         ddata = dm.load_all(cfg, grid, hist, wide)
         dsc = dm.score_candidates(P, slices, ddata)
         predd["delta_wm_mean"] = [float(x) if np.isfinite(x) else None for x in dsc["wm_mean"]]
+    if args.ens_climb:                                             # R86 寫法＝主 CNN、對照 K 筆平均
+        args.climb_alt, args.climb_alt_n = "ens", args.ens_climb
+    used = {args.climb_main, args.model_arms} | ({args.climb_alt} if args.climb_alt_n else set())
     ctx_all = None
-    if args.ctx_shadow or args.ens_climb:                          # 上下文接龍模型替全部候選打分（影子／R86 平均）
+    if args.ctx_shadow or used & {"ens", "ctx"}:                   # 上下文接龍模型替全部候選打分（影子／R86 起打分）
         from script import r82_ctx_sm as cx
         if dsc is None:
             from script import r82_delta_sm as dm
             ddata = dm.load_all(cfg, grid, hist, wide)
         ctx_all = cx.score_candidates(P, slices, ddata)["wm_mean"]
         predd["ctx_wm_mean"] = [float(x) if np.isfinite(x) else None for x in ctx_all]
+    model = {} if dsc is None else {"cnn": dsc["wm_mean"]}
+    if ctx_all is not None:
+        model.update(ens=(dsc["wm_mean"] + ctx_all) / 2, ctx=ctx_all)
     if args.delta_climb and tops:                                  # R82 S2：爬山名額一部分改由變化量模型挑
         lcb = args.exploit_lcb * dsc["wm_std"]
 
@@ -952,12 +961,13 @@ def build(args):
             return out
 
         n_d = min(args.delta_climb, climb_n)
-        k_e = min(args.ens_climb, n_d)
-        if k_e:                                                    # R86：CNN 與上下文模型平均打分，與 CNN 單獨交替挑
-            dpicks = pick_climb_pair(climb_score((dsc["wm_mean"] + ctx_all) / 2), climb_score(dsc["wm_mean"]),
-                                     meta, tops, k_e, n_d - k_e, "eclimb", "dclimb")
+        k_a = min(args.climb_alt_n, n_d) if args.climb_alt else 0
+        main = climb_score(model[args.climb_main])
+        if k_a:                                                    # R86 起：兩種打分同批對照（親代內交替取）
+            dpicks = pick_climb_pair(climb_score(model[args.climb_alt]), main, meta, tops, k_a, n_d - k_a,
+                                     CLIMB_ARM[args.climb_alt], CLIMB_ARM[args.climb_main])
         else:
-            dpicks = [(i, "dclimb") for i, _ in pick_climb(climb_score(dsc["wm_mean"]), meta, tops, n_d)]
+            dpicks = [(i, CLIMB_ARM[args.climb_main]) for i, _ in pick_climb(main, meta, tops, n_d)]
         picks += dpicks
         taken |= {i for i, _ in dpicks}
         climb_n -= len(dpicks)
@@ -971,17 +981,17 @@ def build(args):
     q = quotas(args.n - len(picks), rep["quality_ok"] or args.delta_exploit)
     gen_idx = np.array([i for i in range(n_gen) if i not in taken], dtype=int)
     ex = {}
+    mm = model.get(args.model_arms)                                # R87 起 --model-arms ens：兩臂改用平均分（臂名 e*）
+    tag = "d" if args.model_arms == "cnn" else "e"
     if args.delta_exploit:                                         # R83：exploit 臂改由變化量模型排序（臂名 dexploit）
-        ex = {"ex_mean": dsc["wm_mean"][gen_idx], "ex_std": dsc["wm_std"][gen_idx]}
+        ex = {"ex_mean": mm[gen_idx], "ex_std": dsc["wm_std"][gen_idx]}
     if args.delta_explore:                                         # R84：explore 臂改用變化量模型 UCB（臂名 dexplore）
-        ex.update(xp_mean=dsc["wm_mean"][gen_idx], xp_std=dsc["wm_std"][gen_idx])
-    picks += [(int(gen_idx[i]), "dexploit" if a == "exploit" and "ex_mean" in ex
-               else "dexplore" if a == "explore" and "xp_mean" in ex else a)
+        ex.update(xp_mean=mm[gen_idx], xp_std=dsc["wm_std"][gen_idx])
+    picks += [(int(gen_idx[i]), tag + "exploit" if a == "exploit" and "ex_mean" in ex
+               else tag + "explore" if a == "explore" and "xp_mean" in ex else a)
               for i, a in select(P[gen_idx], mean[gen_idx], std[gen_idx], [meta[i] for i in gen_idx], q, rng,
                                  exploit_lcb=args.exploit_lcb, **ex)]
-    q = {"climb": len([1 for _, a in picks if a == "climb"]),
-         "dclimb": len([1 for _, a in picks if a == "dclimb"]),
-         "eclimb": len([1 for _, a in picks if a == "eclimb"]), **q}
+    q = {a: len([1 for _, b in picks if b == a]) for a in ("climb", *CLIMB_ARM.values())} | q
     rows, sel = write_input(args.out, cfg, Path(args.config).read_text(encoding="utf-8"),
                             P, picks, meta, predd, args.batch)
     arms = {}
@@ -1095,7 +1105,14 @@ def main(argv=None):
     b.add_argument("--rot-quota", type=int, default=0,
                    help="180° 旋轉對稱臂（S11＝S22）保留名額；起點為已量對稱設計＋前段起點對稱化")
     b.add_argument("--ens-climb", type=int, default=0,
-                   help="R86：爬山名額中幾筆改用 CNN 變化量＋上下文接龍模型的平均分挑（臂名 eclimb，其餘 dclimb 對照）")
+                   help="R86：爬山名額中幾筆改用 CNN 變化量＋上下文接龍模型的平均分挑（臂名 eclimb，其餘 dclimb 對照）；"
+                        "等同 --climb-alt ens --climb-alt-n K")
+    b.add_argument("--climb-main", choices=sorted(CLIMB_ARM), default="cnn",
+                   help="爬山主打分：cnn＝變化量模型（dclimb）、ens＝與上下文模型平均（eclimb）、ctx＝上下文模型（tclimb）")
+    b.add_argument("--climb-alt", choices=sorted(CLIMB_ARM), default=None, help="爬山對照打分（同批交替取）")
+    b.add_argument("--climb-alt-n", type=int, default=0, help="爬山對照打分的名額")
+    b.add_argument("--model-arms", choices=("cnn", "ens"), default="cnn",
+                   help="exploit／explore 臂的打分：cnn＝變化量模型（d*）、ens＝與上下文模型平均（e*，R87 起）")
     b.add_argument("--ctx-shadow", action="store_true",
                    help="影子模式：R82 上下文接龍（可變 K）模型預測入選的每一筆，寫進 manifest 的 ctx_wm_mean，不參與挑選")
     b.add_argument("--delta-explore", action="store_true",
