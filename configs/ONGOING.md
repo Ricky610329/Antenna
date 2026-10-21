@@ -9,7 +9,7 @@
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
 - **主目標（學長 10/15 23:00 定優先）＝v6**：量測 11–40 GHz，S21 通帶 26–30 ≥ −3、阻帶 11–19 與 36–40 ≤ −20（`configs/dual_r81_v6.yaml`；−15 版 `dual_r81_v6a.yaml` 參考），S11/S22 26.5–29.5 ≤ −10 照 Ricky 要求保留。11 GHz 直流直通，實際需兩埠斷開：`r81_curve_sm build --batch N --n 24 --climb-n 10 --climb-top 10 --max-flips 12 --exploit-lcb 0.5 --parent-score violation --p-cross 0.3 --disconnect --push 0.5 --reseam 0.2 --reseam-amp 2 --reseam-reach 1 --config configs/dual_r81_v6.yaml`，enqueue `--prio -2 --shards 3`。
-- **現況（10-21 09:01）**：目標暫改 **v6a（−15）先達標**（Ricky 10/20），v6a 最佳 `b111_004` −0.21（單次，只卡通帶 30 GHz）；v6 最佳 `b92_016` −3.11。現行建批見 R88／R89 §3（`--climb-main ctx --model-arms ens --explore-model cnn …`）。通帶天花板：低阻一有抑制，通帶最佳封頂 −0.19（1217 筆中 1193 筆同血統 a0，見 round-81 末節）。
+- **現況（10-21 20:10）**：目標 **v6a（−15）**，Ricky 定 ≥ +0.1（公證）才切回 v6。v6a 公證最佳 `mg07_003` +0.063（三筆公證皆 216＝218 位元一致）、單次最佳 `mg08_018` +0.080。主力已改 R89／R90 實測導向小步（`script/r89_merge.py`），一般模型批（b113–b115）退為填補。v6 最佳 `b92_016` −3.11。
 - **已達標**：v4a（b25_008 +0.21，公證）；v4x（18–40，`b61_008` +0.03，216 公證一致）——v4x 線停止。v5a 斷開線（Ricky 好奇，非規格）最佳 −2.69，降 prio 1 不再加批。
 - **R80 對稱天線續探（學長要求，慢慢探索）**：最佳 `r80sc_b05_014` WM +0.599（公證）；`python -m script.r80_sym_climb build/enqueue/score`，量測同 R80，釘選 218、prio 1（排在 v6 之後）。
 - **資料根**：`\\140.123.106.219\temp\碩二_鄒穎麒's\antenna\experiments\r81_wide_filter_20261007\v2_v001\dataset`
