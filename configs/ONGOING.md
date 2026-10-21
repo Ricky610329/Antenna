@@ -4,7 +4,7 @@
 > 2026-10-12 前的完整流水帳（R80 收尾、Codex 的 R81 release 機制、diffsim、資料工廠、🔜 候選、✅ 指標）原樣封存在
 > [docs/log/archive/ongoing-2026-10-12.md](../docs/log/archive/ongoing-2026-10-12.md)。
 
-最後更新：2026-10-22 07:20
+最後更新：2026-10-22 07:34
 
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
@@ -45,10 +45,6 @@
 
 - x01（24 筆，斷開歷史設計重量 11–40，prio −3）。R91 已結（❌ 不成立：v6 低阻與通帶強耦合）。v6a 公證最佳 `mg15_005` +0.147。
 - 待 Ricky：v6（−20）方向——探索／規格討論／先交付 v6a。待查 218 環境。
-
-## 🔵 R88 利用／探索臂只准小步（running）→ [round-88](../docs/log/round-88-small-step.md)
-
-- b112–b114 `--climb-main ctx --model-arms ens --explore-model cnn --small-exploit 4 --small-explore 2`；目標 v6a（−15）。R87 已結（✅ 成立，差距小）；b110 為 R87 延續批、b111 為新設定首批。
 
 ## 🔵 R85 拉扯區外擾動＋修復（running）→ [round-85](../docs/log/round-85-perturb-repair.md)
 
