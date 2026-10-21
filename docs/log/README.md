@@ -69,7 +69,7 @@
 | 82 | 變化量代理模型：實測配對學「翻幾格→曲線變化」（離線＋掛 R81 v6 批次試用） | ✅ concluded（2026-10-20） | 預測排序**全面勝過**原 SM（上線 ρ +0.24～+0.50 vs −0.27～−0.39），爬山名額產出兩者相近；最大浪費在生成池 → R83 | [round-82](round-82-delta-surrogate.md) |
 | 83 | 生成池 exploit 臂改由變化量模型排序 | ✅ concluded（2026-10-20） | **成立**：dexploit > −5 57%、中位 −4.64（原 SM 19%／−9.28），出全體最佳 −3.11 | [round-83](round-83-delta-exploit.md) |
 | 84 | explore 臂改由變化量模型 UCB 排序 | ✅ concluded（2026-10-20） | **成立**：dexplore 中位 −0.88、> −1 67%（v6a 尺），原 SM explore −4.87／7% | [round-84](round-84-delta-explore.md) |
-| 85 | 拉扯區外擾動＋修復（破局；Ricky × emforge session 評估） | 🔵 running（2026-10-20 起，A 區塊掃描） | 待分析 | [round-85](round-85-perturb-repair.md) |
+| 85 | 拉扯區外擾動＋修復（破局；Ricky × emforge session 評估） | ✅ concluded（2026-10-22） | **不成立（v6）**：整塊無槓桿；單格槓桿推低阻 +2 但通帶 −4～−7（B 於 R91 w02） | [round-85](round-85-perturb-repair.md) |
 | 86 | CNN 變化量＋上下文接龍模型平均打分 | ✅ concluded（2026-10-21） | **成立**：平均爬山中位 −0.53／> −0.5 占 33%，CNN 對照 −0.58／7%；前段 CNN 排序失效（ρ −0.13） | [round-86](round-86-model-ensemble.md) |
 | 87 | 爬山打分：平均 vs 上下文接龍模型單獨 | ✅ concluded（2026-10-21） | **成立（差距小）**：上下文單獨中位 −0.38、> −1 100%，平均 −0.40／93%；近頂端翻 ≥ 5 格 0／29 改善 | [round-87](round-87-ctx-climb.md) |
 | 88 | 利用／探索臂只准小步（≤ 4 格） | ✅ concluded（2026-10-22） | **不成立（撤回）**：小步中位 −0.29 vs 對照 −0.23；鑑別力低（結果前已註記） | [round-88](round-88-small-step.md) |
