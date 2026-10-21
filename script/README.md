@@ -28,6 +28,7 @@
 | `profiled_batch.py` / `batch_scope.py` | 具名量測 profile（`configs/dual_r81_s21_v2.yaml` 這類有 `measurement`/`score_spec` 段的 yaml）的驗證、入庫與 hash 核對，以及 `--scope` 限定實驗佇列；由 `dedust run/worker` 呼叫 |
 | `r81_curve_sm.py` | **R81 v2 批次選樣**：dual 全曲線 SM（5 顆 ensemble，masked MSE）＋下一批 exploit/explore/random 30/18/12，產 dedust worker 可吃的 input 夾；`build --batch N --out <dir>`、`score --stores ...`。不跑 HFSS、只讀 NAS |
 | `r81_block_scan.py` | R85 區塊掃描：以冠軍為底，拉扯區外切 4×4 小塊、每筆反轉一塊（維持兩埠斷開），量各區對五項 margin 的影響 |
+| `r89_merge.py` | R89 整合批：卡上緣 30 GHz 的前段設計為底、30 GHz 較好的前段設計為捐贈者，相異格分塊列舉移植組合；過濾兩埠接通與大塊金屬結構改變，模型平均分排序挑 n 筆 |
 | `r81v2_worker.py`（`r81v2.cmd`） | R81 v2 正式機 worker 短入口：在 v2 資料根跑原生 `dedust worker --scope symmetry_filter_20261007`，三台同一行 `.\script\r81v2.cmd` |
 | ~~R80 對稱工廠 `symmetry_*.py`、R81 release／binding 入口 `r81_*_entry.py` 等、`filter_*.py`、`profiled_shards.py`、`prepare_symmetry_filter.py`、`exploration.py`、`start_r81_*.ps1`、`start_scoped_worker.ps1`、`r81.cmd`/`r81.ps1`~~ | 已移除（2026-10-12，見 git tag `pre-cleanup-20261012`）。R80 已凍結、R81 改用 `r81_curve_sm` 與原生 worker |
 | `expected_best.py` | R6 期望基準尺（每 round 收檔可重跑疊圖） |
