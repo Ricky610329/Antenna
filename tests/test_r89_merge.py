@@ -27,3 +27,25 @@ def test_transplants_skip_full_set_and_keep_big_structure():
     donor2[11, 3:9] = False                                              # 把大塊切成兩半 → 大塊數改變
     donor2[18, 18] = True
     assert all(mg.big_components(q) == mg.big_components(base) for q, _ in mg.transplants(base, donor2))
+
+
+def test_improving_moves_keeps_small_gains_from_good_parents():
+    z = np.zeros(625, bool)
+    a = z.copy(); a[100] = True
+    b = z.copy(); b[[100, 101, 102, 103, 104]] = True
+    pats = {"P": z, "A": a, "B": b, "C": a.copy(), "Q": z.copy()}
+    scores = {"P": -0.3, "A": -0.2, "B": -0.1, "C": -0.4, "Q": -2.0}
+    parents = {"A": "P", "B": "P", "C": "P", "D": "P"}
+    out = mg.improving_moves(scores, pats, parents, max_cells=4)
+    assert [m[1] for m in out] == ["A"]                                # B 改 5 格、C 變差、D 沒量
+    assert mg.improving_moves(scores, pats, {"A": "Q"}, min_parent=-0.5) == []   # 親代太差不收
+
+
+def test_stack_candidates_apply_moves_and_rank_by_gain_sum():
+    base = sm.enforce_dual_geometry(np.zeros((25, 25), bool)).reshape(-1)
+    moves = [(0.10, "A", np.array([30]), np.array([True])),
+             (0.05, "B", np.array([200]), np.array([True])),
+             (0.02, "C", np.array([30]), np.array([True]))]           # C 與 A 同格同值
+    out = mg.stack_candidates(base, moves, sizes=(2,))
+    assert out[0][1] == ["A", "B"] and abs(out[0][2] - 0.15) < 1e-9
+    assert all(q.reshape(-1)[[30, 200]].any() for q, _, _ in out)
