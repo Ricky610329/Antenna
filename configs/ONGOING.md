@@ -4,7 +4,7 @@
 > 2026-10-12 前的完整流水帳（R80 收尾、Codex 的 R81 release 機制、diffsim、資料工廠、🔜 候選、✅ 指標）原樣封存在
 > [docs/log/archive/ongoing-2026-10-12.md](../docs/log/archive/ongoing-2026-10-12.md)。
 
-最後更新：2026-10-21 16:27
+最後更新：2026-10-21 16:30
 
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
@@ -43,6 +43,7 @@
 
 ## 🔵 R89 整合前段設計（running）→ [round-89](../docs/log/round-89-merge.md)
 
+- **10-21 16:30 Ricky：v6a 要做到 ≥ +0.1（公證）才切回 v6**。
 - **10-21 16:27 v6a 首筆 ≥ 0**：`mg05_009` +0.006（218，單次）→ 公證 `r81v6n01` 釘 216。
 - mg01（24 筆）收齊：最佳 `mg01_011` **−0.110**（單次），達「整合有效」門檻。mg02（疊加 12＋第二代移植 12，prio −3）已發車。
 - mg02 指令：`python -m script.r89_merge --n 24 --base-mode top --rank small --stack 12 --stack-base r81v2_b111_010_0dcdaf1d --name r81v6mg02 --out <dir>`
