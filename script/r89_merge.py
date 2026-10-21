@@ -183,12 +183,13 @@ def main(argv=None):
                     help="預估模式（逗號分隔的底 id）：依前段單格翻轉實測平均 Δ 預估五項 margin，依預估 WM 挑單格與兩兩"
                          "（用於擾動後修復：如通帶過了但高阻破的底）")
     ap.add_argument("--edge-pair", type=int, default=3)
+    ap.add_argument("--config", type=Path, default=V6A, help="評分／量測設定（預設 v6a；切回 v6 用 configs/dual_r81_v6.yaml）")
     ap.add_argument("--seed", type=int, default=89)
     ap.add_argument("--name", default="r81v6mg01")
     ap.add_argument("--out", required=True)
     args = ap.parse_args(argv)
     rng = np.random.default_rng(args.seed)
-    cfg = sm.load_cfg(V6A)
+    cfg = sm.load_cfg(args.config)
     grid = np.asarray(sm.frequency_grid(cfg.measurement))
     wide = sm.load_wide(sm.WIDE_ROOT, cfg, grid)
     edge = {26.0: int(np.argmin(abs(grid - 26))), 30.0: int(np.argmin(abs(grid - 30)))}
@@ -279,7 +280,7 @@ def main(argv=None):
         picks.append(int(i))
         if len(picks) >= n_tr:
             break
-    pcfg = load_profile_config(V6A)
+    pcfg = load_profile_config(args.config)
     mid, sid = measurement_id(pcfg.measurement), score_spec_id(pcfg.score_spec)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=False)
@@ -304,7 +305,7 @@ def main(argv=None):
     (out / "manifest.json").write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
     (out / "measurement.json").write_text(json.dumps(pcfg.measurement, ensure_ascii=False, indent=2), encoding="utf-8")
     (out / "score_spec.json").write_text(json.dumps(pcfg.score_spec, ensure_ascii=False, indent=2), encoding="utf-8")
-    (out / "config.yaml").write_text(V6A.read_text(encoding="utf-8"), encoding="utf-8")
+    (out / "config.yaml").write_text(Path(args.config).read_text(encoding="utf-8"), encoding="utf-8")
     validate_input(out, pcfg)
     print(f"→ {out}：{len(man)} 筆（疊加 {len(stack)}、移植 {len(picks)}）；每筆改 {min(x['n_changed'] for x in man)}–"
           f"{max(x['n_changed'] for x in man)} 格；移植組合數 {len(per)}")
@@ -359,7 +360,7 @@ def edge_main(args, cfg, grid, wide, cand):
         for lst in per_base:
             if lst and len(picks) < args.n:
                 picks.append(lst.pop(0))
-    pcfg = load_profile_config(V6A)
+    pcfg = load_profile_config(args.config)
     mid, sid = measurement_id(pcfg.measurement), score_spec_id(pcfg.score_spec)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=False)
@@ -377,7 +378,7 @@ def edge_main(args, cfg, grid, wide, cand):
     (out / "manifest.json").write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
     (out / "measurement.json").write_text(json.dumps(pcfg.measurement, ensure_ascii=False, indent=2), encoding="utf-8")
     (out / "score_spec.json").write_text(json.dumps(pcfg.score_spec, ensure_ascii=False, indent=2), encoding="utf-8")
-    (out / "config.yaml").write_text(V6A.read_text(encoding="utf-8"), encoding="utf-8")
+    (out / "config.yaml").write_text(Path(args.config).read_text(encoding="utf-8"), encoding="utf-8")
     validate_input(out, pcfg)
     print(f"→ {out}：{len(man)} 筆（兩兩 {sum(len(x[3]) == 2 for x in picks)}、單格 {sum(len(x[3]) == 1 for x in picks)}）")
 
