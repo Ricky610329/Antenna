@@ -181,6 +181,9 @@ def main(argv=None):
     ap.add_argument("--edge-bases", type=int, default=2)
     ap.add_argument("--stats-min-parent", type=float, default=-1.0,
                     help="單格翻轉統計只收親代 WM 高於此值的配對（v6 尺前段約 −3，宜放寬到 −6）")
+    ap.add_argument("--levers", default=None,
+                    help="指定格模式：'r,c;r,c;…'——對 --lever-base 每個底把這些格各自翻轉（單步）與兩兩翻轉（R85 步驟 B：已知槓桿格）")
+    ap.add_argument("--lever-base", default=None, help="指定格模式的底 id（逗號分隔可多個）")
     ap.add_argument("--predict", default=None,
                     help="預估模式（逗號分隔的底 id）：依前段單格翻轉實測平均 Δ 預估五項 margin，依預估 WM 挑單格與兩兩"
                          "（用於擾動後修復：如通帶過了但高阻破的底）")
@@ -209,6 +212,8 @@ def main(argv=None):
         bases = [r for w, r in cand if grid[pb][np.argmin(r["y"][1][pb])] == 30.0][:args.bases]
     else:
         bases = [r for w, r in cand][:args.bases]
+    if args.levers:
+        return lever_main(args, cfg, wide, cand)
     if args.edge is not None or args.predict:
         if args.edge is None:
             args.edge = 30.0
@@ -383,6 +388,53 @@ def edge_main(args, cfg, grid, wide, cand):
     (out / "config.yaml").write_text(Path(args.config).read_text(encoding="utf-8"), encoding="utf-8")
     validate_input(out, pcfg)
     print(f"→ {out}：{len(man)} 筆（兩兩 {sum(len(x[3]) == 2 for x in picks)}、單格 {sum(len(x[3]) == 1 for x in picks)}）")
+
+
+def lever_candidates(base, cells, big=4):
+    """base（bool 625）上把 cells 各自翻轉、兩兩翻轉；過濾兩埠接通與大塊結構改變。回傳 [(pattern, 翻的格)]。"""
+    nb = big_components(base.reshape(25, 25), big)
+    out = []
+    for k in (1, 2):
+        for combo in itertools.combinations(cells, k):
+            q = base.reshape(25, 25).copy()
+            for r, c in combo:
+                q[r, c] = ~q[r, c]
+            q = sm.enforce_dual_geometry(q)
+            if sm.pads_connected(q) or big_components(q, big) != nb:
+                continue
+            out.append((q.reshape(-1), list(combo)))
+    return out
+
+
+def lever_main(args, cfg, wide, cand):
+    cells = [tuple(int(x) for x in c.split(",")) for c in args.levers.split(";") if c]
+    known = {r["sha"] for r in wide} | sm.input_hashes(sm.WIDE_ROOT)
+    pcfg = load_profile_config(args.config)
+    mid, sid = measurement_id(pcfg.measurement), score_spec_id(pcfg.score_spec)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=False)
+    man = []
+    for bid in args.lever_base.split(","):
+        b = next(r for w, r in cand if r["id"] == bid)
+        bp = np.asarray(b["pattern"]).reshape(-1) > 0.5
+        for q, combo in lever_candidates(bp, cells, args.big):
+            h = pattern_sha256(q.reshape(25, 25))
+            if h in known or len(man) >= args.n:
+                continue
+            known.add(h)
+            rid = f"{args.name}_{len(man):03d}_{h[:8]}"
+            torch.save(torch.tensor(q.reshape(25, 25).astype(np.float32)), out / f"{rid}.pt")
+            man.append({"id": rid, "batch": 1, "port": "dual", "kind": "merge", "measurement_id": mid,
+                        "score_spec_id": sid, "pattern_file": f"{rid}.pt", "pattern_sha256": h,
+                        "lineage_id": b["lineage"], "parent_id": f"{b['store']}:{b['id']}", "selection_arm": "lever",
+                        "op": "lever", "cells": [[r, c, bool(q.reshape(25, 25)[r, c])] for r, c in combo],
+                        "n_changed": len(combo)})
+    (out / "manifest.json").write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
+    (out / "measurement.json").write_text(json.dumps(pcfg.measurement, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "score_spec.json").write_text(json.dumps(pcfg.score_spec, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "config.yaml").write_text(Path(args.config).read_text(encoding="utf-8"), encoding="utf-8")
+    validate_input(out, pcfg)
+    print(f"→ {out}：{len(man)} 筆（單步 {sum(m['n_changed'] == 1 for m in man)}、兩兩 {sum(m['n_changed'] == 2 for m in man)}）")
 
 
 if __name__ == "__main__":

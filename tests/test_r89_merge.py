@@ -76,3 +76,12 @@ def test_predicted_moves_rank_by_min_margin_and_pair_additively():
     assert best_cells == [(1, True)] and abs(best_wm - 0.12) < 1e-9          # 1 單步：高阻 +0.3、通帶 0.12 → 0.12
     pair = next(x for x in out if len(x[0]) == 2 and {c for c, _ in x[0]} == {1, 2})
     assert abs(pair[1] - (-0.38)) < 1e-9                                      # 兩兩可加：通帶 0.12−0.5
+
+
+def test_lever_candidates_singles_and_pairs():
+    base = sm.enforce_dual_geometry(np.zeros((25, 25), bool)).reshape(-1)
+    out = mg.lever_candidates(base, [(8, 2), (12, 3), (16, 4)])
+    combos = sorted(tuple(c) for _, c in out)
+    assert len(out) == 6 and ((8, 2),) in combos and ((8, 2), (12, 3)) in combos   # 3 單步＋3 兩兩
+    q = dict((tuple(c), p) for p, c in out)[((8, 2),)]
+    assert q.reshape(25, 25)[8, 2] and q.sum() == base.sum() + 1

@@ -21,8 +21,14 @@
 
 - w01：`python -m script.r89_merge --config configs/dual_r81_v6.yaml --n 24 --base-mode top --stats-min-parent -6 --predict r81v2_b92_016_1921041c,r81v2_b94_000_3dc4d025,r81v2_b94_015_8aaaa10e --name r81v6w01 --out <dir>`
 - 入佇列：`python -m script.r81_curve_sm enqueue --input <dir> --name r81v6w01 --prio -3 --shards 3 --config configs/dual_r81_v6.yaml`
+- w02：`python -m script.r89_merge --config configs/dual_r81_v6.yaml --n 24 --base-mode top --levers "2,7;3,9;6,9;4,15;17,10;22,16" --lever-base r81v2_b92_016_1921041c,r81v2_b94_000_3dc4d025 --name r81v6w02 --out <dir>`
 
 ## 4. 分析 (Analyze)
+
+### 2026-10-22 05:16：w01 前 13 筆——v6 低阻不動；w02 低阻槓桿（R85 步驟 B）發車
+
+- w01（`--predict`，v6 尺）13／24：最佳 −3.047（b92_016＋(23,20) 加銅＋(8,19) 挖空；底 −3.107），**低阻全停在 −2.85～−3.43**；預估偏樂觀 0.2～3 dB。單格翻轉統計主要來自 v6a 前段（低阻非瓶頸），幾乎沒有推動 14.5 GHz 的樣本。
+- w02（prio −3）：`r89_merge --levers "2,7;3,9;6,9;4,15;17,10;22,16" --lever-base b92_016,b94_000`——交接檔的低阻單格槓桿，單步 10＋兩兩 14。看點：低阻能否推過 −2.5，代價落在哪一項（交接檔觀察：高阻 −4 dB 級）。新增 `lever_candidates`／`lever_main`，附測試。
 
 ## 5. 結論 (Conclude)
 
