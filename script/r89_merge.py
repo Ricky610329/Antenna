@@ -136,6 +136,25 @@ def edge_moves(stats, base_pat, base_margins, keep=0.1):
     return sorted(out, key=lambda t: -t[2])
 
 
+def predicted_moves(stats, base_pat, base_margins, top_pairs=8):
+    """單格翻轉（及前 top_pairs 個的兩兩組合）套到 base 的預估：五項 margin＝base＋實測平均 Δ（兩兩視為可加），
+    預估 WM＝其中最小。回傳 [(格清單 [(格, 值)], 預估 WM, 樣本數下限)]，依預估 WM 由大到小。"""
+    singles = []
+    for (k, val), v in stats.items():
+        if bool(base_pat[k]) == val:
+            continue
+        d = {m: float(np.mean([x[1][m] for x in v])) for m in MARGINS}
+        singles.append(([(k, val)], d, len(v)))
+    pred = lambda d: min(base_margins[m] + d[m] for m in MARGINS)
+    singles.sort(key=lambda t: -pred(t[1]))
+    out = [(c, pred(d), n) for c, d, n in singles]
+    for (c1, d1, n1), (c2, d2, n2) in itertools.combinations(singles[:top_pairs], 2):
+        if c1[0][0] == c2[0][0]:
+            continue
+        out.append((c1 + c2, pred({m: d1[m] + d2[m] for m in MARGINS}), min(n1, n2)))
+    return sorted(out, key=lambda t: -t[1])
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--n", type=int, default=24)
@@ -160,6 +179,9 @@ def main(argv=None):
                     help="通帶邊緣專攻（GHz，如 30）：只產「能抬高該頻點 S21 的單格翻轉」——依前段單格翻轉實測平均增益，"
                          "套到 WM 前 --edge-bases 名；另加每個底最乾淨前 --edge-pair 格的兩兩組合")
     ap.add_argument("--edge-bases", type=int, default=2)
+    ap.add_argument("--predict", default=None,
+                    help="預估模式（逗號分隔的底 id）：依前段單格翻轉實測平均 Δ 預估五項 margin，依預估 WM 挑單格與兩兩"
+                         "（用於擾動後修復：如通帶過了但高阻破的底）")
     ap.add_argument("--edge-pair", type=int, default=3)
     ap.add_argument("--seed", type=int, default=89)
     ap.add_argument("--name", default="r81v6mg01")
@@ -184,7 +206,9 @@ def main(argv=None):
         bases = [r for w, r in cand if grid[pb][np.argmin(r["y"][1][pb])] == 30.0][:args.bases]
     else:
         bases = [r for w, r in cand][:args.bases]
-    if args.edge is not None:
+    if args.edge is not None or args.predict:
+        if args.edge is None:
+            args.edge = 30.0
         return edge_main(args, cfg, grid, wide, cand)
     pool = [r for w, r in cand if w > args.donor_wm]
     pats, meta = [], []
@@ -298,14 +322,25 @@ def edge_main(args, cfg, grid, wide, cand):
     stats = single_flip_stats(rows, parents, i_f)
     known = {r["sha"] for r in wide} | sm.input_hashes(sm.WIDE_ROOT)
     per_base = []
-    for w, b in cand[:args.edge_bases]:
+    if args.predict:
+        ids = args.predict.split(",")
+        bases = [(w, r) for w, r in cand if r["id"] in ids]
+    else:
+        bases = cand[:args.edge_bases]
+    for w, b in bases:
         bp, bs, _ = rows[b["id"]]
-        mv = edge_moves(stats, bp, bs["margins"])
-        print(f"底 {b['id'][6:18]}（{w:+.3f}）可用翻轉 {len(mv)}：",
-              [((k // 25, k % 25), "加銅" if v else "挖空", round(d, 3), n) for k, v, d, n in mv[:8]])
         nb = big_components(bp.reshape(25, 25), args.big)
         items = []
-        combos = [[m] for m in mv] + [list(c) for c in itertools.combinations(mv[:args.edge_pair], 2)]
+        if args.predict:
+            pm = predicted_moves(stats, bp, bs["margins"])
+            print(f"底 {b['id'][6:18]}（{w:+.3f}）預估前 8：",
+                  [([(k // 25, k % 25, "加" if v else "挖") for k, v in c], round(pw, 3), n) for c, pw, n in pm[:8]])
+            combos = [[(k, v, pw, n) for k, v in c] for c, pw, n in pm]
+        else:
+            mv = edge_moves(stats, bp, bs["margins"])
+            print(f"底 {b['id'][6:18]}（{w:+.3f}）可用翻轉 {len(mv)}：",
+                  [((k // 25, k % 25), "加銅" if v else "挖空", round(d, 3), n) for k, v, d, n in mv[:8]])
+            combos = [[m] for m in mv] + [list(c) for c in itertools.combinations(mv[:args.edge_pair], 2)]
         for combo in combos:
             q = bp.copy()
             for k, v, _, _ in combo:
@@ -316,8 +351,9 @@ def edge_main(args, cfg, grid, wide, cand):
                 continue
             known.add(h)
             items.append((q, h, b, combo))
-        pairs_first = [x for x in items if len(x[3]) == 2] + [x for x in items if len(x[3]) == 1]
-        per_base.append(pairs_first)
+        if not args.predict:                                       # 上緣專攻：兩兩優先；預估模式：照預估 WM 順序
+            items = [x for x in items if len(x[3]) == 2] + [x for x in items if len(x[3]) == 1]
+        per_base.append(items)
     picks = []
     while len(picks) < args.n and any(per_base):                 # 各底輪流取
         for lst in per_base:
@@ -333,9 +369,11 @@ def edge_main(args, cfg, grid, wide, cand):
         torch.save(torch.tensor(q.reshape(25, 25).astype(np.float32)), out / f"{rid}.pt")
         man.append({"id": rid, "batch": 1, "port": "dual", "kind": "merge", "measurement_id": mid, "score_spec_id": sid,
                     "pattern_file": f"{rid}.pt", "pattern_sha256": h, "lineage_id": b["lineage"],
-                    "parent_id": f"{b['store']}:{b['id']}", "selection_arm": "edge", "op": f"edge{args.edge:g}",
+                    "parent_id": f"{b['store']}:{b['id']}", "selection_arm": "predict" if args.predict else "edge",
+                    "op": "predict" if args.predict else f"edge{args.edge:g}",
                     "cells": [[int(c // 25), int(c % 25), bool(v)] for c, v, _, _ in combo],
-                    "pred_gain": float(sum(d for _, _, d, _ in combo)), "n_changed": len(combo)})
+                    "pred_gain": float(combo[0][2] if args.predict else sum(d for _, _, d, _ in combo)),
+                    "n_changed": len(combo)})
     (out / "manifest.json").write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
     (out / "measurement.json").write_text(json.dumps(pcfg.measurement, ensure_ascii=False, indent=2), encoding="utf-8")
     (out / "score_spec.json").write_text(json.dumps(pcfg.score_spec, ensure_ascii=False, indent=2), encoding="utf-8")

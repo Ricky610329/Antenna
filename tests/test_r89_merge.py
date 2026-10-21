@@ -62,3 +62,17 @@ def test_edge_moves_skip_present_and_unsafe_side_effects():
     bm = {"s21_pass": -0.05, "s21_low_stop": 0.6, "s21_high_stop": 3.0, "s11_match": 1.0, "s22_match": 3.0}
     out = mg.edge_moves(stats, z, bm)
     assert [(k, v) for k, v, _, _ in out] == [(10, True)]
+
+
+def test_predicted_moves_rank_by_min_margin_and_pair_additively():
+    z = np.zeros(625, bool)
+    zero = {m: 0.0 for m in mg.MARGINS}
+    stats = {(1, True): [(0.0, dict(zero, s21_high_stop=1.5))],                   # 修高阻
+             (2, True): [(0.0, dict(zero, s21_high_stop=1.0, s21_pass=-0.5))],    # 修高阻但傷通帶
+             (3, True): [(0.0, dict(zero, s21_high_stop=-0.2))]}
+    bm = {"s21_pass": 0.12, "s21_low_stop": 0.8, "s21_high_stop": -1.2, "s11_match": 1.2, "s22_match": 4.9}
+    out = mg.predicted_moves(stats, z, bm, top_pairs=3)
+    best_cells, best_wm, _ = out[0]
+    assert best_cells == [(1, True)] and abs(best_wm - 0.12) < 1e-9          # 1 單步：高阻 +0.3、通帶 0.12 → 0.12
+    pair = next(x for x in out if len(x[0]) == 2 and {c for c, _ in x[0]} == {1, 2})
+    assert abs(pair[1] - (-0.38)) < 1e-9                                      # 兩兩可加：通帶 0.12−0.5
