@@ -54,7 +54,9 @@ def rows_v6(cfg, grid):
     return rows
 
 
-def climb_panel(ax, x, wm, best, batches, lo, hi, label_events=True, events_from=0, text_right=False):
+def climb_panel(ax, x, wm, best, batches, lo, hi, label_events=True, events_from=0, text_right=False, xmax=None):
+    """xmax：固定右界（動畫逐格畫時用，事件間距與標字位移也以整段為準）。"""
+    span = (xmax if xmax is not None else x[-1]) - x[0]
     ax.scatter(x, np.clip(wm, lo, None), s=8, color=DOT, lw=0, label="每筆模擬")
     ax.step(x, best, where="post", color=LINE, lw=2.2, label=f"累計最佳（目前 {best[-1]:+.2f}，單次）")
     ax.axhline(0, color=rp.INK, lw=1.2, ls="--")
@@ -64,12 +66,12 @@ def climb_panel(ax, x, wm, best, batches, lo, hi, label_events=True, events_from
         if b in batches and b >= events_from:
             k = batches.index(b)
             ax.axvline(x[k], color=MARK, lw=0.8, ls=":")
-            if label_events and x[k] - last >= (x[-1] - x[0]) * 0.025:   # 太近的事件只畫線不寫字，免得疊字
+            if label_events and x[k] - last >= span * 0.025:   # 太近的事件只畫線不寫字，免得疊字
                 last = x[k]
-                off = (x[-1] - x[0]) * 0.006 * (1 if text_right else -1)
+                off = span * 0.006 * (1 if text_right else -1)
                 ax.text(x[k] + off, lo + (hi - lo) * 0.02, text, rotation=90, ha="left" if text_right else "right",
                         va="bottom", fontsize=8.5, color=MARK, bbox=dict(facecolor=rp.SURF, edgecolor="none", pad=1.5))
-    ax.set_xlim(x[0] - 1, x[-1] + 4)
+    ax.set_xlim(x[0] - 1, (xmax if xmax is not None else x[-1]) + 4)
     ax.set_ylim(lo, hi)
     ax.set_xlabel("累計 HFSS 模擬筆數（11–40 GHz）", color=rp.MUTED)
     ax.set_ylabel("WM (dB)", color=rp.MUTED)

@@ -1,9 +1,12 @@
-"""R81 濾波器全程最佳設計演進 GIF：從第一批（b01）到現在，每筆都用「當時的規格」評分。
-主線規格依序 v2 → v3 → v4 → v4a → v4 → v4x → v6 → v6a（v5／v5a 旁支、公證、掃描、填空池不列）。
-每段規格內累計最佳每刷新一次就是一格；換規格時累計最佳重新起算。
-左 2×2：S21、S11、S22（當時規格線）、pattern；右：爬坡（線性 y 軸，底色＝規格段）。
+"""R81 濾波器最佳設計演進 GIF。累計最佳每刷新一次就是一格。
+左 2×2：S21、S11、S22（規格線）、pattern；右：爬坡（線性 y 軸，隨動畫推進）。
 
-用法：python -m script.figs.r81_best_gif <輸出資料夾> [--ms 200]
+--history v6a（預設）：11–40 GHz 量測起（m02、b62 起、R89 整合批）全以 v6a 尺評分；
+  爬坡格同 r81v6a_climb.png 左格（−15～+2 dB、事件標註）。
+--history all：b01 起主線各段（v2 → v3 → v4 → v4a → v4 → v4x → v6 → v6a）以當時規格評分、
+  換規格即重新起算、底色＝規格段（v5／v5a 旁支、公證、掃描、填空池不列）。
+
+用法：python -m script.figs.r81_best_gif <輸出資料夾> [--ms 200] [--history all]
 輸出：r81v6a_best_evolution.gif
 """
 import argparse
@@ -18,7 +21,7 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 
 from script import r81_curve_sm as sm
 from script.figs import r81_progress as rp
-from script.figs.r81_v6 import DOT, LINE, MG_AFTER
+from script.figs.r81_v6 import DOT, LINE, MG_AFTER, V6, V6A, climb_panel, rows_v6
 
 PANELS = (("S21", 1), ("S11", 0), ("S22", 2))
 LO = -15
@@ -99,10 +102,17 @@ def main(argv=None):
     ap.add_argument("outdir", type=Path)
     ap.add_argument("--ms", type=int, default=200, help="每格毫秒")
     ap.add_argument("--hold", type=int, default=12, help="最後一格多停幾格")
+    ap.add_argument("--history", choices=("v6a", "all"), default="v6a")
     args = ap.parse_args(argv)
     plt.rcParams["font.family"] = ["Microsoft JhengHei", "sans-serif"]
-    grid = np.asarray(sm.frequency_grid(sm.load_cfg(sm.REPO / "configs" / "dual_r81_v6.yaml").measurement))
-    rows, cfgs = load_history(grid)
+    grid = np.asarray(sm.frequency_grid(sm.load_cfg(V6).measurement))
+    if args.history == "all":
+        rows, cfgs = load_history(grid)
+        batches = None
+    else:
+        cfgs = {"v6a": sm.load_cfg(V6A)}
+        rows = [{"r": r, "sc": sm.true_wm(r, cfgs["v6a"], grid), "stage": "v6a"} for r in rows_v6(sm.load_cfg(V6), grid)]
+        batches = [x["r"]["batch"] for x in rows]
     w = np.array([x["sc"]["worst_margin"] for x in rows])
     st = [x["stage"] for x in rows]
     xs = np.arange(1, len(rows) + 1)
@@ -126,6 +136,29 @@ def main(argv=None):
     ax_p = fig.add_subplot(gs[1, 1])
     ax_c = fig.add_subplot(gs[:, 2])
 
+    def draw_stages(n, i):
+        for j, (a, b, s) in enumerate(segs):
+            ax_c.axvspan(xs[a] - 0.5, xs[b] + 0.5, color=SHADE[j % 2], lw=0)
+            if xs[b] - xs[a] > 45:
+                ax_c.text((xs[a] + xs[b]) / 2, 0.75, STAGES[s][0], ha="center", va="bottom", fontsize=8.5,
+                          color=rp.MUTED, rotation=90)
+        ax_c.scatter(xs[:n], np.clip(w[:n], LO, None), s=6, color=DOT, lw=0)
+        for a, b, s in segs:
+            if a < n:
+                e = min(b, i) + 1
+                ax_c.step(xs[a:e], cum[a:e], where="post", color=LINE, lw=2.2)
+        ax_c.scatter([n], [cum[i]], s=70, color="#e0322b", zorder=5)
+        ax_c.axhline(0, color=rp.INK, lw=1.2, ls="--")
+        ax_c.set_ylim(LO, 3.5)
+        ax_c.set_yticks([-15, -10, -5, 0])
+        ax_c.set_xlim(0, xs[-1] + 10)
+        ax_c.set_xlabel("累計 HFSS 模擬筆數（主線）", color=rp.MUTED)
+        ax_c.set_ylabel("WM（各段當時規格，dB）", color=rp.MUTED)
+        ax_c.set_title(f"爬坡：{STAGES[st[i]][0]} 段累計最佳 {cum[i]:+.2f} dB（換規格即重新起算；低於 −15 壓底）",
+                       loc="left", fontsize=10.5, color=rp.INK)
+        rp.style(ax_c)
+        ax_c.set_box_aspect(1)
+
     def draw(k):
         i = seq[k]
         row, sc, stg = rows[i]["r"], rows[i]["sc"], st[i]
@@ -141,31 +174,19 @@ def main(argv=None):
         ax_p.set_title("pattern（25×25，上下緣中央為兩埠饋墊）", loc="left", fontsize=9.5, color=rp.INK)
         ax_p.set_box_aspect(1)
         ax_c.clear()
-        for j, (a, b, s) in enumerate(segs):
-            ax_c.axvspan(xs[a] - 0.5, xs[b] + 0.5, color=SHADE[j % 2], lw=0)
-            if xs[b] - xs[a] > 45:
-                ax_c.text((xs[a] + xs[b]) / 2, 0.75, STAGES[s][0], ha="center", va="bottom", fontsize=8.5,
-                          color=rp.MUTED, rotation=90)
         n = i + 1
-        ax_c.scatter(xs[:n], np.clip(w[:n], LO, None), s=6, color=DOT, lw=0)
-        for a, b, s in segs:
-            if a < n:
-                e = min(b, i) + 1
-                ax_c.step(xs[a:e], cum[a:e], where="post", color=LINE, lw=2.2)
-        ax_c.scatter([n], [cum[i]], s=70, color="#e0322b", zorder=5)
-        ax_c.axhline(0, color=rp.INK, lw=1.2, ls="--")
-        ax_c.set_ylim(LO, 3.5)
-        ax_c.set_yticks([-15, -10, -5, 0])
-        ax_c.set_xlim(0, xs[-1] + 10)
-        ax_c.set_xlabel("累計 HFSS 模擬筆數（主線）", color=rp.MUTED)
-        ax_c.set_ylabel("WM（各段當時規格，dB）", color=rp.MUTED)
-        ax_c.set_title(f"爬坡：{STAGES[stg][0]} 段累計最佳 {cum[i]:+.2f} dB（換規格即重新起算；低於 −15 壓底）",
-                       loc="left", fontsize=10.5, color=rp.INK)
-        rp.style(ax_c)
-        ax_c.set_box_aspect(1)
+        if batches is not None:
+            climb_panel(ax_c, xs[:n], w[:n], cum[:n], batches[:n], LO, 2, xmax=xs[-1])
+            ax_c.scatter([n], [cum[i]], s=70, color="#e0322b", zorder=5)
+            ax_c.set_yticks(range(-14, 3, 2))
+            ax_c.legend(loc="upper right", frameon=False, fontsize=9)
+            ax_c.set_title("濾波器 −15 版（v6a）性能爬升（阻帶 11–19、36–40 ≤ −15 dB）", loc="left", fontsize=11,
+                           color=rp.INK)
+        else:
+            draw_stages(n, i)
         ww = sc["worst_margin"]
-        fig.suptitle(f"R81 濾波器全程最佳演進　{STAGES[stg][0]}　第 {n} 筆模擬　WM {ww:+.3f} dB　"
-                     f"（{min(k + 1, len(frames))}／{len(frames)}）\n{row['id']}",
+        head = "R81 濾波器 −15 版最佳演進" if batches is not None else f"R81 濾波器全程最佳演進　{STAGES[stg][0]}"
+        fig.suptitle(f"{head}　第 {n} 筆模擬　WM {ww:+.3f} dB　（{min(k + 1, len(frames))}／{len(frames)}）\n{row['id']}",
                      x=0.03, ha="left", fontsize=12, color="#1a7f37" if ww >= 0 else rp.INK)
         fig.subplots_adjust(left=0.05, right=0.98, top=0.89, bottom=0.06, wspace=0.25, hspace=0.25)
 
