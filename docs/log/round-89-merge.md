@@ -27,6 +27,8 @@
 - `python -m script.r89_merge --n 24 --out <dir>`
 - `python -m script.r81_curve_sm enqueue --input <dir> --name r81v6mg01 --prio -3 --shards 3 --config configs/dual_r81_v6a.yaml`
 
+- 2026-10-21 09:43 發車：建批時資料已更新，實際底＝`b111_010`、`b111_004`、`b110_011`，捐贈者＝`b109_006`、`b110_014`、`b106_003`、`b112_003`、`b110_012`；過濾後候選 86、挑 24 筆（12 組，每筆改 1–11 格，平均分預測 −0.40～−0.14）。`r81v6mg01s1–s3` prio −3。
+
 ## 4. 分析 (Analyze)
 
 ## 5. 結論 (Conclude)
