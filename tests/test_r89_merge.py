@@ -49,3 +49,16 @@ def test_stack_candidates_apply_moves_and_rank_by_gain_sum():
     out = mg.stack_candidates(base, moves, sizes=(2,))
     assert out[0][1] == ["A", "B"] and abs(out[0][2] - 0.15) < 1e-9
     assert all(q.reshape(-1)[[30, 200]].any() for q, _, _ in out)
+
+
+def test_edge_moves_skip_present_and_unsafe_side_effects():
+    z = np.zeros(625, bool)
+    stats = {(10, True): [(0.15, {"s21_pass": 0.15, "s21_low_stop": 0.0, "s21_high_stop": 1.0,
+                                   "s11_match": 0.0, "s22_match": 0.0})],
+             (11, True): [(0.20, {"s21_pass": 0.2, "s21_low_stop": -1.0, "s21_high_stop": 0.0,
+                                   "s11_match": 0.0, "s22_match": 0.0})],          # 低阻會不過
+             (12, False): [(0.30, {m: 0.0 for m in mg.MARGINS})],                 # 底已是空白
+             (13, True): [(-0.05, {m: 0.0 for m in mg.MARGINS})]}                 # 不抬高
+    bm = {"s21_pass": -0.05, "s21_low_stop": 0.6, "s21_high_stop": 3.0, "s11_match": 1.0, "s22_match": 3.0}
+    out = mg.edge_moves(stats, z, bm)
+    assert [(k, v) for k, v, _, _ in out] == [(10, True)]

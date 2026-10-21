@@ -97,6 +97,45 @@ def stack_candidates(base, moves, sizes=(2, 3), big=4):
     return sorted(out, key=lambda t: -t[2])
 
 
+MARGINS = ("s21_pass", "s21_low_stop", "s21_high_stop", "s11_match", "s22_match")
+
+
+def single_flip_stats(rows, parents, i_f, min_parent=-1.0):
+    """單格翻轉的實測配對（親代 WM > min_parent）→ {(格索引, 新值): [(ΔS21@f, {margin: Δ})...]}。
+    rows：id → (bool 625, true_wm 結果, S21 曲線)；parents：子代 id → 親代 id。"""
+    out = {}
+    for cid, pid in parents.items():
+        if cid not in rows or pid not in rows:
+            continue
+        c, cs, cy = rows[cid]
+        p, ps, py = rows[pid]
+        if ps["worst_margin"] <= min_parent:
+            continue
+        fl = np.flatnonzero(c != p)
+        if len(fl) != 1:
+            continue
+        k = int(fl[0])
+        out.setdefault((k, bool(c[k])), []).append(
+            (float(cy[i_f] - py[i_f]), {m: cs["margins"][m] - ps["margins"][m] for m in MARGINS}))
+    return out
+
+
+def edge_moves(stats, base_pat, base_margins, keep=0.1):
+    """依平均 ΔS21@f 由大到小，挑 base 尚未是該值、且（base margin＋平均 Δ）其餘四項都 ≥ keep 的單格翻轉。
+    回傳 [(格, 新值, 平均 ΔS21@f, 樣本數)]。"""
+    out = []
+    for (k, val), v in stats.items():
+        if bool(base_pat[k]) == val:
+            continue
+        d = np.mean([x[0] for x in v])
+        if d <= 0:
+            continue
+        pred = {m: base_margins[m] + np.mean([x[1][m] for x in v]) for m in MARGINS if m != "s21_pass"}
+        if min(pred.values()) >= keep:
+            out.append((k, val, float(d), len(v)))
+    return sorted(out, key=lambda t: -t[2])
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--n", type=int, default=24)
@@ -115,6 +154,11 @@ def main(argv=None):
     ap.add_argument("--stack-k", type=int, default=8, help="取增益前幾名的小步移植來疊加")
     ap.add_argument("--stack-sizes", default="2,3", help="疊加幾個小步（逗號分隔；1＝單步套到新底）")
     ap.add_argument("--stack-min-parent", type=float, default=-0.25, help="小步移植的親代 WM 下限（只收前段的改動）")
+    ap.add_argument("--edge", type=float, default=None,
+                    help="通帶邊緣專攻（GHz，如 30）：只產「能抬高該頻點 S21 的單格翻轉」——依前段單格翻轉實測平均增益，"
+                         "套到 WM 前 --edge-bases 名；另加每個底最乾淨前 --edge-pair 格的兩兩組合")
+    ap.add_argument("--edge-bases", type=int, default=2)
+    ap.add_argument("--edge-pair", type=int, default=3)
     ap.add_argument("--seed", type=int, default=89)
     ap.add_argument("--name", default="r81v6mg01")
     ap.add_argument("--out", required=True)
@@ -138,6 +182,8 @@ def main(argv=None):
         bases = [r for w, r in cand if grid[pb][np.argmin(r["y"][1][pb])] == 30.0][:args.bases]
     else:
         bases = [r for w, r in cand][:args.bases]
+    if args.edge is not None:
+        return edge_main(args, cfg, grid, wide, cand)
     pool = [r for w, r in cand if w > args.donor_wm]
     pats, meta = [], []
     known = {r["sha"] for r in wide} | sm.input_hashes(sm.WIDE_ROOT)
@@ -230,6 +276,64 @@ def main(argv=None):
     validate_input(out, pcfg)
     print(f"→ {out}：{len(man)} 筆（疊加 {len(stack)}、移植 {len(picks)}）；每筆改 {min(x['n_changed'] for x in man)}–"
           f"{max(x['n_changed'] for x in man)} 格；移植組合數 {len(per)}")
+
+
+def edge_main(args, cfg, grid, wide, cand):
+    """--edge 模式：單格翻轉套到前幾名，候選 ≤ n，依底輪流取。"""
+    i_f = int(np.argmin(abs(grid - args.edge)))
+    rows, parents = {}, {}
+    for w, r in cand:
+        rows[r["id"]] = (np.asarray(r["pattern"]).reshape(-1) > 0.5, sm.true_wm(r, cfg, grid), r["y"][1])
+    for f in sm.V2_DATASET.glob("dedust_r81v6*_input/manifest.json"):
+        for m in json.loads(f.read_text(encoding="utf-8")):
+            parents[m["id"]] = m.get("parent_id", "").split(":")[-1]
+    stats = single_flip_stats(rows, parents, i_f)
+    known = {r["sha"] for r in wide} | sm.input_hashes(sm.WIDE_ROOT)
+    per_base = []
+    for w, b in cand[:args.edge_bases]:
+        bp, bs, _ = rows[b["id"]]
+        mv = edge_moves(stats, bp, bs["margins"])
+        print(f"底 {b['id'][6:18]}（{w:+.3f}）可用翻轉 {len(mv)}：",
+              [((k // 25, k % 25), "加銅" if v else "挖空", round(d, 3), n) for k, v, d, n in mv[:8]])
+        nb = big_components(bp.reshape(25, 25), args.big)
+        items = []
+        combos = [[m] for m in mv] + [list(c) for c in itertools.combinations(mv[:args.edge_pair], 2)]
+        for combo in combos:
+            q = bp.copy()
+            for k, v, _, _ in combo:
+                q[k] = v
+            q = sm.enforce_dual_geometry(q)
+            h = pattern_sha256(q)
+            if h in known or sm.pads_connected(q) or big_components(q, args.big) != nb:
+                continue
+            known.add(h)
+            items.append((q, h, b, combo))
+        pairs_first = [x for x in items if len(x[3]) == 2] + [x for x in items if len(x[3]) == 1]
+        per_base.append(pairs_first)
+    picks = []
+    while len(picks) < args.n and any(per_base):                 # 各底輪流取
+        for lst in per_base:
+            if lst and len(picks) < args.n:
+                picks.append(lst.pop(0))
+    pcfg = load_profile_config(V6A)
+    mid, sid = measurement_id(pcfg.measurement), score_spec_id(pcfg.score_spec)
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=False)
+    man = []
+    for k, (q, h, b, combo) in enumerate(picks):
+        rid = f"{args.name}_{k:03d}_{h[:8]}"
+        torch.save(torch.tensor(q.reshape(25, 25).astype(np.float32)), out / f"{rid}.pt")
+        man.append({"id": rid, "batch": 1, "port": "dual", "kind": "merge", "measurement_id": mid, "score_spec_id": sid,
+                    "pattern_file": f"{rid}.pt", "pattern_sha256": h, "lineage_id": b["lineage"],
+                    "parent_id": f"{b['store']}:{b['id']}", "selection_arm": "edge", "op": f"edge{args.edge:g}",
+                    "cells": [[int(c // 25), int(c % 25), bool(v)] for c, v, _, _ in combo],
+                    "pred_gain": float(sum(d for _, _, d, _ in combo)), "n_changed": len(combo)})
+    (out / "manifest.json").write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
+    (out / "measurement.json").write_text(json.dumps(pcfg.measurement, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "score_spec.json").write_text(json.dumps(pcfg.score_spec, ensure_ascii=False, indent=2), encoding="utf-8")
+    (out / "config.yaml").write_text(V6A.read_text(encoding="utf-8"), encoding="utf-8")
+    validate_input(out, pcfg)
+    print(f"→ {out}：{len(man)} 筆（兩兩 {sum(len(x[3]) == 2 for x in picks)}、單格 {sum(len(x[3]) == 1 for x in picks)}）")
 
 
 if __name__ == "__main__":
