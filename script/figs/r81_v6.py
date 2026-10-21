@@ -20,7 +20,8 @@ DOT, LINE, MARK = "#9ec5f4", "#2a78d6", "#eb6834"
 V6, V6A = sm.REPO / "configs" / "dual_r81_v6.yaml", sm.REPO / "configs" / "dual_r81_v6a.yaml"
 EVENTS = [(62, "斷開＋大步變異 30 格：壓掉 13.5 GHz 峰"), (67, "饋墊附近細步"), (71, "12 格＋前 10 名起點"),
           (74, "交界推移"), (76, "任意切縫重切"), (78, "取消選樣放寬"), (85, "變化量模型試用"), (89, "利用臂改用變化量模型"),
-          (92, "爬山全交變化量模型"), (96, "目標改 −15 版＋探索臂改用變化量模型"), (101, "兩模型平均打分")]
+          (92, "爬山全交變化量模型"), (96, "目標改 −15 版＋探索臂改用變化量模型"), (101, "兩模型平均打分"),
+          (107, "爬山改上下文模型＋利用臂改平均"), (112, "利用／探索臂小步限制")]
 
 
 def rows_v6(cfg, grid):
@@ -41,34 +42,51 @@ def rows_v6(cfg, grid):
     return rows
 
 
-def climb_figure(out, rows, key="wm", lo=-20, title="濾波器 v6 性能爬升（阻帶 11–19、36–40 ≤ −20 dB）", note=""):
-    wm = np.array([r[key] for r in rows])
-    best = np.maximum.accumulate(wm)
-    x = np.arange(1, len(wm) + 1)
-    fig, ax = plt.subplots(figsize=(7, 7), dpi=160)
-    fig.patch.set_facecolor(rp.SURF)
+def climb_panel(ax, x, wm, best, batches, lo, hi, label_events=True, events_from=0, text_right=False):
     ax.scatter(x, np.clip(wm, lo, None), s=8, color=DOT, lw=0, label="每筆模擬")
     ax.step(x, best, where="post", color=LINE, lw=2.2, label=f"累計最佳（目前 {best[-1]:+.2f}，單次）")
     ax.axhline(0, color=rp.INK, lw=1.2, ls="--")
-    ax.text(4, 0.3, "達標 WM = 0", fontsize=9, color=rp.INK)
-    batches = [r["batch"] for r in rows]
+    ax.text(x[0] + 3, (hi - lo) * 0.015, "達標 WM = 0", fontsize=9, color=rp.INK, va="bottom")
     for b, text in EVENTS:
-        if b in batches:
-            i = batches.index(b)
-            ax.axvline(x[i], color=MARK, lw=0.8, ls=":")
-            ax.text(x[i] - 3, lo + 0.4, text, rotation=90, ha="right", va="bottom", fontsize=8.5, color=MARK,
-                    bbox=dict(facecolor=rp.SURF, edgecolor="none", pad=1.5))
-    ax.set_xlim(0, x[-1] + 4)
-    ax.set_ylim(lo, 2)
+        if b in batches and b >= events_from:
+            k = batches.index(b)
+            ax.axvline(x[k], color=MARK, lw=0.8, ls=":")
+            if label_events:
+                off = (x[-1] - x[0]) * 0.006 * (1 if text_right else -1)
+                ax.text(x[k] + off, lo + (hi - lo) * 0.02, text, rotation=90, ha="left" if text_right else "right",
+                        va="bottom", fontsize=8.5, color=MARK, bbox=dict(facecolor=rp.SURF, edgecolor="none", pad=1.5))
+    ax.set_xlim(x[0] - 1, x[-1] + 4)
+    ax.set_ylim(lo, hi)
     ax.set_xlabel("累計 HFSS 模擬筆數（11–40 GHz）", color=rp.MUTED)
     ax.set_ylabel("WM (dB)", color=rp.MUTED)
-    ax.set_title(title, loc="left", fontsize=11.5, color=rp.INK)
-    ax.legend(loc="upper right", frameon=False, fontsize=9)
     rp.style(ax)
     ax.set_box_aspect(1)
-    fig.text(0.02, 0.01, f"共 {len(wm)} 筆單次 HFSS；前 24 筆為 18–40 好設計以 11–40 重量；低於 {lo} dB 的點壓在底線。{note}",
+
+
+def climb_figure(out, rows, key="wm", lo=-20, title="濾波器 v6 性能爬升（阻帶 11–19、36–40 ≤ −20 dB）", note="",
+                 zoom=None):
+    """zoom＝(起始批號, 下限 dB)：右側加一格放大最近一段（各格正方形）。"""
+    wm = np.array([r[key] for r in rows])
+    best = np.maximum.accumulate(wm)
+    x = np.arange(1, len(wm) + 1)
+    batches = [r["batch"] for r in rows]
+    fig, axes = plt.subplots(1, 2 if zoom else 1, figsize=(13.5, 7) if zoom else (7, 7), dpi=160, squeeze=False)
+    fig.patch.set_facecolor(rp.SURF)
+    ax = axes[0, 0]
+    climb_panel(ax, x, wm, best, batches, lo, 2)
+    ax.set_title(title, loc="left", fontsize=11.5, color=rp.INK)
+    ax.legend(loc="upper right", frameon=False, fontsize=9)
+    if zoom:
+        b0, zlo = zoom
+        k = next(i for i, b in enumerate(batches) if b >= b0)
+        az = axes[0, 1]
+        climb_panel(az, x[k:], wm[k:], best[k:], batches[k:], zlo, 0.15, events_from=b0, text_right=True)
+        az.set_title(f"放大：b{b0} 起（{len(wm) - k} 筆），{best[k]:+.2f} → {best[-1]:+.2f}", loc="left",
+                     fontsize=11.5, color=rp.INK)
+        ax.axvspan(x[k], x[-1], color=LINE, alpha=0.06, lw=0)
+    fig.text(0.02, 0.01, f"共 {len(wm)} 筆單次 HFSS；前 24 筆為 18–40 好設計以 11–40 重量；低於下限的點壓在底線。{note}",
              fontsize=8, color=rp.MUTED)
-    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
     fig.savefig(out, facecolor=rp.SURF)
     plt.close(fig)
     print("saved", out, len(wm), round(best[-1], 3))
@@ -139,7 +157,8 @@ def main(argv=None):
         r["wm_a"] = sm.true_wm(r, v6a, grid)["worst_margin"]
     climb_figure(args.outdir / "r81v6a_climb.png", rows, key="wm_a", lo=-15,
                  title="濾波器 −15 版（v6a）性能爬升（阻帶 11–19、36–40 ≤ −15 dB）",
-                 note="\nb95 以前選樣以 −20 版為目標、b96 起改以 −15 版為目標；此圖全部以 −15 版尺回算。")
+                 note="\nb95 以前選樣以 −20 版為目標、b96 起改以 −15 版為目標；此圖全部以 −15 版尺回算。",
+                 zoom=(96, -1.5))
     best = next(r for r in rows if r["id"] == args.id) if args.id else max(rows, key=lambda r: r["wm"])
     card_figure(args.outdir / "r81v6_best_card.png", best, grid, v6, v6a, len(rows))
     best_a = max(rows, key=lambda r: r["wm_a"])
