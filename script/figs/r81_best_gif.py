@@ -1,7 +1,7 @@
 """R81 v6a（−15 版）最佳設計演進 GIF：累計最佳每刷新一次就是一格。
-左＝pattern（紅框＝與上一格最佳不同的格），右＝S21 曲線與規格線；標題＝第幾筆模擬、v6a WM、設計 id。
+2×2：pattern、S21、S11、S22（各含規格線）；標題＝第幾筆模擬、v6a WM、設計 id（WM ≥ 0 轉綠）。
 
-用法：python -m script.figs.r81_best_gif <輸出資料夾> [--ms 600]
+用法：python -m script.figs.r81_best_gif <輸出資料夾> [--ms 350]
 輸出：r81v6a_best_evolution.gif
 """
 import argparse
@@ -12,18 +12,40 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation, PillowWriter
-from matplotlib.patches import Rectangle
 
 from script import r81_curve_sm as sm
 from script.figs import r81_progress as rp
 from script.figs.r81_v6 import LINE, V6, V6A, rows_v6
 
+PANELS = (("S21", 1, "s21"), ("S11", 0, "s11_match"), ("S22", 2, "s22_match"))
+
+
+def curve_panel(ax, grid, y, label, spec, margins):
+    for b in spec.score_spec["bands"]:
+        if b["label"] != label:
+            continue
+        lo, hi, thr = b["start_ghz"], b["stop_ghz"], b["threshold"]
+        ax.axvspan(lo, hi, color="#f6dede" if b["relation"] == "le" else "#dff0e3", alpha=0.6, lw=0)
+        ax.plot([lo, hi], [thr, thr], color=rp.INK, lw=1.3, ls="--")
+    ax.plot(grid, y, color=LINE, lw=2.0)
+    ax.set_xlim(11, 40)
+    ax.set_ylim(-45, 2)
+    ax.set_xticks([11, 15, 19, 22, 26, 30, 36, 40])
+    ax.set_ylabel(f"{label} (dB)", color=rp.MUTED, fontsize=9)
+    if label == "S21":
+        t = f"S21：通帶 {margins['s21_pass']:+.2f}、低阻 {margins['s21_low_stop']:+.2f}、高阻 {margins['s21_high_stop']:+.2f}"
+    else:
+        t = f"{label}：匹配 {margins[label.lower() + '_match']:+.2f}"
+    ax.set_title(t, loc="left", fontsize=9.5, color=rp.INK)
+    rp.style(ax)
+    ax.set_box_aspect(1)
+
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("outdir", type=Path)
-    ap.add_argument("--ms", type=int, default=600, help="每格毫秒")
-    ap.add_argument("--hold", type=int, default=6, help="最後一格多停幾格")
+    ap.add_argument("--ms", type=int, default=350, help="每格毫秒")
+    ap.add_argument("--hold", type=int, default=8, help="最後一格多停幾格")
     args = ap.parse_args(argv)
     plt.rcParams["font.family"] = ["Microsoft JhengHei", "sans-serif"]
     v6, v6a = sm.load_cfg(V6), sm.load_cfg(V6A)
@@ -31,49 +53,34 @@ def main(argv=None):
     rows = rows_v6(v6, grid)
     frames, best = [], -np.inf
     for n, r in enumerate(rows, 1):
-        w = sm.true_wm(r, v6a, grid)["worst_margin"]
-        if w > best:
-            best = w
-            frames.append((n, w, r))
-    print("刷新次數", len(frames), "；最後", round(frames[-1][1], 3))
+        sc = sm.true_wm(r, v6a, grid)
+        if sc["worst_margin"] > best:
+            best = sc["worst_margin"]
+            frames.append((n, sc, r))
+    print("刷新次數", len(frames), "；最後", round(frames[-1][1]["worst_margin"], 3))
     seq = list(range(len(frames))) + [len(frames) - 1] * args.hold
-    fig, (ax_p, ax_s) = plt.subplots(1, 2, figsize=(10.5, 5.4), dpi=100)
+    fig, axes = plt.subplots(2, 2, figsize=(9, 9.2), dpi=90)
     fig.patch.set_facecolor(rp.SURF)
+    ax_p = axes[1, 1]
+    curve_axes = {"S21": axes[0, 0], "S11": axes[0, 1], "S22": axes[1, 0]}
 
     def draw(k):
-        n, w, r = frames[seq[k]]
-        prev = frames[seq[k] - 1][2] if seq[k] > 0 else None
-        pat = np.asarray(r["pattern"]).reshape(25, 25) > 0.5
+        n, sc, r = frames[seq[k]]
+        for label, li, _ in PANELS:
+            ax = curve_axes[label]
+            ax.clear()
+            curve_panel(ax, grid, r["y"][li], label, v6a, sc["margins"])
+        axes[1, 0].set_xlabel("頻率 (GHz)", color=rp.MUTED, fontsize=9)
         ax_p.clear()
-        ax_p.imshow(pat, cmap="Greys", origin="upper", interpolation="nearest", vmin=0, vmax=1)
-        if prev is not None:
-            diff = np.argwhere(pat != (np.asarray(prev["pattern"]).reshape(25, 25) > 0.5))
-            for i, j in diff[:60]:
-                ax_p.add_patch(Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False, ec="#e0322b", lw=1.6))
-            ax_p.set_title(f"pattern（紅框＝比上一個最佳改了 {len(diff)} 格）", loc="left", fontsize=10, color=rp.INK)
-        else:
-            ax_p.set_title("pattern（起點）", loc="left", fontsize=10, color=rp.INK)
+        ax_p.imshow(np.asarray(r["pattern"]).reshape(25, 25) > 0.5, cmap="Greys", origin="upper",
+                    interpolation="nearest", vmin=0, vmax=1)
         ax_p.set_xticks([]); ax_p.set_yticks([])
+        ax_p.set_title("pattern（25×25，上下緣中央為兩埠饋墊）", loc="left", fontsize=9.5, color=rp.INK)
         ax_p.set_box_aspect(1)
-        ax_s.clear()
-        for b in v6a.score_spec["bands"]:
-            if b["label"] != "S21":
-                continue
-            lo, hi, thr = b["start_ghz"], b["stop_ghz"], b["threshold"]
-            ax_s.axvspan(lo, hi, color="#f6dede" if b["relation"] == "le" else "#dff0e3", alpha=0.6, lw=0)
-            ax_s.plot([lo, hi], [thr, thr], color=rp.INK, lw=1.3, ls="--")
-        ax_s.plot(grid, r["y"][1], color=LINE, lw=2.2)
-        ax_s.set_xlim(11, 40); ax_s.set_ylim(-45, 2)
-        ax_s.set_xlabel("頻率 (GHz)", color=rp.MUTED); ax_s.set_ylabel("S21 (dB)", color=rp.MUTED)
-        mg = sm.true_wm(r, v6a, grid)["margins"]
-        ax_s.set_title(f"通帶 {mg['s21_pass']:+.2f}｜低阻 {mg['s21_low_stop']:+.2f}｜高阻 {mg['s21_high_stop']:+.2f}｜"
-                       f"S11 {mg['s11_match']:+.2f}｜S22 {mg['s22_match']:+.2f}", loc="left", fontsize=9, color=rp.INK)
-        rp.style(ax_s)
-        ax_s.set_box_aspect(1)
-        color = "#1a7f37" if w >= 0 else rp.INK
-        fig.suptitle(f"−15 版最佳演進　第 {n} 筆模擬　WM {w:+.3f} dB　（{seq[k] + 1}／{len(frames)}）　{r['id']}",
-                     x=0.02, ha="left", fontsize=12, color=color)
-        fig.subplots_adjust(left=0.03, right=0.98, top=0.86, bottom=0.11, wspace=0.18)
+        w = sc["worst_margin"]
+        fig.suptitle(f"−15 版最佳演進　第 {n} 筆模擬　WM {w:+.3f} dB　（{seq[k] + 1}／{len(frames)}）\n{r['id']}",
+                     x=0.03, ha="left", fontsize=12, color="#1a7f37" if w >= 0 else rp.INK)
+        fig.subplots_adjust(left=0.08, right=0.98, top=0.89, bottom=0.06, wspace=0.22, hspace=0.25)
 
     anim = FuncAnimation(fig, draw, frames=len(seq), interval=args.ms)
     args.outdir.mkdir(parents=True, exist_ok=True)
