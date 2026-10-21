@@ -179,6 +179,8 @@ def main(argv=None):
                     help="通帶邊緣專攻（GHz，如 30）：只產「能抬高該頻點 S21 的單格翻轉」——依前段單格翻轉實測平均增益，"
                          "套到 WM 前 --edge-bases 名；另加每個底最乾淨前 --edge-pair 格的兩兩組合")
     ap.add_argument("--edge-bases", type=int, default=2)
+    ap.add_argument("--stats-min-parent", type=float, default=-1.0,
+                    help="單格翻轉統計只收親代 WM 高於此值的配對（v6 尺前段約 −3，宜放寬到 −6）")
     ap.add_argument("--predict", default=None,
                     help="預估模式（逗號分隔的底 id）：依前段單格翻轉實測平均 Δ 預估五項 margin，依預估 WM 挑單格與兩兩"
                          "（用於擾動後修復：如通帶過了但高阻破的底）")
@@ -320,7 +322,7 @@ def edge_main(args, cfg, grid, wide, cand):
     for f in sm.V2_DATASET.glob("dedust_r81v6*_input/manifest.json"):
         for m in json.loads(f.read_text(encoding="utf-8")):
             parents[m["id"]] = m.get("parent_id", "").split(":")[-1]
-    stats = single_flip_stats(rows, parents, i_f)
+    stats = single_flip_stats(rows, parents, i_f, min_parent=args.stats_min_parent)
     known = {r["sha"] for r in wide} | sm.input_hashes(sm.WIDE_ROOT)
     per_base = []
     if args.predict:
