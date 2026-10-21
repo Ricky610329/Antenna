@@ -2,7 +2,7 @@
 
 用法：python -m script.figs.r81_v6 <輸出資料夾> [--id r81v2_b71_003_f8fd2069]
 輸出：r81v6_climb.png、r81v6a_climb.png（−15 版尺回算全部）、r81v6_best_card.png、r81v6a_best_card.png（−15 版最佳，各格 margin 用 −15 版；各格正方形）。
-資料：v2_v001 資料根中 11–40 GHz 量測的 store（補量 r81v6m02 與 b62 起各批），依批號排序；重測（~rep）不計入。
+資料：v2_v001 資料根中 11–40 GHz 量測的 store（補量 r81v6m02、b62 起各批、R89 整合批 mgNN），依批號排序；重測（~rep）不計入。
 """
 import argparse
 import re
@@ -21,23 +21,35 @@ V6, V6A = sm.REPO / "configs" / "dual_r81_v6.yaml", sm.REPO / "configs" / "dual_
 EVENTS = [(62, "斷開＋大步變異 30 格：壓掉 13.5 GHz 峰"), (67, "饋墊附近細步"), (71, "12 格＋前 10 名起點"),
           (74, "交界推移"), (76, "任意切縫重切"), (78, "取消選樣放寬"), (85, "變化量模型試用"), (89, "利用臂改用變化量模型"),
           (92, "爬山全交變化量模型"), (96, "目標改 −15 版＋探索臂改用變化量模型"), (101, "兩模型平均打分"),
-          (107, "爬山改上下文模型＋利用臂改平均"), (112, "利用／探索臂小步限制")]
+          (107, "爬山改上下文模型＋利用臂改平均"), (112, "利用／探索臂小步限制"),
+          (1001, "整合移植（R89）")]
+MG_AFTER = {1: 112, 2: 113}   # 整合批 mgNN 實際量測時段接在哪一批之後
 
 
 def rows_v6(cfg, grid):
     """11–40 GHz store 的全部 ok 實測，依（批號, store, id）排序；同圖只留第一筆。"""
     stores = [s for s in sm.V2_DATASET.glob("dedust_r81v6*s?")
-              if re.search(r"(m02|b\d+)s\d$", s.name) and (s / "results.json").exists()]
-    key = lambda s: 0 if "m02" in s.name else int(re.search(r"b(\d+)s\d$", s.name).group(1))
+              if re.search(r"(m02|b\d+|mg\d+)s\d$", s.name) and (s / "results.json").exists()]
+
+    def key(s):
+        """排序位置與批號：整合批 mgNN 排在 MG_AFTER 那一批之後，批號記成 1000＋NN（事件標註用）。"""
+        if "m02" in s.name:
+            return 0, 0
+        m = re.search(r"mg(\d+)s\d$", s.name)
+        if m:
+            return MG_AFTER.get(int(m.group(1)), 999) + 0.5, 1000 + int(m.group(1))
+        b = int(re.search(r"b(\d+)s\d$", s.name).group(1))
+        return b, b
+
     rows, seen = [], set()
-    for s in sorted(stores, key=lambda s: (key(s), s.name)):
+    for s in sorted(stores, key=lambda s: (key(s)[0], s.name)):
         for r in sm.load_store(s, grid):
             if "~rep" in r["id"] or r["sha"] in seen:
                 continue
             sc = sm.true_wm(r, cfg, grid)
             if sc:
                 seen.add(r["sha"])
-                r.update(batch=key(s), wm=sc["worst_margin"], margins=sc["margins"])
+                r.update(batch=key(s)[1], wm=sc["worst_margin"], margins=sc["margins"])
                 rows.append(r)
     return rows
 
@@ -47,11 +59,13 @@ def climb_panel(ax, x, wm, best, batches, lo, hi, label_events=True, events_from
     ax.step(x, best, where="post", color=LINE, lw=2.2, label=f"累計最佳（目前 {best[-1]:+.2f}，單次）")
     ax.axhline(0, color=rp.INK, lw=1.2, ls="--")
     ax.text(x[0] + 3, (hi - lo) * 0.015, "達標 WM = 0", fontsize=9, color=rp.INK, va="bottom")
+    last = -np.inf
     for b, text in EVENTS:
         if b in batches and b >= events_from:
             k = batches.index(b)
             ax.axvline(x[k], color=MARK, lw=0.8, ls=":")
-            if label_events:
+            if label_events and x[k] - last >= (x[-1] - x[0]) * 0.025:   # 太近的事件只畫線不寫字，免得疊字
+                last = x[k]
                 off = (x[-1] - x[0]) * 0.006 * (1 if text_right else -1)
                 ax.text(x[k] + off, lo + (hi - lo) * 0.02, text, rotation=90, ha="left" if text_right else "right",
                         va="bottom", fontsize=8.5, color=MARK, bbox=dict(facecolor=rp.SURF, edgecolor="none", pad=1.5))
