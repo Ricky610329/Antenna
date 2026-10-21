@@ -150,7 +150,9 @@ def main(argv=None):
     ap.add_argument("--rank", choices=("model", "small"), default="model",
                     help="model＝變化量＋上下文模型平均分（mg01）；small＝移植格數少者優先")
     ap.add_argument("--stack", type=int, default=0, help="疊加候選的名額（從 n 中撥出）")
-    ap.add_argument("--stack-base", default=None, help="疊加的底設計 id")
+    ap.add_argument("--stack-base", default=None, help="疊加的底設計 id（逗號分隔可多個，名額平分）")
+    ap.add_argument("--stack-same-parent", action="store_true",
+                    help="只疊「親代就是這個底」的已實測有效小步（同底驗證過的單步才組合）")
     ap.add_argument("--stack-k", type=int, default=8, help="取增益前幾名的小步移植來疊加")
     ap.add_argument("--stack-sizes", default="2,3", help="疊加幾個小步（逗號分隔；1＝單步套到新底）")
     ap.add_argument("--stack-min-parent", type=float, default=-0.25, help="小步移植的親代 WM 下限（只收前段的改動）")
@@ -211,20 +213,26 @@ def main(argv=None):
                 man[m["id"]] = m.get("parent_id", "").split(":")[-1]
         scores = {r["id"]: w for w, r in cand}
         ptn = {r["id"]: np.asarray(r["pattern"]).reshape(-1) > 0.5 for w, r in cand}
-        sb = next(r for w, r in cand if r["id"] == args.stack_base)
-        moves = [m for m in improving_moves(scores, ptn, man, min_parent=args.stack_min_parent)
-                 if (ptn[sb["id"]][m[2]] != m[3]).any()][:args.stack_k]   # 底已做到的改動不算
-        print("疊加用的小步移植：", [(m[1][6:16], round(m[0], 3), len(m[2])) for m in moves])
         sizes = tuple(int(x) for x in args.stack_sizes.split(","))
-        for q, src, gain in stack_candidates(ptn[sb["id"]], moves, sizes=sizes, big=args.big):
-            h = pattern_sha256(q)
-            if h in known:
-                continue
-            known.add(h)
-            stack.append({"pattern": q.reshape(-1), "sha": h, "base": sb, "src": src, "gain": gain,
-                          "n_changed": int((q.reshape(-1) != ptn[sb["id"]]).sum())})
-            if len(stack) >= args.stack:
-                break
+        bases_s = args.stack_base.split(",")
+        for bi, bid in enumerate(bases_s):                         # 多個底時名額平分
+            quota = args.stack // len(bases_s) + (1 if bi < args.stack % len(bases_s) else 0)
+            sb = next(r for w, r in cand if r["id"] == bid)
+            moves = [m for m in improving_moves(scores, ptn, man, min_parent=args.stack_min_parent)
+                     if (ptn[sb["id"]][m[2]] != m[3]).any()                       # 底已做到的改動不算
+                     and (not args.stack_same_parent or man.get(m[1]) == sb["id"])][:args.stack_k]
+            print(f"底 {bid[6:18]} 疊加用的小步：", [(m[1][6:16], round(m[0], 3), len(m[2])) for m in moves])
+            got = 0
+            for q, src, gain in stack_candidates(ptn[sb["id"]], moves, sizes=sizes, big=args.big):
+                h = pattern_sha256(q)
+                if h in known:
+                    continue
+                known.add(h)
+                stack.append({"pattern": q.reshape(-1), "sha": h, "base": sb, "src": src, "gain": gain,
+                              "n_changed": int((q.reshape(-1) != ptn[sb["id"]]).sum())})
+                got += 1
+                if got >= quota:
+                    break
     P = np.asarray(pats, dtype=np.float32).reshape(-1, 625)
     n_tr = args.n - len(stack)
     if args.rank == "model":
@@ -239,7 +247,7 @@ def main(argv=None):
         cnn = ctx = np.full(len(P), np.nan)
         order = np.lexsort((rng.random(len(P)), [m["n_changed"] for m in meta]))
     picks, per = [], {}
-    for i in order:                                                # 每組（底, 捐贈者）≤ per_pair 筆
+    for i in order if n_tr > 0 else []:                            # 每組（底, 捐贈者）≤ per_pair 筆
         key = (meta[i]["base"]["id"], meta[i]["donor"]["id"])
         if per.get(key, 0) >= args.per_pair:
             continue
