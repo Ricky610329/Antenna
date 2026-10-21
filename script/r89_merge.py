@@ -113,6 +113,7 @@ def main(argv=None):
     ap.add_argument("--stack", type=int, default=0, help="疊加候選的名額（從 n 中撥出）")
     ap.add_argument("--stack-base", default=None, help="疊加的底設計 id")
     ap.add_argument("--stack-k", type=int, default=8, help="取增益前幾名的小步移植來疊加")
+    ap.add_argument("--stack-sizes", default="2,3", help="疊加幾個小步（逗號分隔；1＝單步套到新底）")
     ap.add_argument("--stack-min-parent", type=float, default=-0.25, help="小步移植的親代 WM 下限（只收前段的改動）")
     ap.add_argument("--seed", type=int, default=89)
     ap.add_argument("--name", default="r81v6mg01")
@@ -168,7 +169,8 @@ def main(argv=None):
         moves = [m for m in improving_moves(scores, ptn, man, min_parent=args.stack_min_parent)
                  if (ptn[sb["id"]][m[2]] != m[3]).any()][:args.stack_k]   # 底已做到的改動不算
         print("疊加用的小步移植：", [(m[1][6:16], round(m[0], 3), len(m[2])) for m in moves])
-        for q, src, gain in stack_candidates(ptn[sb["id"]], moves, big=args.big):
+        sizes = tuple(int(x) for x in args.stack_sizes.split(","))
+        for q, src, gain in stack_candidates(ptn[sb["id"]], moves, sizes=sizes, big=args.big):
             h = pattern_sha256(q)
             if h in known:
                 continue
