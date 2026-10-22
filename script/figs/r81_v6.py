@@ -22,8 +22,13 @@ EVENTS = [(62, "斷開＋大步變異 30 格：壓掉 13.5 GHz 峰"), (67, "饋�
           (74, "交界推移"), (76, "任意切縫重切"), (78, "取消選樣放寬"), (85, "變化量模型試用"), (89, "利用臂改用變化量模型"),
           (92, "爬山全交變化量模型"), (96, "目標改 −15 版＋探索臂改用變化量模型"), (101, "兩模型平均打分"),
           (107, "爬山改上下文模型＋利用臂改平均"), (112, "利用／探索臂小步限制"),
-          (1001, "整合移植（R89）"), (1002, "疊加實測有效小步"), (1006, "通帶 30 GHz 專攻")]
-MG_AFTER = {1: 112, 2: 113, 3: 113, 4: 114, 5: 114, 6: 114}   # 整合批 mgNN 實際量測時段接在哪一批之後
+          (1001, "整合移植（R89）"), (1002, "疊加實測有效小步"), (1006, "通帶 30 GHz 專攻"), (1013, "擾動後修復＋預估模式")]
+MG_AFTER = {1: 112, 2: 113, 3: 113, 4: 114, 5: 114, 6: 114, 7: 114, 8: 114, 9: 114, 10: 114, 11: 114, 12: 114,
+            13: 114, 14: 115, 15: 115, 16: 115, 17: 115, 18: 115, 19: 115}   # 整合批 mgNN 實際量測時段接在哪一批之後
+NOTARIZED = {                     # v6a 跨機公證通過（round-89／90）；圖卡優先挑這些，標題註明
+    "r81v6mg05_009_59eb9c0e": "216＝218", "r81v6mg06_002_fc2c5910": "216＝218", "r81v6mg07_003_329c2f14": "216＝218",
+    "r81v6mg08_018_41808495": "216＝218", "r81v6mg13_019_32a4c2ad": "216＝37", "r81v6mg13_017_e23e29e6": "216＝37",
+    "r81v6mg14_015_00661532": "216＝37", "r81v6mg15_005_c943952c": "216＝37"}
 
 
 def rows_v6(cfg, grid):
@@ -96,7 +101,8 @@ def climb_figure(out, rows, key="wm", lo=-20, title="濾波器 v6 性能爬升�
         b0, zlo = zoom
         k = next(i for i, b in enumerate(batches) if b >= b0)
         az = axes[0, 1]
-        climb_panel(az, x[k:], wm[k:], best[k:], batches[k:], zlo, 0.15, events_from=b0, text_right=True)
+        climb_panel(az, x[k:], wm[k:], best[k:], batches[k:], zlo, max(0.15, best[-1] + 0.06), events_from=b0,
+                    text_right=True)
         az.set_title(f"放大：b{b0} 起（{len(wm) - k} 筆），{best[k]:+.2f} → {best[-1]:+.2f}", loc="left",
                      fontsize=11.5, color=rp.INK)
         ax.axvspan(x[k], x[-1], color=LINE, alpha=0.06, lw=0)
@@ -146,7 +152,8 @@ def card_figure(out, r, grid, v6, v6a, n, spec="v6"):
     px.set_title("pattern（25×25，上下緣中央為兩埠饋墊，兩埠金屬不相連）", loc="left", fontsize=10, color=rp.INK)
     px.set_xlabel(r["id"], fontsize=8.5, color=rp.MUTED)
     if spec == "v6a":
-        title = f"濾波器 −15 版（v6a）目前最佳：WM {wma:+.2f} dB；同一設計在 −20 版為 {r['wm']:+.2f} dB，單次未公證"
+        tag = f"已公證（{NOTARIZED[r['id']]} 兩機一致）" if r["id"] in NOTARIZED else "單次未公證"
+        title = f"濾波器 −15 版（v6a）目前最佳：WM {wma:+.3f} dB，{tag}；同一設計在 −20 版為 {r['wm']:+.2f} dB"
     else:
         title = f"濾波器 v6 目前最佳：WM {r['wm']:+.2f} dB（−20 版）、{wma:+.2f} dB（−15 版），單次未公證"
     fig.suptitle(title, x=0.03, ha="left", fontsize=12.5, color=rp.INK)
@@ -177,7 +184,8 @@ def main(argv=None):
                  zoom=(96, -1.5))
     best = next(r for r in rows if r["id"] == args.id) if args.id else max(rows, key=lambda r: r["wm"])
     card_figure(args.outdir / "r81v6_best_card.png", best, grid, v6, v6a, len(rows))
-    best_a = max(rows, key=lambda r: r["wm_a"])
+    pool = [r for r in rows if r["id"] in NOTARIZED] or rows        # 有公證設計就從公證的挑，免得挑到單次離群值
+    best_a = max(pool, key=lambda r: r["wm_a"])
     card_figure(args.outdir / "r81v6a_best_card.png", best_a, grid, v6, v6a, len(rows), spec="v6a")
 
 

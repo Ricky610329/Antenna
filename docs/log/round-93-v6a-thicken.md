@@ -1,0 +1,30 @@
+# Round 93 — v6a 續爬（Ricky：「繼續去爬 −15 吧」）
+
+- **狀態**: running（mg19 起）
+- **提出 / 開跑 / 結論**: 2026-10-22 / 2026-10-22 / —
+- **一句話問題**: v6 在 a0 與遠親家族皆撞牆（R91、R92 不成立）；Ricky 決定續爬 v6a。實測導向小步（`--predict`、移植）能把 v6a 公證最佳從 +0.147 再往上推、並加厚各項餘裕嗎？
+- **一句話結論 (TL;DR)**: 待分析
+- **指向**: [round-90](round-90-reach-plus01.md) · [round-92](round-92-family-survey.md) · `script/r89_merge.py`
+
+## 1. 假設 (Propose)
+
+- 前段（+0.12～+0.15）仍有單步與兩兩改善空間；預估模式在 v6a 前段命中率可用。
+
+## 2. 實驗設計 (Design)
+
+- mg19（prio −1，底 mg15_005、mg18_013、mg15_011）、mg20（prio −5，底 mg18_011 +0.154、mg15_005、mg18_013）起，每批 `--predict` 24 筆；新高者換機公證（避開 218）。
+- **判準（發車前寫死）**：3 批內公證最佳 ≥ +0.20 → 成立；+0.15～+0.20 → 回報（續爬價值遞減）；< +0.15 → 不成立。
+- 硬上限 3 批（mg19、mg20、mg21）。
+
+## 3. 執行紀錄 (Run)
+
+- `python -m script.r89_merge --n 24 --base-mode top --predict <底 id…> --name r81v6mgNN --out <dir>`；`enqueue … --config configs/dual_r81_v6a.yaml`
+- 公證：暫存區 `notarize_v6a.py --machine 216|37 --prio -6`。`mg18_011` +0.154（37 原量）公證 `r81v6n12` 釘 216。
+
+## 4. 分析 (Analyze)
+
+## 5. 結論 (Conclude)
+
+## 6. 後續決策 (Next)
+
+## 7. 歸檔指向 (Archive)
