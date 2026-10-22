@@ -22,6 +22,8 @@
 
 - mg30：`r89_merge --n 24 --base-mode top --predict r81v6mg28_012_5734eceb,r81v6mg28_000_84acb6df,r81v6mg26_006_091f57e2 --name r81v6mg30`（mg29 未收齊即排，防空轉）
 
+- mg31（本輪第 3 批＝最後一批）：疊加 14＋移植 10——`r89_merge --n 24 --base-mode top --bases 3 --donors 8 --donor-wm 0.18 --max-groups 5 --rank small --per-pair 1 --stack 14 --stack-base r81v6mg28_012_5734eceb,r81v6mg28_000_84acb6df --stack-k 8 --stack-sizes 1,2,3 --stack-min-parent 0.18 --name r81v6mg31`（把 mg25–mg28 實測有效的 1–3 格小步疊到兩個 +0.25 級底上）
+
 ## 4. 分析 (Analyze)
 
 ### 2026-10-22 20:39：mg28_012 第三方公證 n21（37）
