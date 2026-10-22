@@ -431,22 +431,31 @@ def lever_main(args, cfg, wide, cand):
     mid, sid = measurement_id(pcfg.measurement), score_spec_id(pcfg.score_spec)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=False)
-    man = []
+    per_base = []
     for bid in args.lever_base.split(","):
         b = next(r for w, r in cand if r["id"] == bid)
         bp = np.asarray(b["pattern"]).reshape(-1) > 0.5
+        items = []
         for q, combo in lever_candidates(bp, cells, args.big):
             h = pattern_sha256(q.reshape(25, 25))
-            if h in known or len(man) >= args.n:
-                continue
-            known.add(h)
-            rid = f"{args.name}_{len(man):03d}_{h[:8]}"
-            torch.save(torch.tensor(q.reshape(25, 25).astype(np.float32)), out / f"{rid}.pt")
-            man.append({"id": rid, "batch": 1, "port": "dual", "kind": "merge", "measurement_id": mid,
-                        "score_spec_id": sid, "pattern_file": f"{rid}.pt", "pattern_sha256": h,
-                        "lineage_id": b["lineage"], "parent_id": f"{b['store']}:{b['id']}", "selection_arm": "lever",
-                        "op": "lever", "cells": [[r, c, bool(q.reshape(25, 25)[r, c])] for r, c in combo],
-                        "n_changed": len(combo)})
+            if h not in known:
+                known.add(h)
+                items.append((q, combo, b, h))
+        per_base.append(items)
+    picks = []
+    while len(picks) < args.n and any(per_base):                 # 各底輪流取（單步先於兩兩）
+        for lst in per_base:
+            if lst and len(picks) < args.n:
+                picks.append(lst.pop(0))
+    man = []
+    for q, combo, b, h in picks:
+        rid = f"{args.name}_{len(man):03d}_{h[:8]}"
+        torch.save(torch.tensor(q.reshape(25, 25).astype(np.float32)), out / f"{rid}.pt")
+        man.append({"id": rid, "batch": 1, "port": "dual", "kind": "merge", "measurement_id": mid,
+                    "score_spec_id": sid, "pattern_file": f"{rid}.pt", "pattern_sha256": h,
+                    "lineage_id": b["lineage"], "parent_id": f"{b['store']}:{b['id']}", "selection_arm": "lever",
+                    "op": "lever", "cells": [[r, c, bool(q.reshape(25, 25)[r, c])] for r, c in combo],
+                    "n_changed": len(combo)})
     (out / "manifest.json").write_text(json.dumps(man, ensure_ascii=False, indent=1), encoding="utf-8")
     (out / "measurement.json").write_text(json.dumps(pcfg.measurement, ensure_ascii=False, indent=2), encoding="utf-8")
     (out / "score_spec.json").write_text(json.dumps(pcfg.score_spec, ensure_ascii=False, indent=2), encoding="utf-8")
