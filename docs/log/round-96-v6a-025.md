@@ -20,6 +20,8 @@
 
 - mg29：`r89_merge --n 24 --base-mode top --bases 3 --donors 8 --donor-wm 0.18 --max-groups 5 --rank small --per-pair 1 --name r81v6mg29`，`r81_curve_sm enqueue --name r81v6mg29 --prio -5 --shards 3 --config configs/dual_r81_v6a.yaml`
 
+- mg30：`r89_merge --n 24 --base-mode top --predict r81v6mg28_012_5734eceb,r81v6mg28_000_84acb6df,r81v6mg26_006_091f57e2 --name r81v6mg30`（mg29 未收齊即排，防空轉）
+
 ## 4. 分析 (Analyze)
 
 ### 2026-10-22 20:39：mg28_012 第三方公證 n21（37）
