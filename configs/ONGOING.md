@@ -4,7 +4,7 @@
 > 2026-10-12 前的完整流水帳（R80 收尾、Codex 的 R81 release 機制、diffsim、資料工廠、🔜 候選、✅ 指標）原樣封存在
 > [docs/log/archive/ongoing-2026-10-12.md](../docs/log/archive/ongoing-2026-10-12.md)。
 
-最後更新：2026-10-22 12:44
+最後更新：2026-10-22 13:39
 
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
@@ -43,6 +43,7 @@
 
 ## 🔵 R94 v6a 平台多設計移植（running）→ [round-94](../docs/log/round-94-plateau-merge.md)
 
+- **10-22 13:39 新高（單次 216）`mg20_011` +0.19、`mg20_005` +0.18**——公證 n14 排 218（37 仍卡）。
 - 公證最佳 `mg18_011` +0.154（37＝216）。R93 已結（回報：+0.15 平台）。mg22（前 4 底×8 捐贈者移植，prio −5）進行中。
 - 37 自 10:49 卡在 mg20s3（COM 例外後無進度）——待 Ricky 重開。待查 218 環境。
 
