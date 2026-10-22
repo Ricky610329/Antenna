@@ -64,6 +64,16 @@ def test_edge_moves_skip_present_and_unsafe_side_effects():
     assert [(k, v) for k, v, _, _ in out] == [(10, True)]
 
 
+def test_two_edge_pairs_cross_edges_distinct_cells_ranked_by_weaker_side():
+    mv1 = [(5, True, 0.30, 2), (6, True, 0.10, 1)]                           # 抬 26
+    mv2 = [(5, True, 0.25, 2), (7, False, 0.20, 3)]                          # 抬 30
+    out = mg.two_edge_pairs(mv1, mv2, top=2)
+    keys = [(a[0], b[0]) for a, b in out]
+    assert (5, 5) not in keys                                                # 同一格不配
+    assert keys[0] == (5, 7)                                                 # min(0.30, 0.20)＝0.20 最大
+    assert keys == [(5, 7), (6, 5), (6, 7)]
+
+
 def test_predicted_moves_rank_by_min_margin_and_pair_additively():
     z = np.zeros(625, bool)
     zero = {m: 0.0 for m in mg.MARGINS}

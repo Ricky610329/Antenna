@@ -136,6 +136,13 @@ def edge_moves(stats, base_pat, base_margins, keep=0.1):
     return sorted(out, key=lambda t: -t[2])
 
 
+def two_edge_pairs(mv1, mv2, top=4):
+    """通帶兩緣同時卡住時（R96：26／30 GHz 都 −2.74），單格只抬一緣、WM 看不到。mv1／mv2＝兩個頻點各自的
+    edge_moves 結果；回傳「一格抬 f1＋一格抬 f2」的兩兩（不同格），依 min(兩邊增益) 由大到小。"""
+    pairs = [(a, b) for a in mv1[:top] for b in mv2[:top] if a[0] != b[0]]
+    return sorted(pairs, key=lambda ab: -min(ab[0][2], ab[1][2]))
+
+
 def predicted_moves(stats, base_pat, base_margins, top_pairs=8):
     """單格翻轉（及前 top_pairs 個的兩兩組合）套到 base 的預估：五項 margin＝base＋實測平均 Δ（兩兩視為可加），
     預估 WM＝其中最小。回傳 [(格清單 [(格, 值)], 預估 WM, 樣本數下限)]，依預估 WM 由大到小。"""
@@ -179,6 +186,9 @@ def main(argv=None):
                     help="通帶邊緣專攻（GHz，如 30）：只產「能抬高該頻點 S21 的單格翻轉」——依前段單格翻轉實測平均增益，"
                          "套到 WM 前 --edge-bases 名；另加每個底最乾淨前 --edge-pair 格的兩兩組合")
     ap.add_argument("--edge-bases", type=int, default=2)
+    ap.add_argument("--edge2", type=float, default=None,
+                    help="雙緣模式（搭配 --edge，如 --edge 26 --edge2 30）：一格抬 --edge 頻點、一格抬 --edge2 頻點的兩兩，"
+                         "各取前 --edge-pair 名（R97：通帶兩緣同時卡住）")
     ap.add_argument("--stats-min-parent", type=float, default=-1.0,
                     help="單格翻轉統計只收親代 WM 高於此值的配對（v6 尺前段約 −3，宜放寬到 −6）")
     ap.add_argument("--levers", default=None,
@@ -328,6 +338,8 @@ def edge_main(args, cfg, grid, wide, cand):
         for m in json.loads(f.read_text(encoding="utf-8")):
             parents[m["id"]] = m.get("parent_id", "").split(":")[-1]
     stats = single_flip_stats(rows, parents, i_f, min_parent=args.stats_min_parent)
+    if args.edge2 is not None:
+        stats2 = single_flip_stats(rows, parents, int(np.argmin(abs(grid - args.edge2))), min_parent=args.stats_min_parent)
     known = {r["sha"] for r in wide} | sm.input_hashes(sm.WIDE_ROOT)
     per_base = []
     if args.predict:
@@ -344,6 +356,11 @@ def edge_main(args, cfg, grid, wide, cand):
             print(f"底 {b['id'][6:18]}（{w:+.3f}）預估前 8：",
                   [([(k // 25, k % 25, "加" if v else "挖") for k, v in c], round(pw, 3), n) for c, pw, n in pm[:8]])
             combos = [[(k, v, pw, n) for k, v in c] for c, pw, n in pm]
+        elif args.edge2 is not None:
+            mv1 = edge_moves(stats, bp, bs["margins"])
+            mv2 = edge_moves(stats2, bp, bs["margins"])
+            print(f"底 {b['id'][6:18]}（{w:+.3f}）抬 {args.edge:g}：{len(mv1)}、抬 {args.edge2:g}：{len(mv2)}")
+            combos = [list(ab) for ab in two_edge_pairs(mv1, mv2, args.edge_pair)]
         else:
             mv = edge_moves(stats, bp, bs["margins"])
             print(f"底 {b['id'][6:18]}（{w:+.3f}）可用翻轉 {len(mv)}：",
@@ -378,7 +395,8 @@ def edge_main(args, cfg, grid, wide, cand):
         man.append({"id": rid, "batch": 1, "port": "dual", "kind": "merge", "measurement_id": mid, "score_spec_id": sid,
                     "pattern_file": f"{rid}.pt", "pattern_sha256": h, "lineage_id": b["lineage"],
                     "parent_id": f"{b['store']}:{b['id']}", "selection_arm": "predict" if args.predict else "edge",
-                    "op": "predict" if args.predict else f"edge{args.edge:g}",
+                    "op": "predict" if args.predict else (f"edge{args.edge:g}+{args.edge2:g}" if args.edge2 is not None
+                                                          else f"edge{args.edge:g}"),
                     "cells": [[int(c // 25), int(c % 25), bool(v)] for c, v, _, _ in combo],
                     "pred_gain": float(combo[0][2] if args.predict else sum(d for _, _, d, _ in combo)),
                     "n_changed": len(combo)})
