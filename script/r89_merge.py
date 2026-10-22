@@ -194,6 +194,8 @@ def main(argv=None):
     ap.add_argument("--levers", default=None,
                     help="指定格模式：'r,c;r,c;…'——對 --lever-base 每個底把這些格各自翻轉（單步）與兩兩翻轉（R85 步驟 B：已知槓桿格）")
     ap.add_argument("--lever-base", default=None, help="指定格模式的底 id（逗號分隔可多個）")
+    ap.add_argument("--lever-sizes", default="1,2", help="指定格模式的組合大小（逗號分隔）")
+    ap.add_argument("--lever-anchor", default=None, help="指定格模式：每組必含的格 'r,c'（R98：成對翻轉移植到其他底）")
     ap.add_argument("--predict", default=None,
                     help="預估模式（逗號分隔的底 id）：依前段單格翻轉實測平均 Δ 預估五項 margin，依預估 WM 挑單格與兩兩"
                          "（用於擾動後修復：如通帶過了但高阻破的底）")
@@ -408,12 +410,15 @@ def edge_main(args, cfg, grid, wide, cand):
     print(f"→ {out}：{len(man)} 筆（兩兩 {sum(len(x[3]) == 2 for x in picks)}、單格 {sum(len(x[3]) == 1 for x in picks)}）")
 
 
-def lever_candidates(base, cells, big=4):
-    """base（bool 625）上把 cells 各自翻轉、兩兩翻轉；過濾兩埠接通與大塊結構改變。回傳 [(pattern, 翻的格)]。"""
+def lever_candidates(base, cells, big=4, sizes=(1, 2), anchor=None):
+    """base（bool 625）上把 cells 各自翻轉、兩兩翻轉（sizes 指定組合大小；anchor＝每組必含的格）；
+    過濾兩埠接通與大塊結構改變。回傳 [(pattern, 翻的格)]。"""
     nb = big_components(base.reshape(25, 25), big)
     out = []
-    for k in (1, 2):
+    for k in sizes:
         for combo in itertools.combinations(cells, k):
+            if anchor is not None and anchor not in combo:
+                continue
             q = base.reshape(25, 25).copy()
             for r, c in combo:
                 q[r, c] = ~q[r, c]
@@ -436,7 +441,8 @@ def lever_main(args, cfg, wide, cand):
         b = next(r for w, r in cand if r["id"] == bid)
         bp = np.asarray(b["pattern"]).reshape(-1) > 0.5
         items = []
-        for q, combo in lever_candidates(bp, cells, args.big):
+        anchor = tuple(int(x) for x in args.lever_anchor.split(",")) if args.lever_anchor else None
+        for q, combo in lever_candidates(bp, cells, args.big, tuple(int(k) for k in args.lever_sizes.split(",")), anchor):
             h = pattern_sha256(q.reshape(25, 25))
             if h not in known:
                 known.add(h)

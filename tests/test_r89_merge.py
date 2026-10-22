@@ -95,3 +95,9 @@ def test_lever_candidates_singles_and_pairs():
     assert len(out) == 6 and ((8, 2),) in combos and ((8, 2), (12, 3)) in combos   # 3 單步＋3 兩兩
     q = dict((tuple(c), p) for p, c in out)[((8, 2),)]
     assert q.reshape(25, 25)[8, 2] and q.sum() == base.sum() + 1
+
+
+def test_lever_candidates_sizes_and_anchor_keep_only_anchored_pairs():
+    base = sm.enforce_dual_geometry(np.zeros((25, 25), bool)).reshape(-1)
+    out = mg.lever_candidates(base, [(8, 2), (12, 3), (16, 4)], sizes=(2,), anchor=(16, 4))
+    assert sorted(tuple(sorted(c)) for _, c in out) == [((8, 2), (16, 4)), ((12, 3), (16, 4))]   # 不含 anchor 的那對與單步都不產
