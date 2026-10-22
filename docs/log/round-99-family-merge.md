@@ -22,7 +22,14 @@
 
 - mg36：`python -m script.r89_merge --n 24 --base-mode top --bases 3 --donors 8 --donor-wm 0.28 --max-groups 5 --rank small --per-pair 1 --stack 8 --stack-base r81v6mg34_000_b4bb9425,r81v6mg33_023_92bc2c9b --stack-k 6 --stack-sizes 1,2 --stack-min-parent 0.25 --name r81v6mg36 --out <dir>`
 
+- mg37：`r89_merge --n 24 --base-mode top --bases 3 --donors 10 --donor-wm 0.30 --max-groups 5 --rank small --per-pair 1 --name r81v6mg37`（底 mg36_001、mg36_010、mg36_003；22 筆）
+
 ## 4. 分析 (Analyze)
+
+### 2026-10-23 04:45：R98 遺留 mg35 收齊；mg36 前兩片
+
+- mg35（預估單格）最佳 mg35_023 +0.359（218，底 mg34_001＋補 (12,1)），未破 +0.363。
+- mg36（移植）單次：**mg36_001 +0.3745**（218）→ 公證 n32（216）；mg36_003 +0.3651（216）→ 公證 n31（37）。押注「≥ 1 筆 > +0.363」單次已達，待公證。
 
 ## 5. 結論 (Conclude)
 
