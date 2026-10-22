@@ -4,7 +4,7 @@
 > 2026-10-12 前的完整流水帳（R80 收尾、Codex 的 R81 release 機制、diffsim、資料工廠、🔜 候選、✅ 指標）原樣封存在
 > [docs/log/archive/ongoing-2026-10-12.md](../docs/log/archive/ongoing-2026-10-12.md)。
 
-最後更新：2026-10-22 09:48
+最後更新：2026-10-22 10:13
 
 ## 🔵 R81 寬頻濾波器 spec v2（running）→ [round-81](../docs/log/round-81-wide-filter.md)
 
@@ -43,6 +43,7 @@
 
 ## 🔵 R93 v6a 續爬（running）→ [round-93](../docs/log/round-93-v6a-thicken.md)
 
+- **10-22 10:13 公證最佳 `mg18_011` +0.154**（37＝216；低阻 +1.01、高阻 +3.43、S11 +0.93、S22 +5.19）。
 - **Ricky 10-22：「繼續去爬 −15 吧」**——v6 暫緩（R91／R92 不成立）。公證最佳 `mg15_005` +0.147；單次 `mg18_011` +0.154（公證 n12）。mg19（prio −1）、mg20（prio −5）進行中。
 - 待查：218 對部分幾何離群（`C:ntenna\Antenna` 的 git／HFSS 版本）。
 
