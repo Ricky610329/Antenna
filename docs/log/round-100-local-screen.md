@@ -25,6 +25,8 @@
 
 - mg40：`r89_merge --n 24 --base-mode top --bases 3 --donors 10 --donor-wm 0.34 --max-groups 5 --rank small --per-pair 1 --stack 8 --stack-base r81v6mg37_000_92ff9a8b,r81v6mg38_009_9ba0f11d --stack-k 6 --stack-sizes 1,2 --stack-min-parent 0.36 --name r81v6mg40`（移植 16＋疊加 8）
 
+- mg41（第 3 批＝最後一批）：`r89_merge --n 24 --base-mode top --bases 3 --donors 10 --donor-wm 0.35 --max-groups 5 --rank small --per-pair 1 --stack 8 --stack-base r81v6mg39_010_e496b1c7 --stack-k 6 --stack-sizes 1,2 --stack-min-parent 0.36 --name r81v6mg41`
+
 ## 4. 分析 (Analyze)
 
 ### 2026-10-23 07:47：mg39 收齊——局部篩選找不到「抬 30 而不傷通帶」的格
