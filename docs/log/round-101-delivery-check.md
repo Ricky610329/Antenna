@@ -25,6 +25,8 @@
 
 - mg43：`r89_merge --n 24 --base-mode top --bases 3 --donors 10 --donor-wm 0.37 --max-groups 5 --rank small --per-pair 1 --stack 6 --stack-base r81v6mg42_006_5c175760,r81v6mg41_007_3681998f --stack-k 6 --stack-sizes 1,2 --stack-min-parent 0.37 --name r81v6mg43`（移植 18＋疊加 6）
 
+- mg44（第 3 批＝最後一批）：`r89_merge --n 24 --base-mode top --bases 3 --donors 12 --donor-wm 0.37 --max-groups 6 --rank small --per-pair 1 --stack 6 --stack-base r81v6mg41_007_3681998f,r81v6mg42_011_a04fe994 --stack-k 6 --stack-sizes 1,2 --stack-min-parent 0.37 --name r81v6mg44`
+
 ## 4. 分析 (Analyze)
 
 ### 2026-10-23 10:57：公證 n35、n36
