@@ -23,6 +23,8 @@
 - `notarize_v6a.py --name r81v6n36 --machine 218 --prio -6 --rep 2 <mg39_010 mg37_000 mg34_000>`；`--name r81v6n37 --machine 37 --rep 2 <mg36_001>`
 - mg42：`r89_merge --n 24 --base-mode top --bases 3 --donors 10 --donor-wm 0.36 --max-groups 5 --rank small --per-pair 1 --name r81v6mg42`
 
+- mg43：`r89_merge --n 24 --base-mode top --bases 3 --donors 10 --donor-wm 0.37 --max-groups 5 --rank small --per-pair 1 --stack 6 --stack-base r81v6mg42_006_5c175760,r81v6mg41_007_3681998f --stack-k 6 --stack-sizes 1,2 --stack-min-parent 0.37 --name r81v6mg43`（移植 18＋疊加 6）
+
 ## 4. 分析 (Analyze)
 
 ### 2026-10-23 10:57：公證 n35、n36
@@ -55,6 +57,11 @@
 
 - 218 重量 +0.4048、曲線差 0 → **首個公證 ≥ +0.40**（通帶 +0.405、低阻 +1.13、高阻 +1.07、S11 +1.30、S22 +4.96）。高阻餘裕窄；交付首選仍建議 mg41_007（+0.399，高阻 +3.97）。
 - n39 改釘 218 後即被認領；m03s1 首度出現進度（1／12）。
+
+### 2026-10-23 12:43：mg42 收齊；mg43 已排
+
+- mg42（19 筆）最佳單次 mg42_011 +0.4053（37；高阻 +1.13、S11 +1.11）——僅比公證最佳多 0.0005，且高阻窄，不列紀錄、不送公證。
+- mg43（第 2 批，移植 18＋疊加 6）已排。佇列只剩填空時入列，防 HFSS 空轉。
 
 ## 5. 結論 (Conclude)
 
