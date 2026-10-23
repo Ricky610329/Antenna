@@ -51,3 +51,4 @@ dedust store / pool 快取。R6 的圖走 `python -m script.expected_best report
 - `r81_reseam.py` — R81 任意切縫示意：v6 最佳斷開設計（直線交界）與三個鋸齒切縫重切變體（上下主體與浮島分色）→ `docs/log/assets/round-81/r81_reseam_demo.png`
 - `r82_s2_trial.py` — R82 上線試用：同批爬山名額「原 SM 挑」vs「變化量模型挑」的預測 vs 實測（兩格各一模型）→ `docs/log/assets/round-82/r82_s2_trial.png`
 - `r85_block_scan.py` — R85 區塊掃描：b92_016 每個 4×4 小塊反轉後的 Δ低阻／Δ高阻 熱圖（兩格）→ `docs/log/assets/round-85/r85_block_scan.png`
+- `report_generations.py` — 2026-10 日月光「歷來實驗總整理」世代時間軸：四代各一條帶（代表方法＋口試／日月光會議／交付／量測／代表成果標記），上方一條日月光要求與學長傳達；2026/06 起時間軸放大 3.5 倍並以淺底標示。日期與數字寫死、抄自 `docs/進度報告/10月_歷來實驗總整理/實驗總表.md`，零 NAS → `docs/進度報告/10月_歷來實驗總整理/figs/timeline_generations.png`
