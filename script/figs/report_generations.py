@@ -3,6 +3,7 @@
 用法（repo 根目錄）：
     python script/figs/report_generations.py
 輸出：docs/進度報告/10月_歷來實驗總整理/figs/timeline_generations.png（寬圖，dpi 200）
+      同夾 timeline_simple.png（簡版甘特圖：線性時間軸、四條帶各一行白話主題、上方 4 個日月光節點）
 
 日期與數字全部抄自同夾 `實驗總表.md`（§1 世代一覽、§2.10 規格演進、§2.11 量測與交付、§3 全實驗清單）；
 本圖不讀 NAS、不跑模擬。2026/06 起第四代事件密集，時間軸在 2026/06/01 之後放大 3.5 倍，圖上以淺色底與註記標明。
@@ -196,5 +197,71 @@ def main():
     print(f"saved {OUT}  ({W:.2f} x {H:.2f} in)")
 
 
+# ---------------------------------------------------------------- 簡版甘特圖（給日月光投影片）
+#   線性時間軸、不放大；四條帶各一行白話主題，上方最多 4 個日月光節點。日期抄自實驗總表 §1 與上方 GENS／REQUESTS。
+OUT_SIMPLE = OUT.with_name("timeline_simple.png")
+SIMPLE_GENS = [
+    ("第一代　陳廷茂", "2023/07–2024/08", date(2023, 7, 1), date(2024, 8, 7),
+     "生成網路＋代理模型的線上學習：雙層、四層板天線與濾波天線", "right"),
+    ("第二代　錢鵬予", "2024/08–2025/07", date(2024, 8, 7), date(2025, 7, 8),
+     "穩定二值化訓練、變異跳出局部解：雙埠濾波、n260", "right"),
+    ("第三代　吳維文", "2025/07–2026/06", date(2025, 7, 8), date(2026, 6, 30),
+     "單階段訓練、理論初始貼片、抑制孤島：首批打樣量測", "left"),
+    ("第四代　鄒穎麒", "2026/06–2026/10", date(2026, 6, 8), date(2026, 10, 23),
+     "批次線上學習、可製造設計：對稱天線、濾波器", "left"),
+]
+SIMPLE_ASE = [   # (日期, 文字, 層, 對齊)：右對齊＝文字收在標記左邊
+    (date(2024, 12, 5), "2024/12 首次日月光簡報", 1, "left"),
+    (date(2025, 10, 2), "2025/10 要求先做天線、至少一軸對稱", 2, "right"),
+    (date(2026, 8, 31), "2026/08/31 交付 39 個設計", 2, "right"),
+    (date(2026, 10, 7), "2026/10 寬頻濾波器規格", 1, "right"),
+]
+
+
+def simple():
+    s0, s1 = date(2023, 6, 1), date(2026, 11, 20)
+    left, width = 3.3, 12.4                       # 英吋：左欄放人名，右邊是時間區
+
+    def sx(d):
+        return left + months(s0, d) / months(s0, s1) * width
+
+    fig = plt.figure(figsize=(left + width + 0.3, 6.6), dpi=200)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, left + width + 0.3)
+    ax.set_ylim(0, 6.6)
+    ax.axis("off")
+    fig.patch.set_facecolor(SURFACE)
+    rows, lane, axis_y = [4.35, 3.35, 2.35, 1.35], 5.55, 0.62
+    for y in range(2024, 2027):
+        x = sx(date(y, 1, 1))
+        ax.plot([x, x], [axis_y, lane + 0.15], color=RULE, lw=0.8, zorder=0)
+        ax.text(x, axis_y - 0.25, str(y), ha="center", va="center", fontsize=14, color=MUTED)
+    ax.plot([sx(s0), sx(s1)], [axis_y, axis_y], color=MUTED, lw=1.2)
+
+    ax.text(0.3, lane, "日月光", ha="left", va="center", fontsize=16, fontweight="bold", color=INK)
+    ax.plot([sx(s0), sx(s1)], [lane, lane], color=INK, lw=1.0)
+    for d, s, tier, ha in SIMPLE_ASE:
+        x, ly = sx(d), lane + 0.30 * tier
+        ax.plot([x, x], [axis_y, lane], color=RULE, lw=0.9, ls=(0, (3, 3)), zorder=0)
+        ax.plot([x, x], [lane, ly], color=INK, lw=0.8)
+        ax.plot(x, lane, marker="v", ms=11, color=INK, mec=SURFACE, mew=1.2, zorder=5)
+        label(ax, x + (0.06 if ha == "left" else -0.06), ly, s, ha=ha, fs=14)
+
+    for (name, span, a, b, kw, side), y, c in zip(SIMPLE_GENS, rows, GEN_COLOR):
+        ax.text(0.3, y + 0.15, name, ha="left", va="center", fontsize=16, fontweight="bold", color=INK)
+        ax.text(0.3, y - 0.18, span, ha="left", va="center", fontsize=13.5, color=MUTED)
+        x1, x2 = sx(a), sx(b)
+        ax.add_patch(FancyBboxPatch((x1, y - 0.2), x2 - x1, 0.4, boxstyle="round,pad=0,rounding_size=0.08",
+                                    fc=c, ec="none", alpha=0.85, zorder=2))
+        tx, ha = (x2 + 0.15, "left") if side == "right" else (x1 - 0.15, "right")
+        ax.text(tx, y, kw, ha=ha, va="center", fontsize=14.5, color=INK, zorder=3)
+
+    OUT_SIMPLE.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(OUT_SIMPLE, dpi=200, facecolor=SURFACE)
+    plt.close(fig)
+    print(f"saved {OUT_SIMPLE}")
+
+
 if __name__ == "__main__":
     main()
+    simple()
