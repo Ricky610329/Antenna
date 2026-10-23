@@ -175,8 +175,9 @@ def _note(ax, x, y, s, color=None, fontsize=12):
     ax.text(x, y, s, ha="center", va="center", fontsize=fontsize, color=color or ea.INK)
 
 
-def spec_ant():
-    """v7 輸出頁（天線）：規格直接畫在圖上；曲線為代表設計，淡紅＝規格不允許，淡紫＝左側帶外額外要求。"""
+def spec_ant(extra=True, name="sq_spec_ant.png"):
+    """v7 輸出頁（天線）：規格直接畫在圖上；曲線為代表設計，淡紅＝規格不允許，淡紫＝左側帶外額外要求。
+    extra=False 不畫淡紫區與「額外要求」字樣（對外版，日月光報告用）；name 可給絕對路徑，另存不覆寫組會原圖。"""
     _, f, s11, gain, rad = antenna_data()
     with plt.rc_context({"font.size": 12, "axes.titlesize": 14}):
         fig = plt.figure(figsize=(11.6, 4.3))
@@ -189,9 +190,11 @@ def spec_ant():
         ax.set_ylim(-12, 8)
         ax.set_yticks([-10, -5, 0, 5])
         ax.fill_between([26.5, 29.5], -12, 4, color=BAD, lw=0, zorder=0)
-        ax.axvspan(24, 25.5, color=EXTRA, lw=0, zorder=0)
+        if extra:
+            ax.axvspan(24, 25.5, color=EXTRA, lw=0, zorder=0)
         _note(ax, 28, -2, "≥ 4 dBi")
-        _note(ax, 24.75, -9, "額外\n要求")
+        if extra:
+            _note(ax, 24.75, -9, "額外\n要求")
         ax = fig.add_subplot(gs[0, 2], projection="polar")
         theta = np.asarray(rad["theta_deg"])
         ax.set_theta_zero_location("N")
@@ -212,7 +215,7 @@ def spec_ant():
         ax.text(0, -16, "±45° 內\n下降 ≤ 3 dB", ha="center", va="center", fontsize=11, color=ea.INK)
         ax.set_title("28 GHz 方向圖", pad=10)
         ax.legend(loc="upper center", bbox_to_anchor=(.5, -.04), ncol=2, fontsize=11)
-        save(fig, "sq_spec_ant.png")
+        save(fig, name)
 
 
 def spec_flt():

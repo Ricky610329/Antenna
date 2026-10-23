@@ -3,8 +3,11 @@
 用法（repo 根目錄）：
     python -m script.figs.report_ase_climb [--only single,sym,dual,wideband] [--refresh] [--root <dataset>]
     python -m script.figs.report_ase_climb --only best_single,best_sym,best_wideband     # 最佳設計卡（預設不跑）
+    python -m script.figs.report_ase_climb --only spec_antenna                          # 天線規格圖（預設不跑）
 輸出：docs/進度報告/10月_歷來實驗總整理/figs/gen4_ase/climb_{single,sym,dual,wideband}.png（16:7，dpi 200）
       同夾 best_{single,sym,wideband}.png（最佳設計卡，16:5，dpi 200）
+      同夾 spec_antenna.png（天線規格圖，不含左側帶外淡紫區；用組會 meeting_square.spec_ant(extra=False)，不覆寫組會原圖）
+對外規則：圖上小數一律兩位（爬升圖終點標籤、設計卡「最差餘裕」），所以投影片產生器不必再遮擋或裁切。
 
 圖面只放淡色點（每筆模擬）、粗階梯（累計最佳）、規格線 0、3–5 個白話方法節點；不放標題與圖下小字。
 數字條件與出處記在 `docs/進度報告/10月_歷來實驗總整理/notes/gen4_爬升量化.md`。
@@ -191,9 +194,9 @@ def wideband_series():
 
 # ---------------------------------------------------------------- 畫圖
 
-def climb_figure(out, s, lo, hi, nodes, end_fmt="{:+.2f} dB"):
+def climb_figure(out, s, lo, hi, nodes):
     """nodes：[(id, 文字, (文字 x, 文字 y), ha)]，第一個是起點節點（第一輪模擬的最佳）；
-    其餘是方法節點，標在該 id 所在位置的累計最佳上。低於 lo 的點壓在底線。"""
+    其餘是方法節點，標在該 id 所在位置的累計最佳上。低於 lo 的點壓在底線。終點標籤一律兩位小數（對外規則）。"""
     plt.rcParams["font.family"] = ["Microsoft JhengHei", "sans-serif"]
     plt.rcParams["axes.unicode_minus"] = False
     wm, ok = s["wm"], s["ok"]
@@ -222,7 +225,7 @@ def climb_figure(out, s, lo, hi, nodes, end_fmt="{:+.2f} dB"):
                     bbox=dict(boxstyle="round,pad=0.3", fc=SURF, ec="none", alpha=0.9),
                     arrowprops=dict(arrowstyle="-", color=NODE, lw=1.4, shrinkA=2, shrinkB=5))
         ax.plot(px, py, "o", ms=8, color=NODE, mec="white", mew=1.2, zorder=6)
-    ax.annotate(end_fmt.format(best[-1]).replace("-", "−"), (x[-1], best[-1]), (-12, 14), textcoords="offset points", ha="right",
+    ax.annotate(f"{best[-1]:+.2f} dB".replace("-", "−"), (x[-1], best[-1]), (-12, 14), textcoords="offset points", ha="right",
                 va="bottom", fontsize=TEXT + 1, color=LINE, fontweight="bold", zorder=6)
     ax.set_xlim(-span * 0.01, span * 1.03)
     ax.set_ylim(lo - (hi - lo) * 0.01, hi)
@@ -347,8 +350,8 @@ def _card_frame():
     return fig, gs
 
 
-def _card_save(fig, out, wm, fmt):
-    fig.text(0.975, 0.975, ("最差餘裕 " + fmt.format(wm) + " dB").replace("-", "−"), ha="right", va="top",
+def _card_save(fig, out, wm):
+    fig.text(0.975, 0.975, f"最差餘裕 {wm:+.2f} dB".replace("-", "−"), ha="right", va="top",
              fontsize=CNOTE, color=LINE, fontweight="bold")
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=200, facecolor=SURF)
@@ -356,7 +359,7 @@ def _card_save(fig, out, wm, fmt):
     print("saved", out)
 
 
-def _antenna_card(out, p, y, rad, wm, fmt):
+def _antenna_card(out, p, y, rad, wm):
     """單埠／對稱天線共用：[pattern | S11 | 增益 | 28 GHz 方向圖]；規格＝26.5–29.5 GHz S11 ≤ −10 dB、增益 ≥ 4 dBi。"""
     f = np.arange(24, 32.01, 0.5)
     fig, gs = _card_frame()
@@ -367,7 +370,7 @@ def _antenna_card(out, p, y, rad, wm, fmt):
     _card_curve(fig.add_subplot(gs[2]), f, y[1], "增益 (dBi)", [(26.5, 29.5, 4, "ge")],
                 ylim=(-10, 10), yticks=range(-10, 11, 5), **xs)
     _card_polar(fig.add_subplot(gs[3], projection="polar"), rad)
-    _card_save(fig, out, wm, fmt)
+    _card_save(fig, out, wm)
 
 
 def best_single_card(out):
@@ -391,7 +394,7 @@ def best_single_card(out):
     assert rec["id"] == rid, f"records.json 的 wm 已換成 {rec['id']}，卡片仍是 {rid}"
     _card_check("best_single", wm, rec["value"], 0.005)
     print(f"  S11 餘裕 {per['S11']:+.4f}、Gain 餘裕 {per['Gain']:+.4f}")
-    _antenna_card(out, p, y, rad, wm, "{:+.2f}")
+    _antenna_card(out, p, y, rad, wm)
 
 
 def best_sym_card(out):
@@ -411,7 +414,7 @@ def best_sym_card(out):
     cfg = load_config(REPO / "configs" / "single_r5_explore.yaml")
     _card_check("best_sym 交叉（worst_margin）", worst_margin(y, ["S11", "Gain"], cfg.targets)[0], wm, 1e-4)
     _card_check("best_sym", wm, 0.599, 0.0006)
-    _antenna_card(out, p, y, rad, wm, "{:+.3f}")
+    _antenna_card(out, p, y, rad, wm)
 
 
 def best_wideband_card(out):
@@ -435,13 +438,24 @@ def best_wideband_card(out):
                  for b in v6a.score_spec["bands"] if b["label"] == lab]
         _card_curve(fig.add_subplot(gs[col]), grid, r["y"][k], f"{lab} (dB)", bands, xlim=(11, 40), ylim=(-45, 2),
                     xticks=[15, 20, 25, 30, 35, 40], yticks=range(-40, 1, 10))
-    _card_save(fig, out, wm, "{:+.2f}")
+    _card_save(fig, out, wm)
+
+
+def spec_antenna_figure(out):
+    """天線規格圖（對外版）：S11、增益、28 GHz 方向圖三格，規格淡紅禁區直接畫在圖上，曲線是示範設計。
+    沿用組會 `meeting_square.spec_ant`（凍結 JSON、零 HFSS），以 extra=False 不畫左側帶外的淡紫「額外要求」區；
+    另存到 out，不覆寫組會原圖。meeting_square 載入時會改全域 rcParams，且同程序先畫的圖（report_r1r10_style 等）
+    也改過底色，所以在 rc_context 裡先還原 matplotlib 預設再載入，出圖與執行順序無關、也不影響其他圖。"""
+    with plt.rc_context():
+        plt.rcdefaults()
+        from script.figs import meeting_square as ms
+        ms.spec_ant(extra=False, name=str(out))
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", default="single,sym,dual,wideband",
-                    help="另有 best_single,best_sym,best_wideband（最佳設計卡，預設不跑）")
+                    help="另有 best_single,best_sym,best_wideband（最佳設計卡）、spec_antenna（天線規格圖），預設不跑")
     ap.add_argument("--refresh", action="store_true", help="重掃 dataset（單埠／雙埠快取）")
     ap.add_argument("--root", type=Path, default=None, help="dataset 根目錄；預設本機 NAS 備份")
     args = ap.parse_args(argv)
@@ -457,6 +471,8 @@ def main(argv=None):
         best_sym_card(OUT / "best_sym.png")
     if "best_wideband" in todo:
         best_wideband_card(OUT / "best_wideband.png")
+    if "spec_antenna" in todo:
+        spec_antenna_figure(OUT / "spec_antenna.png")
 
     if "single" in todo:
         s = series(load_cached("single", root, args.refresh), SINGLE_END,
@@ -470,7 +486,7 @@ def main(argv=None):
     if "sym" in todo:
         s = sym_series()
         summary("sym", s)
-        climb_figure(OUT / "climb_sym.png", s, lo=-4.0, hi=1.2, end_fmt="{:+.3f} dB", nodes=[
+        climb_figure(OUT / "climb_sym.png", s, lo=-4.0, hi=1.2, nodes=[
             ("r80g001_1039_23133a9e", "從既有天線設計出發", (250, -2.6), "left"),
             ("r80bestrep01_f6ffb938", "代理模型挑選、大量生成對稱設計\n首次通過規格", (1250, 0.75), "left"),
             ("r80sc_b05_014_eb0a73b6", "從好設計左右成對局部修改", (4650, 0.5), "right")])
