@@ -300,3 +300,65 @@ def test_legacy_dual_loader_explicitly_skips_measurement_store(dataset, monkeypa
     monkeypatch.setattr(sm_dual, "DATASET_PATH", Path(str(dataset)))
     x, y, source, raw = sm_dual._scan_stores(["profile_store"], workers=1)
     assert x.shape == (0, 625) and y.shape == (0, 3, 17) and source == [] and raw == 0
+
+
+def _write_two(dataset_root, name, cfg_data):
+    """兩筆的 dual 輸入夾（p0、p1 圖樣不同）。"""
+    folder = _write_input(dataset_root, name, cfg_data, pid="p0")
+    measurement = json.loads((folder / "measurement.json").read_text(encoding="utf-8"))
+    rows = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
+    pattern = _pattern(cfg_data["port"])
+    pattern[12, 3] = 1
+    rows.append(dict(rows[0], id="p1", lineage_id="p1", pattern_sha256=profiled_batch.pattern_sha256(pattern)))
+    torch.save(pattern, folder / "p1.pt")
+    profiled_batch.atomic_json(folder / "manifest.json", rows)
+    assert measurement
+    return folder
+
+
+TIER1 = {"input": "n_input", "store": "n_store", "prio": -6, "scope": "symmetry_filter_20261007"}
+
+
+class _FakeDualQueuesTier1(_FakeDual):
+    """第一筆模擬時，佇列冒出一個 tier-1 job（模擬發車中途有公證入列）。"""
+    job = TIER1
+
+    def __call__(self, pattern_tensor):
+        out = super().__call__(pattern_tensor)
+        (dedust.DATASET_PATH.joinpath("jobs.json")).write_text(json.dumps([type(self).job]), encoding="utf-8")
+        return out
+
+
+def test_tier2_yield_keeps_the_sample_just_simulated(dataset, tmp_path, monkeypatch):
+    # 2026-10-23 bug：讓位檢查在「模擬完、寫檔前」，讓位時剛算完的那筆被丟掉。
+    _write_two(dataset, "fill_input", _config("dual"))
+    _FakeDualQueuesTier1.reset()
+    _FakeDualQueuesTier1.job = TIER1
+    monkeypatch.setattr("antenna.patch.DualPortSimulator", _FakeDualQueuesTier1)
+    args = _run_args("fill_input", "fill_store", CONFIGS["dual"], tmp_path / "work")
+    assert dedust.run(args) == "yield"
+    assert _FakeDualQueuesTier1.calls == 1
+    results = json.loads((dataset / "fill_store" / "results.json").read_text(encoding="utf-8"))
+    assert results["p0"]["status"] == "ok" and "p1" not in results
+
+
+def test_tier2_does_not_yield_to_job_pinned_to_another_machine(dataset, tmp_path, monkeypatch):
+    # 2026-10-23 bug：釘給 37 的公證讓 216／218 的填空每筆都讓位又回頭重跑（三小時零進度）。
+    _write_two(dataset, "fill_input", _config("dual"))
+    _FakeDualQueuesTier1.reset()
+    _FakeDualQueuesTier1.job = dict(TIER1, machine="37")
+    monkeypatch.setattr("antenna.patch.DualPortSimulator", _FakeDualQueuesTier1)
+    args = _run_args("fill_input", "fill_store", CONFIGS["dual"], tmp_path / "work")
+    args.claim_me = "140.123.106.216"
+    assert dedust.run(args) is None
+    assert _FakeDualQueuesTier1.calls == 2
+    results = json.loads((dataset / "fill_store" / "results.json").read_text(encoding="utf-8"))
+    assert results["p0"]["status"] == "ok" and results["p1"]["status"] == "ok"
+
+
+def test_pinned_elsewhere_matches_full_ip_and_last_octet():
+    assert not dedust._pinned_elsewhere({}, "140.123.106.216")
+    assert not dedust._pinned_elsewhere({"machine": "216"}, "140.123.106.216")
+    assert not dedust._pinned_elsewhere({"machine": "140.123.106.216"}, "140.123.106.216")
+    assert dedust._pinned_elsewhere({"machine": "37"}, "140.123.106.216")
+    assert dedust._pinned_elsewhere({"machine": "37"}, None)

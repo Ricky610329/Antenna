@@ -5632,6 +5632,33 @@ def _resolve_batch_config(config_path, input_name=None):
     return raw
 
 
+def _pinned_elsewhere(job, me):
+    """job 釘給別台（machine 欄＝完整 IP 或末段）且不是本機 → True；與 worker 認領的釘選比對同一規則。"""
+    pin = str(job.get("machine") or "")
+    return bool(pin) and not (me and (me == pin or me.endswith("." + pin)))
+
+
+def _tier1_waiting(args):
+    """本 scope 內有本機可認領、尚未 claim／done／fail 的 tier-1 job → 回傳其 store；否則 None。"""
+    from script.batch_scope import job_in_scope
+    qp, sd = DATASET_PATH.joinpath("jobs.json"), DATASET_PATH.joinpath("jobs_state")
+    try:
+        jobs = json.load(open(str(qp), encoding="utf-8")) if qp.exists() else []
+    except Exception:
+        return None
+    me = getattr(args, "claim_me", None)
+    for j in jobs:
+        if not job_in_scope(j, getattr(args, "scope", None)) or j.get("prio", 9) >= getattr(args, "tier2_prio", 99):
+            continue
+        if _pinned_elsewhere(j, me):
+            continue
+        st = j["store"]
+        if any(sd.joinpath(st + ext).exists() for ext in (".done", ".fail", ".claim")):
+            continue
+        return st
+    return None
+
+
 def run(args):
     from antenna.patch import DualPortSimulator, SinglePortRadSimulator   # lazy：開發機/CI 不 import COM 相依
     from antenna.utils.store import SampleStore
@@ -5865,6 +5892,22 @@ def run(args):
                 fails = 0
             aborted = False
             for k, (num, m) in enumerate(todo):
+                #? tier-2 讓位（2026-07-12 Ricky「空窗期跑 tier2,一接到 job 就暫停」）:
+                #  填空批（prio ≥ tier2_prio）每筆開模前掃佇列,出現本機可認領的 tier-1 → 釋放 claim 退出;
+                #  進度全在 results.json（冪等）,之後任一機續跑。
+                #! 2026-10-23 修:原本在「模擬完、寫檔前」檢查——讓位時剛算完的那筆被丟掉;且釘給別台的
+                #  公證 job 也觸發讓位,本機接不走又回頭重跑填空,每筆都丟(m03 三分片 3 小時零進度)。
+                if getattr(args, "job_prio", 0) >= getattr(args, "tier2_prio", 99):
+                    _st = _tier1_waiting(args)
+                    if _st is not None:
+                        print(f"⏸ tier-1 job {_st} 出現——tier-2 讓位（進度已落檔,空窗時任一機續跑）")
+                        _cp = getattr(args, "claim_path", None)
+                        if _cp is not None:
+                            try:
+                                os.remove(_cp)
+                            except OSError:
+                                pass
+                        return "yield"
                 p = torch.load(str(input_dir.joinpath(f"{m['id']}.pt")), weights_only=True)
                 print(f"[{m['id']}] 模擬中… (本次第 {k + 1}/{len(todo)} 筆;manifest #{num + 1}/{len(manifest)})")
                 done_evt, fired = threading.Event(), threading.Event()
@@ -5923,34 +5966,6 @@ def run(args):
                     if owner != getattr(args, "claim_me", None):
                         print(f"⚠ claim 已被 {owner} 接管——本機停寫退出（避免 results.json 互踩）")
                         return "yield"
-                #? tier-2 讓位（2026-07-12 Ricky「空窗期跑 tier2,一接到 job 就暫停」）:
-                #  填空批（prio ≥ tier2_prio）每筆完成後掃佇列,出現可認領的 tier-1 → 釋放 claim 退出;
-                #  進度全在 results.json（冪等）,之後任一機續跑——暫停/恢復零額外儲存機制。
-                if getattr(args, "job_prio", 0) >= getattr(args, "tier2_prio", 99):
-                    from script.batch_scope import job_in_scope
-                    _qp = DATASET_PATH.joinpath("jobs.json")
-                    _sd = DATASET_PATH.joinpath("jobs_state")
-                    try:
-                        _jobs = json.load(open(str(_qp), encoding="utf-8")) if _qp.exists() else []
-                    except Exception:
-                        _jobs = []
-                    for _j in _jobs:
-                        if not job_in_scope(_j, getattr(args, "scope", None)):
-                            continue
-                        if _j.get("prio", 9) >= getattr(args, "tier2_prio", 99):
-                            continue
-                        _st = _j["store"]
-                        if _sd.joinpath(_st + ".done").exists() or _sd.joinpath(_st + ".fail").exists() \
-                                or _sd.joinpath(_st + ".claim").exists():
-                            continue
-                        print(f"⏸ tier-1 job {_st} 出現——tier-2 讓位（進度已落檔,空窗時任一機續跑）")
-                        if cp is not None:
-                            try:
-                                os.remove(cp)
-                            except OSError:
-                                pass
-                        return "yield"
-
                 resp = torch.stack([torch.as_tensor(result[l]).float().reshape(-1) for l in labels])
                 rad = getattr(sim, "last_radiation", None)
                 if profile_cfg:
