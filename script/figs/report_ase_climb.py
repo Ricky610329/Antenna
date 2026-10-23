@@ -2,7 +2,9 @@
 
 用法（repo 根目錄）：
     python -m script.figs.report_ase_climb [--only single,sym,dual,wideband] [--refresh] [--root <dataset>]
+    python -m script.figs.report_ase_climb --only best_single,best_sym,best_wideband     # 最佳設計卡（預設不跑）
 輸出：docs/進度報告/10月_歷來實驗總整理/figs/gen4_ase/climb_{single,sym,dual,wideband}.png（16:7，dpi 200）
+      同夾 best_{single,sym,wideband}.png（最佳設計卡，16:5，dpi 200）
 
 圖面只放淡色點（每筆模擬）、粗階梯（累計最佳）、規格線 0、3–5 個白話方法節點；不放標題與圖下小字。
 數字條件與出處記在 `docs/進度報告/10月_歷來實驗總整理/notes/gen4_爬升量化.md`。
@@ -15,6 +17,11 @@
   min(m1+2, m2+2, m3, m4+5)，到 records_dual.json 的 wm_mfg 紀錄 smp073_d_040（8/24）為止。
 - 對稱天線：沿用 r80_sym.ordered（R80 5,000 筆＋續探，依 store 完成時間）；截到 10/15 續探收齊為止。
 - 寬頻濾波器：沿用 r81_v6.rows_v6（11–40 GHz 全部量測，依批次序），以 −15 dB 版尺（v6a）回算。
+最佳設計卡（best_*）：一列四格、每格近正方形，圖上只放量名與單位、規格區（淡紅禁區＋虛線門檻）、右上角
+「最差餘裕」；不放設計編號、版本代號與圖下註腳。數值一律現場重算並與 records／既有紀錄核對（不一致就中止）：
+- best_single：本機 NAS 備份 dedust_c48nq1_p05 的 c48nq1p05_16（records.json wm），尺＝antenna.losses.worst_margin。
+- best_sym：r80_sym 同一批 store 的 r80sc_b05_014_eb0a73b6，尺＝r80_sym_climb.margins（與 worst_margin 交叉核對）。
+- best_wideband：R81 v2 資料根的 r81v6mg44_016_caea7f52，尺＝r81_curve_sm.true_wm 以 v6a（−15 dB 版）計。
 單埠／雙埠第一次跑要讀約 6 萬個小檔（數分鐘、低優先權），結果快取在 tmp/ase_climb_*.npz。
 """
 import argparse
@@ -255,9 +262,186 @@ def summary(name, s):
           f"；通過規格 {int(((s['wm'] >= 0) & s['ok']).sum())} 筆")
 
 
+# ---------------------------------------------------------------- 最佳設計卡（對外乾淨版）
+
+CARD = (16, 5)
+CARD_SINGLE = ("dedust_c48nq1_p05", "c48nq1p05_16")   # records.json wm（+0.79）
+CARD_SYM = "r80sc_b05_014_eb0a73b6"                   # round-80 對稱最佳（+0.599）
+CARD_WIDE = "r81v6mg44_016_caea7f52"                  # round-101 寬頻最佳（+0.41，v6a 尺）
+BAD = "#e34948"
+CTICK, CTITLE, CNOTE = 13, 17, 23
+
+
+def _card_check(name, got, ref, tol):
+    ok = abs(got - ref) <= tol
+    print(f"[{name}] 重算最差餘裕 {got:+.4f} dB；對照 {ref:+g}（容差 {tol:g}）→ {'一致' if ok else '不一致'}")
+    if not ok:
+        raise SystemExit(f"{name}：重算 {got:+.4f} 與對照值 {ref:+g} 不符，中止出圖")
+
+
+def _card_ax(ax, title):
+    ax.set_facecolor(SURF)
+    ax.set_title(title, loc="left", fontsize=CTITLE, color=INK, pad=10)
+    ax.tick_params(colors=MUTED, labelsize=CTICK)
+    for sp in ax.spines.values():
+        sp.set_color("#bdbcb6")
+
+
+def _card_pattern(ax, p):
+    """25×25 金屬圖形；imshow origin="upper"＝第一索引朝下，饋線邊（row 24）在圖下緣。"""
+    ax.imshow(np.asarray(p).reshape(25, 25) > 0.5, cmap="Greys", origin="upper", interpolation="nearest")
+    ax.set_xticks([])
+    ax.set_yticks([])
+    _card_ax(ax, "pattern")
+    ax.set_box_aspect(1)
+
+
+def _card_curve(ax, f, y, title, bands, xlim, ylim, xticks, yticks):
+    """bands：[(起頻, 止頻, 門檻, "le"|"ge")]；le＝曲線須在門檻下，禁區是門檻以上的淡紅塊。"""
+    for lo, hi, thr, rel in bands:
+        y0, y1 = (thr, ylim[1]) if rel == "le" else (ylim[0], thr)
+        ax.fill_between([lo, hi], y0, y1, color=BAD, alpha=0.10, lw=0, zorder=1)
+        ax.plot([lo, hi], [thr, thr], color=INK, lw=1.8, ls="--", zorder=3)
+    ax.plot(f, y, color=LINE, lw=3.0, zorder=4)
+    ax.set_xlim(*xlim)
+    ax.set_ylim(*ylim)
+    ax.set_xticks(xticks)
+    ax.set_yticks(list(yticks))
+    ax.grid(color=GRID, lw=0.8)
+    ax.set_axisbelow(True)
+    ax.set_xlabel("頻率 (GHz)", fontsize=CTICK + 1, color=MUTED)
+    _card_ax(ax, title)
+    ax.set_box_aspect(1)
+
+
+def _card_polar(ax, rad):
+    """28 GHz 方向圖兩切面（只畫 |θ|≤90°；沿用 polar_rad_ax，去掉無圖例的 G0−3 dB 紅圈與窗）。"""
+    from script.figs.report_r1r10_style import polar_rad_ax
+    th = np.asarray(rad["theta"], dtype=float)
+    keep = np.abs(th) <= 90
+
+    def cut(k):
+        return np.asarray(rad[k], dtype=float)[keep]
+
+    rmin, rmax, _ = polar_rad_ax(ax, th[keep], [(cut("phi0"), LINE, "φ = 0°", 3.0), (cut("phi90"), NODE, "φ = 90°", 3.0)],
+                                 show_window=False)
+    ax.lines[0].remove()                       # polar_rad_ax 先畫的 G0−3 dB 紅圈；沒有圖例就是雜訊
+    ax.set_facecolor(SURF)
+    ax.set_rlabel_position(150)                # 半徑刻度字移到後半球（無曲線處），免得壓在 0° 角度字與曲線上
+    ax.set_yticklabels([str(t) for t in range(rmin, rmax + 1, 5)], fontsize=CTICK - 2, color=MUTED)
+    names = {0: "0", 30: "30", 60: "60", 90: "90", 270: "−90", 300: "−60", 330: "−30"}
+    ax.set_thetagrids(range(0, 360, 30), [names.get(a, "") for a in range(0, 360, 30)], fontsize=CTICK - 1,
+                      color=MUTED)
+    ax.set_title("28 GHz 方向圖 (dBi)", loc="left", fontsize=CTITLE, color=INK, pad=26)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.03), ncol=2, frameon=False, fontsize=CTICK + 1,
+              handlelength=1.4, columnspacing=1.4)
+
+
+def _card_frame():
+    plt.rcParams["font.family"] = ["Microsoft JhengHei", "sans-serif"]
+    plt.rcParams["axes.unicode_minus"] = False
+    fig = plt.figure(figsize=CARD, dpi=200)
+    fig.patch.set_facecolor(SURF)
+    # 每格寬＝高≈3.1 吋：寬 15.04/(4+3×0.28)＝3.10、高 0.62×5＝3.10；右側留邊給極座標最外圈的角度字
+    gs = fig.add_gridspec(1, 4, left=0.02, right=0.96, bottom=0.16, top=0.78, wspace=0.28)
+    return fig, gs
+
+
+def _card_save(fig, out, wm, fmt):
+    fig.text(0.975, 0.975, ("最差餘裕 " + fmt.format(wm) + " dB").replace("-", "−"), ha="right", va="top",
+             fontsize=CNOTE, color=LINE, fontweight="bold")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=200, facecolor=SURF)
+    plt.close(fig)
+    print("saved", out)
+
+
+def _antenna_card(out, p, y, rad, wm, fmt):
+    """單埠／對稱天線共用：[pattern | S11 | 增益 | 28 GHz 方向圖]；規格＝26.5–29.5 GHz S11 ≤ −10 dB、增益 ≥ 4 dBi。"""
+    f = np.arange(24, 32.01, 0.5)
+    fig, gs = _card_frame()
+    _card_pattern(fig.add_subplot(gs[0]), p)
+    xs = dict(xlim=(24, 32), xticks=[24, 26, 28, 30, 32])
+    _card_curve(fig.add_subplot(gs[1]), f, y[0], "S11 (dB)", [(26.5, 29.5, -10, "le")],
+                ylim=(-30, 0), yticks=range(-30, 1, 10), **xs)
+    _card_curve(fig.add_subplot(gs[2]), f, y[1], "增益 (dBi)", [(26.5, 29.5, 4, "ge")],
+                ylim=(-10, 10), yticks=range(-10, 11, 5), **xs)
+    _card_polar(fig.add_subplot(gs[3], projection="polar"), rad)
+    _card_save(fig, out, wm, fmt)
+
+
+def best_single_card(out):
+    """單埠最佳（records.json wm c48nq1p05_16）：資料取本機 NAS 備份；尺＝losses.worst_margin（dedust 記帳同一把）。"""
+    import torch
+    from antenna.losses import worst_margin
+    from antenna.training import load_config
+    store, rid = CARD_SINGLE
+    p = np.asarray(torch.load(BACKUP / (store + "_input") / (rid + ".pt"), weights_only=True)).reshape(25, 25) > 0.5
+    y = None
+    for f in sorted((BACKUP / store).glob("*.pt")):          # store 是 hash 檔名；以 pattern 比對找這一筆
+        pp, yy = torch.load(f, weights_only=True, map_location="cpu")
+        if (np.asarray(pp).reshape(25, 25) > 0.5).tolist() == p.tolist():
+            y = np.asarray(yy, dtype=float).reshape(2, -1)
+            break
+    assert y is not None, f"{store} 裡找不到 {rid} 的樣本"
+    rad = torch.load(BACKUP / store / "rad" / (rid + ".pt"), weights_only=True)
+    cfg = load_config(REPO / "configs" / "single_r5_explore.yaml")
+    wm, per = worst_margin(y, ["S11", "Gain"], cfg.targets)
+    rec = json.loads((REPO / "docs" / "records.json").read_text(encoding="utf-8"))["wm"]
+    assert rec["id"] == rid, f"records.json 的 wm 已換成 {rec['id']}，卡片仍是 {rid}"
+    _card_check("best_single", wm, rec["value"], 0.005)
+    print(f"  S11 餘裕 {per['S11']:+.4f}、Gain 餘裕 {per['Gain']:+.4f}")
+    _antenna_card(out, p, y, rad, wm, "{:+.2f}")
+
+
+def best_sym_card(out):
+    """對稱最佳：與 r80_sym.card_figure 同一份資料（續探 store）；尺＝r80_sym_climb.margins，另以 worst_margin 交叉核對。"""
+    import torch
+    from antenna.losses import worst_margin
+    from antenna.training import load_config
+    from script import r80_sym_climb as sc
+    rid = CARD_SYM
+    store = next(s for s in sorted(sc.V2_ROOT.glob("dedust_r80scb??s?"))
+                 if rid in json.loads((s / "results.json").read_text(encoding="utf-8")))
+    e = json.loads((store / "results.json").read_text(encoding="utf-8"))[rid]
+    p, y = torch.load(store / e["sample_file"], weights_only=True, map_location="cpu")
+    y = np.asarray(y, dtype=float)
+    rad = torch.load(store / e["rad_file"], weights_only=False)
+    wm = float(sc.margins(y[None]).min())
+    cfg = load_config(REPO / "configs" / "single_r5_explore.yaml")
+    _card_check("best_sym 交叉（worst_margin）", worst_margin(y, ["S11", "Gain"], cfg.targets)[0], wm, 1e-4)
+    _card_check("best_sym", wm, 0.599, 0.0006)
+    _antenna_card(out, p, y, rad, wm, "{:+.3f}")
+
+
+def best_wideband_card(out):
+    """寬頻濾波器最佳：[pattern | S21 | S11 | S22]；以 v6a（−15 dB 版）規格畫門檻與禁區，尺＝r81_curve_sm.true_wm。"""
+    from script import r81_curve_sm as sm
+    from script.figs.r81_v6 import V6, V6A
+    rid = CARD_WIDE
+    v6, v6a = sm.load_cfg(V6), sm.load_cfg(V6A)
+    grid = sm.frequency_grid(v6.measurement)
+    store = next(s for s in sorted(sm.V2_DATASET.glob(f"dedust_{rid.split('_')[0]}s?"))
+                 if rid in json.loads((s / "results.json").read_text(encoding="utf-8")))
+    r = next(r for r in sm.load_store(store, grid) if r["id"] == rid)
+    sc = sm.true_wm(r, v6a, grid)
+    wm = sc["worst_margin"]
+    _card_check("best_wideband", wm, 0.41, 0.005)
+    print("  各項餘裕 " + "、".join(f"{k} {v:+.2f}" for k, v in sc["margins"].items()))
+    fig, gs = _card_frame()
+    _card_pattern(fig.add_subplot(gs[0]), r["pattern"])
+    for col, (k, lab) in enumerate(((1, "S21"), (0, "S11"), (2, "S22")), start=1):
+        bands = [(b["start_ghz"], b["stop_ghz"], b["threshold"], b["relation"])
+                 for b in v6a.score_spec["bands"] if b["label"] == lab]
+        _card_curve(fig.add_subplot(gs[col]), grid, r["y"][k], f"{lab} (dB)", bands, xlim=(11, 40), ylim=(-45, 2),
+                    xticks=[15, 20, 25, 30, 35, 40], yticks=range(-40, 1, 10))
+    _card_save(fig, out, wm, "{:+.2f}")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", default="single,sym,dual,wideband")
+    ap.add_argument("--only", default="single,sym,dual,wideband",
+                    help="另有 best_single,best_sym,best_wideband（最佳設計卡，預設不跑）")
     ap.add_argument("--refresh", action="store_true", help="重掃 dataset（單埠／雙埠快取）")
     ap.add_argument("--root", type=Path, default=None, help="dataset 根目錄；預設本機 NAS 備份")
     args = ap.parse_args(argv)
@@ -266,6 +450,13 @@ def main(argv=None):
         from antenna.utils import DATASET_PATH
         root = BACKUP if BACKUP.exists() else Path(str(DATASET_PATH))
     todo = args.only.split(",")
+
+    if "best_single" in todo:
+        best_single_card(OUT / "best_single.png")
+    if "best_sym" in todo:
+        best_sym_card(OUT / "best_sym.png")
+    if "best_wideband" in todo:
+        best_wideband_card(OUT / "best_wideband.png")
 
     if "single" in todo:
         s = series(load_cached("single", root, args.refresh), SINGLE_END,
