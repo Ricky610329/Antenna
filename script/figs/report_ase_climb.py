@@ -20,8 +20,8 @@
   min(m1+2, m2+2, m3, m4+5)，到 records_dual.json 的 wm_mfg 紀錄 smp073_d_040（8/24）為止。
 - 對稱天線：沿用 r80_sym.ordered（R80 5,000 筆＋續探，依 store 完成時間）；截到 10/15 續探收齊為止。
 - 寬頻濾波器：沿用 r81_v6.rows_v6（11–40 GHz 全部量測，依批次序），以 −15 dB 版尺（v6a）回算。
-最佳設計卡（best_*）：一列四格、每格近正方形，圖上只放量名與單位、規格區（淡紅禁區＋虛線門檻）、右上角
-「最差餘裕」；不放設計編號、版本代號與圖下註腳。數值一律現場重算並與 records／既有紀錄核對（不一致就中止）：
+最佳設計卡（best_*）：一列四格、每格近正方形，圖上只放量名與單位、規格區（淡紅禁區＋虛線門檻）、整排左上角
+「最差餘裕」（放右上會被讀成方向圖的餘裕，第三版審稿 r1）；第一格標「金屬圖形」；不放設計編號、版本代號與圖下註腳。數值一律現場重算並與 records／既有紀錄核對（不一致就中止）：
 - best_single：本機 NAS 備份 dedust_c48nq1_p05 的 c48nq1p05_16（records.json wm），尺＝antenna.losses.worst_margin。
 - best_sym：r80_sym 同一批 store 的 r80sc_b05_014_eb0a73b6，尺＝r80_sym_climb.margins（與 worst_margin 交叉核對）。
 - best_wideband：R81 v2 資料根的 r81v6mg44_016_caea7f52，尺＝r81_curve_sm.true_wm 以 v6a（−15 dB 版）計。
@@ -297,7 +297,7 @@ def _card_pattern(ax, p):
     ax.imshow(np.asarray(p).reshape(25, 25) > 0.5, cmap="Greys", origin="upper", interpolation="nearest")
     ax.set_xticks([])
     ax.set_yticks([])
-    _card_ax(ax, "pattern")
+    _card_ax(ax, "金屬圖形")
     ax.set_box_aspect(1)
 
 
@@ -370,7 +370,7 @@ def _card_frame():
 
 
 def _card_save(fig, out, wm):
-    fig.text(0.975, 0.975, f"最差餘裕 {wm:+.2f} dB".replace("-", "−"), ha="right", va="top",
+    fig.text(0.02, 0.975, f"最差餘裕 {wm:+.2f} dB".replace("-", "−"), ha="left", va="top",
              fontsize=CNOTE, color=LINE, fontweight="bold")
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=200, facecolor=SURF)
@@ -520,7 +520,7 @@ def main(argv=None):
         climb_figure(OUT / "climb_dual.png", s, lo=-9.0, hi=1.0, nodes=[
             ("d70b1_A_11", "從前代累積的設計出發", (700, -6.9), "left"),
             ("d70b3_A_11_d2_00_d2_01", "從好設計局部修改", (1300, -5.0), "left"),
-            ("smp002_L_031", "代理模型挑選候選\n模擬機不停機補量", (3300, -1.0), "left"),
+            ("smp002_L_031", "代理模型挑選候選\n模擬機不停機補模擬", (3300, -1.0), "left"),
             ("smp050_L_011", "自動化流程無人值守運轉", (12300, -1.3), "right")])
     if "wideband" in todo:
         s = wideband_series()

@@ -4,7 +4,7 @@
     python -m script.figs.report_ase_arch [--only arch,surrogate_idea,surrogate_rank]
 輸出：docs/進度報告/10月_歷來實驗總整理/figs/gen4_ase/
     arch.png            系統架構：元件方塊＋資料流箭頭，依開發機／NAS／三台模擬機分區（16:7，dpi 200）
-    surrogate_idea.png  代理模型做法示意：原本「一張圖形→整條曲線」對照新版「量過的相近設計＋改了哪幾格→變化量」
+    surrogate_idea.png  代理模型做法示意：前一版「一張圖形→整條曲線」對照新版「已模擬的相近設計＋改了哪幾格→變化量」
                         （示意圖：格子與曲線都是畫出來的，不是實際設計，圖上不放數字；16:7）
     surrogate_rank.png  新版代理模型上線後逐輪的排序相關（預測 vs HFSS 的 Spearman ρ），三條線（約 4:3，給左圖右文）
 
@@ -110,9 +110,9 @@ def arch(out):
     # 開發機：人與 AI 協作（上）、候選產生 → 代理模型篩選（中）
     _cbox(ax, 0.55, 4.95, 7.15, 1.1, "人與 AI 協作", "判讀結果、事先寫下成功標準、決定下一步方向", F_HUMAN)
     _cbox(ax, 0.55, 1.9, 3.15, 1.95, "候選產生", "從好設計局部修改、\n區塊移植、變異交叉", F_GEN)
-    _cbox(ax, 4.55, 1.9, 3.15, 1.95, "代理模型篩選", "代理模型或實測統計\n預估表現，排序挑出一輪", F_SM)
+    _cbox(ax, 4.55, 1.9, 3.15, 1.95, "代理模型篩選", "代理模型或模擬結果統計\n預估表現，排序挑出一輪", F_SM)
     # 共享儲存：資料庫（上）、模擬佇列（下）
-    _cbox(ax, 8.6, 3.95, 2.85, 2.1, "模擬結果資料庫", "前代累積的設計＋\n每筆新模擬", F_DATA)
+    _cbox(ax, 8.6, 3.95, 2.85, 2.1, "模擬結果資料庫", "歷史累積的設計＋\n每筆新模擬", F_DATA)
     _cbox(ax, 8.6, 0.75, 2.85, 1.95, "模擬佇列", "查重複、分成三份，\n三台依優先順序取件", F_DATA)
     # 模擬機：評分（上）、三台模擬機（下）
     _cbox(ax, 12.35, 4.95, 3.1, 1.1, "評分", "曲線換成最差餘裕", F_HFSS)
@@ -192,11 +192,11 @@ def surrogate_idea(out):
     ax.axis("off")
 
     # 左側列名
-    ax.text(0.25, 5.55, "原本", fontsize=22, fontweight="bold", color=NAVY, va="center")
+    ax.text(0.25, 5.55, "前一版", fontsize=22, fontweight="bold", color=NAVY, va="center")
     ax.text(0.25, 2.25, "新版", fontsize=22, fontweight="bold", color=NAVY, va="center")
     ax.plot([0.25, 15.75], [3.95, 3.95], color=GRID, lw=1.5)
 
-    # 原本：一張設計圖形 → 神經網路 → 整條曲線（輸出與新版的預測曲線上下對齊）
+    # 前一版：一張設計圖形 → 神經網路 → 整條曲線（輸出與新版的預測曲線上下對齊）
     _grid_icon(ax, 2.0, 4.85, 1.4)
     ax.text(2.7, 4.62, "設計圖形", ha="center", va="top", fontsize=17, color=INK)
     _arrow(ax, (3.65, 5.55), (6.5, 5.55))
@@ -205,7 +205,7 @@ def surrogate_idea(out):
     _curve_icon(ax, 14.05, 5.0, 1.5, 1.1)
     ax.text(14.8, 4.62, "預測整條曲線", ha="center", va="top", fontsize=17, color=INK)
 
-    # 新版：量過的相近設計（圖形＋HFSS 曲線，1–4 個）＋候選改了哪幾格 → 神經網路 → 變化量 ＋ 鄰居曲線 ＝ 預測曲線
+    # 新版：已模擬的相近設計（圖形＋HFSS 曲線，1–4 個）＋候選改了哪幾格 → 神經網路 → 變化量 ＋ 鄰居曲線 ＝ 預測曲線
     for k, (dx, dy) in enumerate(((0.3, 0.3), (0.15, 0.15), (0.0, 0.0))):
         x0, y0 = 1.2 + dx, 1.65 + dy
         ax.add_patch(FancyBboxPatch((x0, y0), 2.65, 1.25, boxstyle="round,pad=0,rounding_size=0.06",
@@ -213,7 +213,7 @@ def surrogate_idea(out):
         if k == 2:
             _grid_icon(ax, x0 + 0.12, y0 + 0.14, 0.97)
             _curve_icon(ax, x0 + 1.25, y0 + 0.14, 1.28, 0.97)
-    ax.text(2.65, 1.45, "量過的相近設計\n圖形＋HFSS 曲線，1–4 個", ha="center", va="top", fontsize=16, color=INK,
+    ax.text(2.65, 1.45, "已模擬的相近設計\n圖形＋HFSS 曲線，1–4 個", ha="center", va="top", fontsize=16, color=INK,
             linespacing=1.35)
     ax.text(4.45, 2.4, "＋", ha="center", va="center", fontsize=22, color=MUTED)
     _grid_icon(ax, 4.75, 1.9, 1.0, flips={(1, 4), (2, 4), (5, 2)}, flip_only=True)
@@ -254,7 +254,7 @@ def surrogate_rank(out):
     ax.plot(x, RANK_DELTA, "o-", color=BLUE, label="變化量模型", **kw)
     cx = sorted(RANK_CTX)
     ax.plot(np.asarray(cx) + 0.14, [RANK_CTX[k] for k in cx], "D-", color=AQUA, label="上下文模型", **kw)
-    ax.plot(x - 0.14, RANK_OLD, "s-", color=ORANGE, label="原本的代理模型", **kw)   # 左右錯開，同輪數值相近時不互蓋
+    ax.plot(x - 0.14, RANK_OLD, "s-", color=ORANGE, label="前一版代理模型", **kw)   # 左右錯開，同輪數值相近時不互蓋
     ax.set_xlim(0.5, 10.5)
     ax.set_ylim(-0.8, 0.9)
     ax.set_xticks(RANK_ROUNDS)
