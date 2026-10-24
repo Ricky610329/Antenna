@@ -25,6 +25,8 @@
 - best_single：本機 NAS 備份 dedust_c48nq1_p05 的 c48nq1p05_16（records.json wm），尺＝antenna.losses.worst_margin。
 - best_sym：r80_sym 同一批 store 的 r80sc_b05_014_eb0a73b6，尺＝r80_sym_climb.margins（與 worst_margin 交叉核對）。
 - best_wideband：R81 v2 資料根的 r81v6mg44_016_caea7f52，尺＝r81_curve_sm.true_wm 以 v6a（−15 dB 版）計。
+- 天線卡的方向圖格：整圈 θ、以 0° 方向增益正規化，禁區與 −3 dB 虛線同第 5 頁規格圖（spec_antenna）；
+  方向圖餘裕用 dedust.rad_window_margin 現場算，單埠另與 store results.json 的 rad 核對。
 單埠／雙埠第一次跑要讀約 6 萬個小檔（數分鐘、低優先權），結果快取在 tmp/ase_climb_*.npz。
 """
 import argparse
@@ -275,9 +277,9 @@ BAD = "#e34948"
 CTICK, CTITLE, CNOTE = 13, 17, 23
 
 
-def _card_check(name, got, ref, tol):
+def _card_check(name, got, ref, tol, what="最差餘裕"):
     ok = abs(got - ref) <= tol
-    print(f"[{name}] 重算最差餘裕 {got:+.4f} dB；對照 {ref:+g}（容差 {tol:g}）→ {'一致' if ok else '不一致'}")
+    print(f"[{name}] 重算{what} {got:+.4f} dB；對照 {ref:+g}（容差 {tol:g}）→ {'一致' if ok else '不一致'}")
     if not ok:
         raise SystemExit(f"{name}：重算 {got:+.4f} 與對照值 {ref:+g} 不符，中止出圖")
 
@@ -317,27 +319,44 @@ def _card_curve(ax, f, y, title, bands, xlim, ylim, xticks, yticks):
     ax.set_box_aspect(1)
 
 
+RAD_WIN, RAD_FLOOR, RAD_LO = 45, 3, -40   # 規格 ±45° 內不比 0° 方向低 3 dB 以上；圓心 −40 dB，兩張卡都不截
+RAD_LABEL_AT = 15                          # 半徑刻度字放在 ±45° 禁區裡（曲線依規格進不來）；0 dB 那圈壓在曲線上，不標字
+
+
 def _card_polar(ax, rad):
-    """28 GHz 方向圖兩切面（只畫 |θ|≤90°；沿用 polar_rad_ax，去掉無圖例的 G0−3 dB 紅圈與窗）。"""
-    from script.figs.report_r1r10_style import polar_rad_ax
+    """28 GHz 方向圖兩切面，畫整圈 θ −180°～180°（rad 檔本來就是整圈，2° 一點），以 0° 方向增益正規化成 0 dB。
+    畫法同第 5 頁規格圖（meeting_square.spec_ant）：淡紅＝±45° 內低於 0° 方向 3 dB 的禁區、虛線＝−3 dB 門檻。
+    rad 是 dB(GainTotal)；HFSS 角度原樣（θ 順時針為正，φ 標籤不隨 pattern 圖轉向而交換）。
+    回傳兩切面方向圖餘裕，用 dedust 記帳同一個函式 rad_window_margin 算。"""
+    from script.dedust import rad_window_margin
     th = np.asarray(rad["theta"], dtype=float)
-    keep = np.abs(th) <= 90
-
-    def cut(k):
-        return np.asarray(rad[k], dtype=float)[keep]
-
-    rmin, rmax, _ = polar_rad_ax(ax, th[keep], [(cut("phi0"), LINE, "φ = 0°", 3.0), (cut("phi90"), NODE, "φ = 90°", 3.0)],
-                                 show_window=False)
-    ax.lines[0].remove()                       # polar_rad_ax 先畫的 G0−3 dB 紅圈；沒有圖例就是雜訊
+    assert th.min() <= -178 and th.max() >= 178, f"rad 檔 θ 只有 {th.min()}～{th.max()}，不是整圈"
+    i0 = int(np.argmin(np.abs(th)))
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
+    w = np.radians(np.linspace(-RAD_WIN, RAD_WIN, 91))
+    ax.fill_between(w, RAD_LO, -RAD_FLOOR, color=BAD, alpha=0.10, lw=0, zorder=1)
+    ax.plot(w, np.full_like(w, -RAD_FLOOR), color=INK, lw=1.8, ls="--", zorder=3)
+    margins = {}
+    for k, color, label in (("phi0", LINE, "φ = 0°"), ("phi90", NODE, "φ = 90°")):
+        g = np.asarray(rad[k], dtype=float)
+        norm = g - g[i0]
+        assert norm.min() >= RAD_LO, f"{k} 最低 {norm.min():.1f} dB 低於圓心 {RAD_LO}，會被截"
+        margins[k] = rad_window_margin(th, g, RAD_WIN, RAD_FLOOR)
+        ax.plot(np.radians(th), norm, color=color, lw=3.0, label=label, zorder=4)
+    ax.set_ylim(RAD_LO, 3)
+    ax.set_yticks([-30, -20, -10, 0])
+    ax.set_rlabel_position(RAD_LABEL_AT)
+    ax.set_yticklabels(["−30", "−20", "−10", ""], fontsize=CTICK - 2, color=MUTED)
+    ax.set_xticks(np.radians(range(0, 360, 45)))
+    ax.set_xticklabels(["0°", "45°", "90°", "", "180°", "", "−90°", "−45°"], fontsize=CTICK - 1, color=MUTED)
+    ax.grid(color=GRID, lw=0.8)
     ax.set_facecolor(SURF)
-    ax.set_rlabel_position(150)                # 半徑刻度字移到後半球（無曲線處），免得壓在 0° 角度字與曲線上
-    ax.set_yticklabels([str(t) for t in range(rmin, rmax + 1, 5)], fontsize=CTICK - 2, color=MUTED)
-    names = {0: "0", 30: "30", 60: "60", 90: "90", 270: "−90", 300: "−60", 330: "−30"}
-    ax.set_thetagrids(range(0, 360, 30), [names.get(a, "") for a in range(0, 360, 30)], fontsize=CTICK - 1,
-                      color=MUTED)
-    ax.set_title("28 GHz 方向圖 (dBi)", loc="left", fontsize=CTITLE, color=INK, pad=26)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.03), ncol=2, frameon=False, fontsize=CTICK + 1,
+    ax.spines["polar"].set_color("#bdbcb6")
+    ax.set_title("28 GHz 方向圖，相對 0° (dB)", loc="left", fontsize=CTITLE, color=INK, pad=26)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.07), ncol=2, frameon=False, fontsize=CTICK + 1,
               handlelength=1.4, columnspacing=1.4)
+    return margins
 
 
 def _card_frame():
@@ -359,7 +378,7 @@ def _card_save(fig, out, wm):
     print("saved", out)
 
 
-def _antenna_card(out, p, y, rad, wm):
+def _antenna_card(out, p, y, rad, wm, rad_ref=None):
     """單埠／對稱天線共用：[pattern | S11 | 增益 | 28 GHz 方向圖]；規格＝26.5–29.5 GHz S11 ≤ −10 dB、增益 ≥ 4 dBi。"""
     f = np.arange(24, 32.01, 0.5)
     fig, gs = _card_frame()
@@ -369,8 +388,12 @@ def _antenna_card(out, p, y, rad, wm):
                 ylim=(-30, 0), yticks=range(-30, 1, 10), **xs)
     _card_curve(fig.add_subplot(gs[2]), f, y[1], "增益 (dBi)", [(26.5, 29.5, 4, "ge")],
                 ylim=(-10, 10), yticks=range(-10, 11, 5), **xs)
-    _card_polar(fig.add_subplot(gs[3], projection="polar"), rad)
+    rm = _card_polar(fig.add_subplot(gs[3], projection="polar"), rad)
+    print("  方向圖餘裕 " + "、".join(f"{k} {v:+.4f}" for k, v in rm.items()) + f" → {min(rm.values()):+.4f} dB")
+    for k, ref in (rad_ref or {}).items():               # results.json 的 rad 是兩位小數
+        _card_check(k, rm[k], ref, 0.005, what="方向圖餘裕")
     _card_save(fig, out, wm)
+    return rm
 
 
 def best_single_card(out):
@@ -394,7 +417,8 @@ def best_single_card(out):
     assert rec["id"] == rid, f"records.json 的 wm 已換成 {rec['id']}，卡片仍是 {rid}"
     _card_check("best_single", wm, rec["value"], 0.005)
     print(f"  S11 餘裕 {per['S11']:+.4f}、Gain 餘裕 {per['Gain']:+.4f}")
-    _antenna_card(out, p, y, rad, wm)
+    res = json.loads((BACKUP / store / "results.json").read_text(encoding="utf-8"))[rid]
+    _antenna_card(out, p, y, rad, wm, rad_ref=res["rad"])
 
 
 def best_sym_card(out):
@@ -414,7 +438,7 @@ def best_sym_card(out):
     cfg = load_config(REPO / "configs" / "single_r5_explore.yaml")
     _card_check("best_sym 交叉（worst_margin）", worst_margin(y, ["S11", "Gain"], cfg.targets)[0], wm, 1e-4)
     _card_check("best_sym", wm, 0.599, 0.0006)
-    _antenna_card(out, p, y, rad, wm)
+    _antenna_card(out, p, y, rad, wm)                       # 這批 results.json 沒存方向圖餘裕，只現場算
 
 
 def best_wideband_card(out):
