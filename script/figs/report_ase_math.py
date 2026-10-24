@@ -37,8 +37,8 @@ FORMULAS = {
                  r"$\hat{y}=\mathrm{GEN}_{\phi}(x),\quad x=\mathrm{MPGN}_{\theta}(s^{*})$"],
     "g1_loss": [r"$\mathcal{L}=\dfrac{1}{N}\sum_{n=1}^{N}\max(R_n-C_R,\,0)^2"
                 r"+\dfrac{1}{N}\sum_{n=1}^{N}\min(G_n-C_G,\,0)^2$"],
-    "g1_ste": [r"$s=\mathrm{Sign}(z),\quad b=(1+s)/2,\quad "
-               r"\partial\mathcal{L}/\partial z=\partial\mathcal{L}/\partial s$"],
+    "g1_ste": [r"$q=\mathrm{Sign}(z),\quad b=(1+q)/2,\quad "
+               r"\partial\mathcal{L}/\partial z=\partial\mathcal{L}/\partial q$"],
     "g1_online": [r"$\mathcal{D}\leftarrow\mathcal{D}\cup\{(x_t,\,y_t)\}$",
                   r"$\mathrm{MSE}_{\mathcal{D}}(\phi)=\mathrm{mean}\,(\mathrm{GEN}_{\phi}(x)-y)^2<10^{-4}$"],
     # ---------------------------------------------------------------- 第二代，錢鵬予碩論
@@ -57,7 +57,8 @@ FORMULAS = {
     "g3_loss": [r"$\mathcal{L}_{\mathrm{EM}}=\ell\,(\hat{S}_{11}[\,\hat{S}_{11}>-10\,],\,{-10})"
                 r"+\ell\,(\hat{G}[\,\hat{G}<4\,],\,4)$",
                 r"$\mathcal{L}_{\mathrm{total}}=\mathcal{L}_{\mathrm{EM}}+w_{\mathrm{SC}}\cdot\mathcal{L}_{\mathrm{SC}}$"],
-    "g3_sc": [r"$\mathcal{L}_{\mathrm{SC}}=\dfrac{1}{\lambda_2(L)},\quad L=D-A,\quad A_{ij}=p_i\,p_j+\varepsilon$"],
+    "g3_sc": [r"$\mathcal{L}_{\mathrm{SC}}=1/\lambda_2(L),\quad L=D-A$",
+              r"$A_{ij}=p_i\,p_j+\varepsilon\ \ \mathrm{if}\ \ i\sim j,\qquad A_{ij}=0\ \ \mathrm{otherwise}$"],
     "g3_dlf": [r"$B_{\mathrm{train}}=\{\,(P_i,\,y_i,\,\mathcal{L}_i)\in B\ :\ \mathcal{L}_i\leq\bar{\mathcal{L}}_t\,\}$",
                r"$\bar{\mathcal{L}}_t=\mathrm{mean}(\mathcal{H})$"],
     # ---------------------------------------------------------------- 第四代，程式核對
